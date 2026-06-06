@@ -132,16 +132,16 @@ export async function POST(req: NextRequest) {
       }
 
       // Record consents — GDPR/HIPAA compliance
-      const consents = [
-        { type: "TERMS_OF_SERVICE" as const, granted: acceptedTerms, version: "1.0" },
-        { type: "PRIVACY_POLICY" as const, granted: acceptedPrivacy, version: "1.0" },
+   const consents = [
+        { type: "TERMS_OF_SERVICE", granted: acceptedTerms, version: "1.0" },
+        { type: "PRIVACY_POLICY", granted: acceptedPrivacy, version: "1.0" },
       ];
 
       if (acceptedHipaa !== undefined) {
-        consents.push({ type: "HIPAA_AUTHORIZATION" as const, granted: acceptedHipaa, version: "1.0" });
+        consents.push({ type: "HIPAA_AUTHORIZATION", granted: acceptedHipaa, version: "1.0" });
       }
       if (acceptedGdpr !== undefined) {
-        consents.push({ type: "GDPR_CONSENT" as const, granted: acceptedGdpr, version: "1.0" });
+        consents.push({ type: "GDPR_CONSENT", granted: acceptedGdpr, version: "1.0" });
       }
 
       await tx.consent.createMany({
