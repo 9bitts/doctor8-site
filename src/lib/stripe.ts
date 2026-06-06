@@ -4,15 +4,18 @@
 
 import Stripe from "stripe";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("STRIPE_SECRET_KEY is not set");
-}
+let stripeInstance: Stripe | null = null;
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-06-20",
-  typescript: true,
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    if (!stripeInstance) {
+      const key = process.env.STRIPE_SECRET_KEY;
+      if (!key) throw new Error("STRIPE_SECRET_KEY is not set");
+      stripeInstance = new Stripe(key, { apiVersion: "2024-06-20", typescript: true });
+    }
+    return (stripeInstance as unknown as Record<string | symbol, unknown>)[prop];
+  },
 });
-
 // Currency per region
 export function getCurrency(region: string): string {
   switch (region) {
