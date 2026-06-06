@@ -1,0 +1,578 @@
+// Doctor8 — Database Schema
+// PostgreSQL via Prisma
+// HIPAA & GDPR compliant design
+//
+// Key compliance decisions:
+// - PHI fields are marked with @encrypted (handled in application layer)
+// - All access to patient records creates an AuditLog entry
+// - Users can request deletion (soft delete + scheduled hard delete)
+// - Consent is tracked with timestamps and versions
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum UserRole {
+  PATIENT
+  PROFESSIONAL
+  ADMIN
+}
+
+enum UserRegion {
+  US
+  EU
+  BR
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum AppointmentType {
+  TELECONSULT
+  IN_PERSON
+}
+
+enum DocumentType {
+  PRESCRIPTION
+  EXAM_REQUEST
+  EXAM_RESULT
+  CERTIFICATE
+  REFERRAL
+  CLINICAL_NOTE
+  OTHER
+}
+
+enum MedicationFlow {
+  CLINICAL    // Goes to patient medical history — shared with doctor
+  PURCHASE    // Goes to collective purchase list — NOT clinical
+}
+
+enum ConsentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  HIPAA_AUTHORIZATION   // US only
+  GDPR_CONSENT          // EU only
+  MARKETING
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  VIEW_RECORD
+  CREATE_RECORD
+  UPDATE_RECORD
+  DELETE_RECORD
+  EXPORT_DATA
+  SHARE_RECORD
+  PAYMENT
+  PASSWORD_CHANGE
+  EMAIL_CHANGE
+  DATA_DELETION_REQUEST
+}
+
+// ─────────────────────────────────────────
+// CORE USER
+// ─────────────────────────────────────────
+
+model User {
+  id              String     @id @default(cuid())
+  email           String     @unique
+  emailVerified   DateTime?
+  passwordHash    String?    // null for OAuth users
+  role            UserRole
+  region          UserRegion @default(US)
+  language        String     @default("en")
+
+  // Soft delete — GDPR right to erasure
+  // After 30 days we hard-delete PHI, keep anonymized stats
+  deletedAt       DateTime?
+  deletionScheduledAt DateTime?
+
+  // Session security — HIPAA
+  lastLoginAt     DateTime?
+  lastLoginIp     String?    // @encrypted — stored encrypted
+  failedLoginAttempts Int    @default(0)
+  lockedUntil     DateTime?
+
+  // MFA (phase 2)
+  mfaEnabled      Boolean    @default(false)
+  mfaSecret       String?    // @encrypted
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  patientProfile    PatientProfile?
+  professionalProfile ProfessionalProfile?
+  accounts          Account[]
+  sessions          Session[]
+  consents          Consent[]
+  auditLogs         AuditLog[]
+  sentMessages      Message[]       @relation("SentMessages")
+  receivedMessages  Message[]       @relation("ReceivedMessages")
+  notifications     Notification[]
+  subscription      Subscription?
+  dataExportRequests DataExportRequest[]
+
+  @@index([email])
+  @@index([role])
+  @@index([region])
+}
+
+// NextAuth required models
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.Text
+  session_state     String?
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  ipAddress    String?
+  userAgent    String?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────
+// PATIENT PROFILE
+// ─────────────────────────────────────────
+
+model PatientProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Basic info — @encrypted in application layer (HIPAA PHI)
+  firstName     String   // @encrypted
+  lastName      String   // @encrypted
+  dateOfBirth   DateTime? // @encrypted — PHI
+  phone         String?  // @encrypted — PHI
+  avatarUrl     String?
+
+  // Address — @encrypted (PHI)
+  addressLine1  String?  // @encrypted
+  addressLine2  String?  // @encrypted
+  city          String?
+  state         String?
+  country       String?  @default("US")
+  zipCode       String?  // @encrypted
+
+  // Emergency contact
+  emergencyContactName  String? // @encrypted
+  emergencyContactPhone String? // @encrypted
+
+  // Medical history
+  bloodType     String?
+  allergies     String? // @encrypted — PHI
+  chronicConditions String? // @encrypted — PHI
+  notes         String? // @encrypted — PHI
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  medications       Medication[]
+  appointments      Appointment[]
+  medicalDocuments  MedicalDocument[]
+  sharedRecords     SharedRecord[]
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────
+// PROFESSIONAL PROFILE
+// ─────────────────────────────────────────
+
+model ProfessionalProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName       String
+  lastName        String
+  avatarUrl       String?
+  phone           String?  // @encrypted
+
+  // Professional credentials
+  licenseNumber   String   // CRM, CRP, CRN, etc.
+  licenseState    String?
+  licenseCountry  String   @default("US")
+  specialty       String
+  subspecialties  String[] @default([])
+  bio             String?
+
+  // Practice info
+  clinicName      String?
+  clinicAddress   String?
+  clinicCity      String?
+  clinicState     String?
+  clinicCountry   String?
+  clinicZip       String?
+
+  // Teleconsult
+  acceptsTeleconsult  Boolean @default(true)
+  acceptsInPerson     Boolean @default(false)
+  consultPrice        Float   // in cents (USD or EUR cents)
+  currency            String  @default("USD")
+
+  // Availability (JSON: {dayOfWeek: [startTime, endTime]})
+  availability    Json?
+
+  // Verification
+  verified        Boolean  @default(false)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  appointments        Appointment[]
+  medicalDocuments    MedicalDocument[]
+  prescriptions       Prescription[]
+  availabilitySlots   AvailabilitySlot[]
+  virtualCard         VirtualCard?
+
+  @@index([userId])
+  @@index([specialty])
+}
+
+// ─────────────────────────────────────────
+// MEDICATIONS (FIX: two separate flows)
+// ─────────────────────────────────────────
+
+model Medication {
+  id              String         @id @default(cuid())
+  patientId       String
+  patient         PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  name            String         // @encrypted — PHI
+  dosage          String?        // @encrypted — PHI
+  frequency       String?        // @encrypted — PHI
+  startDate       DateTime?
+  endDate         DateTime?
+  prescribedBy    String?
+  notes           String?        // @encrypted
+
+  // THE FIX: separates clinical from purchase
+  flow            MedicationFlow @default(CLINICAL)
+
+  active          Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([patientId])
+  @@index([flow])  // allows querying clinical vs purchase separately
+}
+
+// ─────────────────────────────────────────
+// APPOINTMENTS + SCHEDULING
+// ─────────────────────────────────────────
+
+model AvailabilitySlot {
+  id               String              @id @default(cuid())
+  professionalId   String
+  professional     ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  dayOfWeek        Int    // 0=Sunday, 6=Saturday
+  startTime        String // "09:00"
+  endTime          String // "17:00"
+  slotDurationMins Int    @default(30)
+  isActive         Boolean @default(true)
+
+  @@index([professionalId])
+}
+
+model Appointment {
+  id               String              @id @default(cuid())
+  patientId        String
+  patient          PatientProfile      @relation(fields: [patientId], references: [id])
+  professionalId   String
+  professional     ProfessionalProfile @relation(fields: [professionalId], references: [id])
+
+  scheduledAt      DateTime
+  durationMins     Int                 @default(30)
+  type             AppointmentType     @default(TELECONSULT)
+  status           AppointmentStatus   @default(PENDING)
+
+  // Teleconsult
+  meetingUrl       String?
+  meetingRoomId    String?
+
+  // Payment
+  priceAmount      Int     // in cents
+  currency         String  @default("USD")
+  stripePaymentId  String?
+  paidAt           DateTime?
+
+  // Clinical
+  chiefComplaint   String? // @encrypted — PHI
+  notes            String? // @encrypted — PHI
+
+  // Reminders sent
+  reminder24hSent  Boolean @default(false)
+  reminder1hSent   Boolean @default(false)
+
+  cancelledAt      DateTime?
+  cancelledBy      String?
+  cancelReason     String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  documents        MedicalDocument[]
+
+  @@index([patientId])
+  @@index([professionalId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────
+// MEDICAL DOCUMENTS + CARDS
+// ─────────────────────────────────────────
+
+model MedicalDocument {
+  id               String              @id @default(cuid())
+  patientId        String
+  patient          PatientProfile      @relation(fields: [patientId], references: [id])
+  professionalId   String?
+  professional     ProfessionalProfile? @relation(fields: [professionalId], references: [id])
+  appointmentId    String?
+  appointment      Appointment?        @relation(fields: [appointmentId], references: [id])
+
+  type             DocumentType
+  title            String       // @encrypted
+  content          String?      @db.Text  // @encrypted — PHI
+  fileUrl          String?      // S3 URL — @encrypted
+
+  // Sharing
+  sharedRecords    SharedRecord[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  prescriptions    Prescription[]
+
+  @@index([patientId])
+  @@index([type])
+}
+
+model SharedRecord {
+  id               String           @id @default(cuid())
+  documentId       String
+  document         MedicalDocument  @relation(fields: [documentId], references: [id])
+  patientId        String
+  patient          PatientProfile   @relation(fields: [patientId], references: [id])
+
+  // Who can access
+  sharedWithEmail  String?   // external share
+  sharedWithUserId String?   // internal share
+
+  accessToken      String    @unique @default(cuid()) // for link sharing
+  expiresAt        DateTime? // null = never expires
+  viewedAt         DateTime?
+
+  createdAt        DateTime  @default(now())
+
+  @@index([patientId])
+  @@index([accessToken])
+}
+
+model Prescription {
+  id               String              @id @default(cuid())
+  documentId       String?
+  document         MedicalDocument?    @relation(fields: [documentId], references: [id])
+  professionalId   String
+  professional     ProfessionalProfile @relation(fields: [professionalId], references: [id])
+
+  // @encrypted — all PHI
+  medications      Json    // [{name, dosage, frequency, duration, instructions}]
+  instructions     String? // @encrypted
+  validUntil       DateTime?
+  digitalSignature String? // professional's signature hash
+
+  createdAt        DateTime @default(now())
+
+  @@index([professionalId])
+}
+
+// ─────────────────────────────────────────
+// MESSAGING
+// ─────────────────────────────────────────
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId  String
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  content     String   @db.Text  // @encrypted — may contain PHI
+  readAt      DateTime?
+  deletedAt   DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+// ─────────────────────────────────────────
+// PAYMENTS + SUBSCRIPTIONS
+// ─────────────────────────────────────────
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id])
+
+  stripeCustomerId     String   @unique
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+
+  status               String   // active, cancelled, past_due, trialing
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean  @default(false)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// PROFESSIONAL VIRTUAL CARD
+// ─────────────────────────────────────────
+
+model VirtualCard {
+  id             String              @id @default(cuid())
+  professionalId String              @unique
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id])
+
+  slug           String              @unique  // doctor8.app/dr/slug
+  headline       String?
+  website        String?
+  socialLinks    Json?
+  isPublic       Boolean             @default(true)
+
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+// ─────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  body      String
+  type      String   // appointment_reminder, message, payment, system
+  data      Json?
+  readAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([readAt])
+}
+
+// ─────────────────────────────────────────
+// COMPLIANCE — HIPAA + GDPR
+// ─────────────────────────────────────────
+
+// Every access to PHI must create an audit log — HIPAA requirement
+model AuditLog {
+  id          String      @id @default(cuid())
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+
+  action      AuditAction
+  resource    String      // e.g. "PatientProfile", "MedicalDocument"
+  resourceId  String?
+  ipAddress   String?     // @encrypted
+  userAgent   String?
+  details     Json?       // additional context, never store PHI here
+
+  createdAt   DateTime    @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// Explicit consent tracking — GDPR requirement
+model Consent {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        ConsentType
+  version     String      // "1.0", "1.1" etc — matches document version
+  granted     Boolean
+  grantedAt   DateTime    @default(now())
+  revokedAt   DateTime?
+  ipAddress   String?     // @encrypted
+  userAgent   String?
+
+  @@unique([userId, type, version])
+  @@index([userId])
+}
+
+// GDPR right to data portability + right to erasure
+model DataExportRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  type        String   // "export" or "deletion"
+  status      String   @default("pending") // pending, processing, completed, failed
+  fileUrl     String?  // S3 URL of export ZIP (for export requests)
+  completedAt DateTime?
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
