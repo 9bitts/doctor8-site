@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
 
       if (customer.deleted) break;
 
-      const userId = (customer as { metadata: { userId: string } }).metadata.userId;
+      const userId = (customer as unknown as { metadata: { userId: string } }).metadata.userId;
       if (!userId) break;
 
       await db.subscription.upsert({
