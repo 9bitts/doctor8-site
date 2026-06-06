@@ -113,7 +113,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   events: {
-    async signOut({ token }) {
+    async signOut(message) {
+      const token = "token" in message ? message.token : null;
       if (token?.id) {
         await audit.logout(token.id as string);
       }
