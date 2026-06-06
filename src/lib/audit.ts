@@ -29,7 +29,7 @@ export async function createAuditLog(params: AuditParams): Promise<void> {
         resourceId: params.resourceId,
         ipAddress: ipAddress.split(",")[0].trim(), // first IP if behind proxy
         userAgent: userAgent.substring(0, 500),    // truncate long agents
-        details: params.details,
+        details: params.details as never,
       },
     });
   } catch (error) {
