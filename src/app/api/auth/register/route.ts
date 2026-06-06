@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Record consents — GDPR/HIPAA compliance
-   const consents = [
+   const consents: { type: string; granted: boolean; version: string }[] = [
         { type: "TERMS_OF_SERVICE", granted: acceptedTerms, version: "1.0" },
         { type: "PRIVACY_POLICY", granted: acceptedPrivacy, version: "1.0" },
       ];
