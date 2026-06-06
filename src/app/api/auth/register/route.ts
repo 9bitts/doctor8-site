@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { UserRole, UserRegion } from "@prisma/client";
+iimport { UserRole, UserRegion, ConsentType } from "@prisma/client";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Record consents — GDPR/HIPAA compliance
-   const consents: { type: string; granted: boolean; version: string }[] = [
+   const consents: { type: ConsentType; granted: boolean; version: string }[] = [
         { type: "TERMS_OF_SERVICE", granted: acceptedTerms, version: "1.0" },
         { type: "PRIVACY_POLICY", granted: acceptedPrivacy, version: "1.0" },
       ];
