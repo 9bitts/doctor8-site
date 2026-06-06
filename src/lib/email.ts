@@ -4,7 +4,13 @@
 
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resendInstance: Resend | null = null;
+function getResend(): Resend {
+  if (!resendInstance) {
+    resendInstance = new Resend(process.env.RESEND_API_KEY || "re_placeholder");
+  }
+  return resendInstance;
+}
 const FROM = process.env.EMAIL_FROM || "Doctor8 <noreply@doctor8.app>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
 
@@ -35,7 +41,7 @@ export async function sendAppointmentConfirmation({
     hour: "2-digit", minute: "2-digit",
   });
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: patientEmail,
     subject: `✅ Appointment confirmed — ${dateStr}`,
@@ -101,7 +107,7 @@ export async function sendAppointmentReminder({
 }) {
   const timeStr = scheduledAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: patientEmail,
     subject: `⏰ Reminder: Appointment with Dr. ${doctorName} in ${hoursUntil}h`,
@@ -136,7 +142,7 @@ export async function sendPasswordReset({
 }) {
   const resetUrl = `${APP_URL}/reset-password?token=${token}`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: "Reset your Doctor8 password",
@@ -171,7 +177,7 @@ export async function sendEmailChangeVerification({
 }) {
   const verifyUrl = `${APP_URL}/api/auth/verify-email-change?token=${token}`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: isOldEmail ? "Confirm email address change" : "Verify your new email address",
