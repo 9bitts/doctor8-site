@@ -159,5 +159,4 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-// CRITICAL: disable body parser for webhooks
-export const config = { api: { bodyParser: false } };
+export const runtime = "nodejs";
