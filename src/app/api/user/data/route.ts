@@ -15,48 +15,57 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  const [user, patient, professional, appointments, medications, messages, consents, auditLogs] =
-    await Promise.all([
-      db.user.findUnique({ where: { id: userId }, select: { email: true, role: true, region: true, createdAt: true } }),
-      db.patientProfile.findUnique({ where: { userId }, include: { medications: true, medicalDocuments: true } }),
-      db.professionalProfile.findUnique({ where: { userId } }),
-      db.appointment.findMany({
-        where: patient ? { patientId: (await db.patientProfile.findUnique({ where: { userId } }))?.id } : { professional: { userId } },
-        take: 500,
-      }),
-      patient ? db.medication.findMany({ where: { patientId: patient.id } }) : [],
-      db.message.findMany({
-        where: { OR: [{ senderId: userId }, { receiverId: userId }] },
-        take: 1000,
-      }),
-      db.consent.findMany({ where: { userId } }),
-      db.auditLog.findMany({ where: { userId }, take: 1000, orderBy: { createdAt: "desc" } }),
-    ]);
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { email: true, role: true, region: true, createdAt: true },
+  });
+  const patient = await db.patientProfile.findUnique({
+    where: { userId },
+    include: { medications: true, medicalDocuments: true },
+  });
+  const professional = await db.professionalProfile.findUnique({ where: { userId } });
+  const medications = patient
+    ? await db.medication.findMany({ where: { patientId: patient.id } })
+    : [];
+  const appointments = patient
+    ? await db.appointment.findMany({ where: { patientId: patient.id }, take: 500 })
+    : [];
+  const messages = await db.message.findMany({
+    where: { OR: [{ senderId: userId }, { receiverId: userId }] },
+    take: 1000,
+  });
+  const consents = await db.consent.findMany({ where: { userId } });
+  const auditLogs = await db.auditLog.findMany({
+    where: { userId },
+    take: 1000,
+    orderBy: { createdAt: "desc" },
+  });
 
-  // Decrypt PHI for export
   const exportData = {
     exportDate: new Date().toISOString(),
     platform: "Doctor8",
     notice: "This export contains all personal data associated with your account under GDPR Article 20.",
     account: user,
-    profile: patient ? {
-      ...patient,
-      firstName: decrypt(patient.firstName),
-      lastName: decrypt(patient.lastName),
-      phone: patient.phone ? decrypt(patient.phone) : null,
-      allergies: patient.allergies ? decrypt(patient.allergies) : null,
-      chronicConditions: patient.chronicConditions ? decrypt(patient.chronicConditions) : null,
-    } : professional,
-    medications: medications.map((m: any) => ({
+    profile: patient
+      ? {
+          ...patient,
+          firstName: decrypt(patient.firstName),
+          lastName: decrypt(patient.lastName),
+          phone: patient.phone ? decrypt(patient.phone) : null,
+          allergies: patient.allergies ? decrypt(patient.allergies) : null,
+          chronicConditions: patient.chronicConditions ? decrypt(patient.chronicConditions) : null,
+        }
+      : professional,
+    medications: medications.map((m) => ({
       ...m,
       name: decrypt(m.name),
       dosage: m.dosage ? decrypt(m.dosage) : null,
       frequency: m.frequency ? decrypt(m.frequency) : null,
     })),
     appointments,
-    messages: messages.map((m: any) => ({
+    messages: messages.map((m) => ({
       ...m,
-      content: "[Content omitted for privacy — full content available on request]",
+      content: "[Content omitted for privacy]",
     })),
     consents,
     auditLog: auditLogs,
@@ -83,8 +92,6 @@ export async function DELETE(req: NextRequest) {
   }
 
   const userId = session.user.id;
-
-  // Schedule deletion — GDPR allows 30 days to process
   const deletionDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   await db.$transaction([
