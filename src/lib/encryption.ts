@@ -5,19 +5,21 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
-const KEY = Buffer.from(process.env.ENCRYPTION_KEY || "", "hex");
 
-if (process.env.NODE_ENV === "production" && KEY.length !== 32) {
-  throw new Error(
-    "ENCRYPTION_KEY must be a 32-byte hex string. Generate with: openssl rand -hex 32"
-  );
+
+function getKey(): Buffer {
+  const key = Buffer.from(process.env.ENCRYPTION_KEY || "", "hex");
+  if (key.length !== 32) {
+    throw new Error("ENCRYPTION_KEY must be a 32-byte hex string. Generate with: openssl rand -hex 32");
+  }
+  return key;
 }
 
 export function encrypt(plaintext: string): string {
   if (!plaintext) return plaintext;
 
   const iv = randomBytes(16);
-  const cipher = createCipheriv(ALGORITHM, KEY, iv);
+  const cipher = createCipheriv(ALGORITHM, getKey(), iv);
 
   let encrypted = cipher.update(plaintext, "utf8", "hex");
   encrypted += cipher.final("hex");
@@ -36,7 +38,7 @@ export function decrypt(ciphertext: string): string {
   const iv = Buffer.from(ivHex, "hex");
   const authTag = Buffer.from(authTagHex, "hex");
 
-  const decipher = createDecipheriv(ALGORITHM, KEY, iv);
+  const decipher = createDecipheriv(ALGORITHM, getKey(), iv);
   decipher.setAuthTag(authTag);
 
   let decrypted = decipher.update(encrypted, "hex", "utf8");
