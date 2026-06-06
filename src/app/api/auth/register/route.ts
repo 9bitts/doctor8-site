@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-iimport { UserRole, UserRegion, ConsentType } from "@prisma/client";
+import { UserRole, UserRegion, ConsentType } from "@prisma/client";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
