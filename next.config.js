@@ -26,7 +26,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' 'unsafe-hashes'",
               "img-src 'self' data: https:",
               "font-src 'self'",
               "connect-src 'self' https://api.stripe.com",
