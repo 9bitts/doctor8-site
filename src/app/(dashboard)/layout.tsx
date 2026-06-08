@@ -2,8 +2,9 @@
 
 // src/app/(dashboard)/layout.tsx
 // Shared layout for all dashboard pages — patient and professional
+// Reads the logged-in user's role from the session so the menu adapts automatically.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -35,7 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/professional/appointments", label: "Appointments", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/prescriptions", label: "Prescriptions", icon: <Stethoscope size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/messages", label: "Messages", icon: <MessageSquare size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/analytics", label: "Analytics", icon: <BarChart3 size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/professional/settings/availability", label: "Availability", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
 
   // Shared
   { href: "/settings", label: "Settings", icon: <Settings size={18} />, roles: ["PATIENT", "PROFESSIONAL", "ADMIN"] },
@@ -43,17 +44,36 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function DashboardLayout({
   children,
-  role = "PATIENT",
-  userName = "User",
 }: {
   children: React.ReactNode;
-  role?: string;
-  userName?: string;
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Read the real logged-in user from the session
+  const [role, setRole] = useState<string>("PATIENT");
+  const [userName, setUserName] = useState<string>("User");
+
+  useEffect(() => {
+    async function loadSession() {
+      try {
+        const res = await fetch("/api/auth/session");
+        const session = await res.json();
+        if (session?.user?.role) setRole(session.user.role);
+        if (session?.user?.name) {
+          setUserName(session.user.name);
+        } else if (session?.user?.email) {
+          setUserName(session.user.email.split("@")[0]);
+        }
+      } catch {
+        // keep defaults
+      }
+    }
+    loadSession();
+  }, []);
+
   const navItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const roleLabel = role === "PROFESSIONAL" ? "Professional" : role === "ADMIN" ? "Admin" : "Patient";
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -96,7 +116,7 @@ export default function DashboardLayout({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{userName}</p>
-              <p className="text-xs text-slate-400 capitalize">{role.toLowerCase()}</p>
+              <p className="text-xs text-slate-400">{roleLabel}</p>
             </div>
           </div>
         </div>
