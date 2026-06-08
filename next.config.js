@@ -26,9 +26,9 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline' 'unsafe-hashes'",
+              "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
-              "font-src 'self'",
+              "font-src 'self' data:",
               "connect-src 'self' https://api.stripe.com",
             ].join("; "),
           },
@@ -37,6 +37,4 @@ const nextConfig = {
     ];
   },
 };
-
 module.exports = nextConfig;
-// rebuild 20260608091135
