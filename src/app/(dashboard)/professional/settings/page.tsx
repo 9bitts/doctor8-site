@@ -7,38 +7,129 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Loader2, CheckCircle2, Stethoscope, Video, Building2,
-  DollarSign, FileText, User, Award
+  Loader2, CheckCircle2, Video, Building2,
+  DollarSign, User, Award
 } from "lucide-react";
 
-// Wide list of health professions (not only doctors)
-const PROFESSIONS = [
-  "Doctor (General Practice)",
-  "Doctor (Cardiology)",
-  "Doctor (Dermatology)",
-  "Doctor (Pediatrics)",
-  "Doctor (Psychiatry)",
-  "Doctor (Gynecology)",
-  "Doctor (Orthopedics)",
-  "Doctor (Cannabis Medicine)",
-  "Psychologist",
-  "Psychoanalyst",
-  "Nutritionist",
-  "Dietitian",
-  "Physiotherapist",
-  "Occupational Therapist",
-  "Speech Therapist",
-  "Nurse",
-  "Midwife",
-  "Dentist",
-  "Pharmacist",
-  "Personal Trainer",
-  "Acupuncturist",
-  "Chiropractor",
-  "Podiatrist",
-  "Optometrist",
-  "Social Worker (Health)",
-  "Other",
+// Health professions grouped by category.
+// Medical specialties: the 55 officially recognized by CFM (Brazil),
+// which also map closely to international specialties.
+// Plus the other regulated health professions.
+const PROFESSION_GROUPS: { group: string; options: string[] }[] = [
+  {
+    group: "Medical Specialties",
+    options: [
+      "Acupuncture",
+      "Allergy and Immunology",
+      "Anesthesiology",
+      "Angiology",
+      "Cardiology",
+      "Cardiovascular Surgery",
+      "Hand Surgery",
+      "Head and Neck Surgery",
+      "Digestive System Surgery",
+      "General Surgery",
+      "Pediatric Surgery",
+      "Plastic Surgery",
+      "Thoracic Surgery",
+      "Vascular Surgery",
+      "Internal Medicine",
+      "Coloproctology",
+      "Dermatology",
+      "Endocrinology and Metabolism",
+      "Endoscopy",
+      "Gastroenterology",
+      "Medical Genetics",
+      "Geriatrics",
+      "Gynecology and Obstetrics",
+      "Hematology and Hemotherapy",
+      "Homeopathy",
+      "Infectious Diseases",
+      "Mastology",
+      "Family and Community Medicine",
+      "Physical Medicine and Rehabilitation",
+      "Occupational Medicine",
+      "Sports Medicine",
+      "Emergency Medicine",
+      "Legal Medicine and Forensics",
+      "Nuclear Medicine",
+      "Intensive Care Medicine",
+      "Preventive and Social Medicine",
+      "Nephrology",
+      "Neurosurgery",
+      "Neurology",
+      "Nutrology",
+      "Ophthalmology",
+      "Oncology",
+      "Orthopedics and Traumatology",
+      "Otorhinolaryngology (ENT)",
+      "Pathology",
+      "Clinical Pathology / Laboratory Medicine",
+      "Pediatrics",
+      "Pneumology",
+      "Psychiatry",
+      "Radiology and Diagnostic Imaging",
+      "Radiotherapy",
+      "Rheumatology",
+      "Urology",
+      "Cannabis Medicine",
+      "General Practice",
+    ],
+  },
+  {
+    group: "Psychology & Mental Health",
+    options: [
+      "Psychologist",
+      "Psychoanalyst",
+      "Neuropsychologist",
+      "Psychotherapist",
+      "Behavioral Therapist",
+    ],
+  },
+  {
+    group: "Nutrition",
+    options: ["Nutritionist", "Dietitian", "Sports Nutritionist"],
+  },
+  {
+    group: "Rehabilitation & Therapy",
+    options: [
+      "Physiotherapist",
+      "Occupational Therapist",
+      "Speech Therapist (Speech-Language Pathologist)",
+      "Osteopath",
+      "Chiropractor",
+    ],
+  },
+  {
+    group: "Nursing",
+    options: ["Nurse", "Nurse Practitioner", "Midwife", "Obstetric Nurse"],
+  },
+  {
+    group: "Dentistry",
+    options: [
+      "Dentist (General)",
+      "Orthodontist",
+      "Endodontist",
+      "Periodontist",
+      "Oral and Maxillofacial Surgeon",
+      "Pediatric Dentist",
+    ],
+  },
+  {
+    group: "Other Health Professions",
+    options: [
+      "Pharmacist",
+      "Biomedical Scientist",
+      "Physical Educator / Personal Trainer",
+      "Social Worker (Health)",
+      "Optometrist",
+      "Podiatrist",
+      "Acupuncturist (non-medical)",
+      "Naturopath",
+      "Veterinarian",
+      "Other",
+    ],
+  },
 ];
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
@@ -50,10 +141,9 @@ export default function ProfessionalSettings() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  // Form fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [profession, setProfession] = useState(PROFESSIONS[0]);
+  const [profession, setProfession] = useState("General Practice");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [licenseState, setLicenseState] = useState("");
   const [bio, setBio] = useState("");
@@ -75,7 +165,7 @@ export default function ProfessionalSettings() {
           if (p) {
             setFirstName(p.firstName || "");
             setLastName(p.lastName || "");
-            setProfession(p.specialty || PROFESSIONS[0]);
+            setProfession(p.specialty || "General Practice");
             setLicenseNumber(p.licenseNumber || "");
             setLicenseState(p.licenseState || "");
             setBio(p.bio || "");
@@ -107,19 +197,9 @@ export default function ProfessionalSettings() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName,
-          lastName,
-          specialty: profession,
-          licenseNumber,
-          licenseState,
-          bio,
-          consultPrice: Math.round(Number(price) * 100),
-          currency,
-          acceptsTeleconsult,
-          acceptsInPerson,
-          clinicName,
-          clinicCity,
-          clinicCountry,
+          firstName, lastName, specialty: profession, licenseNumber, licenseState,
+          bio, consultPrice: Math.round(Number(price) * 100), currency,
+          acceptsTeleconsult, acceptsInPerson, clinicName, clinicCity, clinicCountry,
         }),
       });
       if (!res.ok) {
@@ -196,7 +276,11 @@ export default function ProfessionalSettings() {
           <label className="block text-sm font-medium text-slate-600 mb-1.5">Profession / Specialty *</label>
           <select value={profession} onChange={(e) => setProfession(e.target.value)}
             className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 bg-white">
-            {PROFESSIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {PROFESSION_GROUPS.map((g) => (
+              <optgroup key={g.group} label={g.group}>
+                {g.options.map((o) => <option key={o} value={o}>{o}</option>)}
+              </optgroup>
+            ))}
           </select>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
