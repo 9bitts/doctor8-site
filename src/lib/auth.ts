@@ -1,9 +1,7 @@
 // src/lib/auth.ts
 // Authentication configuration using Auth.js (NextAuth v5)
 // HIPAA: session timeout, login auditing, failed attempt tracking
-
 import NextAuth from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
@@ -21,7 +19,10 @@ const SESSION_MAX_AGE = parseInt(
 );
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(db),
+  // NOTE: No PrismaAdapter here.
+  // Auth.js v5 Credentials provider is incompatible with a database adapter.
+  // With JWT strategy, the adapter is not needed — the token holds the session.
+  trustHost: true,
   session: {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE,
@@ -40,23 +41,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
-
         const { email, password } = parsed.data;
-
         const user = await db.user.findUnique({
           where: { email: email.toLowerCase() },
         });
-
         if (!user || !user.passwordHash) return null;
         if (user.deletedAt) return null;
-
         // HIPAA: account lockout after failed attempts
         if (user.lockedUntil && user.lockedUntil > new Date()) {
           throw new Error("AccountLocked");
         }
-
         const isValid = await bcrypt.compare(password, user.passwordHash);
-
         if (!isValid) {
           // Increment failed attempts — lock after 5
           const attempts = user.failedLoginAttempts + 1;
@@ -71,7 +66,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
           return null;
         }
-
         // Reset failed attempts on success
         await db.user.update({
           where: { id: user.id },
@@ -81,10 +75,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             lastLoginAt: new Date(),
           },
         });
-
         // HIPAA audit log
         await audit.login(user.id);
-
         return {
           id: user.id,
           email: user.email,
