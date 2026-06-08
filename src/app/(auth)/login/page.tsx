@@ -12,7 +12,7 @@ import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") || "";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +41,19 @@ function LoginPageInner() {
         return;
       }
 
-      router.push(callbackUrl);
+      if (callbackUrl) {
+        router.push(callbackUrl);
+      } else {
+        // Descobre o papel do usuário e manda para a página certa
+        const res = await fetch("/api/auth/session");
+        const session = await res.json();
+        const role = session?.user?.role;
+        if (role === "PROFESSIONAL") {
+          router.push("/professional");
+        } else {
+          router.push("/patient");
+        }
+      }
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
