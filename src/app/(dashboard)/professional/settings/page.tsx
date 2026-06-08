@@ -1,172 +1,296 @@
 "use client";
-// src/app/(dashboard)/professional/settings/availability/page.tsx
-// Professional sets their weekly schedule here — required for appointments to work
+
+// src/app/(dashboard)/professional/settings/page.tsx
+// Complete professional profile — for ALL health professions, not only doctors.
+// Saving this makes the professional VERIFIED and visible in patient search.
 
 import { useState, useEffect } from "react";
-import { Save, Loader2, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Loader2, CheckCircle2, Stethoscope, Video, Building2,
+  DollarSign, FileText, User, Award
+} from "lucide-react";
 
-const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-const TIMES = Array.from({ length: 48 }, (_, i) => {
-  const h = Math.floor(i / 2);
-  const m = i % 2 === 0 ? "00" : "30";
-  const ampm = h < 12 ? "AM" : "PM";
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return { value: `${String(h).padStart(2,"0")}:${m}`, label: `${h12}:${m} ${ampm}` };
-});
+// Wide list of health professions (not only doctors)
+const PROFESSIONS = [
+  "Doctor (General Practice)",
+  "Doctor (Cardiology)",
+  "Doctor (Dermatology)",
+  "Doctor (Pediatrics)",
+  "Doctor (Psychiatry)",
+  "Doctor (Gynecology)",
+  "Doctor (Orthopedics)",
+  "Doctor (Cannabis Medicine)",
+  "Psychologist",
+  "Psychoanalyst",
+  "Nutritionist",
+  "Dietitian",
+  "Physiotherapist",
+  "Occupational Therapist",
+  "Speech Therapist",
+  "Nurse",
+  "Midwife",
+  "Dentist",
+  "Pharmacist",
+  "Personal Trainer",
+  "Acupuncturist",
+  "Chiropractor",
+  "Podiatrist",
+  "Optometrist",
+  "Social Worker (Health)",
+  "Other",
+];
 
-interface DaySlot {
-  dayOfWeek: number;
-  enabled: boolean;
-  startTime: string;
-  endTime: string;
-  slotDuration: number;
-}
+const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
 
-const defaultSlots = (): DaySlot[] =>
-  DAYS.map((_, i) => ({
-    dayOfWeek: i,
-    enabled: i >= 1 && i <= 5, // Mon–Fri by default
-    startTime: "09:00",
-    endTime: "17:00",
-    slotDuration: 30,
-  }));
-
-export default function AvailabilityPage() {
-  const [slots, setSlots] = useState<DaySlot[]>(defaultSlots());
+export default function ProfessionalSettings() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => { fetchAvailability(); }, []);
+  // Form fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [profession, setProfession] = useState(PROFESSIONS[0]);
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [licenseState, setLicenseState] = useState("");
+  const [bio, setBio] = useState("");
+  const [price, setPrice] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [acceptsTeleconsult, setAcceptsTeleconsult] = useState(true);
+  const [acceptsInPerson, setAcceptsInPerson] = useState(false);
+  const [clinicName, setClinicName] = useState("");
+  const [clinicCity, setClinicCity] = useState("");
+  const [clinicCountry, setClinicCountry] = useState("");
 
-  async function fetchAvailability() {
-    try {
-      const res = await fetch("/api/professional/availability");
-      if (res.ok) {
-        const d = await res.json();
-        if (d.slots?.length) {
-          setSlots(defaultSlots().map((def) => {
-            const existing = d.slots.find((s: DaySlot) => s.dayOfWeek === def.dayOfWeek);
-            return existing ? { ...def, ...existing, enabled: true } : def;
-          }));
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("/api/professional/profile");
+        if (res.ok) {
+          const d = await res.json();
+          const p = d.profile;
+          if (p) {
+            setFirstName(p.firstName || "");
+            setLastName(p.lastName || "");
+            setProfession(p.specialty || PROFESSIONS[0]);
+            setLicenseNumber(p.licenseNumber || "");
+            setLicenseState(p.licenseState || "");
+            setBio(p.bio || "");
+            setPrice(p.consultPrice ? String(p.consultPrice / 100) : "");
+            setCurrency(p.currency || "USD");
+            setAcceptsTeleconsult(p.acceptsTeleconsult ?? true);
+            setAcceptsInPerson(p.acceptsInPerson ?? false);
+            setClinicName(p.clinicName || "");
+            setClinicCity(p.clinicCity || "");
+            setClinicCountry(p.clinicCountry || "");
+          }
         }
+      } finally {
+        setLoading(false);
       }
-    } finally { setLoading(false); }
-  }
-
-  function updateSlot(dayOfWeek: number, field: keyof DaySlot, value: unknown) {
-    setSlots((prev) => prev.map((s) => s.dayOfWeek === dayOfWeek ? { ...s, [field]: value } : s));
-  }
+    }
+    load();
+  }, []);
 
   async function handleSave() {
+    setError("");
+    if (!firstName || !lastName || !licenseNumber || !price) {
+      setError("Please fill in your name, professional registration number and consultation price.");
+      return;
+    }
     setSaving(true);
     try {
-      await fetch("/api/professional/availability", {
-        method: "PUT",
+      const res = await fetch("/api/professional/profile", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots: slots.filter((s) => s.enabled) }),
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          specialty: profession,
+          licenseNumber,
+          licenseState,
+          bio,
+          consultPrice: Math.round(Number(price) * 100),
+          currency,
+          acceptsTeleconsult,
+          acceptsInPerson,
+          clinicName,
+          clinicCity,
+          clinicCountry,
+        }),
       });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to save");
+      }
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } finally { setSaving(false); }
+      setTimeout(() => setSaved(false), 4000);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  const totalWeeklySlots = slots
-    .filter((s) => s.enabled)
-    .reduce((acc, s) => {
-      const [sh, sm] = s.startTime.split(":").map(Number);
-      const [eh, em] = s.endTime.split(":").map(Number);
-      const mins = (eh * 60 + em) - (sh * 60 + sm);
-      return acc + Math.floor(mins / s.slotDuration);
-    }, 0);
-
-  if (loading) return <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-slate-400" /></div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-emerald-500" size={28} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Availability</h1>
-          <p className="text-slate-500 text-sm mt-1">Set your weekly schedule. Patients can only book during these hours.</p>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold text-emerald-600">{totalWeeklySlots}</p>
-          <p className="text-xs text-slate-400">slots/week</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Professional Profile</h1>
+        <p className="text-slate-500 mt-1">
+          Complete your profile to appear in patient search and start receiving bookings.
+        </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
-        {slots.map((slot) => (
-          <div key={slot.dayOfWeek} className={`p-5 transition-colors ${slot.enabled ? "" : "opacity-50 bg-slate-50"}`}>
-            <div className="flex items-center gap-4 flex-wrap">
-              {/* Toggle */}
-              <button type="button" onClick={() => updateSlot(slot.dayOfWeek, "enabled", !slot.enabled)}
-                className={`w-11 h-6 rounded-full transition-colors shrink-0 ${slot.enabled ? "bg-emerald-500" : "bg-slate-200"}`}>
-                <div className={`w-4 h-4 bg-white rounded-full mx-1 shadow transition-transform ${slot.enabled ? "translate-x-5" : ""}`} />
-              </button>
+      {saved && (
+        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+          <CheckCircle2 className="text-emerald-500" size={20} />
+          <p className="text-emerald-700 text-sm font-medium">
+            Profile saved! You are now visible to patients.
+          </p>
+        </div>
+      )}
 
-              {/* Day name */}
-              <p className="font-semibold text-slate-800 w-24 shrink-0">{DAYS[slot.dayOfWeek]}</p>
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4">
+          <p className="text-rose-700 text-sm">{error}</p>
+        </div>
+      )}
 
-              {slot.enabled ? (
-                <>
-                  {/* Start time */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-400">From</label>
-                    <select value={slot.startTime} onChange={(e) => updateSlot(slot.dayOfWeek, "startTime", e.target.value)}
-                      className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
-                      {TIMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
-                  </div>
-
-                  {/* End time */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-400">To</label>
-                    <select value={slot.endTime} onChange={(e) => updateSlot(slot.dayOfWeek, "endTime", e.target.value)}
-                      className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
-                      {TIMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Duration */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-400">Slot</label>
-                    <select value={slot.slotDuration} onChange={(e) => updateSlot(slot.dayOfWeek, "slotDuration", Number(e.target.value))}
-                      className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
-                      <option value={15}>15 min</option>
-                      <option value={30}>30 min</option>
-                      <option value={45}>45 min</option>
-                      <option value={60}>1 hour</option>
-                    </select>
-                  </div>
-
-                  {/* Slots count */}
-                  <p className="text-xs text-emerald-600 font-medium ml-auto shrink-0">
-                    {(() => {
-                      const [sh, sm] = slot.startTime.split(":").map(Number);
-                      const [eh, em] = slot.endTime.split(":").map(Number);
-                      const mins = (eh * 60 + em) - (sh * 60 + sm);
-                      const count = Math.floor(mins / slot.slotDuration);
-                      return count > 0 ? `${count} slots` : "Invalid range";
-                    })()}
-                  </p>
-                </>
-              ) : (
-                <p className="text-slate-400 text-sm">Unavailable</p>
-              )}
-            </div>
+      {/* Identity */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <User size={18} className="text-emerald-500" /> Identity
+        </h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">First name *</label>
+            <input value={firstName} onChange={(e) => setFirstName(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
           </div>
-        ))}
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">Last name *</label>
+            <input value={lastName} onChange={(e) => setLastName(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+          </div>
+        </div>
       </div>
 
-      <button onClick={handleSave} disabled={saving}
-        className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-50">
-        {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <CheckCircle2 size={18} /> : <Save size={18} />}
-        {saving ? "Saving..." : saved ? "Saved!" : "Save availability"}
-      </button>
+      {/* Profession & credentials */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Award size={18} className="text-emerald-500" /> Profession & Credentials
+        </h2>
+        <div>
+          <label className="block text-sm font-medium text-slate-600 mb-1.5">Profession / Specialty *</label>
+          <select value={profession} onChange={(e) => setProfession(e.target.value)}
+            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 bg-white">
+            {PROFESSIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">
+              Registration number * <span className="text-slate-400 font-normal">(CRM, CRP, CRN, license...)</span>
+            </label>
+            <input value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)}
+              placeholder="e.g. CRM 123456"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">State / Region</label>
+            <input value={licenseState} onChange={(e) => setLicenseState(e.target.value)}
+              placeholder="e.g. SP, CA, London"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-600 mb-1.5">Bio / About you</label>
+          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3}
+            placeholder="Tell patients about your experience and approach..."
+            className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none" />
+        </div>
+      </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
-        <strong>Note:</strong> Changes take effect immediately. Patients who already have confirmed bookings will not be affected.
+      {/* Consultation */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <DollarSign size={18} className="text-emerald-500" /> Consultation
+        </h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">Price per consultation *</label>
+            <input type="number" value={price} onChange={(e) => setPrice(e.target.value)}
+              placeholder="e.g. 80"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">Currency</label>
+            <select value={currency} onChange={(e) => setCurrency(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 bg-white">
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 pt-2">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={acceptsTeleconsult} onChange={(e) => setAcceptsTeleconsult(e.target.checked)}
+              className="w-4 h-4 accent-emerald-500" />
+            <span className="text-sm text-slate-700 flex items-center gap-2"><Video size={15} /> Accept teleconsultations (online)</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={acceptsInPerson} onChange={(e) => setAcceptsInPerson(e.target.checked)}
+              className="w-4 h-4 accent-emerald-500" />
+            <span className="text-sm text-slate-700 flex items-center gap-2"><Building2 size={15} /> Accept in-person visits</span>
+          </label>
+        </div>
+      </div>
+
+      {/* Clinic (optional) */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Building2 size={18} className="text-emerald-500" /> Clinic <span className="text-slate-400 text-sm font-normal">(optional)</span>
+        </h2>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">Clinic name</label>
+            <input value={clinicName} onChange={(e) => setClinicName(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">City</label>
+            <input value={clinicCity} onChange={(e) => setClinicCity(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">Country</label>
+            <input value={clinicCountry} onChange={(e) => setClinicCountry(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+          </div>
+        </div>
+      </div>
+
+      {/* Save */}
+      <div className="flex items-center justify-between gap-4 pb-8">
+        <p className="text-xs text-slate-400">
+          Don&apos;t forget to set your weekly hours in <a href="/professional/settings/availability" className="text-emerald-600 underline">Availability</a>.
+        </p>
+        <button onClick={handleSave} disabled={saving}
+          className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shrink-0">
+          {saving && <Loader2 className="animate-spin" size={16} />}
+          {saving ? "Saving..." : "Save profile"}
+        </button>
       </div>
     </div>
   );
