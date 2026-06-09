@@ -1,63 +1,118 @@
 // src/app/api/auth/change-email/route.ts
-// Secure email change with double verification (old + new email)
+// Authenticated user requests an email change
+// Sends verification to the NEW email before applying the change
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { audit } from "@/lib/audit";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { z } from "zod";
-import { nanoid } from "nanoid";
 
 const schema = z.object({
   newEmail: z.string().email("Invalid email address"),
-  password: z.string().min(1),
+  currentPassword: z.string().min(1, "Password is required to change your email"),
 });
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+    return NextResponse.json(
+      { error: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
   }
 
-  const { newEmail, password } = parsed.data;
+  const { newEmail, currentPassword } = parsed.data;
 
-  const user = await db.user.findUnique({ where: { id: session.user.id } });
-  if (!user?.passwordHash) return NextResponse.json({ error: "Cannot change email" }, { status: 400 });
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true, passwordHash: true },
+    include: {
+      patientProfile: { select: { firstName: true } },
+      professionalProfile: { select: { firstName: true } },
+    } as any,
+  });
 
-  // Verify current password
-  const isValid = await bcrypt.compare(password, user.passwordHash);
-  if (!isValid) return NextResponse.json({ error: "Password is incorrect" }, { status: 400 });
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   // Check new email not already taken
+  if (newEmail.toLowerCase() === user.email.toLowerCase()) {
+    return NextResponse.json({ error: "This is already your current email." }, { status: 400 });
+  }
+
   const existing = await db.user.findUnique({ where: { email: newEmail.toLowerCase() } });
-  if (existing) return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+  if (existing) {
+    return NextResponse.json({ error: "This email is already in use." }, { status: 409 });
+  }
 
-  // Create verification tokens for both old and new email
-  const tokenOld = nanoid(32);
-  const tokenNew = nanoid(32);
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  // Require password for email change (except Google-only users)
+  if (user.passwordHash) {
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) {
+      return NextResponse.json({ error: "Password is incorrect." }, { status: 400 });
+    }
+  }
 
-  // Store pending email change
-  await db.verificationToken.createMany({
-    data: [
-      { identifier: `email-change-old:${user.id}`, token: tokenOld, expires },
-      { identifier: `email-change-new:${user.id}:${newEmail}`, token: tokenNew, expires },
-    ],
+  // Generate verification token for new email
+  const token = randomBytes(32).toString("hex");
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  // Store pending email change in VerificationToken
+  // identifier format: "email-change:{userId}:{newEmail}"
+  const identifier = `email-change:${session.user.id}:${newEmail.toLowerCase()}`;
+
+  await db.verificationToken.deleteMany({
+    where: { identifier: { startsWith: `email-change:${session.user.id}:` } },
   });
 
-  // Send verification emails via Resend
-  // (Email sending code would go here — using Resend SDK)
-  // await sendEmailChangeVerification({ user, newEmail, tokenOld, tokenNew });
-
-  await audit.emailChange(user.id);
-
-  return NextResponse.json({
-    success: true,
-    message: "Verification emails sent to both your old and new email address.",
+  await db.verificationToken.create({
+    data: { identifier, token, expires },
   });
+
+  // Send verification email to the NEW address
+  const firstName =
+    (user as any).patientProfile?.firstName ||
+    (user as any).professionalProfile?.firstName ||
+    "there";
+
+  try {
+    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
+    const verifyUrl = `${APP_URL}/api/auth/confirm-email-change?token=${token}`;
+
+    const { Resend } = await import("resend");
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const FROM = process.env.EMAIL_FROM || "Doctor8 <noreply@doctor8.app>";
+
+    await resend.emails.send({
+      from: FROM,
+      to: newEmail.toLowerCase(),
+      subject: "Confirm your new email address — Doctor8",
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:32px 20px;">
+          <h1 style="color:#0a4d6e;">Doctor<span style="color:#00b87a;">8</span></h1>
+          <h2 style="color:#1a2a3a;">Confirm your new email</h2>
+          <p style="color:#6b7280;">Hi ${firstName}, click below to confirm <strong>${newEmail}</strong> as your new email address. This link expires in 24 hours.</p>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="${verifyUrl}" style="background:#00b87a;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;">
+              Confirm new email
+            </a>
+          </div>
+          <p style="color:#9ca3af;font-size:12px;">If you didn't request this, ignore this email. Your email won't change.</p>
+        </div>
+      `,
+    });
+  } catch (e) {
+    console.error("[CHANGE EMAIL SEND ERROR]", e);
+  }
+
+  return NextResponse.json({ success: true });
 }
