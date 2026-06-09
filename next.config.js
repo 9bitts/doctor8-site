@@ -1,4 +1,5 @@
 // next.config.js
+generateBuildId: async () => Date.now().toString(),
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
