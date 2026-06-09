@@ -2,6 +2,7 @@
   "name": "doctor8",
   "version": "1.0.0",
   "private": true,
+  "cacheBust": "1",
   "engines": {
     "node": "20.x"
   },
