@@ -43,6 +43,16 @@ function ChipGroup({
   );
 }
 
+// Defined OUTSIDE the page component so inputs keep focus while typing.
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+      <h2 className="font-semibold text-slate-800 text-base">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"];
 const SEX = ["Female", "Male", "Intersex", "Prefer not to say"];
 const MARITAL = ["Single", "Married", "Stable union", "Divorced", "Widowed", "Other"];
@@ -180,13 +190,6 @@ export default function HistoryPage() {
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-emerald-500" size={28} /></div>;
   }
-
-  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-      <h2 className="font-semibold text-slate-800 text-base">{title}</h2>
-      {children}
-    </div>
-  );
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-10">
