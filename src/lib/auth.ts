@@ -2,6 +2,7 @@
 // Authentication configuration using Auth.js (NextAuth v5)
 // HIPAA: session timeout, login auditing, failed attempt tracking
 // Supports: Credentials (email+password) + Google OAuth
+// Google new users get the role they chose on the registration screen (signup_role cookie)
 
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
@@ -20,6 +21,18 @@ const loginSchema = z.object({
 const SESSION_MAX_AGE = parseInt(
   process.env.SESSION_MAX_AGE_SECONDS || "900"
 );
+
+// Reads the role the user picked on the registration screen, stored in a cookie
+// before the Google redirect. Dynamic import keeps next/headers out of edge bundles.
+async function readSignupRole(): Promise<"PATIENT" | "PROFESSIONAL"> {
+  try {
+    const { cookies } = await import("next/headers");
+    const value = cookies().get("signup_role")?.value;
+    return value === "PROFESSIONAL" ? "PROFESSIONAL" : "PATIENT";
+  } catch {
+    return "PATIENT";
+  }
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -79,7 +92,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        // Reset failed attempts on success
         await db.user.update({
           where: { id: user.id },
           data: {
@@ -89,7 +101,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           },
         });
 
-        // HIPAA audit log
         await audit.login(user.id);
 
         return {
@@ -111,7 +122,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
 
           if (!dbUser) {
-            // New Google user — create account as PATIENT by default
+            // New Google user — use the role chosen on the registration screen
+            const signupRole = await readSignupRole();
+
             const nameParts = (user.name || "").split(" ");
             const firstName = nameParts[0] || "";
             const lastName = nameParts.slice(1).join(" ") || "";
@@ -120,19 +133,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               data: {
                 email: user.email!,
                 emailVerified: new Date(), // Google already verified the email
-                role: "PATIENT",
+                role: signupRole,
                 region: "US",
               },
             });
 
-            await db.patientProfile.create({
-              data: {
-                userId: dbUser.id,
-                firstName,
-                lastName,
-                avatarUrl: user.image || null,
-              },
-            });
+            if (signupRole === "PROFESSIONAL") {
+              await db.professionalProfile.create({
+                data: {
+                  userId: dbUser.id,
+                  firstName,
+                  lastName,
+                  avatarUrl: user.image || null,
+                  licenseNumber: "",
+                  specialty: "",
+                  consultPrice: 0,
+                },
+              });
+            } else {
+              await db.patientProfile.create({
+                data: {
+                  userId: dbUser.id,
+                  firstName,
+                  lastName,
+                  avatarUrl: user.image || null,
+                },
+              });
+            }
           } else if (!dbUser.emailVerified) {
             // Existing user who hadn't verified — Google now confirms their email
             await db.user.update({
@@ -178,14 +205,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async jwt({ token, user, account }) {
-      // Set token data on first sign-in (Credentials)
       if (user) {
         token.id = user.id;
         token.role = (user as { role: string }).role;
         token.region = (user as { region: string }).region;
       }
 
-      // For Google sign-in, fetch role/region from DB (first time only)
+      // For Google sign-in, fetch role/region from DB
       if (account?.provider === "google" && token.email) {
         const dbUser = await db.user.findUnique({
           where: { email: token.email },

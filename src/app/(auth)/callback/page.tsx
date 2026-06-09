@@ -1,7 +1,8 @@
 "use client";
 
 // src/app/(auth)/callback/page.tsx
-// Post-OAuth redirect page — checks session role and redirects to the right dashboard
+// Post-OAuth redirect page — clears the signup_role cookie, checks session role,
+// and redirects to the right dashboard.
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -11,6 +12,9 @@ export default function CallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Clean up the temporary signup role cookie
+    document.cookie = "signup_role=; path=/; max-age=0; SameSite=Lax";
+
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((session) => {
