@@ -1,7 +1,4 @@
 // src/app/api/auth/change-email/route.ts
-// Authenticated user requests an email change
-// Sends verification to the NEW email before applying the change
-
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -31,20 +28,16 @@ export async function POST(req: NextRequest) {
 
   const { newEmail, currentPassword } = parsed.data;
 
+  // Fetch user with profile names separately
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: { email: true, passwordHash: true },
-    include: {
-      patientProfile: { select: { firstName: true } },
-      professionalProfile: { select: { firstName: true } },
-    } as any,
   });
 
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  // Check new email not already taken
   if (newEmail.toLowerCase() === user.email.toLowerCase()) {
     return NextResponse.json({ error: "This is already your current email." }, { status: 400 });
   }
@@ -54,7 +47,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "This email is already in use." }, { status: 409 });
   }
 
-  // Require password for email change (except Google-only users)
   if (user.passwordHash) {
     const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValid) {
@@ -62,12 +54,22 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Generate verification token for new email
+  // Get first name for the email
+  const patientProfile = await db.patientProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { firstName: true },
+  });
+  const professionalProfile = !patientProfile
+    ? await db.professionalProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { firstName: true },
+      })
+    : null;
+
+  const firstName = patientProfile?.firstName || professionalProfile?.firstName || "there";
+
   const token = randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-  // Store pending email change in VerificationToken
-  // identifier format: "email-change:{userId}:{newEmail}"
   const identifier = `email-change:${session.user.id}:${newEmail.toLowerCase()}`;
 
   await db.verificationToken.deleteMany({
@@ -78,16 +80,9 @@ export async function POST(req: NextRequest) {
     data: { identifier, token, expires },
   });
 
-  // Send verification email to the NEW address
-  const firstName =
-    (user as any).patientProfile?.firstName ||
-    (user as any).professionalProfile?.firstName ||
-    "there";
-
   try {
     const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
     const verifyUrl = `${APP_URL}/api/auth/confirm-email-change?token=${token}`;
-
     const { Resend } = await import("resend");
     const resend = new Resend(process.env.RESEND_API_KEY);
     const FROM = process.env.EMAIL_FROM || "Doctor8 <noreply@doctor8.app>";
@@ -106,7 +101,7 @@ export async function POST(req: NextRequest) {
               Confirm new email
             </a>
           </div>
-          <p style="color:#9ca3af;font-size:12px;">If you didn't request this, ignore this email. Your email won't change.</p>
+          <p style="color:#9ca3af;font-size:12px;">If you didn't request this, ignore this email.</p>
         </div>
       `,
     });
