@@ -126,7 +126,7 @@ function LoginForm() {
           <h1 className="text-4xl font-black text-white tracking-tight">
             Doctor<span className="text-emerald-400">8</span>
           </h1>
-          <p className="text-slate-400 mt-2 text-sm">Sign in to your account </p>
+          <p className="text-slate-400 mt-2 text-sm">Sign in</p>
         </div>
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
