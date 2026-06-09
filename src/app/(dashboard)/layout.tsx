@@ -1,7 +1,7 @@
 "use client";
 
 // src/app/(dashboard)/layout.tsx
-// Shared layout for all dashboard pages — patient and professional
+// Shared layout for all dashboard pages — patient and professional.
 // Reads the logged-in user's role from the session so the menu adapts automatically.
 
 import { useState, useEffect } from "react";
@@ -11,7 +11,7 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
-  Stethoscope, ClipboardList, Users, BarChart3
+  Stethoscope, ClipboardList, Users, UserCog
 } from "lucide-react";
 
 interface NavItem {
@@ -32,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
 
   // Professional
   { href: "/professional", label: "Dashboard", icon: <LayoutDashboard size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/professional/settings", label: "My Profile", icon: <UserCog size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/patients", label: "Patients", icon: <Users size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/appointments", label: "Appointments", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/prescriptions", label: "Prescriptions", icon: <Stethoscope size={18} />, roles: ["PROFESSIONAL"] },
@@ -39,7 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/professional/settings/availability", label: "Availability", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
 
   // Shared
-  { href: "/settings", label: "Settings", icon: <Settings size={18} />, roles: ["PATIENT", "PROFESSIONAL", "ADMIN"] },
+  { href: "/settings", label: "Account", icon: <Settings size={18} />, roles: ["PATIENT", "PROFESSIONAL", "ADMIN"] },
 ];
 
 export default function DashboardLayout({
@@ -172,14 +173,12 @@ export default function DashboardLayout({
             <Menu size={22} />
           </button>
 
-          {/* Page title (filled by children via context in real app) */}
           <div className="lg:hidden">
             <span className="text-lg font-bold text-slate-900">
               Doctor<span className="text-emerald-500">8</span>
             </span>
           </div>
 
-          {/* Right side */}
           <div className="flex items-center gap-3 ml-auto">
             <button className="relative text-slate-400 hover:text-slate-600 transition p-2 rounded-xl hover:bg-slate-100">
               <Bell size={20} />

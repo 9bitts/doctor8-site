@@ -1,6 +1,7 @@
 // src/app/api/professional/profile/route.ts
 // GET: load the logged-in professional's profile
 // POST: create or update it, and mark as verified so they appear in patient search
+// Stores photo (avatarUrl), areas of expertise (subspecialties) and full clinic address.
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -26,12 +27,11 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const {
-    firstName, lastName, specialty, licenseNumber, licenseState,
+    firstName, lastName, specialty, subspecialties, licenseNumber, licenseState,
     bio, consultPrice, currency, acceptsTeleconsult, acceptsInPerson,
-    clinicName, clinicCity, clinicCountry,
+    avatarUrl, clinicName, clinicAddress, clinicCity, clinicState, clinicCountry, clinicZip,
   } = body;
 
-  // Basic validation
   if (!firstName || !lastName || !licenseNumber || !specialty || !consultPrice) {
     return NextResponse.json(
       { error: "Missing required fields: name, registration number, profession and price." },
@@ -39,15 +39,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // A profile is "verified" (visible in search) once it has the essentials
-  const isComplete = Boolean(
-    firstName && lastName && licenseNumber && specialty && consultPrice > 0
-  );
+  // A profile becomes "verified" (visible in search) once it has the essentials
+  const isComplete = Boolean(firstName && lastName && licenseNumber && specialty && consultPrice > 0);
+
+  // subspecialties is an array column
+  const subsArray = Array.isArray(subspecialties)
+    ? subspecialties
+    : typeof subspecialties === "string" && subspecialties.length
+    ? subspecialties.split(",").map((s: string) => s.trim()).filter(Boolean)
+    : [];
 
   const data = {
     firstName,
     lastName,
     specialty,
+    subspecialties: subsArray,
     licenseNumber,
     licenseState: licenseState || null,
     bio: bio || null,
@@ -55,9 +61,13 @@ export async function POST(req: NextRequest) {
     currency: currency || "USD",
     acceptsTeleconsult: Boolean(acceptsTeleconsult),
     acceptsInPerson: Boolean(acceptsInPerson),
+    avatarUrl: avatarUrl || null,
     clinicName: clinicName || null,
+    clinicAddress: clinicAddress || null,
     clinicCity: clinicCity || null,
+    clinicState: clinicState || null,
     clinicCountry: clinicCountry || null,
+    clinicZip: clinicZip || null,
     verified: isComplete,
     verifiedAt: isComplete ? new Date() : null,
   };
@@ -68,18 +78,11 @@ export async function POST(req: NextRequest) {
 
   let profile;
   if (existing) {
-    profile = await db.professionalProfile.update({
-      where: { userId: session.user.id },
-      data,
-    });
+    profile = await db.professionalProfile.update({ where: { userId: session.user.id }, data });
     await audit.updateRecord(session.user.id, "ProfessionalProfile", profile.id);
   } else {
     profile = await db.professionalProfile.create({
-      data: {
-        userId: session.user.id,
-        licenseCountry: clinicCountry || "US",
-        ...data,
-      },
+      data: { userId: session.user.id, licenseCountry: clinicCountry || "US", ...data },
     });
     await audit.createRecord(session.user.id, "ProfessionalProfile", profile.id);
   }
