@@ -21,16 +21,17 @@ interface NavItem {
   roles: string[];
 }
 
-const NAV_ITEMS: NavItem[] = [
-  // Patient
+const PATIENT_NAV: NavItem[] = [
   { href: "/patient", label: "Dashboard", icon: <LayoutDashboard size={18} />, roles: ["PATIENT"] },
   { href: "/patient/history", label: "Medical History", icon: <FileText size={18} />, roles: ["PATIENT"] },
   { href: "/patient/medications", label: "Medications", icon: <Pill size={18} />, roles: ["PATIENT"] },
   { href: "/patient/appointments", label: "Appointments", icon: <Calendar size={18} />, roles: ["PATIENT"] },
   { href: "/patient/documents", label: "Documents", icon: <ClipboardList size={18} />, roles: ["PATIENT"] },
   { href: "/patient/messages", label: "Messages", icon: <MessageSquare size={18} />, roles: ["PATIENT"] },
+  { href: "/patient/account", label: "Account", icon: <Settings size={18} />, roles: ["PATIENT"] },
+];
 
-  // Professional
+const PROFESSIONAL_NAV: NavItem[] = [
   { href: "/professional", label: "Dashboard", icon: <LayoutDashboard size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/settings", label: "My Profile", icon: <UserCog size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/patients", label: "Patients", icon: <Users size={18} />, roles: ["PROFESSIONAL"] },
@@ -38,9 +39,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/professional/prescriptions", label: "Prescriptions", icon: <Stethoscope size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/messages", label: "Messages", icon: <MessageSquare size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/settings/availability", label: "Availability", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
-
-  // Shared
-  { href: "/settings", label: "Account", icon: <Settings size={18} />, roles: ["PATIENT", "PROFESSIONAL", "ADMIN"] },
+  { href: "/professional/account", label: "Account", icon: <Settings size={18} />, roles: ["PROFESSIONAL"] },
 ];
 
 export default function DashboardLayout({
@@ -51,7 +50,6 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Read the real logged-in user from the session
   const [role, setRole] = useState<string>("PATIENT");
   const [userName, setUserName] = useState<string>("User");
 
@@ -73,13 +71,12 @@ export default function DashboardLayout({
     loadSession();
   }, []);
 
-  const navItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const navItems = role === "PROFESSIONAL" ? PROFESSIONAL_NAV : PATIENT_NAV;
   const roleLabel = role === "PROFESSIONAL" ? "Professional" : role === "ADMIN" ? "Admin" : "Patient";
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
 
-      {/* Sidebar overlay for mobile */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"
@@ -87,7 +84,6 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
           fixed top-0 left-0 h-full w-64 bg-slate-900 z-40 flex flex-col
@@ -96,7 +92,6 @@ export default function DashboardLayout({
           lg:translate-x-0 lg:static lg:z-auto
         `}
       >
-        {/* Logo */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/50">
           <Link href="/" className="text-2xl font-black text-white tracking-tight">
             Doctor<span className="text-emerald-400">8</span>
@@ -109,7 +104,6 @@ export default function DashboardLayout({
           </button>
         </div>
 
-        {/* User info */}
         <div className="px-4 py-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">
@@ -122,7 +116,6 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <div className="space-y-1">
             {navItems.map((item) => {
@@ -150,7 +143,6 @@ export default function DashboardLayout({
           </div>
         </nav>
 
-        {/* Sign out */}
         <div className="px-3 py-4 border-t border-slate-700/50">
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
@@ -162,9 +154,7 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
         <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex items-center justify-between sticky top-0 z-20">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -190,7 +180,6 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 p-4 lg:p-8 overflow-auto">
           {children}
         </main>
