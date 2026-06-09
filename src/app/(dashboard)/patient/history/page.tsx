@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { Save, Share2, Download, Loader2, CheckCircle2, Copy } from "lucide-react";
+import ShareModal from "@/components/ShareModal";
 
 // Multi-select chip group
 function ChipGroup({
@@ -131,6 +132,7 @@ export default function HistoryPage() {
   const [error, setError] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => { fetchHistory(); }, []);
 
@@ -435,7 +437,7 @@ export default function HistoryPage() {
             {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
             {saving ? "Saving..." : "Save history"}
           </button>
-          <button type="button" onClick={handleShare} disabled={shareLoading}
+          <button type="button" onClick={() => setShowShareModal(true)}
             className="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 font-semibold px-5 py-3 rounded-xl transition flex items-center gap-2">
             {shareLoading ? <Loader2 className="animate-spin" size={16} /> : <Share2 size={16} />}
             Share with doctor
@@ -446,19 +448,11 @@ export default function HistoryPage() {
           </a>
         </div>
 
-        {shareUrl && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-sm text-blue-800 font-medium mb-2">Secure link (valid for 7 days):</p>
-            <div className="flex items-center gap-2">
-              <input readOnly value={shareUrl} className="flex-1 bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs text-slate-600" />
-              <button type="button" onClick={() => navigator.clipboard.writeText(shareUrl)}
-                className="bg-blue-500 text-white rounded-lg px-3 py-2 text-xs font-medium flex items-center gap-1">
-                <Copy size={13} /> Copy
-              </button>
-            </div>
-          </div>
-        )}
-      </form>
+</form>
+
+      {showShareModal && (
+        <ShareModal type="history" onClose={() => setShowShareModal(false)} />
+      )}
     </div>
   );
 }

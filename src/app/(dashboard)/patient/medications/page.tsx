@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { Pill, Plus, Eye, EyeOff, Trash2, ShoppingCart, Stethoscope, X, Loader2, Share2, Download } from "lucide-react";
+import ShareModal from "@/components/ShareModal";
 
 type Flow = "CLINICAL" | "PURCHASE";
 
@@ -26,6 +27,7 @@ export default function MedicationsPage() {
   const [activeTab, setActiveTab] = useState<Flow>("CLINICAL");
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
@@ -149,7 +151,7 @@ export default function MedicationsPage() {
         {activeTab === "CLINICAL" && clinicalMeds.length > 0 && (
           <div className="flex items-center gap-2 px-5 py-3 bg-slate-50 border-b border-slate-200">
             <button
-              onClick={handleShare}
+              onClick={() => setShowShareModal(true)}
               disabled={shareLoading}
               className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition"
             >
@@ -335,7 +337,10 @@ export default function MedicationsPage() {
       )}
 
       {/* Tailwind inline styles for input */}
-      <style>{`.input-base { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #1e293b; outline: none; transition: border-color .15s; } .input-base:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.1); }`}</style>
+{showShareModal && (
+        <ShareModal type="medications" onClose={() => setShowShareModal(false)} />
+      )}     
+ <style>{`.input-base { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #1e293b; outline: none; transition: border-color .15s; } .input-base:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.1); }`}</style>
     </div>
   );
 }
@@ -417,6 +422,4 @@ function MedCard({ medication, onDelete }: { medication: Medication; onDelete: (
           </button>
         </div>
       )}
-    </div>
-  );
-}
+
