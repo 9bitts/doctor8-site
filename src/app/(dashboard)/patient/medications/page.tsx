@@ -422,4 +422,6 @@ function MedCard({ medication, onDelete }: { medication: Medication; onDelete: (
           </button>
         </div>
       )}
-
+    </div>
+  );
+}
