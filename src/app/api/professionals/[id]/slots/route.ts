@@ -1,10 +1,13 @@
 // src/app/api/professionals/[id]/slots/route.ts
-// Returns available time slots for a professional in the next 14 days
+// Returns available time slots for a professional for the next 14 days
+// Excludes slots already booked (CONFIRMED or PENDING appointments)
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { addDays, format, setHours, setMinutes, isAfter, parseISO } from "date-fns";
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export async function GET(
   req: NextRequest,
@@ -16,80 +19,96 @@ export async function GET(
   const professional = await db.professionalProfile.findUnique({
     where: { id: params.id },
     include: {
-      availabilitySlots: { where: { isActive: true } },
+      availabilitySlots: {
+        where: { isActive: true },
+        orderBy: { dayOfWeek: "asc" },
+      },
     },
   });
 
-  if (!professional) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!professional) {
+    return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+  }
 
-  // Get existing appointments for next 14 days
+  if (professional.availabilitySlots.length === 0) {
+    return NextResponse.json({ days: [] });
+  }
+
+  // Get existing appointments for the next 14 days to exclude booked slots
   const now = new Date();
-  const twoWeeksLater = addDays(now, 14);
+  const twoWeeksLater = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
-  const existingAppointments = await db.appointment.findMany({
+  const bookedAppointments = await db.appointment.findMany({
     where: {
       professionalId: params.id,
       status: { in: ["CONFIRMED", "PENDING"] },
       scheduledAt: { gte: now, lte: twoWeeksLater },
     },
-    select: { scheduledAt: true, durationMins: true },
+    select: { scheduledAt: true },
   });
 
   const bookedTimes = new Set(
-    existingAppointments.map((a) => format(new Date(a.scheduledAt), "yyyy-MM-dd HH:mm"))
+    bookedAppointments.map((a) => a.scheduledAt.toISOString())
   );
 
-  // Generate slots for the next 14 days
-  const days: {
-    date: string;
-    dayOfWeek: number;
-    label: string;
-    slots: { time: string; datetime: string; available: boolean }[];
-  }[] = [];
+  // Generate slots for next 14 days
+  const days = [];
 
-  for (let i = 1; i <= 14; i++) {
-    const date = addDays(now, i);
+  for (let i = 0; i < 14; i++) {
+    const date = new Date(now);
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0);
+
     const dayOfWeek = date.getDay();
-    const dateStr = format(date, "yyyy-MM-dd");
-    const dateLabel = format(date, "EEE, MMM d");
-
-    const availability = professional.availabilitySlots.find(
-      (s) => s.dayOfWeek === dayOfWeek
+    const availabilityForDay = professional.availabilitySlots.find(
+      (slot) => slot.dayOfWeek === dayOfWeek
     );
 
-    if (!availability) {
-      days.push({ date: dateStr, dayOfWeek, label: dateLabel, slots: [] });
-      continue;
-    }
+    if (!availabilityForDay) continue;
 
-    const [startH, startM] = availability.startTime.split(":").map(Number);
-    const [endH, endM] = availability.endTime.split(":").map(Number);
-    const duration = availability.slotDurationMins;
+    const slots = [];
+    const [startHour, startMin] = availabilityForDay.startTime.split(":").map(Number);
+    const [endHour, endMin] = availabilityForDay.endTime.split(":").map(Number);
+    const duration = availabilityForDay.slotDurationMins;
 
-    const slots: { time: string; datetime: string; available: boolean }[] = [];
-    let current = setMinutes(setHours(date, startH), startM);
-    const end = setMinutes(setHours(date, endH), endM);
+    let currentHour = startHour;
+    let currentMin = startMin;
 
-    while (isAfter(end, current)) {
-      const timeKey = format(current, "yyyy-MM-dd HH:mm");
-      const timeLabel = format(current, "h:mm a");
-      const isAvailable = !bookedTimes.has(timeKey) && isAfter(current, now);
+    while (
+      currentHour < endHour ||
+      (currentHour === endHour && currentMin < endMin)
+    ) {
+      const slotDate = new Date(date);
+      slotDate.setHours(currentHour, currentMin, 0, 0);
+
+      // Skip slots in the past (with 1h buffer)
+      const isPast = slotDate.getTime() < now.getTime() + 60 * 60 * 1000;
+      const isBooked = bookedTimes.has(slotDate.toISOString());
+
+      const timeStr = `${String(currentHour).padStart(2, "0")}:${String(currentMin).padStart(2, "0")}`;
 
       slots.push({
-        time: timeLabel,
-        datetime: current.toISOString(),
-        available: isAvailable,
+        time: timeStr,
+        datetime: slotDate.toISOString(),
+        available: !isPast && !isBooked,
       });
 
-      current = new Date(current.getTime() + duration * 60 * 1000);
+      // Advance by slot duration
+      currentMin += duration;
+      if (currentMin >= 60) {
+        currentHour += Math.floor(currentMin / 60);
+        currentMin = currentMin % 60;
+      }
     }
 
-    days.push({ date: dateStr, dayOfWeek, label: dateLabel, slots });
+    if (slots.some((s) => s.available)) {
+      days.push({
+        date: date.toISOString().split("T")[0],
+        label: `${DAY_NAMES[dayOfWeek]}, ${MONTH_NAMES[date.getMonth()]} ${date.getDate()}`,
+        slots,
+      });
+    }
   }
 
-  return NextResponse.json({
-    professionalId: params.id,
-    slotDurationMins: professional.availabilitySlots[0]?.slotDurationMins || 30,
-    days,
-  });
+  return NextResponse.json({ days });
 }

@@ -1,21 +1,20 @@
 "use client";
 
 // src/app/(dashboard)/patient/appointments/page.tsx
-// Full appointment booking flow:
+// Full appointment booking flow with real Stripe payment:
 // Step 1 — Browse doctors + filter
-// Step 2 — Select date/time
-// Step 3 — Checkout (card, PIX, PayPal)
+// Step 2 — Select date/time slot
+// Step 3 — Checkout with real Stripe card payment
 // Step 4 — Confirmation
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
-  Calendar, Search, Filter, Star, MapPin, Video, Building2,
-  Clock, ChevronRight, ChevronLeft, CreditCard, X, Loader2,
-  CheckCircle2, AlertCircle, Pill
+  Calendar, Search, Video, Building2,
+  Clock, ChevronRight, ChevronLeft, CreditCard, Loader2,
+  CheckCircle2, AlertCircle, Star, MapPin, Lock,
 } from "lucide-react";
 
 type Step = "browse" | "slots" | "payment" | "confirmed";
-type PaymentMethod = "card" | "pix" | "paypal";
 
 interface Professional {
   id: string;
@@ -48,7 +47,6 @@ export default function AppointmentsPage() {
   const [slots, setSlots] = useState<SlotDay[]>([]);
   const [selectedDay, setSelectedDay] = useState<SlotDay | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
-  const [payMethod, setPayMethod] = useState<PaymentMethod>("card");
   const [loading, setLoading] = useState(true);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [payLoading, setPayLoading] = useState(false);
@@ -57,11 +55,65 @@ export default function AppointmentsPage() {
   const [search, setSearch] = useState("");
   const [specialty, setSpecialty] = useState("All");
   const [type, setType] = useState<"TELECONSULT" | "IN_PERSON">("TELECONSULT");
-
-  // Existing appointments
   const [appointments, setAppointments] = useState<any[]>([]);
 
+  // Stripe card element state
+  const [stripeLoaded, setStripeLoaded] = useState(false);
+  const [cardComplete, setCardComplete] = useState(false);
+  const cardElementRef = useRef<any>(null);
+  const stripeRef = useRef<any>(null);
+  const elementsRef = useRef<any>(null);
+
   useEffect(() => { fetchProfessionals(); fetchAppointments(); }, []);
+
+  // Load Stripe.js when entering payment step
+  useEffect(() => {
+    if (step === "payment" && !stripeLoaded) {
+      loadStripe();
+    }
+  }, [step]);
+
+  async function loadStripe() {
+    // Dynamically load Stripe.js
+    if (!(window as any).Stripe) {
+      const script = document.createElement("script");
+      script.src = "https://js.stripe.com/v3/";
+      script.onload = () => initStripe();
+      document.head.appendChild(script);
+    } else {
+      initStripe();
+    }
+  }
+
+  function initStripe() {
+    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (!publishableKey) return;
+
+    stripeRef.current = (window as any).Stripe(publishableKey);
+    elementsRef.current = stripeRef.current.elements();
+
+    const card = elementsRef.current.create("card", {
+      style: {
+        base: {
+          fontSize: "16px",
+          color: "#1e293b",
+          fontFamily: "system-ui, sans-serif",
+          "::placeholder": { color: "#94a3b8" },
+        },
+        invalid: { color: "#ef4444" },
+      },
+    });
+
+    setTimeout(() => {
+      const mount = document.getElementById("card-element");
+      if (mount) {
+        card.mount("#card-element");
+        card.on("change", (e: any) => setCardComplete(e.complete));
+        cardElementRef.current = card;
+        setStripeLoaded(true);
+      }
+    }, 100);
+  }
 
   async function fetchProfessionals() {
     setLoading(true);
@@ -85,41 +137,94 @@ export default function AppointmentsPage() {
     try {
       const res = await fetch(`/api/professionals/${pro.id}/slots`);
       const d = await res.json();
-      const daysWithSlots = (d.days || []).filter((day: SlotDay) => day.slots.length > 0);
+      const daysWithSlots = (d.days || []).filter((day: SlotDay) =>
+        day.slots.some((s) => s.available)
+      );
       setSlots(daysWithSlots);
       if (daysWithSlots.length > 0) setSelectedDay(daysWithSlots[0]);
     } finally { setSlotsLoading(false); }
   }
 
-  async function handleBook() {
-    if (!selectedPro || !selectedSlot) return;
+  async function handlePayment() {
+    if (!selectedPro || !selectedSlot || !stripeRef.current || !cardElementRef.current) return;
+
     setPayLoading(true);
     setError("");
+
     try {
-      // Create payment intent
-      const res = await fetch("/api/payments/create-intent", {
+      // 1. Create PaymentIntent on server
+      const intentRes = await fetch("/api/payments/create-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           professionalId: selectedPro.id,
           scheduledAt: selectedSlot,
           type,
-          paymentMethod: payMethod,
+          paymentMethod: "card",
         }),
       });
-      const d = await res.json();
+      const intentData = await intentRes.json();
 
-      if (!res.ok) { setError(d.error?.general?.[0] || "Payment failed"); return; }
+      if (!intentRes.ok) {
+        setError(intentData.error?.general?.[0] || "Failed to initialize payment.");
+        return;
+      }
 
-      // In a real app, here you'd use Stripe.js to confirm the payment
-      // For this prototype, we simulate success
-      // stripe.confirmCardPayment(d.clientSecret, { payment_method: ... })
+      // 2. Confirm payment with Stripe.js (real card charge)
+      const { error: stripeError, paymentIntent } = await stripeRef.current.confirmCardPayment(
+        intentData.clientSecret,
+        { payment_method: { card: cardElementRef.current } }
+      );
 
-      // Simulate confirmed for demo
-      setConfirmedId("appt_" + Math.random().toString(36).slice(2));
-      setStep("confirmed");
-    } catch { setError("Something went wrong. Please try again."); }
-    finally { setPayLoading(false); }
+      if (stripeError) {
+        setError(stripeError.message || "Payment failed. Please try again.");
+        return;
+      }
+
+      if (paymentIntent.status === "succeeded") {
+        // 3. Create appointment in our system
+        const apptRes = await fetch("/api/appointments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            professionalId: selectedPro.id,
+            scheduledAt: selectedSlot,
+            type,
+            stripePaymentIntentId: paymentIntent.id,
+            priceAmount: intentData.amount,
+            currency: intentData.currency,
+          }),
+        });
+
+        const apptData = await apptRes.json();
+        if (!apptRes.ok) {
+          setError(apptData.error?.general?.[0] || "Appointment could not be confirmed.");
+          return;
+        }
+
+        setConfirmedId(apptData.appointmentId);
+        setStep("confirmed");
+        fetchAppointments();
+      }
+    } catch (e) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setPayLoading(false);
+    }
+  }
+
+  function resetFlow() {
+    setStep("browse");
+    setSelectedPro(null);
+    setSelectedSlot("");
+    setSelectedDay(null);
+    setSlots([]);
+    setError("");
+    setStripeLoaded(false);
+    setCardComplete(false);
+    cardElementRef.current = null;
+    stripeRef.current = null;
+    elementsRef.current = null;
   }
 
   const filtered = professionals.filter((p) => {
@@ -130,6 +235,13 @@ export default function AppointmentsPage() {
     return matchSearch && matchSpecialty;
   });
 
+  const priceDisplay = selectedPro
+    ? new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: selectedPro.currency || "USD",
+      }).format(selectedPro.consultPrice / 100)
+    : "";
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
 
@@ -139,9 +251,9 @@ export default function AppointmentsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Appointments</h1>
           <p className="text-slate-500 text-sm mt-1">Book and manage your consultations</p>
         </div>
-        {step !== "browse" && (
+        {step !== "browse" && step !== "confirmed" && (
           <button
-            onClick={() => { setStep("browse"); setSelectedPro(null); setSelectedSlot(""); }}
+            onClick={resetFlow}
             className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 font-medium"
           >
             <ChevronLeft size={16} /> Back to search
@@ -181,7 +293,6 @@ export default function AppointmentsPage() {
       {/* ═══ STEP 1: BROWSE ═══ */}
       {step === "browse" && (
         <>
-          {/* Filters */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
             <div className="flex gap-3">
               <div className="relative flex-1">
@@ -198,7 +309,7 @@ export default function AppointmentsPage() {
                 {(["TELECONSULT", "IN_PERSON"] as const).map((t) => (
                   <button
                     key={t}
-                    onClick={() => { setType(t); }}
+                    onClick={() => setType(t)}
                     className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
                       type === t ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
@@ -209,7 +320,7 @@ export default function AppointmentsPage() {
                 ))}
               </div>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               {SPECIALTIES.map((s) => (
                 <button
                   key={s}
@@ -224,11 +335,13 @@ export default function AppointmentsPage() {
             </div>
           </div>
 
-          {/* Doctor grid */}
           {loading ? (
             <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-slate-400" /></div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-slate-500">No doctors found matching your search.</div>
+            <div className="text-center py-16">
+              <p className="text-slate-500 mb-2">No doctors found.</p>
+              <p className="text-xs text-slate-400">Professionals need to complete their profile to appear here.</p>
+            </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {filtered.map((pro) => (
@@ -242,7 +355,6 @@ export default function AppointmentsPage() {
       {/* ═══ STEP 2: SELECT SLOT ═══ */}
       {step === "slots" && selectedPro && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Doctor summary */}
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-emerald-400/20 flex items-center justify-center text-2xl font-black text-emerald-300">
               {selectedPro.firstName[0]}
@@ -250,9 +362,7 @@ export default function AppointmentsPage() {
             <div>
               <h2 className="text-white font-bold text-lg">Dr. {selectedPro.firstName} {selectedPro.lastName}</h2>
               <p className="text-slate-400 text-sm">{selectedPro.specialty}</p>
-              <p className="text-emerald-400 font-semibold text-sm mt-1">
-                {new Intl.NumberFormat("en-US", { style: "currency", currency: selectedPro.currency }).format(selectedPro.consultPrice / 100)} / consultation
-              </p>
+              <p className="text-emerald-400 font-semibold text-sm mt-1">{priceDisplay} / consultation</p>
             </div>
           </div>
 
@@ -263,7 +373,6 @@ export default function AppointmentsPage() {
               <p className="text-center text-slate-500 py-8">No available slots in the next 14 days.</p>
             ) : (
               <>
-                {/* Day selector */}
                 <div>
                   <p className="text-sm font-semibold text-slate-700 mb-3">Select a day</p>
                   <div className="flex gap-2 overflow-x-auto pb-1">
@@ -288,7 +397,6 @@ export default function AppointmentsPage() {
                   </div>
                 </div>
 
-                {/* Time slots */}
                 {selectedDay && (
                   <div>
                     <p className="text-sm font-semibold text-slate-700 mb-3">
@@ -336,88 +444,67 @@ export default function AppointmentsPage() {
 
           {error && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
-              <AlertCircle size={16} /> {error}
+              <AlertCircle size={16} className="shrink-0" /> {error}
             </div>
           )}
 
           {/* Order summary */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-2">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Order summary</p>
-            <div className="flex justify-between text-sm"><span className="text-slate-600">Consultation with Dr. {selectedPro.lastName}</span><span className="font-semibold">{new Intl.NumberFormat("en-US", { style: "currency", currency: selectedPro.currency }).format(selectedPro.consultPrice / 100)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-slate-600">Date</span><span>{new Date(selectedSlot).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-slate-600">Time</span><span>{new Date(selectedSlot).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-slate-600">Type</span><span>{type === "TELECONSULT" ? "🎥 Teleconsultation" : "🏥 In-person"}</span></div>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-600">Consultation with Dr. {selectedPro.lastName}</span>
+              <span className="font-semibold">{priceDisplay}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-600">Date</span>
+              <span>{new Date(selectedSlot).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-600">Time</span>
+              <span>{new Date(selectedSlot).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-600">Type</span>
+              <span>{type === "TELECONSULT" ? "🎥 Teleconsultation" : "🏥 In-person"}</span>
+            </div>
             <div className="border-t border-slate-200 mt-3 pt-3 flex justify-between font-bold text-slate-900">
               <span>Total</span>
-              <span>{new Intl.NumberFormat("en-US", { style: "currency", currency: selectedPro.currency }).format(selectedPro.consultPrice / 100)}</span>
+              <span>{priceDisplay}</span>
             </div>
           </div>
 
-          {/* Payment method */}
+          {/* Stripe card element */}
           <div>
-            <p className="text-sm font-semibold text-slate-700 mb-3">Payment method</p>
-            <div className="grid grid-cols-3 gap-3">
-              {([
-                { id: "card", label: "Credit Card", emoji: "💳" },
-                { id: "pix", label: "PIX", emoji: "⚡" },
-                { id: "paypal", label: "PayPal", emoji: "🅿️" },
-              ] as const).map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setPayMethod(m.id)}
-                  className={`flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition ${
-                    payMethod === m.id ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <span className="text-2xl">{m.emoji}</span>
-                  <span className="text-xs font-semibold text-slate-700">{m.label}</span>
-                </button>
-              ))}
-            </div>
+            <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <CreditCard size={16} /> Card details
+            </p>
+            <div
+              id="card-element"
+              className="border border-slate-200 rounded-xl px-4 py-3.5 bg-white focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-400 transition"
+            />
+            {!stripeLoaded && (
+              <div className="flex items-center gap-2 mt-2 text-xs text-slate-400">
+                <Loader2 size={12} className="animate-spin" /> Loading secure payment form...
+              </div>
+            )}
           </div>
-
-          {/* Card fields (shown only for card) */}
-          {payMethod === "card" && (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Card number</label>
-                <input type="text" placeholder="1234 5678 9012 3456" className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Expiry</label>
-                  <input type="text" placeholder="MM / YY" className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">CVC</label>
-                  <input type="text" placeholder="123" className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {payMethod === "pix" && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
-              ⚡ A PIX QR code will be generated after you confirm. You will have 30 minutes to complete the payment.
-            </div>
-          )}
-
-          {payMethod === "paypal" && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-              🅿️ You will be redirected to PayPal to complete your payment securely.
-            </div>
-          )}
 
           <button
-            onClick={handleBook}
-            disabled={payLoading}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-slate-800 to-emerald-600 text-white font-bold py-4 rounded-xl transition hover:opacity-90 disabled:opacity-50 text-base"
+            onClick={handlePayment}
+            disabled={payLoading || !stripeLoaded || !cardComplete}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-slate-800 to-emerald-600 text-white font-bold py-4 rounded-xl transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-base"
           >
-            {payLoading ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
-            {payLoading ? "Processing..." : `Pay ${new Intl.NumberFormat("en-US", { style: "currency", currency: selectedPro.currency }).format(selectedPro.consultPrice / 100)}`}
+            {payLoading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Lock size={18} />
+            )}
+            {payLoading ? "Processing payment..." : `Pay ${priceDisplay}`}
           </button>
 
-          <p className="text-xs text-slate-400 text-center">🔒 Secured by Stripe · HIPAA compliant</p>
+          <p className="text-xs text-slate-400 text-center flex items-center justify-center gap-1">
+            <Lock size={11} /> Secured by Stripe · HIPAA compliant · Your card is never stored
+          </p>
         </div>
       )}
 
@@ -432,13 +519,32 @@ export default function AppointmentsPage() {
             <p className="text-slate-500 mt-2">Your consultation has been booked and paid.</p>
           </div>
           <div className="bg-slate-50 rounded-xl p-5 text-sm space-y-2 text-left">
-            <div className="flex justify-between"><span className="text-slate-500">Doctor</span><span className="font-semibold">Dr. {selectedPro.firstName} {selectedPro.lastName}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Date</span><span className="font-semibold">{new Date(selectedSlot).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Time</span><span className="font-semibold">{new Date(selectedSlot).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span></div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Doctor</span>
+              <span className="font-semibold">Dr. {selectedPro.firstName} {selectedPro.lastName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Date</span>
+              <span className="font-semibold">
+                {new Date(selectedSlot).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Time</span>
+              <span className="font-semibold">
+                {new Date(selectedSlot).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Amount paid</span>
+              <span className="font-semibold text-emerald-600">{priceDisplay}</span>
+            </div>
           </div>
-          <p className="text-sm text-slate-500">A confirmation email has been sent. You will receive a reminder 24h and 1h before.</p>
+          <p className="text-sm text-slate-500">
+            A confirmation email has been sent. You will receive reminders 24h and 1h before.
+          </p>
           <button
-            onClick={() => { setStep("browse"); setSelectedPro(null); setSelectedSlot(""); fetchAppointments(); }}
+            onClick={resetFlow}
             className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl hover:bg-slate-700 transition"
           >
             Back to appointments
@@ -451,7 +557,10 @@ export default function AppointmentsPage() {
 
 function DoctorCard({ pro, onSelect }: { pro: Professional; onSelect: () => void }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-emerald-300 transition cursor-pointer" onClick={onSelect}>
+    <div
+      className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-emerald-300 transition cursor-pointer"
+      onClick={onSelect}
+    >
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-400 to-emerald-500 flex items-center justify-center text-2xl font-black text-white shrink-0">
           {pro.firstName[0]}
@@ -472,15 +581,23 @@ function DoctorCard({ pro, onSelect }: { pro: Professional; onSelect: () => void
         </div>
         <div className="text-right shrink-0">
           <p className="font-bold text-slate-900 text-base">
-            {new Intl.NumberFormat("en-US", { style: "currency", currency: pro.currency }).format(pro.consultPrice / 100)}
+            {new Intl.NumberFormat("en-US", { style: "currency", currency: pro.currency || "USD" }).format(pro.consultPrice / 100)}
           </p>
           <p className="text-xs text-slate-400">/consultation</p>
         </div>
       </div>
       {pro.bio && <p className="text-xs text-slate-500 mt-3 line-clamp-2">{pro.bio}</p>}
       <div className="flex items-center gap-2 mt-4">
-        {pro.acceptsTeleconsult && <span className="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium"><Video size={11} /> Online</span>}
-        {pro.acceptsInPerson && <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium"><Building2 size={11} /> In-person</span>}
+        {pro.acceptsTeleconsult && (
+          <span className="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium">
+            <Video size={11} /> Online
+          </span>
+        )}
+        {pro.acceptsInPerson && (
+          <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
+            <Building2 size={11} /> In-person
+          </span>
+        )}
         <button className="ml-auto flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800">
           Book <ChevronRight size={13} />
         </button>
