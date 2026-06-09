@@ -21,7 +21,6 @@ const PASSWORD_RULES = [
 export default function RegisterPage() {
   const router = useRouter();
 
-  const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<Role>("PATIENT");
   const [region, setRegion] = useState<Region>("US");
 
@@ -31,7 +30,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Consent checkboxes
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [acceptedHipaa, setAcceptedHipaa] = useState(false);
@@ -82,8 +80,8 @@ export default function RegisterPage() {
         return;
       }
 
-      // Redirect to login with success message
-      router.push("/login?registered=true");
+      // Redirect to verify-email page with the email address
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch {
       setErrors({ general: ["Something went wrong. Please try again."] });
     } finally {
@@ -114,7 +112,6 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
 
-            {/* STEP 1: Role + Region */}
             {/* Role selection */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-3">
@@ -196,7 +193,7 @@ export default function RegisterPage() {
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email[0]}</p>}
             </div>
 
-            {/* Password with strength indicator */}
+            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
               <div className="relative">
@@ -217,7 +214,6 @@ export default function RegisterPage() {
                 </button>
               </div>
 
-              {/* Password strength rules */}
               {password && (
                 <div className="mt-3 space-y-1">
                   {PASSWORD_RULES.map((rule) => (

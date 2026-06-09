@@ -14,7 +14,58 @@ function getResend(): Resend {
 const FROM = process.env.EMAIL_FROM || "Doctor8 <noreply@doctor8.app>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
 
-// ─── APPOINTMENT CONFIRMATION ─────────────────────────────
+// ─── EMAIL VERIFICATION ──────────────────────────────────────────────────────
+export async function sendEmailVerification({
+  email,
+  name,
+  token,
+}: {
+  email: string;
+  name: string;
+  token: string;
+}) {
+  const verifyUrl = `${APP_URL}/api/auth/verify-email?token=${token}`;
+
+  await getResend().emails.send({
+    from: FROM,
+    to: email,
+    subject: "Verify your Doctor8 email address",
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 20px;background:#f8fafc;">
+        <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08);">
+          <div style="background:linear-gradient(135deg,#0a4d6e,#00b87a);padding:32px;text-align:center;">
+            <h1 style="color:white;font-size:28px;font-weight:900;margin:0;">Doctor<span style="color:#a7f3d0;">8</span></h1>
+            <p style="color:rgba(255,255,255,.85);margin:8px 0 0;font-size:15px;">Confirm your email address</p>
+          </div>
+          <div style="padding:32px;">
+            <p style="color:#1a2a3a;font-size:16px;">Hi <strong>${name}</strong>,</p>
+            <p style="color:#4a6070;font-size:14px;line-height:1.6;">
+              Welcome to Doctor8! Please verify your email address to complete your registration and access your account.
+            </p>
+            <div style="text-align:center;margin:32px 0;">
+              <a href="${verifyUrl}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+                Verify Email Address
+              </a>
+            </div>
+            <p style="color:#6b7280;font-size:13px;line-height:1.6;">
+              This link expires in <strong>24 hours</strong>.<br>
+              If you didn't create a Doctor8 account, you can safely ignore this email.
+            </p>
+            <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+              Or copy this link: <a href="${verifyUrl}" style="color:#0a4d6e;">${verifyUrl}</a>
+            </p>
+          </div>
+        </div>
+        <p style="text-align:center;color:#9ca3af;font-size:11px;margin-top:20px;">
+          Doctor8 &middot; HIPAA &amp; GDPR Compliant &middot;
+          <a href="${APP_URL}/privacy" style="color:#9ca3af;">Privacy Policy</a>
+        </p>
+      </div>
+    `,
+  });
+}
+
+// ─── APPOINTMENT CONFIRMATION ─────────────────────────────────────────────────
 export async function sendAppointmentConfirmation({
   patientEmail,
   patientName,
@@ -44,7 +95,7 @@ export async function sendAppointmentConfirmation({
   await getResend().emails.send({
     from: FROM,
     to: patientEmail,
-    subject: `✅ Appointment confirmed — ${dateStr}`,
+    subject: `✅ Appointment confirmed – ${dateStr}`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 20px;background:#f8fafc;">
         <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08);">
@@ -55,7 +106,6 @@ export async function sendAppointmentConfirmation({
           <div style="padding:32px;">
             <p style="color:#1a2a3a;font-size:16px;">Hi <strong>${patientName}</strong>,</p>
             <p style="color:#4a6070;font-size:14px;line-height:1.6;">Your appointment has been successfully booked. Here are the details:</p>
-
             <div style="background:#f0fdf9;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0;">
               <table style="width:100%;font-size:14px;">
                 <tr><td style="color:#6b7280;padding:6px 0;width:140px;">Doctor</td><td style="color:#1a2a3a;font-weight:600;">Dr. ${doctorName}</td></tr>
@@ -65,7 +115,6 @@ export async function sendAppointmentConfirmation({
                 <tr><td style="color:#6b7280;padding:6px 0;">Type</td><td style="color:#1a2a3a;">${type === "TELECONSULT" ? "🎥 Teleconsultation (online)" : "🏥 In-person"}</td></tr>
               </table>
             </div>
-
             ${meetingUrl ? `
               <div style="text-align:center;margin:24px 0;">
                 <a href="${meetingUrl}" style="background:#0a4d6e;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;">
@@ -73,23 +122,22 @@ export async function sendAppointmentConfirmation({
                 </a>
               </div>
             ` : ""}
-
             <p style="color:#6b7280;font-size:13px;text-align:center;">
               You will receive a reminder 24 hours and 1 hour before your appointment.<br>
-              <a href="${APP_URL}/patient/appointments/${appointmentId}" style="color:#0a4d6e;">View appointment</a> ·
+              <a href="${APP_URL}/patient/appointments/${appointmentId}" style="color:#0a4d6e;">View appointment</a> &middot;
               <a href="${APP_URL}/patient/appointments/${appointmentId}/cancel" style="color:#dc2626;">Cancel</a>
             </p>
           </div>
         </div>
         <p style="text-align:center;color:#9ca3af;font-size:11px;margin-top:20px;">
-          Doctor8 · HIPAA & GDPR Compliant · <a href="${APP_URL}/privacy" style="color:#9ca3af;">Privacy Policy</a>
+          Doctor8 &middot; HIPAA &amp; GDPR Compliant &middot; <a href="${APP_URL}/privacy" style="color:#9ca3af;">Privacy Policy</a>
         </p>
       </div>
     `,
   });
 }
 
-// ─── APPOINTMENT REMINDER ─────────────────────────────────
+// ─── APPOINTMENT REMINDER ─────────────────────────────────────────────────────
 export async function sendAppointmentReminder({
   patientEmail,
   patientName,
@@ -130,7 +178,7 @@ export async function sendAppointmentReminder({
   });
 }
 
-// ─── PASSWORD RESET ───────────────────────────────────────
+// ─── PASSWORD RESET ───────────────────────────────────────────────────────────
 export async function sendPasswordReset({
   email,
   name,
@@ -163,7 +211,7 @@ export async function sendPasswordReset({
   });
 }
 
-// ─── EMAIL CHANGE VERIFICATION ────────────────────────────
+// ─── EMAIL CHANGE VERIFICATION ────────────────────────────────────────────────
 export async function sendEmailChangeVerification({
   email,
   name,

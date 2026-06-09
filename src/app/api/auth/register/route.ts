@@ -2,12 +2,15 @@
 // User registration endpoint
 // GDPR: captures explicit consent before creating account
 // HIPAA: enforces password strength
+// Sends email verification after successful registration
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { UserRole, UserRegion, ConsentType } from "@prisma/client";
+import { sendEmailVerification } from "@/lib/email";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -32,8 +35,8 @@ const registerSchema = z.object({
   acceptedPrivacy: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Privacy Policy" }),
   }),
-  acceptedHipaa: z.boolean().optional(),  // required for US users
-  acceptedGdpr: z.boolean().optional(),   // required for EU users
+  acceptedHipaa: z.boolean().optional(),
+  acceptedGdpr: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -61,7 +64,6 @@ export async function POST(req: NextRequest) {
       acceptedGdpr,
     } = data.data;
 
-    // HIPAA: US users must accept HIPAA authorization
     if (region === "US" && !acceptedHipaa) {
       return NextResponse.json(
         { error: { acceptedHipaa: ["HIPAA Authorization required for US users"] } },
@@ -69,7 +71,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // GDPR: EU users must accept GDPR consent
     if (region === "EU" && !acceptedGdpr) {
       return NextResponse.json(
         { error: { acceptedGdpr: ["GDPR consent required for EU users"] } },
@@ -77,7 +78,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if email already exists
     const existing = await db.user.findUnique({
       where: { email: email.toLowerCase() },
     });
@@ -89,32 +89,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hash password — bcrypt with cost factor 12 (HIPAA recommended)
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Get IP for consent audit
     const ip = req.headers.get("x-forwarded-for") ||
       req.headers.get("x-real-ip") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
 
     // Create user + profile + consents in a transaction
     const user = await db.$transaction(async (tx) => {
-      // Create user
       const newUser = await tx.user.create({
         data: {
           email: email.toLowerCase(),
           passwordHash,
           role: role as UserRole,
           region: region as UserRegion,
+          // emailVerified is null — set after email confirmation
         },
       });
 
-      // Create role-specific profile
       if (role === "PATIENT") {
         await tx.patientProfile.create({
           data: {
             userId: newUser.id,
-            firstName,  // will be encrypted by service layer
+            firstName,
             lastName,
           },
         });
@@ -124,15 +121,14 @@ export async function POST(req: NextRequest) {
             userId: newUser.id,
             firstName,
             lastName,
-            licenseNumber: "",  // filled in onboarding
-            specialty: "",      // filled in onboarding
+            licenseNumber: "",
+            specialty: "",
             consultPrice: 0,
           },
         });
       }
 
-      // Record consents — GDPR/HIPAA compliance
-   const consents: { type: ConsentType; granted: boolean; version: string }[] = [
+      const consents: { type: ConsentType; granted: boolean; version: string }[] = [
         { type: "TERMS_OF_SERVICE", granted: acceptedTerms, version: "1.0" },
         { type: "PRIVACY_POLICY", granted: acceptedPrivacy, version: "1.0" },
       ];
@@ -157,6 +153,34 @@ export async function POST(req: NextRequest) {
 
       return newUser;
     });
+
+    // Generate verification token (24h expiry)
+    const token = randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    // Remove any previous tokens for this email, then create new one
+    await db.verificationToken.deleteMany({
+      where: { identifier: email.toLowerCase() },
+    });
+    await db.verificationToken.create({
+      data: {
+        identifier: email.toLowerCase(),
+        token,
+        expires,
+      },
+    });
+
+    // Send verification email — non-blocking, don't fail registration if email fails
+    try {
+      await sendEmailVerification({
+        email: email.toLowerCase(),
+        name: firstName,
+        token,
+      });
+    } catch (emailError) {
+      console.error("[EMAIL VERIFICATION SEND ERROR]", emailError);
+      // User can request resend from verify-email page
+    }
 
     return NextResponse.json(
       { success: true, userId: user.id },
