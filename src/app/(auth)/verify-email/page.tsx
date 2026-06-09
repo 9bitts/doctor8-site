@@ -3,12 +3,12 @@
 // src/app/(auth)/verify-email/page.tsx
 // Shown after registration — tells user to check their email
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, RefreshCw, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const emailParam = searchParams.get("email") || "";
   const errorParam = searchParams.get("error");
@@ -17,7 +17,6 @@ export default function VerifyEmailPage() {
   const [resendStatus, setResendStatus] = useState<"idle" | "sent" | "error">("idle");
   const [countdown, setCountdown] = useState(0);
 
-  // Expired token: auto-trigger resend on mount
   const isExpired = errorParam === "expired";
 
   useEffect(() => {
@@ -41,7 +40,7 @@ export default function VerifyEmailPage() {
 
       if (res.ok) {
         setResendStatus("sent");
-        setCountdown(60); // 60s cooldown
+        setCountdown(60);
       } else {
         setResendStatus("error");
       }
@@ -151,5 +150,13 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
