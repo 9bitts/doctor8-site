@@ -269,6 +269,7 @@ model ProfessionalProfile {
   prescriptions       Prescription[]
   availabilitySlots   AvailabilitySlot[]
   virtualCard         VirtualCard?
+  patientRecords      PatientRecord[]
 
   @@index([userId])
   @@index([specialty])
@@ -575,4 +576,34 @@ model DataExportRequest {
   updatedAt   DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ────────────────────────────────────────────
+// PATIENT RECORD (chart created by a professional)
+// A patient "file" the doctor keeps. May or may not be linked
+// to a real user account (linkedUserId). Nothing is shared with
+// the patient until the doctor explicitly shares it.
+// ────────────────────────────────────────────
+model PatientRecord {
+  id              String   @id @default(cuid())
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  // Patient data filled by the professional — @encrypted in app layer (PHI)
+  firstName       String   // @encrypted
+  lastName        String   // @encrypted
+  email           String?  // used to link/invite the patient
+  phone           String?  // @encrypted
+  dateOfBirth     DateTime?
+  notes           String?  @db.Text // @encrypted — general chart notes
+
+  // Link to a real account, once the patient has one
+  linkedUserId    String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([professionalId])
+  @@index([email])
+  @@index([linkedUserId])
 }
