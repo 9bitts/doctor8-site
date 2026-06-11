@@ -382,6 +382,8 @@ model MedicalDocument {
   appointment      Appointment?        @relation(fields: [appointmentId], references: [id])
 
   type             DocumentType
+  categoryId       String?
+  category         Category?    @relation(fields: [categoryId], references: [id])
   title            String       // @encrypted
   content          String?      @db.Text  // @encrypted — PHI
   fileUrl          String?      // S3 URL — @encrypted
@@ -397,6 +399,7 @@ model MedicalDocument {
   @@index([patientId])
   @@index([patientRecordId])
   @@index([type])
+  @@index([categoryId])
 }
 
 model SharedRecord {
@@ -611,4 +614,32 @@ model PatientRecord {
   @@index([professionalId])
   @@index([email])
   @@index([linkedUserId])
+
+}
+// ────────────────────────────────────────────
+// CATEGORY (dynamic document categories, grouped)
+// Managed centrally (admin). Documents point here via categoryId.
+// ────────────────────────────────────────────
+model Category {
+  id          String   @id @default(cuid())
+  name        String              // e.g. "Exame de sangue"
+  slug        String   @unique     // e.g. "exame-de-sangue"
+  groupName   String              // e.g. "Exames"
+  groupOrder  Int      @default(0) // order of the group in the menu
+  itemOrder   Int      @default(0) // order within the group
+  icon        String?             // optional lucide icon name
+  isSystem    Boolean  @default(true)  // seeded by the company
+  active      Boolean  @default(true)
+
+  // Maps the old enum DocumentType to this category (for migration)
+  legacyType  String?             // e.g. "EXAM_RESULT"
+
+  documents   MedicalDocument[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([groupName])
+  @@index([slug])
+  @@index([active])
 }
