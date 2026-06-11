@@ -18,7 +18,11 @@ const nextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
+          {
+            key: "Permissions-Policy",
+            value:
+              'camera=(self "https://doctor8.daily.co"), microphone=(self "https://doctor8.daily.co"), display-capture=(self "https://doctor8.daily.co"), fullscreen=(self "https://doctor8.daily.co"), autoplay=(self "https://doctor8.daily.co"), geolocation=()',
+          },
           {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
