@@ -32,7 +32,7 @@ export async function GET(
 
   // Access control: only the prescribing professional or the patient
   const isProfessional = prescription.professional.userId === session.user.id;
-  const isPatient = prescription.document?.patient &&
+  const isPatient = prescription.document?.patientId &&
     (await db.patientProfile.findFirst({
       where: { userId: session.user.id, id: prescription.document.patientId },
     }));
