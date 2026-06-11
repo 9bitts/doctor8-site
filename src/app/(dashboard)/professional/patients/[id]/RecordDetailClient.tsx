@@ -8,6 +8,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   FlaskConical, ClipboardList, FileCheck, Send, StickyNote, File,
+  Share2, Mail, Loader2,
 } from "lucide-react";
 
 interface Chart {
@@ -51,6 +52,45 @@ export default function RecordDetailClient({
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Share state, keyed by document id
+  const [shareStatus, setShareStatus] = useState<Record<string, string>>({});
+  const [sharingId, setSharingId] = useState<string | null>(null);
+
+  async function handleShare(docId: string) {
+    setSharingId(docId);
+    setShareStatus((s) => ({ ...s, [docId]: "" }));
+    try {
+      const res = await fetch(`/api/professional/documents/${docId}/share`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || "Failed") }));
+      } else if (data.shared) {
+        setShareStatus((s) => ({ ...s, [docId]: "shared" }));
+      } else if (data.needsInvite) {
+        setShareStatus((s) => ({ ...s, [docId]: data.hasEmail ? "needsInvite" : "noEmail" }));
+      }
+    } catch {
+      setShareStatus((s) => ({ ...s, [docId]: "error:Network error" }));
+    }
+    setSharingId(null);
+  }
+
+  async function handleInvite(docId: string) {
+    setSharingId(docId);
+    try {
+      const res = await fetch(`/api/professional/documents/${docId}/share`, { method: "PUT" });
+      const data = await res.json();
+      if (!res.ok) {
+        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || "Failed") }));
+      } else if (data.invited) {
+        setShareStatus((s) => ({ ...s, [docId]: "invited" }));
+      }
+    } catch {
+      setShareStatus((s) => ({ ...s, [docId]: "error:Network error" }));
+    }
+    setSharingId(null);
+  }
 
   const [type, setType] = useState("EXAM_RESULT");
   const [title, setTitle] = useState("");
@@ -190,6 +230,8 @@ export default function RecordDetailClient({
           <div className="divide-y divide-slate-100">
             {docs.map((d) => {
               const cat = CATEGORIES[d.type] || CATEGORIES.OTHER;
+              const status = shareStatus[d.id] || "";
+              const isSharing = sharingId === d.id;
               return (
                 <div key={d.id} className="px-5 py-4">
                   <div className="flex items-center gap-2 mb-1">
@@ -206,6 +248,56 @@ export default function RecordDetailClient({
                   {d.content && (
                     <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{d.content}</p>
                   )}
+
+                  {/* Share row */}
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    {status === "shared" ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg">
+                        <CheckCircle2 size={14} /> Shared with patient
+                      </span>
+                    ) : status === "invited" ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg">
+                        <Mail size={14} /> Invitation sent
+                      </span>
+                    ) : status === "needsInvite" ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
+                          <AlertCircle size={14} /> Patient has no account yet
+                        </span>
+                        <button
+                          onClick={() => handleInvite(d.id)}
+                          disabled={isSharing}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                        >
+                          {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+                          Send invite email
+                        </button>
+                      </div>
+                    ) : status === "noEmail" ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
+                        <AlertCircle size={14} /> No account and no email on file — add an email to the chart to invite
+                      </span>
+                    ) : status.startsWith("error:") ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-rose-600">{status.slice(6)}</span>
+                        <button
+                          onClick={() => handleShare(d.id)}
+                          className="text-xs font-medium text-slate-600 hover:text-slate-800 underline"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleShare(d.id)}
+                        disabled={isSharing}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                      >
+                        {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                        Share with patient
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

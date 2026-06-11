@@ -239,9 +239,60 @@ export async function sendEmailChangeVerification({
         } This link expires in 24 hours.</p>
         <div style="text-align:center;margin:32px 0;">
           <a href="${verifyUrl}" style="background:#0a4d6e;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;">
-            ${isOldEmail ? "Confirm Change" : "Verify Email"}
+${isOldEmail ? "Confirm Change" : "Verify Email"}
           </a>
         </div>
+      </div>
+    `,
+  });
+}
+
+// ─── PATIENT INVITE (record sharing) ──────────────────────────────────────
+export async function sendPatientInvite({
+  email,
+  patientName,
+  doctorName,
+}: {
+  email: string;
+  patientName: string;
+  doctorName: string;
+}) {
+  const signupUrl = `${APP_URL}/register?email=${encodeURIComponent(email)}`;
+
+  await getResend().emails.send({
+    from: FROM,
+    to: email,
+    subject: `Dr. ${doctorName} shared health records with you on Doctor8`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 20px;background:#f8fafc;">
+        <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08);">
+          <div style="background:linear-gradient(135deg,#0a4d6e,#00b87a);padding:32px;text-align:center;">
+            <h1 style="color:white;font-size:28px;font-weight:900;margin:0;">Doctor<span style="color:#a7f3d0;">8</span></h1>
+            <p style="color:rgba(255,255,255,.85);margin:8px 0 0;font-size:15px;">You've been invited</p>
+          </div>
+          <div style="padding:32px;">
+            <p style="color:#1a2a3a;font-size:16px;">Hi <strong>${patientName}</strong>,</p>
+            <p style="color:#4a6070;font-size:14px;line-height:1.6;">
+              <strong>Dr. ${doctorName}</strong> would like to share your health records with you
+              securely through Doctor8. To access them, create your free account using this email address.
+            </p>
+            <div style="text-align:center;margin:32px 0;">
+              <a href="${signupUrl}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+                Create my account
+              </a>
+            </div>
+            <p style="color:#6b7280;font-size:13px;line-height:1.6;">
+              Once you sign up, your doctor can share exams, results and other records with you safely.
+            </p>
+            <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+              Or copy this link: <a href="${signupUrl}" style="color:#0a4d6e;">${signupUrl}</a>
+            </p>
+          </div>
+        </div>
+        <p style="text-align:center;color:#9ca3af;font-size:11px;margin-top:20px;">
+          Doctor8 &middot; HIPAA &amp; GDPR Compliant &middot;
+          <a href="${APP_URL}/privacy" style="color:#9ca3af;">Privacy Policy</a>
+        </p>
       </div>
     `,
   });
