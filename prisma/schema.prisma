@@ -372,8 +372,10 @@ model Appointment {
 
 model MedicalDocument {
   id               String              @id @default(cuid())
-  patientId        String
-  patient          PatientProfile      @relation(fields: [patientId], references: [id])
+  patientId        String?
+  patient          PatientProfile?     @relation(fields: [patientId], references: [id])
+  patientRecordId  String?
+  patientRecord    PatientRecord?      @relation(fields: [patientRecordId], references: [id])
   professionalId   String?
   professional     ProfessionalProfile? @relation(fields: [professionalId], references: [id])
   appointmentId    String?
@@ -393,6 +395,7 @@ model MedicalDocument {
   prescriptions    Prescription[]
 
   @@index([patientId])
+  @@index([patientRecordId])
   @@index([type])
 }
 
@@ -599,6 +602,8 @@ model PatientRecord {
 
   // Link to a real account, once the patient has one
   linkedUserId    String?
+  // Clinical records attached to this chart
+  medicalDocuments MedicalDocument[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
