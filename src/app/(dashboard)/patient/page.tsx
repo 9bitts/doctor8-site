@@ -240,8 +240,8 @@ export default async function PatientDashboard() {
         <Section title="Quick actions" icon={<Activity size={16} />}>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Book appointment", icon: "📅", href: "/patient/appointments/new", color: "bg-blue-50 hover:bg-blue-100 text-blue-700" },
-              { label: "Export health record", icon: "📄", href: "/patient/history/export", color: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700" },
+              { label: "Book appointment", icon: "📅", href: "/patient/appointments", color: "bg-blue-50 hover:bg-blue-100 text-blue-700" },
+              { label: "Export health record", icon: "📄", href: "/api/patient/history/pdf", color: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700" },
               { label: "Add medication", icon: "💊", href: "/patient/medications", color: "bg-violet-50 hover:bg-violet-100 text-violet-700" },
               { label: "Share with doctor", icon: "🔗", href: "/patient/history/share", color: "bg-rose-50 hover:bg-rose-100 text-rose-700" },
             ].map((action) => (
