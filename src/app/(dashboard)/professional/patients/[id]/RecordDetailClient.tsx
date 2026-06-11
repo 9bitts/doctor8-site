@@ -1,0 +1,297 @@
+"use client";
+
+// src/app/(dashboard)/professional/patients/[id]/RecordDetailClient.tsx
+// Chart detail + add clinical record (title + text + optional file upload to S3).
+
+import { useState } from "react";
+import Link from "next/link";
+import {
+  ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
+  FlaskConical, ClipboardList, FileCheck, Send, StickyNote, File,
+} from "lucide-react";
+
+interface Chart {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  hasAccount: boolean;
+}
+interface Doc {
+  id: string;
+  type: string;
+  title: string;
+  content: string | null;
+  hasFile: boolean;
+  createdAt: string;
+}
+
+// Category labels + icons (PRESCRIPTION is handled separately, not here)
+const CATEGORIES: Record<string, { label: string; icon: React.ReactNode }> = {
+  EXAM_REQUEST: { label: "Exam request", icon: <ClipboardList size={15} /> },
+  EXAM_RESULT: { label: "Exam result", icon: <FlaskConical size={15} /> },
+  CERTIFICATE: { label: "Certificate", icon: <FileCheck size={15} /> },
+  REFERRAL: { label: "Referral", icon: <Send size={15} /> },
+  CLINICAL_NOTE: { label: "Clinical note", icon: <StickyNote size={15} /> },
+  OTHER: { label: "Other", icon: <File size={15} /> },
+};
+
+const CATEGORY_OPTIONS = Object.keys(CATEGORIES);
+
+export default function RecordDetailClient({
+  chart,
+  initialDocuments,
+}: {
+  chart: Chart;
+  initialDocuments: Doc[];
+}) {
+  const [docs, setDocs] = useState<Doc[]>(initialDocuments);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [type, setType] = useState("EXAM_RESULT");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+
+  function resetForm() {
+    setType("EXAM_RESULT"); setTitle(""); setContent(""); setFile(null); setError(null);
+  }
+
+  async function handleCreate() {
+    if (!title.trim()) {
+      setError("Title is required.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+
+    try {
+      let fileKey = "";
+
+      // 1) Upload the file first (if any)
+      if (file) {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("folder", `records/${chart.id}`);
+        const up = await fetch("/api/uploads", { method: "POST", body: fd });
+        const upData = await up.json();
+        if (!up.ok) {
+          setError(upData.error || "File upload failed.");
+          setSaving(false);
+          return;
+        }
+        fileKey = upData.key;
+      }
+
+      // 2) Create the clinical record
+      const res = await fetch("/api/professional/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientRecordId: chart.id,
+          type,
+          title,
+          content,
+          fileKey,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(typeof data.error === "string" ? data.error : "Could not create record.");
+        setSaving(false);
+        return;
+      }
+
+      setDocs((prev) => [
+        {
+          id: data.id,
+          type: data.type,
+          title: data.title,
+          content: data.content,
+          hasFile: data.hasFile,
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+      resetForm();
+      setShowForm(false);
+    } catch {
+      setError("Network error. Try again.");
+    }
+    setSaving(false);
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <Link
+        href="/professional/patients"
+        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
+      >
+        <ArrowLeft size={16} /> Back to patients
+      </Link>
+
+      {/* Chart header */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-600 text-lg shrink-0">
+            {chart.firstName[0]}{chart.lastName[0]}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-slate-900">
+              {chart.firstName} {chart.lastName}
+            </h1>
+            <div className="mt-1 space-y-0.5 text-sm text-slate-500">
+              {chart.email && <p>{chart.email}</p>}
+              {chart.phone && <p>{chart.phone}</p>}
+            </div>
+            <p className="text-xs mt-2">
+              {chart.hasAccount ? (
+                <span className="text-emerald-600 inline-flex items-center gap-1">
+                  <CheckCircle2 size={12} /> Has Doctor8 account
+                </span>
+              ) : (
+                <span className="text-amber-600 inline-flex items-center gap-1">
+                  <AlertCircle size={12} /> No account yet
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+        {chart.notes && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Notes</p>
+            <p className="text-sm text-slate-600 whitespace-pre-wrap">{chart.notes}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Records section */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-slate-900">Clinical records</h2>
+        <button
+          onClick={() => { setShowForm(true); resetForm(); }}
+          className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+        >
+          <Plus size={18} /> Add record
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        {docs.length === 0 ? (
+          <div className="text-center py-14">
+            <FileText className="mx-auto text-slate-300 mb-3" size={36} />
+            <p className="text-slate-400 text-sm">No records yet</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {docs.map((d) => {
+              const cat = CATEGORIES[d.type] || CATEGORIES.OTHER;
+              return (
+                <div key={d.id} className="px-5 py-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      {cat.icon} {cat.label}
+                    </span>
+                    {d.hasFile && (
+                      <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                        <Paperclip size={12} /> attachment
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-semibold text-slate-800 text-sm">{d.title}</p>
+                  {d.content && (
+                    <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{d.content}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Add record modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
+              <h2 className="font-bold text-slate-800">New clinical record</h2>
+              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                >
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <option key={c} value={c}>{CATEGORIES[c].label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Title *</label>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Blood test results"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Description</label>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Attachment <span className="text-slate-400">(PDF, image or video — max 50MB)</span>
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 file:text-sm file:font-medium hover:file:bg-emerald-100"
+                />
+                {file && (
+                  <p className="text-xs text-slate-500 mt-1">{file.name} ({(file.size/1024/1024).toFixed(1)} MB)</p>
+                )}
+              </div>
+
+              {error && (
+                <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{error}</p>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={saving}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save record"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
