@@ -1,17 +1,22 @@
 // src/app/api/payments/create-intent/route.ts
-// Creates a Stripe PaymentIntent for a consultation booking
-// Payment must succeed before appointment is confirmed (pre-paid model)
-
+// Creates a Stripe PaymentIntent for a consultation booking.
+// Payment must succeed before appointment is confirmed (pre-paid model).
+//
+// Club Doctor rules (as of this version):
+//  - Consultations are ALWAYS charged in USD, regardless of user region.
+//  - Active Club members get a 20% discount on the consultation price.
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { stripe, getCurrency, getOrCreateStripeCustomer } from "@/lib/stripe";
+import { stripe, getOrCreateStripeCustomer } from "@/lib/stripe";
+import { hasActiveClub, applyClubDiscount } from "@/lib/subscription";
 import { z } from "zod";
 
 const schema = z.object({
   professionalId: z.string(),
   scheduledAt: z.string().datetime(),
   type: z.enum(["TELECONSULT", "IN_PERSON"]),
+  // Kept for compatibility, but consultations only use "card" for now.
   paymentMethod: z.enum(["card", "pix", "paypal"]).default("card"),
 });
 
@@ -23,7 +28,7 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { professionalId, scheduledAt, type, paymentMethod } = parsed.data;
+  const { professionalId, scheduledAt, type } = parsed.data;
 
   // Get professional pricing
   const professional = await db.professionalProfile.findUnique({
@@ -37,16 +42,21 @@ export async function POST(req: NextRequest) {
     where: { userId: session.user.id },
     select: { firstName: true, lastName: true },
   });
-
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: { email: true, region: true },
   });
-
   if (!patient || !user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const currency = getCurrency(user.region);
-  const amount = professional.consultPrice; // already in cents
+  // Consultations are always charged in USD now.
+  const currency = "usd";
+
+  // Apply Club Doctor discount if the patient has an active subscription.
+  const isMember = await hasActiveClub(session.user.id);
+  const { finalAmount, discountApplied, originalAmount } = applyClubDiscount(
+    professional.consultPrice, // already in cents
+    isMember
+  );
 
   // Stripe customer
   const customerId = await getOrCreateStripeCustomer(
@@ -55,25 +65,12 @@ export async function POST(req: NextRequest) {
     `${patient.firstName} ${patient.lastName}`
   );
 
-  // Payment method types per region and user choice
-  const paymentMethodTypes: string[] = [];
-
-  if (paymentMethod === "card") {
-    paymentMethodTypes.push("card");
-  } else if (paymentMethod === "pix" && currency === "brl") {
-    paymentMethodTypes.push("pix");
-  } else if (paymentMethod === "paypal") {
-    paymentMethodTypes.push("paypal");
-  } else {
-    paymentMethodTypes.push("card"); // fallback
-  }
-
-  // Create PaymentIntent
+  // Create PaymentIntent (card only)
   const intent = await stripe.paymentIntents.create({
-    amount,
+    amount: finalAmount,
     currency,
     customer: customerId,
-    payment_method_types: paymentMethodTypes,
+    payment_method_types: ["card"],
     metadata: {
       userId: session.user.id,
       professionalId,
@@ -81,20 +78,18 @@ export async function POST(req: NextRequest) {
       type,
       patientName: `${patient.firstName} ${patient.lastName}`,
       doctorName: `${professional.firstName} ${professional.lastName}`,
+      clubDiscount: discountApplied ? "true" : "false",
+      originalAmount: String(originalAmount),
     },
     description: `Doctor8 — Consultation with Dr. ${professional.lastName} · ${new Date(scheduledAt).toLocaleDateString()}`,
-    // PIX expiry — 30 minutes
-    ...(paymentMethod === "pix" ? {
-      payment_method_options: {
-        pix: { expires_after_seconds: 1800 },
-      },
-    } : {}),
   });
 
   return NextResponse.json({
     clientSecret: intent.client_secret,
     intentId: intent.id,
-    amount,
+    amount: finalAmount,
+    originalAmount,
+    discountApplied,
     currency,
     professional: {
       name: `${professional.firstName} ${professional.lastName}`,
