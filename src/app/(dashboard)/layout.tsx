@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import NotificationBell from "@/components/NotificationBell";
 import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
@@ -170,10 +171,7 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
-            <button className="relative text-slate-400 hover:text-slate-600 transition p-2 rounded-xl hover:bg-slate-100">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full" />
-            </button>
+            <NotificationBell />
             <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-sm font-bold">
               {userName.charAt(0).toUpperCase()}
             </div>

@@ -1,11 +1,13 @@
 // src/app/api/messages/route.ts
-// Real-time-like messaging between patient and professional
-// Uses polling (client fetches every 5 seconds) — simple and reliable
+// Real-time-like messaging between patient and professional.
+// Uses polling (client fetches every 5 seconds) — simple and reliable.
+// On send, also creates a bell notification for the receiver.
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
+import { createNotification } from "@/lib/notifications";
 import { z } from "zod";
 
 const sendSchema = z.object({
@@ -13,7 +15,16 @@ const sendSchema = z.object({
   content: z.string().min(1).max(2000),
 });
 
-// GET — fetch conversation with a specific user
+// Helper: display name of a user from either profile.
+function displayName(u: any): string {
+  if (!u) return "Someone";
+  if (u.role === "PATIENT") {
+    return `${u.patientProfile?.firstName ?? ""} ${u.patientProfile?.lastName ?? ""}`.trim() || "Patient";
+  }
+  return `Dr. ${u.professionalProfile?.firstName ?? ""} ${u.professionalProfile?.lastName ?? ""}`.trim() || "Professional";
+}
+
+// GET — fetch conversation with a specific user, or list all conversations
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,14 +46,11 @@ export async function GET(req: NextRequest) {
       include: { sender: { select: { id: true, role: true, patientProfile: { select: { firstName: true, lastName: true, avatarUrl: true } }, professionalProfile: { select: { firstName: true, lastName: true, avatarUrl: true } } } } },
     });
 
-    // Build unique conversations
     const convMap = new Map<string, { userId: string; name: string; lastMessage: string; lastAt: Date; unread: number }>();
 
     for (const m of sent) {
       const other = m.receiver;
-      const name = other.role === "PATIENT"
-        ? `${other.patientProfile?.firstName} ${other.patientProfile?.lastName}`
-        : `Dr. ${other.professionalProfile?.firstName} ${other.professionalProfile?.lastName}`;
+      const name = displayName(other);
       if (!convMap.has(other.id) || convMap.get(other.id)!.lastAt < m.createdAt) {
         convMap.set(other.id, { userId: other.id, name, lastMessage: decrypt(m.content).substring(0, 60), lastAt: m.createdAt, unread: 0 });
       }
@@ -50,9 +58,7 @@ export async function GET(req: NextRequest) {
 
     for (const m of received) {
       const other = m.sender;
-      const name = other.role === "PATIENT"
-        ? `${other.patientProfile?.firstName} ${other.patientProfile?.lastName}`
-        : `Dr. ${other.professionalProfile?.firstName} ${other.professionalProfile?.lastName}`;
+      const name = displayName(other);
       const existing = convMap.get(other.id);
       const unread = !m.readAt ? 1 : 0;
       if (!existing || existing.lastAt < m.createdAt) {
@@ -65,7 +71,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ conversations: Array.from(convMap.values()).sort((a, b) => b.lastAt.getTime() - a.lastAt.getTime()) });
   }
 
-  // Fetch messages in a conversation
   const messages = await db.message.findMany({
     where: {
       OR: [
@@ -79,7 +84,6 @@ export async function GET(req: NextRequest) {
     take: 100,
   });
 
-  // Mark received messages as read
   await db.message.updateMany({
     where: { senderId: withUserId, receiverId: session.user.id, readAt: null },
     data: { readAt: new Date() },
@@ -105,11 +109,9 @@ export async function POST(req: NextRequest) {
 
   const { receiverId, content } = parsed.data;
 
-  // Verify receiver exists
   const receiver = await db.user.findUnique({ where: { id: receiverId } });
   if (!receiver) return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
 
-  // Encrypt message content — may contain PHI
   const message = await db.message.create({
     data: {
       senderId: session.user.id,
@@ -118,9 +120,26 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Create a bell notification for the receiver.
+  const sender = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      role: true,
+      patientProfile: { select: { firstName: true, lastName: true } },
+      professionalProfile: { select: { firstName: true, lastName: true } },
+    },
+  });
+  await createNotification({
+    userId: receiverId,
+    title: "New message",
+    body: `${displayName(sender)} sent you a message.`,
+    type: "message",
+    data: { fromUserId: session.user.id },
+  });
+
   return NextResponse.json({
     ...message,
-    content, // return plain text to sender
+    content,
     isMine: true,
   }, { status: 201 });
 }
