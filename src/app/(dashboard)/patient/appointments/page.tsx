@@ -269,14 +269,14 @@ export default function AppointmentsPage() {
           </p>
           <div className="space-y-2">
             {appointments.slice(0, 2).map((apt: any) => (
-              <div key={apt.id} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 shadow-sm">
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">
+              <div key={apt.id} className="flex items-center justify-between gap-3 bg-white rounded-xl px-4 py-3 shadow-sm">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 truncate">
                     Dr. {apt.professional?.firstName} {apt.professional?.lastName}
                   </p>
                   <p className="text-xs text-slate-500">{apt.professional?.specialty}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className="text-xs font-semibold text-emerald-700">
                     {new Date(apt.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </p>
@@ -284,6 +284,14 @@ export default function AppointmentsPage() {
                     {new Date(apt.scheduledAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
+                {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
+                  <a
+                    href={`/video/${apt.id}`}
+                    className="shrink-0 flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-3 py-2 rounded-lg transition"
+                  >
+                    <Video size={13} /> Join
+                  </a>
+                )}
               </div>
             ))}
           </div>
