@@ -119,7 +119,7 @@ export default async function PatientDashboard() {
               icon={<Calendar size={28} className="text-slate-300" />}
               message="No upcoming appointments"
               action="Book a consultation"
-              href="/patient/appointments/new"
+              href="/patient/appointments"
             />
           ) : (
             <div className="space-y-3">

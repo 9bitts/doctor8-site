@@ -42,7 +42,6 @@ export default async function ProfessionalAppointments() {
         <h1 className="text-2xl font-bold text-slate-900">Appointments</h1>
         <p className="text-slate-500 mt-1">All your consultations</p>
       </div>
-
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {appointments.length === 0 ? (
           <div className="text-center py-16">
@@ -79,9 +78,9 @@ export default async function ProfessionalAppointments() {
                 <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg ${statusColors[apt.status] || "bg-slate-100 text-slate-600"}`}>
                   {apt.status}
                 </span>
-                {apt.meetingUrl && apt.status === "CONFIRMED" && (
+                {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
                   <a
-                    href={apt.meetingUrl}
+                    href={`/video/${apt.id}`}
                     className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-emerald-400 transition"
                   >
                     <Video size={12} /> Join
