@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { decrypt } from "@/lib/encryption";
 import SharedWithMeClient from "./SharedWithMeClient";
 
+export const dynamic = "force-dynamic";
+
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
   try { return decrypt(v); } catch { return v; }
