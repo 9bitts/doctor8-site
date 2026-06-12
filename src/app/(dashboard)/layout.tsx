@@ -12,7 +12,7 @@ import NotificationBell from "@/components/NotificationBell";
 import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
-  Stethoscope, ClipboardList, Users, UserCog, Inbox
+  Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers,
 } from "lucide-react";
 
 interface NavItem {
@@ -37,6 +37,7 @@ const PROFESSIONAL_NAV: NavItem[] = [
   { href: "/professional/settings", label: "My Profile", icon: <UserCog size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/patients", label: "Patients", icon: <Users size={18} />, roles: ["PROFESSIONAL"] },
 { href: "/professional/shared", label: "Shared with me", icon: <Inbox size={18} />, roles: ["PROFESSIONAL"] },
+{ href: "/professional/categories", label: "Categories", icon: <Layers size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/appointments", label: "Appointments", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/prescriptions", label: "Prescriptions", icon: <Stethoscope size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/messages", label: "Messages", icon: <MessageSquare size={18} />, roles: ["PROFESSIONAL"] },
