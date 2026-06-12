@@ -270,6 +270,7 @@ model ProfessionalProfile {
   availabilitySlots   AvailabilitySlot[]
   virtualCard         VirtualCard?
   patientRecords      PatientRecord[]
+  sharedDocuments  SharedRecord[]  @relation("DocsSharedWithProfessional")
 
   @@index([userId])
   @@index([specialty])
@@ -413,6 +414,11 @@ model SharedRecord {
   sharedWithEmail  String?   // external share
   sharedWithUserId String?   // internal share
 
+  // Direction of the share (Phase 4D)
+  sharedByUserId            String?              // NEW — who shared it (patient, when patient->doctor)
+  sharedWithProfessionalId  String?              // NEW — recipient professional (patient->doctor)
+  sharedWithProfessional    ProfessionalProfile? @relation("DocsSharedWithProfessional", fields: [sharedWithProfessionalId], references: [id]) // NEW
+
   accessToken      String    @unique @default(cuid()) // for link sharing
   expiresAt        DateTime? // null = never expires
   viewedAt         DateTime?
@@ -421,6 +427,7 @@ model SharedRecord {
 
   @@index([patientId])
   @@index([accessToken])
+  @@index([sharedWithProfessionalId])
 }
 
 model Prescription {
