@@ -1,7 +1,7 @@
 // src/app/api/professional/records/route.ts
 // Patient charts (PatientRecord) created by a professional.
 // GET  — list this professional's patient charts
-// POST — create a new patient chart
+// POST — create a new patient chart (optionally attaching a shared document)
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -15,10 +15,16 @@ const createSchema = z.object({
   phone: z.string().max(40).optional().or(z.literal("")),
   dateOfBirth: z.string().optional().or(z.literal("")),
   notes: z.string().max(5000).optional().or(z.literal("")),
+  // Phase 4D-2: if present, attach this (shared) document to the new chart.
+  attachDocumentId: z.string().optional().or(z.literal("")),
 });
 
 async function getProfessional(userId: string) {
   return db.professionalProfile.findUnique({ where: { userId } });
+}
+
+function safeDecrypt(v: string): string {
+  try { return decrypt(v); } catch { return v; }
 }
 
 export async function GET() {
@@ -35,7 +41,6 @@ export async function GET() {
     orderBy: { updatedAt: "desc" },
   });
 
-  // Decrypt PHI for display
   const decoded = records.map((r) => ({
     id: r.id,
     firstName: safeDecrypt(r.firstName),
@@ -87,20 +92,44 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Phase 4D-2: attach a shared document to this new chart (letter A).
+  // We make a COPY into the chart so the doctor keeps it even if the patient
+  // later un-shares. We only copy a document that was actually shared with
+  // this professional.
+  let attachedDocumentId: string | null = null;
+  if (d.attachDocumentId) {
+    const share = await db.sharedRecord.findFirst({
+      where: { documentId: d.attachDocumentId, sharedWithProfessionalId: professional.id },
+      select: { id: true },
+    });
+    if (share) {
+      const original = await db.medicalDocument.findUnique({
+        where: { id: d.attachDocumentId },
+        select: { type: true, categoryId: true, title: true, content: true, fileUrl: true },
+      });
+      if (original) {
+        const copy = await db.medicalDocument.create({
+          data: {
+            patientRecordId: record.id,
+            professionalId: professional.id,
+            type: original.type,
+            categoryId: original.categoryId,
+            title: original.title,     // already encrypted in DB
+            content: original.content, // already encrypted (or null)
+            fileUrl: original.fileUrl, // already encrypted S3 key (or null)
+          },
+        });
+        attachedDocumentId = copy.id;
+      }
+    }
+  }
+
   return NextResponse.json({
     id: record.id,
     firstName: d.firstName,
     lastName: d.lastName,
     email: record.email,
     hasAccount: !!linkedUserId,
+    attachedDocumentId,
   }, { status: 201 });
-}
-
-// decrypt that won't crash if a value somehow isn't encrypted
-function safeDecrypt(v: string): string {
-  try {
-    return decrypt(v);
-  } catch {
-    return v;
-  }
 }

@@ -1,5 +1,6 @@
 // src/app/api/professional/shared/route.ts
-// GET (no params) — list documents patients shared with this professional.
+// GET (no params) — list documents patients shared with this professional,
+//                   including whether that patient already has a chart.
 // GET (?documentId=...) — return a signed URL to download that shared file.
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -27,9 +28,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const documentId = searchParams.get("documentId");
 
-  // --- Single document: return a signed URL for download ---
+  // --- Single document: signed URL for download ---
   if (documentId) {
-    // Verify this document was shared with THIS professional.
     const share = await db.sharedRecord.findFirst({
       where: { documentId, sharedWithProfessionalId: professional.id },
       select: { id: true },
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ url });
   }
 
-  // --- List: all documents shared with this professional by patients ---
+  // --- List of documents shared with this professional ---
   const shares = await db.sharedRecord.findMany({
     where: { sharedWithProfessionalId: professional.id },
     orderBy: { createdAt: "desc" },
@@ -55,26 +55,57 @@ export async function GET(req: NextRequest) {
       document: {
         include: { category: { select: { name: true, groupName: true } } },
       },
-      patient: { select: { id: true, firstName: true, lastName: true, userId: true } },
+      patient: { select: { id: true, firstName: true, lastName: true, email: true, userId: true } },
     },
   });
 
+  // For each sharing patient, does this professional already have a chart?
+  // We match by linkedUserId (chart linked to that account) OR by email.
+  const patientUserIds = Array.from(new Set(shares.map((s) => s.patient.userId)));
+  const charts = await db.patientRecord.findMany({
+    where: { professionalId: professional.id },
+    select: { id: true, linkedUserId: true, email: true },
+  });
+
+  function findChart(patientUserId: string, patientEmail: string | null | undefined): string | null {
+    const byUser = charts.find((c) => c.linkedUserId === patientUserId);
+    if (byUser) return byUser.id;
+    if (patientEmail) {
+      const byEmail = charts.find((c) => (c.email || "").toLowerCase() === patientEmail.toLowerCase());
+      if (byEmail) return byEmail.id;
+    }
+    return null;
+  }
+
+  // Patient account emails (PatientProfile has no email; it's on the User).
+  const users = await db.user.findMany({
+    where: { id: { in: patientUserIds } },
+    select: { id: true, email: true },
+  });
+  const emailByUser = new Map<string, string | null>(users.map((u) => [u.id, u.email]));
+
   const items = shares
     .filter((s) => s.document)
-    .map((s) => ({
-      shareId: s.id,
-      documentId: s.document!.id,
-      title: safeDecrypt(s.document!.title),
-      content: s.document!.content ? safeDecrypt(s.document!.content) : null,
-      categoryName: s.document!.category?.name ?? null,
-      categoryGroup: s.document!.category?.groupName ?? null,
-      type: s.document!.type as string,
-      hasFile: !!s.document!.fileUrl,
-      patientName: `${safeDecrypt(s.patient.firstName)} ${safeDecrypt(s.patient.lastName)}`.trim(),
-      patientUserId: s.patient.userId,
-      patientProfileId: s.patient.id,
-      sharedAt: s.createdAt.toISOString(),
-    }));
+    .map((s) => {
+      const pEmail = emailByUser.get(s.patient.userId) ?? null;
+      const existingChartId = findChart(s.patient.userId, pEmail);
+      return {
+        shareId: s.id,
+        documentId: s.document!.id,
+        title: safeDecrypt(s.document!.title),
+        content: s.document!.content ? safeDecrypt(s.document!.content) : null,
+        categoryName: s.document!.category?.name ?? null,
+        categoryGroup: s.document!.category?.groupName ?? null,
+        type: s.document!.type as string,
+        hasFile: !!s.document!.fileUrl,
+        patientName: `${safeDecrypt(s.patient.firstName)} ${safeDecrypt(s.patient.lastName)}`.trim(),
+        patientFirstName: safeDecrypt(s.patient.firstName),
+        patientLastName: safeDecrypt(s.patient.lastName),
+        patientEmail: pEmail,
+        existingChartId,
+        sharedAt: s.createdAt.toISOString(),
+      };
+    });
 
   return NextResponse.json({ items });
 }

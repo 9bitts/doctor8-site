@@ -36,20 +36,52 @@ export default async function ProfessionalSharedPage() {
     },
   });
 
+  // Charts of this professional, to know if each patient already has one.
+  const charts = await db.patientRecord.findMany({
+    where: { professionalId: professional.id },
+    select: { id: true, linkedUserId: true, email: true },
+  });
+
+  const patientUserIds = Array.from(new Set(shares.map((s) => s.patient.userId)));
+  const users = await db.user.findMany({
+    where: { id: { in: patientUserIds } },
+    select: { id: true, email: true },
+  });
+  const emailByUser = new Map<string, string | null>(users.map((u) => [u.id, u.email]));
+
+  function findChart(patientUserId: string, patientEmail: string | null | undefined): string | null {
+    const byUser = charts.find((c) => c.linkedUserId === patientUserId);
+    if (byUser) return byUser.id;
+    if (patientEmail) {
+      const byEmail = charts.find((c) => (c.email || "").toLowerCase() === patientEmail.toLowerCase());
+      if (byEmail) return byEmail.id;
+    }
+    return null;
+  }
+
   const items = shares
     .filter((s) => s.document)
-    .map((s) => ({
-      shareId: s.id,
-      documentId: s.document!.id,
-      title: safeDecrypt(s.document!.title),
-      content: s.document!.content ? safeDecrypt(s.document!.content) : null,
-      categoryName: s.document!.category?.name ?? null,
-      categoryGroup: s.document!.category?.groupName ?? null,
-      type: s.document!.type as string,
-      hasFile: !!s.document!.fileUrl,
-      patientName: `${safeDecrypt(s.patient.firstName)} ${safeDecrypt(s.patient.lastName)}`.trim(),
-      sharedAt: s.createdAt.toISOString(),
-    }));
+    .map((s) => {
+      const pEmail = emailByUser.get(s.patient.userId) ?? null;
+      const firstName = safeDecrypt(s.patient.firstName);
+      const lastName = safeDecrypt(s.patient.lastName);
+      return {
+        shareId: s.id,
+        documentId: s.document!.id,
+        title: safeDecrypt(s.document!.title),
+        content: s.document!.content ? safeDecrypt(s.document!.content) : null,
+        categoryName: s.document!.category?.name ?? null,
+        categoryGroup: s.document!.category?.groupName ?? null,
+        type: s.document!.type as string,
+        hasFile: !!s.document!.fileUrl,
+        patientName: `${firstName} ${lastName}`.trim(),
+        patientFirstName: firstName,
+        patientLastName: lastName,
+        patientEmail: pEmail,
+        existingChartId: findChart(s.patient.userId, pEmail),
+        sharedAt: s.createdAt.toISOString(),
+      };
+    });
 
   return <SharedWithMeClient initialItems={items} />;
 }

@@ -1,15 +1,19 @@
 "use client";
 
 // src/app/(dashboard)/patient/documents/DocumentsClient.tsx
-// Patient documents: list (own + shared, grouped by category group) + add own
-// document + download via signed URL + share own documents WITH A DOCTOR (4D).
+// Patient documents: list (own + shared) + add own document + download +
+// share own documents WITH A DOCTOR + UN-SHARE (4D-2).
 
 import { useState, useEffect } from "react";
 import {
   FileText, Plus, X, Download, Loader2, UserCheck, Tag, Share2, CheckCircle2,
-  Stethoscope, AlertCircle,
+  Stethoscope, AlertCircle, XCircle,
 } from "lucide-react";
 
+interface SharedDoctor {
+  professionalId: string;
+  name: string;
+}
 interface Item {
   id: string;
   type: string;
@@ -19,26 +23,17 @@ interface Item {
   content: string | null;
   hasFile: boolean;
   createdAt: string;
-  sharedBy: string | null;        // doctor name when a doctor shared it with me
+  sharedBy: string | null;                 // doctor name when a doctor shared it with me
+  sharedWithDoctors: SharedDoctor[];       // doctors I shared this doc with
 }
 
 interface CategoryItem {
-  id: string;
-  name: string;
-  groupName: string;
-  icon: string | null;
-  legacyType: string | null;
+  id: string; name: string; groupName: string; icon: string | null; legacyType: string | null;
 }
-interface CategoryGroup {
-  group: string;
-  items: CategoryItem[];
-}
+interface CategoryGroup { group: string; items: CategoryItem[]; }
 
 interface Doctor {
-  professionalId: string;
-  userId: string;
-  name: string;
-  specialty: string;
+  professionalId: string; userId: string; name: string; specialty: string;
 }
 
 const LEGACY_LABELS: Record<string, string> = {
@@ -58,20 +53,16 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   const [error, setError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  // Dynamic categories
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  // Eligible doctors (loaded lazily when needed)
   const [doctors, setDoctors] = useState<Doctor[] | null>(null);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
 
-  // Share modal state
-  const [shareDocId, setShareDocId] = useState<string | null>(null); // which doc we're sharing
-  const [shareResult, setShareResult] = useState<Record<string, string>>({}); // docId -> "shared" | "error:msg"
-  const [sharingTo, setSharingTo] = useState<string | null>(null); // professionalId being submitted
+  const [shareDocId, setShareDocId] = useState<string | null>(null);
+  const [sharingTo, setSharingTo] = useState<string | null>(null);
+  const [unsharingKey, setUnsharingKey] = useState<string | null>(null);
 
-  // Form fields
   const [categoryId, setCategoryId] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -88,9 +79,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         setGroups(gs);
         const first = gs[0]?.items[0];
         if (first) setCategoryId(first.id);
-      } catch {
-        /* leave empty */
-      }
+      } catch { /* leave empty */ }
       if (active) setCategoriesLoading(false);
     })();
     return () => { active = false; };
@@ -158,13 +147,13 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
           hasFile: data.hasFile,
           createdAt: new Date().toISOString(),
           sharedBy: null,
+          sharedWithDoctors: [],
         },
         ...prev,
       ]);
       resetForm();
       setShowForm(false);
       setSaving(false);
-      // Right after saving, offer to share with a doctor.
       await ensureDoctorsLoaded();
       setShareDocId(newId);
     } catch {
@@ -178,7 +167,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     setShareDocId(docId);
   }
 
-  async function handleShareWithDoctor(docId: string, professionalId: string) {
+  async function handleShareWithDoctor(docId: string, professionalId: string, doctorName: string) {
     setSharingTo(professionalId);
     try {
       const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor`, {
@@ -188,15 +177,33 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       });
       const data = await res.json();
       if (res.ok && data.shared) {
-        setShareResult((s) => ({ ...s, [docId]: "shared" }));
+        setItems((prev) => prev.map((it) => {
+          if (it.id !== docId) return it;
+          const exists = it.sharedWithDoctors.some((dd) => dd.professionalId === professionalId);
+          return exists ? it : { ...it, sharedWithDoctors: [...it.sharedWithDoctors, { professionalId, name: doctorName }] };
+        }));
         setShareDocId(null);
-      } else {
-        setShareResult((s) => ({ ...s, [docId]: "error:" + (data.error || "Failed") }));
       }
-    } catch {
-      setShareResult((s) => ({ ...s, [docId]: "error:Network error" }));
-    }
+    } catch { /* ignore */ }
     setSharingTo(null);
+  }
+
+  async function handleUnshare(docId: string, professionalId: string) {
+    const key = docId + ":" + professionalId;
+    setUnsharingKey(key);
+    try {
+      const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor?professionalId=${professionalId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setItems((prev) => prev.map((it) =>
+          it.id === docId
+            ? { ...it, sharedWithDoctors: it.sharedWithDoctors.filter((dd) => dd.professionalId !== professionalId) }
+            : it
+        ));
+      }
+    } catch { /* ignore */ }
+    setUnsharingKey(null);
   }
 
   async function handleDownload(id: string) {
@@ -207,13 +214,10 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       if (res.ok && data.url) {
         window.open(data.url, "_blank", "noopener,noreferrer");
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
     setDownloadingId(null);
   }
 
-  // Group items by their category group (fallback: legacy type label as its own group)
   function groupKeyOf(it: Item): string {
     return it.categoryGroup || LEGACY_LABELS[it.type] || "Other";
   }
@@ -260,8 +264,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
                 {groupedByGroup[grp].map((it) => {
                   const itemLabel = it.categoryName || LEGACY_LABELS[it.type] || "Other";
-                  const isOwn = !it.sharedBy; // own docs can be shared with a doctor
-                  const result = shareResult[it.id] || "";
+                  const isOwn = !it.sharedBy;
                   return (
                     <div key={it.id} className="px-5 py-4 hover:bg-slate-50 transition">
                       <div className="flex items-center gap-4">
@@ -293,28 +296,34 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                         )}
                       </div>
 
-                      {/* Share-with-doctor row (only for own documents) */}
+                      {/* Share / Unshare row (only for own documents) */}
                       {isOwn && (
-                        <div className="mt-2">
-                          {result === "shared" ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg">
-                              <CheckCircle2 size={14} /> Shared with your doctor
-                            </span>
-                          ) : result.startsWith("error:") ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-rose-600">{result.slice(6)}</span>
-                              <button onClick={() => openShare(it.id)} className="text-xs font-medium text-slate-600 underline">
-                                Try again
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => openShare(it.id)}
-                              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
-                            >
-                              <Share2 size={14} /> Share with doctor
-                            </button>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {it.sharedWithDoctors.length > 0 && (
+                            it.sharedWithDoctors.map((dd) => {
+                              const key = it.id + ":" + dd.professionalId;
+                              return (
+                                <span key={dd.professionalId} className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg">
+                                  <CheckCircle2 size={14} /> Shared with {dd.name}
+                                  <button
+                                    onClick={() => handleUnshare(it.id, dd.professionalId)}
+                                    disabled={unsharingKey === key}
+                                    className="ml-1 text-rose-500 hover:text-rose-700 disabled:opacity-50"
+                                    aria-label="Unshare"
+                                    title="Unshare"
+                                  >
+                                    {unsharingKey === key ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />}
+                                  </button>
+                                </span>
+                              );
+                            })
                           )}
+                          <button
+                            onClick={() => openShare(it.id)}
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
+                          >
+                            <Share2 size={14} /> Share with doctor
+                          </button>
                         </div>
                       )}
                     </div>
@@ -448,23 +457,31 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {doctors.map((d) => (
-                    <button
-                      key={d.professionalId}
-                      onClick={() => handleShareWithDoctor(shareDocId, d.professionalId)}
-                      disabled={sharingTo !== null}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition text-left disabled:opacity-50"
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                        <Stethoscope size={16} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-800 text-sm">{d.name}</p>
-                        <p className="text-xs text-slate-500">{d.specialty}</p>
-                      </div>
-                      {sharingTo === d.professionalId && <Loader2 size={16} className="animate-spin text-emerald-500" />}
-                    </button>
-                  ))}
+                  {doctors.map((d) => {
+                    const current = items.find((it) => it.id === shareDocId);
+                    const alreadyShared = current?.sharedWithDoctors.some((dd) => dd.professionalId === d.professionalId);
+                    return (
+                      <button
+                        key={d.professionalId}
+                        onClick={() => !alreadyShared && handleShareWithDoctor(shareDocId, d.professionalId, d.name)}
+                        disabled={sharingTo !== null || alreadyShared}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition text-left disabled:opacity-60"
+                      >
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                          <Stethoscope size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-800 text-sm">{d.name}</p>
+                          <p className="text-xs text-slate-500">{d.specialty}</p>
+                        </div>
+                        {alreadyShared ? (
+                          <span className="text-xs text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 size={14} /> Shared</span>
+                        ) : sharingTo === d.professionalId ? (
+                          <Loader2 size={16} className="animate-spin text-emerald-500" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
