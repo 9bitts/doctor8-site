@@ -28,7 +28,10 @@ export default async function PatientChartDetail({
   const record = await db.patientRecord.findUnique({
     where: { id: params.id },
     include: {
-      medicalDocuments: { orderBy: { createdAt: "desc" } },
+      medicalDocuments: {
+        orderBy: { createdAt: "desc" },
+        include: { category: { select: { name: true, groupName: true } } },
+      },
     },
   });
 
@@ -47,6 +50,8 @@ export default async function PatientChartDetail({
   const documents = record.medicalDocuments.map((d) => ({
     id: d.id,
     type: d.type as string,
+    categoryName: d.category?.name ?? null,
+    categoryGroup: d.category?.groupName ?? null,
     title: safeDecrypt(d.title),
     content: d.content ? safeDecrypt(d.content) : null,
     hasFile: !!d.fileUrl,

@@ -2,13 +2,13 @@
 
 // src/app/(dashboard)/professional/patients/[id]/RecordDetailClient.tsx
 // Chart detail + add clinical record (title + text + optional file upload to S3).
+// Phase 4B: the category selector is now dynamic (grouped categories from the DB).
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
-  FlaskConical, ClipboardList, FileCheck, Send, StickyNote, File,
-  Share2, Mail, Loader2,
+  Share2, Mail, Loader2, Tag,
 } from "lucide-react";
 
 interface Chart {
@@ -23,23 +23,36 @@ interface Chart {
 interface Doc {
   id: string;
   type: string;
+  categoryName: string | null;
+  categoryGroup: string | null;
   title: string;
   content: string | null;
   hasFile: boolean;
   createdAt: string;
 }
 
-// Category labels + icons (PRESCRIPTION is handled separately, not here)
-const CATEGORIES: Record<string, { label: string; icon: React.ReactNode }> = {
-  EXAM_REQUEST: { label: "Exam request", icon: <ClipboardList size={15} /> },
-  EXAM_RESULT: { label: "Exam result", icon: <FlaskConical size={15} /> },
-  CERTIFICATE: { label: "Certificate", icon: <FileCheck size={15} /> },
-  REFERRAL: { label: "Referral", icon: <Send size={15} /> },
-  CLINICAL_NOTE: { label: "Clinical note", icon: <StickyNote size={15} /> },
-  OTHER: { label: "Other", icon: <File size={15} /> },
-};
+interface CategoryItem {
+  id: string;
+  name: string;
+  groupName: string;
+  icon: string | null;
+  legacyType: string | null;
+}
+interface CategoryGroup {
+  group: string;
+  items: CategoryItem[];
+}
 
-const CATEGORY_OPTIONS = Object.keys(CATEGORIES);
+// Fallback labels for legacy `type` (records created before dynamic categories).
+const LEGACY_LABELS: Record<string, string> = {
+  PRESCRIPTION: "Prescription",
+  EXAM_REQUEST: "Exam request",
+  EXAM_RESULT: "Exam result",
+  CERTIFICATE: "Certificate",
+  REFERRAL: "Referral",
+  CLINICAL_NOTE: "Clinical note",
+  OTHER: "Other",
+};
 
 export default function RecordDetailClient({
   chart,
@@ -53,9 +66,45 @@ export default function RecordDetailClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Dynamic categories
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
   // Share state, keyed by document id
   const [shareStatus, setShareStatus] = useState<Record<string, string>>({});
   const [sharingId, setSharingId] = useState<string | null>(null);
+
+  // Form fields
+  const [categoryId, setCategoryId] = useState("");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/categories");
+        const data = await res.json();
+        if (!active) return;
+        const gs: CategoryGroup[] = data.groups || [];
+        setGroups(gs);
+        // Default to the first category of the first group
+        const first = gs[0]?.items[0];
+        if (first) setCategoryId(first.id);
+      } catch {
+        // leave empty; form will show a message
+      }
+      if (active) setCategoriesLoading(false);
+    })();
+    return () => { active = false; };
+  }, []);
+
+  function resetForm() {
+    const first = groups[0]?.items[0];
+    setCategoryId(first ? first.id : "");
+    setTitle(""); setContent(""); setFile(null); setError(null);
+  }
 
   async function handleShare(docId: string) {
     setSharingId(docId);
@@ -92,18 +141,13 @@ export default function RecordDetailClient({
     setSharingId(null);
   }
 
-  const [type, setType] = useState("EXAM_RESULT");
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-
-  function resetForm() {
-    setType("EXAM_RESULT"); setTitle(""); setContent(""); setFile(null); setError(null);
-  }
-
   async function handleCreate() {
     if (!title.trim()) {
       setError("Title is required.");
+      return;
+    }
+    if (!categoryId) {
+      setError("Please choose a category.");
       return;
     }
     setSaving(true);
@@ -133,7 +177,7 @@ export default function RecordDetailClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patientRecordId: chart.id,
-          type,
+          categoryId,
           title,
           content,
           fileKey,
@@ -150,6 +194,8 @@ export default function RecordDetailClient({
         {
           id: data.id,
           type: data.type,
+          categoryName: data.categoryName ?? null,
+          categoryGroup: null,
           title: data.title,
           content: data.content,
           hasFile: data.hasFile,
@@ -213,7 +259,7 @@ export default function RecordDetailClient({
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-slate-900">Clinical records</h2>
         <button
-          onClick={() => { setShowForm(true); resetForm(); }}
+          onClick={() => { resetForm(); setShowForm(true); }}
           className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
         >
           <Plus size={18} /> Add record
@@ -229,15 +275,18 @@ export default function RecordDetailClient({
         ) : (
           <div className="divide-y divide-slate-100">
             {docs.map((d) => {
-              const cat = CATEGORIES[d.type] || CATEGORIES.OTHER;
+              const label = d.categoryName || LEGACY_LABELS[d.type] || "Other";
               const status = shareStatus[d.id] || "";
               const isSharing = sharingId === d.id;
               return (
                 <div key={d.id} className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                      {cat.icon} {cat.label}
+                      <Tag size={12} /> {label}
                     </span>
+                    {d.categoryGroup && (
+                      <span className="text-xs text-slate-400">{d.categoryGroup}</span>
+                    )}
                     {d.hasFile && (
                       <span className="inline-flex items-center gap-1 text-xs text-slate-400">
                         <Paperclip size={12} /> attachment
@@ -318,15 +367,27 @@ export default function RecordDetailClient({
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
-                >
-                  {CATEGORY_OPTIONS.map((c) => (
-                    <option key={c} value={c}>{CATEGORIES[c].label}</option>
-                  ))}
-                </select>
+                {categoriesLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
+                    <Loader2 size={14} className="animate-spin" /> Loading categories...
+                  </div>
+                ) : groups.length === 0 ? (
+                  <p className="text-sm text-amber-600">No categories available.</p>
+                ) : (
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  >
+                    {groups.map((g) => (
+                      <optgroup key={g.group} label={g.group}>
+                        {g.items.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Title *</label>
@@ -374,7 +435,7 @@ export default function RecordDetailClient({
                 </button>
                 <button
                   onClick={handleCreate}
-                  disabled={saving}
+                  disabled={saving || categoriesLoading}
                   className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Save record"}
