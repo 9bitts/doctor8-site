@@ -1,14 +1,14 @@
 "use client";
 
 // src/app/(dashboard)/professional/shared/SharedWithMeClient.tsx
-// List of documents patients shared with this professional + download +
-// "Create chart" (attach the document) or "Open chart" if it already exists.
+// Documents patients shared with this professional + download +
+// Create chart / Open chart / Add to chart (existing) / Added.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  FileText, Download, Loader2, Tag, User, FolderPlus, FolderOpen, CheckCircle2,
+  FileText, Download, Loader2, Tag, User, FolderPlus, FolderOpen, FilePlus2, CheckCircle2,
 } from "lucide-react";
 
 interface Item {
@@ -25,6 +25,7 @@ interface Item {
   patientLastName: string;
   patientEmail: string | null;
   existingChartId: string | null;
+  alreadyAttached?: boolean;
   sharedAt: string;
 }
 
@@ -42,7 +43,20 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
   const router = useRouter();
   const [items, setItems] = useState<Item[]>(initialItems);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [creatingId, setCreatingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  // Re-sync from the API on mount, so we get alreadyAttached / existingChartId fresh.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/professional/shared");
+        const data = await res.json();
+        if (active && Array.isArray(data.items)) setItems(data.items);
+      } catch { /* keep initial */ }
+    })();
+    return () => { active = false; };
+  }, []);
 
   async function handleDownload(documentId: string) {
     setDownloadingId(documentId);
@@ -52,14 +66,12 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
       if (res.ok && data.url) {
         window.open(data.url, "_blank", "noopener,noreferrer");
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
     setDownloadingId(null);
   }
 
   async function handleCreateChart(it: Item) {
-    setCreatingId(it.shareId);
+    setBusyId(it.shareId);
     try {
       const res = await fetch("/api/professional/records", {
         method: "POST",
@@ -73,23 +85,29 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
       });
       const data = await res.json();
       if (res.ok && data.id) {
-        // Mark this item (and any from the same patient) as having a chart now.
-        setItems((prev) =>
-          prev.map((p) =>
-            p.patientEmail === it.patientEmail && it.patientEmail
-              ? { ...p, existingChartId: data.id }
-              : p.shareId === it.shareId
-              ? { ...p, existingChartId: data.id }
-              : p
-          )
-        );
-        // Go straight to the new chart.
         router.push(`/professional/patients/${data.id}`);
       }
-    } catch {
-      /* ignore */
-    }
-    setCreatingId(null);
+    } catch { /* ignore */ }
+    setBusyId(null);
+  }
+
+  async function handleAddToChart(it: Item) {
+    if (!it.existingChartId) return;
+    setBusyId(it.shareId);
+    try {
+      const res = await fetch(`/api/professional/shared/${it.documentId}/attach`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chartId: it.existingChartId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.attached) {
+        setItems((prev) => prev.map((p) =>
+          p.shareId === it.shareId ? { ...p, alreadyAttached: true } : p
+        ));
+      }
+    } catch { /* ignore */ }
+    setBusyId(null);
   }
 
   return (
@@ -111,7 +129,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
           {items.map((it) => {
             const label = it.categoryName || LEGACY_LABELS[it.type] || "Other";
-            const isCreating = creatingId === it.shareId;
+            const isBusy = busyId === it.shareId;
             return (
               <div key={it.shareId} className="px-5 py-4 hover:bg-slate-50 transition">
                 <div className="flex items-center gap-4">
@@ -141,22 +159,38 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                   )}
                 </div>
 
-                {/* Chart row */}
-                <div className="mt-3">
+                {/* Chart actions */}
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
                   {it.existingChartId ? (
-                    <Link
-                      href={`/professional/patients/${it.existingChartId}`}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
-                    >
-                      <FolderOpen size={14} /> Open chart
-                    </Link>
+                    <>
+                      <Link
+                        href={`/professional/patients/${it.existingChartId}`}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
+                      >
+                        <FolderOpen size={14} /> Open chart
+                      </Link>
+                      {it.alreadyAttached ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
+                          <CheckCircle2 size={14} /> Added to chart
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleAddToChart(it)}
+                          disabled={isBusy}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                        >
+                          {isBusy ? <Loader2 size={14} className="animate-spin" /> : <FilePlus2 size={14} />}
+                          Add to chart
+                        </button>
+                      )}
+                    </>
                   ) : (
                     <button
                       onClick={() => handleCreateChart(it)}
-                      disabled={isCreating}
+                      disabled={isBusy}
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                     >
-                      {isCreating ? <Loader2 size={14} className="animate-spin" /> : <FolderPlus size={14} />}
+                      {isBusy ? <Loader2 size={14} className="animate-spin" /> : <FolderPlus size={14} />}
                       Create first chart for this patient
                     </button>
                   )}

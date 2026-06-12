@@ -1,6 +1,7 @@
 // src/app/api/professional/shared/route.ts
 // GET (no params) — list documents patients shared with this professional,
-//                   including whether that patient already has a chart.
+//                   incl. whether the patient already has a chart and whether
+//                   the document was already attached to that chart.
 // GET (?documentId=...) — return a signed URL to download that shared file.
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -59,13 +60,17 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  // For each sharing patient, does this professional already have a chart?
-  // We match by linkedUserId (chart linked to that account) OR by email.
-  const patientUserIds = Array.from(new Set(shares.map((s) => s.patient.userId)));
   const charts = await db.patientRecord.findMany({
     where: { professionalId: professional.id },
     select: { id: true, linkedUserId: true, email: true },
   });
+
+  const patientUserIds = Array.from(new Set(shares.map((s) => s.patient.userId)));
+  const users = await db.user.findMany({
+    where: { id: { in: patientUserIds } },
+    select: { id: true, email: true },
+  });
+  const emailByUser = new Map<string, string | null>(users.map((u) => [u.id, u.email]));
 
   function findChart(patientUserId: string, patientEmail: string | null | undefined): string | null {
     const byUser = charts.find((c) => c.linkedUserId === patientUserId);
@@ -77,18 +82,23 @@ export async function GET(req: NextRequest) {
     return null;
   }
 
-  // Patient account emails (PatientProfile has no email; it's on the User).
-  const users = await db.user.findMany({
-    where: { id: { in: patientUserIds } },
-    select: { id: true, email: true },
+  // Which shared documents were already attached to a chart of this professional?
+  const sharedDocIds = shares.map((s) => s.documentId);
+  const attachedCopies = await db.medicalDocument.findMany({
+    where: {
+      professionalId: professional.id,
+      sourceDocumentId: { in: sharedDocIds },
+    },
+    select: { sourceDocumentId: true },
   });
-  const emailByUser = new Map<string, string | null>(users.map((u) => [u.id, u.email]));
+  const attachedSet = new Set(attachedCopies.map((a) => a.sourceDocumentId));
 
   const items = shares
     .filter((s) => s.document)
     .map((s) => {
       const pEmail = emailByUser.get(s.patient.userId) ?? null;
-      const existingChartId = findChart(s.patient.userId, pEmail);
+      const firstName = safeDecrypt(s.patient.firstName);
+      const lastName = safeDecrypt(s.patient.lastName);
       return {
         shareId: s.id,
         documentId: s.document!.id,
@@ -98,11 +108,12 @@ export async function GET(req: NextRequest) {
         categoryGroup: s.document!.category?.groupName ?? null,
         type: s.document!.type as string,
         hasFile: !!s.document!.fileUrl,
-        patientName: `${safeDecrypt(s.patient.firstName)} ${safeDecrypt(s.patient.lastName)}`.trim(),
-        patientFirstName: safeDecrypt(s.patient.firstName),
-        patientLastName: safeDecrypt(s.patient.lastName),
+        patientName: `${firstName} ${lastName}`.trim(),
+        patientFirstName: firstName,
+        patientLastName: lastName,
         patientEmail: pEmail,
-        existingChartId,
+        existingChartId: findChart(s.patient.userId, pEmail),
+        alreadyAttached: attachedSet.has(s.document!.id),
         sharedAt: s.createdAt.toISOString(),
       };
     });

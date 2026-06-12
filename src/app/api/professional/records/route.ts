@@ -92,10 +92,9 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Phase 4D-2: attach a shared document to this new chart (letter A).
-  // We make a COPY into the chart so the doctor keeps it even if the patient
-  // later un-shares. We only copy a document that was actually shared with
-  // this professional.
+  // Phase 4D-2 / 3D-2: attach a shared document to this new chart (letter A).
+  // We make a COPY into the chart (so the doctor keeps it even if un-shared),
+  // recording sourceDocumentId for de-duplication later.
   let attachedDocumentId: string | null = null;
   if (d.attachDocumentId) {
     const share = await db.sharedRecord.findFirst({
@@ -114,9 +113,10 @@ export async function POST(req: NextRequest) {
             professionalId: professional.id,
             type: original.type,
             categoryId: original.categoryId,
-            title: original.title,     // already encrypted in DB
-            content: original.content, // already encrypted (or null)
-            fileUrl: original.fileUrl, // already encrypted S3 key (or null)
+            title: original.title,
+            content: original.content,
+            fileUrl: original.fileUrl,
+            sourceDocumentId: d.attachDocumentId,
           },
         });
         attachedDocumentId = copy.id;

@@ -389,6 +389,10 @@ model MedicalDocument {
   content          String?      @db.Text  // @encrypted — PHI
   fileUrl          String?      // S3 URL — @encrypted
 
+  // When this record is a COPY of a document shared by a patient (4D/3D-2),
+  // this points to the original shared document (to prevent duplicates).
+  sourceDocumentId String?
+
   // Sharing
   sharedRecords    SharedRecord[]
 
