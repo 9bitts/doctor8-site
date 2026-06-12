@@ -29,6 +29,7 @@ export default async function PatientDocuments() {
     where: { patientId: patient.id, professionalId: null },
     orderBy: { createdAt: "desc" },
     take: 200,
+    include: { category: { select: { name: true, groupName: true } } },
   });
 
   // 2) Records shared with this patient by a doctor
@@ -38,6 +39,7 @@ export default async function PatientDocuments() {
       document: {
         include: {
           professional: { select: { firstName: true, lastName: true, specialty: true } },
+          category: { select: { name: true, groupName: true } },
         },
       },
     },
@@ -50,6 +52,8 @@ export default async function PatientDocuments() {
   const ownItems = ownDocs.map((d) => ({
     id: d.id,
     type: d.type as string,
+    categoryName: d.category?.name ?? null,
+    categoryGroup: d.category?.groupName ?? null,
     title: safeDecrypt(d.title),
     content: d.content ? safeDecrypt(d.content) : null,
     hasFile: !!d.fileUrl,
@@ -62,6 +66,8 @@ export default async function PatientDocuments() {
     .map((s) => ({
       id: s.document!.id,
       type: s.document!.type as string,
+      categoryName: s.document!.category?.name ?? null,
+      categoryGroup: s.document!.category?.groupName ?? null,
       title: safeDecrypt(s.document!.title),
       content: s.document!.content ? safeDecrypt(s.document!.content) : null,
       hasFile: !!s.document!.fileUrl,

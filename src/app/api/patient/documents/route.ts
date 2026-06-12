@@ -1,7 +1,10 @@
 // src/app/api/patient/documents/route.ts
 // POST — patient uploads their OWN document (title + category + optional file key)
-// GET  — returns a signed URL to view a file the patient is allowed to see (?key=...)
+// GET  — returns a signed URL to view a file the patient is allowed to see (?documentId=...)
 //        (the patient may only view files from their own docs or records shared with them)
+//
+// Phase 4B: POST now accepts categoryId (dynamic categories). We store categoryId
+// AND derive the legacy `type` enum from the category's legacyType (Option 1: coexist).
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -10,6 +13,7 @@ import { getSignedReadUrl } from "@/lib/s3";
 import { z } from "zod";
 
 const DOC_TYPES = [
+  "PRESCRIPTION",
   "EXAM_REQUEST",
   "EXAM_RESULT",
   "CERTIFICATE",
@@ -18,8 +22,11 @@ const DOC_TYPES = [
   "OTHER",
 ] as const;
 
+type DocType = (typeof DOC_TYPES)[number];
+
 const createSchema = z.object({
-  type: z.enum(DOC_TYPES),
+  categoryId: z.string().optional(),
+  type: z.enum(DOC_TYPES).optional(),
   title: z.string().min(1).max(200),
   content: z.string().max(20000).optional().or(z.literal("")),
   fileKey: z.string().optional().or(z.literal("")),
@@ -28,6 +35,11 @@ const createSchema = z.object({
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
   try { return decrypt(v); } catch { return v; }
+}
+
+function normalizeType(v: string | null | undefined): DocType {
+  if (v && (DOC_TYPES as readonly string[]).includes(v)) return v as DocType;
+  return "OTHER";
 }
 
 export async function POST(req: NextRequest) {
@@ -46,11 +58,30 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
 
+  // Resolve the category (if provided) and derive the legacy enum type.
+  let categoryId: string | null = null;
+  let categoryName: string | null = null;
+  let derivedType: DocType = normalizeType(d.type);
+
+  if (d.categoryId) {
+    const category = await db.category.findUnique({
+      where: { id: d.categoryId },
+      select: { id: true, name: true, legacyType: true, active: true },
+    });
+    if (!category || !category.active) {
+      return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+    }
+    categoryId = category.id;
+    categoryName = category.name;
+    derivedType = normalizeType(category.legacyType);
+  }
+
   // Patient's own document: patientId = me, professionalId = null (so no "shared" tag)
   const doc = await db.medicalDocument.create({
     data: {
       patientId: patient.id,
-      type: d.type,
+      categoryId,
+      type: derivedType,
       title: encrypt(d.title),
       content: d.content ? encrypt(d.content) : null,
       fileUrl: d.fileKey ? encrypt(d.fileKey) : null,
@@ -60,6 +91,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     id: doc.id,
     type: doc.type,
+    categoryId,
+    categoryName,
     title: d.title,
     content: d.content || null,
     hasFile: !!d.fileKey,

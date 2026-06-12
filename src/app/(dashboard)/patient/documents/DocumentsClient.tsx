@@ -1,17 +1,21 @@
 "use client";
 
 // src/app/(dashboard)/patient/documents/DocumentsClient.tsx
-// Patient documents: list (own + shared, grouped by category) + add own document + download via signed URL.
+// Patient documents: list (own + shared, grouped by category group) + add own
+// document + download via signed URL.
+// Phase 4B: category selector is now dynamic (grouped categories from the DB),
+// and the list groups by the dynamic category group when available.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  FileText, Plus, X, Download, Paperclip, Loader2,
-  FlaskConical, ClipboardList, FileCheck, Send, StickyNote, File, UserCheck,
+  FileText, Plus, X, Download, Loader2, UserCheck, Tag,
 } from "lucide-react";
 
 interface Item {
   id: string;
   type: string;
+  categoryName: string | null;
+  categoryGroup: string | null;
   title: string;
   content: string | null;
   hasFile: boolean;
@@ -19,15 +23,28 @@ interface Item {
   sharedBy: string | null;
 }
 
-const CATEGORIES: Record<string, { label: string; icon: React.ReactNode }> = {
-  EXAM_REQUEST: { label: "Exam request", icon: <ClipboardList size={16} className="text-blue-500" /> },
-  EXAM_RESULT: { label: "Exam result", icon: <FlaskConical size={16} className="text-violet-500" /> },
-  CERTIFICATE: { label: "Certificate", icon: <FileCheck size={16} className="text-amber-500" /> },
-  REFERRAL: { label: "Referral", icon: <Send size={16} className="text-rose-500" /> },
-  CLINICAL_NOTE: { label: "Clinical note", icon: <StickyNote size={16} className="text-slate-500" /> },
-  OTHER: { label: "Other", icon: <File size={16} className="text-slate-500" /> },
+interface CategoryItem {
+  id: string;
+  name: string;
+  groupName: string;
+  icon: string | null;
+  legacyType: string | null;
+}
+interface CategoryGroup {
+  group: string;
+  items: CategoryItem[];
+}
+
+// Fallback labels for legacy `type` (records with no dynamic category yet).
+const LEGACY_LABELS: Record<string, string> = {
+  PRESCRIPTION: "Prescription",
+  EXAM_REQUEST: "Exam request",
+  EXAM_RESULT: "Exam result",
+  CERTIFICATE: "Certificate",
+  REFERRAL: "Referral",
+  CLINICAL_NOTE: "Clinical note",
+  OTHER: "Other",
 };
-const CATEGORY_ORDER = ["EXAM_RESULT", "EXAM_REQUEST", "CERTIFICATE", "REFERRAL", "CLINICAL_NOTE", "OTHER"];
 
 export default function DocumentsClient({ initialItems }: { initialItems: Item[] }) {
   const [items, setItems] = useState<Item[]>(initialItems);
@@ -36,17 +53,44 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   const [error, setError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const [type, setType] = useState("EXAM_RESULT");
+  // Dynamic categories
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // Form fields
+  const [categoryId, setCategoryId] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/categories");
+        const data = await res.json();
+        if (!active) return;
+        const gs: CategoryGroup[] = data.groups || [];
+        setGroups(gs);
+        const first = gs[0]?.items[0];
+        if (first) setCategoryId(first.id);
+      } catch {
+        /* leave empty */
+      }
+      if (active) setCategoriesLoading(false);
+    })();
+    return () => { active = false; };
+  }, []);
+
   function resetForm() {
-    setType("EXAM_RESULT"); setTitle(""); setContent(""); setFile(null); setError(null);
+    const first = groups[0]?.items[0];
+    setCategoryId(first ? first.id : "");
+    setTitle(""); setContent(""); setFile(null); setError(null);
   }
 
   async function handleCreate() {
     if (!title.trim()) { setError("Title is required."); return; }
+    if (!categoryId) { setError("Please choose a category."); return; }
     setSaving(true);
     setError(null);
     try {
@@ -63,7 +107,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       const res = await fetch("/api/patient/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, title, content, fileKey }),
+        body: JSON.stringify({ categoryId, title, content, fileKey }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -72,7 +116,17 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         return;
       }
       setItems((prev) => [
-        { id: data.id, type: data.type, title: data.title, content: data.content, hasFile: data.hasFile, createdAt: new Date().toISOString(), sharedBy: null },
+        {
+          id: data.id,
+          type: data.type,
+          categoryName: data.categoryName ?? null,
+          categoryGroup: null,
+          title: data.title,
+          content: data.content,
+          hasFile: data.hasFile,
+          createdAt: new Date().toISOString(),
+          sharedBy: null,
+        },
         ...prev,
       ]);
       resetForm();
@@ -97,10 +151,16 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     setDownloadingId(null);
   }
 
-  // Group items by category
-  const grouped: Record<string, Item[]> = {};
+  // Group items by their category group (fallback: legacy type label as its own group)
+  function groupKeyOf(it: Item): string {
+    return it.categoryGroup || LEGACY_LABELS[it.type] || "Other";
+  }
+  const groupedByGroup: Record<string, Item[]> = {};
+  const groupOrder: string[] = [];
   for (const it of items) {
-    (grouped[it.type] ||= []).push(it);
+    const k = groupKeyOf(it);
+    if (!groupedByGroup[k]) { groupedByGroup[k] = []; groupOrder.push(k); }
+    groupedByGroup[k].push(it);
   }
 
   return (
@@ -111,7 +171,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
           <p className="text-slate-500 mt-1">Your exams, results and records shared by your doctors</p>
         </div>
         <button
-          onClick={() => { setShowForm(true); resetForm(); }}
+          onClick={() => { resetForm(); setShowForm(true); }}
           className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
         >
           <Plus size={18} /> Add document
@@ -128,20 +188,23 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         </div>
       ) : (
         <div className="space-y-6">
-          {CATEGORY_ORDER.filter((c) => grouped[c]?.length).map((cat) => {
-            const cfg = CATEGORIES[cat] || CATEGORIES.OTHER;
-            return (
-              <div key={cat}>
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  {cfg.icon}
-                  <h2 className="text-sm font-bold text-slate-700">{cfg.label}</h2>
-                  <span className="text-xs text-slate-400">({grouped[cat].length})</span>
-                </div>
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
-                  {grouped[cat].map((it) => (
+          {groupOrder.map((grp) => (
+            <div key={grp}>
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <Tag size={16} className="text-emerald-500" />
+                <h2 className="text-sm font-bold text-slate-700">{grp}</h2>
+                <span className="text-xs text-slate-400">({groupedByGroup[grp].length})</span>
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
+                {groupedByGroup[grp].map((it) => {
+                  const itemLabel = it.categoryName || LEGACY_LABELS[it.type] || "Other";
+                  return (
                     <div key={it.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                            {itemLabel}
+                          </span>
                           <p className="font-semibold text-slate-800 text-sm">{it.title}</p>
                           {it.sharedBy && (
                             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
@@ -164,11 +227,11 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                         </button>
                       )}
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 
@@ -185,15 +248,27 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
-                >
-                  {CATEGORY_ORDER.map((c) => (
-                    <option key={c} value={c}>{CATEGORIES[c].label}</option>
-                  ))}
-                </select>
+                {categoriesLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
+                    <Loader2 size={14} className="animate-spin" /> Loading categories...
+                  </div>
+                ) : groups.length === 0 ? (
+                  <p className="text-sm text-amber-600">No categories available.</p>
+                ) : (
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  >
+                    {groups.map((g) => (
+                      <optgroup key={g.group} label={g.group}>
+                        {g.items.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Title *</label>
@@ -241,7 +316,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                 </button>
                 <button
                   onClick={handleCreate}
-                  disabled={saving}
+                  disabled={saving || categoriesLoading}
                   className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Save document"}
