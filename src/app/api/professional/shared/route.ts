@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       document: {
         include: { category: { select: { name: true, groupName: true } } },
       },
-      patient: { select: { id: true, firstName: true, lastName: true, email: true, userId: true } },
+      patient: { select: { id: true, firstName: true, lastName: true, userId: true } },
     },
   });
 
