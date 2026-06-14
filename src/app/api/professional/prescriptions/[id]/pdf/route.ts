@@ -1,11 +1,115 @@
 // src/app/api/professional/prescriptions/[id]/pdf/route.ts
-// Generates a professional digital prescription PDF
+// Generates a professional digital prescription PDF.
+// ETAPA 2.5 fixes:
+//  - Patient name now resolves from the chart (patientRecord) when there's no account.
+//  - All labels + the medication frequency are translated to the language of the
+//    person downloading the PDF (read from User.language).
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { audit } from "@/lib/audit";
+
+type Lang = "en" | "pt" | "es";
+
+function normLang(v: string | null | undefined): Lang {
+  if (v === "pt" || v === "es") return v;
+  return "en";
+}
+
+function safeDecrypt(v: string): string {
+  try { return decrypt(v); } catch { return v; }
+}
+
+// PDF label dictionary (kept local to this file — the PDF is server-rendered HTML)
+const L: Record<Lang, Record<string, string>> = {
+  en: {
+    tagline: "Secure Digital Health Platform · HIPAA & GDPR Compliant",
+    date: "Date",
+    patientName: "Patient Name",
+    prescriptionDate: "Prescription Date",
+    validUntil: "Valid Until",
+    noExpiry: "No expiry",
+    dosage: "Dosage",
+    frequency: "Frequency",
+    duration: "Duration",
+    instructions: "Instructions",
+    generalInstructions: "General Instructions",
+    digitalId: "Digital Prescription ID",
+    digitalSignature: "Digital Signature",
+    confidential: "CONFIDENTIAL — This prescription is protected health information under HIPAA.",
+  },
+  pt: {
+    tagline: "Plataforma Digital de Saúde Segura · Conforme HIPAA e LGPD",
+    date: "Data",
+    patientName: "Nome do paciente",
+    prescriptionDate: "Data da prescrição",
+    validUntil: "Válida até",
+    noExpiry: "Sem validade",
+    dosage: "Dosagem",
+    frequency: "Frequência",
+    duration: "Duração",
+    instructions: "Instruções",
+    generalInstructions: "Instruções gerais",
+    digitalId: "ID da prescrição digital",
+    digitalSignature: "Assinatura digital",
+    confidential: "CONFIDENCIAL — Esta prescrição é informação de saúde protegida.",
+  },
+  es: {
+    tagline: "Plataforma Digital de Salud Segura · Conforme HIPAA y GDPR",
+    date: "Fecha",
+    patientName: "Nombre del paciente",
+    prescriptionDate: "Fecha de la receta",
+    validUntil: "Válida hasta",
+    noExpiry: "Sin caducidad",
+    dosage: "Dosis",
+    frequency: "Frecuencia",
+    duration: "Duración",
+    instructions: "Instrucciones",
+    generalInstructions: "Instrucciones generales",
+    digitalId: "ID de la receta digital",
+    digitalSignature: "Firma digital",
+    confidential: "CONFIDENCIAL — Esta receta es información de salud protegida.",
+  },
+};
+
+// Map the stored English frequency values to translated text
+const FREQ: Record<Lang, Record<string, string>> = {
+  en: {
+    "Once daily": "Once daily",
+    "Twice daily": "Twice daily",
+    "Three times daily": "Three times daily",
+    "Every 8 hours": "Every 8 hours",
+    "Every 12 hours": "Every 12 hours",
+    "As needed": "As needed",
+    "Weekly": "Weekly",
+  },
+  pt: {
+    "Once daily": "Uma vez ao dia",
+    "Twice daily": "Duas vezes ao dia",
+    "Three times daily": "Três vezes ao dia",
+    "Every 8 hours": "A cada 8 horas",
+    "Every 12 hours": "A cada 12 horas",
+    "As needed": "Quando necessário",
+    "Weekly": "Semanalmente",
+  },
+  es: {
+    "Once daily": "Una vez al día",
+    "Twice daily": "Dos veces al día",
+    "Three times daily": "Tres veces al día",
+    "Every 8 hours": "Cada 8 horas",
+    "Every 12 hours": "Cada 12 horas",
+    "As needed": "Cuando sea necesario",
+    "Weekly": "Semanalmente",
+  },
+};
+
+function translateFreq(value: string, lang: Lang): string {
+  return FREQ[lang][value] || value; // fall back to raw value if not a known option
+}
+
+const LOCALE: Record<Lang, string> = { en: "en-US", pt: "pt-BR", es: "es-ES" };
 
 export async function GET(
   req: NextRequest,
@@ -23,6 +127,9 @@ export async function GET(
           patient: {
             select: { firstName: true, lastName: true, dateOfBirth: true },
           },
+          patientRecord: {
+            select: { firstName: true, lastName: true },
+          },
         },
       },
     },
@@ -30,7 +137,7 @@ export async function GET(
 
   if (!prescription) return new NextResponse("Not found", { status: 404 });
 
-  // Access control: only the prescribing professional or the patient
+  // Access control: only the prescribing professional or the patient (by account)
   const isProfessional = prescription.professional.userId === session.user.id;
   const isPatient = prescription.document?.patientId &&
     (await db.patientProfile.findFirst({
@@ -43,33 +150,46 @@ export async function GET(
 
   await audit.viewRecord(session.user.id, "Prescription", prescription.id);
 
-  const patientFirstName = prescription.document?.patient
-    ? decrypt(prescription.document.patient.firstName)
-    : "—";
-  const patientLastName = prescription.document?.patient
-    ? decrypt(prescription.document.patient.lastName)
-    : "—";
+  // Language = the language of whoever is downloading
+  const viewer = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { language: true },
+  });
+  const lang = normLang(viewer?.language);
+  const tr = L[lang];
+  const locale = LOCALE[lang];
+
+  // Resolve patient name: prefer the chart (works without account), fall back to account.
+  let patientFirstName = "—";
+  let patientLastName = "";
+  if (prescription.document?.patientRecord) {
+    patientFirstName = safeDecrypt(prescription.document.patientRecord.firstName);
+    patientLastName = safeDecrypt(prescription.document.patientRecord.lastName);
+  } else if (prescription.document?.patient) {
+    patientFirstName = safeDecrypt(prescription.document.patient.firstName);
+    patientLastName = safeDecrypt(prescription.document.patient.lastName);
+  }
 
   const meds = prescription.medications as {
     name: string; dosage: string; frequency: string; duration?: string; instructions?: string;
   }[];
 
   const instructions = prescription.instructions
-    ? decrypt(prescription.instructions)
+    ? safeDecrypt(prescription.instructions)
     : "";
 
-  const today = new Date().toLocaleDateString("en-US", {
+  const today = new Date().toLocaleDateString(locale, {
     year: "numeric", month: "long", day: "numeric",
   });
 
   const validUntil = prescription.validUntil
-    ? new Date(prescription.validUntil).toLocaleDateString("en-US", {
+    ? new Date(prescription.validUntil).toLocaleDateString(locale, {
         year: "numeric", month: "long", day: "numeric",
       })
-    : "No expiry";
+    : tr.noExpiry;
 
   const html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
 <meta charset="UTF-8">
 <title>Prescription — Dr. ${prescription.professional.lastName}</title>
@@ -110,14 +230,14 @@ export async function GET(
 <div class="header">
   <div class="logo-area">
     <h1>Doctor<span>8</span></h1>
-    <p>Secure Digital Health Platform · HIPAA & GDPR Compliant</p>
+    <p>${tr.tagline}</p>
   </div>
   <div class="doc-info">
     <div class="doc-name">Dr. ${prescription.professional.firstName} ${prescription.professional.lastName}</div>
     <div class="license">${prescription.professional.specialty}</div>
     <div class="license">${prescription.professional.licenseNumber}</div>
     ${prescription.professional.clinicCity ? `<div class="license">${prescription.professional.clinicCity}${prescription.professional.clinicState ? `, ${prescription.professional.clinicState}` : ""}</div>` : ""}
-    <div class="license" style="margin-top:8px;">Date: ${today}</div>
+    <div class="license" style="margin-top:8px;">${tr.date}: ${today}</div>
   </div>
 </div>
 
@@ -125,15 +245,15 @@ export async function GET(
 
 <div class="patient-box">
   <div class="patient-field">
-    <label>Patient Name</label>
+    <label>${tr.patientName}</label>
     <value>${patientFirstName} ${patientLastName}</value>
   </div>
   <div class="patient-field">
-    <label>Prescription Date</label>
+    <label>${tr.prescriptionDate}</label>
     <value>${today}</value>
   </div>
   <div class="patient-field">
-    <label>Valid Until</label>
+    <label>${tr.validUntil}</label>
     <value>${validUntil}</value>
   </div>
 </div>
@@ -144,26 +264,26 @@ ${meds.map((med, i) => `
   <div class="med-item">
     <div class="med-name">${i + 1}. ${med.name}</div>
     <div class="med-detail">
-      <span>Dosage:</span> ${med.dosage}<br>
-      <span>Frequency:</span> ${med.frequency}<br>
-      ${med.duration ? `<span>Duration:</span> ${med.duration}<br>` : ""}
-      ${med.instructions ? `<span>Instructions:</span> ${med.instructions}` : ""}
+      <span>${tr.dosage}:</span> ${med.dosage}<br>
+      <span>${tr.frequency}:</span> ${translateFreq(med.frequency, lang)}<br>
+      ${med.duration ? `<span>${tr.duration}:</span> ${med.duration}<br>` : ""}
+      ${med.instructions ? `<span>${tr.instructions}:</span> ${med.instructions}` : ""}
     </div>
   </div>
 `).join("")}
 
 ${instructions ? `
   <div class="instructions-box">
-    <label>General Instructions</label>
+    <label>${tr.generalInstructions}</label>
     <p>${instructions}</p>
   </div>
 ` : ""}
 
 <div class="footer">
   <div class="validity">
-    <strong>Digital Prescription ID</strong>
+    <strong>${tr.digitalId}</strong>
     ${prescription.id.toUpperCase().slice(0, 12)}
-    <div style="margin-top:8px;"><strong>Digital Signature</strong>${prescription.digitalSignature?.slice(0, 16)}...</div>
+    <div style="margin-top:8px;"><strong>${tr.digitalSignature}</strong>${prescription.digitalSignature?.slice(0, 16)}...</div>
   </div>
   <div class="signature-area">
     <div style="height:48px;"></div>
@@ -175,7 +295,7 @@ ${instructions ? `
 </div>
 
 <div class="confidential">
-  CONFIDENTIAL — This prescription is protected health information under HIPAA.<br>
+  ${tr.confidential}<br>
   Prescription ID: ${prescription.id} · Doctor8 Platform · doctor8.app
 </div>
 
