@@ -2,13 +2,16 @@
 
 // src/app/(auth)/register/page.tsx
 // Step 1: choose role (Patient / Professional)
-// Step 2: registration form for that role — Google OAuth + email/password
-// The chosen role is stored in a cookie so Google sign-up creates the correct account type.
+// Step 2: registration form. i18n: standalone language selector (outside the
+// dashboard I18nProvider). Language is read from localStorage (same key the
+// dashboard uses) or detected from the browser, and persisted so the dashboard
+// opens in the same language after login.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2,
   User, Stethoscope, ArrowLeft,
@@ -17,15 +20,34 @@ import {
 type Role = "PATIENT" | "PROFESSIONAL";
 type Region = "US" | "EU" | "BR";
 
-const PASSWORD_RULES = [
-  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
-  { label: "One uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
-  { label: "One number", test: (p: string) => /[0-9]/.test(p) },
-  { label: "One special character", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
-];
+// Same localStorage key used by the dashboard I18nProvider, so the choice carries over.
+const LANG_KEY = "doctor8.lang";
+
+function detectInitialLang(): Lang {
+  if (typeof window === "undefined") return "en";
+  try {
+    const saved = window.localStorage.getItem(LANG_KEY);
+    if (saved) return normalizeLang(saved);
+  } catch { /* ignore */ }
+  // Detect from browser
+  const nav = (navigator.language || "en").toLowerCase();
+  if (nav.startsWith("pt")) return "pt";
+  if (nav.startsWith("es")) return "es";
+  return "en";
+}
 
 export default function RegisterPage() {
   const router = useRouter();
+
+  // Standalone language state (this screen is outside the dashboard provider)
+  const [lang, setLang] = useState<Lang>("en");
+  useEffect(() => { setLang(detectInitialLang()); }, []);
+  const t = (key: string) => translate(lang, key);
+
+  function changeLang(l: Lang) {
+    setLang(l);
+    try { window.localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
+  }
 
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<Role>("PATIENT");
@@ -46,6 +68,13 @@ export default function RegisterPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
 
+  const PASSWORD_RULES = [
+    { key: "reg.rule8", test: (p: string) => p.length >= 8 },
+    { key: "reg.ruleUpper", test: (p: string) => /[A-Z]/.test(p) },
+    { key: "reg.ruleNumber", test: (p: string) => /[0-9]/.test(p) },
+    { key: "reg.ruleSpecial", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+  ];
+
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
 
@@ -63,7 +92,6 @@ export default function RegisterPage() {
   }
 
   async function handleGoogleSignUp() {
-    // Store chosen role so the server creates the right account type after Google redirect
     document.cookie = `signup_role=${role}; path=/; max-age=600; SameSite=Lax`;
     setGoogleLoading(true);
     await signIn("google", { callbackUrl: "/callback" });
@@ -87,6 +115,7 @@ export default function RegisterPage() {
           region,
           firstName,
           lastName,
+          language: lang,
           acceptedTerms,
           acceptedPrivacy,
           acceptedHipaa: region === "US" ? acceptedHipaa : undefined,
@@ -97,13 +126,13 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrors(data.error || { general: ["Registration failed"] });
+        setErrors(data.error || { general: [t("reg.regFailed")] });
         return;
       }
 
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch {
-      setErrors({ general: ["Something went wrong. Please try again."] });
+      setErrors({ general: [t("reg.genericError")] });
     } finally {
       setLoading(false);
     }
@@ -115,21 +144,40 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
 
+        {/* Language selector (top right) */}
+        <div className="flex justify-end mb-4">
+          <div className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => changeLang(l.code)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 ${
+                  lang === l.code ? "bg-emerald-500 text-white" : "text-slate-300 hover:text-white hover:bg-white/10"
+                }`}
+                aria-label={l.label}
+              >
+                <span>{l.flag}</span>
+                <span className="uppercase">{l.code}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black text-white tracking-tight">
             Doctor<span className="text-emerald-400">8</span>
           </h1>
           <p className="text-slate-400 mt-2 text-sm">
-            {step === 1 ? "Create your account" : isProfessional ? "Healthcare professional sign up" : "Patient sign up"}
+            {step === 1 ? t("reg.tagline.create") : isProfessional ? t("reg.tagline.pro") : t("reg.tagline.patient")}
           </p>
         </div>
 
-        {/* ───────── STEP 1: ROLE CHOICE ───────── */}
+        {/* STEP 1: ROLE CHOICE */}
         {step === 1 && (
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
             <p className="text-center text-slate-300 text-sm mb-6">
-              How would you like to use Doctor8?
+              {t("reg.howUse")}
             </p>
 
             <div className="space-y-4">
@@ -141,10 +189,8 @@ export default function RegisterPage() {
                   <User className="w-7 h-7 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-base">I&apos;m a Patient</p>
-                  <p className="text-slate-400 text-sm mt-0.5">
-                    Book appointments, manage your health records and consult specialists.
-                  </p>
+                  <p className="text-white font-semibold text-base">{t("reg.imPatient")}</p>
+                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imPatientDesc")}</p>
                 </div>
               </button>
 
@@ -156,36 +202,33 @@ export default function RegisterPage() {
                   <Stethoscope className="w-7 h-7 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-base">I&apos;m a Healthcare Professional</p>
-                  <p className="text-slate-400 text-sm mt-0.5">
-                    Receive patients, manage your schedule and grow your practice.
-                  </p>
+                  <p className="text-white font-semibold text-base">{t("reg.imPro")}</p>
+                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imProDesc")}</p>
                 </div>
               </button>
             </div>
 
             <div className="border-t border-white/10 mt-6 pt-6 text-center">
               <p className="text-slate-400 text-sm">
-                Already have an account?{" "}
+                {t("reg.haveAccount")}{" "}
                 <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition">
-                  Sign in
+                  {t("reg.signIn")}
                 </Link>
               </p>
             </div>
           </div>
         )}
 
-        {/* ───────── STEP 2: REGISTRATION FORM ───────── */}
+        {/* STEP 2: REGISTRATION FORM */}
         {step === 2 && (
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
 
-            {/* Back + role badge */}
             <button
               onClick={() => setStep(1)}
               className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition mb-5"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
+              {t("reg.back")}
             </button>
 
             <div className="flex items-center gap-3 mb-6 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
@@ -195,7 +238,7 @@ export default function RegisterPage() {
                 <User className="w-5 h-5 text-emerald-400 shrink-0" />
               )}
               <p className="text-emerald-300 text-sm font-medium">
-                {isProfessional ? "Healthcare Professional account" : "Patient account"}
+                {isProfessional ? t("reg.proAccount") : t("reg.patientAccount")}
               </p>
             </div>
 
@@ -206,7 +249,6 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Google sign up */}
             <button
               onClick={handleGoogleSignUp}
               disabled={googleLoading || loading}
@@ -222,12 +264,12 @@ export default function RegisterPage() {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
               )}
-              {isProfessional ? "Sign up as professional with Google" : "Sign up with Google"}
+              {isProfessional ? t("reg.googlePro") : t("reg.googlePatient")}
             </button>
 
             <div className="flex items-center gap-4 mb-4">
               <div className="flex-1 h-px bg-white/10" />
-              <span className="text-slate-500 text-xs uppercase tracking-wider">or</span>
+              <span className="text-slate-500 text-xs uppercase tracking-wider">{t("reg.or")}</span>
               <div className="flex-1 h-px bg-white/10" />
             </div>
 
@@ -235,22 +277,22 @@ export default function RegisterPage() {
 
               {/* Region */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Your region</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.region")}</label>
                 <select
                   value={region}
                   onChange={(e) => setRegion(e.target.value as Region)}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
                 >
-                  <option value="US" className="bg-slate-800">🇺🇸 United States</option>
-                  <option value="EU" className="bg-slate-800">🇪🇺 European Union</option>
-                  <option value="BR" className="bg-slate-800">🇧🇷 Brazil</option>
+                  <option value="US" className="bg-slate-800">{t("reg.regionUS")}</option>
+                  <option value="EU" className="bg-slate-800">{t("reg.regionEU")}</option>
+                  <option value="BR" className="bg-slate-800">{t("reg.regionBR")}</option>
                 </select>
               </div>
 
               {/* Name */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">First name</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.firstName")}</label>
                   <input
                     type="text"
                     value={firstName}
@@ -260,7 +302,7 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Last name</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.lastName")}</label>
                   <input
                     type="text"
                     value={lastName}
@@ -273,7 +315,7 @@ export default function RegisterPage() {
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Email address</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.email")}</label>
                 <input
                   type="email"
                   value={email}
@@ -286,7 +328,7 @@ export default function RegisterPage() {
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.password")}</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -299,7 +341,7 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? t("reg.hidePassword") : t("reg.showPassword")}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -308,12 +350,12 @@ export default function RegisterPage() {
                 {password && (
                   <div className="mt-3 space-y-1">
                     {PASSWORD_RULES.map((rule) => (
-                      <div key={rule.label} className="flex items-center gap-2">
+                      <div key={rule.key} className="flex items-center gap-2">
                         <CheckCircle2
                           className={`w-3.5 h-3.5 ${rule.test(password) ? "text-emerald-400" : "text-slate-600"}`}
                         />
                         <span className={`text-xs ${rule.test(password) ? "text-emerald-400" : "text-slate-500"}`}>
-                          {rule.label}
+                          {t(rule.key)}
                         </span>
                       </div>
                     ))}
@@ -324,37 +366,36 @@ export default function RegisterPage() {
               {/* Professional note */}
               {isProfessional && (
                 <p className="text-xs text-slate-400 bg-white/5 border border-white/10 rounded-xl p-3">
-                  After signing up, you&apos;ll complete your professional profile (specialty,
-                  registration number, price and availability) to start receiving patients.
+                  {t("reg.proNote")}
                 </p>
               )}
 
               {/* Consents */}
               <div className="border-t border-white/10 pt-5 space-y-3">
-                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Required agreements</p>
+                <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">{t("reg.requiredAgreements")}</p>
 
                 <Checkbox
                   checked={acceptedTerms}
                   onChange={setAcceptedTerms}
-                  label={<>I accept the <Link href="/terms" className="text-emerald-400 hover:underline" target="_blank">Terms of Service</Link></>}
+                  label={<>{t("reg.acceptTerms")} <Link href="/terms" className="text-emerald-400 hover:underline" target="_blank">{t("reg.termsOfService")}</Link></>}
                 />
                 <Checkbox
                   checked={acceptedPrivacy}
                   onChange={setAcceptedPrivacy}
-                  label={<>I accept the <Link href="/privacy" className="text-emerald-400 hover:underline" target="_blank">Privacy Policy</Link></>}
+                  label={<>{t("reg.acceptPrivacy")} <Link href="/privacy" className="text-emerald-400 hover:underline" target="_blank">{t("reg.privacyPolicy")}</Link></>}
                 />
                 {region === "US" && (
                   <Checkbox
                     checked={acceptedHipaa}
                     onChange={setAcceptedHipaa}
-                    label={<>I acknowledge the <Link href="/hipaa" className="text-emerald-400 hover:underline" target="_blank">HIPAA Authorization</Link> for sharing my health information</>}
+                    label={<>{t("reg.acceptHipaaPre")} <Link href="/hipaa" className="text-emerald-400 hover:underline" target="_blank">{t("reg.hipaaAuth")}</Link> {t("reg.acceptHipaaPost")}</>}
                   />
                 )}
                 {region === "EU" && (
                   <Checkbox
                     checked={acceptedGdpr}
                     onChange={setAcceptedGdpr}
-                    label={<>I consent to the processing of my personal data as described in our <Link href="/privacy" className="text-emerald-400 hover:underline" target="_blank">Privacy Policy</Link> (GDPR)</>}
+                    label={<>{t("reg.acceptGdprPre")} <Link href="/privacy" className="text-emerald-400 hover:underline" target="_blank">{t("reg.privacyPolicy")}</Link> {t("reg.acceptGdprPost")}</>}
                   />
                 )}
               </div>
@@ -365,15 +406,15 @@ export default function RegisterPage() {
                 className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {loading ? "Creating account..." : "Create account"}
+                {loading ? t("reg.creating") : t("reg.createAccount")}
               </button>
             </form>
 
             <div className="border-t border-white/10 mt-6 pt-6 text-center">
               <p className="text-slate-400 text-sm">
-                Already have an account?{" "}
+                {t("reg.haveAccount")}{" "}
                 <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition">
-                  Sign in
+                  {t("reg.signIn")}
                 </Link>
               </p>
             </div>
