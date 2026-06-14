@@ -654,3 +654,40 @@ model Category {
   @@index([slug])
   @@index([active])
 }
+
+// ─────────────────────────────────────────
+// DRUG CATALOG (medication reference database)
+// This is the SEARCHABLE CATALOG of drugs (like Memed's database).
+// It is NOT patient data — it's a shared reference list the doctor
+// searches when writing a prescription. No PHI here.
+// (Note: the existing "Medication" model is the patient's own list —
+//  this is different and intentionally named DrugCatalog to avoid collision.)
+// ─────────────────────────────────────────
+model DrugCatalog {
+  id              String   @id @default(cuid())
+
+  // Display + search
+  name            String   // commercial/brand name, e.g. "Amoxil"
+  activeIngredient String  // e.g. "Amoxicillin" / "Amoxicilina"
+  presentation    String   // e.g. "500mg capsule, box of 21"
+  manufacturer    String?  // e.g. "GSK"
+
+  // Classification
+  country         String   @default("BR")  // "BR", "US", "EU" ...
+  category        String?  // e.g. "Antibiotic", "Analgesic"
+  controlled      Boolean  @default(false) // tarja preta / controlled substance
+  prescriptionType String? // "OTC", "RED_STRIPE", "BLACK_STRIPE", "RX"
+
+  // Normalized lowercase fields for fast case-insensitive search
+  searchName      String   // lowercase of name
+  searchIngredient String  // lowercase of activeIngredient
+
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([searchName])
+  @@index([searchIngredient])
+  @@index([country])
+  @@index([active])
+}
