@@ -3,6 +3,12 @@
 // GDPR: captures explicit consent before creating account
 // HIPAA: enforces password strength
 // Sends email verification after successful registration
+//
+// ETAPA 3a: when a PATIENT registers, automatically link any patient charts
+// (PatientRecord) that a doctor previously created with the same email — so the
+// prescriptions/documents are already attached to the new account.
+// (Access is still protected by email verification: the user can't log in until
+//  they verify their email, even though the link is established at signup.)
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -27,6 +33,8 @@ const registerSchema = z.object({
   region: z.enum(["US", "EU", "BR"]).default("US"),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
+  // Optional language preference coming from the registration screen
+  language: z.string().optional(),
 
   // GDPR/HIPAA: required consents
   acceptedTerms: z.literal(true, {
@@ -58,6 +66,7 @@ export async function POST(req: NextRequest) {
       region,
       firstName,
       lastName,
+      language,
       acceptedTerms,
       acceptedPrivacy,
       acceptedHipaa,
@@ -95,6 +104,10 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-real-ip") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
 
+    const normalizedLanguage = language === "pt" || language === "es" || language === "en"
+      ? language
+      : undefined;
+
     // Create user + profile + consents in a transaction
     const user = await db.$transaction(async (tx) => {
       const newUser = await tx.user.create({
@@ -103,6 +116,7 @@ export async function POST(req: NextRequest) {
           passwordHash,
           role: role as UserRole,
           region: region as UserRegion,
+          ...(normalizedLanguage ? { language: normalizedLanguage } : {}),
           // emailVerified is null — set after email confirmation
         },
       });
@@ -114,6 +128,16 @@ export async function POST(req: NextRequest) {
             firstName,
             lastName,
           },
+        });
+
+        // ETAPA 3a: auto-link any patient charts created by a doctor with this email.
+        // This makes prescriptions/documents already attached to the new account.
+        await tx.patientRecord.updateMany({
+          where: {
+            email: email.toLowerCase(),
+            linkedUserId: null,
+          },
+          data: { linkedUserId: newUser.id },
         });
       } else {
         await tx.professionalProfile.create({
@@ -153,6 +177,35 @@ export async function POST(req: NextRequest) {
 
       return newUser;
     });
+
+    // ETAPA 3a: after the account exists, attach the linked charts' documents
+    // (e.g. prescriptions) to the patient's profile so they show up in the app.
+    // Done outside the transaction; failures here must not break registration.
+    try {
+      const patientProfile = await db.patientProfile.findUnique({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (patientProfile) {
+        const linkedRecords = await db.patientRecord.findMany({
+          where: { linkedUserId: user.id },
+          select: { id: true },
+        });
+        const recordIds = linkedRecords.map((r) => r.id);
+        if (recordIds.length > 0) {
+          // Attach any documents of those charts that don't yet have a patientId.
+          await db.medicalDocument.updateMany({
+            where: {
+              patientRecordId: { in: recordIds },
+              patientId: null,
+            },
+            data: { patientId: patientProfile.id },
+          });
+        }
+      }
+    } catch (linkError) {
+      console.error("[REGISTER LINK ERROR]", linkError);
+    }
 
     // Generate verification token (24h expiry)
     const token = randomBytes(32).toString("hex");
