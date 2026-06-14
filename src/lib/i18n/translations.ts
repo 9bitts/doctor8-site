@@ -43,6 +43,34 @@ const en: Dict = {
   "common.save": "Save",
   "common.cancel": "Cancel",
   "common.loading": "Loading...",
+  "common.viewAll": "View all",
+  "common.active": "Active",
+  // Greetings
+  "greeting.morning": "Good morning",
+  "greeting.afternoon": "Good afternoon",
+  "greeting.evening": "Good evening",
+  // Patient dashboard
+  "pdash.subtitle": "Here's your health overview for today.",
+  "pdash.stat.upcoming": "Upcoming appointments",
+  "pdash.stat.medications": "Active medications",
+  "pdash.stat.documents": "Documents",
+  "pdash.stat.healthScore": "Health score",
+  "pdash.upcoming.title": "Upcoming appointments",
+  "pdash.upcoming.empty": "No upcoming appointments",
+  "pdash.upcoming.action": "Book a consultation",
+  "pdash.meds.title": "Active medications",
+  "pdash.meds.empty": "No active medications",
+  "pdash.meds.action": "Add medication",
+  "pdash.docs.title": "Recent documents",
+  "pdash.docs.empty": "No documents yet",
+  "pdash.docs.action": "Upload a document",
+  "pdash.quick.title": "Quick actions",
+  "pdash.quick.book": "Book appointment",
+  "pdash.quick.export": "Export health record",
+  "pdash.quick.addMed": "Add medication",
+  "pdash.quick.share": "Share with doctor",
+  "pdash.privacy.bold": "Your data is protected.",
+  "pdash.privacy.text": "All your health information is encrypted and stored securely in compliance with HIPAA (US) and GDPR (EU) regulations. Only you and professionals you authorize can access your records.",
 };
 
 const pt: Dict = {
@@ -71,6 +99,32 @@ const pt: Dict = {
   "common.save": "Salvar",
   "common.cancel": "Cancelar",
   "common.loading": "Carregando...",
+  "common.viewAll": "Ver todos",
+  "common.active": "Ativo",
+  "greeting.morning": "Bom dia",
+  "greeting.afternoon": "Boa tarde",
+  "greeting.evening": "Boa noite",
+  "pdash.subtitle": "Aqui está o resumo da sua saúde para hoje.",
+  "pdash.stat.upcoming": "Próximas consultas",
+  "pdash.stat.medications": "Medicações ativas",
+  "pdash.stat.documents": "Documentos",
+  "pdash.stat.healthScore": "Índice de saúde",
+  "pdash.upcoming.title": "Próximas consultas",
+  "pdash.upcoming.empty": "Nenhuma consulta agendada",
+  "pdash.upcoming.action": "Agendar uma consulta",
+  "pdash.meds.title": "Medicações ativas",
+  "pdash.meds.empty": "Nenhuma medicação ativa",
+  "pdash.meds.action": "Adicionar medicação",
+  "pdash.docs.title": "Documentos recentes",
+  "pdash.docs.empty": "Nenhum documento ainda",
+  "pdash.docs.action": "Enviar um documento",
+  "pdash.quick.title": "Ações rápidas",
+  "pdash.quick.book": "Agendar consulta",
+  "pdash.quick.export": "Exportar prontuário",
+  "pdash.quick.addMed": "Adicionar medicação",
+  "pdash.quick.share": "Compartilhar com médico",
+  "pdash.privacy.bold": "Seus dados estão protegidos.",
+  "pdash.privacy.text": "Todas as suas informações de saúde são criptografadas e armazenadas com segurança, em conformidade com a LGPD (Brasil), HIPAA (EUA) e GDPR (Europa). Apenas você e os profissionais que autorizar podem acessar seus registros.",
 };
 
 const es: Dict = {
@@ -99,6 +153,32 @@ const es: Dict = {
   "common.save": "Guardar",
   "common.cancel": "Cancelar",
   "common.loading": "Cargando...",
+  "common.viewAll": "Ver todo",
+  "common.active": "Activo",
+  "greeting.morning": "Buenos días",
+  "greeting.afternoon": "Buenas tardes",
+  "greeting.evening": "Buenas noches",
+  "pdash.subtitle": "Aquí está el resumen de tu salud para hoy.",
+  "pdash.stat.upcoming": "Próximas citas",
+  "pdash.stat.medications": "Medicaciones activas",
+  "pdash.stat.documents": "Documentos",
+  "pdash.stat.healthScore": "Índice de salud",
+  "pdash.upcoming.title": "Próximas citas",
+  "pdash.upcoming.empty": "No hay citas programadas",
+  "pdash.upcoming.action": "Reservar una consulta",
+  "pdash.meds.title": "Medicaciones activas",
+  "pdash.meds.empty": "No hay medicaciones activas",
+  "pdash.meds.action": "Agregar medicación",
+  "pdash.docs.title": "Documentos recientes",
+  "pdash.docs.empty": "Aún no hay documentos",
+  "pdash.docs.action": "Subir un documento",
+  "pdash.quick.title": "Acciones rápidas",
+  "pdash.quick.book": "Reservar cita",
+  "pdash.quick.export": "Exportar historial",
+  "pdash.quick.addMed": "Agregar medicación",
+  "pdash.quick.share": "Compartir con médico",
+  "pdash.privacy.bold": "Tus datos están protegidos.",
+  "pdash.privacy.text": "Toda tu información de salud está cifrada y almacenada de forma segura, en cumplimiento con HIPAA (EE. UU.) y GDPR (Europa). Solo tú y los profesionales que autorices pueden acceder a tus registros.",
 };
 
 export const dictionaries: Record<Lang, Dict> = { en, pt, es };
@@ -106,4 +186,24 @@ export const dictionaries: Record<Lang, Dict> = { en, pt, es };
 export function translate(lang: Lang, key: string): string {
   const d = dictionaries[lang] || en;
   return d[key] ?? en[key] ?? key;
+}
+
+// Server-safe helpers (usable in Server Components) -----------------
+
+export function normalizeLang(value: string | null | undefined): Lang {
+  if (value === "pt" || value === "en" || value === "es") return value;
+  return "en";
+}
+
+// Locale code for date/number formatting based on language
+export function localeOf(lang: Lang): string {
+  return lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
+}
+
+// Time-of-day greeting key
+export function greetingKey(date = new Date()): string {
+  const h = date.getHours();
+  if (h < 12) return "greeting.morning";
+  if (h < 18) return "greeting.afternoon";
+  return "greeting.evening";
 }

@@ -1,11 +1,12 @@
 // src/app/(dashboard)/patient/page.tsx
-// Patient home dashboard
+// Patient home dashboard (i18n: translated server-side from User.language)
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
-import { decryptPatientFields, PHI_FIELDS } from "@/lib/encryption";
+import { decryptPatientFields } from "@/lib/encryption";
+import { translate, normalizeLang, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
 import {
   Calendar, FileText, Pill, AlertCircle,
   Clock, ChevronRight, Heart, Activity
@@ -18,6 +19,12 @@ export default async function PatientDashboard() {
   if (session.user.role !== "PATIENT") redirect("/professional");
 
   const userId = session.user.id;
+
+  // Language for this user (server-side translation)
+  const userRow = await db.user.findUnique({ where: { id: userId }, select: { language: true } });
+  const lang: Lang = normalizeLang(userRow?.language);
+  const t = (key: string) => translate(lang, key);
+  const locale = localeOf(lang);
 
   // Load patient data
   const patient = await db.patientProfile.findUnique({
@@ -50,10 +57,8 @@ export default async function PatientDashboard() {
 
   if (!patient) redirect("/onboarding");
 
-  // Audit log — HIPAA: record dashboard access
   await audit.viewRecord(userId, "PatientProfile", patient.id);
 
-  // Decrypt PHI fields
   const decrypted = decryptPatientFields(
     { firstName: patient.firstName, lastName: patient.lastName },
     ["firstName", "lastName"]
@@ -69,37 +74,37 @@ export default async function PatientDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
-          Good morning, {decrypted.firstName} 👋
+          {t(greetingKey())}, {decrypted.firstName} 👋
         </h1>
-        <p className="text-slate-500 mt-1">Here&apos;s your health overview for today.</p>
+        <p className="text-slate-500 mt-1">{t("pdash.subtitle")}</p>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={<Calendar className="text-blue-500" size={20} />}
-          label="Upcoming appointments"
+          label={t("pdash.stat.upcoming")}
           value={upcomingCount}
           bg="bg-blue-50"
           href="/patient/appointments"
         />
         <StatCard
           icon={<Pill className="text-emerald-500" size={20} />}
-          label="Active medications"
+          label={t("pdash.stat.medications")}
           value={medicationCount}
           bg="bg-emerald-50"
           href="/patient/medications"
         />
         <StatCard
           icon={<FileText className="text-violet-500" size={20} />}
-          label="Documents"
+          label={t("pdash.stat.documents")}
           value={documentCount}
           bg="bg-violet-50"
           href="/patient/documents"
         />
         <StatCard
           icon={<Heart className="text-rose-500" size={20} />}
-          label="Health score"
+          label={t("pdash.stat.healthScore")}
           value="—"
           bg="bg-rose-50"
           href="/patient/history"
@@ -110,15 +115,16 @@ export default async function PatientDashboard() {
 
         {/* Upcoming appointments */}
         <Section
-          title="Upcoming appointments"
+          title={t("pdash.upcoming.title")}
           href="/patient/appointments"
           icon={<Calendar size={16} />}
+          viewAllLabel={t("common.viewAll")}
         >
           {patient.appointments.length === 0 ? (
             <EmptyState
               icon={<Calendar size={28} className="text-slate-300" />}
-              message="No upcoming appointments"
-              action="Book a consultation"
+              message={t("pdash.upcoming.empty")}
+              action={t("pdash.upcoming.action")}
               href="/patient/appointments"
             />
           ) : (
@@ -139,11 +145,11 @@ export default async function PatientDashboard() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-semibold text-slate-700">
-                      {new Date(apt.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {new Date(apt.scheduledAt).toLocaleDateString(locale, { month: "short", day: "numeric" })}
                     </p>
                     <p className="text-xs text-slate-500 flex items-center gap-1 justify-end">
                       <Clock size={10} />
-                      {new Date(apt.scheduledAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
                 </div>
@@ -154,15 +160,16 @@ export default async function PatientDashboard() {
 
         {/* Active medications */}
         <Section
-          title="Active medications"
+          title={t("pdash.meds.title")}
           href="/patient/medications"
           icon={<Pill size={16} />}
+          viewAllLabel={t("common.viewAll")}
         >
           {patient.medications.length === 0 ? (
             <EmptyState
               icon={<Pill size={28} className="text-slate-300" />}
-              message="No active medications"
-              action="Add medication"
+              message={t("pdash.meds.empty")}
+              action={t("pdash.meds.action")}
               href="/patient/medications"
             />
           ) : (
@@ -187,7 +194,7 @@ export default async function PatientDashboard() {
                       </p>
                     </div>
                     <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium shrink-0">
-                      Active
+                      {t("common.active")}
                     </span>
                   </div>
                 );
@@ -198,15 +205,16 @@ export default async function PatientDashboard() {
 
         {/* Recent documents */}
         <Section
-          title="Recent documents"
+          title={t("pdash.docs.title")}
           href="/patient/documents"
           icon={<FileText size={16} />}
+          viewAllLabel={t("common.viewAll")}
         >
           {patient.medicalDocuments.length === 0 ? (
             <EmptyState
               icon={<FileText size={28} className="text-slate-300" />}
-              message="No documents yet"
-              action="Upload a document"
+              message={t("pdash.docs.empty")}
+              action={t("pdash.docs.action")}
               href="/patient/documents"
             />
           ) : (
@@ -224,7 +232,7 @@ export default async function PatientDashboard() {
                       {doc.type.replace("_", " ")}
                     </p>
                     <p className="text-xs text-slate-500">
-                      {new Date(doc.createdAt).toLocaleDateString("en-US", {
+                      {new Date(doc.createdAt).toLocaleDateString(locale, {
                         month: "short", day: "numeric", year: "numeric"
                       })}
                     </p>
@@ -237,13 +245,13 @@ export default async function PatientDashboard() {
         </Section>
 
         {/* Quick actions */}
-        <Section title="Quick actions" icon={<Activity size={16} />}>
+        <Section title={t("pdash.quick.title")} icon={<Activity size={16} />} viewAllLabel={t("common.viewAll")}>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Book appointment", icon: "📅", href: "/patient/appointments", color: "bg-blue-50 hover:bg-blue-100 text-blue-700" },
-              { label: "Export health record", icon: "📄", href: "/api/patient/history/pdf", color: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700" },
-              { label: "Add medication", icon: "💊", href: "/patient/medications", color: "bg-violet-50 hover:bg-violet-100 text-violet-700" },
-              { label: "Share with doctor", icon: "🔗", href: "/patient/history/share", color: "bg-rose-50 hover:bg-rose-100 text-rose-700" },
+              { label: t("pdash.quick.book"), icon: "📅", href: "/patient/appointments", color: "bg-blue-50 hover:bg-blue-100 text-blue-700" },
+              { label: t("pdash.quick.export"), icon: "📄", href: "/api/patient/history/pdf", color: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700" },
+              { label: t("pdash.quick.addMed"), icon: "💊", href: "/patient/medications", color: "bg-violet-50 hover:bg-violet-100 text-violet-700" },
+              { label: t("pdash.quick.share"), icon: "🔗", href: "/patient/history/share", color: "bg-rose-50 hover:bg-rose-100 text-rose-700" },
             ].map((action) => (
               <Link
                 key={action.href}
@@ -258,13 +266,11 @@ export default async function PatientDashboard() {
         </Section>
       </div>
 
-      {/* HIPAA compliance notice */}
+      {/* Privacy notice */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
         <AlertCircle size={16} className="text-blue-500 mt-0.5 shrink-0" />
         <p className="text-xs text-blue-700">
-          <strong>Your data is protected.</strong> All your health information is encrypted and stored securely
-          in compliance with HIPAA (US) and GDPR (EU) regulations. Only you and professionals you authorize
-          can access your records.
+          <strong>{t("pdash.privacy.bold")}</strong> {t("pdash.privacy.text")}
         </p>
       </div>
     </div>
@@ -283,8 +289,8 @@ function StatCard({ icon, label, value, bg, href }: {
   );
 }
 
-function Section({ title, href, icon, children }: {
-  title: string; href?: string; icon: React.ReactNode; children: React.ReactNode;
+function Section({ title, href, icon, children, viewAllLabel }: {
+  title: string; href?: string; icon: React.ReactNode; children: React.ReactNode; viewAllLabel: string;
 }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -295,7 +301,7 @@ function Section({ title, href, icon, children }: {
         </div>
         {href && (
           <Link href={href} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
-            View all <ChevronRight size={14} />
+            {viewAllLabel} <ChevronRight size={14} />
           </Link>
         )}
       </div>
