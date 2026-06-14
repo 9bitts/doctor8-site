@@ -71,6 +71,20 @@ const en: Dict = {
   "pdash.quick.share": "Share with doctor",
   "pdash.privacy.bold": "Your data is protected.",
   "pdash.privacy.text": "All your health information is encrypted and stored securely in compliance with HIPAA (US) and GDPR (EU) regulations. Only you and professionals you authorize can access your records.",
+  // Professional dashboard
+  "prodash.welcome": "Welcome, Dr.",
+  "prodash.stat.today": "Today's appointments",
+  "prodash.stat.totalConsults": "Total consultations",
+  "prodash.stat.earnings": "Total earnings",
+  "prodash.stat.upcoming": "Upcoming",
+  "prodash.upcoming.title": "Upcoming appointments",
+  "prodash.upcoming.empty": "No upcoming appointments",
+  "prodash.type.teleconsult": "🎥 Teleconsultation",
+  "prodash.type.inPerson": "🏥 In-person",
+  "prodash.join": "Join",
+  "prodash.verify.title": "Complete your profile to start receiving patients",
+  "prodash.verify.text": "Add your availability, pricing and credentials to appear in search results.",
+  "prodash.verify.action": "Complete profile",
 };
 
 const pt: Dict = {
@@ -125,6 +139,19 @@ const pt: Dict = {
   "pdash.quick.share": "Compartilhar com médico",
   "pdash.privacy.bold": "Seus dados estão protegidos.",
   "pdash.privacy.text": "Todas as suas informações de saúde são criptografadas e armazenadas com segurança, em conformidade com a LGPD (Brasil), HIPAA (EUA) e GDPR (Europa). Apenas você e os profissionais que autorizar podem acessar seus registros.",
+  "prodash.welcome": "Bem-vindo, Dr.",
+  "prodash.stat.today": "Consultas de hoje",
+  "prodash.stat.totalConsults": "Total de consultas",
+  "prodash.stat.earnings": "Faturamento total",
+  "prodash.stat.upcoming": "Próximas",
+  "prodash.upcoming.title": "Próximas consultas",
+  "prodash.upcoming.empty": "Nenhuma consulta agendada",
+  "prodash.type.teleconsult": "🎥 Teleconsulta",
+  "prodash.type.inPerson": "🏥 Presencial",
+  "prodash.join": "Entrar",
+  "prodash.verify.title": "Complete seu perfil para começar a receber pacientes",
+  "prodash.verify.text": "Adicione sua disponibilidade, valores e credenciais para aparecer nos resultados de busca.",
+  "prodash.verify.action": "Completar perfil",
 };
 
 const es: Dict = {
@@ -179,6 +206,19 @@ const es: Dict = {
   "pdash.quick.share": "Compartir con médico",
   "pdash.privacy.bold": "Tus datos están protegidos.",
   "pdash.privacy.text": "Toda tu información de salud está cifrada y almacenada de forma segura, en cumplimiento con HIPAA (EE. UU.) y GDPR (Europa). Solo tú y los profesionales que autorices pueden acceder a tus registros.",
+  "prodash.welcome": "Bienvenido, Dr.",
+  "prodash.stat.today": "Citas de hoy",
+  "prodash.stat.totalConsults": "Total de consultas",
+  "prodash.stat.earnings": "Ingresos totales",
+  "prodash.stat.upcoming": "Próximas",
+  "prodash.upcoming.title": "Próximas citas",
+  "prodash.upcoming.empty": "No hay citas programadas",
+  "prodash.type.teleconsult": "🎥 Teleconsulta",
+  "prodash.type.inPerson": "🏥 Presencial",
+  "prodash.join": "Entrar",
+  "prodash.verify.title": "Completa tu perfil para empezar a recibir pacientes",
+  "prodash.verify.text": "Agrega tu disponibilidad, precios y credenciales para aparecer en los resultados de búsqueda.",
+  "prodash.verify.action": "Completar perfil",
 };
 
 export const dictionaries: Record<Lang, Dict> = { en, pt, es };
