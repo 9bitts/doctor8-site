@@ -1,9 +1,11 @@
 "use client";
 
 // src/app/(dashboard)/patient/messages/page.tsx
-// Chat interface — same component used by patients and professionals
+// Chat interface — same component used by patients and professionals. i18n via useI18n().
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 import { Send, Search, Loader2, MessageSquare, ArrowLeft } from "lucide-react";
 
 interface Conversation {
@@ -23,6 +25,9 @@ interface Message {
 }
 
 export default function MessagesPage() {
+  const { t, lang } = useI18n();
+  const locale = localeOf(lang);
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -83,7 +88,7 @@ export default function MessagesPage() {
       if (lastMessageTime.current) {
         fetchMessages(lastMessageTime.current);
       }
-    }, 4000); // Poll every 4 seconds
+    }, 4000);
   }
 
   function stopPolling() {
@@ -98,7 +103,6 @@ export default function MessagesPage() {
     setNewMessage("");
     setSending(true);
 
-    // Optimistic update
     const tempMsg: Message = {
       id: `temp-${Date.now()}`,
       content,
@@ -115,11 +119,9 @@ export default function MessagesPage() {
       });
       const msg = await res.json();
 
-      // Replace temp message with real one
       setMessages((prev) => prev.map((m) => m.id === tempMsg.id ? msg : m));
       lastMessageTime.current = msg.createdAt;
 
-      // Update conversation list
       fetchConversations();
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
@@ -137,8 +139,8 @@ export default function MessagesPage() {
     const date = new Date(iso);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    if (diff < 86400000) return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    if (diff < 86400000) return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
   };
 
   return (
@@ -147,12 +149,12 @@ export default function MessagesPage() {
       {/* Sidebar — conversation list */}
       <div className={`w-full sm:w-80 border-r border-slate-200 flex flex-col shrink-0 ${activeConv ? "hidden sm:flex" : "flex"}`}>
         <div className="p-4 border-b border-slate-100">
-          <h2 className="font-bold text-slate-900 mb-3">Messages</h2>
+          <h2 className="font-bold text-slate-900 mb-3">{t("msg.title")}</h2>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search conversations..."
+              placeholder={t("msg.search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-8 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
@@ -166,7 +168,7 @@ export default function MessagesPage() {
           ) : filtered.length === 0 ? (
             <div className="text-center py-12">
               <MessageSquare size={32} className="text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-400 text-sm">No conversations yet</p>
+              <p className="text-slate-400 text-sm">{t("msg.noConversations")}</p>
             </div>
           ) : (
             filtered.map((conv) => (
@@ -199,7 +201,6 @@ export default function MessagesPage() {
       {/* Chat area */}
       {activeConv ? (
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Chat header */}
           <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-3 bg-white">
             <button onClick={() => setActiveConv(null)} className="sm:hidden text-slate-500">
               <ArrowLeft size={20} />
@@ -209,15 +210,14 @@ export default function MessagesPage() {
             </div>
             <div>
               <p className="font-semibold text-slate-900 text-sm">{activeConv.name}</p>
-              <p className="text-xs text-emerald-500">🔒 End-to-end encrypted</p>
+              <p className="text-xs text-emerald-500">{t("msg.encrypted")}</p>
             </div>
           </div>
 
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-slate-50">
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <p className="text-slate-400 text-sm">No messages yet. Say hello!</p>
+                <p className="text-slate-400 text-sm">{t("msg.noMessages")}</p>
               </div>
             ) : (
               messages.map((msg) => (
@@ -239,13 +239,12 @@ export default function MessagesPage() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <form onSubmit={sendMessage} className="px-4 py-4 bg-white border-t border-slate-200 flex items-end gap-3">
             <textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e as any); } }}
-              placeholder="Type a message... (Enter to send)"
+              placeholder={t("msg.typePlaceholder")}
               rows={1}
               className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 max-h-32"
             />
@@ -262,7 +261,7 @@ export default function MessagesPage() {
         <div className="flex-1 hidden sm:flex items-center justify-center bg-slate-50">
           <div className="text-center">
             <MessageSquare size={48} className="text-slate-200 mx-auto mb-4" />
-            <p className="text-slate-400">Select a conversation to start messaging</p>
+            <p className="text-slate-400">{t("msg.selectConversation")}</p>
           </div>
         </div>
       )}

@@ -2,9 +2,10 @@
 
 // src/app/(dashboard)/patient/documents/DocumentsClient.tsx
 // Patient documents: list (own + shared) + add own document + download +
-// share own documents WITH A DOCTOR + UN-SHARE (4D-2).
+// share own documents WITH A DOCTOR + UN-SHARE (4D-2). i18n via useT().
 
 import { useState, useEffect } from "react";
+import { useT } from "@/lib/i18n/I18nProvider";
 import {
   FileText, Plus, X, Download, Loader2, UserCheck, Tag, Share2, CheckCircle2,
   Stethoscope, AlertCircle, XCircle,
@@ -23,8 +24,8 @@ interface Item {
   content: string | null;
   hasFile: boolean;
   createdAt: string;
-  sharedBy: string | null;                 // doctor name when a doctor shared it with me
-  sharedWithDoctors: SharedDoctor[];       // doctors I shared this doc with
+  sharedBy: string | null;
+  sharedWithDoctors: SharedDoctor[];
 }
 
 interface CategoryItem {
@@ -36,17 +37,18 @@ interface Doctor {
   professionalId: string; userId: string; name: string; specialty: string;
 }
 
-const LEGACY_LABELS: Record<string, string> = {
-  PRESCRIPTION: "Prescription",
-  EXAM_REQUEST: "Exam request",
-  EXAM_RESULT: "Exam result",
-  CERTIFICATE: "Certificate",
-  REFERRAL: "Referral",
-  CLINICAL_NOTE: "Clinical note",
-  OTHER: "Other",
+const LEGACY_KEYS: Record<string, string> = {
+  PRESCRIPTION: "doctype.PRESCRIPTION",
+  EXAM_REQUEST: "doctype.EXAM_REQUEST",
+  EXAM_RESULT: "doctype.EXAM_RESULT",
+  CERTIFICATE: "doctype.CERTIFICATE",
+  REFERRAL: "doctype.REFERRAL",
+  CLINICAL_NOTE: "doctype.CLINICAL_NOTE",
+  OTHER: "doctype.OTHER",
 };
 
 export default function DocumentsClient({ initialItems }: { initialItems: Item[] }) {
+  const t = useT();
   const [items, setItems] = useState<Item[]>(initialItems);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -67,6 +69,9 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [file, setFile] = useState<File | null>(null);
+
+  // Fallback label for a legacy type (translated)
+  const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
 
   useEffect(() => {
     let active = true;
@@ -109,8 +114,8 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   }
 
   async function handleCreate() {
-    if (!title.trim()) { setError("Title is required."); return; }
-    if (!categoryId) { setError("Please choose a category."); return; }
+    if (!title.trim()) { setError(t("docs.err.titleRequired")); return; }
+    if (!categoryId) { setError(t("docs.err.categoryRequired")); return; }
     setSaving(true);
     setError(null);
     try {
@@ -121,7 +126,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         fd.append("folder", "patient-docs");
         const up = await fetch("/api/uploads", { method: "POST", body: fd });
         const upData = await up.json();
-        if (!up.ok) { setError(upData.error || "Upload failed."); setSaving(false); return; }
+        if (!up.ok) { setError(upData.error || t("docs.err.uploadFailed")); setSaving(false); return; }
         fileKey = upData.key;
       }
       const res = await fetch("/api/patient/documents", {
@@ -131,7 +136,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Could not save.");
+        setError(typeof data.error === "string" ? data.error : t("docs.err.couldNotSave"));
         setSaving(false);
         return;
       }
@@ -157,7 +162,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       await ensureDoctorsLoaded();
       setShareDocId(newId);
     } catch {
-      setError("Network error. Try again.");
+      setError(t("docs.err.network"));
       setSaving(false);
     }
   }
@@ -219,7 +224,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   }
 
   function groupKeyOf(it: Item): string {
-    return it.categoryGroup || LEGACY_LABELS[it.type] || "Other";
+    return it.categoryGroup || legacyLabel(it.type);
   }
   const groupedByGroup: Record<string, Item[]> = {};
   const groupOrder: string[] = [];
@@ -233,24 +238,22 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Documents</h1>
-          <p className="text-slate-500 mt-1">Your exams, results and records shared by your doctors</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("docs.title")}</h1>
+          <p className="text-slate-500 mt-1">{t("docs.subtitle")}</p>
         </div>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
         >
-          <Plus size={18} /> Add document
+          <Plus size={18} /> {t("docs.add")}
         </button>
       </div>
 
       {items.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
           <FileText className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="text-slate-400 text-sm">No documents yet</p>
-          <p className="text-slate-400 text-xs mt-1">
-            Add your own, or records shared by your doctor will appear here
-          </p>
+          <p className="text-slate-400 text-sm">{t("docs.empty.title")}</p>
+          <p className="text-slate-400 text-xs mt-1">{t("docs.empty.subtitle")}</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -263,7 +266,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
               </div>
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
                 {groupedByGroup[grp].map((it) => {
-                  const itemLabel = it.categoryName || LEGACY_LABELS[it.type] || "Other";
+                  const itemLabel = it.categoryName || legacyLabel(it.type);
                   const isOwn = !it.sharedBy;
                   return (
                     <div key={it.id} className="px-5 py-4 hover:bg-slate-50 transition">
@@ -276,7 +279,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                             <p className="font-semibold text-slate-800 text-sm">{it.title}</p>
                             {it.sharedBy && (
                               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                <UserCheck size={11} /> Shared by {it.sharedBy}
+                                <UserCheck size={11} /> {t("docs.sharedBy")} {it.sharedBy}
                               </span>
                             )}
                           </div>
@@ -289,14 +292,13 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                             onClick={() => handleDownload(it.id)}
                             disabled={downloadingId === it.id}
                             className="shrink-0 text-slate-400 hover:text-emerald-500 transition p-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
-                            aria-label="Open attachment"
+                            aria-label={t("docs.openAttachment")}
                           >
                             {downloadingId === it.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                           </button>
                         )}
                       </div>
 
-                      {/* Share / Unshare row (only for own documents) */}
                       {isOwn && (
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           {it.sharedWithDoctors.length > 0 && (
@@ -304,13 +306,13 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                               const key = it.id + ":" + dd.professionalId;
                               return (
                                 <span key={dd.professionalId} className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg">
-                                  <CheckCircle2 size={14} /> Shared with {dd.name}
+                                  <CheckCircle2 size={14} /> {t("docs.sharedWith")} {dd.name}
                                   <button
                                     onClick={() => handleUnshare(it.id, dd.professionalId)}
                                     disabled={unsharingKey === key}
                                     className="ml-1 text-rose-500 hover:text-rose-700 disabled:opacity-50"
-                                    aria-label="Unshare"
-                                    title="Unshare"
+                                    aria-label={t("docs.unshare")}
+                                    title={t("docs.unshare")}
                                   >
                                     {unsharingKey === key ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />}
                                   </button>
@@ -322,7 +324,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                             onClick={() => openShare(it.id)}
                             className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
                           >
-                            <Share2 size={14} /> Share with doctor
+                            <Share2 size={14} /> {t("docs.shareWithDoctor")}
                           </button>
                         </div>
                       )}
@@ -340,20 +342,20 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
-              <h2 className="font-bold text-slate-800">Add document</h2>
+              <h2 className="font-bold text-slate-800">{t("docs.modal.title")}</h2>
               <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("docs.modal.category")}</label>
                 {categoriesLoading ? (
                   <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
-                    <Loader2 size={14} className="animate-spin" /> Loading categories...
+                    <Loader2 size={14} className="animate-spin" /> {t("docs.modal.loadingCategories")}
                   </div>
                 ) : groups.length === 0 ? (
-                  <p className="text-sm text-amber-600">No categories available.</p>
+                  <p className="text-sm text-amber-600">{t("docs.modal.noCategories")}</p>
                 ) : (
                   <select
                     value={categoryId}
@@ -371,16 +373,16 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                 )}
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Title *</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("docs.modal.titleLabel")}</label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Blood test - June 2026"
+                  placeholder={t("docs.modal.titlePlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Notes</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("docs.modal.notes")}</label>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
@@ -390,7 +392,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  File <span className="text-slate-400">(PDF, image or video — max 50MB)</span>
+                  {t("docs.modal.file")} <span className="text-slate-400">{t("docs.modal.fileHint")}</span>
                 </label>
                 <input
                   type="file"
@@ -412,14 +414,14 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                   onClick={() => setShowForm(false)}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={saving || categoriesLoading}
                   className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50"
                 >
-                  {saving ? "Saving..." : "Save document"}
+                  {saving ? t("docs.modal.saving") : t("docs.modal.save")}
                 </button>
               </div>
             </div>
@@ -432,28 +434,22 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h2 className="font-bold text-slate-800">Share with your doctor?</h2>
+              <h2 className="font-bold text-slate-800">{t("docs.share.title")}</h2>
               <button onClick={() => setShareDocId(null)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
             <div className="p-5">
-              <p className="text-sm text-slate-500 mb-4">
-                Choose a doctor to share this document with. Only doctors you have a
-                confirmed appointment with are shown.
-              </p>
+              <p className="text-sm text-slate-500 mb-4">{t("docs.share.help")}</p>
 
               {doctorsLoading ? (
                 <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
-                  <Loader2 size={16} className="animate-spin" /> Loading your doctors...
+                  <Loader2 size={16} className="animate-spin" /> {t("docs.share.loading")}
                 </div>
               ) : !doctors || doctors.length === 0 ? (
                 <div className="flex items-start gap-2 text-sm text-amber-600 bg-amber-50 rounded-xl px-4 py-3">
                   <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  <span>
-                    You don&apos;t have a confirmed appointment with any doctor yet.
-                    Book a consultation first, then you can share documents.
-                  </span>
+                  <span>{t("docs.share.none")}</span>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -475,7 +471,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                           <p className="text-xs text-slate-500">{d.specialty}</p>
                         </div>
                         {alreadyShared ? (
-                          <span className="text-xs text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 size={14} /> Shared</span>
+                          <span className="text-xs text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 size={14} /> {t("docs.share.shared")}</span>
                         ) : sharingTo === d.professionalId ? (
                           <Loader2 size={16} className="animate-spin text-emerald-500" />
                         ) : null}
@@ -489,7 +485,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                 onClick={() => setShareDocId(null)}
                 className="w-full mt-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
               >
-                Not now
+                {t("docs.share.notNow")}
               </button>
             </div>
           </div>

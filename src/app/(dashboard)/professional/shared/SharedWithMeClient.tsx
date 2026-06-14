@@ -1,12 +1,12 @@
 "use client";
 
 // src/app/(dashboard)/professional/shared/SharedWithMeClient.tsx
-// Documents patients shared with this professional + download +
-// Create chart / Open chart / Add to chart (existing) / Added.
+// Documents patients shared with this professional + chart actions. i18n via useT().
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/I18nProvider";
 import {
   FileText, Download, Loader2, Tag, User, FolderPlus, FolderOpen, FilePlus2, CheckCircle2,
 } from "lucide-react";
@@ -29,23 +29,25 @@ interface Item {
   sharedAt: string;
 }
 
-const LEGACY_LABELS: Record<string, string> = {
-  PRESCRIPTION: "Prescription",
-  EXAM_REQUEST: "Exam request",
-  EXAM_RESULT: "Exam result",
-  CERTIFICATE: "Certificate",
-  REFERRAL: "Referral",
-  CLINICAL_NOTE: "Clinical note",
-  OTHER: "Other",
+const LEGACY_KEYS: Record<string, string> = {
+  PRESCRIPTION: "doctype.PRESCRIPTION",
+  EXAM_REQUEST: "doctype.EXAM_REQUEST",
+  EXAM_RESULT: "doctype.EXAM_RESULT",
+  CERTIFICATE: "doctype.CERTIFICATE",
+  REFERRAL: "doctype.REFERRAL",
+  CLINICAL_NOTE: "doctype.CLINICAL_NOTE",
+  OTHER: "doctype.OTHER",
 };
 
 export default function SharedWithMeClient({ initialItems }: { initialItems: Item[] }) {
+  const t = useT();
   const router = useRouter();
   const [items, setItems] = useState<Item[]>(initialItems);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  // Re-sync from the API on mount, so we get alreadyAttached / existingChartId fresh.
+  const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
+
   useEffect(() => {
     let active = true;
     (async () => {
@@ -113,22 +115,20 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Shared with me</h1>
-        <p className="text-slate-500 mt-1">Documents your patients shared with you</p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("shared.title")}</h1>
+        <p className="text-slate-500 mt-1">{t("shared.subtitle")}</p>
       </div>
 
       {items.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
           <FileText className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="text-slate-400 text-sm">No documents shared yet</p>
-          <p className="text-slate-400 text-xs mt-1">
-            When a patient shares an exam or document, it appears here
-          </p>
+          <p className="text-slate-400 text-sm">{t("shared.empty")}</p>
+          <p className="text-slate-400 text-xs mt-1">{t("shared.emptyHint")}</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
           {items.map((it) => {
-            const label = it.categoryName || LEGACY_LABELS[it.type] || "Other";
+            const label = it.categoryName || legacyLabel(it.type);
             const isBusy = busyId === it.shareId;
             return (
               <div key={it.shareId} className="px-5 py-4 hover:bg-slate-50 transition">
@@ -152,7 +152,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                       onClick={() => handleDownload(it.documentId)}
                       disabled={downloadingId === it.documentId}
                       className="shrink-0 text-slate-400 hover:text-emerald-500 transition p-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
-                      aria-label="Download"
+                      aria-label={t("shared.download")}
                     >
                       {downloadingId === it.documentId ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                     </button>
@@ -167,11 +167,11 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                         href={`/professional/patients/${it.existingChartId}`}
                         className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
                       >
-                        <FolderOpen size={14} /> Open chart
+                        <FolderOpen size={14} /> {t("shared.openChart")}
                       </Link>
                       {it.alreadyAttached ? (
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
-                          <CheckCircle2 size={14} /> Added to chart
+                          <CheckCircle2 size={14} /> {t("shared.addedToChart")}
                         </span>
                       ) : (
                         <button
@@ -180,7 +180,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                           className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                         >
                           {isBusy ? <Loader2 size={14} className="animate-spin" /> : <FilePlus2 size={14} />}
-                          Add to chart
+                          {t("shared.addToChart")}
                         </button>
                       )}
                     </>
@@ -191,7 +191,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                     >
                       {isBusy ? <Loader2 size={14} className="animate-spin" /> : <FolderPlus size={14} />}
-                      Create first chart for this patient
+                      {t("shared.createFirstChart")}
                     </button>
                   )}
                 </div>

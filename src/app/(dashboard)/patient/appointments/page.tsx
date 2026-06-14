@@ -1,13 +1,11 @@
 "use client";
 
 // src/app/(dashboard)/patient/appointments/page.tsx
-// Full appointment booking flow with real Stripe payment:
-// Step 1 — Browse doctors + filter
-// Step 2 — Select date/time slot
-// Step 3 — Checkout with real Stripe card payment
-// Step 4 — Confirmation
+// Full appointment booking flow with real Stripe payment. i18n via useI18n().
 
 import { useState, useEffect, useRef } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 import {
   Calendar, Search, Video, Building2,
   Clock, ChevronRight, ChevronLeft, CreditCard, Loader2,
@@ -38,9 +36,12 @@ interface SlotDay {
   slots: { time: string; datetime: string; available: boolean }[];
 }
 
-const SPECIALTIES = ["All", "General Practice", "Cardiology", "Psychology", "Nutrition", "Cannabis Medicine", "Dermatology"];
-
 export default function AppointmentsPage() {
+  const { t, lang } = useI18n();
+  const locale = localeOf(lang);
+
+  const SPECIALTIES = ["All", "General Practice", "Cardiology", "Psychology", "Nutrition", "Cannabis Medicine", "Dermatology"];
+
   const [step, setStep] = useState<Step>("browse");
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [selectedPro, setSelectedPro] = useState<Professional | null>(null);
@@ -57,7 +58,6 @@ export default function AppointmentsPage() {
   const [type, setType] = useState<"TELECONSULT" | "IN_PERSON">("TELECONSULT");
   const [appointments, setAppointments] = useState<any[]>([]);
 
-  // Stripe card element state
   const [stripeLoaded, setStripeLoaded] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
   const cardElementRef = useRef<any>(null);
@@ -66,7 +66,6 @@ export default function AppointmentsPage() {
 
   useEffect(() => { fetchProfessionals(); fetchAppointments(); }, []);
 
-  // Load Stripe.js when entering payment step
   useEffect(() => {
     if (step === "payment" && !stripeLoaded) {
       loadStripe();
@@ -74,7 +73,6 @@ export default function AppointmentsPage() {
   }, [step]);
 
   async function loadStripe() {
-    // Dynamically load Stripe.js
     if (!(window as any).Stripe) {
       const script = document.createElement("script");
       script.src = "https://js.stripe.com/v3/";
@@ -152,7 +150,6 @@ export default function AppointmentsPage() {
     setError("");
 
     try {
-      // 1. Create PaymentIntent on server
       const intentRes = await fetch("/api/payments/create-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -166,23 +163,21 @@ export default function AppointmentsPage() {
       const intentData = await intentRes.json();
 
       if (!intentRes.ok) {
-        setError(intentData.error?.general?.[0] || "Failed to initialize payment.");
+        setError(intentData.error?.general?.[0] || t("appt.errInitPayment"));
         return;
       }
 
-      // 2. Confirm payment with Stripe.js (real card charge)
       const { error: stripeError, paymentIntent } = await stripeRef.current.confirmCardPayment(
         intentData.clientSecret,
         { payment_method: { card: cardElementRef.current } }
       );
 
       if (stripeError) {
-        setError(stripeError.message || "Payment failed. Please try again.");
+        setError(stripeError.message || t("appt.errPaymentFailed"));
         return;
       }
 
       if (paymentIntent.status === "succeeded") {
-        // 3. Create appointment in our system
         const apptRes = await fetch("/api/appointments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -198,7 +193,7 @@ export default function AppointmentsPage() {
 
         const apptData = await apptRes.json();
         if (!apptRes.ok) {
-          setError(apptData.error?.general?.[0] || "Appointment could not be confirmed.");
+          setError(apptData.error?.general?.[0] || t("appt.errNotConfirmed"));
           return;
         }
 
@@ -207,7 +202,7 @@ export default function AppointmentsPage() {
         fetchAppointments();
       }
     } catch (e) {
-      setError("Something went wrong. Please try again.");
+      setError(t("appt.errGeneric"));
     } finally {
       setPayLoading(false);
     }
@@ -236,7 +231,7 @@ export default function AppointmentsPage() {
   });
 
   const priceDisplay = selectedPro
-    ? new Intl.NumberFormat("en-US", {
+    ? new Intl.NumberFormat(locale, {
         style: "currency",
         currency: selectedPro.currency || "USD",
       }).format(selectedPro.consultPrice / 100)
@@ -248,15 +243,15 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Appointments</h1>
-          <p className="text-slate-500 text-sm mt-1">Book and manage your consultations</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("appt.title")}</h1>
+          <p className="text-slate-500 text-sm mt-1">{t("appt.subtitle")}</p>
         </div>
         {step !== "browse" && step !== "confirmed" && (
           <button
             onClick={resetFlow}
             className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 font-medium"
           >
-            <ChevronLeft size={16} /> Back to search
+            <ChevronLeft size={16} /> {t("appt.backToSearch")}
           </button>
         )}
       </div>
@@ -265,7 +260,7 @@ export default function AppointmentsPage() {
       {appointments.length > 0 && step === "browse" && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
           <p className="text-sm font-semibold text-emerald-800 mb-3 flex items-center gap-2">
-            <Calendar size={15} /> Upcoming appointments
+            <Calendar size={15} /> {t("appt.upcoming")}
           </p>
           <div className="space-y-2">
             {appointments.slice(0, 2).map((apt: any) => (
@@ -278,10 +273,10 @@ export default function AppointmentsPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-semibold text-emerald-700">
-                    {new Date(apt.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    {new Date(apt.scheduledAt).toLocaleDateString(locale, { month: "short", day: "numeric" })}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {new Date(apt.scheduledAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                    {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
                 {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
@@ -289,7 +284,7 @@ export default function AppointmentsPage() {
                     href={`/video/${apt.id}`}
                     className="shrink-0 flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-3 py-2 rounded-lg transition"
                   >
-                    <Video size={13} /> Join
+                    <Video size={13} /> {t("appt.join")}
                   </a>
                 )}
               </div>
@@ -298,7 +293,7 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      {/* ═══ STEP 1: BROWSE ═══ */}
+      {/* STEP 1: BROWSE */}
       {step === "browse" && (
         <>
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
@@ -309,21 +304,21 @@ export default function AppointmentsPage() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by name or specialty..."
+                  placeholder={t("appt.search")}
                   className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400"
                 />
               </div>
               <div className="flex gap-2">
-                {(["TELECONSULT", "IN_PERSON"] as const).map((t) => (
+                {(["TELECONSULT", "IN_PERSON"] as const).map((tp) => (
                   <button
-                    key={t}
-                    onClick={() => setType(t)}
+                    key={tp}
+                    onClick={() => setType(tp)}
                     className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
-                      type === t ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      type === tp ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
-                    {t === "TELECONSULT" ? <Video size={13} /> : <Building2 size={13} />}
-                    {t === "TELECONSULT" ? "Online" : "In-person"}
+                    {tp === "TELECONSULT" ? <Video size={13} /> : <Building2 size={13} />}
+                    {tp === "TELECONSULT" ? t("appt.online") : t("appt.inPerson")}
                   </button>
                 ))}
               </div>
@@ -347,20 +342,20 @@ export default function AppointmentsPage() {
             <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-slate-400" /></div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-slate-500 mb-2">No doctors found.</p>
-              <p className="text-xs text-slate-400">Professionals need to complete their profile to appear here.</p>
+              <p className="text-slate-500 mb-2">{t("appt.noDoctors")}</p>
+              <p className="text-xs text-slate-400">{t("appt.noDoctorsHint")}</p>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {filtered.map((pro) => (
-                <DoctorCard key={pro.id} pro={pro} onSelect={() => selectProfessional(pro)} />
+                <DoctorCard key={pro.id} pro={pro} onSelect={() => selectProfessional(pro)} locale={locale} t={t} />
               ))}
             </div>
           )}
         </>
       )}
 
-      {/* ═══ STEP 2: SELECT SLOT ═══ */}
+      {/* STEP 2: SELECT SLOT */}
       {step === "slots" && selectedPro && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 flex items-center gap-4">
@@ -370,7 +365,7 @@ export default function AppointmentsPage() {
             <div>
               <h2 className="text-white font-bold text-lg">Dr. {selectedPro.firstName} {selectedPro.lastName}</h2>
               <p className="text-slate-400 text-sm">{selectedPro.specialty}</p>
-              <p className="text-emerald-400 font-semibold text-sm mt-1">{priceDisplay} / consultation</p>
+              <p className="text-emerald-400 font-semibold text-sm mt-1">{priceDisplay} {t("appt.perConsult")}</p>
             </div>
           </div>
 
@@ -378,11 +373,11 @@ export default function AppointmentsPage() {
             {slotsLoading ? (
               <div className="flex justify-center py-10"><Loader2 size={24} className="animate-spin text-slate-400" /></div>
             ) : slots.length === 0 ? (
-              <p className="text-center text-slate-500 py-8">No available slots in the next 14 days.</p>
+              <p className="text-center text-slate-500 py-8">{t("appt.noSlots")}</p>
             ) : (
               <>
                 <div>
-                  <p className="text-sm font-semibold text-slate-700 mb-3">Select a day</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-3">{t("appt.selectDay")}</p>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {slots.map((day) => {
                       const availableCount = day.slots.filter((s) => s.available).length;
@@ -398,7 +393,7 @@ export default function AppointmentsPage() {
                         >
                           <span className="text-xs text-slate-500 font-medium">{day.label.split(",")[0]}</span>
                           <span className="text-lg font-bold text-slate-800 mt-0.5">{day.label.split(" ").pop()}</span>
-                          <span className="text-xs text-emerald-600 font-semibold mt-1">{availableCount} slots</span>
+                          <span className="text-xs text-emerald-600 font-semibold mt-1">{availableCount} {t("appt.slots")}</span>
                         </button>
                       );
                     })}
@@ -408,7 +403,7 @@ export default function AppointmentsPage() {
                 {selectedDay && (
                   <div>
                     <p className="text-sm font-semibold text-slate-700 mb-3">
-                      {selectedDay.label} — available times
+                      {selectedDay.label} — {t("appt.availableTimes")}
                     </p>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                       {selectedDay.slots.map((slot) => (
@@ -436,7 +431,7 @@ export default function AppointmentsPage() {
                     onClick={() => setStep("payment")}
                     className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl transition text-base"
                   >
-                    Continue to payment <ChevronRight size={18} />
+                    {t("appt.continueToPayment")} <ChevronRight size={18} />
                   </button>
                 )}
               </>
@@ -445,10 +440,10 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      {/* ═══ STEP 3: PAYMENT ═══ */}
+      {/* STEP 3: PAYMENT */}
       {step === "payment" && selectedPro && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-          <h2 className="font-bold text-slate-900 text-lg">Complete payment</h2>
+          <h2 className="font-bold text-slate-900 text-lg">{t("appt.completePayment")}</h2>
 
           {error && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
@@ -456,35 +451,33 @@ export default function AppointmentsPage() {
             </div>
           )}
 
-          {/* Order summary */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-2">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Order summary</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">{t("appt.orderSummary")}</p>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Consultation with Dr. {selectedPro.lastName}</span>
+              <span className="text-slate-600">{t("appt.consultWith")} {selectedPro.lastName}</span>
               <span className="font-semibold">{priceDisplay}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Date</span>
-              <span>{new Date(selectedSlot).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+              <span className="text-slate-600">{t("appt.date")}</span>
+              <span>{new Date(selectedSlot).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" })}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Time</span>
-              <span>{new Date(selectedSlot).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+              <span className="text-slate-600">{t("appt.time")}</span>
+              <span>{new Date(selectedSlot).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Type</span>
-              <span>{type === "TELECONSULT" ? "🎥 Teleconsultation" : "🏥 In-person"}</span>
+              <span className="text-slate-600">{t("appt.type")}</span>
+              <span>{type === "TELECONSULT" ? t("appt.teleconsult") : t("appt.inPersonType")}</span>
             </div>
             <div className="border-t border-slate-200 mt-3 pt-3 flex justify-between font-bold text-slate-900">
-              <span>Total</span>
+              <span>{t("appt.total")}</span>
               <span>{priceDisplay}</span>
             </div>
           </div>
 
-          {/* Stripe card element */}
           <div>
             <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <CreditCard size={16} /> Card details
+              <CreditCard size={16} /> {t("appt.cardDetails")}
             </p>
             <div
               id="card-element"
@@ -492,7 +485,7 @@ export default function AppointmentsPage() {
             />
             {!stripeLoaded && (
               <div className="flex items-center gap-2 mt-2 text-xs text-slate-400">
-                <Loader2 size={12} className="animate-spin" /> Loading secure payment form...
+                <Loader2 size={12} className="animate-spin" /> {t("appt.loadingPayment")}
               </div>
             )}
           </div>
@@ -507,55 +500,53 @@ export default function AppointmentsPage() {
             ) : (
               <Lock size={18} />
             )}
-            {payLoading ? "Processing payment..." : `Pay ${priceDisplay}`}
+            {payLoading ? t("appt.processing") : `${t("appt.pay")} ${priceDisplay}`}
           </button>
 
           <p className="text-xs text-slate-400 text-center flex items-center justify-center gap-1">
-            <Lock size={11} /> Secured by Stripe · HIPAA compliant · Your card is never stored
+            <Lock size={11} /> {t("appt.securedBy")}
           </p>
         </div>
       )}
 
-      {/* ═══ STEP 4: CONFIRMED ═══ */}
+      {/* STEP 4: CONFIRMED */}
       {step === "confirmed" && selectedPro && (
         <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-8 text-center space-y-6">
           <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
             <CheckCircle2 size={40} className="text-emerald-500" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Appointment confirmed!</h2>
-            <p className="text-slate-500 mt-2">Your consultation has been booked and paid.</p>
+            <h2 className="text-2xl font-bold text-slate-900">{t("appt.confirmed")}</h2>
+            <p className="text-slate-500 mt-2">{t("appt.confirmedSub")}</p>
           </div>
           <div className="bg-slate-50 rounded-xl p-5 text-sm space-y-2 text-left">
             <div className="flex justify-between">
-              <span className="text-slate-500">Doctor</span>
+              <span className="text-slate-500">{t("appt.doctor")}</span>
               <span className="font-semibold">Dr. {selectedPro.firstName} {selectedPro.lastName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Date</span>
+              <span className="text-slate-500">{t("appt.date")}</span>
               <span className="font-semibold">
-                {new Date(selectedSlot).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                {new Date(selectedSlot).toLocaleDateString(locale, { weekday: "long", month: "long", day: "numeric" })}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Time</span>
+              <span className="text-slate-500">{t("appt.time")}</span>
               <span className="font-semibold">
-                {new Date(selectedSlot).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                {new Date(selectedSlot).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Amount paid</span>
+              <span className="text-slate-500">{t("appt.amountPaid")}</span>
               <span className="font-semibold text-emerald-600">{priceDisplay}</span>
             </div>
           </div>
-          <p className="text-sm text-slate-500">
-            A confirmation email has been sent. You will receive reminders 24h and 1h before.
-          </p>
+          <p className="text-sm text-slate-500">{t("appt.emailSent")}</p>
           <button
             onClick={resetFlow}
             className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl hover:bg-slate-700 transition"
           >
-            Back to appointments
+            {t("appt.backToAppts")}
           </button>
         </div>
       )}
@@ -563,7 +554,7 @@ export default function AppointmentsPage() {
   );
 }
 
-function DoctorCard({ pro, onSelect }: { pro: Professional; onSelect: () => void }) {
+function DoctorCard({ pro, onSelect, locale, t }: { pro: Professional; onSelect: () => void; locale: string; t: (k: string) => string }) {
   return (
     <div
       className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-emerald-300 transition cursor-pointer"
@@ -589,25 +580,25 @@ function DoctorCard({ pro, onSelect }: { pro: Professional; onSelect: () => void
         </div>
         <div className="text-right shrink-0">
           <p className="font-bold text-slate-900 text-base">
-            {new Intl.NumberFormat("en-US", { style: "currency", currency: pro.currency || "USD" }).format(pro.consultPrice / 100)}
+            {new Intl.NumberFormat(locale, { style: "currency", currency: pro.currency || "USD" }).format(pro.consultPrice / 100)}
           </p>
-          <p className="text-xs text-slate-400">/consultation</p>
+          <p className="text-xs text-slate-400">{t("appt.perConsult")}</p>
         </div>
       </div>
       {pro.bio && <p className="text-xs text-slate-500 mt-3 line-clamp-2">{pro.bio}</p>}
       <div className="flex items-center gap-2 mt-4">
         {pro.acceptsTeleconsult && (
           <span className="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium">
-            <Video size={11} /> Online
+            <Video size={11} /> {t("appt.online")}
           </span>
         )}
         {pro.acceptsInPerson && (
           <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
-            <Building2 size={11} /> In-person
+            <Building2 size={11} /> {t("appt.inPerson")}
           </span>
         )}
         <button className="ml-auto flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800">
-          Book <ChevronRight size={13} />
+          {t("appt.book")} <ChevronRight size={13} />
         </button>
       </div>
     </div>

@@ -1,18 +1,11 @@
 "use client";
 // src/app/(dashboard)/professional/settings/availability/page.tsx
-// Professional sets their weekly schedule here — required for appointments to work
+// Professional sets their weekly schedule here. i18n via useI18n().
 
 import { useState, useEffect } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 import { Save, Loader2, CheckCircle2 } from "lucide-react";
-
-const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-const TIMES = Array.from({ length: 48 }, (_, i) => {
-  const h = Math.floor(i / 2);
-  const m = i % 2 === 0 ? "00" : "30";
-  const ampm = h < 12 ? "AM" : "PM";
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return { value: `${String(h).padStart(2,"0")}:${m}`, label: `${h12}:${m} ${ampm}` };
-});
 
 interface DaySlot {
   dayOfWeek: number;
@@ -23,7 +16,7 @@ interface DaySlot {
 }
 
 const defaultSlots = (): DaySlot[] =>
-  DAYS.map((_, i) => ({
+  Array.from({ length: 7 }, (_, i) => ({
     dayOfWeek: i,
     enabled: i >= 1 && i <= 5, // Mon–Fri by default
     startTime: "09:00",
@@ -32,6 +25,18 @@ const defaultSlots = (): DaySlot[] =>
   }));
 
 export default function AvailabilityPage() {
+  const { t, lang } = useI18n();
+  const locale = localeOf(lang);
+
+  // Build the time options, formatting the label in the user's locale.
+  const TIMES = Array.from({ length: 48 }, (_, i) => {
+    const h = Math.floor(i / 2);
+    const m = i % 2 === 0 ? "00" : "30";
+    const value = `${String(h).padStart(2, "0")}:${m}`;
+    const label = new Date(2000, 0, 1, h, Number(m)).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+    return { value, label };
+  });
+
   const [slots, setSlots] = useState<DaySlot[]>(defaultSlots());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,12 +91,12 @@ export default function AvailabilityPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Availability</h1>
-          <p className="text-slate-500 text-sm mt-1">Set your weekly schedule. Patients can only book during these hours.</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("avail.title")}</h1>
+          <p className="text-slate-500 text-sm mt-1">{t("avail.subtitle")}</p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-emerald-600">{totalWeeklySlots}</p>
-          <p className="text-xs text-slate-400">slots/week</p>
+          <p className="text-xs text-slate-400">{t("avail.slotsPerWeek")}</p>
         </div>
       </div>
 
@@ -106,53 +111,49 @@ export default function AvailabilityPage() {
               </button>
 
               {/* Day name */}
-              <p className="font-semibold text-slate-800 w-24 shrink-0">{DAYS[slot.dayOfWeek]}</p>
+              <p className="font-semibold text-slate-800 w-24 shrink-0">{t(`day.${slot.dayOfWeek}`)}</p>
 
               {slot.enabled ? (
                 <>
-                  {/* Start time */}
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-400">From</label>
+                    <label className="text-xs text-slate-400">{t("avail.from")}</label>
                     <select value={slot.startTime} onChange={(e) => updateSlot(slot.dayOfWeek, "startTime", e.target.value)}
                       className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
-                      {TIMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      {TIMES.map((tm) => <option key={tm.value} value={tm.value}>{tm.label}</option>)}
                     </select>
                   </div>
 
-                  {/* End time */}
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-400">To</label>
+                    <label className="text-xs text-slate-400">{t("avail.to")}</label>
                     <select value={slot.endTime} onChange={(e) => updateSlot(slot.dayOfWeek, "endTime", e.target.value)}
                       className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
-                      {TIMES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      {TIMES.map((tm) => <option key={tm.value} value={tm.value}>{tm.label}</option>)}
                     </select>
                   </div>
 
-                  {/* Duration */}
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-slate-400">Slot</label>
+                    <label className="text-xs text-slate-400">{t("avail.slot")}</label>
                     <select value={slot.slotDuration} onChange={(e) => updateSlot(slot.dayOfWeek, "slotDuration", Number(e.target.value))}
                       className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
-                      <option value={15}>15 min</option>
-                      <option value={30}>30 min</option>
-                      <option value={45}>45 min</option>
-                      <option value={60}>1 hour</option>
+                      <option value={15}>{t("avail.min15")}</option>
+                      <option value={30}>{t("avail.min30")}</option>
+                      <option value={45}>{t("avail.min45")}</option>
+                      <option value={60}>{t("avail.hour1")}</option>
                     </select>
                   </div>
 
-                  {/* Slots count */}
                   <p className="text-xs text-emerald-600 font-medium ml-auto shrink-0">
                     {(() => {
                       const [sh, sm] = slot.startTime.split(":").map(Number);
                       const [eh, em] = slot.endTime.split(":").map(Number);
                       const mins = (eh * 60 + em) - (sh * 60 + sm);
                       const count = Math.floor(mins / slot.slotDuration);
-                      return count > 0 ? `${count} slots` : "Invalid range";
+                      return count > 0 ? `${count} ${t("avail.slots")}` : t("avail.invalidRange");
                     })()}
                   </p>
                 </>
               ) : (
-                <p className="text-slate-400 text-sm">Unavailable</p>
+                <p className="text-slate-400 text-sm">{t("avail.unavailable")}</p>
               )}
             </div>
           </div>
@@ -162,11 +163,11 @@ export default function AvailabilityPage() {
       <button onClick={handleSave} disabled={saving}
         className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-50">
         {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <CheckCircle2 size={18} /> : <Save size={18} />}
-        {saving ? "Saving..." : saved ? "Saved!" : "Save availability"}
+        {saving ? t("avail.saving") : saved ? t("avail.saved") : t("avail.save")}
       </button>
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
-        <strong>Note:</strong> Changes take effect immediately. Patients who already have confirmed bookings will not be affected.
+        <strong>{t("avail.noteBold")}</strong> {t("avail.noteText")}
       </div>
     </div>
   );

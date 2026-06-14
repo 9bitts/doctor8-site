@@ -1,31 +1,31 @@
 "use client";
 
 // src/app/(dashboard)/patient/account/page.tsx
-// Account settings: change password + change email
-// Same page is used for both patient and professional (via their respective routes)
+// Account settings: change password + change email. i18n via useT().
 
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
+import { useT } from "@/lib/i18n/I18nProvider";
 import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
   Eye, EyeOff, LogOut, Shield,
 } from "lucide-react";
 
-const PASSWORD_RULES = [
-  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
-  { label: "One uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
-  { label: "One number", test: (p: string) => /[0-9]/.test(p) },
-  { label: "One special character", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
-];
-
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition";
 
 export default function AccountPage() {
-  const [currentEmail, setCurrentEmail] = useState("");
-  const [hasPassword, setHasPassword] = useState(true);
+  const t = useT();
 
-  // Change password state
+  const PASSWORD_RULES = [
+    { key: "acct.rule8", test: (p: string) => p.length >= 8 },
+    { key: "acct.ruleUpper", test: (p: string) => /[A-Z]/.test(p) },
+    { key: "acct.ruleNumber", test: (p: string) => /[0-9]/.test(p) },
+    { key: "acct.ruleSpecial", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+  ];
+
+  const [currentEmail, setCurrentEmail] = useState("");
+
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
@@ -35,7 +35,6 @@ export default function AccountPage() {
   const [pwdSuccess, setPwdSuccess] = useState(false);
   const [pwdError, setPwdError] = useState("");
 
-  // Change email state
   const [newEmail, setNewEmail] = useState("");
   const [emailPwd, setEmailPwd] = useState("");
   const [showEmailPwd, setShowEmailPwd] = useState(false);
@@ -47,7 +46,6 @@ export default function AccountPage() {
   const passwordsMatch = newPwd === confirmPwd;
 
   useEffect(() => {
-    // Load current session info
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((s) => {
@@ -60,8 +58,8 @@ export default function AccountPage() {
     setPwdError("");
     setPwdSuccess(false);
 
-    if (!isPasswordValid) { setPwdError("New password doesn't meet the requirements."); return; }
-    if (!passwordsMatch) { setPwdError("Passwords don't match."); return; }
+    if (!isPasswordValid) { setPwdError(t("acct.errPwdReq")); return; }
+    if (!passwordsMatch) { setPwdError(t("acct.pwdNoMatch")); return; }
 
     setPwdLoading(true);
     try {
@@ -76,7 +74,7 @@ export default function AccountPage() {
         setPwdError(
           typeof data.error === "string"
             ? data.error
-            : data.error?.newPassword?.[0] || data.error?.currentPassword?.[0] || "Failed to change password."
+            : data.error?.newPassword?.[0] || data.error?.currentPassword?.[0] || t("acct.errPwdFail")
         );
         return;
       }
@@ -87,7 +85,7 @@ export default function AccountPage() {
       setConfirmPwd("");
       setTimeout(() => setPwdSuccess(false), 5000);
     } catch {
-      setPwdError("Something went wrong. Please try again.");
+      setPwdError(t("acct.errGeneric"));
     } finally {
       setPwdLoading(false);
     }
@@ -98,7 +96,7 @@ export default function AccountPage() {
     setEmailError("");
     setEmailSuccess(false);
 
-    if (!newEmail) { setEmailError("Please enter a new email address."); return; }
+    if (!newEmail) { setEmailError(t("acct.errEnterEmail")); return; }
 
     setEmailLoading(true);
     try {
@@ -113,7 +111,7 @@ export default function AccountPage() {
         setEmailError(
           typeof data.error === "string"
             ? data.error
-            : data.error?.newEmail?.[0] || data.error?.currentPassword?.[0] || "Failed to request email change."
+            : data.error?.newEmail?.[0] || data.error?.currentPassword?.[0] || t("acct.errEmailFail")
         );
         return;
       }
@@ -122,7 +120,7 @@ export default function AccountPage() {
       setNewEmail("");
       setEmailPwd("");
     } catch {
-      setEmailError("Something went wrong. Please try again.");
+      setEmailError(t("acct.errGeneric"));
     } finally {
       setEmailLoading(false);
     }
@@ -131,8 +129,8 @@ export default function AccountPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Account</h1>
-        <p className="text-slate-500 mt-1 text-sm">Manage your login credentials.</p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("acct.title")}</h1>
+        <p className="text-slate-500 mt-1 text-sm">{t("acct.subtitle")}</p>
       </div>
 
       {/* Current account info */}
@@ -141,20 +139,20 @@ export default function AccountPage() {
           <Shield size={18} className="text-emerald-600" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-slate-800">{currentEmail || "Loading..."}</p>
-          <p className="text-xs text-slate-400 mt-0.5">Your current email address</p>
+          <p className="text-sm font-semibold text-slate-800">{currentEmail || t("common.loading")}</p>
+          <p className="text-xs text-slate-400 mt-0.5">{t("acct.currentEmail")}</p>
         </div>
       </div>
 
-      {/* ─── Change password ─── */}
+      {/* Change password */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Lock size={18} className="text-emerald-500" /> Change password
+          <Lock size={18} className="text-emerald-500" /> {t("acct.changePassword")}
         </h2>
 
         {pwdSuccess && (
           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-700">
-            <CheckCircle2 size={16} className="shrink-0" /> Password changed successfully!
+            <CheckCircle2 size={16} className="shrink-0" /> {t("acct.pwdSuccess")}
           </div>
         )}
         {pwdError && (
@@ -164,9 +162,8 @@ export default function AccountPage() {
         )}
 
         <form onSubmit={handleChangePassword} className="space-y-4">
-          {/* Current password */}
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Current password</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("acct.currentPwd")}</label>
             <div className="relative">
               <input
                 type={showCurrent ? "text" : "password"}
@@ -186,9 +183,8 @@ export default function AccountPage() {
             </div>
           </div>
 
-          {/* New password */}
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">New password</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("acct.newPwd")}</label>
             <div className="relative">
               <input
                 type={showNew ? "text" : "password"}
@@ -209,13 +205,13 @@ export default function AccountPage() {
             {newPwd && (
               <div className="mt-2 space-y-1">
                 {PASSWORD_RULES.map((rule) => (
-                  <div key={rule.label} className="flex items-center gap-2">
+                  <div key={rule.key} className="flex items-center gap-2">
                     <CheckCircle2
                       size={12}
                       className={rule.test(newPwd) ? "text-emerald-500" : "text-slate-300"}
                     />
                     <span className={`text-xs ${rule.test(newPwd) ? "text-emerald-600" : "text-slate-400"}`}>
-                      {rule.label}
+                      {t(rule.key)}
                     </span>
                   </div>
                 ))}
@@ -223,9 +219,8 @@ export default function AccountPage() {
             )}
           </div>
 
-          {/* Confirm new password */}
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Confirm new password</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("acct.confirmPwd")}</label>
             <input
               type="password"
               value={confirmPwd}
@@ -235,7 +230,7 @@ export default function AccountPage() {
               className={inputClass}
             />
             {confirmPwd && !passwordsMatch && (
-              <p className="text-xs text-red-500 mt-1">Passwords don&apos;t match.</p>
+              <p className="text-xs text-red-500 mt-1">{t("acct.pwdNoMatch")}</p>
             )}
           </div>
 
@@ -245,26 +240,23 @@ export default function AccountPage() {
             className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2"
           >
             {pwdLoading && <Loader2 size={15} className="animate-spin" />}
-            {pwdLoading ? "Saving..." : "Change password"}
+            {pwdLoading ? t("acct.saving") : t("acct.changePasswordBtn")}
           </button>
         </form>
       </div>
 
-      {/* ─── Change email ─── */}
+      {/* Change email */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Mail size={18} className="text-emerald-500" /> Change email
+          <Mail size={18} className="text-emerald-500" /> {t("acct.changeEmail")}
         </h2>
 
         {emailSuccess ? (
           <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
             <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-emerald-700">Verification email sent!</p>
-              <p className="text-xs text-emerald-600 mt-1">
-                Check your new inbox and click the link to confirm the change.
-                Your email won&apos;t change until you click the link.
-              </p>
+              <p className="text-sm font-semibold text-emerald-700">{t("acct.emailSentTitle")}</p>
+              <p className="text-xs text-emerald-600 mt-1">{t("acct.emailSentText")}</p>
             </div>
           </div>
         ) : (
@@ -277,7 +269,7 @@ export default function AccountPage() {
 
             <form onSubmit={handleChangeEmail} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">New email address</label>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("acct.newEmail")}</label>
                 <input
                   type="email"
                   value={newEmail}
@@ -291,7 +283,7 @@ export default function AccountPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-1.5">
-                  Confirm with your password
+                  {t("acct.confirmWithPwd")}
                 </label>
                 <div className="relative">
                   <input
@@ -318,24 +310,24 @@ export default function AccountPage() {
                 className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2"
               >
                 {emailLoading && <Loader2 size={15} className="animate-spin" />}
-                {emailLoading ? "Sending..." : "Send verification email"}
+                {emailLoading ? t("acct.sending") : t("acct.sendVerification")}
               </button>
             </form>
           </>
         )}
       </div>
 
-      {/* ─── Sign out ─── */}
+      {/* Sign out */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-slate-800">Sign out</p>
-          <p className="text-xs text-slate-400 mt-0.5">Sign out of your account on this device.</p>
+          <p className="text-sm font-semibold text-slate-800">{t("acct.signOut")}</p>
+          <p className="text-xs text-slate-400 mt-0.5">{t("acct.signOutDesc")}</p>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition"
         >
-          <LogOut size={15} /> Sign out
+          <LogOut size={15} /> {t("acct.signOut")}
         </button>
       </div>
     </div>

@@ -1,10 +1,11 @@
 "use client";
 
 // src/app/(dashboard)/professional/patients/PatientsClient.tsx
-// Client UI for the professional's patient charts: list + create new chart.
+// Client UI for the professional's patient charts: list + create new chart. i18n via useT().
 
 import { useState } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { Users, Plus, X, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface Chart {
@@ -17,6 +18,7 @@ interface Chart {
 }
 
 export default function PatientsClient({ initialCharts }: { initialCharts: Chart[] }) {
+  const t = useT();
   const [charts, setCharts] = useState<Chart[]>(initialCharts);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -35,7 +37,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
 
   async function handleCreate() {
     if (!firstName.trim() || !lastName.trim()) {
-      setError("First and last name are required.");
+      setError(t("pat.errNameRequired"));
       return;
     }
     setSaving(true);
@@ -48,11 +50,10 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Could not create chart.");
+        setError(typeof data.error === "string" ? data.error : t("pat.errCreate"));
         setSaving(false);
         return;
       }
-      // Add to top of list
       setCharts((prev) => [
         {
           id: data.id,
@@ -67,7 +68,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
       resetForm();
       setShowForm(false);
     } catch {
-      setError("Network error. Try again.");
+      setError(t("pat.errNetwork"));
     }
     setSaving(false);
   }
@@ -76,16 +77,16 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Patients</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t("pat.title")}</h1>
           <p className="text-slate-500 mt-1">
-            {charts.length} {charts.length === 1 ? "chart" : "charts"}
+            {charts.length} {charts.length === 1 ? t("pat.chart") : t("pat.charts")}
           </p>
         </div>
         <button
           onClick={() => { setShowForm(true); resetForm(); }}
           className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
         >
-          <Plus size={18} /> New patient
+          <Plus size={18} /> {t("pat.new")}
         </button>
       </div>
 
@@ -94,10 +95,8 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
         {charts.length === 0 ? (
           <div className="text-center py-16">
             <Users className="mx-auto text-slate-300 mb-3" size={40} />
-            <p className="text-slate-400 text-sm">No patient charts yet</p>
-            <p className="text-slate-400 text-xs mt-1">
-              Create a chart to start adding records and sharing with patients
-            </p>
+            <p className="text-slate-400 text-sm">{t("pat.empty")}</p>
+            <p className="text-slate-400 text-xs mt-1">{t("pat.emptyHint")}</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -117,11 +116,11 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   <p className="text-xs mt-0.5">
                     {c.hasAccount ? (
                       <span className="text-emerald-600 inline-flex items-center gap-1">
-                        <CheckCircle2 size={12} /> Has Doctor8 account
+                        <CheckCircle2 size={12} /> {t("pat.hasAccount")}
                       </span>
                     ) : (
                       <span className="text-amber-600 inline-flex items-center gap-1">
-                        <AlertCircle size={12} /> No account yet
+                        <AlertCircle size={12} /> {t("pat.noAccount")}
                       </span>
                     )}
                   </p>
@@ -138,7 +137,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
-              <h2 className="font-bold text-slate-800">New patient chart</h2>
+              <h2 className="font-bold text-slate-800">{t("pat.modalTitle")}</h2>
               <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
@@ -146,7 +145,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">First name *</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.firstName")}</label>
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
@@ -154,7 +153,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Last name *</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.lastName")}</label>
                   <input
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
@@ -164,7 +163,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Email <span className="text-slate-400">(to share records later)</span>
+                  {t("pat.email")} <span className="text-slate-400">{t("pat.emailHint")}</span>
                 </label>
                 <input
                   type="email"
@@ -175,7 +174,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Phone</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.phone")}</label>
                 <input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -183,7 +182,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Notes</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.notes")}</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -201,14 +200,14 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   onClick={() => setShowForm(false)}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={saving}
                   className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50"
                 >
-                  {saving ? "Saving..." : "Create chart"}
+                  {saving ? t("pat.creating") : t("pat.create")}
                 </button>
               </div>
             </div>

@@ -1,11 +1,10 @@
 "use client";
 
 // src/app/(dashboard)/patient/medications/page.tsx
-// THE FIX: medications are now clearly separated into two flows:
-// CLINICAL → goes to medical history, shared with doctors
-// PURCHASE → goes to collective purchase list, NOT shared
+// CLINICAL vs PURCHASE flows. i18n via useT().
 
 import { useState, useEffect } from "react";
+import { useT } from "@/lib/i18n/I18nProvider";
 import { Pill, Plus, Eye, EyeOff, Trash2, ShoppingCart, Stethoscope, X, Loader2, Share2, Download } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 
@@ -24,6 +23,7 @@ interface Medication {
 }
 
 export default function MedicationsPage() {
+  const t = useT();
   const [activeTab, setActiveTab] = useState<Flow>("CLINICAL");
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +71,7 @@ export default function MedicationsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Remove this medication?")) return;
+    if (!confirm(t("med.removeConfirm"))) return;
     await fetch(`/api/patient/medications/${id}`, { method: "DELETE" });
     fetchMedications();
   }
@@ -83,7 +83,7 @@ export default function MedicationsPage() {
       const data = await res.json();
       if (data.url) {
         await navigator.clipboard.writeText(data.url);
-        alert("Share link copied to clipboard! Link expires in 7 days.");
+        alert(t("med.shareCopied"));
       }
     } finally { setShareLoading(false); }
   }
@@ -102,28 +102,28 @@ export default function MedicationsPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Medications</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage your medications and purchase list</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("med.title")}</h1>
+          <p className="text-slate-500 text-sm mt-1">{t("med.subtitle")}</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition"
         >
-          <Plus size={16} /> Add
+          <Plus size={16} /> {t("med.add")}
         </button>
       </div>
 
-      {/* THE FIX EXPLAINED — info banner */}
+      {/* Info banner */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-        <p className="font-semibold mb-1">Two separate lists:</p>
+        <p className="font-semibold mb-1">{t("med.twoLists")}</p>
         <ul className="space-y-1 text-xs">
           <li className="flex items-center gap-2">
             <Stethoscope size={12} className="text-emerald-600 shrink-0" />
-            <strong>Clinical medications</strong> — visible to your doctors during consultations
+            <strong>{t("med.clinicalLabel")}</strong> — {t("med.clinicalDesc")}
           </li>
           <li className="flex items-center gap-2">
             <ShoppingCart size={12} className="text-blue-600 shrink-0" />
-            <strong>Purchase list</strong> — medications you want to buy (not shared with doctors)
+            <strong>{t("med.purchaseLabel")}</strong> — {t("med.purchaseDesc")}
           </li>
         </ul>
       </div>
@@ -135,14 +135,14 @@ export default function MedicationsPage() {
             active={activeTab === "CLINICAL"}
             onClick={() => setActiveTab("CLINICAL")}
             icon={<Stethoscope size={15} />}
-            label={`Clinical medications (${clinicalMeds.length})`}
+            label={`${t("med.clinicalTab")} (${clinicalMeds.length})`}
             color="emerald"
           />
           <TabBtn
             active={activeTab === "PURCHASE"}
             onClick={() => setActiveTab("PURCHASE")}
             icon={<ShoppingCart size={15} />}
-            label={`Purchase list (${purchaseMeds.length})`}
+            label={`${t("med.purchaseTab")} (${purchaseMeds.length})`}
             color="blue"
           />
         </div>
@@ -156,14 +156,14 @@ export default function MedicationsPage() {
               className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition"
             >
               {shareLoading ? <Loader2 size={12} className="animate-spin" /> : <Share2 size={12} />}
-              Share with doctor
+              {t("med.shareWithDoctor")}
             </button>
             <button
               onClick={handleExportPDF}
               className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition"
             >
               <Download size={12} />
-              Export PDF
+              {t("med.exportPDF")}
             </button>
           </div>
         )}
@@ -178,15 +178,13 @@ export default function MedicationsPage() {
             <div className="text-center py-10">
               <div className="text-4xl mb-3">{activeTab === "CLINICAL" ? "💊" : "🛒"}</div>
               <p className="text-slate-500 text-sm mb-4">
-                {activeTab === "CLINICAL"
-                  ? "No clinical medications added yet"
-                  : "Your purchase list is empty"}
+                {activeTab === "CLINICAL" ? t("med.emptyClinical") : t("med.emptyPurchase")}
               </p>
               <button
                 onClick={() => setShowForm(true)}
                 className="text-emerald-600 text-sm font-semibold hover:underline"
               >
-                + Add medication
+                + {t("med.addMed")}
               </button>
             </div>
           ) : (
@@ -196,6 +194,7 @@ export default function MedicationsPage() {
                   key={med.id}
                   medication={med}
                   onDelete={() => handleDelete(med.id)}
+                  t={t}
                 />
               ))}
             </div>
@@ -208,9 +207,8 @@ export default function MedicationsPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
 
-            {/* Modal header */}
             <div className="flex items-center justify-between p-5 border-b border-slate-200">
-              <h2 className="font-bold text-slate-900">Add medication</h2>
+              <h2 className="font-bold text-slate-900">{t("med.modalTitle")}</h2>
               <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
@@ -218,10 +216,9 @@ export default function MedicationsPage() {
 
             <form onSubmit={handleAdd} className="p-5 space-y-4">
 
-              {/* Flow selector — critical for the fix */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  What is this medication for?
+                  {t("med.forWhat")}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -234,8 +231,8 @@ export default function MedicationsPage() {
                     }`}
                   >
                     <Stethoscope size={18} className={form.flow === "CLINICAL" ? "text-emerald-600" : "text-slate-400"} />
-                    <p className="text-sm font-semibold mt-1 text-slate-800">I&apos;m taking it</p>
-                    <p className="text-xs text-slate-500">Shared with doctors</p>
+                    <p className="text-sm font-semibold mt-1 text-slate-800">{t("med.taking")}</p>
+                    <p className="text-xs text-slate-500">{t("med.takingDesc")}</p>
                   </button>
                   <button
                     type="button"
@@ -247,68 +244,68 @@ export default function MedicationsPage() {
                     }`}
                   >
                     <ShoppingCart size={18} className={form.flow === "PURCHASE" ? "text-blue-600" : "text-slate-400"} />
-                    <p className="text-sm font-semibold mt-1 text-slate-800">I want to buy</p>
-                    <p className="text-xs text-slate-500">Purchase list only</p>
+                    <p className="text-sm font-semibold mt-1 text-slate-800">{t("med.wantBuy")}</p>
+                    <p className="text-xs text-slate-500">{t("med.wantBuyDesc")}</p>
                   </button>
                 </div>
               </div>
 
-              <Field label="Medication name *" required>
+              <Field label={t("med.nameLabel")} required>
                 <input
                   type="text"
                   required
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. Metformin"
+                  placeholder={t("med.namePlaceholder")}
                   className="input-base"
                 />
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Dosage">
+                <Field label={t("med.dosage")}>
                   <input
                     type="text"
                     value={form.dosage}
                     onChange={(e) => setForm({ ...form, dosage: e.target.value })}
-                    placeholder="e.g. 500mg"
+                    placeholder="500mg"
                     className="input-base"
                   />
                 </Field>
-                <Field label="Frequency">
+                <Field label={t("med.frequency")}>
                   <select
                     value={form.frequency}
                     onChange={(e) => setForm({ ...form, frequency: e.target.value })}
                     className="input-base"
                   >
-                    <option value="">Select...</option>
-                    <option>Once daily</option>
-                    <option>Twice daily</option>
-                    <option>Three times daily</option>
-                    <option>Every 8 hours</option>
-                    <option>Every 12 hours</option>
-                    <option>As needed</option>
-                    <option>Weekly</option>
+                    <option value="">{t("med.freqSelect")}</option>
+                    <option value="Once daily">{t("med.freqOnce")}</option>
+                    <option value="Twice daily">{t("med.freqTwice")}</option>
+                    <option value="Three times daily">{t("med.freqThree")}</option>
+                    <option value="Every 8 hours">{t("med.freq8h")}</option>
+                    <option value="Every 12 hours">{t("med.freq12h")}</option>
+                    <option value="As needed">{t("med.freqAsNeeded")}</option>
+                    <option value="Weekly">{t("med.freqWeekly")}</option>
                   </select>
                 </Field>
               </div>
 
               {form.flow === "CLINICAL" && (
-                <Field label="Prescribed by">
+                <Field label={t("med.prescribedBy")}>
                   <input
                     type="text"
                     value={form.prescribedBy}
                     onChange={(e) => setForm({ ...form, prescribedBy: e.target.value })}
-                    placeholder="Doctor's name"
+                    placeholder={t("med.prescribedByPlaceholder")}
                     className="input-base"
                   />
                 </Field>
               )}
 
-              <Field label="Notes">
+              <Field label={t("med.notes")}>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Any additional notes..."
+                  placeholder={t("med.notesPlaceholder")}
                   rows={2}
                   className="input-base resize-none"
                 />
@@ -320,7 +317,7 @@ export default function MedicationsPage() {
                   onClick={() => setShowForm(false)}
                   className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
@@ -328,7 +325,7 @@ export default function MedicationsPage() {
                   className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {saving && <Loader2 size={14} className="animate-spin" />}
-                  {saving ? "Saving..." : "Save medication"}
+                  {saving ? t("docs.modal.saving") : t("med.saveMed")}
                 </button>
               </div>
             </form>
@@ -336,11 +333,10 @@ export default function MedicationsPage() {
         </div>
       )}
 
-      {/* Tailwind inline styles for input */}
-{showShareModal && (
+      {showShareModal && (
         <ShareModal type="medications" onClose={() => setShowShareModal(false)} />
-      )}     
- <style>{`.input-base { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #1e293b; outline: none; transition: border-color .15s; } .input-base:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.1); }`}</style>
+      )}
+      <style>{`.input-base { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #1e293b; outline: none; transition: border-color .15s; } .input-base:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.1); }`}</style>
     </div>
   );
 }
@@ -373,7 +369,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
   );
 }
 
-function MedCard({ medication, onDelete }: { medication: Medication; onDelete: () => void }) {
+function MedCard({ medication, onDelete, t }: { medication: Medication; onDelete: () => void; t: (k: string) => string }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 transition">
@@ -392,7 +388,7 @@ function MedCard({ medication, onDelete }: { medication: Medication; onDelete: (
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-800 text-sm">{medication.name}</p>
           <p className="text-xs text-slate-500">
-            {[medication.dosage, medication.frequency].filter(Boolean).join(" · ") || "No details"}
+            {[medication.dosage, medication.frequency].filter(Boolean).join(" · ") || t("med.noDetails")}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -401,7 +397,7 @@ function MedCard({ medication, onDelete }: { medication: Medication; onDelete: (
               ? "bg-emerald-100 text-emerald-700"
               : "bg-blue-100 text-blue-700"
           }`}>
-            {medication.flow === "CLINICAL" ? "Clinical" : "Purchase"}
+            {medication.flow === "CLINICAL" ? t("med.clinical") : t("med.purchase")}
           </span>
           {expanded ? <EyeOff size={14} className="text-slate-400" /> : <Eye size={14} className="text-slate-400" />}
         </div>
@@ -409,16 +405,16 @@ function MedCard({ medication, onDelete }: { medication: Medication; onDelete: (
       {expanded && (
         <div className="px-4 pb-4 pt-0 bg-slate-50 border-t border-slate-100">
           {medication.prescribedBy && (
-            <p className="text-xs text-slate-600 mt-2"><strong>Prescribed by:</strong> {medication.prescribedBy}</p>
+            <p className="text-xs text-slate-600 mt-2"><strong>{t("med.prescribedByLabel")}</strong> {medication.prescribedBy}</p>
           )}
           {medication.notes && (
-            <p className="text-xs text-slate-600 mt-1"><strong>Notes:</strong> {medication.notes}</p>
+            <p className="text-xs text-slate-600 mt-1"><strong>{t("med.notesLabel")}</strong> {medication.notes}</p>
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
             className="mt-3 flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium transition"
           >
-            <Trash2 size={12} /> Remove medication
+            <Trash2 size={12} /> {t("med.remove")}
           </button>
         </div>
       )}

@@ -1,10 +1,11 @@
 "use client";
 
 // src/app/(dashboard)/professional/categories/CategoriesClient.tsx
-// Levels navigation: groups -> categories -> records (across all patients).
+// Levels navigation: groups -> categories -> records (across all patients). i18n via useT().
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/I18nProvider";
 import {
   Layers, ChevronRight, ChevronDown, FileText, Paperclip, Loader2,
   ArrowLeft, User, FolderOpen,
@@ -24,11 +25,11 @@ interface CategoryRecord {
 }
 
 export default function CategoriesClient() {
+  const t = useT();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  // Selected category drill-down
   const [selected, setSelected] = useState<{ id: string; name: string; group: string } | null>(null);
   const [records, setRecords] = useState<CategoryRecord[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
@@ -41,7 +42,6 @@ export default function CategoriesClient() {
         const data = await res.json();
         if (!active) return;
         setGroups(data.groups || []);
-        // Open all groups by default
         const open: Record<string, boolean> = {};
         (data.groups || []).forEach((g: Group) => { open[g.group] = true; });
         setOpenGroups(open);
@@ -75,7 +75,7 @@ export default function CategoriesClient() {
           onClick={() => setSelected(null)}
           className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
         >
-          <ArrowLeft size={16} /> Back to categories
+          <ArrowLeft size={16} /> {t("cat.backToCategories")}
         </button>
 
         <div>
@@ -85,12 +85,12 @@ export default function CategoriesClient() {
 
         {recordsLoading ? (
           <div className="flex items-center gap-2 text-sm text-slate-400 py-10 justify-center">
-            <Loader2 size={18} className="animate-spin" /> Loading records...
+            <Loader2 size={18} className="animate-spin" /> {t("cat.loadingRecords")}
           </div>
         ) : records.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-14">
             <FileText className="mx-auto text-slate-300 mb-3" size={36} />
-            <p className="text-slate-400 text-sm">No records in this category</p>
+            <p className="text-slate-400 text-sm">{t("cat.noRecordsInCategory")}</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
@@ -103,7 +103,7 @@ export default function CategoriesClient() {
                     </span>
                     {r.hasFile && (
                       <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
-                        <Paperclip size={11} /> attachment
+                        <Paperclip size={11} /> {t("cat.attachment")}
                       </span>
                     )}
                   </div>
@@ -117,7 +117,7 @@ export default function CategoriesClient() {
                     href={`/professional/patients/${r.chartId}`}
                     className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
                   >
-                    <FolderOpen size={14} /> Open chart
+                    <FolderOpen size={14} /> {t("cat.openChart")}
                   </Link>
                 )}
               </div>
@@ -132,21 +132,19 @@ export default function CategoriesClient() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Categories</h1>
-        <p className="text-slate-500 mt-1">Browse your records by category, across all patients</p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("cat.title")}</h1>
+        <p className="text-slate-500 mt-1">{t("cat.subtitle")}</p>
       </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-400 py-10 justify-center">
-          <Loader2 size={18} className="animate-spin" /> Loading categories...
+          <Loader2 size={18} className="animate-spin" /> {t("cat.loadingCategories")}
         </div>
       ) : groups.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
           <Layers className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="text-slate-400 text-sm">No categorized records yet</p>
-          <p className="text-slate-400 text-xs mt-1">
-            Records you add to patient charts will appear here, grouped by category
-          </p>
+          <p className="text-slate-400 text-sm">{t("cat.noCategorized")}</p>
+          <p className="text-slate-400 text-xs mt-1">{t("cat.noCategorizedHint")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -161,7 +159,7 @@ export default function CategoriesClient() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-800 text-sm">{g.group}</p>
-                  <p className="text-xs text-slate-400">{g.total} {g.total === 1 ? "record" : "records"}</p>
+                  <p className="text-xs text-slate-400">{g.total} {g.total === 1 ? t("cat.record") : t("cat.records")}</p>
                 </div>
                 {openGroups[g.group] ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
               </button>

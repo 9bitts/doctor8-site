@@ -1,18 +1,20 @@
 "use client";
 
 // src/app/(dashboard)/professional/settings/page.tsx
-// Complete, editable professional profile — for ALL health professions.
-// Inspired by Doctoralia: photo, "about me", areas of expertise, address.
-// Saving marks the profile VERIFIED and visible in patient search.
+// Complete, editable professional profile. i18n via useT().
+// NOTE: the long specialty list is kept in English for now; group headers and
+// all surrounding UI are translated.
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/I18nProvider";
 import {
   Loader2, CheckCircle2, Video, Building2, DollarSign, User, Award, Camera, X, Plus,
 } from "lucide-react";
 
-const PROFESSION_GROUPS: { group: string; options: string[] }[] = [
-  { group: "Medical Specialties", options: [
+// group key -> options. The group label is translated via t(groupKey).
+const PROFESSION_GROUPS: { groupKey: string; options: string[] }[] = [
+  { groupKey: "set.profGroup.medical", options: [
     "Acupuncture","Allergy and Immunology","Anesthesiology","Angiology","Cardiology","Cardiovascular Surgery",
     "Hand Surgery","Head and Neck Surgery","Digestive System Surgery","General Surgery","Pediatric Surgery",
     "Plastic Surgery","Thoracic Surgery","Vascular Surgery","Internal Medicine","Coloproctology","Dermatology",
@@ -25,18 +27,19 @@ const PROFESSION_GROUPS: { group: string; options: string[] }[] = [
     "Pediatrics","Pneumology","Psychiatry","Radiology and Diagnostic Imaging","Radiotherapy","Rheumatology","Urology",
     "Cannabis Medicine","General Practice",
   ]},
-  { group: "Psychology & Mental Health", options: ["Psychologist","Psychoanalyst","Neuropsychologist","Psychotherapist","Behavioral Therapist"] },
-  { group: "Nutrition", options: ["Nutritionist","Dietitian","Sports Nutritionist"] },
-  { group: "Rehabilitation & Therapy", options: ["Physiotherapist","Occupational Therapist","Speech Therapist (Speech-Language Pathologist)","Osteopath","Chiropractor"] },
-  { group: "Nursing", options: ["Nurse","Nurse Practitioner","Midwife","Obstetric Nurse"] },
-  { group: "Dentistry", options: ["Dentist (General)","Orthodontist","Endodontist","Periodontist","Oral and Maxillofacial Surgeon","Pediatric Dentist"] },
-  { group: "Other Health Professions", options: ["Pharmacist","Biomedical Scientist","Physical Educator / Personal Trainer","Social Worker (Health)","Optometrist","Podiatrist","Acupuncturist (non-medical)","Naturopath","Veterinarian","Other"] },
+  { groupKey: "set.profGroup.psychology", options: ["Psychologist","Psychoanalyst","Neuropsychologist","Psychotherapist","Behavioral Therapist"] },
+  { groupKey: "set.profGroup.nutrition", options: ["Nutritionist","Dietitian","Sports Nutritionist"] },
+  { groupKey: "set.profGroup.rehab", options: ["Physiotherapist","Occupational Therapist","Speech Therapist (Speech-Language Pathologist)","Osteopath","Chiropractor"] },
+  { groupKey: "set.profGroup.nursing", options: ["Nurse","Nurse Practitioner","Midwife","Obstetric Nurse"] },
+  { groupKey: "set.profGroup.dentistry", options: ["Dentist (General)","Orthodontist","Endodontist","Periodontist","Oral and Maxillofacial Surgeon","Pediatric Dentist"] },
+  { groupKey: "set.profGroup.other", options: ["Pharmacist","Biomedical Scientist","Physical Educator / Personal Trainer","Social Worker (Health)","Optometrist","Podiatrist","Acupuncturist (non-medical)","Naturopath","Veterinarian","Other"] },
 ];
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
 const inputClass = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
 
 export default function ProfessionalSettings() {
+  const t = useT();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
@@ -99,12 +102,11 @@ export default function ProfessionalSettings() {
     load();
   }, []);
 
-  // Resize + compress the chosen image on the client, then store as data URL.
   function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setError("Please choose an image file.");
+      setError(t("set.errPhoto"));
       return;
     }
     const reader = new FileReader();
@@ -138,7 +140,7 @@ export default function ProfessionalSettings() {
   async function handleSave() {
     setError("");
     if (!firstName || !lastName || !licenseNumber || !price) {
-      setError("Please fill in your name, registration number and consultation price.");
+      setError(t("set.errRequired"));
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -154,13 +156,13 @@ export default function ProfessionalSettings() {
           clinicName, clinicAddress, clinicCity, clinicState, clinicCountry, clinicZip,
         }),
       });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed to save"); }
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || t("set.errGeneric")); }
       setSaved(true);
       setTimeout(() => setSaved(false), 4000);
       window.scrollTo({ top: 0, behavior: "smooth" });
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      setError(e instanceof Error ? e.message : t("set.errGeneric"));
     } finally {
       setSaving(false);
     }
@@ -175,16 +177,14 @@ export default function ProfessionalSettings() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
-        <p className="text-slate-500 mt-1">
-          This is what patients see. Complete it to appear in search and receive bookings. You can edit anytime.
-        </p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("set.title")}</h1>
+        <p className="text-slate-500 mt-1">{t("set.subtitle")}</p>
       </div>
 
       {saved && (
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
           <CheckCircle2 className="text-emerald-500" size={20} />
-          <p className="text-emerald-700 text-sm font-medium">Profile saved! You are visible to patients.</p>
+          <p className="text-emerald-700 text-sm font-medium">{t("set.savedMsg")}</p>
         </div>
       )}
       {error && (
@@ -193,7 +193,7 @@ export default function ProfessionalSettings() {
 
       {/* Photo + Identity */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><User size={18} className="text-emerald-500" /> Photo &amp; Identity</h2>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><User size={18} className="text-emerald-500" /> {t("set.photoIdentity")}</h2>
         <div className="flex items-center gap-5">
           <div className="relative">
             {avatarUrl ? (
@@ -214,18 +214,18 @@ export default function ProfessionalSettings() {
             <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
             <button type="button" onClick={() => fileRef.current?.click()}
               className="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm flex items-center gap-2">
-              <Camera size={15} /> {avatarUrl ? "Change photo" : "Upload photo"}
+              <Camera size={15} /> {avatarUrl ? t("set.changePhoto") : t("set.uploadPhoto")}
             </button>
-            <p className="text-xs text-slate-400 mt-2">A professional photo builds patient trust. Square images work best.</p>
+            <p className="text-xs text-slate-400 mt-2">{t("set.photoHint")}</p>
           </div>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">First name *</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.firstName")}</label>
             <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Last name *</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.lastName")}</label>
             <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>
         </div>
@@ -233,23 +233,23 @@ export default function ProfessionalSettings() {
 
       {/* Profession & credentials */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><Award size={18} className="text-emerald-500" /> Profession &amp; Credentials</h2>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><Award size={18} className="text-emerald-500" /> {t("set.profCreds")}</h2>
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1.5">Profession / Specialty *</label>
+          <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.profSpecialty")}</label>
           <select className={inputClass + " bg-white"} value={profession} onChange={(e) => setProfession(e.target.value)}>
             {PROFESSION_GROUPS.map((g) => (
-              <optgroup key={g.group} label={g.group}>
+              <optgroup key={g.groupKey} label={t(g.groupKey)}>
                 {g.options.map((o) => <option key={o} value={o}>{o}</option>)}
               </optgroup>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1.5">Areas of expertise / conditions you treat</label>
+          <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.expertise")}</label>
           <div className="flex gap-2">
             <input className={inputClass} value={subInput} onChange={(e) => setSubInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSub(); } }}
-              placeholder="e.g. Anxiety, Diabetes — type and press Enter" />
+              placeholder={t("set.expertisePlaceholder")} />
             <button type="button" onClick={addSub} className="bg-emerald-500 text-white rounded-xl px-3 shrink-0"><Plus size={16} /></button>
           </div>
           {subspecialties.length > 0 && (
@@ -265,31 +265,31 @@ export default function ProfessionalSettings() {
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Registration number * <span className="text-slate-400 font-normal">(CRM, CRP, CRN...)</span></label>
-            <input className={inputClass} value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} placeholder="e.g. CRM 123456" />
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.regNumber")} <span className="text-slate-400 font-normal">{t("set.regNumberHint")}</span></label>
+            <input className={inputClass} value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} placeholder={t("set.regNumberPlaceholder")} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">State / Region</label>
-            <input className={inputClass} value={licenseState} onChange={(e) => setLicenseState(e.target.value)} placeholder="e.g. SP, CA" />
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.stateRegion")}</label>
+            <input className={inputClass} value={licenseState} onChange={(e) => setLicenseState(e.target.value)} placeholder={t("set.stateRegionPlaceholder")} />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1.5">About me</label>
+          <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.aboutMe")}</label>
           <textarea rows={4} className={inputClass + " resize-none"} value={bio} onChange={(e) => setBio(e.target.value)}
-            placeholder="Write in the first person. Share your experience, your approach to care, and what makes your work unique." />
+            placeholder={t("set.aboutMePlaceholder")} />
         </div>
       </div>
 
       {/* Consultation */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><DollarSign size={18} className="text-emerald-500" /> Consultation</h2>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><DollarSign size={18} className="text-emerald-500" /> {t("set.consultation")}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Price per consultation *</label>
-            <input type="number" className={inputClass} value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g. 80" />
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.pricePerConsult")}</label>
+            <input type="number" className={inputClass} value={price} onChange={(e) => setPrice(e.target.value)} placeholder={t("set.pricePlaceholder")} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Currency</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.currency")}</label>
             <select className={inputClass + " bg-white"} value={currency} onChange={(e) => setCurrency(e.target.value)}>
               {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -298,43 +298,43 @@ export default function ProfessionalSettings() {
         <div className="flex flex-col gap-3 pt-2">
           <label className="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" checked={acceptsTeleconsult} onChange={(e) => setAcceptsTeleconsult(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
-            <span className="text-sm text-slate-700 flex items-center gap-2"><Video size={15} /> Accept teleconsultations (online)</span>
+            <span className="text-sm text-slate-700 flex items-center gap-2"><Video size={15} /> {t("set.acceptTele")}</span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" checked={acceptsInPerson} onChange={(e) => setAcceptsInPerson(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
-            <span className="text-sm text-slate-700 flex items-center gap-2"><Building2 size={15} /> Accept in-person visits</span>
+            <span className="text-sm text-slate-700 flex items-center gap-2"><Building2 size={15} /> {t("set.acceptInPerson")}</span>
           </label>
         </div>
       </div>
 
       {/* Clinic / Address */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><Building2 size={18} className="text-emerald-500" /> Clinic / Address <span className="text-slate-400 text-sm font-normal">(optional)</span></h2>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><Building2 size={18} className="text-emerald-500" /> {t("set.clinicAddress")} <span className="text-slate-400 text-sm font-normal">{t("set.optional")}</span></h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Clinic name</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.clinicName")}</label>
             <input className={inputClass} value={clinicName} onChange={(e) => setClinicName(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Address</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.address")}</label>
             <input className={inputClass} value={clinicAddress} onChange={(e) => setClinicAddress(e.target.value)} />
           </div>
         </div>
         <div className="grid sm:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">City</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.city")}</label>
             <input className={inputClass} value={clinicCity} onChange={(e) => setClinicCity(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">State</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.state")}</label>
             <input className={inputClass} value={clinicState} onChange={(e) => setClinicState(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">Country</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.country")}</label>
             <input className={inputClass} value={clinicCountry} onChange={(e) => setClinicCountry(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">ZIP / Postal</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.zip")}</label>
             <input className={inputClass} value={clinicZip} onChange={(e) => setClinicZip(e.target.value)} />
           </div>
         </div>
@@ -343,12 +343,12 @@ export default function ProfessionalSettings() {
       {/* Save bar */}
       <div className="flex items-center justify-between gap-4 sticky bottom-4 bg-white/80 backdrop-blur rounded-2xl border border-slate-100 shadow-lg p-3">
         <p className="text-xs text-slate-400 pl-2">
-          Set your weekly hours in <a href="/professional/settings/availability" className="text-emerald-600 underline">Availability</a>.
+          {t("set.availabilityNote")} <a href="/professional/settings/availability" className="text-emerald-600 underline">{t("set.availabilityLink")}</a>.
         </p>
         <button onClick={handleSave} disabled={saving}
           className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shrink-0">
           {saving && <Loader2 className="animate-spin" size={16} />}
-          {saving ? "Saving..." : "Save profile"}
+          {saving ? t("set.saving") : t("set.saveProfile")}
         </button>
       </div>
     </div>
