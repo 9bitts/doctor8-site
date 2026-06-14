@@ -1,20 +1,47 @@
 "use client";
 
 // src/app/(auth)/login/page.tsx
-// Login page — email/password + Google OAuth
-// Handles: verified=true success, EmailNotVerified error, AccountLocked error
+// Login page — email/password + Google OAuth. i18n: standalone language selector
+// (outside the dashboard I18nProvider), using the same localStorage key so the
+// choice carries over to the dashboard after login.
 
 import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail,
 } from "lucide-react";
 
+// Same localStorage key used by the dashboard I18nProvider.
+const LANG_KEY = "doctor8.lang";
+
+function detectInitialLang(): Lang {
+  if (typeof window === "undefined") return "en";
+  try {
+    const saved = window.localStorage.getItem(LANG_KEY);
+    if (saved) return normalizeLang(saved);
+  } catch { /* ignore */ }
+  const nav = (navigator.language || "en").toLowerCase();
+  if (nav.startsWith("pt")) return "pt";
+  if (nav.startsWith("es")) return "es";
+  return "en";
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Standalone language state
+  const [lang, setLang] = useState<Lang>("en");
+  useEffect(() => { setLang(detectInitialLang()); }, []);
+  const t = (key: string) => translate(lang, key);
+
+  function changeLang(l: Lang) {
+    setLang(l);
+    try { window.localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
+  }
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +54,6 @@ function LoginForm() {
   const verified = searchParams.get("verified") === "true";
   const callbackUrl = searchParams.get("callbackUrl") || "";
 
-  // Handle error params from NextAuth redirects
   useEffect(() => {
     const err = searchParams.get("error");
     if (err === "EmailNotVerified") {
@@ -35,9 +61,9 @@ function LoginForm() {
     } else if (err === "AccountLocked") {
       setError("locked");
     } else if (err === "InvalidVerificationLink") {
-      setError("Please request a new verification link.");
+      setError("invalidLink");
     } else if (err === "VerificationFailed") {
-      setError("Verification failed. Please try again or request a new link.");
+      setError("verificationFailed");
     } else if (err) {
       setError("invalid");
     }
@@ -50,7 +76,6 @@ function LoginForm() {
     setUnverifiedEmail("");
 
     try {
-      // Pre-check: does this email need verification?
       const checkRes = await fetch("/api/auth/check-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,7 +117,6 @@ function LoginForm() {
         return;
       }
 
-      // Redirect based on role
       const sessionRes = await fetch("/api/auth/session");
       const session = await sessionRes.json();
       const role = session?.user?.role;
@@ -106,7 +130,7 @@ function LoginForm() {
       }
       router.refresh();
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError("generic");
       setLoading(false);
     }
   }
@@ -121,12 +145,31 @@ function LoginForm() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
 
+        {/* Language selector (top right) */}
+        <div className="flex justify-end mb-4">
+          <div className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => changeLang(l.code)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 ${
+                  lang === l.code ? "bg-emerald-500 text-white" : "text-slate-300 hover:text-white hover:bg-white/10"
+                }`}
+                aria-label={l.label}
+              >
+                <span>{l.flag}</span>
+                <span className="uppercase">{l.code}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black text-white tracking-tight">
             Doctor<span className="text-emerald-400">8</span>
           </h1>
-          <p className="text-slate-400 mt-2 text-sm">Sign in</p>
+          <p className="text-slate-400 mt-2 text-sm">{t("login.tagline")}</p>
         </div>
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
@@ -135,9 +178,7 @@ function LoginForm() {
           {verified && (
             <div className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 mb-6">
               <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
-              <p className="text-emerald-300 text-sm">
-                Email verified successfully! You can now sign in.
-              </p>
+              <p className="text-emerald-300 text-sm">{t("login.verified")}</p>
             </div>
           )}
 
@@ -147,10 +188,8 @@ function LoginForm() {
               <div className="flex items-start gap-3 mb-3">
                 <Mail className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-amber-300 text-sm font-medium">Email not verified</p>
-                  <p className="text-amber-400/80 text-xs mt-1">
-                    Please check your inbox and click the verification link before signing in.
-                  </p>
+                  <p className="text-amber-300 text-sm font-medium">{t("login.unverifiedTitle")}</p>
+                  <p className="text-amber-400/80 text-xs mt-1">{t("login.unverifiedText")}</p>
                 </div>
               </div>
               {unverifiedEmail && (
@@ -158,7 +197,7 @@ function LoginForm() {
                   href={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
                   className="text-xs text-amber-300 hover:text-amber-200 underline"
                 >
-                  Resend verification email →
+                  {t("login.resend")} →
                 </Link>
               )}
             </div>
@@ -167,23 +206,35 @@ function LoginForm() {
           {error === "locked" && (
             <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
               <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
-              <p className="text-red-300 text-sm">
-                Account temporarily locked due to too many failed attempts. Try again in 30 minutes.
-              </p>
+              <p className="text-red-300 text-sm">{t("login.locked")}</p>
             </div>
           )}
 
           {error === "invalid" && (
             <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
               <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
-              <p className="text-red-300 text-sm">Invalid email or password.</p>
+              <p className="text-red-300 text-sm">{t("login.invalid")}</p>
             </div>
           )}
 
-          {error !== "" && error !== "unverified" && error !== "locked" && error !== "invalid" && (
+          {error === "invalidLink" && (
             <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
               <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
-              <p className="text-red-300 text-sm">{error}</p>
+              <p className="text-red-300 text-sm">{t("login.invalidLink")}</p>
+            </div>
+          )}
+
+          {error === "verificationFailed" && (
+            <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+              <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+              <p className="text-red-300 text-sm">{t("login.verificationFailed")}</p>
+            </div>
+          )}
+
+          {error === "generic" && (
+            <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+              <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+              <p className="text-red-300 text-sm">{t("login.genericError")}</p>
             </div>
           )}
 
@@ -203,12 +254,12 @@ function LoginForm() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
             )}
-            Continue with Google
+            {t("login.continueGoogle")}
           </button>
 
           <div className="flex items-center gap-4 mb-4">
             <div className="flex-1 h-px bg-white/10" />
-            <span className="text-slate-500 text-xs uppercase tracking-wider">or</span>
+            <span className="text-slate-500 text-xs uppercase tracking-wider">{t("login.or")}</span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
 
@@ -216,7 +267,7 @@ function LoginForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email address
+                {t("login.email")}
               </label>
               <input
                 type="email"
@@ -230,7 +281,7 @@ function LoginForm() {
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Password
+                {t("login.password")}
               </label>
               <div className="relative">
                 <input
@@ -245,7 +296,7 @@ function LoginForm() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("login.hidePassword") : t("login.showPassword")}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -257,7 +308,7 @@ function LoginForm() {
                 href="/forgot-password"
                 className="text-sm text-emerald-400 hover:text-emerald-300 transition"
               >
-                Forgot password?
+                {t("login.forgot")}
               </Link>
             </div>
 
@@ -267,18 +318,18 @@ function LoginForm() {
               className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? t("login.signingIn") : t("login.signIn")}
             </button>
           </form>
 
           <div className="border-t border-white/10 mt-6 pt-6 text-center">
             <p className="text-slate-400 text-sm">
-              Don&apos;t have an account?{" "}
+              {t("login.noAccount")}{" "}
               <Link
                 href="/register"
                 className="text-emerald-400 hover:text-emerald-300 font-medium transition"
               >
-                Create account
+                {t("login.createAccount")}
               </Link>
             </p>
           </div>
@@ -295,4 +346,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
- 
