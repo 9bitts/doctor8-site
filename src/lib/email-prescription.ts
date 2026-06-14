@@ -109,3 +109,99 @@ export async function sendPrescriptionNotification({
     `,
   });
 }
+
+// ── Prescription invite (patient WITHOUT an account yet) ──────────────────────
+// Sent when a doctor prescribes for a chart whose patient has no account.
+// Invites them to create an account so the prescription becomes accessible.
+// Language follows the doctor's panel language (passed in).
+
+const INVITE: Record<Lang, {
+  subject: (d: string) => string;
+  heading: string;
+  hi: (n: string) => string;
+  body: (d: string) => string;
+  cta: string;
+  footnote: string;
+  orCopy: string;
+  privacy: string;
+}> = {
+  en: {
+    subject: (d) => `Dr. ${d} sent you a prescription on Doctor8`,
+    heading: "You have a prescription waiting",
+    hi: (n) => `Hi <strong>${n}</strong>,`,
+    body: (d) => `Dr. ${d} has issued a digital prescription for you. Create your free Doctor8 account with this email to view and download it.`,
+    cta: "Create my account",
+    footnote: "Once you sign up and verify your email, your prescription will be waiting in your account.",
+    orCopy: "Or copy this link:",
+    privacy: "Privacy Policy",
+  },
+  pt: {
+    subject: (d) => `Dr. ${d} enviou uma receita para você no Doctor8`,
+    heading: "Você tem uma receita esperando",
+    hi: (n) => `Olá <strong>${n}</strong>,`,
+    body: (d) => `O Dr. ${d} emitiu uma receita digital para você. Crie sua conta gratuita no Doctor8 com este email para visualizar e baixar.`,
+    cta: "Criar minha conta",
+    footnote: "Assim que você se cadastrar e verificar seu email, sua receita estará esperando na sua conta.",
+    orCopy: "Ou copie este link:",
+    privacy: "Política de Privacidade",
+  },
+  es: {
+    subject: (d) => `El Dr. ${d} te envió una receta en Doctor8`,
+    heading: "Tienes una receta esperando",
+    hi: (n) => `Hola <strong>${n}</strong>,`,
+    body: (d) => `El Dr. ${d} ha emitido una receta digital para ti. Crea tu cuenta gratuita en Doctor8 con este email para verla y descargarla.`,
+    cta: "Crear mi cuenta",
+    footnote: "Una vez que te registres y verifiques tu email, tu receta estará esperando en tu cuenta.",
+    orCopy: "O copia este enlace:",
+    privacy: "Política de Privacidad",
+  },
+};
+
+export async function sendPrescriptionInvite({
+  patientEmail,
+  patientName,
+  doctorName,
+  language,
+}: {
+  patientEmail: string;
+  patientName: string;
+  doctorName: string;
+  language?: string;
+}) {
+  const lang = normLang(language);
+  const c = INVITE[lang];
+  const signupUrl = `${APP_URL}/register?email=${encodeURIComponent(patientEmail)}`;
+
+  await getResend().emails.send({
+    from: FROM,
+    to: patientEmail,
+    subject: c.subject(doctorName),
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 20px;background:#f8fafc;">
+        <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08);">
+          <div style="background:linear-gradient(135deg,#0a4d6e,#00b87a);padding:32px;text-align:center;">
+            <h1 style="color:white;font-size:28px;font-weight:900;margin:0;">Doctor<span style="color:#a7f3d0;">8</span></h1>
+            <p style="color:rgba(255,255,255,.85);margin:8px 0 0;font-size:15px;">${c.heading}</p>
+          </div>
+          <div style="padding:32px;">
+            <p style="color:#1a2a3a;font-size:16px;">${c.hi(patientName)}</p>
+            <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(doctorName)}</p>
+            <div style="text-align:center;margin:32px 0;">
+              <a href="${signupUrl}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+                ${c.cta}
+              </a>
+            </div>
+            <p style="color:#6b7280;font-size:13px;line-height:1.6;">${c.footnote}</p>
+            <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+              ${c.orCopy} <a href="${signupUrl}" style="color:#0a4d6e;">${signupUrl}</a>
+            </p>
+          </div>
+        </div>
+        <p style="text-align:center;color:#9ca3af;font-size:11px;margin-top:20px;">
+          Doctor8 &middot; HIPAA &amp; GDPR Compliant &middot;
+          <a href="${APP_URL}/privacy" style="color:#9ca3af;">${c.privacy}</a>
+        </p>
+      </div>
+    `,
+  });
+}

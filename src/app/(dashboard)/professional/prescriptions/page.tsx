@@ -72,6 +72,12 @@ export default function PrescriptionsPage() {
   const [saved, setSaved] = useState(false);
   const [formError, setFormError] = useState("");
 
+  // Success / invite step (after saving)
+  const [successPatient, setSuccessPatient] = useState<Chart | null>(null);
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+
   // Patient selection
   const [charts, setCharts] = useState<Chart[]>([]);
   const [patientQuery, setPatientQuery] = useState("");
@@ -120,6 +126,10 @@ export default function PrescriptionsPage() {
     setInstructions("");
     setValidDays(30);
     setFormError("");
+    setSuccessPatient(null);
+    setInviteSending(false);
+    setInviteSent(false);
+    setInviteError("");
   }
 
   // ── Patient search (client-side filter over loaded charts) ──
@@ -217,18 +227,43 @@ export default function PrescriptionsPage() {
         }),
       });
       if (res.ok) {
-        setSaved(true);
-        setTimeout(() => {
-          setSaved(false);
-          setShowForm(false);
-          resetForm();
-          fetchPrescriptions();
-        }, 1300);
+        // Show the success step instead of closing immediately.
+        // It adapts: patient with account = "notified"; without = invite option.
+        setSuccessPatient(selectedPatient);
+        fetchPrescriptions();
       } else {
         const d = await res.json().catch(() => ({}));
         setFormError(typeof d.error === "string" ? d.error : t("rx2.needMeds"));
       }
     } finally { setSaving(false); }
+  }
+
+  async function sendInvite() {
+    if (!successPatient) return;
+    setInviteSending(true);
+    setInviteError("");
+    try {
+      const res = await fetch(`/api/professional/records/${successPatient.id}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: lang }),
+      });
+      if (res.ok) {
+        setInviteSent(true);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setInviteError(typeof d.error === "string" ? d.error : t("rx3.inviteError"));
+      }
+    } catch {
+      setInviteError(t("rx3.inviteError"));
+    } finally {
+      setInviteSending(false);
+    }
+  }
+
+  function closeAll() {
+    setShowForm(false);
+    resetForm();
   }
 
   const filtered = prescriptions.filter((p) => {
@@ -327,12 +362,75 @@ export default function PrescriptionsPage() {
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
 
             <div className="sticky top-0 bg-white flex items-center justify-between p-5 border-b border-slate-200 z-10">
-              <h2 className="font-bold text-slate-900 text-lg">{t("rx.modalTitle")}</h2>
-              <button onClick={() => { setShowForm(false); resetForm(); }} className="text-slate-400 hover:text-slate-600">
+              <h2 className="font-bold text-slate-900 text-lg">{successPatient ? t("rx3.successTitle") : t("rx.modalTitle")}</h2>
+              <button onClick={closeAll} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
 
+            {successPatient ? (
+              /* ── SUCCESS STEP (adapts to whether the patient has an account) ── */
+              <div className="p-6 space-y-5">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
+                    <CheckCircle2 size={28} className="text-emerald-600" />
+                  </div>
+                  <p className="font-bold text-slate-900 text-lg">{t("rx3.savedTitle")}</p>
+                  <p className="text-slate-500 text-sm mt-1">
+                    {successPatient.firstName} {successPatient.lastName}
+                  </p>
+                </div>
+
+                {successPatient.hasAccount ? (
+                  /* Patient HAS account → was notified */
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 flex items-start gap-3">
+                    <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <p>{t("rx3.notifiedText")}</p>
+                  </div>
+                ) : successPatient.email ? (
+                  /* Patient NO account but HAS email → offer invite with confirmation */
+                  inviteSent ? (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 flex items-start gap-3">
+                      <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
+                      <p>{t("rx3.inviteSent")} <strong>{successPatient.email}</strong></p>
+                    </div>
+                  ) : (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-amber-800">{t("rx3.noAccountText")}</p>
+                          <p className="text-sm text-amber-900 font-semibold mt-2">{successPatient.email}</p>
+                          <p className="text-xs text-amber-700 mt-1">{t("rx3.emailCorrect")}</p>
+                        </div>
+                      </div>
+                      {inviteError && <p className="text-sm text-rose-600">{inviteError}</p>}
+                      <button
+                        onClick={sendInvite}
+                        disabled={inviteSending}
+                        className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {inviteSending ? <Loader2 size={14} className="animate-spin" /> : null}
+                        {t("rx3.sendInvite")}
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  /* No account and no email → nothing to send */
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 flex items-start gap-3">
+                    <AlertCircle size={18} className="text-slate-400 shrink-0 mt-0.5" />
+                    <p>{t("rx3.noEmailText")}</p>
+                  </div>
+                )}
+
+                <button
+                  onClick={closeAll}
+                  className="w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
+                >
+                  {t("rx3.done")}
+                </button>
+              </div>
+            ) : (
             <div className="p-5 space-y-6">
 
               {/* ── PATIENT ── */}
@@ -579,6 +677,7 @@ export default function PrescriptionsPage() {
                 </button>
               </div>
             </div>
+            )}
           </div>
         </div>
       )}

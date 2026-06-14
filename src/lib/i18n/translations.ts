@@ -592,6 +592,16 @@ const en: Dict = {
   "myrx.issued": "Issued",
   "myrx.validUntil": "valid until",
   "myrx.downloadPDF": "Download PDF",
+  "rx3.successTitle": "Prescription created",
+  "rx3.savedTitle": "Prescription saved!",
+  "rx3.notifiedText": "This patient has an account — they've been notified in the app and by email.",
+  "rx3.noAccountText": "This patient doesn't have an account yet. Invite them to create one and access the prescription?",
+  "rx3.emailCorrect": "Is this email correct?",
+  "rx3.sendInvite": "Send invite",
+  "rx3.inviteSent": "Invite sent to",
+  "rx3.inviteError": "Couldn't send the invite. Please try again.",
+  "rx3.noEmailText": "This patient has no email on file, so no invite can be sent. You can add an email to their chart later.",
+  "rx3.done": "Done",
 };
 
 const pt: Dict = {
@@ -1147,6 +1157,16 @@ const pt: Dict = {
   "myrx.issued": "Emitida em",
   "myrx.validUntil": "válida até",
   "myrx.downloadPDF": "Baixar PDF",
+  "rx3.successTitle": "Prescrição criada",
+  "rx3.savedTitle": "Prescrição salva!",
+  "rx3.notifiedText": "Este paciente tem conta — ele foi avisado no app e por email.",
+  "rx3.noAccountText": "Este paciente ainda não tem conta. Convidá-lo a criar uma e acessar a receita?",
+  "rx3.emailCorrect": "Este email está correto?",
+  "rx3.sendInvite": "Enviar convite",
+  "rx3.inviteSent": "Convite enviado para",
+  "rx3.inviteError": "Não foi possível enviar o convite. Tente novamente.",
+  "rx3.noEmailText": "Este paciente não tem email cadastrado, então não é possível enviar convite. Você pode adicionar um email à ficha depois.",
+  "rx3.done": "Concluir",
 };
 
 const es: Dict = {
@@ -1702,6 +1722,16 @@ const es: Dict = {
   "myrx.issued": "Emitida el",
   "myrx.validUntil": "válida hasta",
   "myrx.downloadPDF": "Descargar PDF",
+  "rx3.successTitle": "Receta creada",
+  "rx3.savedTitle": "¡Receta guardada!",
+  "rx3.notifiedText": "Este paciente tiene cuenta — se le ha notificado en la app y por email.",
+  "rx3.noAccountText": "Este paciente aún no tiene cuenta. ¿Invitarlo a crear una y acceder a la receta?",
+  "rx3.emailCorrect": "¿Este email es correcto?",
+  "rx3.sendInvite": "Enviar invitación",
+  "rx3.inviteSent": "Invitación enviada a",
+  "rx3.inviteError": "No se pudo enviar la invitación. Inténtalo de nuevo.",
+  "rx3.noEmailText": "Este paciente no tiene email registrado, así que no se puede enviar invitación. Puedes añadir un email a su ficha más tarde.",
+  "rx3.done": "Listo",
 };
 
 export const dictionaries: Record<Lang, Dict> = { en, pt, es };
