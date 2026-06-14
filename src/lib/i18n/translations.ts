@@ -17,6 +17,7 @@ const en: Dict = {
   "nav.dashboard": "Dashboard",
   "nav.medicalHistory": "Medical History",
   "nav.medications": "Medications",
+  "nav.myPrescriptions": "My prescriptions",
   "nav.appointments": "Appointments",
   "nav.documents": "Documents",
   "nav.messages": "Messages",
@@ -584,12 +585,20 @@ const en: Dict = {
   "rx2.needMeds": "Add at least one medication.",
   "rx2.country": "Country",
   "rx2.countryAll": "All countries",
+  "myrx.title": "My prescriptions",
+  "myrx.subtitle": "Digital prescriptions issued by your doctors.",
+  "myrx.empty": "No prescriptions yet",
+  "myrx.emptyHint": "Prescriptions issued by your doctors will appear here.",
+  "myrx.issued": "Issued",
+  "myrx.validUntil": "valid until",
+  "myrx.downloadPDF": "Download PDF",
 };
 
 const pt: Dict = {
   "nav.dashboard": "Painel",
   "nav.medicalHistory": "Histórico Médico",
   "nav.medications": "Medicações",
+  "nav.myPrescriptions": "Minhas receitas",
   "nav.appointments": "Consultas",
   "nav.documents": "Documentos",
   "nav.messages": "Mensagens",
@@ -1131,12 +1140,20 @@ const pt: Dict = {
   "rx2.needMeds": "Adicione pelo menos um medicamento.",
   "rx2.country": "País",
   "rx2.countryAll": "Todos os países",
+  "myrx.title": "Minhas receitas",
+  "myrx.subtitle": "Receitas digitais emitidas pelos seus médicos.",
+  "myrx.empty": "Nenhuma receita ainda",
+  "myrx.emptyHint": "As receitas emitidas pelos seus médicos vão aparecer aqui.",
+  "myrx.issued": "Emitida em",
+  "myrx.validUntil": "válida até",
+  "myrx.downloadPDF": "Baixar PDF",
 };
 
 const es: Dict = {
   "nav.dashboard": "Panel",
   "nav.medicalHistory": "Historial médico",
   "nav.medications": "Medicaciones",
+  "nav.myPrescriptions": "Mis recetas",
   "nav.appointments": "Citas",
   "nav.documents": "Documentos",
   "nav.messages": "Mensajes",
@@ -1678,6 +1695,13 @@ const es: Dict = {
   "rx2.needMeds": "Agrega al menos un medicamento.",
   "rx2.country": "País",
   "rx2.countryAll": "Todos los países",
+  "myrx.title": "Mis recetas",
+  "myrx.subtitle": "Recetas digitales emitidas por tus médicos.",
+  "myrx.empty": "Aún no hay recetas",
+  "myrx.emptyHint": "Las recetas emitidas por tus médicos aparecerán aquí.",
+  "myrx.issued": "Emitida el",
+  "myrx.validUntil": "válida hasta",
+  "myrx.downloadPDF": "Descargar PDF",
 };
 
 export const dictionaries: Record<Lang, Dict> = { en, pt, es };
