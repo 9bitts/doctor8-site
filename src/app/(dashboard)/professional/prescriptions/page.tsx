@@ -1,12 +1,42 @@
 "use client";
 
 // src/app/(dashboard)/professional/prescriptions/page.tsx
-// Professional creates and manages digital prescriptions. i18n via useI18n().
+// ETAPA 2 — Memed-style prescription screen.
+// - Patient: searched among the professional's charts (PatientRecord). If not found,
+//   the UI tells the doctor to create the chart first.
+// - Medication: searched in the DrugCatalog (Etapa 1 API). Click to add as a card.
+//   Each card has editable dosage / frequency / duration / instructions.
+// - Saving uses the prescription API with patientRecordId (works with/without account).
+// i18n via useI18n().
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
-import { Plus, Trash2, FileText, Download, Loader2, X, CheckCircle2, Search } from "lucide-react";
+import {
+  Plus, Trash2, FileText, Download, Loader2, X, CheckCircle2, Search,
+  User, Pill, AlertCircle, ChevronRight,
+} from "lucide-react";
+
+// ── Types ──
+interface Chart {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  hasAccount: boolean;
+}
+
+interface Drug {
+  id: string;
+  name: string;
+  activeIngredient: string;
+  presentation: string;
+  manufacturer: string | null;
+  country: string;
+  category: string | null;
+  controlled: boolean;
+  prescriptionType: string | null;
+}
 
 interface MedItem {
   name: string;
@@ -14,36 +44,50 @@ interface MedItem {
   frequency: string;
   duration: string;
   instructions: string;
+  // extra display-only info (not sent as clinical fields)
+  presentation?: string;
+  controlled?: boolean;
 }
 
 interface Prescription {
   id: string;
   createdAt: string;
   validUntil?: string;
-  document?: {
-    patient?: { firstName: string; lastName: string };
-  };
+  document?: { patient?: { firstName: string; lastName: string } | null };
   medications: MedItem[];
 }
-
-const emptyMed = (): MedItem => ({
-  name: "", dosage: "", frequency: "", duration: "", instructions: "",
-});
 
 export default function PrescriptionsPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
 
+  // List of existing prescriptions
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  // Modal + form
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [patientId, setPatientId] = useState("");
+  const [formError, setFormError] = useState("");
+
+  // Patient selection
+  const [charts, setCharts] = useState<Chart[]>([]);
+  const [patientQuery, setPatientQuery] = useState("");
+  const [selectedPatient, setSelectedPatient] = useState<Chart | null>(null);
+
+  // Drug search
+  const [drugQuery, setDrugQuery] = useState("");
+  const [drugResults, setDrugResults] = useState<Drug[]>([]);
+  const [drugSearching, setDrugSearching] = useState(false);
+  const [drugCountry, setDrugCountry] = useState("");
+  const drugDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Prescription items
+  const [medications, setMedications] = useState<MedItem[]>([]);
   const [instructions, setInstructions] = useState("");
   const [validDays, setValidDays] = useState(30);
-  const [medications, setMedications] = useState<MedItem[]>([emptyMed()]);
-  const [search, setSearch] = useState("");
 
   useEffect(() => { fetchPrescriptions(); }, []);
 
@@ -55,8 +99,86 @@ export default function PrescriptionsPage() {
     } finally { setLoading(false); }
   }
 
-  function addMedication() {
-    setMedications((prev) => [...prev, emptyMed()]);
+  async function openForm() {
+    setShowForm(true);
+    resetForm();
+    // Load the professional's charts for patient search
+    try {
+      const res = await fetch("/api/professional/records");
+      const d = await res.json();
+      setCharts(d.records || []);
+    } catch { /* ignore */ }
+  }
+
+  function resetForm() {
+    setSelectedPatient(null);
+    setPatientQuery("");
+    setDrugQuery("");
+    setDrugResults([]);
+    setDrugCountry("");
+    setMedications([]);
+    setInstructions("");
+    setValidDays(30);
+    setFormError("");
+  }
+
+  // ── Patient search (client-side filter over loaded charts) ──
+  const filteredCharts = patientQuery.trim().length === 0
+    ? charts.slice(0, 8)
+    : charts.filter((c) =>
+        `${c.firstName} ${c.lastName}`.toLowerCase().includes(patientQuery.toLowerCase())
+      );
+
+  // ── Drug search (server-side, debounced) ──
+  useEffect(() => {
+    if (drugDebounce.current) clearTimeout(drugDebounce.current);
+    const q = drugQuery.trim();
+    if (q.length < 2) {
+      setDrugResults([]);
+      setDrugSearching(false);
+      return;
+    }
+    setDrugSearching(true);
+    drugDebounce.current = setTimeout(async () => {
+      try {
+        const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}${drugCountry ? `&country=${drugCountry}` : ""}`;
+        const res = await fetch(url);
+        const d = await res.json();
+        setDrugResults(d.drugs || []);
+      } catch {
+        setDrugResults([]);
+      } finally {
+        setDrugSearching(false);
+      }
+    }, 300);
+    return () => { if (drugDebounce.current) clearTimeout(drugDebounce.current); };
+  }, [drugQuery, drugCountry]);
+
+  function addDrug(drug: Drug) {
+    setMedications((prev) => [
+      ...prev,
+      {
+        name: `${drug.name}${drug.activeIngredient ? ` (${drug.activeIngredient})` : ""}`,
+        dosage: "",
+        frequency: "",
+        duration: "",
+        instructions: "",
+        presentation: drug.presentation,
+        controlled: drug.controlled,
+      },
+    ]);
+    setDrugQuery("");
+    setDrugResults([]);
+  }
+
+  function addManual() {
+    const q = drugQuery.trim();
+    setMedications((prev) => [
+      ...prev,
+      { name: q || "", dosage: "", frequency: "", duration: "", instructions: "" },
+    ]);
+    setDrugQuery("");
+    setDrugResults([]);
   }
 
   function removeMedication(index: number) {
@@ -67,26 +189,46 @@ export default function PrescriptionsPage() {
     setMedications((prev) => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!patientId || medications.some((m) => !m.name)) return;
+  async function handleSubmit() {
+    setFormError("");
+    if (!selectedPatient) { setFormError(t("rx2.needPatient")); return; }
+    if (medications.length === 0 || medications.some((m) => !m.name || !m.dosage || !m.frequency)) {
+      setFormError(t("rx2.needMeds"));
+      return;
+    }
     setSaving(true);
     try {
+      // send only the clinical fields the API expects
+      const cleanMeds = medications.map((m) => ({
+        name: m.name,
+        dosage: m.dosage,
+        frequency: m.frequency,
+        duration: m.duration,
+        instructions: m.instructions,
+      }));
       const res = await fetch("/api/professional/prescriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patientUserId: patientId, medications, instructions, validDays }),
+        body: JSON.stringify({
+          patientRecordId: selectedPatient.id,
+          medications: cleanMeds,
+          instructions,
+          validDays,
+        }),
       });
       if (res.ok) {
         setSaved(true);
-        setTimeout(() => { setSaved(false); setShowForm(false); resetForm(); fetchPrescriptions(); }, 1500);
+        setTimeout(() => {
+          setSaved(false);
+          setShowForm(false);
+          resetForm();
+          fetchPrescriptions();
+        }, 1300);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setFormError(typeof d.error === "string" ? d.error : t("rx2.needMeds"));
       }
     } finally { setSaving(false); }
-  }
-
-  function resetForm() {
-    setPatientId(""); setInstructions(""); setValidDays(30);
-    setMedications([emptyMed()]);
   }
 
   const filtered = prescriptions.filter((p) => {
@@ -106,7 +248,7 @@ export default function PrescriptionsPage() {
           <p className="text-slate-500 text-sm mt-1">{t("rx.subtitle")}</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openForm}
           className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition"
         >
           <Plus size={16} /> {t("rx.new")}
@@ -132,7 +274,7 @@ export default function PrescriptionsPage() {
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
           <FileText size={40} className="text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500">{t("rx.empty")}</p>
-          <button onClick={() => setShowForm(true)} className="mt-4 text-emerald-600 text-sm font-semibold hover:underline">
+          <button onClick={openForm} className="mt-4 text-emerald-600 text-sm font-semibold hover:underline">
             {t("rx.createFirst")} →
           </button>
         </div>
@@ -191,83 +333,228 @@ export default function PrescriptionsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-5">
+            <div className="p-5 space-y-6">
 
+              {/* ── PATIENT ── */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("rx.patientUserId")}</label>
-                <input
-                  type="text"
-                  required
-                  value={patientId}
-                  onChange={(e) => setPatientId(e.target.value)}
-                  placeholder={t("rx.patientUserIdPlaceholder")}
-                  className="inp"
-                />
-                <p className="text-xs text-slate-400 mt-1">{t("rx.patientUserIdHint")}</p>
-              </div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">{t("rx2.selectPatient")}</label>
 
-              {/* Medications */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-semibold text-slate-700">{t("rx.medications")}</label>
-                  <button type="button" onClick={addMedication} className="text-xs text-emerald-600 font-semibold hover:text-emerald-700 flex items-center gap-1">
-                    <Plus size={13} /> {t("rx.addMed")}
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {medications.map((med, index) => (
-                    <div key={index} className="bg-slate-50 rounded-xl p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("rx.medication")} {index + 1}</span>
-                        {medications.length > 1 && (
-                          <button type="button" onClick={() => removeMedication(index)} className="text-red-400 hover:text-red-600">
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.medName")}</label>
-                          <input required type="text" value={med.name} onChange={(e) => updateMedication(index, "name", e.target.value)} placeholder={t("rx.medNamePlaceholder")} className="inp-sm" />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.medDosage")}</label>
-                          <input required type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder="500mg" className="inp-sm" />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.medFrequency")}</label>
-                          <select required value={med.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="inp-sm">
-                            <option value="">{t("med.freqSelect")}</option>
-                            <option value="Once daily">{t("med.freqOnce")}</option>
-                            <option value="Twice daily">{t("med.freqTwice")}</option>
-                            <option value="Three times daily">{t("med.freqThree")}</option>
-                            <option value="Every 8 hours">{t("med.freq8h")}</option>
-                            <option value="Every 12 hours">{t("med.freq12h")}</option>
-                            <option value="As needed">{t("med.freqAsNeeded")}</option>
-                            <option value="Weekly">{t("med.freqWeekly")}</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.medDuration")}</label>
-                          <input type="text" value={med.duration} onChange={(e) => updateMedication(index, "duration", e.target.value)} placeholder={t("rx.medDurationPlaceholder")} className="inp-sm" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.medInstructions")}</label>
-                        <input type="text" value={med.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} placeholder={t("rx.medInstructionsPlaceholder")} className="inp-sm" />
-                      </div>
+                {selectedPatient ? (
+                  <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-600 text-sm shrink-0">
+                      {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
                     </div>
-                  ))}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 text-sm">
+                        {selectedPatient.firstName} {selectedPatient.lastName}
+                      </p>
+                      <p className="text-xs mt-0.5">
+                        {selectedPatient.hasAccount ? (
+                          <span className="text-emerald-600 inline-flex items-center gap-1">
+                            <CheckCircle2 size={12} /> {t("rx2.hasAccountBadge")}
+                          </span>
+                        ) : (
+                          <span className="text-amber-600 inline-flex items-center gap-1">
+                            <AlertCircle size={12} /> {t("rx2.noAccountBadge")}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { setSelectedPatient(null); setPatientQuery(""); }}
+                      className="text-xs text-slate-500 hover:text-slate-700 font-medium shrink-0"
+                    >
+                      {t("rx2.changePatient")}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={patientQuery}
+                        onChange={(e) => setPatientQuery(e.target.value)}
+                        placeholder={t("rx2.searchPatient")}
+                        className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      />
+                    </div>
+
+                    <div className="mt-2 border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100">
+                      {filteredCharts.length === 0 ? (
+                        <div className="p-4 text-center">
+                          <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
+                          <p className="text-xs text-slate-400 mt-1">{t("rx2.noPatientHint")}</p>
+                          <a
+                            href="/professional/patients"
+                            className="mt-3 inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold hover:underline"
+                          >
+                            <Plus size={14} /> {t("rx2.createPatient")}
+                          </a>
+                        </div>
+                      ) : (
+                        filteredCharts.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => { setSelectedPatient(c); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition text-left"
+                          >
+                            <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
+                              {c.firstName[0]}{c.lastName[0]}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-slate-800 text-sm">{c.firstName} {c.lastName}</p>
+                              <p className="text-xs text-slate-400">
+                                {c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
+                              </p>
+                            </div>
+                            <ChevronRight size={16} className="text-slate-300 shrink-0" />
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* ── DRUG SEARCH ── */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-semibold text-slate-700">{t("rx2.addItem")}</label>
+                  <select
+                    value={drugCountry}
+                    onChange={(e) => setDrugCountry(e.target.value)}
+                    className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-600 focus:outline-none"
+                  >
+                    <option value="">{t("rx2.countryAll")}</option>
+                    <option value="BR">🇧🇷 BR</option>
+                    <option value="US">🇺🇸 US</option>
+                  </select>
                 </div>
+                <div className="relative">
+                  <Pill size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={drugQuery}
+                    onChange={(e) => setDrugQuery(e.target.value)}
+                    placeholder={t("rx2.searchDrug")}
+                    className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  />
+                  {drugSearching && (
+                    <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />
+                  )}
+                </div>
+
+                {/* Drug results dropdown */}
+                {drugQuery.trim().length >= 2 && (
+                  <div className="mt-2 border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                    {drugResults.length === 0 && !drugSearching ? (
+                      <div className="p-4 text-center">
+                        <p className="text-sm text-slate-500">{t("rx2.noDrugsFound")}</p>
+                        <button
+                          onClick={addManual}
+                          className="mt-2 inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold hover:underline"
+                        >
+                          <Plus size={14} /> {t("rx2.addManual")}
+                        </button>
+                      </div>
+                    ) : (
+                      drugResults.map((drug) => (
+                        <button
+                          key={drug.id}
+                          onClick={() => addDrug(drug)}
+                          className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition text-left"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-slate-800 text-sm flex items-center gap-2">
+                              {drug.name}
+                              {drug.controlled && (
+                                <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">
+                                  {t("rx2.controlled")}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-slate-500">{drug.activeIngredient}</p>
+                            <p className="text-xs text-slate-400">{drug.presentation}{drug.manufacturer ? ` · ${drug.manufacturer}` : ""}</p>
+                          </div>
+                          <Plus size={16} className="text-emerald-500 shrink-0 mt-1" />
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* ── SELECTED MEDS (cards) ── */}
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-2">{t("rx2.selectedMeds")}</label>
+                {medications.length === 0 ? (
+                  <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <p className="text-sm text-slate-400">{t("rx2.noMeds")}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {medications.map((med, index) => (
+                      <div key={index} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-800 text-sm flex items-center gap-2 flex-wrap">
+                              {med.name}
+                              {med.controlled && (
+                                <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">
+                                  {t("rx2.controlled")}
+                                </span>
+                              )}
+                            </p>
+                            {med.presentation && (
+                              <p className="text-xs text-slate-400 mt-0.5">{med.presentation}</p>
+                            )}
+                          </div>
+                          <button onClick={() => removeMedication(index)} className="text-red-400 hover:text-red-600 shrink-0">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.dosageLabel")} *</label>
+                            <input type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder="500mg" className="inp-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.frequencyLabel")} *</label>
+                            <select value={med.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="inp-sm">
+                              <option value="">{t("med.freqSelect")}</option>
+                              <option value="Once daily">{t("med.freqOnce")}</option>
+                              <option value="Twice daily">{t("med.freqTwice")}</option>
+                              <option value="Three times daily">{t("med.freqThree")}</option>
+                              <option value="Every 8 hours">{t("med.freq8h")}</option>
+                              <option value="Every 12 hours">{t("med.freq12h")}</option>
+                              <option value="As needed">{t("med.freqAsNeeded")}</option>
+                              <option value="Weekly">{t("med.freqWeekly")}</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.durationLabel")}</label>
+                            <input type="text" value={med.duration} onChange={(e) => updateMedication(index, "duration", e.target.value)} placeholder={t("rx.medDurationPlaceholder")} className="inp-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.instructionsLabel")}</label>
+                            <input type="text" value={med.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} placeholder={t("rx.medInstructionsPlaceholder")} className="inp-sm" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── GENERAL INSTRUCTIONS + VALIDITY ── */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("rx2.generalInstructions")}</label>
+                <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2} placeholder={t("rx.generalInstructionsPlaceholder")} className="inp resize-none" />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("rx.generalInstructions")}</label>
-                <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3} placeholder={t("rx.generalInstructionsPlaceholder")} className="inp resize-none" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("rx.validFor")}</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("rx2.validFor")}</label>
                 <select value={validDays} onChange={(e) => setValidDays(Number(e.target.value))} className="inp">
                   <option value={7}>{t("rx.days7")}</option>
                   <option value={30}>{t("rx.days30")}</option>
@@ -278,16 +565,20 @@ export default function PrescriptionsPage() {
                 </select>
               </div>
 
+              {formError && (
+                <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{formError}</p>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { setShowForm(false); resetForm(); }} className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition">
-                  {t("common.cancel")}
+                  {t("rx2.cancel")}
                 </button>
-                <button type="submit" disabled={saving} className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
+                <button type="button" onClick={handleSubmit} disabled={saving} className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
                   {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <CheckCircle2 size={14} /> : null}
-                  {saved ? t("rx.saved") : saving ? t("rx.saving") : t("rx.create")}
+                  {saved ? t("rx2.saved") : saving ? t("rx2.saving") : t("rx2.save")}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
