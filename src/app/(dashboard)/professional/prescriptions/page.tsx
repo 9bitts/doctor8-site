@@ -17,6 +17,36 @@ import {
   User, Pill, AlertCircle, ChevronRight,
 } from "lucide-react";
 
+// ── Controlled-substance helper (Portaria 344/98) ──
+// Maps the prescriptionType code (A1, A2, A3, B1, B2, C1...) saved in the catalog
+// to the tarja color, a short label (the tag) and the receipt type the doctor must
+// use. Texts are inlined (PT) so no i18n keys need to be added. Pure display.
+function controlInfo(type: string | null | undefined): {
+  tarja: "preta" | "vermelha";
+  label: string;
+  receita: string;
+} | null {
+  if (!type) return null;
+  const code = type.toUpperCase();
+  const A = "Exige Notificação de Receita A (amarela)";
+  const B = "Exige Notificação de Receita B (azul)";
+  const C = "Exige Receita de Controle Especial (2 vias)";
+  const CESP = "Exige Notificação de Receita Especial";
+  const map: Record<string, { tarja: "preta" | "vermelha"; label: string; receita: string }> = {
+    A1: { tarja: "preta", label: "A1 — Receita A", receita: A },
+    A2: { tarja: "preta", label: "A2 — Receita A", receita: A },
+    A3: { tarja: "preta", label: "A3 — Receita A", receita: A },
+    B1: { tarja: "preta", label: "B1 — Receita B", receita: B },
+    B2: { tarja: "preta", label: "B2 — Receita B", receita: B },
+    C1: { tarja: "vermelha", label: "C1 — Controle especial", receita: C },
+    C2: { tarja: "vermelha", label: "C2 — Retinoide", receita: CESP },
+    C3: { tarja: "vermelha", label: "C3 — Talidomida", receita: CESP },
+    C4: { tarja: "vermelha", label: "C4 — Antirretroviral", receita: C },
+    C5: { tarja: "vermelha", label: "C5 — Anabolizante", receita: C },
+  };
+  return map[code] || { tarja: "vermelha", label: "Controlado", receita: C };
+}
+
 // ── Types ──
 interface Chart {
   id: string;
@@ -47,6 +77,7 @@ interface MedItem {
   // extra display-only info (not sent as clinical fields)
   presentation?: string;
   controlled?: boolean;
+  prescriptionType?: string | null;
 }
 
 interface Prescription {
@@ -175,6 +206,7 @@ export default function PrescriptionsPage() {
         instructions: "",
         presentation: drug.presentation,
         controlled: drug.controlled,
+        prescriptionType: drug.prescriptionType,
       },
     ]);
     setDrugQuery("");
@@ -557,16 +589,23 @@ export default function PrescriptionsPage() {
                         </button>
                       </div>
                     ) : (
-                      drugResults.map((drug) => (
+                      drugResults.map((drug) => {
+                        const ci = controlInfo(drug.prescriptionType);
+                        return (
                         <button
                           key={drug.id}
                           onClick={() => addDrug(drug)}
                           className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition text-left"
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-slate-800 text-sm flex items-center gap-2">
+                            <p className="font-medium text-slate-800 text-sm flex items-center gap-2 flex-wrap">
                               {drug.name}
-                              {drug.controlled && (
+                              {drug.controlled && ci && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${ci.tarja === "preta" ? "bg-slate-800 text-white" : "bg-red-100 text-red-600"}`}>
+                                  {ci.label}
+                                </span>
+                              )}
+                              {drug.controlled && !ci && (
                                 <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">
                                   {t("rx2.controlled")}
                                 </span>
@@ -574,10 +613,17 @@ export default function PrescriptionsPage() {
                             </p>
                             <p className="text-xs text-slate-500">{drug.activeIngredient}</p>
                             <p className="text-xs text-slate-400">{drug.presentation}{drug.manufacturer ? ` · ${drug.manufacturer}` : ""}</p>
+                            {drug.controlled && ci && (
+                              <p className="text-[11px] text-slate-500 mt-1 inline-flex items-center gap-1">
+                                <AlertCircle size={11} className={ci.tarja === "preta" ? "text-slate-700" : "text-red-500"} />
+                                {ci.receita}
+                              </p>
+                            )}
                           </div>
                           <Plus size={16} className="text-emerald-500 shrink-0 mt-1" />
                         </button>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}
@@ -592,13 +638,20 @@ export default function PrescriptionsPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {medications.map((med, index) => (
+                    {medications.map((med, index) => {
+                      const ci = controlInfo(med.prescriptionType);
+                      return (
                       <div key={index} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="font-semibold text-slate-800 text-sm flex items-center gap-2 flex-wrap">
                               {med.name}
-                              {med.controlled && (
+                              {med.controlled && ci && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${ci.tarja === "preta" ? "bg-slate-800 text-white" : "bg-red-100 text-red-600"}`}>
+                                  {ci.label}
+                                </span>
+                              )}
+                              {med.controlled && !ci && (
                                 <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">
                                   {t("rx2.controlled")}
                                 </span>
@@ -606,6 +659,12 @@ export default function PrescriptionsPage() {
                             </p>
                             {med.presentation && (
                               <p className="text-xs text-slate-400 mt-0.5">{med.presentation}</p>
+                            )}
+                            {med.controlled && ci && (
+                              <p className={`text-[11px] mt-1 inline-flex items-center gap-1 rounded-md px-2 py-1 ${ci.tarja === "preta" ? "bg-slate-100 text-slate-700" : "bg-red-50 text-red-700"}`}>
+                                <AlertCircle size={11} />
+                                {ci.receita}
+                              </p>
                             )}
                           </div>
                           <button onClick={() => removeMedication(index)} className="text-red-400 hover:text-red-600 shrink-0">
@@ -640,7 +699,8 @@ export default function PrescriptionsPage() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
