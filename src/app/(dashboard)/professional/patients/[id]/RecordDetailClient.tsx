@@ -3,12 +3,13 @@
 // src/app/(dashboard)/professional/patients/[id]/RecordDetailClient.tsx
 // Chart detail + add clinical record (title + text + optional file upload to S3).
 // Phase 4B: the category selector is now dynamic (grouped categories from the DB).
+// Etapa 3c: edit the chart's email (only when no account) + resend prescription invite.
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
-  Share2, Mail, Loader2, Tag,
+  Share2, Mail, Loader2, Tag, Pencil, Send,
 } from "lucide-react";
 
 interface Chart {
@@ -66,6 +67,16 @@ export default function RecordDetailClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Chart contact (email) state — Etapa 3c
+  const [chartEmail, setChartEmail] = useState<string | null>(chart.email);
+  const [hasAccount, setHasAccount] = useState<boolean>(chart.hasAccount);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailDraft, setEmailDraft] = useState(chart.email || "");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailMsg, setEmailMsg] = useState<string | null>(null);
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+
   // Dynamic categories
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -89,7 +100,6 @@ export default function RecordDetailClient({
         if (!active) return;
         const gs: CategoryGroup[] = data.groups || [];
         setGroups(gs);
-        // Default to the first category of the first group
         const first = gs[0]?.items[0];
         if (first) setCategoryId(first.id);
       } catch {
@@ -104,6 +114,53 @@ export default function RecordDetailClient({
     const first = groups[0]?.items[0];
     setCategoryId(first ? first.id : "");
     setTitle(""); setContent(""); setFile(null); setError(null);
+  }
+
+  // ── Etapa 3c: save edited email ──
+  async function saveEmail() {
+    setEmailSaving(true);
+    setEmailMsg(null);
+    try {
+      const res = await fetch(`/api/professional/records/${chart.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailDraft.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEmailMsg("error:" + (typeof data.error === "string" ? data.error : "Failed to update email"));
+      } else {
+        setChartEmail(data.email);
+        setHasAccount(!!data.hasAccount);
+        setEditingEmail(false);
+        setEmailMsg(data.hasAccount ? "linked" : "saved");
+      }
+    } catch {
+      setEmailMsg("error:Network error");
+    }
+    setEmailSaving(false);
+  }
+
+  // ── Etapa 3c: resend prescription invite ──
+  async function resendInvite() {
+    setInviteSending(true);
+    setInviteMsg(null);
+    try {
+      const res = await fetch(`/api/professional/records/${chart.id}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setInviteMsg("error:" + (typeof data.error === "string" ? data.error : "Failed to send invite"));
+      } else {
+        setInviteMsg("sent");
+      }
+    } catch {
+      setInviteMsg("error:Network error");
+    }
+    setInviteSending(false);
   }
 
   async function handleShare(docId: string) {
@@ -155,8 +212,6 @@ export default function RecordDetailClient({
 
     try {
       let fileKey = "";
-
-      // 1) Upload the file first (if any)
       if (file) {
         const fd = new FormData();
         fd.append("file", file);
@@ -171,7 +226,6 @@ export default function RecordDetailClient({
         fileKey = upData.key;
       }
 
-      // 2) Create the clinical record
       const res = await fetch("/api/professional/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -231,11 +285,11 @@ export default function RecordDetailClient({
               {chart.firstName} {chart.lastName}
             </h1>
             <div className="mt-1 space-y-0.5 text-sm text-slate-500">
-              {chart.email && <p>{chart.email}</p>}
+              {chartEmail && <p>{chartEmail}</p>}
               {chart.phone && <p>{chart.phone}</p>}
             </div>
             <p className="text-xs mt-2">
-              {chart.hasAccount ? (
+              {hasAccount ? (
                 <span className="text-emerald-600 inline-flex items-center gap-1">
                   <CheckCircle2 size={12} /> Has Doctor8 account
                 </span>
@@ -247,6 +301,93 @@ export default function RecordDetailClient({
             </p>
           </div>
         </div>
+
+        {/* ── Etapa 3c: email & invite management (only meaningful when no account) ── */}
+        {!hasAccount && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Patient access</p>
+
+            {editingEmail ? (
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-slate-600">Email</label>
+                <div className="flex gap-2 flex-wrap">
+                  <input
+                    type="email"
+                    value={emailDraft}
+                    onChange={(e) => setEmailDraft(e.target.value)}
+                    placeholder="patient@email.com"
+                    className="flex-1 min-w-[200px] px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  />
+                  <button
+                    onClick={saveEmail}
+                    disabled={emailSaving}
+                    className="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50"
+                  >
+                    {emailSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                    Save
+                  </button>
+                  <button
+                    onClick={() => { setEditingEmail(false); setEmailDraft(chartEmail || ""); setEmailMsg(null); }}
+                    className="text-sm text-slate-500 hover:text-slate-700 px-3 py-2"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-slate-700">
+                  {chartEmail ? chartEmail : <span className="text-slate-400">No email on file</span>}
+                </span>
+                <button
+                  onClick={() => { setEditingEmail(true); setEmailMsg(null); }}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
+                >
+                  <Pencil size={13} /> {chartEmail ? "Edit email" : "Add email"}
+                </button>
+
+                {chartEmail && (
+                  <button
+                    onClick={resendInvite}
+                    disabled={inviteSending}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                  >
+                    {inviteSending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                    Send invite
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* messages */}
+            {emailMsg === "saved" && (
+              <p className="text-xs text-emerald-600 mt-2 inline-flex items-center gap-1">
+                <CheckCircle2 size={12} /> Email updated.
+              </p>
+            )}
+            {emailMsg === "linked" && (
+              <p className="text-xs text-emerald-600 mt-2 inline-flex items-center gap-1">
+                <CheckCircle2 size={12} /> Email updated and linked to an existing account.
+              </p>
+            )}
+            {emailMsg?.startsWith("error:") && (
+              <p className="text-xs text-rose-600 mt-2 inline-flex items-center gap-1">
+                <AlertCircle size={12} /> {emailMsg.slice(6)}
+              </p>
+            )}
+            {inviteMsg === "sent" && (
+              <p className="text-xs text-blue-600 mt-2 inline-flex items-center gap-1">
+                <Mail size={12} /> Invite sent to {chartEmail}.
+              </p>
+            )}
+            {inviteMsg?.startsWith("error:") && (
+              <p className="text-xs text-rose-600 mt-2 inline-flex items-center gap-1">
+                <AlertCircle size={12} /> {inviteMsg.slice(6)}
+              </p>
+            )}
+          </div>
+        )}
+
         {chart.notes && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Notes</p>
