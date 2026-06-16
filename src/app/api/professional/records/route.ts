@@ -2,6 +2,9 @@
 // Patient charts (PatientRecord) created by a professional.
 // GET  — list this professional's patient charts
 // POST — create a new patient chart (optionally attaching a shared document)
+//
+// P1-a: accepts registration data (sex, cpf, address...) used by the prescription
+// (CFM superinscription). All new fields are optional; phone is now expected by the UI.
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -15,6 +18,14 @@ const createSchema = z.object({
   phone: z.string().max(40).optional().or(z.literal("")),
   dateOfBirth: z.string().optional().or(z.literal("")),
   notes: z.string().max(5000).optional().or(z.literal("")),
+  // P1-a: registration data (all optional)
+  sex: z.string().max(10).optional().or(z.literal("")),
+  cpf: z.string().max(30).optional().or(z.literal("")),
+  addressLine1: z.string().max(200).optional().or(z.literal("")),
+  city: z.string().max(100).optional().or(z.literal("")),
+  state: z.string().max(100).optional().or(z.literal("")),
+  country: z.string().max(60).optional().or(z.literal("")),
+  zipCode: z.string().max(30).optional().or(z.literal("")),
   // Phase 4D-2: if present, attach this (shared) document to the new chart.
   attachDocumentId: z.string().optional().or(z.literal("")),
 });
@@ -88,13 +99,19 @@ export async function POST(req: NextRequest) {
       phone: d.phone ? encrypt(d.phone) : null,
       dateOfBirth: d.dateOfBirth ? new Date(d.dateOfBirth) : null,
       notes: d.notes ? encrypt(d.notes) : null,
+      // P1-a registration data
+      sex: d.sex || null,
+      cpf: d.cpf ? encrypt(d.cpf) : null,
+      addressLine1: d.addressLine1 ? encrypt(d.addressLine1) : null,
+      city: d.city || null,
+      state: d.state || null,
+      country: d.country || null,
+      zipCode: d.zipCode ? encrypt(d.zipCode) : null,
       linkedUserId,
     },
   });
 
   // Phase 4D-2 / 3D-2: attach a shared document to this new chart (letter A).
-  // We make a COPY into the chart (so the doctor keeps it even if un-shared),
-  // recording sourceDocumentId for de-duplication later.
   let attachedDocumentId: string | null = null;
   if (d.attachDocumentId) {
     const share = await db.sharedRecord.findFirst({

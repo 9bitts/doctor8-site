@@ -613,6 +613,13 @@ model PatientRecord {
   phone           String?  // @encrypted
   dateOfBirth     DateTime?
   notes           String?  @db.Text // @encrypted — general chart notes
+  cpf             String?  // @encrypted — opcional (paciente no exterior pode não ter)
+  sex             String?  // opcional — "M", "F", "O" ou livre
+  addressLine1    String?  // @encrypted — rua, número, complemento
+  city            String?
+  state           String?  // estado/província/região
+  country         String?  @default("BR")
+  zipCode         String?  // @encrypted — CEP / ZIP / código postal
 
   // Link to a real account, once the patient has one
   linkedUserId    String?

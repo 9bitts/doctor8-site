@@ -2,6 +2,8 @@
 
 // src/app/(dashboard)/professional/patients/PatientsClient.tsx
 // Client UI for the professional's patient charts: list + create new chart. i18n via useT().
+// P1-a: added phone (required) + registration data (birth, sex, CPF, address) used by the
+// prescription (CFM superinscription). Registration fields can be filled now or later.
 
 import { useState } from "react";
 import Link from "next/link";
@@ -30,8 +32,20 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
 
+  // P1-a: registration data (used by the prescription)
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [sex, setSex] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [city, setCity] = useState("");
+  const [stateField, setStateField] = useState("");
+  const [country, setCountry] = useState("BR");
+  const [zipCode, setZipCode] = useState("");
+
   function resetForm() {
     setFirstName(""); setLastName(""); setEmail(""); setPhone(""); setNotes("");
+    setDateOfBirth(""); setSex(""); setCpf("");
+    setAddressLine1(""); setCity(""); setStateField(""); setCountry("BR"); setZipCode("");
     setError(null);
   }
 
@@ -40,13 +54,21 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
       setError(t("pat.errNameRequired"));
       return;
     }
+    if (!phone.trim()) {
+      setError(t("pat.errPhoneRequired"));
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       const res = await fetch("/api/professional/records", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName, email, phone, notes }),
+        body: JSON.stringify({
+          firstName, lastName, email, phone, notes,
+          dateOfBirth, sex, cpf,
+          addressLine1, city, state: stateField, country, zipCode,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -136,7 +158,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
               <h2 className="font-bold text-slate-800">{t("pat.modalTitle")}</h2>
               <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
@@ -162,6 +184,15 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                 </div>
               </div>
               <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.phone")} *</label>
+                <input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+55 11 99999-9999"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                />
+              </div>
+              <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
                   {t("pat.email")} <span className="text-slate-400">{t("pat.emailHint")}</span>
                 </label>
@@ -173,14 +204,98 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.phone")}</label>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
-                />
+
+              {/* ── Registration data (for the prescription) ── */}
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t("pat.regSection")}</p>
+                <p className="text-xs text-slate-400 mb-3">{t("pat.regHint")}</p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.dob")}</label>
+                    <input
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.sex")}</label>
+                    <select
+                      value={sex}
+                      onChange={(e) => setSex(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                    >
+                      <option value="">{t("pat.sexSelect")}</option>
+                      <option value="F">{t("pat.sexF")}</option>
+                      <option value="M">{t("pat.sexM")}</option>
+                      <option value="O">{t("pat.sexO")}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    {t("pat.cpf")} <span className="text-slate-400">{t("pat.cpfHint")}</span>
+                  </label>
+                  <input
+                    value={cpf}
+                    onChange={(e) => setCpf(e.target.value)}
+                    placeholder="000.000.000-00"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  />
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.address")}</label>
+                  <input
+                    value={addressLine1}
+                    onChange={(e) => setAddressLine1(e.target.value)}
+                    placeholder={t("pat.addressPlaceholder")}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.city")}</label>
+                    <input
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.state")}</label>
+                    <input
+                      value={stateField}
+                      onChange={(e) => setStateField(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.country")}</label>
+                    <input
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.zip")}</label>
+                    <input
+                      value={zipCode}
+                      onChange={(e) => setZipCode(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    />
+                  </div>
+                </div>
               </div>
+
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.notes")}</label>
                 <textarea
