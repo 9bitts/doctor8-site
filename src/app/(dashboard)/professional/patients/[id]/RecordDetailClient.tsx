@@ -4,12 +4,13 @@
 // Chart detail + add clinical record (title + text + optional file upload to S3).
 // Phase 4B: the category selector is now dynamic (grouped categories from the DB).
 // Etapa 3c: edit the chart's email (only when no account) + resend prescription invite.
+// P1-b: edit the chart's registration data (birth, sex, cpf, address) used by the prescription.
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
-  Share2, Mail, Loader2, Tag, Pencil, Send,
+  Share2, Mail, Loader2, Tag, Pencil, Send, MapPin,
 } from "lucide-react";
 
 interface Chart {
@@ -20,6 +21,15 @@ interface Chart {
   phone: string | null;
   notes: string | null;
   hasAccount: boolean;
+  // P1-b registration data
+  dateOfBirth: string;
+  sex: string;
+  cpf: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  country: string;
+  zipCode: string;
 }
 interface Doc {
   id: string;
@@ -76,6 +86,22 @@ export default function RecordDetailClient({
   const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+
+  // P1-b: registration data state
+  const [reg, setReg] = useState({
+    dateOfBirth: chart.dateOfBirth,
+    sex: chart.sex,
+    cpf: chart.cpf,
+    addressLine1: chart.addressLine1,
+    city: chart.city,
+    state: chart.state,
+    country: chart.country || "BR",
+    zipCode: chart.zipCode,
+  });
+  const [editingReg, setEditingReg] = useState(false);
+  const [regDraft, setRegDraft] = useState(reg);
+  const [regSaving, setRegSaving] = useState(false);
+  const [regMsg, setRegMsg] = useState<string | null>(null);
 
   // Dynamic categories
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
@@ -139,6 +165,44 @@ export default function RecordDetailClient({
       setEmailMsg("error:Network error");
     }
     setEmailSaving(false);
+  }
+
+  // ── P1-b: save registration data ──
+  function openRegEditor() {
+    setRegDraft(reg);
+    setRegMsg(null);
+    setEditingReg(true);
+  }
+  async function saveReg() {
+    setRegSaving(true);
+    setRegMsg(null);
+    try {
+      const res = await fetch(`/api/professional/records/${chart.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dateOfBirth: regDraft.dateOfBirth,
+          sex: regDraft.sex,
+          cpf: regDraft.cpf,
+          addressLine1: regDraft.addressLine1,
+          city: regDraft.city,
+          state: regDraft.state,
+          country: regDraft.country,
+          zipCode: regDraft.zipCode,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRegMsg("error:" + (typeof data.error === "string" ? data.error : "Failed to save"));
+      } else {
+        setReg(regDraft);
+        setEditingReg(false);
+        setRegMsg("saved");
+      }
+    } catch {
+      setRegMsg("error:Network error");
+    }
+    setRegSaving(false);
   }
 
   // ── Etapa 3c: resend prescription invite ──
@@ -265,6 +329,10 @@ export default function RecordDetailClient({
     setSaving(false);
   }
 
+  // Helper: is the registration data essentially empty?
+  const regEmpty = !reg.dateOfBirth && !reg.addressLine1 && !reg.city && !reg.cpf && !reg.sex;
+  const sexLabel = reg.sex === "F" ? "Feminino" : reg.sex === "M" ? "Masculino" : reg.sex === "O" ? "Outro" : "";
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <Link
@@ -300,6 +368,151 @@ export default function RecordDetailClient({
               )}
             </p>
           </div>
+        </div>
+
+        {/* ── P1-b: registration data (for the prescription) ── */}
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Dados para a receita</p>
+            {!editingReg && (
+              <button
+                onClick={openRegEditor}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
+              >
+                <Pencil size={13} /> {regEmpty ? "Adicionar dados" : "Editar dados"}
+              </button>
+            )}
+          </div>
+
+          {editingReg ? (
+            <div className="space-y-3 bg-slate-50 rounded-xl p-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Data de nascimento</label>
+                  <input
+                    type="date"
+                    value={regDraft.dateOfBirth}
+                    onChange={(e) => setRegDraft({ ...regDraft, dateOfBirth: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Sexo</label>
+                  <select
+                    value={regDraft.sex}
+                    onChange={(e) => setRegDraft({ ...regDraft, sex: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  >
+                    <option value="">Selecione</option>
+                    <option value="F">Feminino</option>
+                    <option value="M">Masculino</option>
+                    <option value="O">Outro</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">CPF <span className="text-slate-400">(opcional)</span></label>
+                <input
+                  value={regDraft.cpf}
+                  onChange={(e) => setRegDraft({ ...regDraft, cpf: e.target.value })}
+                  placeholder="000.000.000-00"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Endereço</label>
+                <input
+                  value={regDraft.addressLine1}
+                  onChange={(e) => setRegDraft({ ...regDraft, addressLine1: e.target.value })}
+                  placeholder="Rua, número, complemento"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Cidade</label>
+                  <input
+                    value={regDraft.city}
+                    onChange={(e) => setRegDraft({ ...regDraft, city: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Estado</label>
+                  <input
+                    value={regDraft.state}
+                    onChange={(e) => setRegDraft({ ...regDraft, state: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">País</label>
+                  <input
+                    value={regDraft.country}
+                    onChange={(e) => setRegDraft({ ...regDraft, country: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">CEP</label>
+                  <input
+                    value={regDraft.zipCode}
+                    onChange={(e) => setRegDraft({ ...regDraft, zipCode: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  />
+                </div>
+              </div>
+
+              {regMsg?.startsWith("error:") && (
+                <p className="text-xs text-rose-600 inline-flex items-center gap-1">
+                  <AlertCircle size={12} /> {regMsg.slice(6)}
+                </p>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => { setEditingReg(false); setRegMsg(null); }}
+                  className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={saveReg}
+                  disabled={regSaving}
+                  className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                >
+                  {regSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                  Salvar
+                </button>
+              </div>
+            </div>
+          ) : regEmpty ? (
+            <p className="text-sm text-slate-400">
+              Nenhum dado cadastral ainda. Eles são usados na emissão da receita.
+            </p>
+          ) : (
+            <div className="text-sm text-slate-600 space-y-1">
+              {reg.dateOfBirth && <p><span className="text-slate-400">Nascimento:</span> {reg.dateOfBirth.split("-").reverse().join("/")}</p>}
+              {sexLabel && <p><span className="text-slate-400">Sexo:</span> {sexLabel}</p>}
+              {reg.cpf && <p><span className="text-slate-400">CPF:</span> {reg.cpf}</p>}
+              {(reg.addressLine1 || reg.city || reg.state || reg.country || reg.zipCode) && (
+                <p className="inline-flex items-start gap-1">
+                  <MapPin size={13} className="text-slate-400 mt-0.5 shrink-0" />
+                  <span>
+                    {[reg.addressLine1, reg.city, reg.state, reg.country, reg.zipCode].filter(Boolean).join(", ")}
+                  </span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {regMsg === "saved" && !editingReg && (
+            <p className="text-xs text-emerald-600 mt-2 inline-flex items-center gap-1">
+              <CheckCircle2 size={12} /> Dados salvos.
+            </p>
+          )}
         </div>
 
         {/* ── Etapa 3c: email & invite management (only meaningful when no account) ── */}

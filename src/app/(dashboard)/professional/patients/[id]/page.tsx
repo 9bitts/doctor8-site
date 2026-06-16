@@ -1,5 +1,7 @@
 // src/app/(dashboard)/professional/patients/[id]/page.tsx
 // Detail of one patient chart: info + clinical records, with a form to add records.
+// P1-b: also loads the registration data (birth, sex, cpf, address) so the doctor
+// can review/complete it from the chart.
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
@@ -45,6 +47,15 @@ export default async function PatientChartDetail({
     phone: record.phone ? safeDecrypt(record.phone) : null,
     notes: record.notes ? safeDecrypt(record.notes) : null,
     hasAccount: !!record.linkedUserId,
+    // P1-b registration data
+    dateOfBirth: record.dateOfBirth ? record.dateOfBirth.toISOString().slice(0, 10) : "",
+    sex: record.sex || "",
+    cpf: record.cpf ? safeDecrypt(record.cpf) : "",
+    addressLine1: record.addressLine1 ? safeDecrypt(record.addressLine1) : "",
+    city: record.city || "",
+    state: record.state || "",
+    country: record.country || "",
+    zipCode: record.zipCode ? safeDecrypt(record.zipCode) : "",
   };
 
   const documents = record.medicalDocuments.map((d) => ({
