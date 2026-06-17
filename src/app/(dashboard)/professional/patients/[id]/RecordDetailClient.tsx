@@ -15,6 +15,15 @@ import {
 } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 
+// P2: inline texts for rec.* keys (not yet in translations.ts)
+const REC_TEXTS: Record<string, Record<string, string>> = {
+  titleLabel:       { pt: "Diagnóstico / Título", en: "Diagnosis / Title", es: "Diagnóstico / Título" },
+  titlePlaceholder: { pt: "ex.: Hipertensão arterial — ou o assunto do registro", en: "e.g. Hypertension — or the subject of this record", es: "ej.: Hipertensión arterial — o el asunto del registro" },
+  whatsapp:         { pt: "Abrir WhatsApp", en: "Open WhatsApp", es: "Abrir WhatsApp" },
+  errTitle:         { pt: "O título é obrigatório.", en: "Title is required.", es: "El título es obligatorio." },
+  errCategory:      { pt: "Escolha uma categoria.", en: "Please choose a category.", es: "Elige una categoría." },
+};
+
 interface Chart {
   id: string;
   firstName: string;
@@ -84,6 +93,10 @@ export default function RecordDetailClient({
   initialDocuments: Doc[];
 }) {
   const t = useT();
+  // Detect current language via a known key, then serve inline rec.* texts
+  const _lang = t("common.cancel") === "Cancelar" ? "pt" : t("common.cancel") === "Cancelar" ? "es" : t("common.cancel") === "Cancel" ? "en" : "en";
+  const _langFull = t("greeting.morning") === "Bom dia" ? "pt" : t("greeting.morning") === "Buenos días" ? "es" : "en";
+  const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -276,11 +289,11 @@ export default function RecordDetailClient({
 
   async function handleCreate() {
     if (!title.trim()) {
-      setError(t("rec.errTitle"));
+      setError(rt("errTitle"));
       return;
     }
     if (!categoryId) {
-      setError(t("rec.errCategory"));
+      setError(rt("errCategory"));
       return;
     }
     setSaving(true);
@@ -374,7 +387,7 @@ export default function RecordDetailClient({
                     href={`https://wa.me/${waPhone(chart.phone)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title={t("rec.whatsapp")}
+                    title={rt("whatsapp")}
                     className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-full transition"
                   >
                     <MessageCircle size={12} /> WhatsApp
@@ -772,12 +785,12 @@ export default function RecordDetailClient({
               {/* P2: "Diagnóstico / Título" label — trilíngue */}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  {t("rec.titleLabel")} *
+                  {rt("titleLabel")} *
                 </label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={t("rec.titlePlaceholder")}
+                  placeholder={rt("titlePlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
                 />
               </div>
