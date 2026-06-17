@@ -7,6 +7,9 @@
 // - Medication: searched in the DrugCatalog (Etapa 1 API). Click to add as a card.
 //   Each card has editable dosage / frequency / duration / instructions.
 // - Saving uses the prescription API with patientRecordId (works with/without account).
+// P1-c: when a patient is selected, if the chart is missing required-for-CFM data
+//   (name, address, date of birth), a non-blocking warning appears with a link to
+//   the chart to complete it. Does NOT block issuing the prescription.
 // i18n via useI18n().
 
 import { useState, useEffect, useRef } from "react";
@@ -14,7 +17,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import {
   Plus, Trash2, FileText, Download, Loader2, X, CheckCircle2, Search,
-  User, Pill, AlertCircle, ChevronRight,
+  User, Pill, AlertCircle, ChevronRight, AlertTriangle,
 } from "lucide-react";
 
 // ── Controlled-substance helper (Portaria 344/98) ──
@@ -47,6 +50,16 @@ function controlInfo(type: string | null | undefined): {
   return map[code] || { tarja: "vermelha", label: "Controlado", receita: C };
 }
 
+// ── P1-c: human-readable label for a missing-data code (inline PT) ──
+function missingLabel(code: string): string {
+  const map: Record<string, string> = {
+    name: "nome completo",
+    address: "endereço",
+    dob: "data de nascimento",
+  };
+  return map[code] || code;
+}
+
 // ── Types ──
 interface Chart {
   id: string;
@@ -54,6 +67,7 @@ interface Chart {
   lastName: string;
   email: string | null;
   hasAccount: boolean;
+  missingForRx?: string[];
 }
 
 interface Drug {
@@ -305,6 +319,9 @@ export default function PrescriptionsPage() {
     return name.includes(search.toLowerCase());
   });
 
+  // ── P1-c: missing required-for-CFM data on the selected patient's chart ──
+  const selectedMissing = selectedPatient?.missingForRx ?? [];
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
 
@@ -544,6 +561,28 @@ export default function PrescriptionsPage() {
                       )}
                     </div>
                   </>
+                )}
+
+                {/* ── P1-c: non-blocking warning when required CFM data is missing ── */}
+                {selectedPatient && selectedMissing.length > 0 && (
+                  <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
+                    <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-amber-800">
+                        Para uma receita conforme o CFM, complete na ficha: <strong>{selectedMissing.map(missingLabel).join(", ")}</strong>.
+                      </p>
+                      <p className="text-xs text-amber-700 mt-1">
+                        Você pode emitir mesmo assim, mas a receita pode ficar incompleta.
+                      </p>
+                      <a
+                        href={`/professional/patients/${selectedPatient.id}`}
+                        target="_blank"
+                        className="mt-2 inline-flex items-center gap-1.5 text-amber-900 text-xs font-semibold hover:underline"
+                      >
+                        <ChevronRight size={13} /> Abrir ficha para completar
+                      </a>
+                    </div>
+                  </div>
                 )}
               </div>
 

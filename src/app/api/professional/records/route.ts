@@ -5,6 +5,9 @@
 //
 // P1-a: accepts registration data (sex, cpf, address...) used by the prescription
 // (CFM superinscription). All new fields are optional; phone is now expected by the UI.
+// P1-c: the GET now returns `missingForRx` — a list of the required-for-prescription
+// fields that are still empty (name, address, date of birth), so the prescription
+// screen can warn the doctor (without blocking) and link to the chart to complete them.
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -38,6 +41,27 @@ function safeDecrypt(v: string): string {
   try { return decrypt(v); } catch { return v; }
 }
 
+// P1-c: which required-for-prescription fields are missing on a chart.
+// Returns a list of stable codes: "name" | "address" | "dob".
+// "address" counts as present when there is at least a street line OR a city
+// (some abbreviated foreign addresses may not have all parts).
+function computeMissingForRx(r: {
+  firstName: string | null;
+  lastName: string | null;
+  dateOfBirth: Date | null;
+  addressLine1: string | null;
+  city: string | null;
+}): string[] {
+  const missing: string[] = [];
+  const hasName = !!(r.firstName && r.lastName);
+  const hasAddress = !!(r.addressLine1 || r.city);
+  const hasDob = !!r.dateOfBirth;
+  if (!hasName) missing.push("name");
+  if (!hasAddress) missing.push("address");
+  if (!hasDob) missing.push("dob");
+  return missing;
+}
+
 export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,17 +76,29 @@ export async function GET() {
     orderBy: { updatedAt: "desc" },
   });
 
-  const decoded = records.map((r) => ({
-    id: r.id,
-    firstName: safeDecrypt(r.firstName),
-    lastName: safeDecrypt(r.lastName),
-    email: r.email || null,
-    phone: r.phone ? safeDecrypt(r.phone) : null,
-    linkedUserId: r.linkedUserId,
-    hasAccount: !!r.linkedUserId,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
-  }));
+  const decoded = records.map((r) => {
+    const firstName = safeDecrypt(r.firstName);
+    const lastName = safeDecrypt(r.lastName);
+    return {
+      id: r.id,
+      firstName,
+      lastName,
+      email: r.email || null,
+      phone: r.phone ? safeDecrypt(r.phone) : null,
+      linkedUserId: r.linkedUserId,
+      hasAccount: !!r.linkedUserId,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      // P1-c: what's still missing for a CFM-compliant prescription
+      missingForRx: computeMissingForRx({
+        firstName,
+        lastName,
+        dateOfBirth: r.dateOfBirth,
+        addressLine1: r.addressLine1 ? safeDecrypt(r.addressLine1) : null,
+        city: r.city || null,
+      }),
+    };
+  });
 
   return NextResponse.json({ records: decoded });
 }
