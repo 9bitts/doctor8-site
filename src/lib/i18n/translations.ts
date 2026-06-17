@@ -28,6 +28,7 @@ const en: Dict = {
   "nav.sharedWithMe": "Shared with me",
   "nav.categories": "Categories",
   "nav.prescriptions": "Prescriptions",
+  "nav.library": "Library",
   "nav.availability": "Availability",
   // Navigation — admin
   "nav.adminCategories": "Categories",
@@ -638,6 +639,7 @@ const pt: Dict = {
   "nav.sharedWithMe": "Compartilhados comigo",
   "nav.categories": "Categorias",
   "nav.prescriptions": "Prescrições",
+  "nav.library": "Biblioteca",
   "nav.availability": "Disponibilidade",
   "nav.adminCategories": "Categorias",
   "nav.adminDoctors": "Médicos",
@@ -1220,6 +1222,7 @@ const es: Dict = {
   "nav.sharedWithMe": "Compartidos conmigo",
   "nav.categories": "Categorías",
   "nav.prescriptions": "Recetas",
+  "nav.library": "Biblioteca",
   "nav.availability": "Disponibilidad",
   "nav.adminCategories": "Categorías",
   "nav.adminDoctors": "Médicos",

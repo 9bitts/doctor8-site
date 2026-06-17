@@ -275,6 +275,7 @@ model ProfessionalProfile {
   virtualCard         VirtualCard?
   patientRecords      PatientRecord[]
   sharedDocuments  SharedRecord[]  @relation("DocsSharedWithProfessional")
+  resources      Resource[]
 
   @@index([userId])
   @@index([specialty])
@@ -629,6 +630,7 @@ model PatientRecord {
   linkedUserId    String?
   // Clinical records attached to this chart
   medicalDocuments MedicalDocument[]
+  resourceShares   ResourceShare[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -701,4 +703,29 @@ model DrugCatalog {
   @@index([searchIngredient])
   @@index([country])
   @@index([active])
+}
+
+model Resource {
+  id             String          @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  title          String          // encrypted
+  content        String?         // encrypted — description/notes
+  url            String?         // YouTube link (plain — not PHI)
+  fileUrl        String?         // encrypted S3 key
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  shares         ResourceShare[]
+}
+
+model ResourceShare {
+  id              String        @id @default(cuid())
+  resourceId      String
+  resource        Resource      @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  patientRecordId String
+  patientRecord   PatientRecord @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  sharedAt        DateTime      @default(now())
+
+  @@unique([resourceId, patientRecordId])
 }
