@@ -687,6 +687,12 @@ export default function RecordDetailClient({
                     )}
                   </div>
                   <p className="font-semibold text-slate-800 text-sm">{d.title}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {new Date(d.createdAt).toLocaleString(
+                      _langFull === "pt" ? "pt-BR" : _langFull === "es" ? "es-ES" : "en-US",
+                      { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }
+                    )}
+                  </p>
                   {d.content && (
                     <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{d.content}</p>
                   )}
