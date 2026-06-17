@@ -1,18 +1,40 @@
 "use client";
 
 // src/app/(dashboard)/patient/account/page.tsx
-// Account settings: change password + change email. i18n via useT().
+// Account settings: personal data (P1-e) + change password + change email. i18n via useT().
+// P1-e: the "Personal data" section lets the patient fill/correct their own
+// registration data (name, birth, phone, sex, CPF, address) — the same fields the
+// prescription (CFM) needs. Encryption is handled server-side by the profile API.
 
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
-  Eye, EyeOff, LogOut, Shield,
+  Eye, EyeOff, LogOut, Shield, User,
 } from "lucide-react";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition";
+
+interface ProfileData {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  phone: string;
+  sex: string;
+  cpf: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  country: string;
+  zipCode: string;
+}
+
+const EMPTY_PROFILE: ProfileData = {
+  firstName: "", lastName: "", dateOfBirth: "", phone: "", sex: "", cpf: "",
+  addressLine1: "", city: "", state: "", country: "", zipCode: "",
+};
 
 export default function AccountPage() {
   const t = useT();
@@ -25,6 +47,13 @@ export default function AccountPage() {
   ];
 
   const [currentEmail, setCurrentEmail] = useState("");
+
+  // P1-e: personal data
+  const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState("");
 
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
@@ -52,6 +81,60 @@ export default function AccountPage() {
         if (s?.user?.email) setCurrentEmail(s.user.email);
       });
   }, []);
+
+  // P1-e: load current personal data
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/patient/profile");
+        const data = await res.json();
+        if (active && res.ok && data.profile) {
+          setProfile({ ...EMPTY_PROFILE, ...data.profile });
+        }
+      } catch {
+        /* ignore — keep empty */
+      } finally {
+        if (active) setProfileLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  function setField(field: keyof ProfileData, value: string) {
+    setProfile((p) => ({ ...p, [field]: value }));
+  }
+
+  async function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    setProfileError("");
+    setProfileSaved(false);
+
+    if (!profile.firstName.trim() || !profile.lastName.trim()) {
+      setProfileError(t("pat.errNameRequired"));
+      return;
+    }
+
+    setProfileSaving(true);
+    try {
+      const res = await fetch("/api/patient/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profile),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setProfileError(typeof data.error === "string" ? data.error : t("acct.errGeneric"));
+        return;
+      }
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 5000);
+    } catch {
+      setProfileError(t("acct.errGeneric"));
+    } finally {
+      setProfileSaving(false);
+    }
+  }
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -142,6 +225,111 @@ export default function AccountPage() {
           <p className="text-sm font-semibold text-slate-800">{currentEmail || t("common.loading")}</p>
           <p className="text-xs text-slate-400 mt-0.5">{t("acct.currentEmail")}</p>
         </div>
+      </div>
+
+      {/* P1-e: Personal data */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+        <div>
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <User size={18} className="text-emerald-500" /> {t("pat.regSection")}
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">{t("pat.regHint")}</p>
+        </div>
+
+        {profileSaved && (
+          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-700">
+            <CheckCircle2 size={16} className="shrink-0" /> {t("rx2.saved")}
+          </div>
+        )}
+        {profileError && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+            <AlertCircle size={16} className="shrink-0" /> {profileError}
+          </div>
+        )}
+
+        {profileLoading ? (
+          <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
+            <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
+          </div>
+        ) : (
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.firstName")}</label>
+                <input value={profile.firstName} onChange={(e) => setField("firstName", e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.lastName")}</label>
+                <input value={profile.lastName} onChange={(e) => setField("lastName", e.target.value)} className={inputClass} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.dob")}</label>
+                <input type="date" value={profile.dateOfBirth} onChange={(e) => setField("dateOfBirth", e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.sex")}</label>
+                <select value={profile.sex} onChange={(e) => setField("sex", e.target.value)} className={inputClass + " bg-white"}>
+                  <option value="">{t("pat.sexSelect")}</option>
+                  <option value="F">{t("pat.sexF")}</option>
+                  <option value="M">{t("pat.sexM")}</option>
+                  <option value="O">{t("pat.sexO")}</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.phone")}</label>
+                <input value={profile.phone} onChange={(e) => setField("phone", e.target.value)} placeholder="+55 11 99999-9999" className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">
+                  {t("pat.cpf")} <span className="text-slate-400">{t("pat.cpfHint")}</span>
+                </label>
+                <input value={profile.cpf} onChange={(e) => setField("cpf", e.target.value)} placeholder="000.000.000-00" className={inputClass} />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.address")}</label>
+              <input value={profile.addressLine1} onChange={(e) => setField("addressLine1", e.target.value)} placeholder={t("pat.addressPlaceholder")} className={inputClass} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.city")}</label>
+                <input value={profile.city} onChange={(e) => setField("city", e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.state")}</label>
+                <input value={profile.state} onChange={(e) => setField("state", e.target.value)} className={inputClass} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.country")}</label>
+                <input value={profile.country} onChange={(e) => setField("country", e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.zip")}</label>
+                <input value={profile.zipCode} onChange={(e) => setField("zipCode", e.target.value)} className={inputClass} />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={profileSaving}
+              className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2"
+            >
+              {profileSaving && <Loader2 size={15} className="animate-spin" />}
+              {profileSaving ? t("acct.saving") : t("common.save")}
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Change password */}

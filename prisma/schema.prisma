@@ -194,6 +194,10 @@ model PatientProfile {
   country       String?  @default("US")
   zipCode       String?  // @encrypted
 
+  // P1-e: extra registration fields (match PatientRecord)
+  cpf           String?  // @encrypted — opcional (paciente no exterior pode não ter)
+  sex           String?  // opcional — "M", "F", "O"
+
   // Emergency contact
   emergencyContactName  String? // @encrypted
   emergencyContactPhone String? // @encrypted

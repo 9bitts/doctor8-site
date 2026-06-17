@@ -61,6 +61,7 @@ const L: Record<Lang, Record<string, string>> = {
     patientName: "Patient Name",
     patientAddress: "Patient Address",
     patientAge: "Age",
+    patientCpf: "Tax ID (CPF)",
     yearsOld: "years",
     prescriptionDate: "Prescription Date",
     validUntil: "Valid Until",
@@ -80,6 +81,7 @@ const L: Record<Lang, Record<string, string>> = {
     patientName: "Nome do paciente",
     patientAddress: "Endereço do paciente",
     patientAge: "Idade",
+    patientCpf: "CPF",
     yearsOld: "anos",
     prescriptionDate: "Data da prescrição",
     validUntil: "Válida até",
@@ -99,6 +101,7 @@ const L: Record<Lang, Record<string, string>> = {
     patientName: "Nombre del paciente",
     patientAddress: "Dirección del paciente",
     patientAge: "Edad",
+    patientCpf: "CPF",
     yearsOld: "años",
     prescriptionDate: "Fecha de la receta",
     validUntil: "Válida hasta",
@@ -166,13 +169,13 @@ export async function GET(
         include: {
           patient: {
             select: {
-              firstName: true, lastName: true, dateOfBirth: true,
+              firstName: true, lastName: true, dateOfBirth: true, cpf: true,
               addressLine1: true, city: true, state: true, country: true, zipCode: true,
             },
           },
           patientRecord: {
             select: {
-              firstName: true, lastName: true, dateOfBirth: true,
+              firstName: true, lastName: true, dateOfBirth: true, cpf: true,
               addressLine1: true, city: true, state: true, country: true, zipCode: true,
             },
           },
@@ -214,6 +217,7 @@ export async function GET(
   let patientState = "";
   let patientCountry = "";
   let patientZip = "";
+  let patientCpf = "";
 
   const rec = prescription.document?.patientRecord;
   const acc = prescription.document?.patient;
@@ -226,6 +230,7 @@ export async function GET(
     patientState = rec.state || "";
     patientCountry = rec.country || "";
     patientZip = safeDecrypt(rec.zipCode);
+    patientCpf = safeDecrypt((rec as { cpf?: string | null }).cpf ?? null);
   } else if (acc) {
     patientFirstName = safeDecrypt(acc.firstName);
     patientLastName = safeDecrypt(acc.lastName);
@@ -235,6 +240,7 @@ export async function GET(
     patientState = acc.state || "";
     patientCountry = acc.country || "";
     patientZip = safeDecrypt(acc.zipCode);
+    patientCpf = safeDecrypt((acc as { cpf?: string | null }).cpf ?? null);
   }
 
   const patientAge = computeAge(patientDob);
@@ -280,6 +286,12 @@ export async function GET(
     ? `<div class="patient-field">
          <label>${tr.patientAge}</label>
          <value>${esc(ageText)}</value>
+       </div>`
+    : "";
+  const patientCpfRow = patientCpf
+    ? `<div class="patient-field">
+         <label>${tr.patientCpf}</label>
+         <value>${esc(patientCpf)}</value>
        </div>`
     : "";
 
@@ -351,6 +363,7 @@ export async function GET(
     <value>${esc(patientFirstName)} ${esc(patientLastName)}</value>
   </div>
   ${patientAgeRow}
+  ${patientCpfRow}
   <div class="patient-field">
     <label>${tr.prescriptionDate}</label>
     <value>${today}</value>
