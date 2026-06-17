@@ -4,6 +4,9 @@
 //  - Patient name now resolves from the chart (patientRecord) when there's no account.
 //  - All labels + the medication frequency are translated to the language of the
 //    person downloading the PDF (read from User.language).
+// P1-d (CFM compliance): the superscription now carries the patient's ADDRESS and AGE,
+//  and the header carries the professional's full clinic ADDRESS — as required by the
+//  CFM prescription rules (cabeçalho, superinscrição).
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -18,8 +21,36 @@ function normLang(v: string | null | undefined): Lang {
   return "en";
 }
 
-function safeDecrypt(v: string): string {
+function safeDecrypt(v: string | null | undefined): string {
+  if (v == null) return "";
   try { return decrypt(v); } catch { return v; }
+}
+
+// Escape user-derived text before injecting into the HTML template.
+function esc(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// Compute age in full years from a date of birth.
+function computeAge(dob: Date | null | undefined): number | null {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  if (age < 0 || age > 130) return null;
+  return age;
+}
+
+// Join address parts into a single readable line, skipping empties.
+function joinAddress(parts: (string | null | undefined)[]): string {
+  return parts.map((p) => (p || "").trim()).filter(Boolean).join(", ");
 }
 
 // PDF label dictionary (kept local to this file — the PDF is server-rendered HTML)
@@ -28,6 +59,9 @@ const L: Record<Lang, Record<string, string>> = {
     tagline: "Secure Digital Health Platform · HIPAA & GDPR Compliant",
     date: "Date",
     patientName: "Patient Name",
+    patientAddress: "Patient Address",
+    patientAge: "Age",
+    yearsOld: "years",
     prescriptionDate: "Prescription Date",
     validUntil: "Valid Until",
     noExpiry: "No expiry",
@@ -44,6 +78,9 @@ const L: Record<Lang, Record<string, string>> = {
     tagline: "Plataforma Digital de Saúde Segura · Conforme HIPAA e LGPD",
     date: "Data",
     patientName: "Nome do paciente",
+    patientAddress: "Endereço do paciente",
+    patientAge: "Idade",
+    yearsOld: "anos",
     prescriptionDate: "Data da prescrição",
     validUntil: "Válida até",
     noExpiry: "Sem validade",
@@ -60,6 +97,9 @@ const L: Record<Lang, Record<string, string>> = {
     tagline: "Plataforma Digital de Salud Segura · Conforme HIPAA y GDPR",
     date: "Fecha",
     patientName: "Nombre del paciente",
+    patientAddress: "Dirección del paciente",
+    patientAge: "Edad",
+    yearsOld: "años",
     prescriptionDate: "Fecha de la receta",
     validUntil: "Válida hasta",
     noExpiry: "Sin caducidad",
@@ -125,10 +165,16 @@ export async function GET(
       document: {
         include: {
           patient: {
-            select: { firstName: true, lastName: true, dateOfBirth: true },
+            select: {
+              firstName: true, lastName: true, dateOfBirth: true,
+              addressLine1: true, city: true, state: true, country: true, zipCode: true,
+            },
           },
           patientRecord: {
-            select: { firstName: true, lastName: true },
+            select: {
+              firstName: true, lastName: true, dateOfBirth: true,
+              addressLine1: true, city: true, state: true, country: true, zipCode: true,
+            },
           },
         },
       },
@@ -159,16 +205,50 @@ export async function GET(
   const tr = L[lang];
   const locale = LOCALE[lang];
 
-  // Resolve patient name: prefer the chart (works without account), fall back to account.
+  // ── Resolve patient data: prefer the chart (works without account), fall back to account. ──
   let patientFirstName = "—";
   let patientLastName = "";
-  if (prescription.document?.patientRecord) {
-    patientFirstName = safeDecrypt(prescription.document.patientRecord.firstName);
-    patientLastName = safeDecrypt(prescription.document.patientRecord.lastName);
-  } else if (prescription.document?.patient) {
-    patientFirstName = safeDecrypt(prescription.document.patient.firstName);
-    patientLastName = safeDecrypt(prescription.document.patient.lastName);
+  let patientDob: Date | null = null;
+  let patientAddrLine = "";
+  let patientCity = "";
+  let patientState = "";
+  let patientCountry = "";
+  let patientZip = "";
+
+  const rec = prescription.document?.patientRecord;
+  const acc = prescription.document?.patient;
+  if (rec) {
+    patientFirstName = safeDecrypt(rec.firstName);
+    patientLastName = safeDecrypt(rec.lastName);
+    patientDob = rec.dateOfBirth ?? null;
+    patientAddrLine = safeDecrypt(rec.addressLine1);
+    patientCity = rec.city || "";
+    patientState = rec.state || "";
+    patientCountry = rec.country || "";
+    patientZip = safeDecrypt(rec.zipCode);
+  } else if (acc) {
+    patientFirstName = safeDecrypt(acc.firstName);
+    patientLastName = safeDecrypt(acc.lastName);
+    patientDob = acc.dateOfBirth ?? null;
+    patientAddrLine = safeDecrypt(acc.addressLine1);
+    patientCity = acc.city || "";
+    patientState = acc.state || "";
+    patientCountry = acc.country || "";
+    patientZip = safeDecrypt(acc.zipCode);
   }
+
+  const patientAge = computeAge(patientDob);
+  const patientAddressFull = joinAddress([patientAddrLine, patientCity, patientState, patientZip, patientCountry]);
+
+  // ── Professional clinic address (CFM header) ──
+  const p = prescription.professional;
+  const clinicAddressFull = joinAddress([
+    (p as { clinicName?: string | null }).clinicName,
+    (p as { clinicAddress?: string | null }).clinicAddress,
+    (p as { clinicCity?: string | null }).clinicCity,
+    (p as { clinicState?: string | null }).clinicState,
+    (p as { clinicZip?: string | null }).clinicZip,
+  ]);
 
   const meds = prescription.medications as {
     name: string; dosage: string; frequency: string; duration?: string; instructions?: string;
@@ -188,11 +268,32 @@ export async function GET(
       })
     : tr.noExpiry;
 
+  // Build optional superscription rows (only show address/age when present)
+  const ageText = patientAge != null ? `${patientAge} ${tr.yearsOld}` : "";
+  const patientAddressRow = patientAddressFull
+    ? `<div class="patient-field full">
+         <label>${tr.patientAddress}</label>
+         <value>${esc(patientAddressFull)}</value>
+       </div>`
+    : "";
+  const patientAgeRow = ageText
+    ? `<div class="patient-field">
+         <label>${tr.patientAge}</label>
+         <value>${esc(ageText)}</value>
+       </div>`
+    : "";
+
+  const clinicAddressLine = clinicAddressFull
+    ? `<div class="license">${esc(clinicAddressFull)}</div>`
+    : ((p as { clinicCity?: string | null }).clinicCity
+        ? `<div class="license">${esc((p as { clinicCity?: string | null }).clinicCity || "")}${(p as { clinicState?: string | null }).clinicState ? `, ${esc((p as { clinicState?: string | null }).clinicState || "")}` : ""}</div>`
+        : "");
+
   const html = `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
 <meta charset="UTF-8">
-<title>Prescription — Dr. ${prescription.professional.lastName}</title>
+<title>Prescription — Dr. ${esc(p.lastName)}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Times New Roman', serif; color: #1a1a1a; padding: 48px; }
@@ -200,13 +301,14 @@ export async function GET(
   .logo-area h1 { font-size: 32px; font-weight: 900; font-family: Arial, sans-serif; color: #0a4d6e; letter-spacing: -1px; }
   .logo-area h1 span { color: #00b87a; }
   .logo-area p { font-size: 11px; color: #666; margin-top: 2px; }
-  .doc-info { text-align: right; font-size: 12px; color: #444; }
+  .doc-info { text-align: right; font-size: 12px; color: #444; max-width: 320px; }
   .doc-info .doc-name { font-size: 16px; font-weight: 700; color: #0a4d6e; }
   .doc-info .license { color: #666; margin-top: 2px; }
   .rx-divider { border: none; border-top: 3px double #0a4d6e; margin: 24px 0; }
-  .patient-box { display: flex; gap: 48px; margin-bottom: 32px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e5e7eb; }
+  .patient-box { display: flex; flex-wrap: wrap; gap: 16px 48px; margin-bottom: 32px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e5e7eb; }
   .patient-field label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #888; font-family: Arial, sans-serif; }
   .patient-field value { font-size: 14px; font-weight: 600; display: block; margin-top: 2px; }
+  .patient-field.full { flex-basis: 100%; }
   .rx-symbol { font-size: 48px; color: #0a4d6e; font-style: italic; font-weight: 700; margin-bottom: 16px; }
   .med-item { margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px dashed #e5e7eb; }
   .med-item:last-child { border-bottom: none; }
@@ -233,10 +335,10 @@ export async function GET(
     <p>${tr.tagline}</p>
   </div>
   <div class="doc-info">
-    <div class="doc-name">Dr. ${prescription.professional.firstName} ${prescription.professional.lastName}</div>
-    <div class="license">${prescription.professional.specialty}</div>
-    <div class="license">${prescription.professional.licenseNumber}</div>
-    ${prescription.professional.clinicCity ? `<div class="license">${prescription.professional.clinicCity}${prescription.professional.clinicState ? `, ${prescription.professional.clinicState}` : ""}</div>` : ""}
+    <div class="doc-name">Dr. ${esc(p.firstName)} ${esc(p.lastName)}</div>
+    <div class="license">${esc(p.specialty)}</div>
+    <div class="license">${esc(p.licenseNumber)}</div>
+    ${clinicAddressLine}
     <div class="license" style="margin-top:8px;">${tr.date}: ${today}</div>
   </div>
 </div>
@@ -246,8 +348,9 @@ export async function GET(
 <div class="patient-box">
   <div class="patient-field">
     <label>${tr.patientName}</label>
-    <value>${patientFirstName} ${patientLastName}</value>
+    <value>${esc(patientFirstName)} ${esc(patientLastName)}</value>
   </div>
+  ${patientAgeRow}
   <div class="patient-field">
     <label>${tr.prescriptionDate}</label>
     <value>${today}</value>
@@ -256,18 +359,19 @@ export async function GET(
     <label>${tr.validUntil}</label>
     <value>${validUntil}</value>
   </div>
+  ${patientAddressRow}
 </div>
 
 <div class="rx-symbol">℞</div>
 
 ${meds.map((med, i) => `
   <div class="med-item">
-    <div class="med-name">${i + 1}. ${med.name}</div>
+    <div class="med-name">${i + 1}. ${esc(med.name)}</div>
     <div class="med-detail">
-      <span>${tr.dosage}:</span> ${med.dosage}<br>
-      <span>${tr.frequency}:</span> ${translateFreq(med.frequency, lang)}<br>
-      ${med.duration ? `<span>${tr.duration}:</span> ${med.duration}<br>` : ""}
-      ${med.instructions ? `<span>${tr.instructions}:</span> ${med.instructions}` : ""}
+      <span>${tr.dosage}:</span> ${esc(med.dosage)}<br>
+      <span>${tr.frequency}:</span> ${esc(translateFreq(med.frequency, lang))}<br>
+      ${med.duration ? `<span>${tr.duration}:</span> ${esc(med.duration)}<br>` : ""}
+      ${med.instructions ? `<span>${tr.instructions}:</span> ${esc(med.instructions)}` : ""}
     </div>
   </div>
 `).join("")}
@@ -275,7 +379,7 @@ ${meds.map((med, i) => `
 ${instructions ? `
   <div class="instructions-box">
     <label>${tr.generalInstructions}</label>
-    <p>${instructions}</p>
+    <p>${esc(instructions)}</p>
   </div>
 ` : ""}
 
@@ -288,8 +392,8 @@ ${instructions ? `
   <div class="signature-area">
     <div style="height:48px;"></div>
     <div class="signature-line">
-      Dr. ${prescription.professional.firstName} ${prescription.professional.lastName}<br>
-      ${prescription.professional.specialty} · ${prescription.professional.licenseNumber}
+      Dr. ${esc(p.firstName)} ${esc(p.lastName)}<br>
+      ${esc(p.specialty)} · ${esc(p.licenseNumber)}
     </div>
   </div>
 </div>
