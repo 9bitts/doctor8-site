@@ -1,17 +1,25 @@
 // src/app/(dashboard)/patient/page.tsx
 // Patient home dashboard (i18n: translated server-side from User.language)
+// P1-e follow-up: shows a persistent banner at the top while the patient's
+// registration data (name, address, date of birth) is incomplete, linking to
+// the Account page where they complete it. The banner disappears once complete.
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
-import { decryptPatientFields } from "@/lib/encryption";
+import { decryptPatientFields, decrypt } from "@/lib/encryption";
 import { translate, normalizeLang, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
 import {
   Calendar, FileText, Pill, AlertCircle,
-  Clock, ChevronRight, Heart, Activity
+  Clock, ChevronRight, Heart, Activity, AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
+
+function safeDecrypt(v: string | null): string {
+  if (v == null) return "";
+  try { return decrypt(v); } catch { return v; }
+}
 
 export default async function PatientDashboard() {
   const session = await auth();
@@ -64,6 +72,13 @@ export default async function PatientDashboard() {
     ["firstName", "lastName"]
   );
 
+  // ── Registration completeness (same rule as the prescription warning) ──
+  // address counts as present when there is a street line OR a city.
+  const hasName = !!(decrypted.firstName && decrypted.lastName);
+  const hasDob = !!patient.dateOfBirth;
+  const hasAddress = !!(safeDecrypt(patient.addressLine1) || (patient.city || ""));
+  const profileIncomplete = !hasName || !hasDob || !hasAddress;
+
   const upcomingCount = patient.appointments.length;
   const medicationCount = patient.medications.length;
   const documentCount = patient.medicalDocuments.length;
@@ -78,6 +93,23 @@ export default async function PatientDashboard() {
         </h1>
         <p className="text-slate-500 mt-1">{t("pdash.subtitle")}</p>
       </div>
+
+      {/* P1-e: incomplete-registration banner (persistent until complete) */}
+      {profileIncomplete && (
+        <Link
+          href="/patient/account"
+          className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition"
+        >
+          <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900">{t("pdash.completeProfile.title")}</p>
+            <p className="text-xs text-amber-700 mt-0.5">{t("pdash.completeProfile.text")}</p>
+            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-900">
+              {t("pdash.completeProfile.action")} <ChevronRight size={13} />
+            </span>
+          </div>
+        </Link>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
