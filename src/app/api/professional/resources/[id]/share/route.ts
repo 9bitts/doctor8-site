@@ -43,7 +43,6 @@ export async function POST(
   // Verify chart belongs to this professional
   const chart = await db.patientRecord.findUnique({
     where: { id: patientRecordId },
-    include: { linkedUser: { include: { patientProfile: true } } },
   });
   if (!chart || chart.professionalId !== professional.id) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
