@@ -5,13 +5,15 @@
 // Phase 4B: the category selector is now dynamic (grouped categories from the DB).
 // Etapa 3c: edit the chart's email (only when no account) + resend prescription invite.
 // P1-b: edit the chart's registration data (birth, sex, cpf, address) used by the prescription.
+// P2: "Diagnóstico / Título" label (trilíngue) + botão WhatsApp no cabeçalho da ficha.
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
-  Share2, Mail, Loader2, Tag, Pencil, Send, MapPin,
+  Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle,
 } from "lucide-react";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 interface Chart {
   id: string;
@@ -65,6 +67,15 @@ const LEGACY_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
+// Clean phone for wa.me (digits only, add country code if starts with 0 or missing +)
+function waPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  // If already has country code (e.g. 5511...) keep it; else assume BR (+55)
+  if (digits.length >= 12) return digits;
+  if (digits.startsWith("0")) return "55" + digits.slice(1);
+  return "55" + digits;
+}
+
 export default function RecordDetailClient({
   chart,
   initialDocuments,
@@ -72,6 +83,7 @@ export default function RecordDetailClient({
   chart: Chart;
   initialDocuments: Doc[];
 }) {
+  const t = useT();
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -264,11 +276,11 @@ export default function RecordDetailClient({
 
   async function handleCreate() {
     if (!title.trim()) {
-      setError("Title is required.");
+      setError(t("rec.errTitle"));
       return;
     }
     if (!categoryId) {
-      setError("Please choose a category.");
+      setError(t("rec.errCategory"));
       return;
     }
     setSaving(true);
@@ -354,7 +366,21 @@ export default function RecordDetailClient({
             </h1>
             <div className="mt-1 space-y-0.5 text-sm text-slate-500">
               {chartEmail && <p>{chartEmail}</p>}
-              {chart.phone && <p>{chart.phone}</p>}
+              {chart.phone && (
+                <p className="inline-flex items-center gap-2">
+                  <span>{chart.phone}</span>
+                  {/* P2: WhatsApp button — only shown when phone is on file */}
+                  <a
+                    href={`https://wa.me/${waPhone(chart.phone)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={t("rec.whatsapp")}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-full transition"
+                  >
+                    <MessageCircle size={12} /> WhatsApp
+                  </a>
+                </p>
+              )}
             </div>
             <p className="text-xs mt-2">
               {hasAccount ? (
@@ -603,7 +629,7 @@ export default function RecordDetailClient({
 
         {chart.notes && (
           <div className="mt-4 pt-4 border-t border-slate-100">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Notes</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Notes</p>
             <p className="text-sm text-slate-600 whitespace-pre-wrap">{chart.notes}</p>
           </div>
         )}
@@ -743,12 +769,15 @@ export default function RecordDetailClient({
                   </select>
                 )}
               </div>
+              {/* P2: "Diagnóstico / Título" label — trilíngue */}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Title *</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  {t("rec.titleLabel")} *
+                </label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Blood test results"
+                  placeholder={t("rec.titlePlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
                 />
               </div>
