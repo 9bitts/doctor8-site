@@ -11,7 +11,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
-  Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle,
+  Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 
@@ -22,6 +22,7 @@ const REC_TEXTS: Record<string, Record<string, string>> = {
   whatsapp:         { pt: "Abrir WhatsApp", en: "Open WhatsApp", es: "Abrir WhatsApp" },
   errTitle:         { pt: "O título é obrigatório.", en: "Title is required.", es: "El título es obligatorio." },
   errCategory:      { pt: "Escolha uma categoria.", en: "Please choose a category.", es: "Elige una categoría." },
+  sendMessage:      { pt: "Enviar mensagem", en: "Send message", es: "Enviar mensaje" },
 };
 
 interface Chart {
@@ -32,6 +33,7 @@ interface Chart {
   phone: string | null;
   notes: string | null;
   hasAccount: boolean;
+  linkedUserId: string | null;
   // P1-b registration data
   dateOfBirth: string;
   sex: string;
@@ -406,6 +408,17 @@ export default function RecordDetailClient({
                 </span>
               )}
             </p>
+            {/* P4: message button — only when patient has an account */}
+            {chart.linkedUserId && (
+              <div className="mt-3 flex gap-2">
+                <a
+                  href={`/professional/messages?with=${chart.linkedUserId}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-lg transition"
+                >
+                  <MessageCircle size={13} /> {rt("sendMessage")}
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
