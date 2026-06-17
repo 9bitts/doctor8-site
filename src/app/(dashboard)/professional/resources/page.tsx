@@ -7,7 +7,8 @@ import { useState, useEffect } from "react";
 import {
   BookOpen, Plus, X, Link2, Paperclip, Loader2, Trash2,
   Share2, CheckCircle2, AlertCircle, ExternalLink, Users,
-  ChevronDown, ChevronUp, Search,
+  ChevronDown, ChevronUp, Search, Stethoscope, Phone, Mail,
+  UserPlus,
 } from "lucide-react";
 
 // ── Inline texts (not yet in translations.ts) ──────────────────────────────
@@ -49,6 +50,17 @@ const T: Record<string, Record<Lang, string>> = {
   attachment:       { pt: "Arquivo anexado",                     en: "File attached",                        es: "Archivo adjunto" },
   delete:           { pt: "Remover",                             en: "Remove",                               es: "Eliminar" },
   deleteConfirm:    { pt: "Remover este recurso?",               en: "Remove this resource?",                es: "¿Eliminar este recurso?" },
+  shareWithPro:     { pt: "Compartilhar com profissional",       en: "Share with professional",              es: "Compartir con profesional" },
+  proSearch:        { pt: "Buscar profissional pelo nome...",     en: "Search professional by name...",       es: "Buscar profesional por nombre..." },
+  proNotFound:      { pt: "Nenhum profissional encontrado.",     en: "No professional found.",               es: "No se encontró ningún profesional." },
+  proNoAccount:     { pt: "Não tem conta? Convide pelo email:",  en: "No account? Invite by email:",         es: "¿Sin cuenta? Invita por email:" },
+  proNameLabel:     { pt: "Nome (opcional)",                     en: "Name (optional)",                      es: "Nombre (opcional)" },
+  proEmailLabel:    { pt: "Email *",                             en: "Email *",                              es: "Email *" },
+  proPhoneLabel:    { pt: "WhatsApp (opcional)",                 en: "WhatsApp (optional)",                  es: "WhatsApp (opcional)" },
+  proInvite:        { pt: "Enviar convite",                      en: "Send invite",                          es: "Enviar invitación" },
+  proInvited:       { pt: "Convite enviado!",                    en: "Invite sent!",                         es: "¡Invitación enviada!" },
+  proNotified:      { pt: "Notificado!",                         en: "Notified!",                            es: "¡Notificado!" },
+  proErrEmail:      { pt: "Informe o email do colega.",          en: "Enter colleague's email.",             es: "Ingresa el email del colega." },
 };
 
 function tx(lang: Lang, key: string): string {
@@ -78,6 +90,12 @@ interface Chart {
   firstName: string;
   lastName: string;
 }
+interface ProResult {
+  id: string;
+  name: string;
+  specialty: string;
+  email: string;
+}
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function ResourcesPage() {
@@ -98,7 +116,7 @@ export default function ResourcesPage() {
   const [formUrl,     setFormUrl]     = useState("");
   const [formFile,    setFormFile]    = useState<File | null>(null);
 
-  // Share panel state
+  // Share panel state — patients
   const [shareResId,    setShareResId]    = useState<string | null>(null);
   const [charts,        setCharts]        = useState<Chart[]>([]);
   const [chartsLoading, setChartsLoading] = useState(false);
@@ -106,6 +124,19 @@ export default function ResourcesPage() {
   const [sharingId,     setSharingId]     = useState<string | null>(null);
   const [shareMsg,      setShareMsg]      = useState<Record<string, string>>({});
 
+  // Share panel state — professionals
+  const [shareProResId,  setShareProResId]  = useState<string | null>(null);
+  const [proQuery,       setProQuery]       = useState("");
+  const [proResults,     setProResults]     = useState<ProResult[]>([]);
+  const [proSearching,   setProSearching]   = useState(false);
+  const [proShareMsg,    setProShareMsg]    = useState<Record<string, string>>({});
+  const [proSharingId,   setProSharingId]   = useState<string | null>(null);
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [inviteName,     setInviteName]     = useState("");
+  const [inviteEmail,    setInviteEmail]    = useState("");
+  const [invitePhone,    setInvitePhone]    = useState("");
+  const [inviteSending,  setInviteSending]  = useState(false);
+  const [inviteMsg,      setInviteMsg]      = useState<string | null>(null);
   // Expanded description
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -161,6 +192,54 @@ export default function ResourcesPage() {
   }
 
   // Delete resource
+  // Search professionals
+  useEffect(() => {
+    if (proQuery.length < 2) { setProResults([]); return; }
+    const timer = setTimeout(async () => {
+      setProSearching(true);
+      try {
+        const res = await fetch(`/api/professional/search-pros?q=${encodeURIComponent(proQuery)}`);
+        const data = await res.json();
+        setProResults(data.professionals || []);
+      } catch { setProResults([]); }
+      setProSearching(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [proQuery]);
+
+  // Share with professional (has account)
+  async function shareWithPro(resId: string, proId: string) {
+    setProSharingId(proId);
+    try {
+      const res = await fetch(`/api/professional/resources/${resId}/share-pro`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ professionalId: proId }),
+      });
+      setProShareMsg((m) => ({ ...m, [proId]: res.ok ? "ok" : "error" }));
+    } catch { setProShareMsg((m) => ({ ...m, [proId]: "error" })); }
+    setProSharingId(null);
+  }
+
+  // Invite professional without account
+  async function sendProInvite(resId: string) {
+    if (!inviteEmail.trim()) { setInviteMsg("err:" + t("proErrEmail")); return; }
+    setInviteSending(true); setInviteMsg(null);
+    try {
+      const res = await fetch(`/api/professional/resources/${resId}/share-pro`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim(), name: inviteName.trim(), phone: invitePhone.trim() }),
+      });
+      if (res.ok) {
+        setInviteMsg("ok");
+        setInviteName(""); setInviteEmail(""); setInvitePhone("");
+        setShowInviteForm(false);
+      } else { setInviteMsg("err:Falha ao enviar."); }
+    } catch { setInviteMsg("err:Erro de rede."); }
+    setInviteSending(false);
+  }
+
   async function deleteResource(id: string) {
     if (!confirm(t("deleteConfirm"))) return;
     await fetch(`/api/professional/resources/${id}`, { method: "DELETE" });
@@ -302,6 +381,19 @@ export default function ResourcesPage() {
                     <Share2 size={13} /> {t("shareWith")}
                   </button>
                   <button
+                    onClick={() => {
+                      setShareProResId(shareProResId === r.id ? null : r.id);
+                      setProQuery(""); setProResults([]); setProShareMsg({});
+                      setShowInviteForm(false); setInviteMsg(null);
+                    }}
+                    className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition
+                      ${shareProResId === r.id
+                        ? "bg-blue-500 text-white border-blue-500"
+                        : "text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600"}`}
+                  >
+                    <Stethoscope size={13} /> {t("shareWithPro")}
+                  </button>
+                  <button
                     onClick={() => deleteResource(r.id)}
                     className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition"
                     title={t("delete")}
@@ -311,7 +403,7 @@ export default function ResourcesPage() {
                 </div>
               </div>
 
-              {/* Share panel */}
+              {/* Share panel — patients */}
               {shareResId === r.id && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <div className="relative mb-3">
@@ -362,6 +454,113 @@ export default function ResourcesPage() {
                       })}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Share panel — professionals */}
+              {shareProResId === r.id && (
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-3">
+                    {t("shareWithPro")}
+                  </p>
+                  {/* Search professionals with account */}
+                  <div className="relative mb-3">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      value={proQuery}
+                      onChange={(e) => setProQuery(e.target.value)}
+                      placeholder={t("proSearch")}
+                      className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none"
+                    />
+                  </div>
+                  {proSearching ? (
+                    <div className="flex items-center gap-2 text-slate-400 text-sm py-2">
+                      <Loader2 size={14} className="animate-spin" /> Buscando...
+                    </div>
+                  ) : proQuery.length >= 2 && proResults.length === 0 ? (
+                    <p className="text-sm text-slate-400 mb-2">{t("proNotFound")}</p>
+                  ) : (
+                    <div className="space-y-1 max-h-40 overflow-y-auto mb-3">
+                      {proResults.map((p) => {
+                        const status = proShareMsg[p.id];
+                        return (
+                          <div key={p.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50">
+                            <div>
+                              <p className="text-sm text-slate-700 font-medium">{p.name}</p>
+                              <p className="text-xs text-slate-400">{p.specialty}</p>
+                            </div>
+                            {status === "ok" ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-blue-600">
+                                <CheckCircle2 size={13} /> {t("proNotified")}
+                              </span>
+                            ) : status === "error" ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-rose-500">
+                                <AlertCircle size={13} /> Erro
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => shareWithPro(r.id, p.id)}
+                                disabled={proSharingId === p.id}
+                                className="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 px-2.5 py-1 rounded-lg disabled:opacity-50 transition"
+                              >
+                                {proSharingId === p.id ? <Loader2 size={12} className="animate-spin" /> : <Share2 size={12} />}
+                                Compartilhar
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Invite pro without account */}
+                  <div className="border-t border-slate-100 pt-3">
+                    <button
+                      onClick={() => setShowInviteForm(!showInviteForm)}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-blue-600 transition"
+                    >
+                      <UserPlus size={13} /> {t("proNoAccount")}
+                    </button>
+                    {showInviteForm && (
+                      <div className="mt-3 space-y-2">
+                        <input
+                          value={inviteName}
+                          onChange={(e) => setInviteName(e.target.value)}
+                          placeholder={t("proNameLabel")}
+                          className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+                        />
+                        <input
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          placeholder={t("proEmailLabel")}
+                          type="email"
+                          className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+                        />
+                        <input
+                          value={invitePhone}
+                          onChange={(e) => setInvitePhone(e.target.value)}
+                          placeholder={t("proPhoneLabel")}
+                          className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+                        />
+                        {inviteMsg === "ok" && (
+                          <p className="text-xs text-blue-600 flex items-center gap-1">
+                            <CheckCircle2 size={12} /> {t("proInvited")}
+                          </p>
+                        )}
+                        {inviteMsg?.startsWith("err:") && (
+                          <p className="text-xs text-rose-600">{inviteMsg.slice(4)}</p>
+                        )}
+                        <button
+                          onClick={() => sendProInvite(r.id)}
+                          disabled={inviteSending}
+                          className="w-full py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                        >
+                          {inviteSending ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+                          {t("proInvite")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

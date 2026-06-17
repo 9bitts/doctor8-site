@@ -297,3 +297,81 @@ export async function sendPatientInvite({
     `,
   });
 }
+
+export async function sendColleagueResourceInvite({
+  email,
+  recipientName,
+  senderName,
+  resourceTitle,
+  resourceUrl,
+  loginUrl,
+  whatsappPhone,
+}: {
+  email: string;
+  recipientName: string;
+  senderName: string;
+  resourceTitle: string;
+  resourceUrl: string | null;
+  loginUrl: boolean;   // true = has account (link to login), false = invite to register
+  whatsappPhone?: string | null;
+}) {
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org";
+  const actionUrl = loginUrl
+    ? `${APP_URL}/login`
+    : `${APP_URL}/register`;
+  const actionLabel = loginUrl ? "Ver na minha conta" : "Criar conta e ver recurso";
+  const subjectLine = `${senderName} compartilhou um recurso com você no Doctor8`;
+
+  const resourceBlock = resourceUrl
+    ? `<div style="background:#f0fdf9;border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin:20px 0;text-align:center;">
+        <p style="margin:0 0 8px;color:#374151;font-size:14px;font-weight:600;">${resourceTitle}</p>
+        <a href="${resourceUrl}" style="color:#0a4d6e;font-size:13px;word-break:break-all;">${resourceUrl}</a>
+       </div>`
+    : `<div style="background:#f0fdf9;border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin:20px 0;">
+        <p style="margin:0;color:#374151;font-size:14px;font-weight:600;">${resourceTitle}</p>
+       </div>`;
+
+  const whatsappBlock = whatsappPhone
+    ? `<p style="color:#6b7280;font-size:13px;margin-top:16px;">
+        Você também pode entrar em contato pelo WhatsApp:
+        <a href="https://wa.me/${whatsappPhone.replace(/\D/g, "")}" style="color:#25D366;font-weight:600;">Abrir WhatsApp</a>
+       </p>`
+    : "";
+
+  await getResend().emails.send({
+    from: FROM,
+    to: email,
+    subject: subjectLine,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 20px;background:#f8fafc;">
+        <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08);">
+          <div style="background:linear-gradient(135deg,#0a4d6e,#00b87a);padding:32px;text-align:center;">
+            <h1 style="color:white;font-size:28px;font-weight:900;margin:0;">Doctor<span style="color:#a7f3d0;">8</span></h1>
+            <p style="color:rgba(255,255,255,.85);margin:8px 0 0;font-size:15px;">Recurso compartilhado por colega</p>
+          </div>
+          <div style="padding:32px;">
+            <p style="color:#1a2a3a;font-size:16px;">Olá, <strong>${recipientName}</strong>!</p>
+            <p style="color:#4a6070;font-size:14px;line-height:1.6;">
+              <strong>${senderName}</strong> compartilhou um recurso com você pela plataforma Doctor8:
+            </p>
+            ${resourceBlock}
+            <div style="text-align:center;margin:28px 0;">
+              <a href="${actionUrl}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+                ${actionLabel}
+              </a>
+            </div>
+            ${whatsappBlock}
+            <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+              Acesse em: <a href="${actionUrl}" style="color:#0a4d6e;">${actionUrl}</a>
+            </p>
+          </div>
+        </div>
+        <p style="text-align:center;color:#9ca3af;font-size:11px;margin-top:20px;">
+          Doctor8 &middot; HIPAA &amp; GDPR Compliant &middot;
+          <a href="${APP_URL}/privacy" style="color:#9ca3af;">Política de Privacidade</a>
+        </p>
+      </div>
+    `,
+  });
+}
+
