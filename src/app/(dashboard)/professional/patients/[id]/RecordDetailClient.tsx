@@ -12,6 +12,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
+  Brain, ChevronDown, ChevronUp, Sparkles,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 
@@ -23,6 +24,11 @@ const REC_TEXTS: Record<string, Record<string, string>> = {
   errTitle:         { pt: "O título é obrigatório.", en: "Title is required.", es: "El título es obligatorio." },
   errCategory:      { pt: "Escolha uma categoria.", en: "Please choose a category.", es: "Elige una categoría." },
   sendMessage:      { pt: "Enviar mensagem", en: "Send message", es: "Enviar mensaje" },
+  analyzeAI:        { pt: "Analisar com IA", en: "Analyze with AI", es: "Analizar con IA" },
+  analyzing:        { pt: "Analisando...", en: "Analyzing...", es: "Analizando..." },
+  aiTitle:          { pt: "Análise clínica — IA", en: "Clinical analysis — AI", es: "Análisis clínico — IA" },
+  aiDisclaimer:     { pt: "⚠️ Este é um auxílio clínico gerado por IA. Não substitui o julgamento médico. A responsabilidade clínica é sempre do profissional.", en: "⚠️ This is an AI-generated clinical aid. It does not replace medical judgment. Clinical responsibility always rests with the professional.", es: "⚠️ Este es un apoyo clínico generado por IA. No reemplaza el juicio médico. La responsabilidad clínica siempre recae en el profesional." },
+  aiError:          { pt: "Não foi possível gerar a análise. Tente novamente.", en: "Could not generate analysis. Please try again.", es: "No se pudo generar el análisis. Intente de nuevo." },
 };
 
 interface Chart {
@@ -138,6 +144,11 @@ export default function RecordDetailClient({
   const [shareStatus, setShareStatus] = useState<Record<string, string>>({});
   const [sharingId, setSharingId] = useState<string | null>(null);
 
+  // AI analysis state
+  const [aiAnalysis, setAiAnalysis]   = useState<Record<string, string>>({});
+  const [aiLoading, setAiLoading]     = useState<Record<string, boolean>>({});
+  const [aiOpen, setAiOpen]           = useState<Record<string, boolean>>({});
+
   // Form fields
   const [categoryId, setCategoryId] = useState("");
   const [title, setTitle] = useState("");
@@ -252,6 +263,45 @@ export default function RecordDetailClient({
       setInviteMsg("error:Network error");
     }
     setInviteSending(false);
+  }
+
+  // AI analysis
+  async function analyzeWithAI(doc: Doc) {
+    if (aiLoading[doc.id]) return;
+    setAiLoading((p) => ({ ...p, [doc.id]: true }));
+    setAiOpen((p) => ({ ...p, [doc.id]: true }));
+    try {
+      const prompt = [
+        `Você é um assistente clínico de suporte ao médico. Analise o seguinte registro clínico e forneça:`,
+        `1. **Resumo**: síntese objetiva do conteúdo`,
+        `2. **Interpretação**: o que os dados/texto indicam clinicamente`,
+        `3. **Alertas**: valores fora do normal, achados relevantes ou pontos de atenção (se houver)`,
+        `4. **Sugestões**: próximos passos clínicos razoáveis (se aplicável)`,
+        ``,
+        `Registro — Categoria: ${doc.categoryName || doc.type}`,
+        `Título: ${doc.title}`,
+        doc.content ? `Conteúdo:\n${doc.content}` : `(sem texto — apenas anexo)`,
+        ``,
+        `Responda em ${_langFull === "pt" ? "português" : _langFull === "es" ? "español" : "English"}.`,
+        `Use formatação com markdown (negrito para títulos de seção). Seja conciso e direto.`,
+      ].join("\n");
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || rt("aiError");
+      setAiAnalysis((p) => ({ ...p, [doc.id]: text }));
+    } catch {
+      setAiAnalysis((p) => ({ ...p, [doc.id]: rt("aiError") }));
+    }
+    setAiLoading((p) => ({ ...p, [doc.id]: false }));
   }
 
   async function handleShare(docId: string) {
@@ -758,7 +808,44 @@ export default function RecordDetailClient({
                         Share with patient
                       </button>
                     )}
+
+                    {/* AI analysis button */}
+                    <button
+                      onClick={() => aiAnalysis[d.id]
+                        ? setAiOpen((p) => ({ ...p, [d.id]: !p[d.id] }))
+                        : analyzeWithAI(d)
+                      }
+                      disabled={aiLoading[d.id]}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                    >
+                      {aiLoading[d.id]
+                        ? <><Loader2 size={13} className="animate-spin" /> {rt("analyzing")}</>
+                        : aiAnalysis[d.id]
+                          ? <><Sparkles size={13} /> {aiOpen[d.id] ? "Ocultar análise" : "Ver análise"}</>
+                          : <><Brain size={13} /> {rt("analyzeAI")}</>
+                      }
+                    </button>
                   </div>
+
+                  {/* AI analysis panel */}
+                  {aiOpen[d.id] && aiAnalysis[d.id] && (
+                    <div className="mt-3 bg-purple-50 border border-purple-200 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles size={14} className="text-purple-600" />
+                        <span className="text-xs font-semibold text-purple-700">{rt("aiTitle")}</span>
+                      </div>
+                      <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                        {aiAnalysis[d.id].split(/\*\*(.+?)\*\*/g).map((part, i) =>
+                          i % 2 === 1
+                            ? <strong key={i} className="text-slate-900">{part}</strong>
+                            : <span key={i}>{part}</span>
+                        )}
+                      </div>
+                      <p className="mt-3 text-xs text-purple-600 bg-purple-100 rounded-lg px-3 py-2 leading-relaxed">
+                        {rt("aiDisclaimer")}
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })}
