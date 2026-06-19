@@ -56,6 +56,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/doctors", labelKey: "nav.adminDoctors", icon: <Stethoscope size={18} />, roles: ["ADMIN"] },
   { href: "/admin/patients", labelKey: "nav.adminPatients", icon: <Users size={18} />, roles: ["ADMIN"] },
   { href: "/admin/payments", labelKey: "nav.adminPayments", icon: <CreditCard size={18} />, roles: ["ADMIN"] },
+  { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", icon: <Radio size={18} />, roles: ["ADMIN"] },
 ];
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
