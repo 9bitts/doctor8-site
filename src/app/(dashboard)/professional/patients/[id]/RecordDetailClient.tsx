@@ -6,9 +6,11 @@
 // Etapa 3c: edit the chart's email (only when no account) + resend prescription invite.
 // P1-b: edit the chart's registration data (birth, sex, cpf, address) used by the prescription.
 // P2: "Diagnóstico / Título" label (trilíngue) + botão WhatsApp no cabeçalho da ficha.
+// FIX: proteção contra firstName/lastName vazio no avatar + router.refresh() após saveReg.
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
@@ -19,14 +21,14 @@ import { useT } from "@/lib/i18n/I18nProvider";
 // P2: inline texts for rec.* keys (not yet in translations.ts)
 const REC_TEXTS: Record<string, Record<string, string>> = {
   titleLabel:       { pt: "Diagnóstico / Título", en: "Diagnosis / Title", es: "Diagnóstico / Título" },
-  titlePlaceholder: { pt: "ex.: Hipertensão arterial — ou o assunto do registro", en: "e.g. Hypertension — or the subject of this record", es: "ej.: Hipertensión arterial — o el asunto del registro" },
+  titlePlaceholder: { pt: "ex.: Hipertensão arterial – ou o assunto do registro", en: "e.g. Hypertension – or the subject of this record", es: "ej.: Hipertensión arterial – o el asunto del registro" },
   whatsapp:         { pt: "Abrir WhatsApp", en: "Open WhatsApp", es: "Abrir WhatsApp" },
   errTitle:         { pt: "O título é obrigatório.", en: "Title is required.", es: "El título es obligatorio." },
   errCategory:      { pt: "Escolha uma categoria.", en: "Please choose a category.", es: "Elige una categoría." },
   sendMessage:      { pt: "Enviar mensagem", en: "Send message", es: "Enviar mensaje" },
   analyzeAI:        { pt: "Analisar com IA", en: "Analyze with AI", es: "Analizar con IA" },
   analyzing:        { pt: "Analisando...", en: "Analyzing...", es: "Analizando..." },
-  aiTitle:          { pt: "Análise clínica — IA", en: "Clinical analysis — AI", es: "Análisis clínico — IA" },
+  aiTitle:          { pt: "Análise clínica – IA", en: "Clinical analysis – AI", es: "Análisis clínico – IA" },
   aiDisclaimer:     { pt: "⚠️ Este é um auxílio clínico gerado por IA. Não substitui o julgamento médico. A responsabilidade clínica é sempre do profissional.", en: "⚠️ This is an AI-generated clinical aid. It does not replace medical judgment. Clinical responsibility always rests with the professional.", es: "⚠️ Este es un apoyo clínico generado por IA. No reemplaza el juicio médico. La responsabilidad clínica siempre recae en el profesional." },
   aiError:          { pt: "Não foi possível gerar a análise. Tente novamente.", en: "Could not generate analysis. Please try again.", es: "No se pudo generar el análisis. Intente de nuevo." },
 };
@@ -93,6 +95,16 @@ function waPhone(raw: string): string {
   return "55" + digits;
 }
 
+// FIX: retorna as iniciais com fallback seguro para strings vazias
+function getInitials(firstName: string, lastName: string): string {
+  const f = firstName?.trim() || "";
+  const l = lastName?.trim() || "";
+  if (!f && !l) return "?";
+  if (!f) return l[0].toUpperCase();
+  if (!l) return f[0].toUpperCase();
+  return f[0].toUpperCase() + l[0].toUpperCase();
+}
+
 export default function RecordDetailClient({
   chart,
   initialDocuments,
@@ -101,8 +113,9 @@ export default function RecordDetailClient({
   initialDocuments: Doc[];
 }) {
   const t = useT();
+  const router = useRouter();
+
   // Detect current language via a known key, then serve inline rec.* texts
-  const _lang = t("common.cancel") === "Cancelar" ? "pt" : t("common.cancel") === "Cancelar" ? "es" : t("common.cancel") === "Cancel" ? "en" : "en";
   const _langFull = t("greeting.morning") === "Bom dia" ? "pt" : t("greeting.morning") === "Buenos días" ? "es" : "en";
   const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
@@ -110,7 +123,7 @@ export default function RecordDetailClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Chart contact (email) state — Etapa 3c
+  // Chart contact (email) state – Etapa 3c
   const [chartEmail, setChartEmail] = useState<string | null>(chart.email);
   const [hasAccount, setHasAccount] = useState<boolean>(chart.hasAccount);
   const [editingEmail, setEditingEmail] = useState(false);
@@ -236,6 +249,8 @@ export default function RecordDetailClient({
         setReg(regDraft);
         setEditingReg(false);
         setRegMsg("saved");
+        // FIX: atualiza os dados do Server Component sem navegar para fora da página
+        router.refresh();
       }
     } catch {
       setRegMsg("error:Network error");
@@ -278,9 +293,9 @@ export default function RecordDetailClient({
         `3. **Alertas**: valores fora do normal, achados relevantes ou pontos de atenção (se houver)`,
         `4. **Sugestões**: próximos passos clínicos razoáveis (se aplicável)`,
         ``,
-        `Registro — Categoria: ${doc.categoryName || doc.type}`,
+        `Registro – Categoria: ${doc.categoryName || doc.type}`,
         `Título: ${doc.title}`,
-        doc.content ? `Conteúdo:\n${doc.content}` : `(sem texto — apenas anexo)`,
+        doc.content ? `Conteúdo:\n${doc.content}` : `(sem texto – apenas anexo)`,
         ``,
         `Responda em ${_langFull === "pt" ? "português" : _langFull === "es" ? "español" : "English"}.`,
         `Use formatação com markdown (negrito para títulos de seção). Seja conciso e direto.`,
@@ -422,8 +437,9 @@ export default function RecordDetailClient({
       {/* Chart header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
         <div className="flex items-start gap-4">
+          {/* FIX: usa getInitials() para evitar crash com nomes vazios */}
           <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-600 text-lg shrink-0">
-            {chart.firstName[0]}{chart.lastName[0]}
+            {getInitials(chart.firstName, chart.lastName)}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-slate-900">
@@ -434,7 +450,7 @@ export default function RecordDetailClient({
               {chart.phone && (
                 <p className="inline-flex items-center gap-2">
                   <span>{chart.phone}</span>
-                  {/* P2: WhatsApp button — only shown when phone is on file */}
+                  {/* P2: WhatsApp button – only shown when phone is on file */}
                   <a
                     href={`https://wa.me/${waPhone(chart.phone)}`}
                     target="_blank"
@@ -458,7 +474,7 @@ export default function RecordDetailClient({
                 </span>
               )}
             </p>
-            {/* P4: message button — only when patient has an account */}
+            {/* P4: message button – only when patient has an account */}
             {chart.linkedUserId && (
               <div className="mt-3 flex gap-2">
                 <a
@@ -786,7 +802,7 @@ export default function RecordDetailClient({
                       </div>
                     ) : status === "noEmail" ? (
                       <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-                        <AlertCircle size={14} /> No account and no email on file — add an email to the chart to invite
+                        <AlertCircle size={14} /> No account and no email on file – add an email to the chart to invite
                       </span>
                     ) : status.startsWith("error:") ? (
                       <div className="flex items-center gap-2">
@@ -888,7 +904,7 @@ export default function RecordDetailClient({
                   </select>
                 )}
               </div>
-              {/* P2: "Diagnóstico / Título" label — trilíngue */}
+              {/* P2: "Diagnóstico / Título" label – trilíngue */}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
                   {rt("titleLabel")} *
@@ -911,7 +927,7 @@ export default function RecordDetailClient({
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Attachment <span className="text-slate-400">(PDF, image or video — max 50MB)</span>
+                  Attachment <span className="text-slate-400">(PDF, image or video – max 50MB)</span>
                 </label>
                 <input
                   type="file"
