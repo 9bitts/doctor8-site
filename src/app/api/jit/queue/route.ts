@@ -204,7 +204,7 @@ export async function PATCH(req: NextRequest) {
         userId: e.patientUserId,
         title:  "Você perdeu sua vez",
         body:   "Você não entrou na consulta a tempo. Se ainda precisar de atendimento, entre na fila novamente.",
-        type:   "jit_no_show",
+        type:   "system",
         data:   { sessionId },
       }).catch(() => {});
     }
@@ -288,7 +288,7 @@ export async function PATCH(req: NextRequest) {
       userId: called.patientUserId,
       title:  "É a sua vez!",
       body:   "O médico está pronto para te atender. Você tem 2 minutos para entrar na consulta.",
-      type:   "jit_called",
+      type:   "message",
       data:   { queueId: called.id, meetingUrl, sessionId },
     }).catch(() => {});
 
