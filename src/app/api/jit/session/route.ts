@@ -26,6 +26,79 @@ const patchSchema = z.object({
   maxQueueSize: z.number().int().min(1).max(500).optional(),
 });
 
+function serializeJitSession(jitSession: {
+  id: string;
+  mode: string;
+  status: string;
+  specialty: string;
+  isFree: boolean;
+  priceAmount: number;
+  currency: string;
+  maxQueueSize: number;
+  estimatedMinutesPerPatient: number;
+  _count: { queue: number };
+  queue: Array<{
+    id: string;
+    status: string;
+    position: number;
+    specialty: string;
+    enteredAt: Date;
+    calledAt: Date | null;
+    expiresAt: Date | null;
+    meetingUrl: string | null;
+    patientUser: {
+      id: string;
+      patientProfile: { firstName: string; lastName: string } | null;
+    } | null;
+  }>;
+}) {
+  return {
+    id:                          jitSession.id,
+    mode:                        jitSession.mode,
+    status:                      jitSession.status,
+    specialty:                   jitSession.specialty,
+    isFree:                      jitSession.isFree,
+    priceAmount:                 jitSession.priceAmount,
+    currency:                    jitSession.currency,
+    maxQueueSize:                jitSession.maxQueueSize,
+    estimatedMinutesPerPatient:  jitSession.estimatedMinutesPerPatient,
+    queueCount:                  jitSession._count.queue,
+    queue: jitSession.queue.map((q) => ({
+      id:          q.id,
+      status:      q.status,
+      position:    q.position,
+      specialty:   q.specialty,
+      enteredAt:   q.enteredAt.toISOString(),
+      calledAt:    q.calledAt?.toISOString() ?? null,
+      expiresAt:   q.expiresAt?.toISOString() ?? null,
+      meetingUrl:  q.meetingUrl ?? null,
+      patientName: q.patientUser?.patientProfile
+        ? `${q.patientUser.patientProfile.firstName} ${q.patientUser.patientProfile.lastName}`.trim()
+        : "Paciente",
+    })),
+  };
+}
+
+const jitSessionInclude = {
+  _count: {
+    select: {
+      queue: { where: { status: { in: ["WAITING", "CALLED"] } } },
+    },
+  },
+  queue: {
+    where: { status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } },
+    orderBy: { position: "asc" as const },
+    include: {
+      patientUser: {
+        select: {
+          id: true,
+          patientProfile: { select: { firstName: true, lastName: true } },
+        },
+      },
+    },
+  },
+};
+
 export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -43,56 +116,12 @@ export async function GET() {
       professionalId: professional.id,
       status: { in: ["ONLINE", "PAUSED"] },
     },
-    include: {
-      _count: {
-        select: {
-          queue: { where: { status: { in: ["WAITING", "CALLED"] } } },
-        },
-      },
-      queue: {
-        where: { status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } },
-        orderBy: { position: "asc" },
-        include: {
-          patientUser: {
-            select: {
-              id: true,
-              patientProfile: { select: { firstName: true, lastName: true } },
-            },
-          },
-        },
-      },
-    },
+    include: jitSessionInclude,
   });
 
   if (!jitSession) return NextResponse.json({ session: null });
 
-  return NextResponse.json({
-    session: {
-      id:                          jitSession.id,
-      mode:                        jitSession.mode,
-      status:                      jitSession.status,
-      specialty:                   jitSession.specialty,
-      isFree:                      jitSession.isFree,
-      priceAmount:                 jitSession.priceAmount,
-      currency:                    jitSession.currency,
-      maxQueueSize:                jitSession.maxQueueSize,
-      estimatedMinutesPerPatient:  jitSession.estimatedMinutesPerPatient,
-      queueCount:                  jitSession._count.queue,
-      queue: jitSession.queue.map((q) => ({
-        id:          q.id,
-        status:      q.status,
-        position:    q.position,
-        specialty:   q.specialty,
-        enteredAt:   q.enteredAt.toISOString(),
-        calledAt:    q.calledAt?.toISOString() ?? null,
-        expiresAt:   q.expiresAt?.toISOString() ?? null,
-        meetingUrl:  q.meetingUrl ?? null,
-        patientName: q.patientUser?.patientProfile
-          ? `${q.patientUser.patientProfile.firstName} ${q.patientUser.patientProfile.lastName}`.trim()
-          : "Paciente",
-      })),
-    },
-  });
+  return NextResponse.json({ session: serializeJitSession(jitSession) });
 }
 
 export async function POST(req: NextRequest) {
@@ -162,7 +191,8 @@ export async function PATCH(req: NextRequest) {
   const updated = await db.jitSession.update({
     where: { id: activeSession.id },
     data: parsed.data,
+    include: jitSessionInclude,
   });
 
-  return NextResponse.json({ session: updated });
+  return NextResponse.json({ session: serializeJitSession(updated) });
 }

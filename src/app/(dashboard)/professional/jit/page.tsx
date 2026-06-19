@@ -137,7 +137,7 @@ export default function JitPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       const data = await res.json();
-      if (res.ok) setSession(data.session);
+      if (res.ok) await loadSession();
     } catch { setError("Erro de rede."); }
     setToggling(false);
   }
@@ -171,9 +171,10 @@ export default function JitPage() {
   const isPaused  = session?.status === "PAUSED";
   const isOffline = !session || session.status === "OFFLINE";
 
-  const waitingCount    = session?.queue.filter(q => q.status === "WAITING").length ?? 0;
-  const inProgressEntry = session?.queue.find(q => q.status === "IN_PROGRESS");
-  const calledEntry     = session?.queue.find(q => q.status === "CALLED");
+  const queue           = session?.queue ?? [];
+  const waitingCount    = queue.filter(q => q.status === "WAITING").length;
+  const inProgressEntry = queue.find(q => q.status === "IN_PROGRESS");
+  const calledEntry     = queue.find(q => q.status === "CALLED");
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -434,14 +435,14 @@ export default function JitPage() {
           </div>
 
           {/* Queue list */}
-          {session.queue.length > 0 && (
+          {queue.length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
               <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
                 <Users size={16} className="text-slate-400" />
                 <span className="text-sm font-semibold text-slate-700">Fila de espera</span>
               </div>
               <div className="divide-y divide-slate-100">
-                {session.queue.map((entry) => (
+                {queue.map((entry) => (
                   <div key={entry.id} className="px-5 py-3 flex items-center gap-3">
                     <span className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 text-xs font-bold flex items-center justify-center shrink-0">
                       {entry.position}
