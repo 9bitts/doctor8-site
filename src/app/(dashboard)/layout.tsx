@@ -32,6 +32,7 @@ const PATIENT_NAV: NavItem[] = [
   { href: "/patient/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PATIENT"] },
   { href: "/patient/documents", labelKey: "nav.documents", icon: <ClipboardList size={18} />, roles: ["PATIENT"] },
   { href: "/patient/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PATIENT"] },
+  { href: "/urgent", labelKey: "nav.urgent", icon: <Radio size={18} />, roles: ["PATIENT"] },
   { href: "/patient/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PATIENT"] },
 ];
 
