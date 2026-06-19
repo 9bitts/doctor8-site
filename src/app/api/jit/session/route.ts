@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { JitQueueStatus } from "@prisma/client";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -82,11 +83,11 @@ function serializeJitSession(jitSession: {
 const jitSessionInclude = {
   _count: {
     select: {
-      queue: { where: { status: { in: ["WAITING", "CALLED"] } } },
+      queue: { where: { status: { in: [JitQueueStatus.WAITING, JitQueueStatus.CALLED] } } },
     },
   },
   queue: {
-    where: { status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] } },
+    where: { status: { in: [JitQueueStatus.WAITING, JitQueueStatus.CALLED, JitQueueStatus.IN_PROGRESS] } },
     orderBy: { position: "asc" as const },
     include: {
       patientUser: {

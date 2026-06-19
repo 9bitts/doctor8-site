@@ -183,8 +183,24 @@ export async function PATCH(req: NextRequest) {
 
   const { action, sessionId } = parsed.data;
 
-  // ── EXPIRE_NOSHOWS: called by polling (client-side timer) ──
+  // ── EXPIRE_NOSHOWS: called by the professional's dashboard polling ──
   if (action === "EXPIRE_NOSHOWS") {
+    // Only the professional who owns this session may expire its no-shows.
+    if (session.user.role !== "PROFESSIONAL")
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const professional = await db.professionalProfile.findUnique({
+      where: { userId: session.user.id },
+    });
+    if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
+
+    const ownsSession = await db.jitSession.findFirst({
+      where: { id: sessionId, professionalId: professional.id },
+      select: { id: true },
+    });
+    if (!ownsSession)
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+
     const now = new Date();
     const expired = await db.jitQueue.findMany({
       where: {

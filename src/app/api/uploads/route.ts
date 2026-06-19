@@ -1,15 +1,21 @@
 // src/app/api/uploads/route.ts
 // POST — upload a file to S3, returns the stored key.
-// GET  — get a temporary signed URL to view a stored file (?key=...).
 //
-// Only authenticated users can upload/read. The key is returned to the caller,
+// Only authenticated users can upload. The key is returned to the caller,
 // which stores it on the related record (e.g. MedicalDocument.fileUrl).
+//
+// NOTE: there is intentionally NO generic GET-by-key endpoint here. Reading a
+// file must go through an authorized, record-scoped endpoint that checks the
+// caller is actually allowed to see that document, e.g.:
+//   - GET /api/patient/documents?documentId=...
+//   - GET /api/professional/shared?documentId=...
+// A generic "give me a signed URL for any key" endpoint would be an IDOR
+// (any authenticated user could read any other user's PHI file).
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import {
   uploadToS3,
   buildKey,
-  getSignedReadUrl,
   ALLOWED_MIME,
   MAX_UPLOAD_BYTES,
 } from "@/lib/s3";
@@ -52,16 +58,4 @@ export async function POST(req: NextRequest) {
     type: file.type,
     size: file.size,
   });
-}
-
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { searchParams } = new URL(req.url);
-  const key = searchParams.get("key");
-  if (!key) return NextResponse.json({ error: "Missing key" }, { status: 400 });
-
-  const url = await getSignedReadUrl(key);
-  return NextResponse.json({ url });
 }

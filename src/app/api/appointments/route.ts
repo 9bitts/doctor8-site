@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
+import { stripe } from "@/lib/stripe";
 import { z } from "zod";
 
 export async function GET(req: NextRequest) {
@@ -77,7 +78,9 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { professionalId, scheduledAt, type, stripePaymentIntentId, priceAmount, currency } = parsed.data;
+  // NOTE: priceAmount/currency from the client are NOT trusted — the authoritative
+  // amount/currency come from the verified Stripe PaymentIntent below.
+  const { professionalId, scheduledAt, type, stripePaymentIntentId } = parsed.data;
 
   const patient = await db.patientProfile.findUnique({ where: { userId: session.user.id } });
   if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
@@ -87,6 +90,47 @@ export async function POST(req: NextRequest) {
     where: { id: professionalId, verified: true },
   });
   if (!professional) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+
+  // ── Verify the payment server-side before confirming anything ──
+  // Prevents a client from creating a CONFIRMED/paid appointment without
+  // actually paying (or by tampering with amount/currency).
+  let intent;
+  try {
+    intent = await stripe.paymentIntents.retrieve(stripePaymentIntentId);
+  } catch {
+    return NextResponse.json(
+      { error: { general: ["Payment could not be verified."] } },
+      { status: 402 }
+    );
+  }
+
+  if (intent.status !== "succeeded") {
+    return NextResponse.json(
+      { error: { general: ["Payment has not been completed."] } },
+      { status: 402 }
+    );
+  }
+
+  // The intent must belong to THIS user and THIS booking (created in /create-intent).
+  const meta = intent.metadata || {};
+  if (
+    meta.userId !== session.user.id ||
+    meta.professionalId !== professionalId ||
+    meta.scheduledAt !== scheduledAt
+  ) {
+    return NextResponse.json(
+      { error: { general: ["Payment does not match this booking."] } },
+      { status: 400 }
+    );
+  }
+
+  // Idempotency: never create two appointments for the same payment.
+  const alreadyUsed = await db.appointment.findFirst({
+    where: { stripePaymentId: intent.id },
+  });
+  if (alreadyUsed) {
+    return NextResponse.json({ success: true, appointmentId: alreadyUsed.id }, { status: 200 });
+  }
 
   // Check slot is still available
   const existing = await db.appointment.findFirst({
@@ -98,7 +142,7 @@ export async function POST(req: NextRequest) {
   });
   if (existing) return NextResponse.json({ error: { general: ["This slot is no longer available."] } }, { status: 409 });
 
-  // Create appointment
+  // Create appointment — amount/currency taken from the verified Stripe intent.
   const appointment = await db.appointment.create({
     data: {
       patientId: patient.id,
@@ -106,9 +150,9 @@ export async function POST(req: NextRequest) {
       scheduledAt: new Date(scheduledAt),
       type: type as any,
       status: "CONFIRMED",
-      priceAmount,
-      currency,
-      stripePaymentId: stripePaymentIntentId,
+      priceAmount: intent.amount,
+      currency: intent.currency,
+      stripePaymentId: intent.id,
       paidAt: new Date(),
       durationMins: 30,
     },
