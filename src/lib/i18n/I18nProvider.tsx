@@ -6,12 +6,12 @@
 // and mirrors it in localStorage for instant load on next visit.
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { Lang, translate } from "./translations";
+import { Lang, translate, TranslationKey } from "./translations";
 
 interface I18nContextValue {
   lang: Lang;
   setLang: (l: Lang) => void;
-  t: (key: string) => string;
+  t: (key: TranslationKey | string) => string;
 }
 
 const I18nContext = createContext<I18nContextValue>({
@@ -68,7 +68,7 @@ export function I18nProvider({
     }).catch(() => { /* ignore */ });
   }, []);
 
-  const t = useCallback((key: string) => translate(lang, key), [lang]);
+  const t = useCallback((key: TranslationKey | string) => translate(lang, key), [lang]);
 
   return (
     <I18nContext.Provider value={{ lang, setLang, t }}>

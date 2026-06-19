@@ -16,22 +16,7 @@ import {
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Brain, ChevronDown, ChevronUp, Sparkles,
 } from "lucide-react";
-import { useT } from "@/lib/i18n/I18nProvider";
-
-// P2: inline texts for rec.* keys (not yet in translations.ts)
-const REC_TEXTS: Record<string, Record<string, string>> = {
-  titleLabel:       { pt: "Diagnóstico / Título", en: "Diagnosis / Title", es: "Diagnóstico / Título" },
-  titlePlaceholder: { pt: "ex.: Hipertensão arterial – ou o assunto do registro", en: "e.g. Hypertension – or the subject of this record", es: "ej.: Hipertensión arterial – o el asunto del registro" },
-  whatsapp:         { pt: "Abrir WhatsApp", en: "Open WhatsApp", es: "Abrir WhatsApp" },
-  errTitle:         { pt: "O título é obrigatório.", en: "Title is required.", es: "El título es obligatorio." },
-  errCategory:      { pt: "Escolha uma categoria.", en: "Please choose a category.", es: "Elige una categoría." },
-  sendMessage:      { pt: "Enviar mensagem", en: "Send message", es: "Enviar mensaje" },
-  analyzeAI:        { pt: "Analisar com IA", en: "Analyze with AI", es: "Analizar con IA" },
-  analyzing:        { pt: "Analisando...", en: "Analyzing...", es: "Analizando..." },
-  aiTitle:          { pt: "Análise clínica – IA", en: "Clinical analysis – AI", es: "Análisis clínico – IA" },
-  aiDisclaimer:     { pt: "⚠️ Este é um auxílio clínico gerado por IA. Não substitui o julgamento médico. A responsabilidade clínica é sempre do profissional.", en: "⚠️ This is an AI-generated clinical aid. It does not replace medical judgment. Clinical responsibility always rests with the professional.", es: "⚠️ Este es un apoyo clínico generado por IA. No reemplaza el juicio médico. La responsabilidad clínica siempre recae en el profesional." },
-  aiError:          { pt: "Não foi possível gerar a análise. Tente novamente.", en: "Could not generate analysis. Please try again.", es: "No se pudo generar el análisis. Intente de nuevo." },
-};
+import { useT, useI18n } from "@/lib/i18n/I18nProvider";
 
 interface Chart {
   id: string;
@@ -113,11 +98,8 @@ export default function RecordDetailClient({
   initialDocuments: Doc[];
 }) {
   const t = useT();
+  const { lang } = useI18n();
   const router = useRouter();
-
-  // Detect current language via a known key, then serve inline rec.* texts
-  const _langFull = t("greeting.morning") === "Bom dia" ? "pt" : t("greeting.morning") === "Buenos días" ? "es" : "en";
-  const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -297,7 +279,7 @@ export default function RecordDetailClient({
         `Título: ${doc.title}`,
         doc.content ? `Conteúdo:\n${doc.content}` : `(sem texto – apenas anexo)`,
         ``,
-        `Responda em ${_langFull === "pt" ? "português" : _langFull === "es" ? "español" : "English"}.`,
+        `Responda em ${lang === "pt" ? "português" : lang === "es" ? "español" : "English"}.`,
         `Use formatação com markdown (negrito para títulos de seção). Seja conciso e direto.`,
       ].join("\n");
 
@@ -311,10 +293,10 @@ export default function RecordDetailClient({
         }),
       });
       const data = await res.json();
-      const text = data.content?.[0]?.text || rt("aiError");
+      const text = data.content?.[0]?.text || t("rec.aiError");
       setAiAnalysis((p) => ({ ...p, [doc.id]: text }));
     } catch {
-      setAiAnalysis((p) => ({ ...p, [doc.id]: rt("aiError") }));
+      setAiAnalysis((p) => ({ ...p, [doc.id]: t("rec.aiError") }));
     }
     setAiLoading((p) => ({ ...p, [doc.id]: false }));
   }
@@ -356,11 +338,11 @@ export default function RecordDetailClient({
 
   async function handleCreate() {
     if (!title.trim()) {
-      setError(rt("errTitle"));
+      setError(t("rec.errTitle"));
       return;
     }
     if (!categoryId) {
-      setError(rt("errCategory"));
+      setError(t("rec.errCategory"));
       return;
     }
     setSaving(true);
@@ -375,7 +357,7 @@ export default function RecordDetailClient({
         const up = await fetch("/api/uploads", { method: "POST", body: fd });
         const upData = await up.json();
         if (!up.ok) {
-          setError(upData.error || "File upload failed.");
+          setError(upData.error || t("rec.uploadFailed"));
           setSaving(false);
           return;
         }
@@ -395,7 +377,7 @@ export default function RecordDetailClient({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Could not create record.");
+        setError(typeof data.error === "string" ? data.error : t("rec.createFailed"));
         setSaving(false);
         return;
       }
@@ -416,14 +398,14 @@ export default function RecordDetailClient({
       resetForm();
       setShowForm(false);
     } catch {
-      setError("Network error. Try again.");
+      setError(t("rec.networkError"));
     }
     setSaving(false);
   }
 
   // Helper: is the registration data essentially empty?
   const regEmpty = !reg.dateOfBirth && !reg.addressLine1 && !reg.city && !reg.cpf && !reg.sex;
-  const sexLabel = reg.sex === "F" ? "Feminino" : reg.sex === "M" ? "Masculino" : reg.sex === "O" ? "Outro" : "";
+  const sexLabel = reg.sex === "F" ? t("pat.sexF") : reg.sex === "M" ? t("pat.sexM") : reg.sex === "O" ? t("pat.sexO") : "";
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -431,7 +413,7 @@ export default function RecordDetailClient({
         href="/professional/patients"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
       >
-        <ArrowLeft size={16} /> Back to patients
+        <ArrowLeft size={16} /> {t("rec.backToPatients")}
       </Link>
 
       {/* Chart header */}
@@ -455,7 +437,7 @@ export default function RecordDetailClient({
                     href={`https://wa.me/${waPhone(chart.phone)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title={rt("whatsapp")}
+                    title={t("rec.whatsapp")}
                     className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-full transition"
                   >
                     <MessageCircle size={12} /> WhatsApp
@@ -466,11 +448,11 @@ export default function RecordDetailClient({
             <p className="text-xs mt-2">
               {hasAccount ? (
                 <span className="text-emerald-600 inline-flex items-center gap-1">
-                  <CheckCircle2 size={12} /> Has Doctor8 account
+                  <CheckCircle2 size={12} /> {t("pat.hasAccount")}
                 </span>
               ) : (
                 <span className="text-amber-600 inline-flex items-center gap-1">
-                  <AlertCircle size={12} /> No account yet
+                  <AlertCircle size={12} /> {t("pat.noAccount")}
                 </span>
               )}
             </p>
@@ -481,7 +463,7 @@ export default function RecordDetailClient({
                   href={`/professional/messages?with=${chart.linkedUserId}`}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-lg transition"
                 >
-                  <MessageCircle size={13} /> {rt("sendMessage")}
+                  <MessageCircle size={13} /> {t("rec.sendMessage")}
                 </a>
               </div>
             )}
@@ -491,13 +473,13 @@ export default function RecordDetailClient({
         {/* ── P1-b: registration data (for the prescription) ── */}
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Dados para a receita</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("pat.regSection")}</p>
             {!editingReg && (
               <button
                 onClick={openRegEditor}
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
               >
-                <Pencil size={13} /> {regEmpty ? "Adicionar dados" : "Editar dados"}
+                <Pencil size={13} /> {regEmpty ? t("rec.addRegData") : t("rec.editRegData")}
               </button>
             )}
           </div>
@@ -768,7 +750,7 @@ export default function RecordDetailClient({
                   <p className="font-semibold text-slate-800 text-sm">{d.title}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {new Date(d.createdAt).toLocaleString(
-                      _langFull === "pt" ? "pt-BR" : _langFull === "es" ? "es-ES" : "en-US",
+                      lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US",
                       { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }
                     )}
                   </p>
@@ -835,10 +817,10 @@ export default function RecordDetailClient({
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                     >
                       {aiLoading[d.id]
-                        ? <><Loader2 size={13} className="animate-spin" /> {rt("analyzing")}</>
+                        ? <><Loader2 size={13} className="animate-spin" /> {t("rec.analyzing")}</>
                         : aiAnalysis[d.id]
                           ? <><Sparkles size={13} /> {aiOpen[d.id] ? "Ocultar análise" : "Ver análise"}</>
-                          : <><Brain size={13} /> {rt("analyzeAI")}</>
+                          : <><Brain size={13} /> {t("rec.analyzeAI")}</>
                       }
                     </button>
                   </div>
@@ -848,7 +830,7 @@ export default function RecordDetailClient({
                     <div className="mt-3 bg-purple-50 border border-purple-200 rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <Sparkles size={14} className="text-purple-600" />
-                        <span className="text-xs font-semibold text-purple-700">{rt("aiTitle")}</span>
+                        <span className="text-xs font-semibold text-purple-700">{t("rec.aiTitle")}</span>
                       </div>
                       <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                         {aiAnalysis[d.id].split(/\*\*(.+?)\*\*/g).map((part, i) =>
@@ -858,7 +840,7 @@ export default function RecordDetailClient({
                         )}
                       </div>
                       <p className="mt-3 text-xs text-purple-600 bg-purple-100 rounded-lg px-3 py-2 leading-relaxed">
-                        {rt("aiDisclaimer")}
+                        {t("rec.aiDisclaimer")}
                       </p>
                     </div>
                   )}
@@ -907,12 +889,12 @@ export default function RecordDetailClient({
               {/* P2: "Diagnóstico / Título" label – trilíngue */}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  {rt("titleLabel")} *
+                  {t("rec.titleLabel")} *
                 </label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={rt("titlePlaceholder")}
+                  placeholder={t("rec.titlePlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
                 />
               </div>

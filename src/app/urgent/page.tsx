@@ -10,57 +10,16 @@ import {
   Stethoscope, Search, Loader2, Clock, Users, CheckCircle2,
   AlertCircle, Radio, ArrowLeft, Phone, X, Heart,
 } from "lucide-react";
+import { translate, normalizeLang, Lang, TranslationKey } from "@/lib/i18n/translations";
 
-// ── Inline texts ─────────────────────────────────────────────────────────────
-type Lang = "pt" | "en" | "es";
-const T: Record<string, Record<Lang, string>> = {
-  title:         { pt: "Atendimento Imediato",          en: "Immediate Care",              es: "Atención Inmediata" },
-  subtitle:      { pt: "Profissionais disponíveis agora para te atender.",
-                   en: "Professionals available now to see you.",
-                   es: "Profesionales disponibles ahora para atenderte." },
-  searchSpec:    { pt: "Buscar especialidade...",        en: "Search specialty...",          es: "Buscar especialidad..." },
-  available:     { pt: "Disponíveis agora",              en: "Available now",                es: "Disponibles ahora" },
-  noAvailable:   { pt: "Nenhum profissional disponível no momento.", en: "No professionals available right now.", es: "No hay profesionales disponibles ahora." },
-  noAvailableHint: { pt: "Tente novamente em alguns minutos ou escolha outra especialidade.",
-                     en: "Try again in a few minutes or choose another specialty.",
-                     es: "Inténtalo de nuevo en unos minutos o elige otra especialidad." },
-  free:          { pt: "Gratuito",                       en: "Free",                        es: "Gratuito" },
-  wait:          { pt: "espera estimada",                en: "estimated wait",               es: "espera estimada" },
-  full:          { pt: "Fila cheia",                     en: "Queue full",                   es: "Cola llena" },
-  inQueue:       { pt: "Na fila",                        en: "In queue",                    es: "En cola" },
-  enter:         { pt: "Entrar na fila",                 en: "Join queue",                  es: "Unirse a la cola" },
-  entering:      { pt: "Entrando...",                    en: "Joining...",                  es: "Uniéndose..." },
-  // Waiting screen
-  waitTitle:     { pt: "Você está na fila!",             en: "You're in the queue!",        es: "¡Estás en la cola!" },
-  pos:           { pt: "Sua posição",                    en: "Your position",               es: "Tu posición" },
-  ahead:         { pt: "pessoa(s) à sua frente",         en: "person(s) ahead of you",      es: "persona(s) delante de ti" },
-  estWait:       { pt: "Espera estimada",                en: "Estimated wait",              es: "Espera estimada" },
-  minutes:       { pt: "min",                            en: "min",                         es: "min" },
-  keepOpen:      { pt: "Mantenha esta página aberta. Você será avisado quando for sua vez.",
-                   en: "Keep this page open. You will be notified when it's your turn.",
-                   es: "Mantén esta página abierta. Se te notificará cuando sea tu turno." },
-  // Called screen
-  calledTitle:   { pt: "É a sua vez!",                   en: "It's your turn!",             es: "¡Es tu turno!" },
-  calledSub:     { pt: "O profissional está pronto. Você tem 2 minutos para entrar.",
-                   en: "The professional is ready. You have 2 minutes to enter.",
-                   es: "El profesional está listo. Tienes 2 minutos para entrar." },
-  enterNow:      { pt: "Entrar na consulta",             en: "Enter consultation",          es: "Entrar a la consulta" },
-  // In progress
-  inProgressTitle: { pt: "Consulta em andamento",        en: "Consultation in progress",    es: "Consulta en curso" },
-  enterRoom:     { pt: "Entrar na sala",                 en: "Enter room",                  es: "Entrar a la sala" },
-  // No show
-  noShowTitle:   { pt: "Você perdeu sua vez",            en: "You missed your turn",        es: "Perdiste tu turno" },
-  noShowSub:     { pt: "Você não entrou na consulta a tempo. Se ainda precisar, entre na fila novamente.",
-                   en: "You did not enter the consultation in time. If you still need care, join the queue again.",
-                   es: "No entraste a la consulta a tiempo. Si aún necesitas atención, vuelve a unirte a la cola." },
-  rejoin:        { pt: "Entrar na fila novamente",       en: "Rejoin queue",                es: "Volver a la cola" },
-  leaveQueue:    { pt: "Sair da fila",                   en: "Leave queue",                 es: "Salir de la cola" },
-  loading:       { pt: "Carregando...",                  en: "Loading...",                  es: "Cargando..." },
-  mins:          { pt: "min",                            en: "min",                         es: "min" },
-};
+const LANG_KEY = "doctor8.lang";
 
 function detectLang(): Lang {
   if (typeof window === "undefined") return "pt";
+  try {
+    const stored = localStorage.getItem(LANG_KEY);
+    if (stored) return normalizeLang(stored);
+  } catch { /* ignore */ }
   const l = document.documentElement.lang || navigator.language || "pt";
   if (l.startsWith("en")) return "en";
   if (l.startsWith("es")) return "es";
@@ -105,7 +64,7 @@ export default function UrgentPage() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("pt");
   useEffect(() => { setLang(detectLang()); }, []);
-  const t = (k: string) => T[k]?.[lang] ?? T[k]?.["pt"] ?? k;
+  const t = (key: TranslationKey) => translate(lang, key);
 
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [available,    setAvailable]    = useState<AvailablePro[]>([]);
@@ -232,13 +191,13 @@ export default function UrgentPage() {
             <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center mx-auto mb-4">
               <AlertCircle size={28} className="text-rose-500" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900 mb-2">{t("noShowTitle")}</h2>
-            <p className="text-sm text-slate-500 mb-6">{t("noShowSub")}</p>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">{t("urgent.noShowTitle")}</h2>
+            <p className="text-sm text-slate-500 mb-6">{t("urgent.noShowSub")}</p>
             <button
               onClick={leaveQueue}
               className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition"
             >
-              {t("rejoin")}
+              {t("urgent.rejoin")}
             </button>
           </div>
         </div>
@@ -253,9 +212,9 @@ export default function UrgentPage() {
             <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4 animate-bounce">
               <Phone size={28} className="text-emerald-500" />
             </div>
-            <h2 className="text-2xl font-bold text-emerald-700 mb-2">{t("calledTitle")}</h2>
+            <h2 className="text-2xl font-bold text-emerald-700 mb-2">{t("urgent.calledTitle")}</h2>
             <p className="text-sm text-slate-500 mb-2">{queueEntry.professionalName}</p>
-            <p className="text-sm text-slate-500 mb-6">{t("calledSub")}</p>
+            <p className="text-sm text-slate-500 mb-6">{t("urgent.calledSub")}</p>
             {queueEntry.expiresAt && (
               <CountdownTimer expiresAt={queueEntry.expiresAt} />
             )}
@@ -269,7 +228,7 @@ export default function UrgentPage() {
             >
               {entering
                 ? <Loader2 size={18} className="animate-spin" />
-                : <><Phone size={18} /> {t("enterNow")}</>
+                : <><Phone size={18} /> {t("urgent.enterNow")}</>
               }
             </button>
           </div>
@@ -285,7 +244,7 @@ export default function UrgentPage() {
             <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
               <Stethoscope size={28} className="text-blue-500" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900 mb-2">{t("inProgressTitle")}</h2>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">{t("urgent.inProgressTitle")}</h2>
             <p className="text-sm text-slate-500 mb-6">{queueEntry.professionalName}</p>
             {queueEntry.meetingUrl && (
               <a
@@ -294,7 +253,7 @@ export default function UrgentPage() {
                 rel="noopener noreferrer"
                 className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm transition inline-flex items-center justify-center gap-2"
               >
-                <Phone size={16} /> {t("enterRoom")}
+                <Phone size={16} /> {t("urgent.enterRoom")}
               </a>
             )}
           </div>
@@ -309,40 +268,40 @@ export default function UrgentPage() {
           <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4">
             <Radio size={28} className="text-emerald-500 animate-pulse" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900 mb-1">{t("waitTitle")}</h2>
+          <h2 className="text-lg font-bold text-slate-900 mb-1">{t("urgent.waitTitle")}</h2>
           <p className="text-sm text-slate-500 mb-6">{queueEntry.professionalName} · {queueEntry.specialty}</p>
 
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-slate-50 rounded-xl p-4">
               <p className="text-3xl font-bold text-emerald-600">{queueEntry.position}</p>
-              <p className="text-xs text-slate-500 mt-1">{t("pos")}</p>
+              <p className="text-xs text-slate-500 mt-1">{t("urgent.pos")}</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-4">
               <p className="text-3xl font-bold text-slate-700">{queueEntry.estimatedWaitMinutes}</p>
-              <p className="text-xs text-slate-500 mt-1">{t("minutes")}</p>
+              <p className="text-xs text-slate-500 mt-1">{t("urgent.minutes")}</p>
             </div>
           </div>
 
           {queueEntry.aheadCount > 0 && (
             <p className="text-sm text-slate-500 mb-4">
-              {queueEntry.aheadCount} {t("ahead")}
+              {queueEntry.aheadCount} {t("urgent.ahead")}
             </p>
           )}
 
           <p className="text-xs text-slate-400 bg-slate-50 rounded-xl px-4 py-3 mb-6">
-            {t("keepOpen")}
+            {t("urgent.keepOpen")}
           </p>
 
           <div className="flex items-center justify-center gap-2 mb-2">
             <Loader2 size={14} className="animate-spin text-emerald-500" />
-            <span className="text-xs text-slate-400">Atualizando a cada 4 segundos...</span>
+            <span className="text-xs text-slate-400">{t("urgent.polling")}</span>
           </div>
 
           <button
             onClick={leaveQueue}
             className="text-xs text-slate-400 hover:text-rose-500 transition mt-2"
           >
-            {t("leaveQueue")}
+            {t("urgent.leaveQueue")}
           </button>
         </div>
       </div>
@@ -360,9 +319,9 @@ export default function UrgentPage() {
           </button>
           <div className="flex-1">
             <h1 className="font-bold text-slate-900 flex items-center gap-2">
-              <Heart size={18} className="text-rose-500" /> {t("title")}
+              <Heart size={18} className="text-rose-500" /> {t("urgent.title")}
             </h1>
-            <p className="text-xs text-slate-500">{t("subtitle")}</p>
+            <p className="text-xs text-slate-500">{t("urgent.subtitle")}</p>
           </div>
         </div>
       </div>
@@ -381,7 +340,7 @@ export default function UrgentPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("searchSpec")}
+            placeholder={t("urgent.searchSpec")}
             className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400"
           />
         </div>
@@ -389,12 +348,12 @@ export default function UrgentPage() {
         {/* List */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold text-slate-700">{t("available")}</p>
+            <p className="text-sm font-semibold text-slate-700">{t("urgent.available")}</p>
             <button
               onClick={loadAvailable}
               className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
             >
-              Atualizar
+              {t("urgent.refresh")}
             </button>
           </div>
 
@@ -405,8 +364,8 @@ export default function UrgentPage() {
           ) : filtered.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-100 py-12 text-center">
               <Stethoscope size={36} className="text-slate-300 mx-auto mb-3" />
-              <p className="font-semibold text-slate-600">{t("noAvailable")}</p>
-              <p className="text-sm text-slate-400 mt-1 max-w-xs mx-auto">{t("noAvailableHint")}</p>
+              <p className="font-semibold text-slate-600">{t("urgent.noAvailable")}</p>
+              <p className="text-sm text-slate-400 mt-1 max-w-xs mx-auto">{t("urgent.noAvailableHint")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -427,18 +386,18 @@ export default function UrgentPage() {
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                           pro.isFree ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
                         }`}>
-                          {pro.isFree ? t("free") : `${(pro.priceAmount / 100).toFixed(2)} ${pro.currency}`}
+                          {pro.isFree ? t("urgent.free") : `${(pro.priceAmount / 100).toFixed(2)} ${pro.currency}`}
                         </span>
 
                         {/* Queue info */}
                         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                          <Users size={12} /> {pro.queueCount} {t("inQueue")}
+                          <Users size={12} /> {pro.queueCount} {t("urgent.inQueue")}
                         </span>
 
                         {/* Wait time */}
                         {pro.estimatedWaitMinutes > 0 && (
                           <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                            <Clock size={12} /> ~{pro.estimatedWaitMinutes} {t("mins")} {t("wait")}
+                            <Clock size={12} /> ~{pro.estimatedWaitMinutes} {t("urgent.mins")} {t("urgent.wait")}
                           </span>
                         )}
                       </div>
@@ -452,7 +411,7 @@ export default function UrgentPage() {
                   <div className="mt-3">
                     {pro.isFull ? (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg">
-                        <AlertCircle size={13} /> {t("full")}
+                        <AlertCircle size={13} /> {t("urgent.full")}
                       </span>
                     ) : (
                       <button
@@ -461,8 +420,8 @@ export default function UrgentPage() {
                         className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
                       >
                         {joining === pro.sessionId
-                          ? <><Loader2 size={14} className="animate-spin" /> {t("entering")}</>
-                          : t("enter")
+                          ? <><Loader2 size={14} className="animate-spin" /> {t("urgent.entering")}</>
+                          : t("urgent.enter")
                         }
                       </button>
                     )}

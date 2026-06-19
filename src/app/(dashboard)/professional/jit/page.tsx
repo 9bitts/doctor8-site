@@ -9,54 +9,7 @@ import {
   Loader2, CheckCircle2, AlertCircle, Phone, Pause, Play,
   Stethoscope, DollarSign, Settings, X, ArrowRight,
 } from "lucide-react";
-
-// ── Inline texts ────────────────────────────────────────────────────────────
-type Lang = "pt" | "en" | "es";
-const T: Record<string, Record<Lang, string>> = {
-  title:          { pt: "Plantão Online",             en: "Online Duty",                es: "Guardia Online" },
-  subtitle:       { pt: "Atenda pacientes agora, sem agendamento prévio.",
-                    en: "See patients now, without prior scheduling.",
-                    es: "Atiende pacientes ahora, sin cita previa." },
-  goOnline:       { pt: "Entrar em plantão",          en: "Go on duty",                 es: "Iniciar guardia" },
-  goOffline:      { pt: "Encerrar plantão",           en: "End duty",                   es: "Finalizar guardia" },
-  pause:          { pt: "Pausar",                     en: "Pause",                      es: "Pausar" },
-  resume:         { pt: "Retomar",                    en: "Resume",                     es: "Reanudar" },
-  callNext:       { pt: "Chamar próximo",             en: "Call next",                  es: "Llamar al siguiente" },
-  calling:        { pt: "Chamando...",                en: "Calling...",                 es: "Llamando..." },
-  queueEmpty:     { pt: "Fila vazia",                 en: "Queue is empty",             es: "Cola vacía" },
-  waiting:        { pt: "aguardando",                 en: "waiting",                    es: "esperando" },
-  inProgress:     { pt: "Em consulta",                en: "In consultation",            es: "En consulta" },
-  called:         { pt: "Chamado — aguardando entrar", en: "Called — waiting to enter", es: "Llamado — esperando" },
-  noShow:         { pt: "Não respondeu",              en: "Did not respond",            es: "No respondió" },
-  modeQueue:      { pt: "Fila automática",            en: "Automatic queue",            es: "Cola automática" },
-  modeShowcase:   { pt: "Vitrine (paciente escolhe)", en: "Showcase (patient chooses)", es: "Vitrina (paciente elige)" },
-  specialty:      { pt: "Especialidade visível",      en: "Visible specialty",          es: "Especialidad visible" },
-  free:           { pt: "Atendimento gratuito",       en: "Free service",               es: "Servicio gratuito" },
-  priceLabel:     { pt: "Valor da consulta (centavos)", en: "Consultation price (cents)", es: "Precio (centavos)" },
-  maxQueue:       { pt: "Máximo na fila",             en: "Max queue size",             es: "Máximo en cola" },
-  estTime:        { pt: "Tempo estimado por paciente (min)", en: "Est. minutes per patient", es: "Minutos estimados por paciente" },
-  currency:       { pt: "Moeda",                      en: "Currency",                   es: "Moneda" },
-  saveStart:      { pt: "Salvar e entrar em plantão", en: "Save and go on duty",        es: "Guardar e iniciar guardia" },
-  configTitle:    { pt: "Configurar plantão",         en: "Configure duty",             es: "Configurar guardia" },
-  statusOnline:   { pt: "Online — Aceitando pacientes", en: "Online — Accepting patients", es: "Online — Aceptando pacientes" },
-  statusPaused:   { pt: "Pausado — Fila suspensa",    en: "Paused — Queue suspended",   es: "Pausado — Cola suspendida" },
-  statusOffline:  { pt: "Offline",                    en: "Offline",                    es: "Offline" },
-  disclaimer:     { pt: "Ao entrar em plantão você fica visível para pacientes que buscam atendimento imediato.",
-                    en: "Going on duty makes you visible to patients seeking immediate care.",
-                    es: "Al iniciar guardia serás visible para pacientes que buscan atención inmediata." },
-  patientLabel:   { pt: "Paciente",                   en: "Patient",                    es: "Paciente" },
-  posLabel:       { pt: "Pos.",                       en: "Pos.",                       es: "Pos." },
-  enteredLabel:   { pt: "Entrou",                     en: "Entered",                    es: "Entró" },
-  expLabel:       { pt: "Expira em",                  en: "Expires in",                 es: "Expira en" },
-};
-
-function detectLang(): Lang {
-  if (typeof window === "undefined") return "pt";
-  const l = document.documentElement.lang || navigator.language || "pt";
-  if (l.startsWith("en")) return "en";
-  if (l.startsWith("es")) return "es";
-  return "pt";
-}
+import { useT, useI18n } from "@/lib/i18n/I18nProvider";
 
 interface QueueEntry {
   id: string;
@@ -85,9 +38,8 @@ interface JitSessionData {
 }
 
 export default function JitPage() {
-  const [lang, setLang] = useState<Lang>("pt");
-  useEffect(() => { setLang(detectLang()); }, []);
-  const t = (k: string) => T[k]?.[lang] ?? T[k]?.["pt"] ?? k;
+  const t = useT();
+  const { lang } = useI18n();
 
   const [session, setSession] = useState<JitSessionData | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -236,9 +188,9 @@ export default function JitPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Radio className={`${isOnline ? "text-emerald-500 animate-pulse" : "text-slate-400"}`} size={24} />
-            {t("title")}
+            {t("jit.title")}
           </h1>
-          <p className="text-slate-500 text-sm mt-1">{t("subtitle")}</p>
+          <p className="text-slate-500 text-sm mt-1">{t("jit.subtitle")}</p>
         </div>
 
         {/* Status badge */}
@@ -251,7 +203,7 @@ export default function JitPage() {
             isOnline ? "bg-emerald-500 animate-pulse" :
             isPaused ? "bg-amber-500" : "bg-slate-400"
           }`} />
-          {isOnline ? t("statusOnline") : isPaused ? t("statusPaused") : t("statusOffline")}
+          {isOnline ? t("jit.statusOnline") : isPaused ? t("jit.statusPaused") : t("jit.statusOffline")}
         </span>
       </div>
 
@@ -270,24 +222,24 @@ export default function JitPage() {
               <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4">
                 <Stethoscope size={28} className="text-emerald-500" />
               </div>
-              <h2 className="text-lg font-bold text-slate-900 mb-2">{t("configTitle")}</h2>
-              <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">{t("disclaimer")}</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-2">{t("jit.configTitle")}</h2>
+              <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">{t("jit.disclaimer")}</p>
               <button
                 onClick={() => setShowConfig(true)}
                 className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-3 rounded-xl transition"
               >
-                <Settings size={18} /> {t("configTitle")}
+                <Settings size={18} /> {t("jit.configTitle")}
               </button>
             </div>
           ) : (
             <div className="space-y-4">
               <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                <Settings size={18} className="text-emerald-500" /> {t("configTitle")}
+                <Settings size={18} className="text-emerald-500" /> {t("jit.configTitle")}
               </h2>
 
               {/* Specialty */}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">{t("specialty")} *</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.specialty")} *</label>
                 <input
                   value={cfgSpecialty}
                   onChange={(e) => setCfgSpecialty(e.target.value)}
@@ -310,7 +262,7 @@ export default function JitPage() {
                           : "border-slate-200 text-slate-600 hover:border-emerald-300"
                       }`}
                     >
-                      {m === "QUEUE" ? t("modeQueue") : t("modeShowcase")}
+                      {m === "QUEUE" ? t("jit.modeQueue") : t("jit.modeShowcase")}
                     </button>
                   ))}
                 </div>
@@ -325,14 +277,14 @@ export default function JitPage() {
                     onChange={(e) => setCfgFree(e.target.checked)}
                     className="w-4 h-4 rounded accent-emerald-500"
                   />
-                  <span className="text-sm font-medium text-slate-700">{t("free")}</span>
+                  <span className="text-sm font-medium text-slate-700">{t("jit.free")}</span>
                 </label>
               </div>
 
               {!cfgFree && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("priceLabel")}</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.priceLabel")}</label>
                     <input
                       type="number"
                       value={cfgPrice}
@@ -342,7 +294,7 @@ export default function JitPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("currency")}</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.currency")}</label>
                     <select
                       value={cfgCurrency}
                       onChange={(e) => setCfgCurrency(e.target.value)}
@@ -359,7 +311,7 @@ export default function JitPage() {
               {/* Queue settings */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("maxQueue")}</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.maxQueue")}</label>
                   <input
                     type="number"
                     value={cfgMax}
@@ -369,7 +321,7 @@ export default function JitPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("estTime")}</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.estTime")}</label>
                   <input
                     type="number"
                     value={cfgEstTime}
@@ -394,7 +346,7 @@ export default function JitPage() {
                 >
                   {cfgSaving
                     ? <><Loader2 size={14} className="animate-spin" /> Iniciando...</>
-                    : <><Power size={14} /> {t("saveStart")}</>
+                    : <><Power size={14} /> {t("jit.saveStart")}</>
                   }
                 </button>
               </div>
@@ -410,15 +362,15 @@ export default function JitPage() {
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
               <p className="text-2xl font-bold text-slate-900">{waitingCount}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{t("waiting")}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{t("jit.waiting")}</p>
             </div>
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
               <p className="text-2xl font-bold text-slate-900">{inProgressEntry ? 1 : 0}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{t("inProgress")}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{t("jit.inProgress")}</p>
             </div>
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
               <p className="text-sm font-semibold text-slate-700">{session.specialty}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{session.isFree ? t("free") : `${session.priceAmount / 100} ${session.currency}`}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{session.isFree ? t("jit.free") : `${session.priceAmount / 100} ${session.currency}`}</p>
             </div>
           </div>
 
@@ -430,7 +382,7 @@ export default function JitPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
-                    {inProgressEntry ? t("inProgress") : t("called")}
+                    {inProgressEntry ? t("jit.inProgress") : t("jit.called")}
                   </p>
                   <p className="font-bold text-slate-900 text-lg">
                     {(inProgressEntry || calledEntry)?.patientName}
@@ -460,7 +412,7 @@ export default function JitPage() {
                 <p className="font-semibold text-slate-800">
                   {waitingCount > 0
                     ? `${waitingCount} paciente${waitingCount > 1 ? "s" : ""} aguardando`
-                    : t("queueEmpty")}
+                    : t("jit.queueEmpty")}
                 </p>
                 {waitingCount > 0 && (
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -474,8 +426,8 @@ export default function JitPage() {
                 className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm"
               >
                 {calling
-                  ? <><Loader2 size={16} className="animate-spin" /> {t("calling")}</>
-                  : <><ChevronRight size={16} /> {t("callNext")}</>
+                  ? <><Loader2 size={16} className="animate-spin" /> {t("jit.calling")}</>
+                  : <><ChevronRight size={16} /> {t("jit.callNext")}</>
                 }
               </button>
             </div>
@@ -496,16 +448,16 @@ export default function JitPage() {
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">{entry.patientName}</p>
-                      <p className="text-xs text-slate-400">{t("enteredLabel")} {formatTime(entry.enteredAt)}</p>
+                      <p className="text-xs text-slate-400">{t("jit.enteredLabel")} {formatTime(entry.enteredAt)}</p>
                     </div>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                       entry.status === "IN_PROGRESS" ? "bg-emerald-100 text-emerald-700" :
                       entry.status === "CALLED"      ? "bg-amber-100 text-amber-700" :
                                                        "bg-slate-100 text-slate-500"
                     }`}>
-                      {entry.status === "IN_PROGRESS" ? t("inProgress") :
-                       entry.status === "CALLED"      ? t("called") :
-                                                        t("waiting")}
+                      {entry.status === "IN_PROGRESS" ? t("jit.inProgress") :
+                       entry.status === "CALLED"      ? t("jit.called") :
+                                                        t("jit.waiting")}
                     </span>
                   </div>
                 ))}
@@ -521,15 +473,15 @@ export default function JitPage() {
               className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 inline-flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {toggling ? <Loader2 size={14} className="animate-spin" /> :
-               isOnline ? <><Pause size={14} /> {t("pause")}</> :
-                          <><Play size={14} /> {t("resume")}</>}
+               isOnline ? <><Pause size={14} /> {t("jit.pause")}</> :
+                          <><Play size={14} /> {t("jit.resume")}</>}
             </button>
             <button
               onClick={() => toggleStatus("OFFLINE")}
               disabled={toggling}
               className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm inline-flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {toggling ? <Loader2 size={14} className="animate-spin" /> : <><PowerOff size={14} /> {t("goOffline")}</>}
+              {toggling ? <Loader2 size={14} className="animate-spin" /> : <><PowerOff size={14} /> {t("jit.goOffline")}</>}
             </button>
           </div>
         </>

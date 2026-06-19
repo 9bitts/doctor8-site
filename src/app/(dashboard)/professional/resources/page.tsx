@@ -10,70 +10,7 @@ import {
   ChevronDown, ChevronUp, Search, Stethoscope, Phone, Mail,
   UserPlus,
 } from "lucide-react";
-
-// ── Inline texts (not yet in translations.ts) ──────────────────────────────
-type Lang = "pt" | "en" | "es";
-const T: Record<string, Record<Lang, string>> = {
-  title:            { pt: "Biblioteca",                          en: "Library",                              es: "Biblioteca" },
-  subtitle:         { pt: "Seus links e arquivos de referência. Compartilhe com pacientes.",
-                      en: "Your reference links and files. Share with patients.",
-                      es: "Tus enlaces y archivos de referencia. Comparte con pacientes." },
-  add:              { pt: "Adicionar recurso",                   en: "Add resource",                         es: "Agregar recurso" },
-  empty:            { pt: "Nenhum recurso ainda",                en: "No resources yet",                     es: "Aún no hay recursos" },
-  emptyHint:        { pt: "Adicione links do YouTube ou arquivos que você usa e compartilha com pacientes.",
-                      en: "Add YouTube links or files you use and share with patients.",
-                      es: "Agrega enlaces de YouTube o archivos que usas y compartes con pacientes." },
-  modalTitle:       { pt: "Novo recurso",                        en: "New resource",                         es: "Nuevo recurso" },
-  titleLabel:       { pt: "Título *",                            en: "Title *",                              es: "Título *" },
-  titlePlaceholder: { pt: "ex.: Vídeo sobre hipertensão",        en: "e.g. Video about hypertension",        es: "ej.: Vídeo sobre hipertensión" },
-  descLabel:        { pt: "Descrição",                           en: "Description",                          es: "Descripción" },
-  descPlaceholder:  { pt: "Observações sobre este recurso...",   en: "Notes about this resource...",         es: "Notas sobre este recurso..." },
-  typeLink:         { pt: "Link (YouTube, etc.)",                en: "Link (YouTube, etc.)",                 es: "Enlace (YouTube, etc.)" },
-  typeFile:         { pt: "Arquivo (PDF ou imagem)",             en: "File (PDF or image)",                  es: "Archivo (PDF o imagen)" },
-  urlLabel:         { pt: "URL do vídeo/link *",                 en: "Video/link URL *",                     es: "URL del video/enlace *" },
-  urlPlaceholder:   { pt: "https://youtube.com/watch?v=...",     en: "https://youtube.com/watch?v=...",      es: "https://youtube.com/watch?v=..." },
-  fileLabel:        { pt: "Arquivo *",                           en: "File *",                               es: "Archivo *" },
-  fileHint:         { pt: "(PDF ou imagem — máx. 50MB)",         en: "(PDF or image — max 50MB)",            es: "(PDF o imagen — máx. 50MB)" },
-  save:             { pt: "Salvar",                              en: "Save",                                 es: "Guardar" },
-  saving:           { pt: "Salvando...",                         en: "Saving...",                            es: "Guardando..." },
-  cancel:           { pt: "Cancelar",                            en: "Cancel",                               es: "Cancelar" },
-  errTitle:         { pt: "O título é obrigatório.",             en: "Title is required.",                   es: "El título es obligatorio." },
-  errContent:       { pt: "Informe um link ou selecione um arquivo.", en: "Provide a link or select a file.", es: "Proporciona un enlace o selecciona un archivo." },
-  errUrl:           { pt: "Informe uma URL válida.",             en: "Enter a valid URL.",                   es: "Ingresa una URL válida." },
-  shareWith:        { pt: "Compartilhar com paciente",           en: "Share with patient",                   es: "Compartir con paciente" },
-  shareSearch:      { pt: "Buscar paciente...",                  en: "Search patient...",                    es: "Buscar paciente..." },
-  shareNone:        { pt: "Nenhum paciente encontrado.",         en: "No patient found.",                    es: "No se encontró ningún paciente." },
-  shareLoading:     { pt: "Carregando pacientes...",             en: "Loading patients...",                  es: "Cargando pacientes..." },
-  shared:           { pt: "Compartilhado!",                      en: "Shared!",                              es: "¡Compartido!" },
-  sharesCount:      { pt: "paciente(s)",                         en: "patient(s)",                           es: "paciente(s)" },
-  openLink:         { pt: "Abrir link",                          en: "Open link",                            es: "Abrir enlace" },
-  attachment:       { pt: "Arquivo anexado",                     en: "File attached",                        es: "Archivo adjunto" },
-  delete:           { pt: "Remover",                             en: "Remove",                               es: "Eliminar" },
-  deleteConfirm:    { pt: "Remover este recurso?",               en: "Remove this resource?",                es: "¿Eliminar este recurso?" },
-  shareWithPro:     { pt: "Compartilhar com profissional",       en: "Share with professional",              es: "Compartir con profesional" },
-  proSearch:        { pt: "Buscar profissional pelo nome...",     en: "Search professional by name...",       es: "Buscar profesional por nombre..." },
-  proNotFound:      { pt: "Nenhum profissional encontrado.",     en: "No professional found.",               es: "No se encontró ningún profesional." },
-  proNoAccount:     { pt: "Não tem conta? Convide pelo email:",  en: "No account? Invite by email:",         es: "¿Sin cuenta? Invita por email:" },
-  proNameLabel:     { pt: "Nome (opcional)",                     en: "Name (optional)",                      es: "Nombre (opcional)" },
-  proEmailLabel:    { pt: "Email *",                             en: "Email *",                              es: "Email *" },
-  proPhoneLabel:    { pt: "WhatsApp (opcional)",                 en: "WhatsApp (optional)",                  es: "WhatsApp (opcional)" },
-  proInvite:        { pt: "Enviar convite",                      en: "Send invite",                          es: "Enviar invitación" },
-  proInvited:       { pt: "Convite enviado!",                    en: "Invite sent!",                         es: "¡Invitación enviada!" },
-  proNotified:      { pt: "Notificado!",                         en: "Notified!",                            es: "¡Notificado!" },
-  proErrEmail:      { pt: "Informe o email do colega.",          en: "Enter colleague's email.",             es: "Ingresa el email del colega." },
-};
-
-function tx(lang: Lang, key: string): string {
-  return T[key]?.[lang] ?? T[key]?.["en"] ?? key;
-}
-
-function detectLang(): Lang {
-  if (typeof window === "undefined") return "en";
-  const l = document.documentElement.lang || navigator.language || "en";
-  if (l.startsWith("pt")) return "pt";
-  if (l.startsWith("es")) return "es";
-  return "en";
-}
+import { useT } from "@/lib/i18n/I18nProvider";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Resource {
@@ -99,9 +36,7 @@ interface ProResult {
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function ResourcesPage() {
-  const [lang, setLang] = useState<Lang>("en");
-  useEffect(() => { setLang(detectLang()); }, []);
-  const t = (k: string) => tx(lang, k);
+  const t = useT();
 
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -223,7 +158,7 @@ export default function ResourcesPage() {
 
   // Invite professional without account
   async function sendProInvite(resId: string) {
-    if (!inviteEmail.trim()) { setInviteMsg("err:" + t("proErrEmail")); return; }
+    if (!inviteEmail.trim()) { setInviteMsg("err:" + t("lib.proErrEmail")); return; }
     setInviteSending(true); setInviteMsg(null);
     try {
       const res = await fetch(`/api/professional/resources/${resId}/share-pro`, {
@@ -241,16 +176,16 @@ export default function ResourcesPage() {
   }
 
   async function deleteResource(id: string) {
-    if (!confirm(t("deleteConfirm"))) return;
+    if (!confirm(t("lib.deleteConfirm"))) return;
     await fetch(`/api/professional/resources/${id}`, { method: "DELETE" });
     setResources((prev) => prev.filter((r) => r.id !== id));
   }
 
   // Submit form
   async function handleSubmit() {
-    if (!formTitle.trim()) { setFormError(t("errTitle")); return; }
-    if (formType === "link" && !formUrl.trim()) { setFormError(t("errUrl")); return; }
-    if (formType === "file" && !formFile) { setFormError(t("errContent")); return; }
+    if (!formTitle.trim()) { setFormError(t("lib.errTitle")); return; }
+    if (formType === "link" && !formUrl.trim()) { setFormError(t("lib.errUrl")); return; }
+    if (formType === "file" && !formFile) { setFormError(t("lib.errContent")); return; }
     setSaving(true); setFormError(null);
 
     try {
@@ -295,15 +230,15 @@ export default function ResourcesPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <BookOpen className="text-emerald-500" size={24} /> {t("title")}
+            <BookOpen className="text-emerald-500" size={24} /> {t("lib.title")}
           </h1>
-          <p className="text-slate-500 text-sm mt-1">{t("subtitle")}</p>
+          <p className="text-slate-500 text-sm mt-1">{t("lib.subtitle")}</p>
         </div>
         <button
           onClick={() => { setShowForm(true); setFormError(null); }}
           className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm shrink-0"
         >
-          <Plus size={18} /> {t("add")}
+          <Plus size={18} /> {t("lib.add")}
         </button>
       </div>
 
@@ -315,8 +250,8 @@ export default function ResourcesPage() {
       ) : resources.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">
           <BookOpen className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="font-semibold text-slate-600">{t("empty")}</p>
-          <p className="text-sm text-slate-400 mt-1 max-w-xs mx-auto">{t("emptyHint")}</p>
+          <p className="font-semibold text-slate-600">{t("lib.empty")}</p>
+          <p className="text-sm text-slate-400 mt-1 max-w-xs mx-auto">{t("lib.emptyHint")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -353,17 +288,17 @@ export default function ResourcesPage() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-full transition"
                       >
-                        <ExternalLink size={11} /> {t("openLink")}
+                        <ExternalLink size={11} /> {t("lib.openLink")}
                       </a>
                     )}
                     {r.hasFile && (
                       <span className="inline-flex items-center gap-1 text-xs text-slate-500 bg-slate-50 px-2.5 py-1 rounded-full">
-                        <Paperclip size={11} /> {t("attachment")}
+                        <Paperclip size={11} /> {t("lib.attachment")}
                       </span>
                     )}
                     {r.shareCount > 0 && (
                       <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                        <Users size={11} /> {r.shareCount} {t("sharesCount")}
+                        <Users size={11} /> {r.shareCount} {t("lib.sharesCount")}
                       </span>
                     )}
                   </div>
@@ -378,7 +313,7 @@ export default function ResourcesPage() {
                         ? "bg-emerald-500 text-white border-emerald-500"
                         : "text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-600"}`}
                   >
-                    <Share2 size={13} /> {t("shareWith")}
+                    <Share2 size={13} /> {t("lib.shareWith")}
                   </button>
                   <button
                     onClick={() => {
@@ -391,12 +326,12 @@ export default function ResourcesPage() {
                         ? "bg-blue-500 text-white border-blue-500"
                         : "text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600"}`}
                   >
-                    <Stethoscope size={13} /> {t("shareWithPro")}
+                    <Stethoscope size={13} /> {t("lib.shareWithPro")}
                   </button>
                   <button
                     onClick={() => deleteResource(r.id)}
                     className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition"
-                    title={t("delete")}
+                    title={t("lib.delete")}
                   >
                     <Trash2 size={15} />
                   </button>
@@ -411,16 +346,16 @@ export default function ResourcesPage() {
                     <input
                       value={chartSearch}
                       onChange={(e) => setChartSearch(e.target.value)}
-                      placeholder={t("shareSearch")}
+                      placeholder={t("lib.shareSearch")}
                       className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none"
                     />
                   </div>
                   {chartsLoading ? (
                     <div className="flex items-center gap-2 text-slate-400 text-sm py-2">
-                      <Loader2 size={14} className="animate-spin" /> {t("shareLoading")}
+                      <Loader2 size={14} className="animate-spin" /> {t("lib.shareLoading")}
                     </div>
                   ) : filteredCharts.length === 0 ? (
-                    <p className="text-sm text-slate-400">{t("shareNone")}</p>
+                    <p className="text-sm text-slate-400">{t("lib.shareNone")}</p>
                   ) : (
                     <div className="space-y-1 max-h-48 overflow-y-auto">
                       {filteredCharts.map((c) => {
@@ -431,7 +366,7 @@ export default function ResourcesPage() {
                             <span className="text-sm text-slate-700">{c.firstName} {c.lastName}</span>
                             {status === "ok" ? (
                               <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
-                                <CheckCircle2 size={13} /> {t("shared")}
+                                <CheckCircle2 size={13} /> {t("lib.shared")}
                               </span>
                             ) : status === "error" ? (
                               <span className="inline-flex items-center gap-1 text-xs text-rose-500">
@@ -461,7 +396,7 @@ export default function ResourcesPage() {
               {shareProResId === r.id && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-3">
-                    {t("shareWithPro")}
+                    {t("lib.shareWithPro")}
                   </p>
                   {/* Search professionals with account */}
                   <div className="relative mb-3">
@@ -469,7 +404,7 @@ export default function ResourcesPage() {
                     <input
                       value={proQuery}
                       onChange={(e) => setProQuery(e.target.value)}
-                      placeholder={t("proSearch")}
+                      placeholder={t("lib.proSearch")}
                       className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none"
                     />
                   </div>
@@ -478,7 +413,7 @@ export default function ResourcesPage() {
                       <Loader2 size={14} className="animate-spin" /> Buscando...
                     </div>
                   ) : proQuery.length >= 2 && proResults.length === 0 ? (
-                    <p className="text-sm text-slate-400 mb-2">{t("proNotFound")}</p>
+                    <p className="text-sm text-slate-400 mb-2">{t("lib.proNotFound")}</p>
                   ) : (
                     <div className="space-y-1 max-h-40 overflow-y-auto mb-3">
                       {proResults.map((p) => {
@@ -491,7 +426,7 @@ export default function ResourcesPage() {
                             </div>
                             {status === "ok" ? (
                               <span className="inline-flex items-center gap-1 text-xs text-blue-600">
-                                <CheckCircle2 size={13} /> {t("proNotified")}
+                                <CheckCircle2 size={13} /> {t("lib.proNotified")}
                               </span>
                             ) : status === "error" ? (
                               <span className="inline-flex items-center gap-1 text-xs text-rose-500">
@@ -519,32 +454,32 @@ export default function ResourcesPage() {
                       onClick={() => setShowInviteForm(!showInviteForm)}
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-blue-600 transition"
                     >
-                      <UserPlus size={13} /> {t("proNoAccount")}
+                      <UserPlus size={13} /> {t("lib.proNoAccount")}
                     </button>
                     {showInviteForm && (
                       <div className="mt-3 space-y-2">
                         <input
                           value={inviteName}
                           onChange={(e) => setInviteName(e.target.value)}
-                          placeholder={t("proNameLabel")}
+                          placeholder={t("lib.proNameLabel")}
                           className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
                         />
                         <input
                           value={inviteEmail}
                           onChange={(e) => setInviteEmail(e.target.value)}
-                          placeholder={t("proEmailLabel")}
+                          placeholder={t("lib.proEmailLabel")}
                           type="email"
                           className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
                         />
                         <input
                           value={invitePhone}
                           onChange={(e) => setInvitePhone(e.target.value)}
-                          placeholder={t("proPhoneLabel")}
+                          placeholder={t("lib.proPhoneLabel")}
                           className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
                         />
                         {inviteMsg === "ok" && (
                           <p className="text-xs text-blue-600 flex items-center gap-1">
-                            <CheckCircle2 size={12} /> {t("proInvited")}
+                            <CheckCircle2 size={12} /> {t("lib.proInvited")}
                           </p>
                         )}
                         {inviteMsg?.startsWith("err:") && (
@@ -556,7 +491,7 @@ export default function ResourcesPage() {
                           className="w-full py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
                         >
                           {inviteSending ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-                          {t("proInvite")}
+                          {t("lib.proInvite")}
                         </button>
                       </div>
                     )}
@@ -573,7 +508,7 @@ export default function ResourcesPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
-              <h2 className="font-bold text-slate-800">{t("modalTitle")}</h2>
+              <h2 className="font-bold text-slate-800">{t("lib.modalTitle")}</h2>
               <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
@@ -581,22 +516,22 @@ export default function ResourcesPage() {
             <div className="p-5 space-y-4">
               {/* Title */}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">{t("titleLabel")}</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("lib.titleLabel")}</label>
                 <input
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder={t("titlePlaceholder")}
+                  placeholder={t("lib.titlePlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">{t("descLabel")}</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("lib.descLabel")}</label>
                 <textarea
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
-                  placeholder={t("descPlaceholder")}
+                  placeholder={t("lib.descPlaceholder")}
                   rows={3}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm resize-none"
                 />
@@ -609,24 +544,24 @@ export default function ResourcesPage() {
                     onClick={() => setFormType("link")}
                     className={`flex-1 py-2 flex items-center justify-center gap-1.5 transition ${formType === "link" ? "bg-emerald-500 text-white" : "text-slate-600 hover:bg-slate-50"}`}
                   >
-                    <Link2 size={14} /> {t("typeLink")}
+                    <Link2 size={14} /> {t("lib.typeLink")}
                   </button>
                   <button
                     onClick={() => setFormType("file")}
                     className={`flex-1 py-2 flex items-center justify-center gap-1.5 transition ${formType === "file" ? "bg-emerald-500 text-white" : "text-slate-600 hover:bg-slate-50"}`}
                   >
-                    <Paperclip size={14} /> {t("typeFile")}
+                    <Paperclip size={14} /> {t("lib.typeFile")}
                   </button>
                 </div>
               </div>
 
               {formType === "link" ? (
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("urlLabel")}</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("lib.urlLabel")}</label>
                   <input
                     value={formUrl}
                     onChange={(e) => setFormUrl(e.target.value)}
-                    placeholder={t("urlPlaceholder")}
+                    placeholder={t("lib.urlPlaceholder")}
                     type="url"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
                   />
@@ -634,7 +569,7 @@ export default function ResourcesPage() {
               ) : (
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">
-                    {t("fileLabel")} <span className="text-slate-400 font-normal">{t("fileHint")}</span>
+                    {t("lib.fileLabel")} <span className="text-slate-400 font-normal">{t("lib.fileHint")}</span>
                   </label>
                   <input
                     type="file"
@@ -657,14 +592,14 @@ export default function ResourcesPage() {
                   onClick={() => setShowForm(false)}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
                 >
-                  {t("cancel")}
+                  {t("lib.cancel")}
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={saving}
                   className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50"
                 >
-                  {saving ? t("saving") : t("save")}
+                  {saving ? t("lib.saving") : t("lib.save")}
                 </button>
               </div>
             </div>
