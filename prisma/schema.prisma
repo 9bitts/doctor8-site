@@ -84,6 +84,25 @@ enum AuditAction {
   DATA_DELETION_REQUEST
 }
 
+enum JitMode {
+  QUEUE      // paciente entra na fila, sistema distribui automaticamente
+  SHOWCASE   // paciente escolhe o profissional disponível
+}
+
+enum JitSessionStatus {
+  ONLINE
+  PAUSED
+  OFFLINE
+}
+
+enum JitQueueStatus {
+  WAITING      // na fila, aguardando
+  CALLED       // foi chamado, tem 2 min para entrar
+  IN_PROGRESS  // em consulta
+  DONE         // consulta concluída
+  CANCELLED    // não respondeu no prazo ou desistiu
+  NO_SHOW      // foi chamado e não entrou (2 min esgotados)
+}
 // ─────────────────────────────────────────
 // CORE USER
 // ─────────────────────────────────────────
@@ -96,6 +115,7 @@ model User {
   role            UserRole
   region          UserRegion @default(US)
   language        String     @default("en")
+  jitQueueEntries   JitQueue[]  @relation("JitQueuePatient")
 
   // Soft delete — GDPR right to erasure
   // After 30 days we hard-delete PHI, keep anonymized stats
@@ -276,6 +296,8 @@ model ProfessionalProfile {
   patientRecords      PatientRecord[]
   sharedDocuments  SharedRecord[]  @relation("DocsSharedWithProfessional")
   resources      Resource[]
+
+  jitSessions       JitSession[]
 
   @@index([userId])
   @@index([specialty])
@@ -728,4 +750,111 @@ model ResourceShare {
   sharedAt        DateTime      @default(now())
 
   @@unique([resourceId, patientRecordId])
+}
+
+// ─────────────────────────────────────────
+// JUST-IN-TIME — Plantão Online
+// ─────────────────────────────────────────
+
+model JitSession {
+  id              String              @id @default(cuid())
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  mode            JitMode             @default(QUEUE)
+  status          JitSessionStatus    @default(OFFLINE)
+  specialty       String              // e.g. "Medicina Geral", "Psicologia"
+
+  // Pricing — 0 = gratuito
+  priceAmount     Int                 @default(0)  // in cents
+  currency        String              @default("BRL")
+  isFree          Boolean             @default(true)
+
+  // Queue settings
+  maxQueueSize            Int         @default(50)
+  estimatedMinutesPerPatient Int      @default(20)
+  noShowTimeoutSeconds    Int         @default(120) // 2 minutes
+
+  // Event link (optional — for emergency events like RS floods)
+  jitEventId      String?
+  jitEvent        JitEvent?           @relation(fields: [jitEventId], references: [id])
+
+  queue           JitQueue[]
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([professionalId])
+  @@index([status])
+  @@index([specialty])
+}
+
+model JitQueue {
+  id              String          @id @default(cuid())
+  sessionId       String
+  session         JitSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Patient — must have account (login required)
+  patientUserId   String
+  patientUser     User            @relation("JitQueuePatient", fields: [patientUserId], references: [id])
+
+  status          JitQueueStatus  @default(WAITING)
+  position        Int             // position in queue (recalculated on each change)
+  specialty       String          // what the patient needs
+
+  // Timestamps
+  enteredAt       DateTime        @default(now())
+  calledAt        DateTime?       // when professional clicked "call next"
+  expiresAt       DateTime?       // calledAt + noShowTimeoutSeconds
+  startedAt       DateTime?       // when patient clicked "enter"
+  endedAt         DateTime?       // when session ended
+
+  // Video room
+  meetingUrl      String?         // Daily.co room URL
+  meetingRoomId   String?
+
+  // Payment
+  paymentId       String?         @unique
+  payment         JitPayment?     @relation(fields: [paymentId], references: [id])
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([sessionId])
+  @@index([patientUserId])
+  @@index([status])
+}
+
+model JitPayment {
+  id                String    @id @default(cuid())
+  amount            Int       // in cents
+  currency          String    @default("BRL")
+  stripePaymentId   String?   @unique
+  paidAt            DateTime?
+  status            String    @default("pending") // pending | paid | refunded | failed
+
+  queueEntry        JitQueue?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model JitEvent {
+  id          String    @id @default(cuid())
+  name        String    // e.g. "Ação RS — Enchentes 2024"
+  description String?
+  startAt     DateTime
+  endAt       DateTime?
+
+  // Force all sessions in this event to be free
+  forceFree   Boolean   @default(true)
+
+  // Which specialties are part of this event
+  specialties String[]  @default([])
+
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sessions    JitSession[]
 }
