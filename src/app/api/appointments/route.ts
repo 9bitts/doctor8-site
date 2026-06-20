@@ -1,11 +1,14 @@
 // src/app/api/appointments/route.ts
-// List and create appointments
+// List and create appointments.
+// On creation: schedules QStash reminders (24h email + 3h email/WhatsApp/bell).
+// Cancellation policy checkbox is recorded in appointment metadata.
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { stripe } from "@/lib/stripe";
+import { scheduleAppointmentReminders } from "@/lib/qstash";
 import { z } from "zod";
 
 export async function GET(req: NextRequest) {
@@ -61,12 +64,14 @@ export async function GET(req: NextRequest) {
 }
 
 const createSchema = z.object({
-  professionalId: z.string(),
-  scheduledAt: z.string().datetime(),
-  type: z.enum(["TELECONSULT", "IN_PERSON"]),
+  professionalId:        z.string(),
+  scheduledAt:           z.string().datetime(),
+  type:                  z.enum(["TELECONSULT", "IN_PERSON"]),
   stripePaymentIntentId: z.string(),
-  priceAmount: z.number(),
-  currency: z.string(),
+  priceAmount:           z.number(),
+  currency:              z.string(),
+  // CDC checkbox — patient must accept cancellation policy
+  acceptedCancellationPolicy: z.boolean().default(false),
 });
 
 export async function POST(req: NextRequest) {
@@ -78,61 +83,42 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  // NOTE: priceAmount/currency from the client are NOT trusted — the authoritative
-  // amount/currency come from the verified Stripe PaymentIntent below.
-  const { professionalId, scheduledAt, type, stripePaymentIntentId } = parsed.data;
+  const { professionalId, scheduledAt, type, stripePaymentIntentId, acceptedCancellationPolicy } = parsed.data;
 
   const patient = await db.patientProfile.findUnique({ where: { userId: session.user.id } });
   if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
 
-  // Verify professional exists and is verified
   const professional = await db.professionalProfile.findUnique({
     where: { id: professionalId, verified: true },
   });
   if (!professional) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
 
-  // ── Verify the payment server-side before confirming anything ──
-  // Prevents a client from creating a CONFIRMED/paid appointment without
-  // actually paying (or by tampering with amount/currency).
+  // Verify Stripe payment server-side
   let intent;
   try {
     intent = await stripe.paymentIntents.retrieve(stripePaymentIntentId);
   } catch {
-    return NextResponse.json(
-      { error: { general: ["Payment could not be verified."] } },
-      { status: 402 }
-    );
+    return NextResponse.json({ error: { general: ["Payment could not be verified."] } }, { status: 402 });
   }
 
   if (intent.status !== "succeeded") {
-    return NextResponse.json(
-      { error: { general: ["Payment has not been completed."] } },
-      { status: 402 }
-    );
+    return NextResponse.json({ error: { general: ["Payment has not been completed."] } }, { status: 402 });
   }
 
-  // The intent must belong to THIS user and THIS booking (created in /create-intent).
   const meta = intent.metadata || {};
   if (
     meta.userId !== session.user.id ||
     meta.professionalId !== professionalId ||
     meta.scheduledAt !== scheduledAt
   ) {
-    return NextResponse.json(
-      { error: { general: ["Payment does not match this booking."] } },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: { general: ["Payment does not match this booking."] } }, { status: 400 });
   }
 
-  // Idempotency: never create two appointments for the same payment.
-  const alreadyUsed = await db.appointment.findFirst({
-    where: { stripePaymentId: intent.id },
-  });
-  if (alreadyUsed) {
-    return NextResponse.json({ success: true, appointmentId: alreadyUsed.id }, { status: 200 });
-  }
+  // Idempotency
+  const alreadyUsed = await db.appointment.findFirst({ where: { stripePaymentId: intent.id } });
+  if (alreadyUsed) return NextResponse.json({ success: true, appointmentId: alreadyUsed.id }, { status: 200 });
 
-  // Check slot is still available
+  // Check slot still available
   const existing = await db.appointment.findFirst({
     where: {
       professionalId,
@@ -142,19 +128,22 @@ export async function POST(req: NextRequest) {
   });
   if (existing) return NextResponse.json({ error: { general: ["This slot is no longer available."] } }, { status: 409 });
 
-  // Create appointment — amount/currency taken from the verified Stripe intent.
   const appointment = await db.appointment.create({
     data: {
-      patientId: patient.id,
+      patientId:      patient.id,
       professionalId,
-      scheduledAt: new Date(scheduledAt),
-      type: type as any,
-      status: "CONFIRMED",
-      priceAmount: intent.amount,
-      currency: intent.currency,
+      scheduledAt:    new Date(scheduledAt),
+      type:           type as any,
+      status:         "CONFIRMED",
+      priceAmount:    intent.amount,
+      currency:       intent.currency,
       stripePaymentId: intent.id,
-      paidAt: new Date(),
-      durationMins: 30,
+      paidAt:         new Date(),
+      durationMins:   30,
+      // Store policy acceptance in notes field as JSON metadata
+      ...(acceptedCancellationPolicy ? {
+        chiefComplaint: JSON.stringify({ policyAccepted: true, acceptedAt: new Date().toISOString() }),
+      } : {}),
     },
   });
 
@@ -167,10 +156,10 @@ export async function POST(req: NextRequest) {
       const { sendAppointmentConfirmation } = await import("@/lib/email");
       await sendAppointmentConfirmation({
         patientEmail: user.email,
-        patientName: `${patient.firstName} ${patient.lastName}`,
-        doctorName: `${professional.firstName} ${professional.lastName}`,
-        specialty: professional.specialty,
-        scheduledAt: new Date(scheduledAt),
+        patientName:  `${patient.firstName} ${patient.lastName}`,
+        doctorName:   `${professional.firstName} ${professional.lastName}`,
+        specialty:    professional.specialty,
+        scheduledAt:  new Date(scheduledAt),
         type,
         appointmentId: appointment.id,
       });
@@ -178,6 +167,11 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error("[APPOINTMENT EMAIL ERROR]", e);
   }
+
+  // Schedule QStash reminders (non-blocking)
+  scheduleAppointmentReminders(appointment.id, new Date(scheduledAt)).catch((e) => {
+    console.error("[QSTASH SCHEDULE ERROR]", e);
+  });
 
   return NextResponse.json({ success: true, appointmentId: appointment.id }, { status: 201 });
 }

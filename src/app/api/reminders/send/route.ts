@@ -1,0 +1,156 @@
+// src/app/api/reminders/send/route.ts
+// Called by QStash at the scheduled time to send appointment reminders.
+// Handles: 24h email, 3h email, 3h WhatsApp link, bell notification.
+// QStash calls this endpoint with a delay — we verify the appointment
+// is still active before sending anything.
+
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { decrypt } from "@/lib/encryption";
+import { createNotification } from "@/lib/notifications";
+import { verifyQStashSignature } from "@/lib/qstash";
+import { z } from "zod";
+
+const schema = z.object({
+  appointmentId: z.string(),
+  type: z.enum(["24h_email", "3h_email", "3h_whatsapp", "bell"]),
+});
+
+function safeDecrypt(v: string | null): string {
+  if (!v) return "";
+  try { return decrypt(v); } catch { return v; }
+}
+
+function buildWhatsAppMessage(
+  patientName: string,
+  doctorName: string,
+  scheduledAt: Date,
+  meetingUrl: string | null
+): string {
+  const time = scheduledAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const date = scheduledAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  let msg = `🏥 *Doctor8 — Lembrete de consulta*\n\nOlá ${patientName}! Sua consulta com *Dr. ${doctorName}* é hoje às *${time}* (${date}).`;
+  if (meetingUrl) msg += `\n\n🎥 Acesse aqui: ${meetingUrl}`;
+  msg += `\n\n_Se precisar cancelar, acesse app.doctor8.org_`;
+  return msg;
+}
+
+export async function POST(req: NextRequest) {
+  // Verify request came from QStash
+  const isValid = await verifyQStashSignature(req);
+  if (!isValid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json().catch(() => ({}));
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+
+  const { appointmentId, type } = parsed.data;
+
+  // Load appointment with all needed relations
+  const appointment = await db.appointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      patient: {
+        select: {
+          firstName: true,
+          lastName: true,
+          phone: true,
+        },
+      },
+      professional: {
+        select: {
+          firstName: true,
+          lastName: true,
+          specialty: true,
+        },
+      },
+    },
+  });
+
+  // Skip if cancelled or completed
+  if (!appointment || !["CONFIRMED", "PENDING"].includes(appointment.status)) {
+    return NextResponse.json({ skipped: true, reason: "Appointment not active" });
+  }
+
+  const patientUser = await db.user.findFirst({
+    where: { patientProfile: { id: appointment.patientId } },
+    select: { id: true, email: true },
+  });
+
+  if (!patientUser) return NextResponse.json({ skipped: true, reason: "Patient user not found" });
+
+  const patientName = `${safeDecrypt(appointment.patient.firstName)} ${safeDecrypt(appointment.patient.lastName)}`.trim();
+  const doctorName = `${appointment.professional.firstName} ${appointment.professional.lastName}`;
+  const scheduledAt = new Date(appointment.scheduledAt);
+  const hoursUntil = Math.round((scheduledAt.getTime() - Date.now()) / 3600000);
+
+  // ── 24h EMAIL ──────────────────────────────────────────────────────────────
+  if (type === "24h_email") {
+    try {
+      const { sendAppointmentReminder } = await import("@/lib/email");
+      await sendAppointmentReminder({
+        patientEmail: patientUser.email,
+        patientName,
+        doctorName,
+        scheduledAt,
+        meetingUrl: appointment.meetingUrl ?? undefined,
+        hoursUntil: 24,
+      });
+      console.log(`[REMINDER] 24h email sent to ${patientUser.email}`);
+    } catch (e) {
+      console.error("[REMINDER] 24h email failed:", e);
+    }
+  }
+
+  // ── 3h EMAIL ───────────────────────────────────────────────────────────────
+  if (type === "3h_email") {
+    try {
+      const { sendAppointmentReminder } = await import("@/lib/email");
+      await sendAppointmentReminder({
+        patientEmail: patientUser.email,
+        patientName,
+        doctorName,
+        scheduledAt,
+        meetingUrl: appointment.meetingUrl ?? undefined,
+        hoursUntil: 3,
+      });
+      console.log(`[REMINDER] 3h email sent to ${patientUser.email}`);
+    } catch (e) {
+      console.error("[REMINDER] 3h email failed:", e);
+    }
+  }
+
+  // ── 3h WHATSAPP ────────────────────────────────────────────────────────────
+  if (type === "3h_whatsapp") {
+    const rawPhone = appointment.patient.phone ? safeDecrypt(appointment.patient.phone) : null;
+    if (rawPhone) {
+      const phone = rawPhone.replace(/\D/g, "");
+      const message = buildWhatsAppMessage(patientName, doctorName, scheduledAt, appointment.meetingUrl);
+      const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
+      // We store the WhatsApp URL in a notification so the team/system can trigger it
+      // In production, integrate with WhatsApp Business API (Twilio, Z-API, etc.)
+      await createNotification({
+        userId: patientUser.id,
+        title: "Lembrete de consulta",
+        body: `Sua consulta com Dr. ${doctorName} é em 3 horas.`,
+        type: "appointment_reminder",
+        data: { appointmentId, whatsappUrl: waUrl, phone },
+      }).catch(() => {});
+      console.log(`[REMINDER] 3h WhatsApp notification created for ${phone}`);
+    }
+  }
+
+  // ── BELL NOTIFICATION ──────────────────────────────────────────────────────
+  if (type === "bell") {
+    await createNotification({
+      userId: patientUser.id,
+      title: `Consulta em ${hoursUntil}h`,
+      body: `Lembrete: sua consulta com Dr. ${doctorName} é ${hoursUntil >= 24 ? "amanhã" : "em breve"}.`,
+      type: "appointment_reminder",
+      data: { appointmentId, meetingUrl: appointment.meetingUrl },
+    }).catch(() => {});
+    console.log(`[REMINDER] Bell notification sent to user ${patientUser.id}`);
+  }
+
+  return NextResponse.json({ success: true, type, appointmentId });
+}

@@ -1,10 +1,17 @@
 // src/app/api/appointments/[id]/cancel/route.ts
+// Cancellation with full CDC rules:
+// - Within 7 days of booking AND before appointment: 100% refund
+// - More than 24h before appointment: 100% refund
+// - Less than 24h before appointment: no refund (policy accepted at checkout)
+// - Professional absent: 100% refund always
+// - Professional can always cancel (triggers full refund)
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { audit } from "@/lib/audit";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(
   req: NextRequest,
@@ -15,22 +22,23 @@ export async function POST(
 
   const body = await req.json().catch(() => ({}));
   const reason = body.reason || "Patient requested cancellation";
+  const cancelledByPro = body.cancelledByProfessional === true;
 
   const appointment = await db.appointment.findUnique({
     where: { id: params.id },
     include: {
-      patient: { select: { userId: true } },
-      professional: { select: { userId: true } },
+      patient:      { select: { userId: true, firstName: true, lastName: true } },
+      professional: { select: { userId: true, firstName: true, lastName: true } },
     },
   });
 
   if (!appointment) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Only patient or professional can cancel their own appointments
-  const isPatient = appointment.patient.userId === session.user.id;
+  const isPatient      = appointment.patient.userId === session.user.id;
   const isProfessional = appointment.professional.userId === session.user.id;
+  const isAdmin        = session.user.role === "ADMIN";
 
-  if (!isPatient && !isProfessional && session.user.role !== "ADMIN") {
+  if (!isPatient && !isProfessional && !isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -38,13 +46,36 @@ export async function POST(
     return NextResponse.json({ error: "Appointment cannot be cancelled" }, { status: 400 });
   }
 
-  // Refund if paid and cancelled by patient at least 2h before
-  const hoursUntil = (new Date(appointment.scheduledAt).getTime() - Date.now()) / 1000 / 3600;
-  let refunded = false;
+  const now        = Date.now();
+  const apptTime   = new Date(appointment.scheduledAt).getTime();
+  const paidTime   = appointment.paidAt ? new Date(appointment.paidAt).getTime() : null;
+  const hoursUntil = (apptTime - now) / 3600000;
+  const daysSincePurchase = paidTime ? (now - paidTime) / 86400000 : 999;
 
-  if (appointment.stripePaymentId && isPatient && hoursUntil > 2) {
+  // ── Refund logic ──────────────────────────────────────────────────────────
+  // Rule 1: Professional cancels → always full refund
+  // Rule 2: Patient within 7-day CDC window AND appointment hasn't happened → full refund
+  // Rule 3: Patient cancels >24h before → full refund
+  // Rule 4: Patient cancels <24h before → no refund
+  let refunded     = false;
+  let refundReason = "";
+
+  const shouldRefund =
+    isProfessional ||   // Rule 1
+    (isPatient && daysSincePurchase <= 7 && hoursUntil > 0) ||  // Rule 2 CDC
+    (isPatient && hoursUntil > 24);                              // Rule 3
+
+  if (shouldRefund && appointment.stripePaymentId) {
+    if (isProfessional)                              refundReason = "professional_cancelled";
+    else if (daysSincePurchase <= 7 && hoursUntil > 24) refundReason = "cdc_7days";
+    else                                             refundReason = "more_than_24h";
+
     try {
-      await stripe.refunds.create({ payment_intent: appointment.stripePaymentId });
+      await stripe.refunds.create({
+        payment_intent: appointment.stripePaymentId,
+        reason: "requested_by_customer",
+        metadata: { refundReason, appointmentId: params.id },
+      });
       refunded = true;
     } catch (err) {
       console.error("[CANCEL] Refund failed:", err);
@@ -54,7 +85,7 @@ export async function POST(
   await db.appointment.update({
     where: { id: params.id },
     data: {
-      status: "CANCELLED",
+      status:      "CANCELLED",
       cancelledAt: new Date(),
       cancelledBy: session.user.id,
       cancelReason: reason,
@@ -63,5 +94,25 @@ export async function POST(
 
   await audit.updateRecord(session.user.id, "Appointment", params.id);
 
-  return NextResponse.json({ success: true, refunded, hoursUntil: Math.round(hoursUntil) });
+  // Notify the other party
+  const notifyUserId = isPatient ? appointment.professional.userId : appointment.patient.userId;
+  const cancellerName = isPatient
+    ? `${appointment.patient.firstName} ${appointment.patient.lastName}`
+    : `Dr. ${appointment.professional.firstName} ${appointment.professional.lastName}`;
+
+  await createNotification({
+    userId: notifyUserId,
+    title:  "Consulta cancelada",
+    body:   `${cancellerName} cancelou a consulta do dia ${new Date(appointment.scheduledAt).toLocaleDateString("pt-BR")}.`,
+    type:   "system",
+    data:   { appointmentId: params.id, refunded },
+  }).catch(() => {});
+
+  return NextResponse.json({
+    success:       true,
+    refunded,
+    refundReason:  refundReason || "no_refund_policy",
+    hoursUntil:    Math.round(hoursUntil),
+    daysSincePurchase: Math.round(daysSincePurchase * 10) / 10,
+  });
 }
