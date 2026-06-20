@@ -4,6 +4,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { decrypt } from "@/lib/encryption";
+
+// Patient name fields are stored encrypted (PHI). Decrypt for display,
+// falling back to the raw value if it isn't encrypted.
+function safeDecrypt(v: string | null): string {
+  if (!v) return "";
+  try { return decrypt(v); } catch { return v; }
+}
 
 export async function GET(
   req: NextRequest,
@@ -43,7 +51,7 @@ export async function GET(
   return NextResponse.json({
     title: shared.document.title,
     type: shared.document.type,
-    patientName: `${shared.patient.firstName} ${shared.patient.lastName}`,
+    patientName: `${safeDecrypt(shared.patient.firstName)} ${safeDecrypt(shared.patient.lastName)}`.trim(),
     createdAt: shared.document.createdAt,
     expiresAt: shared.expiresAt,
     content,
