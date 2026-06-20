@@ -50,7 +50,7 @@ export default async function PatientChartDetail({
     hasAccount: !!record.linkedUserId,
     linkedUserId: record.linkedUserId || null,
     // P1-b registration data
-    dateOfBirth: record.dateOfBirth ? record.dateOfBirth.toISOString().slice(0, 10) : "",
+    dateOfBirth: record.dateOfBirth ? safeDecrypt(record.dateOfBirth) : "",
     sex: record.sex || "",
     cpf: record.cpf ? safeDecrypt(record.cpf) : "",
     addressLine1: record.addressLine1 ? safeDecrypt(record.addressLine1) : "",

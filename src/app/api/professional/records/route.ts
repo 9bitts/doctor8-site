@@ -130,8 +130,8 @@ export async function POST(req: NextRequest) {
       lastName:       encrypt(d.lastName),
       email:          d.email ? d.email.toLowerCase() : null,
       phone:          d.phone ? encrypt(d.phone) : null,
-      // dateOfBirth: store as encrypted ISO string
-      dateOfBirth:    d.dateOfBirth ? encrypt(d.dateOfBirth) as unknown as Date : null,
+      // dateOfBirth: store as encrypted ISO string (YYYY-MM-DD)
+      dateOfBirth:    d.dateOfBirth ? encrypt(d.dateOfBirth) : null,
       notes:          d.notes ? encrypt(d.notes) : null,
       sex:            d.sex || null,
       cpf:            d.cpf ? encrypt(d.cpf) : null,

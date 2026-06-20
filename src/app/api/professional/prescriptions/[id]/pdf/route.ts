@@ -224,7 +224,7 @@ export async function GET(
   if (rec) {
     patientFirstName = safeDecrypt(rec.firstName);
     patientLastName = safeDecrypt(rec.lastName);
-    patientDob = rec.dateOfBirth ?? null;
+    patientDob = rec.dateOfBirth ? new Date(safeDecrypt(rec.dateOfBirth)) : null;
     patientAddrLine = safeDecrypt(rec.addressLine1);
     patientCity = rec.city || "";
     patientState = rec.state || "";
@@ -234,7 +234,7 @@ export async function GET(
   } else if (acc) {
     patientFirstName = safeDecrypt(acc.firstName);
     patientLastName = safeDecrypt(acc.lastName);
-    patientDob = acc.dateOfBirth ?? null;
+    patientDob = acc.dateOfBirth ? new Date(safeDecrypt(acc.dateOfBirth)) : null;
     patientAddrLine = safeDecrypt(acc.addressLine1);
     patientCity = acc.city || "";
     patientState = acc.state || "";

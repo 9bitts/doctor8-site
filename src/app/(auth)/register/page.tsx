@@ -20,7 +20,6 @@ import {
 type Role = "PATIENT" | "PROFESSIONAL";
 type Region = "US" | "EU" | "BR";
 
-// Same localStorage key used by the dashboard I18nProvider, so the choice carries over.
 const LANG_KEY = "doctor8.lang";
 
 function detectInitialLang(): Lang {
@@ -29,7 +28,6 @@ function detectInitialLang(): Lang {
     const saved = window.localStorage.getItem(LANG_KEY);
     if (saved) return normalizeLang(saved);
   } catch { /* ignore */ }
-  // Detect from browser
   const nav = (navigator.language || "en").toLowerCase();
   if (nav.startsWith("pt")) return "pt";
   if (nav.startsWith("es")) return "es";
@@ -39,7 +37,6 @@ function detectInitialLang(): Lang {
 export default function RegisterPage() {
   const router = useRouter();
 
-  // Standalone language state (this screen is outside the dashboard provider)
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => { setLang(detectInitialLang()); }, []);
   const t = (key: string) => translate(lang, key);
@@ -69,10 +66,10 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string[]>>({});
 
   const PASSWORD_RULES = [
-    { key: "reg.rule8", test: (p: string) => p.length >= 8 },
-    { key: "reg.ruleUpper", test: (p: string) => /[A-Z]/.test(p) },
+    { key: "reg.rule8",      test: (p: string) => p.length >= 8 },
+    { key: "reg.ruleUpper",  test: (p: string) => /[A-Z]/.test(p) },
     { key: "reg.ruleNumber", test: (p: string) => /[0-9]/.test(p) },
-    { key: "reg.ruleSpecial", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+    { key: "reg.ruleSpecial",test: (p: string) => /[^A-Za-z0-9]/.test(p) },
   ];
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
@@ -163,13 +160,17 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Logo */}
+        {/* Logo — "Já tem uma conta?" fica aqui, no lugar do subtítulo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black text-white tracking-tight">
             Doctor<span className="text-emerald-400">8</span>
           </h1>
+          {/* Link de login substituindo o subtítulo "Crie sua conta" */}
           <p className="text-slate-400 mt-2 text-sm">
-            {step === 1 ? t("reg.tagline.create") : isProfessional ? t("reg.tagline.pro") : t("reg.tagline.patient")}
+            {t("reg.haveAccount")}{" "}
+            <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition">
+              {t("reg.signIn")}
+            </Link>
           </p>
         </div>
 
@@ -207,15 +208,7 @@ export default function RegisterPage() {
                 </div>
               </button>
             </div>
-
-            <div className="border-t border-white/10 mt-6 pt-6 text-center">
-              <p className="text-slate-400 text-sm">
-                {t("reg.haveAccount")}{" "}
-                <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition">
-                  {t("reg.signIn")}
-                </Link>
-              </p>
-            </div>
+            {/* Removido o bloco "Já tem uma conta?" daqui — foi para o topo */}
           </div>
         )}
 
@@ -363,7 +356,6 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* Professional note */}
               {isProfessional && (
                 <p className="text-xs text-slate-400 bg-white/5 border border-white/10 rounded-xl p-3">
                   {t("reg.proNote")}
@@ -409,15 +401,6 @@ export default function RegisterPage() {
                 {loading ? t("reg.creating") : t("reg.createAccount")}
               </button>
             </form>
-
-            <div className="border-t border-white/10 mt-6 pt-6 text-center">
-              <p className="text-slate-400 text-sm">
-                {t("reg.haveAccount")}{" "}
-                <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition">
-                  {t("reg.signIn")}
-                </Link>
-              </p>
-            </div>
           </div>
         )}
       </div>
