@@ -1,16 +1,8 @@
 "use client";
 
 // src/app/(dashboard)/professional/prescriptions/page.tsx
-// ETAPA 2 — Memed-style prescription screen.
-// - Patient: searched among the professional's charts (PatientRecord). If not found,
-//   the UI tells the doctor to create the chart first.
-// - Medication: searched in the DrugCatalog (Etapa 1 API). Click to add as a card.
-//   Each card has editable dosage / frequency / duration / instructions.
-// - Saving uses the prescription API with patientRecordId (works with/without account).
-// P1-c: when a patient is selected, if the chart is missing required-for-CFM data
-//   (name, address, date of birth), a non-blocking warning appears with a link to
-//   the chart to complete it. Does NOT block issuing the prescription.
-// i18n via useI18n().
+// ETAPA 2 — Memed-style prescription screen + Assinatura Digital BirdID/VIDaaS.
+// Adicionado: botão "Assinar digitalmente" em cada receita + modal de OTP.
 
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -18,229 +10,341 @@ import { localeOf } from "@/lib/i18n/translations";
 import {
   Plus, Trash2, FileText, Download, Loader2, X, CheckCircle2, Search,
   User, Pill, AlertCircle, ChevronRight, AlertTriangle,
+  PenLine, Smartphone, Lock, ExternalLink,
 } from "lucide-react";
 
-// ── Controlled-substance helper (Portaria 344/98) ──
-// Maps the prescriptionType code (A1, A2, A3, B1, B2, C1...) saved in the catalog
-// to the tarja color, a short label (the tag) and the receipt type the doctor must
-// use. Texts are inlined (PT) so no i18n keys need to be added. Pure display.
+// ── Controlled-substance helper ──────────────────────────────────────────────
 function controlInfo(type: string | null | undefined): {
-  tarja: "preta" | "vermelha";
-  label: string;
-  receita: string;
+  tarja: "preta" | "vermelha"; label: string; receita: string;
 } | null {
   if (!type) return null;
   const code = type.toUpperCase();
-  const A = "Exige Notificação de Receita A (amarela)";
-  const B = "Exige Notificação de Receita B (azul)";
-  const C = "Exige Receita de Controle Especial (2 vias)";
+  const A    = "Exige Notificação de Receita A (amarela)";
+  const B    = "Exige Notificação de Receita B (azul)";
+  const C    = "Exige Receita de Controle Especial (2 vias)";
   const CESP = "Exige Notificação de Receita Especial";
   const map: Record<string, { tarja: "preta" | "vermelha"; label: string; receita: string }> = {
-    A1: { tarja: "preta", label: "A1 — Receita A", receita: A },
-    A2: { tarja: "preta", label: "A2 — Receita A", receita: A },
-    A3: { tarja: "preta", label: "A3 — Receita A", receita: A },
-    B1: { tarja: "preta", label: "B1 — Receita B", receita: B },
-    B2: { tarja: "preta", label: "B2 — Receita B", receita: B },
-    C1: { tarja: "vermelha", label: "C1 — Controle especial", receita: C },
-    C2: { tarja: "vermelha", label: "C2 — Retinoide", receita: CESP },
-    C3: { tarja: "vermelha", label: "C3 — Talidomida", receita: CESP },
-    C4: { tarja: "vermelha", label: "C4 — Antirretroviral", receita: C },
-    C5: { tarja: "vermelha", label: "C5 — Anabolizante", receita: C },
+    A1: { tarja: "preta",    label: "A1 — Receita A",          receita: A },
+    A2: { tarja: "preta",    label: "A2 — Receita A",          receita: A },
+    A3: { tarja: "preta",    label: "A3 — Receita A",          receita: A },
+    B1: { tarja: "preta",    label: "B1 — Receita B",          receita: B },
+    B2: { tarja: "preta",    label: "B2 — Receita B",          receita: B },
+    C1: { tarja: "vermelha", label: "C1 — Controle especial",  receita: C },
+    C2: { tarja: "vermelha", label: "C2 — Retinoide",          receita: CESP },
+    C3: { tarja: "vermelha", label: "C3 — Talidomida",         receita: CESP },
+    C4: { tarja: "vermelha", label: "C4 — Antirretroviral",    receita: C },
+    C5: { tarja: "vermelha", label: "C5 — Anabolizante",       receita: C },
   };
   return map[code] || { tarja: "vermelha", label: "Controlado", receita: C };
 }
 
-// ── P1-c: human-readable label for a missing-data code (inline PT) ──
 function missingLabel(code: string): string {
-  const map: Record<string, string> = {
-    name: "nome completo",
-    address: "endereço",
-    dob: "data de nascimento",
-  };
-  return map[code] || code;
+  return ({ name: "nome completo", address: "endereço", dob: "data de nascimento" } as any)[code] || code;
 }
 
-// ── Types ──
+// ── Types ────────────────────────────────────────────────────────────────────
 interface Chart {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string | null;
-  hasAccount: boolean;
-  missingForRx?: string[];
+  id: string; firstName: string; lastName: string;
+  email: string | null; hasAccount: boolean; missingForRx?: string[];
 }
-
 interface Drug {
-  id: string;
-  name: string;
-  activeIngredient: string;
-  presentation: string;
-  manufacturer: string | null;
-  country: string;
-  category: string | null;
-  controlled: boolean;
-  prescriptionType: string | null;
+  id: string; name: string; activeIngredient: string; presentation: string;
+  manufacturer: string | null; country: string; category: string | null;
+  controlled: boolean; prescriptionType: string | null;
 }
-
 interface MedItem {
-  name: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  instructions: string;
-  // extra display-only info (not sent as clinical fields)
-  presentation?: string;
-  controlled?: boolean;
-  prescriptionType?: string | null;
+  name: string; dosage: string; frequency: string; duration: string; instructions: string;
+  presentation?: string; controlled?: boolean; prescriptionType?: string | null;
 }
-
 interface Prescription {
-  id: string;
-  createdAt: string;
-  validUntil?: string;
+  id: string; createdAt: string; validUntil?: string;
+  digitalSignature?: string | null;
   document?: { patient?: { firstName: string; lastName: string } | null };
   medications: MedItem[];
 }
 
+// ── Sign Modal ───────────────────────────────────────────────────────────────
+function SignModal({
+  prescription,
+  signConfig,
+  onClose,
+  onSigned,
+}: {
+  prescription: Prescription;
+  signConfig: { configured: boolean; provider: string; cpfMasked: string } | null;
+  onClose: () => void;
+  onSigned: (id: string) => void;
+}) {
+  const [otp,     setOtp]     = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
+  const [success, setSuccess] = useState(false);
+  const [signedUrl, setSignedUrl] = useState("");
+
+  const provider = signConfig?.provider || "BirdID";
+
+  async function handleSign() {
+    if (otp.trim().length < 4) { setError("Digite o código OTP do app."); return; }
+    setLoading(true); setError("");
+    try {
+      const res  = await fetch("/api/professional/prescriptions/sign", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ prescriptionId: prescription.id, otp: otp.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Erro ao assinar."); setLoading(false); return; }
+      setSuccess(true);
+      setSignedUrl(data.signedUrl || "");
+      onSigned(prescription.id);
+    } catch { setError("Erro de rede. Tente novamente."); }
+    setLoading(false);
+  }
+
+  // Sem configuração
+  if (!signConfig?.configured) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-slate-900 flex items-center gap-2">
+              <PenLine size={18} className="text-blue-500" /> Assinatura Digital
+            </h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+            Configure sua assinatura digital (BirdID ou VIDaaS) nas configurações da conta antes de assinar receitas.
+          </div>
+          <a href="/professional/account" onClick={onClose}
+            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+            <ExternalLink size={14} /> Ir para configurações
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2">
+            <PenLine size={18} className="text-blue-500" /> Assinar com {provider}
+          </h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+        </div>
+
+        {success ? (
+          <div className="space-y-4 text-center py-2">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
+              <CheckCircle2 size={32} className="text-emerald-500" />
+            </div>
+            <div>
+              <p className="font-bold text-slate-900">Receita assinada!</p>
+              <p className="text-sm text-slate-500 mt-1">
+                Assinatura ICP-Brasil aplicada com sucesso via {provider}.
+              </p>
+            </div>
+            {signedUrl && (
+              <a href={signedUrl} target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+                <Download size={14} /> Baixar PDF assinado
+              </a>
+            )}
+            <button onClick={onClose}
+              className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 transition">
+              Fechar
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Instruções */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+              <p className="text-sm font-semibold text-blue-800 flex items-center gap-2">
+                <Smartphone size={15} /> Como obter o código OTP
+              </p>
+              <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
+                <li>Abra o app <strong>{provider}</strong> no seu celular</li>
+                <li>Toque em <strong>Gerar OTP</strong> ou <strong>Assinar</strong></li>
+                <li>Copie o código de 6 dígitos</li>
+                <li>Cole abaixo e clique em Assinar</li>
+              </ol>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-1">
+              <p className="text-xs text-slate-500">Receita</p>
+              <p className="font-medium text-slate-800 text-xs">
+                {prescription.document?.patient
+                  ? `${prescription.document.patient.firstName} ${prescription.document.patient.lastName}`
+                  : "Paciente"
+                }
+              </p>
+              <p className="text-xs text-slate-400">CPF no {provider}: {signConfig.cpfMasked}</p>
+            </div>
+
+            {/* OTP input */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                Código OTP do app {provider}
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                placeholder="000000"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-2xl text-center font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === "Enter") handleSign(); }}
+              />
+              <p className="text-xs text-slate-400 mt-1 text-center">
+                O código expira em ~30 segundos. Use um código novo.
+              </p>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle size={14} /> {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 transition">
+                Cancelar
+              </button>
+              <button onClick={handleSign} disabled={loading || otp.length < 4}
+                className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold text-sm transition flex items-center justify-center gap-2">
+                {loading ? <><Loader2 size={13} className="animate-spin" /> Assinando...</> : <><Lock size={13} /> Assinar</>}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
 export default function PrescriptionsPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
 
-  // List of existing prescriptions
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [prescriptions, setPrescriptions]   = useState<Prescription[]>([]);
+  const [loading,       setLoading]         = useState(true);
+  const [search,        setSearch]          = useState("");
 
-  // Modal + form
-  const [showForm, setShowForm] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [showForm,  setShowForm]  = useState(false);
+  const [saving,    setSaving]    = useState(false);
+  const [saved,     setSaved]     = useState(false);
   const [formError, setFormError] = useState("");
 
-  // Success / invite step (after saving)
   const [successPatient, setSuccessPatient] = useState<Chart | null>(null);
-  const [inviteSending, setInviteSending] = useState(false);
-  const [inviteSent, setInviteSent] = useState(false);
-  const [inviteError, setInviteError] = useState("");
+  const [inviteSending,  setInviteSending]  = useState(false);
+  const [inviteSent,     setInviteSent]     = useState(false);
+  const [inviteError,    setInviteError]    = useState("");
 
-  // Patient selection
-  const [charts, setCharts] = useState<Chart[]>([]);
-  const [patientQuery, setPatientQuery] = useState("");
+  const [charts,          setCharts]          = useState<Chart[]>([]);
+  const [patientQuery,    setPatientQuery]    = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(null);
 
-  // Drug search
-  const [drugQuery, setDrugQuery] = useState("");
-  const [drugResults, setDrugResults] = useState<Drug[]>([]);
-  const [drugSearching, setDrugSearching] = useState(false);
-  const [drugCountry, setDrugCountry] = useState("");
+  const [drugQuery,    setDrugQuery]    = useState("");
+  const [drugResults,  setDrugResults]  = useState<Drug[]>([]);
+  const [drugSearching,setDrugSearching]= useState(false);
+  const [drugCountry,  setDrugCountry]  = useState("");
   const drugDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Prescription items
-  const [medications, setMedications] = useState<MedItem[]>([]);
-  const [instructions, setInstructions] = useState("");
-  const [validDays, setValidDays] = useState(30);
+  const [medications,   setMedications]   = useState<MedItem[]>([]);
+  const [instructions,  setInstructions]  = useState("");
+  const [validDays,     setValidDays]     = useState(30);
 
-  useEffect(() => { fetchPrescriptions(); }, []);
+  // Assinatura digital
+  const [signConfig,    setSignConfig]    = useState<{ configured: boolean; provider: string; cpfMasked: string } | null>(null);
+  const [signModal,     setSignModal]     = useState<Prescription | null>(null);
+
+  useEffect(() => {
+    fetchPrescriptions();
+    loadSignConfig();
+  }, []);
 
   async function fetchPrescriptions() {
     try {
       const res = await fetch("/api/professional/prescriptions");
-      const d = await res.json();
+      const d   = await res.json();
       setPrescriptions(d.prescriptions || []);
     } finally { setLoading(false); }
   }
 
+  async function loadSignConfig() {
+    try {
+      const res  = await fetch("/api/professional/digital-sign");
+      const data = await res.json();
+      setSignConfig(data);
+    } catch { /* ignore */ }
+  }
+
+  function markSigned(id: string) {
+    setPrescriptions(prev => prev.map(p =>
+      p.id === id ? { ...p, digitalSignature: `signed:${new Date().toISOString()}` } : p
+    ));
+  }
+
   async function openForm() {
-    setShowForm(true);
-    resetForm();
-    // Load the professional's charts for patient search
+    setShowForm(true); resetForm();
     try {
       const res = await fetch("/api/professional/records");
-      const d = await res.json();
+      const d   = await res.json();
       setCharts(d.records || []);
     } catch { /* ignore */ }
   }
 
   function resetForm() {
-    setSelectedPatient(null);
-    setPatientQuery("");
-    setDrugQuery("");
-    setDrugResults([]);
-    setDrugCountry("");
-    setMedications([]);
-    setInstructions("");
-    setValidDays(30);
-    setFormError("");
-    setSuccessPatient(null);
-    setInviteSending(false);
-    setInviteSent(false);
-    setInviteError("");
+    setSelectedPatient(null); setPatientQuery(""); setDrugQuery("");
+    setDrugResults([]); setDrugCountry([]); setMedications([]);
+    setInstructions(""); setValidDays(30); setFormError("");
+    setSuccessPatient(null); setInviteSending(false);
+    setInviteSent(false); setInviteError("");
   }
 
-  // ── Patient search (client-side filter over loaded charts) ──
   const filteredCharts = patientQuery.trim().length === 0
     ? charts.slice(0, 8)
     : charts.filter((c) =>
         `${c.firstName} ${c.lastName}`.toLowerCase().includes(patientQuery.toLowerCase())
       );
 
-  // ── Drug search (server-side, debounced) ──
   useEffect(() => {
     if (drugDebounce.current) clearTimeout(drugDebounce.current);
     const q = drugQuery.trim();
-    if (q.length < 2) {
-      setDrugResults([]);
-      setDrugSearching(false);
-      return;
-    }
+    if (q.length < 2) { setDrugResults([]); setDrugSearching(false); return; }
     setDrugSearching(true);
     drugDebounce.current = setTimeout(async () => {
       try {
         const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}${drugCountry ? `&country=${drugCountry}` : ""}`;
         const res = await fetch(url);
-        const d = await res.json();
+        const d   = await res.json();
         setDrugResults(d.drugs || []);
-      } catch {
-        setDrugResults([]);
-      } finally {
-        setDrugSearching(false);
-      }
+      } catch { setDrugResults([]); }
+      finally  { setDrugSearching(false); }
     }, 300);
     return () => { if (drugDebounce.current) clearTimeout(drugDebounce.current); };
   }, [drugQuery, drugCountry]);
 
   function addDrug(drug: Drug) {
-    setMedications((prev) => [
-      ...prev,
-      {
-        name: `${drug.name}${drug.activeIngredient ? ` (${drug.activeIngredient})` : ""}`,
-        dosage: "",
-        frequency: "",
-        duration: "",
-        instructions: "",
-        presentation: drug.presentation,
-        controlled: drug.controlled,
-        prescriptionType: drug.prescriptionType,
-      },
-    ]);
-    setDrugQuery("");
-    setDrugResults([]);
+    setMedications((prev) => [...prev, {
+      name: `${drug.name}${drug.activeIngredient ? ` (${drug.activeIngredient})` : ""}`,
+      dosage: "", frequency: "", duration: "", instructions: "",
+      presentation: drug.presentation, controlled: drug.controlled, prescriptionType: drug.prescriptionType,
+    }]);
+    setDrugQuery(""); setDrugResults([]);
   }
 
   function addManual() {
     const q = drugQuery.trim();
-    setMedications((prev) => [
-      ...prev,
-      { name: q || "", dosage: "", frequency: "", duration: "", instructions: "" },
-    ]);
-    setDrugQuery("");
-    setDrugResults([]);
+    setMedications((prev) => [...prev, { name: q || "", dosage: "", frequency: "", duration: "", instructions: "" }]);
+    setDrugQuery(""); setDrugResults([]);
   }
 
-  function removeMedication(index: number) {
-    setMedications((prev) => prev.filter((_, i) => i !== index));
-  }
-
+  function removeMedication(index: number) { setMedications((prev) => prev.filter((_, i) => i !== index)); }
   function updateMedication(index: number, field: keyof MedItem, value: string) {
     setMedications((prev) => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
   }
@@ -249,35 +353,20 @@ export default function PrescriptionsPage() {
     setFormError("");
     if (!selectedPatient) { setFormError(t("rx2.needPatient")); return; }
     if (medications.length === 0 || medications.some((m) => !m.name || !m.dosage || !m.frequency)) {
-      setFormError(t("rx2.needMeds"));
-      return;
+      setFormError(t("rx2.needMeds")); return;
     }
     setSaving(true);
     try {
-      // send only the clinical fields the API expects
       const cleanMeds = medications.map((m) => ({
-        name: m.name,
-        dosage: m.dosage,
-        frequency: m.frequency,
-        duration: m.duration,
-        instructions: m.instructions,
+        name: m.name, dosage: m.dosage, frequency: m.frequency,
+        duration: m.duration, instructions: m.instructions,
       }));
       const res = await fetch("/api/professional/prescriptions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientRecordId: selectedPatient.id,
-          medications: cleanMeds,
-          instructions,
-          validDays,
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientRecordId: selectedPatient.id, medications: cleanMeds, instructions, validDays }),
       });
-      if (res.ok) {
-        // Show the success step instead of closing immediately.
-        // It adapts: patient with account = "notified"; without = invite option.
-        setSuccessPatient(selectedPatient);
-        fetchPrescriptions();
-      } else {
+      if (res.ok) { setSuccessPatient(selectedPatient); fetchPrescriptions(); }
+      else {
         const d = await res.json().catch(() => ({}));
         setFormError(typeof d.error === "string" ? d.error : t("rx2.needMeds"));
       }
@@ -286,40 +375,29 @@ export default function PrescriptionsPage() {
 
   async function sendInvite() {
     if (!successPatient) return;
-    setInviteSending(true);
-    setInviteError("");
+    setInviteSending(true); setInviteError("");
     try {
       const res = await fetch(`/api/professional/records/${successPatient.id}/invite`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ language: lang }),
       });
-      if (res.ok) {
-        setInviteSent(true);
-      } else {
+      if (res.ok) { setInviteSent(true); }
+      else {
         const d = await res.json().catch(() => ({}));
         setInviteError(typeof d.error === "string" ? d.error : t("rx3.inviteError"));
       }
-    } catch {
-      setInviteError(t("rx3.inviteError"));
-    } finally {
-      setInviteSending(false);
-    }
+    } catch { setInviteError(t("rx3.inviteError")); }
+    finally  { setInviteSending(false); }
   }
 
-  function closeAll() {
-    setShowForm(false);
-    resetForm();
-  }
+  function closeAll() { setShowForm(false); resetForm(); }
 
   const filtered = prescriptions.filter((p) => {
     const name = p.document?.patient
-      ? `${p.document.patient.firstName} ${p.document.patient.lastName}`.toLowerCase()
-      : "";
+      ? `${p.document.patient.firstName} ${p.document.patient.lastName}`.toLowerCase() : "";
     return name.includes(search.toLowerCase());
   });
 
-  // ── P1-c: missing required-for-CFM data on the selected patient's chart ──
   const selectedMissing = selectedPatient?.missingForRx ?? [];
 
   return (
@@ -331,24 +409,34 @@ export default function PrescriptionsPage() {
           <h1 className="text-2xl font-bold text-slate-900">{t("rx.title")}</h1>
           <p className="text-slate-500 text-sm mt-1">{t("rx.subtitle")}</p>
         </div>
-        <button
-          onClick={openForm}
-          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition"
-        >
+        <button onClick={openForm}
+          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition">
           <Plus size={16} /> {t("rx.new")}
         </button>
       </div>
 
+      {/* Aviso de assinatura não configurada */}
+      {signConfig && !signConfig.configured && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+          <PenLine size={18} className="text-blue-500 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-blue-800">Assinatura digital não configurada</p>
+            <p className="text-xs text-blue-600 mt-1">
+              Configure BirdID ou VIDaaS para assinar receitas com validade ICP-Brasil.
+            </p>
+          </div>
+          <a href="/professional/account"
+            className="text-xs font-semibold text-blue-700 border border-blue-300 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition shrink-0">
+            Configurar
+          </a>
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          placeholder={t("rx.search")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-        />
+        <input type="text" placeholder={t("rx.search")} value={search} onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
       </div>
 
       {/* List */}
@@ -365,17 +453,24 @@ export default function PrescriptionsPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((p) => {
-            const meds = p.medications as MedItem[];
+            const meds   = p.medications as MedItem[];
+            const signed = !!p.digitalSignature;
             return (
               <div key={p.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div>
-                    <p className="font-semibold text-slate-800">
-                      {p.document?.patient
-                        ? `${p.document.patient.firstName} ${p.document.patient.lastName}`
-                        : t("rx.patient")
-                      }
-                    </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-slate-800">
+                        {p.document?.patient
+                          ? `${p.document.patient.firstName} ${p.document.patient.lastName}`
+                          : t("rx.patient")}
+                      </p>
+                      {signed && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 size={11} /> Assinada ICP-Brasil
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-400 mt-1">
                       {t("rx.issued")} {new Date(p.createdAt).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" })}
                       {p.validUntil && ` · ${t("rx.validUntil")} ${new Date(p.validUntil).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" })}`}
@@ -386,18 +481,22 @@ export default function PrescriptionsPage() {
                           {m.name} {m.dosage}
                         </span>
                       ))}
-                      {meds.length > 3 && (
-                        <span className="text-xs text-slate-400">+{meds.length - 3} {t("rx.more")}</span>
-                      )}
+                      {meds.length > 3 && <span className="text-xs text-slate-400">+{meds.length - 3} {t("rx.more")}</span>}
                     </div>
                   </div>
-                  <a
-                    href={`/api/professional/prescriptions/${p.id}/pdf`}
-                    target="_blank"
-                    className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition shrink-0"
-                  >
-                    <Download size={14} /> {t("rx.downloadPDF")}
-                  </a>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Botão assinar */}
+                    {!signed && (
+                      <button onClick={() => setSignModal(p)}
+                        className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
+                        <PenLine size={13} /> Assinar
+                      </button>
+                    )}
+                    <a href={`/api/professional/prescriptions/${p.id}/pdf`} target="_blank"
+                      className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition">
+                      <Download size={14} /> {t("rx.downloadPDF")}
+                    </a>
+                  </div>
                 </div>
               </div>
             );
@@ -405,39 +504,42 @@ export default function PrescriptionsPage() {
         </div>
       )}
 
+      {/* Modal de assinatura */}
+      {signModal && (
+        <SignModal
+          prescription={signModal}
+          signConfig={signConfig}
+          onClose={() => setSignModal(null)}
+          onSigned={(id) => { markSigned(id); setSignModal(null); }}
+        />
+      )}
+
       {/* Create prescription modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
-
             <div className="sticky top-0 bg-white flex items-center justify-between p-5 border-b border-slate-200 z-10">
-              <h2 className="font-bold text-slate-900 text-lg">{successPatient ? t("rx3.successTitle") : t("rx.modalTitle")}</h2>
-              <button onClick={closeAll} className="text-slate-400 hover:text-slate-600">
-                <X size={20} />
-              </button>
+              <h2 className="font-bold text-slate-900 text-lg">
+                {successPatient ? t("rx3.successTitle") : t("rx.modalTitle")}
+              </h2>
+              <button onClick={closeAll} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
             </div>
 
             {successPatient ? (
-              /* ── SUCCESS STEP (adapts to whether the patient has an account) ── */
               <div className="p-6 space-y-5">
                 <div className="flex flex-col items-center text-center">
                   <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
                     <CheckCircle2 size={28} className="text-emerald-600" />
                   </div>
                   <p className="font-bold text-slate-900 text-lg">{t("rx3.savedTitle")}</p>
-                  <p className="text-slate-500 text-sm mt-1">
-                    {successPatient.firstName} {successPatient.lastName}
-                  </p>
+                  <p className="text-slate-500 text-sm mt-1">{successPatient.firstName} {successPatient.lastName}</p>
                 </div>
-
                 {successPatient.hasAccount ? (
-                  /* Patient HAS account → was notified */
                   <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 flex items-start gap-3">
                     <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
                     <p>{t("rx3.notifiedText")}</p>
                   </div>
                 ) : successPatient.email ? (
-                  /* Patient NO account but HAS email → offer invite with confirmation */
                   inviteSent ? (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 flex items-start gap-3">
                       <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
@@ -454,328 +556,249 @@ export default function PrescriptionsPage() {
                         </div>
                       </div>
                       {inviteError && <p className="text-sm text-rose-600">{inviteError}</p>}
-                      <button
-                        onClick={sendInvite}
-                        disabled={inviteSending}
-                        className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
+                      <button onClick={sendInvite} disabled={inviteSending}
+                        className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
                         {inviteSending ? <Loader2 size={14} className="animate-spin" /> : null}
                         {t("rx3.sendInvite")}
                       </button>
                     </div>
                   )
                 ) : (
-                  /* No account and no email → nothing to send */
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 flex items-start gap-3">
                     <AlertCircle size={18} className="text-slate-400 shrink-0 mt-0.5" />
                     <p>{t("rx3.noEmailText")}</p>
                   </div>
                 )}
-
-                <button
-                  onClick={closeAll}
-                  className="w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
-                >
+                <button onClick={closeAll}
+                  className="w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition">
                   {t("rx3.done")}
                 </button>
               </div>
             ) : (
-            <div className="p-5 space-y-6">
-
-              {/* ── PATIENT ── */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">{t("rx2.selectPatient")}</label>
-
-                {selectedPatient ? (
-                  <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-600 text-sm shrink-0">
-                      {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
+              <div className="p-5 space-y-6">
+                {/* Patient */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">{t("rx2.selectPatient")}</label>
+                  {selectedPatient ? (
+                    <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-600 text-sm shrink-0">
+                        {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-800 text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</p>
+                        <p className="text-xs mt-0.5">
+                          {selectedPatient.hasAccount
+                            ? <span className="text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 size={12} /> {t("rx2.hasAccountBadge")}</span>
+                            : <span className="text-amber-600 inline-flex items-center gap-1"><AlertCircle size={12} /> {t("rx2.noAccountBadge")}</span>}
+                        </p>
+                      </div>
+                      <button onClick={() => { setSelectedPatient(null); setPatientQuery(""); }}
+                        className="text-xs text-slate-500 hover:text-slate-700 font-medium shrink-0">
+                        {t("rx2.changePatient")}
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-800 text-sm">
-                        {selectedPatient.firstName} {selectedPatient.lastName}
-                      </p>
-                      <p className="text-xs mt-0.5">
-                        {selectedPatient.hasAccount ? (
-                          <span className="text-emerald-600 inline-flex items-center gap-1">
-                            <CheckCircle2 size={12} /> {t("rx2.hasAccountBadge")}
-                          </span>
-                        ) : (
-                          <span className="text-amber-600 inline-flex items-center gap-1">
-                            <AlertCircle size={12} /> {t("rx2.noAccountBadge")}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => { setSelectedPatient(null); setPatientQuery(""); }}
-                      className="text-xs text-slate-500 hover:text-slate-700 font-medium shrink-0"
-                    >
-                      {t("rx2.changePatient")}
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="relative">
-                      <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        value={patientQuery}
-                        onChange={(e) => setPatientQuery(e.target.value)}
-                        placeholder={t("rx2.searchPatient")}
-                        className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                      />
-                    </div>
-
-                    <div className="mt-2 border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100">
-                      {filteredCharts.length === 0 ? (
-                        <div className="p-4 text-center">
-                          <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
-                          <p className="text-xs text-slate-400 mt-1">{t("rx2.noPatientHint")}</p>
-                          <a
-                            href="/professional/patients"
-                            className="mt-3 inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold hover:underline"
-                          >
-                            <Plus size={14} /> {t("rx2.createPatient")}
-                          </a>
-                        </div>
-                      ) : (
-                        filteredCharts.map((c) => (
-                          <button
-                            key={c.id}
-                            onClick={() => { setSelectedPatient(c); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition text-left"
-                          >
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input type="text" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)}
+                          placeholder={t("rx2.searchPatient")}
+                          className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                      </div>
+                      <div className="mt-2 border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100">
+                        {filteredCharts.length === 0 ? (
+                          <div className="p-4 text-center">
+                            <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
+                            <p className="text-xs text-slate-400 mt-1">{t("rx2.noPatientHint")}</p>
+                            <a href="/professional/patients"
+                              className="mt-3 inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold hover:underline">
+                              <Plus size={14} /> {t("rx2.createPatient")}
+                            </a>
+                          </div>
+                        ) : filteredCharts.map((c) => (
+                          <button key={c.id} onClick={() => setSelectedPatient(c)}
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition text-left">
                             <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
                               {c.firstName[0]}{c.lastName[0]}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-slate-800 text-sm">{c.firstName} {c.lastName}</p>
-                              <p className="text-xs text-slate-400">
-                                {c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
-                              </p>
+                              <p className="text-xs text-slate-400">{c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}</p>
                             </div>
                             <ChevronRight size={16} className="text-slate-300 shrink-0" />
                           </button>
-                        ))
-                      )}
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {selectedPatient && selectedMissing.length > 0 && (
+                    <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
+                      <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-amber-800">
+                          Para uma receita conforme o CFM, complete na ficha: <strong>{selectedMissing.map(missingLabel).join(", ")}</strong>.
+                        </p>
+                        <a href={`/professional/patients/${selectedPatient.id}`} target="_blank"
+                          className="mt-2 inline-flex items-center gap-1.5 text-amber-900 text-xs font-semibold hover:underline">
+                          <ChevronRight size={13} /> Abrir ficha
+                        </a>
+                      </div>
                     </div>
-                  </>
-                )}
-
-                {/* ── P1-c: non-blocking warning when required CFM data is missing ── */}
-                {selectedPatient && selectedMissing.length > 0 && (
-                  <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
-                    <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-amber-800">
-                        Para uma receita conforme o CFM, complete na ficha: <strong>{selectedMissing.map(missingLabel).join(", ")}</strong>.
-                      </p>
-                      <p className="text-xs text-amber-700 mt-1">
-                        Você pode emitir mesmo assim, mas a receita pode ficar incompleta.
-                      </p>
-                      <a
-                        href={`/professional/patients/${selectedPatient.id}`}
-                        target="_blank"
-                        className="mt-2 inline-flex items-center gap-1.5 text-amber-900 text-xs font-semibold hover:underline"
-                      >
-                        <ChevronRight size={13} /> Abrir ficha para completar
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ── DRUG SEARCH ── */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-slate-700">{t("rx2.addItem")}</label>
-                  <select
-                    value={drugCountry}
-                    onChange={(e) => setDrugCountry(e.target.value)}
-                    className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-600 focus:outline-none"
-                  >
-                    <option value="">{t("rx2.countryAll")}</option>
-                    <option value="BR">🇧🇷 BR</option>
-                    <option value="US">🇺🇸 US</option>
-                  </select>
-                </div>
-                <div className="relative">
-                  <Pill size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={drugQuery}
-                    onChange={(e) => setDrugQuery(e.target.value)}
-                    placeholder={t("rx2.searchDrug")}
-                    className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  />
-                  {drugSearching && (
-                    <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />
                   )}
                 </div>
 
-                {/* Drug results dropdown */}
-                {drugQuery.trim().length >= 2 && (
-                  <div className="mt-2 border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-64 overflow-y-auto">
-                    {drugResults.length === 0 && !drugSearching ? (
-                      <div className="p-4 text-center">
-                        <p className="text-sm text-slate-500">{t("rx2.noDrugsFound")}</p>
-                        <button
-                          onClick={addManual}
-                          className="mt-2 inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold hover:underline"
-                        >
-                          <Plus size={14} /> {t("rx2.addManual")}
-                        </button>
-                      </div>
-                    ) : (
-                      drugResults.map((drug) => {
-                        const ci = controlInfo(drug.prescriptionType);
-                        return (
-                        <button
-                          key={drug.id}
-                          onClick={() => addDrug(drug)}
-                          className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition text-left"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-slate-800 text-sm flex items-center gap-2 flex-wrap">
-                              {drug.name}
-                              {drug.controlled && ci && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${ci.tarja === "preta" ? "bg-slate-800 text-white" : "bg-red-100 text-red-600"}`}>
-                                  {ci.label}
-                                </span>
-                              )}
-                              {drug.controlled && !ci && (
-                                <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">
-                                  {t("rx2.controlled")}
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-xs text-slate-500">{drug.activeIngredient}</p>
-                            <p className="text-xs text-slate-400">{drug.presentation}{drug.manufacturer ? ` · ${drug.manufacturer}` : ""}</p>
-                            {drug.controlled && ci && (
-                              <p className="text-[11px] text-slate-500 mt-1 inline-flex items-center gap-1">
-                                <AlertCircle size={11} className={ci.tarja === "preta" ? "text-slate-700" : "text-red-500"} />
-                                {ci.receita}
-                              </p>
-                            )}
-                          </div>
-                          <Plus size={16} className="text-emerald-500 shrink-0 mt-1" />
-                        </button>
-                        );
-                      })
-                    )}
+                {/* Drug search */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-semibold text-slate-700">{t("rx2.addItem")}</label>
+                    <select value={drugCountry} onChange={(e) => setDrugCountry(e.target.value)}
+                      className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-600 focus:outline-none">
+                      <option value="">{t("rx2.countryAll")}</option>
+                      <option value="BR">🇧🇷 BR</option>
+                      <option value="US">🇺🇸 US</option>
+                    </select>
                   </div>
-                )}
-              </div>
-
-              {/* ── SELECTED MEDS (cards) ── */}
-              <div>
-                <label className="text-sm font-semibold text-slate-700 block mb-2">{t("rx2.selectedMeds")}</label>
-                {medications.length === 0 ? (
-                  <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    <p className="text-sm text-slate-400">{t("rx2.noMeds")}</p>
+                  <div className="relative">
+                    <Pill size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="text" value={drugQuery} onChange={(e) => setDrugQuery(e.target.value)}
+                      placeholder={t("rx2.searchDrug")}
+                      className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                    {drugSearching && <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />}
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {medications.map((med, index) => {
-                      const ci = controlInfo(med.prescriptionType);
-                      return (
-                      <div key={index} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-slate-800 text-sm flex items-center gap-2 flex-wrap">
-                              {med.name}
-                              {med.controlled && ci && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${ci.tarja === "preta" ? "bg-slate-800 text-white" : "bg-red-100 text-red-600"}`}>
-                                  {ci.label}
-                                </span>
-                              )}
-                              {med.controlled && !ci && (
-                                <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-semibold">
-                                  {t("rx2.controlled")}
-                                </span>
-                              )}
-                            </p>
-                            {med.presentation && (
-                              <p className="text-xs text-slate-400 mt-0.5">{med.presentation}</p>
-                            )}
-                            {med.controlled && ci && (
-                              <p className={`text-[11px] mt-1 inline-flex items-center gap-1 rounded-md px-2 py-1 ${ci.tarja === "preta" ? "bg-slate-100 text-slate-700" : "bg-red-50 text-red-700"}`}>
-                                <AlertCircle size={11} />
-                                {ci.receita}
-                              </p>
-                            )}
-                          </div>
-                          <button onClick={() => removeMedication(index)} className="text-red-400 hover:text-red-600 shrink-0">
-                            <Trash2 size={15} />
+                  {drugQuery.trim().length >= 2 && (
+                    <div className="mt-2 border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                      {drugResults.length === 0 && !drugSearching ? (
+                        <div className="p-4 text-center">
+                          <p className="text-sm text-slate-500">{t("rx2.noDrugsFound")}</p>
+                          <button onClick={addManual}
+                            className="mt-2 inline-flex items-center gap-1.5 text-emerald-600 text-sm font-semibold hover:underline">
+                            <Plus size={14} /> {t("rx2.addManual")}
                           </button>
                         </div>
-                        <div className="grid sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.dosageLabel")} *</label>
-                            <input type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder="500mg" className="inp-sm" />
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.frequencyLabel")} *</label>
-                            <select value={med.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="inp-sm">
-                              <option value="">{t("med.freqSelect")}</option>
-                              <option value="Once daily">{t("med.freqOnce")}</option>
-                              <option value="Twice daily">{t("med.freqTwice")}</option>
-                              <option value="Three times daily">{t("med.freqThree")}</option>
-                              <option value="Every 8 hours">{t("med.freq8h")}</option>
-                              <option value="Every 12 hours">{t("med.freq12h")}</option>
-                              <option value="As needed">{t("med.freqAsNeeded")}</option>
-                              <option value="Weekly">{t("med.freqWeekly")}</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.durationLabel")}</label>
-                            <input type="text" value={med.duration} onChange={(e) => updateMedication(index, "duration", e.target.value)} placeholder={t("rx.medDurationPlaceholder")} className="inp-sm" />
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.instructionsLabel")}</label>
-                            <input type="text" value={med.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} placeholder={t("rx.medInstructionsPlaceholder")} className="inp-sm" />
-                          </div>
-                        </div>
-                      </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                      ) : drugResults.map((drug) => {
+                        const ci = controlInfo(drug.prescriptionType);
+                        return (
+                          <button key={drug.id} onClick={() => addDrug(drug)}
+                            className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition text-left">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-slate-800 text-sm flex items-center gap-2 flex-wrap">
+                                {drug.name}
+                                {drug.controlled && ci && (
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${ci.tarja === "preta" ? "bg-slate-800 text-white" : "bg-red-100 text-red-600"}`}>
+                                    {ci.label}
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-xs text-slate-500">{drug.activeIngredient}</p>
+                              <p className="text-xs text-slate-400">{drug.presentation}{drug.manufacturer ? ` · ${drug.manufacturer}` : ""}</p>
+                            </div>
+                            <Plus size={16} className="text-emerald-500 shrink-0 mt-1" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
-              {/* ── GENERAL INSTRUCTIONS + VALIDITY ── */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("rx2.generalInstructions")}</label>
-                <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2} placeholder={t("rx.generalInstructionsPlaceholder")} className="inp resize-none" />
-              </div>
+                {/* Selected meds */}
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 block mb-2">{t("rx2.selectedMeds")}</label>
+                  {medications.length === 0 ? (
+                    <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      <p className="text-sm text-slate-400">{t("rx2.noMeds")}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {medications.map((med, index) => {
+                        const ci = controlInfo(med.prescriptionType);
+                        return (
+                          <div key={index} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-slate-800 text-sm flex items-center gap-2 flex-wrap">
+                                  {med.name}
+                                  {med.controlled && ci && (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${ci.tarja === "preta" ? "bg-slate-800 text-white" : "bg-red-100 text-red-600"}`}>
+                                      {ci.label}
+                                    </span>
+                                  )}
+                                </p>
+                                {med.controlled && ci && (
+                                  <p className={`text-[11px] mt-1 inline-flex items-center gap-1 rounded-md px-2 py-1 ${ci.tarja === "preta" ? "bg-slate-100 text-slate-700" : "bg-red-50 text-red-700"}`}>
+                                    <AlertCircle size={11} />{ci.receita}
+                                  </p>
+                                )}
+                              </div>
+                              <button onClick={() => removeMedication(index)} className="text-red-400 hover:text-red-600 shrink-0">
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                            <div className="grid sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.dosageLabel")} *</label>
+                                <input type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder="500mg" className="inp-sm" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.frequencyLabel")} *</label>
+                                <select value={med.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="inp-sm">
+                                  <option value="">{t("med.freqSelect")}</option>
+                                  <option value="Once daily">{t("med.freqOnce")}</option>
+                                  <option value="Twice daily">{t("med.freqTwice")}</option>
+                                  <option value="Three times daily">{t("med.freqThree")}</option>
+                                  <option value="Every 8 hours">{t("med.freq8h")}</option>
+                                  <option value="Every 12 hours">{t("med.freq12h")}</option>
+                                  <option value="As needed">{t("med.freqAsNeeded")}</option>
+                                  <option value="Weekly">{t("med.freqWeekly")}</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.durationLabel")}</label>
+                                <input type="text" value={med.duration} onChange={(e) => updateMedication(index, "duration", e.target.value)} placeholder={t("rx.medDurationPlaceholder")} className="inp-sm" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.instructionsLabel")}</label>
+                                <input type="text" value={med.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} placeholder={t("rx.medInstructionsPlaceholder")} className="inp-sm" />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("rx2.validFor")}</label>
-                <select value={validDays} onChange={(e) => setValidDays(Number(e.target.value))} className="inp">
-                  <option value={7}>{t("rx.days7")}</option>
-                  <option value={30}>{t("rx.days30")}</option>
-                  <option value={60}>{t("rx.days60")}</option>
-                  <option value={90}>{t("rx.days90")}</option>
-                  <option value={180}>{t("rx.days180")}</option>
-                  <option value={365}>{t("rx.days365")}</option>
-                </select>
-              </div>
+                {/* Instructions + validity */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("rx2.generalInstructions")}</label>
+                  <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2}
+                    placeholder={t("rx.generalInstructionsPlaceholder")} className="inp resize-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("rx2.validFor")}</label>
+                  <select value={validDays} onChange={(e) => setValidDays(Number(e.target.value))} className="inp">
+                    <option value={7}>{t("rx.days7")}</option>
+                    <option value={30}>{t("rx.days30")}</option>
+                    <option value={60}>{t("rx.days60")}</option>
+                    <option value={90}>{t("rx.days90")}</option>
+                    <option value={180}>{t("rx.days180")}</option>
+                    <option value={365}>{t("rx.days365")}</option>
+                  </select>
+                </div>
 
-              {formError && (
-                <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{formError}</p>
-              )}
+                {formError && <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{formError}</p>}
 
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => { setShowForm(false); resetForm(); }} className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition">
-                  {t("rx2.cancel")}
-                </button>
-                <button type="button" onClick={handleSubmit} disabled={saving} className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
-                  {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <CheckCircle2 size={14} /> : null}
-                  {saved ? t("rx2.saved") : saving ? t("rx2.saving") : t("rx2.save")}
-                </button>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={closeAll}
+                    className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition">
+                    {t("rx2.cancel")}
+                  </button>
+                  <button type="button" onClick={handleSubmit} disabled={saving}
+                    className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
+                    {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <CheckCircle2 size={14} /> : null}
+                    {saved ? t("rx2.saved") : saving ? t("rx2.saving") : t("rx2.save")}
+                  </button>
+                </div>
               </div>
-            </div>
             )}
           </div>
         </div>
