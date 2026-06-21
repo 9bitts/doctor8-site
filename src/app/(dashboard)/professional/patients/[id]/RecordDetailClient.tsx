@@ -6,17 +6,25 @@
 // Etapa 3c: edit the chart's email (only when no account) + resend prescription invite.
 // P1-b: edit the chart's registration data (birth, sex, cpf, address) used by the prescription.
 // P2: "Diagnóstico / Título" label (trilíngue) + botão WhatsApp no cabeçalho da ficha.
-// FIX: proteção contra firstName/lastName vazio no avatar + router.refresh() após saveReg.
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
-  Brain, ChevronDown, ChevronUp, Sparkles,
 } from "lucide-react";
-import { useT, useI18n } from "@/lib/i18n/I18nProvider";
+import { useT } from "@/lib/i18n/I18nProvider";
+
+// P2: inline texts for rec.* keys (not yet in translations.ts)
+const REC_TEXTS: Record<string, Record<string, string>> = {
+  titleLabel:       { pt: "Diagnóstico / Título", en: "Diagnosis / Title", es: "Diagnóstico / Título" },
+  titlePlaceholder: { pt: "ex.: Hipertensão arterial — ou o assunto do registro", en: "e.g. Hypertension — or the subject of this record", es: "ej.: Hipertensión arterial — o el asunto del registro" },
+  whatsapp:         { pt: "Abrir WhatsApp", en: "Open WhatsApp", es: "Abrir WhatsApp" },
+  errTitle:         { pt: "O título é obrigatório.", en: "Title is required.", es: "El título es obligatorio." },
+  errCategory:      { pt: "Escolha uma categoria.", en: "Please choose a category.", es: "Elige una categoría." },
+  sendMessage:      { pt: "Enviar mensagem", en: "Send message", es: "Enviar mensaje" },
+  verConv:          { pt: "Ver conversa", en: "View conversation", es: "Ver conversación" },
+};
 
 interface Chart {
   id: string;
@@ -80,16 +88,6 @@ function waPhone(raw: string): string {
   return "55" + digits;
 }
 
-// FIX: retorna as iniciais com fallback seguro para strings vazias
-function getInitials(firstName: string, lastName: string): string {
-  const f = firstName?.trim() || "";
-  const l = lastName?.trim() || "";
-  if (!f && !l) return "?";
-  if (!f) return l[0].toUpperCase();
-  if (!l) return f[0].toUpperCase();
-  return f[0].toUpperCase() + l[0].toUpperCase();
-}
-
 export default function RecordDetailClient({
   chart,
   initialDocuments,
@@ -98,16 +96,19 @@ export default function RecordDetailClient({
   initialDocuments: Doc[];
 }) {
   const t = useT();
-  const { lang } = useI18n();
-  const router = useRouter();
+  // Detect current language via a known key, then serve inline rec.* texts
+  const _lang = t("common.cancel") === "Cancelar" ? "pt" : t("common.cancel") === "Cancelar" ? "es" : t("common.cancel") === "Cancel" ? "en" : "en";
+  const _langFull = t("greeting.morning") === "Bom dia" ? "pt" : t("greeting.morning") === "Buenos días" ? "es" : "en";
+  const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Chart contact (email) state – Etapa 3c
+  // Chart contact (email) state — Etapa 3c
   const [chartEmail, setChartEmail] = useState<string | null>(chart.email);
   const [hasAccount, setHasAccount] = useState<boolean>(chart.hasAccount);
+  const [hasConversation, setHasConversation] = useState<boolean>(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [emailDraft, setEmailDraft] = useState(chart.email || "");
   const [emailSaving, setEmailSaving] = useState(false);
@@ -139,11 +140,6 @@ export default function RecordDetailClient({
   const [shareStatus, setShareStatus] = useState<Record<string, string>>({});
   const [sharingId, setSharingId] = useState<string | null>(null);
 
-  // AI analysis state
-  const [aiAnalysis, setAiAnalysis]   = useState<Record<string, string>>({});
-  const [aiLoading, setAiLoading]     = useState<Record<string, boolean>>({});
-  const [aiOpen, setAiOpen]           = useState<Record<string, boolean>>({});
-
   // Form fields
   const [categoryId, setCategoryId] = useState("");
   const [title, setTitle] = useState("");
@@ -165,6 +161,15 @@ export default function RecordDetailClient({
         // leave empty; form will show a message
       }
       if (active) setCategoriesLoading(false);
+
+      // Check if conversation exists with this patient
+      if (chart.linkedUserId) {
+        try {
+          const res = await fetch(`/api/messages?with=${chart.linkedUserId}`);
+          const data = await res.json();
+          if (active && data.messages?.length > 0) setHasConversation(true);
+        } catch { /* ignore */ }
+      }
     })();
     return () => { active = false; };
   }, []);
@@ -231,8 +236,6 @@ export default function RecordDetailClient({
         setReg(regDraft);
         setEditingReg(false);
         setRegMsg("saved");
-        // FIX: atualiza os dados do Server Component sem navegar para fora da página
-        router.refresh();
       }
     } catch {
       setRegMsg("error:Network error");
@@ -260,45 +263,6 @@ export default function RecordDetailClient({
       setInviteMsg("error:Network error");
     }
     setInviteSending(false);
-  }
-
-  // AI analysis
-  async function analyzeWithAI(doc: Doc) {
-    if (aiLoading[doc.id]) return;
-    setAiLoading((p) => ({ ...p, [doc.id]: true }));
-    setAiOpen((p) => ({ ...p, [doc.id]: true }));
-    try {
-      const prompt = [
-        `Você é um assistente clínico de suporte ao médico. Analise o seguinte registro clínico e forneça:`,
-        `1. **Resumo**: síntese objetiva do conteúdo`,
-        `2. **Interpretação**: o que os dados/texto indicam clinicamente`,
-        `3. **Alertas**: valores fora do normal, achados relevantes ou pontos de atenção (se houver)`,
-        `4. **Sugestões**: próximos passos clínicos razoáveis (se aplicável)`,
-        ``,
-        `Registro – Categoria: ${doc.categoryName || doc.type}`,
-        `Título: ${doc.title}`,
-        doc.content ? `Conteúdo:\n${doc.content}` : `(sem texto – apenas anexo)`,
-        ``,
-        `Responda em ${lang === "pt" ? "português" : lang === "es" ? "español" : "English"}.`,
-        `Use formatação com markdown (negrito para títulos de seção). Seja conciso e direto.`,
-      ].join("\n");
-
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      const data = await res.json();
-      const text = data.content?.[0]?.text || t("rec.aiError");
-      setAiAnalysis((p) => ({ ...p, [doc.id]: text }));
-    } catch {
-      setAiAnalysis((p) => ({ ...p, [doc.id]: t("rec.aiError") }));
-    }
-    setAiLoading((p) => ({ ...p, [doc.id]: false }));
   }
 
   async function handleShare(docId: string) {
@@ -338,11 +302,11 @@ export default function RecordDetailClient({
 
   async function handleCreate() {
     if (!title.trim()) {
-      setError(t("rec.errTitle"));
+      setError(rt("errTitle"));
       return;
     }
     if (!categoryId) {
-      setError(t("rec.errCategory"));
+      setError(rt("errCategory"));
       return;
     }
     setSaving(true);
@@ -357,7 +321,7 @@ export default function RecordDetailClient({
         const up = await fetch("/api/uploads", { method: "POST", body: fd });
         const upData = await up.json();
         if (!up.ok) {
-          setError(upData.error || t("rec.uploadFailed"));
+          setError(upData.error || "File upload failed.");
           setSaving(false);
           return;
         }
@@ -377,7 +341,7 @@ export default function RecordDetailClient({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : t("rec.createFailed"));
+        setError(typeof data.error === "string" ? data.error : "Could not create record.");
         setSaving(false);
         return;
       }
@@ -398,14 +362,14 @@ export default function RecordDetailClient({
       resetForm();
       setShowForm(false);
     } catch {
-      setError(t("rec.networkError"));
+      setError("Network error. Try again.");
     }
     setSaving(false);
   }
 
   // Helper: is the registration data essentially empty?
   const regEmpty = !reg.dateOfBirth && !reg.addressLine1 && !reg.city && !reg.cpf && !reg.sex;
-  const sexLabel = reg.sex === "F" ? t("pat.sexF") : reg.sex === "M" ? t("pat.sexM") : reg.sex === "O" ? t("pat.sexO") : "";
+  const sexLabel = reg.sex === "F" ? "Feminino" : reg.sex === "M" ? "Masculino" : reg.sex === "O" ? "Outro" : "";
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -413,15 +377,14 @@ export default function RecordDetailClient({
         href="/professional/patients"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
       >
-        <ArrowLeft size={16} /> {t("rec.backToPatients")}
+        <ArrowLeft size={16} /> Back to patients
       </Link>
 
       {/* Chart header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
         <div className="flex items-start gap-4">
-          {/* FIX: usa getInitials() para evitar crash com nomes vazios */}
           <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-600 text-lg shrink-0">
-            {getInitials(chart.firstName, chart.lastName)}
+            {chart.firstName[0]}{chart.lastName[0]}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-slate-900">
@@ -432,12 +395,12 @@ export default function RecordDetailClient({
               {chart.phone && (
                 <p className="inline-flex items-center gap-2">
                   <span>{chart.phone}</span>
-                  {/* P2: WhatsApp button – only shown when phone is on file */}
+                  {/* P2: WhatsApp button — only shown when phone is on file */}
                   <a
                     href={`https://wa.me/${waPhone(chart.phone)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title={t("rec.whatsapp")}
+                    title={rt("whatsapp")}
                     className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-full transition"
                   >
                     <MessageCircle size={12} /> WhatsApp
@@ -448,23 +411,31 @@ export default function RecordDetailClient({
             <p className="text-xs mt-2">
               {hasAccount ? (
                 <span className="text-emerald-600 inline-flex items-center gap-1">
-                  <CheckCircle2 size={12} /> {t("pat.hasAccount")}
+                  <CheckCircle2 size={12} /> Has Doctor8 account
                 </span>
               ) : (
                 <span className="text-amber-600 inline-flex items-center gap-1">
-                  <AlertCircle size={12} /> {t("pat.noAccount")}
+                  <AlertCircle size={12} /> No account yet
                 </span>
               )}
             </p>
-            {/* P4: message button – only when patient has an account */}
+            {/* P4: message buttons — only when patient has an account */}
             {chart.linkedUserId && (
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex gap-2 flex-wrap">
                 <a
                   href={`/professional/messages?with=${chart.linkedUserId}`}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-lg transition"
                 >
-                  <MessageCircle size={13} /> {t("rec.sendMessage")}
+                  <MessageCircle size={13} /> {rt("sendMessage")}
                 </a>
+                {hasConversation && (
+                  <a
+                    href={`/professional/messages?with=${chart.linkedUserId}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg transition"
+                  >
+                    <ExternalLink size={13} /> {rt("verConv")}
+                  </a>
+                )}
               </div>
             )}
           </div>
@@ -473,13 +444,13 @@ export default function RecordDetailClient({
         {/* ── P1-b: registration data (for the prescription) ── */}
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("pat.regSection")}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Dados para a receita</p>
             {!editingReg && (
               <button
                 onClick={openRegEditor}
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
               >
-                <Pencil size={13} /> {regEmpty ? t("rec.addRegData") : t("rec.editRegData")}
+                <Pencil size={13} /> {regEmpty ? "Adicionar dados" : "Editar dados"}
               </button>
             )}
           </div>
@@ -750,7 +721,7 @@ export default function RecordDetailClient({
                   <p className="font-semibold text-slate-800 text-sm">{d.title}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {new Date(d.createdAt).toLocaleString(
-                      lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US",
+                      _langFull === "pt" ? "pt-BR" : _langFull === "es" ? "es-ES" : "en-US",
                       { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }
                     )}
                   </p>
@@ -784,7 +755,7 @@ export default function RecordDetailClient({
                       </div>
                     ) : status === "noEmail" ? (
                       <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-                        <AlertCircle size={14} /> No account and no email on file – add an email to the chart to invite
+                        <AlertCircle size={14} /> No account and no email on file — add an email to the chart to invite
                       </span>
                     ) : status.startsWith("error:") ? (
                       <div className="flex items-center gap-2">
@@ -806,44 +777,7 @@ export default function RecordDetailClient({
                         Share with patient
                       </button>
                     )}
-
-                    {/* AI analysis button */}
-                    <button
-                      onClick={() => aiAnalysis[d.id]
-                        ? setAiOpen((p) => ({ ...p, [d.id]: !p[d.id] }))
-                        : analyzeWithAI(d)
-                      }
-                      disabled={aiLoading[d.id]}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
-                    >
-                      {aiLoading[d.id]
-                        ? <><Loader2 size={13} className="animate-spin" /> {t("rec.analyzing")}</>
-                        : aiAnalysis[d.id]
-                          ? <><Sparkles size={13} /> {aiOpen[d.id] ? "Ocultar análise" : "Ver análise"}</>
-                          : <><Brain size={13} /> {t("rec.analyzeAI")}</>
-                      }
-                    </button>
                   </div>
-
-                  {/* AI analysis panel */}
-                  {aiOpen[d.id] && aiAnalysis[d.id] && (
-                    <div className="mt-3 bg-purple-50 border border-purple-200 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Sparkles size={14} className="text-purple-600" />
-                        <span className="text-xs font-semibold text-purple-700">{t("rec.aiTitle")}</span>
-                      </div>
-                      <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                        {aiAnalysis[d.id].split(/\*\*(.+?)\*\*/g).map((part, i) =>
-                          i % 2 === 1
-                            ? <strong key={i} className="text-slate-900">{part}</strong>
-                            : <span key={i}>{part}</span>
-                        )}
-                      </div>
-                      <p className="mt-3 text-xs text-purple-600 bg-purple-100 rounded-lg px-3 py-2 leading-relaxed">
-                        {t("rec.aiDisclaimer")}
-                      </p>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -886,15 +820,15 @@ export default function RecordDetailClient({
                   </select>
                 )}
               </div>
-              {/* P2: "Diagnóstico / Título" label – trilíngue */}
+              {/* P2: "Diagnóstico / Título" label — trilíngue */}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  {t("rec.titleLabel")} *
+                  {rt("titleLabel")} *
                 </label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={t("rec.titlePlaceholder")}
+                  placeholder={rt("titlePlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
                 />
               </div>
@@ -909,7 +843,7 @@ export default function RecordDetailClient({
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Attachment <span className="text-slate-400">(PDF, image or video – max 50MB)</span>
+                  Attachment <span className="text-slate-400">(PDF, image or video — max 50MB)</span>
                 </label>
                 <input
                   type="file"
