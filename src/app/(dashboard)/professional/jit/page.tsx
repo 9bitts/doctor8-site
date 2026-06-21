@@ -1,13 +1,14 @@
 "use client";
 // src/app/(dashboard)/professional/jit/page.tsx
-// Plantão Online — painel do profissional para gerenciar atendimentos just-in-time.
-// Entrega 2: configurar sessão, ligar/desligar plantão, ver fila, chamar próximo.
+// Plantão Online — painel do profissional.
+// Fix 1: campo de preço em valor real (R$ 1,00) em vez de centavos
+// Fix 2: sessionIdRef para evitar closure stale no polling
 
 import { useState, useEffect, useRef } from "react";
 import {
   Radio, Power, PowerOff, Users, Clock, ChevronRight,
   Loader2, CheckCircle2, AlertCircle, Phone, Pause, Play,
-  Stethoscope, DollarSign, Settings, X, ArrowRight,
+  Stethoscope, Settings, X,
 } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/I18nProvider";
 
@@ -37,28 +38,38 @@ interface JitSessionData {
   queue: QueueEntry[];
 }
 
+// Format currency for display
+function formatCurrency(amountCents: number, currency: string): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style:    "currency",
+    currency: currency || "BRL",
+  }).format(amountCents / 100);
+}
+
 export default function JitPage() {
   const t = useT();
   const { lang } = useI18n();
 
-  const [session, setSession] = useState<JitSessionData | null>(null);
-  const [loading, setLoading]   = useState(true);
-  const [calling, setCalling]   = useState(false);
+  const [session,  setSession]  = useState<JitSessionData | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [calling,  setCalling]  = useState(false);
   const [toggling, setToggling] = useState(false);
-  const [error, setError]       = useState<string | null>(null);
+  const [error,    setError]    = useState<string | null>(null);
 
   // Config form
-  const [showConfig, setShowConfig] = useState(false);
+  const [showConfig,   setShowConfig]   = useState(false);
   const [cfgMode,      setCfgMode]      = useState<"QUEUE" | "SHOWCASE">("QUEUE");
   const [cfgSpecialty, setCfgSpecialty] = useState("");
   const [cfgFree,      setCfgFree]      = useState(true);
-  const [cfgPrice,     setCfgPrice]     = useState(0);
+  // Price stored in REAIS (not cents) for user input — converted on save
+  const [cfgPriceReais, setCfgPriceReais] = useState("0,00");
   const [cfgCurrency,  setCfgCurrency]  = useState("BRL");
   const [cfgMax,       setCfgMax]       = useState(50);
   const [cfgEstTime,   setCfgEstTime]   = useState(20);
   const [cfgSaving,    setCfgSaving]    = useState(false);
 
-  const pollRef = useRef<NodeJS.Timeout>();
+  const pollRef      = useRef<NodeJS.Timeout>();
+  const sessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadSession();
@@ -67,9 +78,10 @@ export default function JitPage() {
 
   async function loadSession() {
     try {
-      const res = await fetch("/api/jit/session");
+      const res  = await fetch("/api/jit/session");
       const data = await res.json();
       setSession(data.session);
+      sessionIdRef.current = data.session?.id ?? null;
       if (data.session?.status === "ONLINE" || data.session?.status === "PAUSED") {
         startPolling();
       }
@@ -81,17 +93,18 @@ export default function JitPage() {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
-        // Expire no-shows first
-        if (session?.id) {
+        // Expire no-shows using ref (avoids stale closure)
+        if (sessionIdRef.current) {
           await fetch("/api/jit/queue", {
-            method: "PATCH",
+            method:  "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "EXPIRE_NOSHOWS", sessionId: session.id }),
+            body:    JSON.stringify({ action: "EXPIRE_NOSHOWS", sessionId: sessionIdRef.current }),
           });
         }
-        const res = await fetch("/api/jit/session");
+        const res  = await fetch("/api/jit/session");
         const data = await res.json();
         setSession(data.session);
+        sessionIdRef.current = data.session?.id ?? null;
         if (!data.session || data.session.status === "OFFLINE") {
           clearInterval(pollRef.current);
         }
@@ -99,17 +112,25 @@ export default function JitPage() {
     }, 5000);
   }
 
+  // Parse "1,50" or "1.50" to cents (150)
+  function parsePriceToCents(raw: string): number {
+    const normalized = raw.replace(/\./g, "").replace(",", ".");
+    const val = parseFloat(normalized);
+    return isNaN(val) ? 0 : Math.round(val * 100);
+  }
+
   async function startDuty() {
     setCfgSaving(true); setError(null);
+    const priceAmountCents = cfgFree ? 0 : parsePriceToCents(cfgPriceReais);
     try {
       const res = await fetch("/api/jit/session", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body:    JSON.stringify({
           mode:                       cfgMode,
           specialty:                  cfgSpecialty,
           isFree:                     cfgFree,
-          priceAmount:                cfgFree ? 0 : cfgPrice,
+          priceAmount:                priceAmountCents,
           currency:                   cfgCurrency,
           maxQueueSize:               cfgMax,
           estimatedMinutesPerPatient: cfgEstTime,
@@ -128,16 +149,17 @@ export default function JitPage() {
     if (!session) return;
     setToggling(true); setError(null);
     try {
-      if (newStatus === "OFFLINE") {
-        clearInterval(pollRef.current);
-      }
-      const res = await fetch("/api/jit/session", {
-        method: "PATCH",
+      if (newStatus === "OFFLINE") clearInterval(pollRef.current);
+      const res  = await fetch("/api/jit/session", {
+        method:  "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body:    JSON.stringify({ status: newStatus }),
       });
       const data = await res.json();
-      if (res.ok) await loadSession();
+      if (res.ok) {
+        setSession(data.session);
+        sessionIdRef.current = data.session?.id ?? null;
+      }
     } catch { setError("Erro de rede."); }
     setToggling(false);
   }
@@ -146,25 +168,23 @@ export default function JitPage() {
     if (!session) return;
     setCalling(true); setError(null);
     try {
-      const res = await fetch("/api/jit/queue", {
-        method: "PATCH",
+      const res  = await fetch("/api/jit/queue", {
+        method:  "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "CALL_NEXT", sessionId: session.id }),
+        body:    JSON.stringify({ action: "CALL_NEXT", sessionId: session.id }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Erro"); }
+      if (!res.ok) setError(data.error || "Erro");
       await loadSession();
     } catch { setError("Erro de rede."); }
     setCalling(false);
   }
 
   function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString(lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US",
-      { hour: "2-digit", minute: "2-digit" });
-  }
-
-  function secondsUntil(iso: string): number {
-    return Math.max(0, Math.floor((new Date(iso).getTime() - Date.now()) / 1000));
+    return new Date(iso).toLocaleTimeString(
+      lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US",
+      { hour: "2-digit", minute: "2-digit" }
+    );
   }
 
   const isOnline  = session?.status === "ONLINE";
@@ -193,12 +213,10 @@ export default function JitPage() {
           </h1>
           <p className="text-slate-500 text-sm mt-1">{t("jit.subtitle")}</p>
         </div>
-
-        {/* Status badge */}
         <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${
-          isOnline  ? "bg-emerald-100 text-emerald-700" :
-          isPaused  ? "bg-amber-100 text-amber-700" :
-                      "bg-slate-100 text-slate-500"
+          isOnline ? "bg-emerald-100 text-emerald-700" :
+          isPaused ? "bg-amber-100 text-amber-700" :
+                     "bg-slate-100 text-slate-500"
         }`}>
           <span className={`w-2 h-2 rounded-full ${
             isOnline ? "bg-emerald-500 animate-pulse" :
@@ -254,13 +272,9 @@ export default function JitPage() {
                 <label className="block text-xs font-medium text-slate-600 mb-2">Modo de atendimento</label>
                 <div className="grid grid-cols-2 gap-2">
                   {(["QUEUE", "SHOWCASE"] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setCfgMode(m)}
+                    <button key={m} onClick={() => setCfgMode(m)}
                       className={`py-3 px-4 rounded-xl border text-sm font-medium transition text-left ${
-                        cfgMode === m
-                          ? "bg-emerald-500 text-white border-emerald-500"
-                          : "border-slate-200 text-slate-600 hover:border-emerald-300"
+                        cfgMode === m ? "bg-emerald-500 text-white border-emerald-500" : "border-slate-200 text-slate-600 hover:border-emerald-300"
                       }`}
                     >
                       {m === "QUEUE" ? t("jit.modeQueue") : t("jit.modeShowcase")}
@@ -272,12 +286,8 @@ export default function JitPage() {
               {/* Free / Price */}
               <div>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={cfgFree}
-                    onChange={(e) => setCfgFree(e.target.checked)}
-                    className="w-4 h-4 rounded accent-emerald-500"
-                  />
+                  <input type="checkbox" checked={cfgFree} onChange={(e) => setCfgFree(e.target.checked)}
+                    className="w-4 h-4 rounded accent-emerald-500" />
                   <span className="text-sm font-medium text-slate-700">{t("jit.free")}</span>
                 </label>
               </div>
@@ -285,22 +295,35 @@ export default function JitPage() {
               {!cfgFree && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.priceLabel")}</label>
-                    <input
-                      type="number"
-                      value={cfgPrice}
-                      onChange={(e) => setCfgPrice(Number(e.target.value))}
-                      min={0}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 outline-none text-sm"
-                    />
+                    {/* Price in REAIS — not centavos */}
+                    <label className="block text-xs font-medium text-slate-600 mb-1">
+                      Valor da consulta
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
+                        {cfgCurrency === "BRL" ? "R$" : cfgCurrency === "USD" ? "$" : "€"}
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={cfgPriceReais}
+                        onChange={(e) => {
+                          // Allow digits, comma and dot only
+                          const v = e.target.value.replace(/[^0-9,\.]/g, "");
+                          setCfgPriceReais(v);
+                        }}
+                        placeholder="0,00"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 outline-none text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Ex.: 50,00 → R$ 50,00
+                    </p>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.currency")}</label>
-                    <select
-                      value={cfgCurrency}
-                      onChange={(e) => setCfgCurrency(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 outline-none text-sm bg-white"
-                    >
+                    <select value={cfgCurrency} onChange={(e) => setCfgCurrency(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 outline-none text-sm bg-white">
                       <option value="BRL">BRL (R$)</option>
                       <option value="USD">USD ($)</option>
                       <option value="EUR">EUR (€)</option>
@@ -309,46 +332,39 @@ export default function JitPage() {
                 </div>
               )}
 
+              {/* Preview price */}
+              {!cfgFree && cfgPriceReais && parsePriceToCents(cfgPriceReais) > 0 && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 text-sm text-emerald-700">
+                  ✓ Paciente pagará <strong>{formatCurrency(parsePriceToCents(cfgPriceReais), cfgCurrency)}</strong> para entrar na fila
+                </div>
+              )}
+
               {/* Queue settings */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.maxQueue")}</label>
-                  <input
-                    type="number"
-                    value={cfgMax}
-                    onChange={(e) => setCfgMax(Number(e.target.value))}
+                  <input type="number" value={cfgMax} onChange={(e) => setCfgMax(Number(e.target.value))}
                     min={1} max={500}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 outline-none text-sm"
-                  />
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 outline-none text-sm" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.estTime")}</label>
-                  <input
-                    type="number"
-                    value={cfgEstTime}
-                    onChange={(e) => setCfgEstTime(Number(e.target.value))}
+                  <input type="number" value={cfgEstTime} onChange={(e) => setCfgEstTime(Number(e.target.value))}
                     min={5} max={120}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 outline-none text-sm"
-                  />
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 outline-none text-sm" />
                 </div>
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShowConfig(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
-                >
+                <button onClick={() => setShowConfig(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50">
                   Cancelar
                 </button>
-                <button
-                  onClick={startDuty}
-                  disabled={cfgSaving || !cfgSpecialty.trim()}
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                >
+                <button onClick={startDuty} disabled={cfgSaving || !cfgSpecialty.trim()}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2">
                   {cfgSaving
                     ? <><Loader2 size={14} className="animate-spin" /> Iniciando...</>
-                    : <><Power size={14} /> {t("jit.saveStart")}</>
-                  }
+                    : <><Power size={14} /> {t("jit.saveStart")}</>}
                 </button>
               </div>
             </div>
@@ -371,15 +387,15 @@ export default function JitPage() {
             </div>
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
               <p className="text-sm font-semibold text-slate-700">{session.specialty}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{session.isFree ? t("jit.free") : `${session.priceAmount / 100} ${session.currency}`}</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {session.isFree ? t("jit.free") : formatCurrency(session.priceAmount, session.currency)}
+              </p>
             </div>
           </div>
 
-          {/* Current patient (IN_PROGRESS or CALLED) */}
+          {/* Current patient */}
           {(inProgressEntry || calledEntry) && (
-            <div className={`rounded-2xl border-2 p-5 ${
-              inProgressEntry ? "bg-emerald-50 border-emerald-300" : "bg-amber-50 border-amber-300"
-            }`}>
+            <div className={`rounded-2xl border-2 p-5 ${inProgressEntry ? "bg-emerald-50 border-emerald-300" : "bg-amber-50 border-amber-300"}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
@@ -390,30 +406,23 @@ export default function JitPage() {
                   </p>
                 </div>
                 {(inProgressEntry?.meetingUrl || calledEntry?.meetingUrl) && (
-                  <a
-                    href={(inProgressEntry?.meetingUrl || calledEntry?.meetingUrl) ?? "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
-                  >
+                  <a href={(inProgressEntry?.meetingUrl || calledEntry?.meetingUrl) ?? "#"}
+                    target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm">
                     <Phone size={16} /> Entrar na sala
                   </a>
                 )}
               </div>
-              {calledEntry?.expiresAt && (
-                <CountdownTimer expiresAt={calledEntry.expiresAt} />
-              )}
+              {calledEntry?.expiresAt && <CountdownTimer expiresAt={calledEntry.expiresAt} />}
             </div>
           )}
 
-          {/* Call next button */}
+          {/* Call next */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-semibold text-slate-800">
-                  {waitingCount > 0
-                    ? `${waitingCount} paciente${waitingCount > 1 ? "s" : ""} aguardando`
-                    : t("jit.queueEmpty")}
+                  {waitingCount > 0 ? `${waitingCount} paciente${waitingCount > 1 ? "s" : ""} aguardando` : t("jit.queueEmpty")}
                 </p>
                 {waitingCount > 0 && (
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -421,15 +430,12 @@ export default function JitPage() {
                   </p>
                 )}
               </div>
-              <button
-                onClick={callNext}
+              <button onClick={callNext}
                 disabled={calling || waitingCount === 0 || isPaused || !!calledEntry}
-                className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm"
-              >
+                className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm">
                 {calling
                   ? <><Loader2 size={16} className="animate-spin" /> {t("jit.calling")}</>
-                  : <><ChevronRight size={16} /> {t("jit.callNext")}</>
-                }
+                  : <><ChevronRight size={16} /> {t("jit.callNext")}</>}
               </button>
             </div>
           </div>
@@ -457,8 +463,7 @@ export default function JitPage() {
                                                        "bg-slate-100 text-slate-500"
                     }`}>
                       {entry.status === "IN_PROGRESS" ? t("jit.inProgress") :
-                       entry.status === "CALLED"      ? t("jit.called") :
-                                                        t("jit.waiting")}
+                       entry.status === "CALLED"      ? t("jit.called") : t("jit.waiting")}
                     </span>
                   </div>
                 ))}
@@ -468,20 +473,14 @@ export default function JitPage() {
 
           {/* Controls */}
           <div className="flex gap-3">
-            <button
-              onClick={() => toggleStatus(isOnline ? "PAUSED" : "ONLINE")}
-              disabled={toggling}
-              className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 inline-flex items-center justify-center gap-2 disabled:opacity-50"
-            >
+            <button onClick={() => toggleStatus(isOnline ? "PAUSED" : "ONLINE")} disabled={toggling}
+              className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 inline-flex items-center justify-center gap-2 disabled:opacity-50">
               {toggling ? <Loader2 size={14} className="animate-spin" /> :
                isOnline ? <><Pause size={14} /> {t("jit.pause")}</> :
                           <><Play size={14} /> {t("jit.resume")}</>}
             </button>
-            <button
-              onClick={() => toggleStatus("OFFLINE")}
-              disabled={toggling}
-              className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm inline-flex items-center justify-center gap-2 disabled:opacity-50"
-            >
+            <button onClick={() => toggleStatus("OFFLINE")} disabled={toggling}
+              className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm inline-flex items-center justify-center gap-2 disabled:opacity-50">
               {toggling ? <Loader2 size={14} className="animate-spin" /> : <><PowerOff size={14} /> {t("jit.goOffline")}</>}
             </button>
           </div>
@@ -491,16 +490,15 @@ export default function JitPage() {
   );
 }
 
-// ── Countdown timer component ────────────────────────────────────────────────
 function CountdownTimer({ expiresAt }: { expiresAt: string }) {
   const [secs, setSecs] = useState(() =>
     Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
   );
   useEffect(() => {
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       setSecs(Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)));
     }, 1000);
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, [expiresAt]);
   const mins = Math.floor(secs / 60);
   const s    = secs % 60;

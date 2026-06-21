@@ -1,14 +1,13 @@
 "use client";
 // src/app/urgent/page.tsx
 // Portal de atendimento imediato (Just-in-Time).
-// Paciente precisa estar logado. Caso contrário, redireciona para login.
-// Fluxo: escolhe especialidade → vê profissionais disponíveis → entra na fila → tela de espera.
+// Fix: plantão pago agora bloqueia entrada na fila e exige pagamento Stripe.
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Stethoscope, Search, Loader2, Clock, Users, CheckCircle2,
-  AlertCircle, Radio, ArrowLeft, Phone, X, Heart,
+  AlertCircle, Radio, ArrowLeft, Phone, X, Heart, Lock, CreditCard,
 } from "lucide-react";
 import { translate, normalizeLang, Lang, TranslationKey } from "@/lib/i18n/translations";
 
@@ -26,38 +25,43 @@ function detectLang(): Lang {
   return "pt";
 }
 
+function formatCurrency(amountCents: number, currency: string, lang: Lang): string {
+  const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
+  return new Intl.NumberFormat(locale, { style: "currency", currency: currency || "BRL" }).format(amountCents / 100);
+}
+
 interface AvailablePro {
-  sessionId: string;
-  mode: string;
-  specialty: string;
-  isFree: boolean;
-  priceAmount: number;
-  currency: string;
-  queueCount: number;
+  sessionId:            string;
+  mode:                 string;
+  specialty:            string;
+  isFree:               boolean;
+  priceAmount:          number;
+  currency:             string;
+  queueCount:           number;
   estimatedWaitMinutes: number;
-  maxQueueSize: number;
-  isFull: boolean;
+  maxQueueSize:         number;
+  isFull:               boolean;
   professional: {
-    id: string;
-    name: string;
+    id:        string;
+    name:      string;
     specialty: string;
     avatarUrl: string | null;
-    bio: string | null;
+    bio:       string | null;
   };
 }
 
 interface QueueEntry {
-  id: string;
-  status: string;
-  position: number;
-  aheadCount: number;
+  id:                   string;
+  status:               string;
+  position:             number;
+  aheadCount:           number;
   estimatedWaitMinutes: number;
-  calledAt: string | null;
-  expiresAt: string | null;
-  meetingUrl: string | null;
-  sessionStatus: string;
-  professionalName: string;
-  specialty: string;
+  calledAt:             string | null;
+  expiresAt:            string | null;
+  meetingUrl:           string | null;
+  sessionStatus:        string;
+  professionalName:     string;
+  specialty:            string;
 }
 
 export default function UrgentPage() {
@@ -72,55 +76,120 @@ export default function UrgentPage() {
   const [search,       setSearch]       = useState("");
   const [joining,      setJoining]      = useState<string | null>(null);
   const [error,        setError]        = useState<string | null>(null);
+  const [userId,       setUserId]       = useState<string | null>(null);
+
+  // Payment modal for paid sessions
+  const [payModal,     setPayModal]     = useState<AvailablePro | null>(null);
+  const [stripeLoaded, setStripeLoaded] = useState(false);
+  const [cardComplete, setCardComplete] = useState(false);
+  const [payLoading,   setPayLoading]   = useState(false);
+  const cardElementRef = useRef<any>(null);
+  const stripeRef      = useRef<any>(null);
+  const elementsRef    = useRef<any>(null);
 
   // Active queue entry
-  const [queueEntry,   setQueueEntry]   = useState<QueueEntry | null>(null);
-  const [entering,     setEntering]     = useState(false);
+  const [queueEntry, setQueueEntry] = useState<QueueEntry | null>(null);
+  const [entering,   setEntering]   = useState(false);
   const pollRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    // Check auth
     fetch("/api/auth/session").then(r => r.json()).then(s => {
-      if (!s?.user) {
-        router.push(`/login?callbackUrl=/urgent`);
-        return;
-      }
-      if (s.user.role !== "PATIENT") {
-        router.push("/professional");
-        return;
-      }
+      if (!s?.user) { router.push(`/login?callbackUrl=/urgent`); return; }
+      if (s.user.role !== "PATIENT") { router.push("/professional"); return; }
+      setUserId(s.user.id);
       setCheckingAuth(false);
       loadAvailable();
-    }).catch(() => {
-      router.push("/login?callbackUrl=/urgent");
-    });
+    }).catch(() => { router.push("/login?callbackUrl=/urgent"); });
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
   async function loadAvailable() {
     setLoadingList(true);
     try {
-      const res = await fetch("/api/jit/available");
+      const res  = await fetch("/api/jit/available");
       const data = await res.json();
       setAvailable(data.available || []);
     } catch { /* ignore */ }
     setLoadingList(false);
   }
 
-  async function joinQueue(sessionId: string, specialty: string) {
+  // ── Free session: join directly ────────────────────────────────────────────
+  async function joinQueue(sessionId: string, specialty: string, paymentIntentId?: string) {
     setJoining(sessionId); setError(null);
     try {
-      const res = await fetch("/api/jit/queue", {
-        method: "POST",
+      const res  = await fetch("/api/jit/queue", {
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, specialty }),
+        body:    JSON.stringify({ sessionId, specialty, paymentIntentId }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Erro ao entrar na fila."); setJoining(null); return; }
-      // Start polling queue status
       startQueuePolling(data.entry.id);
     } catch { setError("Erro de rede."); }
     setJoining(null);
+  }
+
+  // ── Paid session: open payment modal ──────────────────────────────────────
+  function openPayModal(pro: AvailablePro) {
+    setPayModal(pro);
+    setCardComplete(false);
+    setStripeLoaded(false);
+    setTimeout(() => loadStripe(), 100);
+  }
+
+  function loadStripe() {
+    if (!(window as any).Stripe) {
+      const script    = document.createElement("script");
+      script.src      = "https://js.stripe.com/v3/";
+      script.onload   = () => initStripe();
+      document.head.appendChild(script);
+    } else { initStripe(); }
+  }
+
+  function initStripe() {
+    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (!key) return;
+    stripeRef.current   = (window as any).Stripe(key);
+    elementsRef.current = stripeRef.current.elements();
+    const card = elementsRef.current.create("card", {
+      style: { base: { fontSize: "16px", color: "#1e293b", fontFamily: "system-ui, sans-serif", "::placeholder": { color: "#94a3b8" } }, invalid: { color: "#ef4444" } },
+    });
+    setTimeout(() => {
+      const el = document.getElementById("jit-card-element");
+      if (el) {
+        card.mount("#jit-card-element");
+        card.on("change", (e: any) => setCardComplete(e.complete));
+        cardElementRef.current = card;
+        setStripeLoaded(true);
+      }
+    }, 200);
+  }
+
+  async function handleJitPayment() {
+    if (!payModal || !stripeRef.current || !cardElementRef.current) return;
+    setPayLoading(true); setError(null);
+    try {
+      // Create PaymentIntent for JIT
+      const intentRes  = await fetch("/api/jit/payment-intent", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ sessionId: payModal.sessionId }),
+      });
+      const intentData = await intentRes.json();
+      if (!intentRes.ok) { setError(intentData.error || "Erro ao iniciar pagamento."); setPayLoading(false); return; }
+
+      const { error: stripeError, paymentIntent } = await stripeRef.current.confirmCardPayment(
+        intentData.clientSecret,
+        { payment_method: { card: cardElementRef.current } }
+      );
+      if (stripeError) { setError(stripeError.message || "Pagamento falhou."); setPayLoading(false); return; }
+
+      if (paymentIntent.status === "succeeded") {
+        setPayModal(null);
+        await joinQueue(payModal.sessionId, payModal.specialty, paymentIntent.id);
+      }
+    } catch { setError("Erro de rede."); }
+    setPayLoading(false);
   }
 
   function startQueuePolling(queueId: string) {
@@ -131,14 +200,11 @@ export default function UrgentPage() {
 
   async function pollQueue(queueId: string) {
     try {
-      const res = await fetch(`/api/jit/queue?queueId=${queueId}`);
+      const res  = await fetch(`/api/jit/queue?queueId=${queueId}`);
       const data = await res.json();
       if (res.ok) {
         setQueueEntry(data.entry);
-        // Stop polling if done
-        if (["DONE", "CANCELLED", "NO_SHOW"].includes(data.entry.status)) {
-          clearInterval(pollRef.current);
-        }
+        if (["DONE", "CANCELLED", "NO_SHOW"].includes(data.entry.status)) clearInterval(pollRef.current);
       }
     } catch { /* ignore */ }
   }
@@ -147,16 +213,14 @@ export default function UrgentPage() {
     if (!queueEntry) return;
     setEntering(true); setError(null);
     try {
-      const res = await fetch("/api/jit/queue/enter", {
-        method: "POST",
+      const res  = await fetch("/api/jit/queue/enter", {
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ queueId: queueEntry.id }),
+        body:    JSON.stringify({ queueId: queueEntry.id }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Erro."); setEntering(false); return; }
-      if (data.meetingUrl) {
-        window.open(data.meetingUrl, "_blank");
-      }
+      if (data.meetingUrl) window.open(data.meetingUrl, "_blank");
       await pollQueue(queueEntry.id);
     } catch { setError("Erro de rede."); }
     setEntering(false);
@@ -179,87 +243,61 @@ export default function UrgentPage() {
     </div>
   );
 
-  // ── Active queue entry screens ────────────────────────────────────────────
+  // ── Active queue screens ──────────────────────────────────────────────────
   if (queueEntry) {
     const status = queueEntry.status;
 
-    // No-show / cancelled
-    if (status === "NO_SHOW" || status === "CANCELLED") {
-      return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 max-w-sm w-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center mx-auto mb-4">
-              <AlertCircle size={28} className="text-rose-500" />
-            </div>
-            <h2 className="text-lg font-bold text-slate-900 mb-2">{t("urgent.noShowTitle")}</h2>
-            <p className="text-sm text-slate-500 mb-6">{t("urgent.noShowSub")}</p>
-            <button
-              onClick={leaveQueue}
-              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition"
-            >
-              {t("urgent.rejoin")}
-            </button>
+    if (status === "NO_SHOW" || status === "CANCELLED") return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 max-w-sm w-full text-center">
+          <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle size={28} className="text-rose-500" />
           </div>
+          <h2 className="text-lg font-bold text-slate-900 mb-2">{t("urgent.noShowTitle")}</h2>
+          <p className="text-sm text-slate-500 mb-6">{t("urgent.noShowSub")}</p>
+          <button onClick={leaveQueue} className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition">
+            {t("urgent.rejoin")}
+          </button>
         </div>
-      );
-    }
+      </div>
+    );
 
-    // Called — enter now!
-    if (status === "CALLED") {
-      return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-sm border-2 border-emerald-400 p-8 max-w-sm w-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4 animate-bounce">
-              <Phone size={28} className="text-emerald-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-emerald-700 mb-2">{t("urgent.calledTitle")}</h2>
-            <p className="text-sm text-slate-500 mb-2">{queueEntry.professionalName}</p>
-            <p className="text-sm text-slate-500 mb-6">{t("urgent.calledSub")}</p>
-            {queueEntry.expiresAt && (
-              <CountdownTimer expiresAt={queueEntry.expiresAt} />
-            )}
-            {error && (
-              <p className="text-xs text-rose-600 mb-3 mt-3">{error}</p>
-            )}
-            <button
-              onClick={enterConsultation}
-              disabled={entering}
-              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base transition disabled:opacity-50 inline-flex items-center justify-center gap-2 mt-4"
-            >
-              {entering
-                ? <Loader2 size={18} className="animate-spin" />
-                : <><Phone size={18} /> {t("urgent.enterNow")}</>
-              }
-            </button>
+    if (status === "CALLED") return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-emerald-400 p-8 max-w-sm w-full text-center">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4 animate-bounce">
+            <Phone size={28} className="text-emerald-500" />
           </div>
+          <h2 className="text-2xl font-bold text-emerald-700 mb-2">{t("urgent.calledTitle")}</h2>
+          <p className="text-sm text-slate-500 mb-2">{queueEntry.professionalName}</p>
+          <p className="text-sm text-slate-500 mb-6">{t("urgent.calledSub")}</p>
+          {queueEntry.expiresAt && <CountdownTimer expiresAt={queueEntry.expiresAt} />}
+          {error && <p className="text-xs text-rose-600 mb-3 mt-3">{error}</p>}
+          <button onClick={enterConsultation} disabled={entering}
+            className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base transition disabled:opacity-50 inline-flex items-center justify-center gap-2 mt-4">
+            {entering ? <Loader2 size={18} className="animate-spin" /> : <><Phone size={18} /> {t("urgent.enterNow")}</>}
+          </button>
         </div>
-      );
-    }
+      </div>
+    );
 
-    // In progress
-    if (status === "IN_PROGRESS") {
-      return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-sm border-2 border-blue-400 p-8 max-w-sm w-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
-              <Stethoscope size={28} className="text-blue-500" />
-            </div>
-            <h2 className="text-lg font-bold text-slate-900 mb-2">{t("urgent.inProgressTitle")}</h2>
-            <p className="text-sm text-slate-500 mb-6">{queueEntry.professionalName}</p>
-            {queueEntry.meetingUrl && (
-              <a
-                href={queueEntry.meetingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm transition inline-flex items-center justify-center gap-2"
-              >
-                <Phone size={16} /> {t("urgent.enterRoom")}
-              </a>
-            )}
+    if (status === "IN_PROGRESS") return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-blue-400 p-8 max-w-sm w-full text-center">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+            <Stethoscope size={28} className="text-blue-500" />
           </div>
+          <h2 className="text-lg font-bold text-slate-900 mb-2">{t("urgent.inProgressTitle")}</h2>
+          <p className="text-sm text-slate-500 mb-6">{queueEntry.professionalName}</p>
+          {queueEntry.meetingUrl && (
+            <a href={queueEntry.meetingUrl} target="_blank" rel="noopener noreferrer"
+              className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm transition inline-flex items-center justify-center gap-2">
+              <Phone size={16} /> {t("urgent.enterRoom")}
+            </a>
+          )}
         </div>
-      );
-    }
+      </div>
+    );
 
     // Waiting
     return (
@@ -270,7 +308,6 @@ export default function UrgentPage() {
           </div>
           <h2 className="text-lg font-bold text-slate-900 mb-1">{t("urgent.waitTitle")}</h2>
           <p className="text-sm text-slate-500 mb-6">{queueEntry.professionalName} · {queueEntry.specialty}</p>
-
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-slate-50 rounded-xl p-4">
               <p className="text-3xl font-bold text-emerald-600">{queueEntry.position}</p>
@@ -281,26 +318,15 @@ export default function UrgentPage() {
               <p className="text-xs text-slate-500 mt-1">{t("urgent.minutes")}</p>
             </div>
           </div>
-
           {queueEntry.aheadCount > 0 && (
-            <p className="text-sm text-slate-500 mb-4">
-              {queueEntry.aheadCount} {t("urgent.ahead")}
-            </p>
+            <p className="text-sm text-slate-500 mb-4">{queueEntry.aheadCount} {t("urgent.ahead")}</p>
           )}
-
-          <p className="text-xs text-slate-400 bg-slate-50 rounded-xl px-4 py-3 mb-6">
-            {t("urgent.keepOpen")}
-          </p>
-
+          <p className="text-xs text-slate-400 bg-slate-50 rounded-xl px-4 py-3 mb-6">{t("urgent.keepOpen")}</p>
           <div className="flex items-center justify-center gap-2 mb-2">
             <Loader2 size={14} className="animate-spin text-emerald-500" />
             <span className="text-xs text-slate-400">{t("urgent.polling")}</span>
           </div>
-
-          <button
-            onClick={leaveQueue}
-            className="text-xs text-slate-400 hover:text-rose-500 transition mt-2"
-          >
+          <button onClick={leaveQueue} className="text-xs text-slate-400 hover:text-rose-500 transition mt-2">
             {t("urgent.leaveQueue")}
           </button>
         </div>
@@ -308,10 +334,9 @@ export default function UrgentPage() {
     );
   }
 
-  // ── Main listing screen ───────────────────────────────────────────────────
+  // ── Main listing ──────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
       <div className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <button onClick={() => router.back()} className="text-slate-400 hover:text-slate-600">
@@ -334,33 +359,20 @@ export default function UrgentPage() {
           </div>
         )}
 
-        {/* Search */}
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("urgent.searchSpec")}
-            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400"
-          />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("urgent.searchSpec")}
+            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400" />
         </div>
 
-        {/* List */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold text-slate-700">{t("urgent.available")}</p>
-            <button
-              onClick={loadAvailable}
-              className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
-            >
-              {t("urgent.refresh")}
-            </button>
+            <button onClick={loadAvailable} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">{t("urgent.refresh")}</button>
           </div>
 
           {loadingList ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 size={20} className="animate-spin text-slate-400" />
-            </div>
+            <div className="flex items-center justify-center py-12"><Loader2 size={20} className="animate-spin text-slate-400" /></div>
           ) : filtered.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-100 py-12 text-center">
               <Stethoscope size={36} className="text-slate-300 mx-auto mb-3" />
@@ -372,29 +384,21 @@ export default function UrgentPage() {
               {filtered.map((pro) => (
                 <div key={pro.sessionId} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
                   <div className="flex items-start gap-3">
-                    {/* Avatar */}
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
                       {pro.professional.name.charAt(4)}
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900">{pro.professional.name}</p>
                       <p className="text-sm text-slate-500">{pro.specialty}</p>
-
                       <div className="flex items-center gap-3 mt-2 flex-wrap">
-                        {/* Free / price */}
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                           pro.isFree ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
                         }`}>
-                          {pro.isFree ? t("urgent.free") : `${(pro.priceAmount / 100).toFixed(2)} ${pro.currency}`}
+                          {pro.isFree ? t("urgent.free") : formatCurrency(pro.priceAmount, pro.currency, lang)}
                         </span>
-
-                        {/* Queue info */}
                         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                           <Users size={12} /> {pro.queueCount} {t("urgent.inQueue")}
                         </span>
-
-                        {/* Wait time */}
                         {pro.estimatedWaitMinutes > 0 && (
                           <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                             <Clock size={12} /> ~{pro.estimatedWaitMinutes} {t("urgent.mins")} {t("urgent.wait")}
@@ -403,26 +407,21 @@ export default function UrgentPage() {
                       </div>
                     </div>
                   </div>
-
-                  {pro.professional.bio && (
-                    <p className="text-xs text-slate-400 mt-2 line-clamp-2">{pro.professional.bio}</p>
-                  )}
-
+                  {pro.professional.bio && <p className="text-xs text-slate-400 mt-2 line-clamp-2">{pro.professional.bio}</p>}
                   <div className="mt-3">
                     {pro.isFull ? (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg">
                         <AlertCircle size={13} /> {t("urgent.full")}
                       </span>
+                    ) : pro.isFree ? (
+                      <button onClick={() => joinQueue(pro.sessionId, pro.specialty)} disabled={joining === pro.sessionId}
+                        className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                        {joining === pro.sessionId ? <><Loader2 size={14} className="animate-spin" /> {t("urgent.entering")}</> : t("urgent.enter")}
+                      </button>
                     ) : (
-                      <button
-                        onClick={() => joinQueue(pro.sessionId, pro.specialty)}
-                        disabled={joining === pro.sessionId}
-                        className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                      >
-                        {joining === pro.sessionId
-                          ? <><Loader2 size={14} className="animate-spin" /> {t("urgent.entering")}</>
-                          : t("urgent.enter")
-                        }
+                      <button onClick={() => openPayModal(pro)} disabled={joining === pro.sessionId}
+                        className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                        <Lock size={14} /> Pagar e entrar na fila · {formatCurrency(pro.priceAmount, pro.currency, lang)}
                       </button>
                     )}
                   </div>
@@ -432,11 +431,64 @@ export default function UrgentPage() {
           )}
         </div>
       </div>
+
+      {/* Payment modal for paid JIT sessions */}
+      {payModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-slate-900 flex items-center gap-2">
+                <CreditCard size={18} className="text-blue-500" /> Pagamento
+              </h2>
+              <button onClick={() => setPayModal(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-1">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Profissional</span>
+                <span className="font-medium">{payModal.professional.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Especialidade</span>
+                <span>{payModal.specialty}</span>
+              </div>
+              <div className="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-200 mt-1">
+                <span>Total</span>
+                <span>{formatCurrency(payModal.priceAmount, payModal.currency, lang)}</span>
+              </div>
+            </div>
+
+            {error && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3 py-2 rounded-xl">{error}</div>
+            )}
+
+            <div>
+              <p className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1.5">
+                <CreditCard size={13} /> Dados do cartão
+              </p>
+              <div id="jit-card-element"
+                className="border border-slate-200 rounded-xl px-4 py-3.5 bg-white focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-400 transition min-h-[48px]" />
+              {!stripeLoaded && (
+                <div className="flex items-center gap-2 mt-2 text-xs text-slate-400">
+                  <Loader2 size={12} className="animate-spin" /> Carregando...
+                </div>
+              )}
+            </div>
+
+            <button onClick={handleJitPayment} disabled={payLoading || !stripeLoaded || !cardComplete}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition">
+              {payLoading ? <><Loader2 size={16} className="animate-spin" /> Processando...</> : <><Lock size={16} /> Pagar e entrar na fila</>}
+            </button>
+            <p className="text-xs text-slate-400 text-center flex items-center justify-center gap-1">
+              <Lock size={11} /> Pagamento seguro via Stripe
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Countdown timer ───────────────────────────────────────────────────────────
 function CountdownTimer({ expiresAt }: { expiresAt: string }) {
   const [secs, setSecs] = useState(() =>
     Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
@@ -447,9 +499,8 @@ function CountdownTimer({ expiresAt }: { expiresAt: string }) {
     }, 1000);
     return () => clearInterval(timer);
   }, [expiresAt]);
-
   const mins = Math.floor(secs / 60);
-  const s = secs % 60;
+  const s    = secs % 60;
   return (
     <p className={`text-lg font-bold mb-2 ${secs < 30 ? "text-rose-600 animate-pulse" : "text-amber-600"}`}>
       ⏱ {mins}:{s.toString().padStart(2, "0")}
