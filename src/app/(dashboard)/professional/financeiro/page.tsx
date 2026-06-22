@@ -28,10 +28,11 @@ interface Transaction {
 }
 
 interface ChartPoint {
-  label:  string;
-  net:    number;
-  gross:  number;
-  count:  number;
+  label:          string;
+  net:            number;
+  gross:          number;
+  count:          number;
+  commissionCents?: number;
 }
 
 interface FinanceData {
@@ -116,7 +117,7 @@ function BarChart({ data, currency }: { data: ChartPoint[]; currency: string }) 
       <div className="flex items-end gap-1.5 h-36 px-1">
         {data.map((d, i) => {
           const netH   = maxNet > 0 ? Math.max((d.net   / maxNet) * 128, d.net   > 0 ? 4 : 0) : 0;
-          const commH  = maxNet > 0 ? Math.max((d.commissionCents / maxNet) * 128, 0) : 0;
+          const commH  = maxNet > 0 ? Math.max(((d.commissionCents ?? (d.gross - d.net)) / maxNet) * 128, 0) : 0;
           return (
             <div key={i} className="flex-1 flex flex-col items-center justify-end gap-0 group relative min-w-0">
               {/* Tooltip */}
@@ -313,7 +314,7 @@ export default function FinanceiroPage() {
                 <BarChart3 size={16} className="text-emerald-500" /> Evolução mensal
               </h2>
               <BarChart
-                data={data.chartData.map(d => ({ ...d, commissionCents: d.gross - d.net }))}
+                data={data.chartData.map(d => ({ label: d.label, net: d.net, gross: d.gross, count: d.count, commissionCents: d.gross - d.net }))}
                 currency={currency}
               />
             </div>
