@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
     where: {
       professionalId: professional.id,
       status:         "COMPLETED",
-      paymentStatus:  "PAID",
+      paidAt:         { not: null },
       scheduledAt:    { gte: from, lte: to },
     },
     select: {
