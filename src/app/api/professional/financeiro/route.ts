@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
       queueEntry: {
         select: {
           patientUser: {
-            select: { name: true },
+            select: { id: true },
           },
         },
       },
@@ -156,8 +156,8 @@ export async function GET(req: NextRequest) {
     const gross      = jp.amount || 0;
     const commission = Math.round(gross * COMMISSION_RATE);
     const net        = gross - commission;
-    const name       = jp.queueEntry?.patientUser?.name || "";
-    const initials   = name ? name.split(" ").map((n: string) => n[0]).slice(0, 2).join("") : "??";
+    const uid      = jp.queueEntry?.patientUser?.id || "";
+    const initials = uid ? uid.slice(0, 2).toUpperCase() : "??";
     transactions.push({
       id:              jp.id,
       date:            jp.createdAt.toISOString(),
