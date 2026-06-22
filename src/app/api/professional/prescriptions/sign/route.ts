@@ -112,7 +112,7 @@ async function cessCreateTransaction(token: string): Promise<string> {
 // Upload do PDF para o CESS
 async function cessUploadPdf(tcn: string, token: string, pdfBytes: Buffer): Promise<void> {
   const form = new FormData();
-  form.append("document", new Blob([pdfBytes], { type: "application/pdf" }), "receita.pdf");
+  form.append("document", new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }), "receita.pdf");
 
   const res = await fetch(`${CESS_BASE}/file-transfer/${tcn}/eot/default`, {
     method:  "POST",
