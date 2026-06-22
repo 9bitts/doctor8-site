@@ -100,19 +100,19 @@ export async function GET(req: NextRequest) {
   // ── 2. Plantão Online pago ────────────────────────────────────────────────
   const jitPayments = await db.jitPayment.findMany({
     where: {
-      session: { professionalId: professional.id },
-      status:  "SUCCEEDED",
-      createdAt: { gte: from, lte: to },
+      queueEntry: { session: { professionalId: professional.id } },
+      status:     "paid",
+      createdAt:  { gte: from, lte: to },
     },
     select: {
       id:        true,
       amount:    true,
       currency:  true,
       createdAt: true,
-      queue: {
+      queueEntry: {
         select: {
-          patient: {
-            select: { firstName: true, lastName: true },
+          patientUser: {
+            select: { name: true },
           },
         },
       },
@@ -156,8 +156,8 @@ export async function GET(req: NextRequest) {
     const gross      = jp.amount || 0;
     const commission = Math.round(gross * COMMISSION_RATE);
     const net        = gross - commission;
-    const p          = jp.queue?.patient;
-    const initials   = p ? `${p.firstName.charAt(0)}${p.lastName.charAt(0)}` : "??";
+    const name       = jp.queueEntry?.patientUser?.name || "";
+    const initials   = name ? name.split(" ").map((n: string) => n[0]).slice(0, 2).join("") : "??";
     transactions.push({
       id:              jp.id,
       date:            jp.createdAt.toISOString(),
