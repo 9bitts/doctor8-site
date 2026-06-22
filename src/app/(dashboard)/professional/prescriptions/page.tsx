@@ -300,7 +300,7 @@ export default function PrescriptionsPage() {
 
   function resetForm() {
     setSelectedPatient(null); setPatientQuery(""); setDrugQuery("");
-    setDrugResults([]); setDrugCountry([]); setMedications([]);
+    setDrugResults([]); setDrugCountry(""); setMedications([]);
     setInstructions(""); setValidDays(30); setFormError("");
     setSuccessPatient(null); setInviteSending(false);
     setInviteSent(false); setInviteError("");
