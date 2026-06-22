@@ -270,6 +270,9 @@ model ProfessionalProfile {
   clinicCountry   String?
   clinicZip       String?
 
+  digitalSignProvider String?
+  digitalSignCpf      String?
+
   // Teleconsult
   acceptsTeleconsult  Boolean @default(true)
   acceptsInPerson     Boolean @default(false)
