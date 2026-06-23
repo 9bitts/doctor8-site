@@ -116,7 +116,7 @@ export async function GET(
         Bucket: BUCKET, Key: prescription.signedFileUrl,
       }));
       const buf = await streamToBuffer(obj.Body as any);
-      return new NextResponse(buf, {
+      return new NextResponse(new Uint8Array(buf), {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `inline; filename="receita-${prescription.id.slice(0, 8)}-assinada.pdf"`,
@@ -183,7 +183,7 @@ export async function GET(
     signed: false,
   });
 
-  return new NextResponse(Buffer.from(pdfBytes), {
+  return new NextResponse(pdfBytes, {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="receita-${prescription.id.slice(0, 8)}.pdf"`,
