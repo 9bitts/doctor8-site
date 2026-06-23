@@ -109,6 +109,16 @@ export default function AppointmentsPage() {
   useEffect(() => { if (step === "payment" && !stripeLoaded) loadStripe(); }, [step]);
   useEffect(() => { setShowTip(true); }, [step]);
 
+  // Deep link from map: /patient/appointments?pro=ID
+  useEffect(() => {
+    if (professionals.length === 0 || selectedPro) return;
+    const proId = new URLSearchParams(window.location.search).get("pro");
+    if (!proId) return;
+    const pro = professionals.find((p) => p.id === proId);
+    if (pro) selectProfessional(pro);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionals]);
+
   async function loadStripe() {
     if (!(window as any).Stripe) {
       const script = document.createElement("script");

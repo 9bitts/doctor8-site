@@ -269,6 +269,8 @@ model ProfessionalProfile {
   clinicState     String?
   clinicCountry   String?
   clinicZip       String?
+  clinicLatitude  Float?
+  clinicLongitude Float?
 
   // DEPRECATED: no longer used. Digital signature now uses Lacuna Rest PKI Core
   // (cloud certificate chosen on the hosted signing page). Kept to avoid a

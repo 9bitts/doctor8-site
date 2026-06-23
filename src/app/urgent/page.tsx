@@ -90,6 +90,7 @@ export default function UrgentPage() {
   // Active queue entry
   const [queueEntry, setQueueEntry] = useState<QueueEntry | null>(null);
   const [entering,   setEntering]   = useState(false);
+  const [highlightSessionId, setHighlightSessionId] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -109,6 +110,8 @@ export default function UrgentPage() {
       const res  = await fetch("/api/jit/available");
       const data = await res.json();
       setAvailable(data.available || []);
+      const sid = new URLSearchParams(window.location.search).get("sessionId");
+      if (sid) setHighlightSessionId(sid);
     } catch { /* ignore */ }
     setLoadingList(false);
   }
@@ -382,7 +385,15 @@ export default function UrgentPage() {
           ) : (
             <div className="space-y-3">
               {filtered.map((pro) => (
-                <div key={pro.sessionId} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+                <div
+                  key={pro.sessionId}
+                  id={`jit-session-${pro.sessionId}`}
+                  className={`bg-white rounded-2xl border shadow-sm p-4 ${
+                    highlightSessionId === pro.sessionId
+                      ? "border-emerald-400 ring-2 ring-emerald-200"
+                      : "border-slate-100"
+                  }`}
+                >
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
                       {pro.professional.name.charAt(4)}

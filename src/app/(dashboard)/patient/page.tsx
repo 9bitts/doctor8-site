@@ -11,7 +11,7 @@ import { translate, normalizeLang, localeOf, greetingKey, Lang } from "@/lib/i18
 import {
   Calendar, FileText, Pill, AlertCircle, Radio, Stethoscope,
   Clock, ChevronRight, Activity, AlertTriangle, MessageSquare,
-  ClipboardList, Settings, Heart, Video,
+  ClipboardList, Settings, Heart, Video, MapPin,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -179,6 +179,7 @@ export default async function PatientDashboard() {
       title: t("pdash.quick.group.attend"),
       items: [
         { href: "/urgent", labelKey: "nav.urgent", icon: <Radio size={20} />, accent: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
+        { href: "/patient/find", labelKey: "nav.find", icon: <MapPin size={20} />, accent: "bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200" },
         { href: "/patient/appointments", labelKey: "nav.appointments", icon: <Calendar size={20} />, accent: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200" },
       ],
     },

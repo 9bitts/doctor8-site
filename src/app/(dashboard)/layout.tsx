@@ -14,7 +14,7 @@ import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
-  BookOpen, Radio, TrendingUp,
+  BookOpen, Radio, TrendingUp, MapPin,
 } from "lucide-react";
 
 interface NavItem {
@@ -33,6 +33,7 @@ const PATIENT_NAV: NavItem[] = [
   { href: "/patient/documents", labelKey: "nav.documents", icon: <ClipboardList size={18} />, roles: ["PATIENT"] },
   { href: "/patient/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PATIENT"] },
   { href: "/urgent", labelKey: "nav.urgent", icon: <Radio size={18} />, roles: ["PATIENT"] },
+  { href: "/patient/find", labelKey: "nav.find", icon: <MapPin size={18} />, roles: ["PATIENT"] },
   { href: "/patient/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PATIENT"] },
 ];
 
