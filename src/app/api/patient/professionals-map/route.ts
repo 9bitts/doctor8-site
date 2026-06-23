@@ -20,6 +20,7 @@ function hasClinicLocation(pro: {
 }
 
 export async function GET(req: NextRequest) {
+  try {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "PATIENT")
@@ -46,23 +47,31 @@ export async function GET(req: NextRequest) {
     select: { id: true },
   });
 
-  const [favorites, reviewAgg, specialtyRows] = await Promise.all([
-    db.patientFavorite.findMany({
-      where: { patientUserId: session.user.id },
-      select: { professionalId: true, notifyOnline: true },
-    }),
-    db.professionalReview.groupBy({
-      by: ["professionalId"],
-      _avg: { rating: true },
-      _count: { rating: true },
-    }),
-    db.professionalProfile.findMany({
-      where: { verified: true },
-      select: { specialty: true },
-      distinct: ["specialty"],
-      orderBy: { specialty: "asc" },
-    }),
-  ]);
+  let favorites: { professionalId: string; notifyOnline: boolean }[] = [];
+  let reviewAgg: { professionalId: string; _avg: { rating: number | null }; _count: { rating: number } }[] = [];
+
+  try {
+    [favorites, reviewAgg] = await Promise.all([
+      db.patientFavorite.findMany({
+        where: { patientUserId: session.user.id },
+        select: { professionalId: true, notifyOnline: true },
+      }),
+      db.professionalReview.groupBy({
+        by: ["professionalId"],
+        _avg: { rating: true },
+        _count: { rating: true },
+      }),
+    ]);
+  } catch (e) {
+    console.error("[PROFESSIONALS-MAP] favorites/reviews unavailable:", e);
+  }
+
+  const specialtyRows = await db.professionalProfile.findMany({
+    where: { verified: true },
+    select: { specialty: true },
+    distinct: ["specialty"],
+    orderBy: { specialty: "asc" },
+  });
 
   const favoriteSet = new Set(favorites.map((f) => f.professionalId));
   const reviewMap = new Map(
@@ -254,4 +263,9 @@ export async function GET(req: NextRequest) {
     teleconsultOnline: filtered.filter((p) => p.teleconsultOnly && p.isOnline).length,
     total: filtered.length,
   });
+  } catch (e) {
+    console.error("[PROFESSIONALS-MAP]", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

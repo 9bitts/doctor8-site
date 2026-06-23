@@ -1,17 +1,22 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import {
-  MapContainer, TileLayer, Marker, Popup, Circle, useMap,
-} from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { useT } from "@/lib/i18n/I18nProvider";
 import {
   Search, Loader2, MapPin, Radio, Calendar, X, Navigation,
   Stethoscope, ChevronRight, AlertCircle, Star, Heart, Clock, DollarSign,
 } from "lucide-react";
+
+const PatientMapView = dynamic(() => import("./PatientMapView"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[360px] lg:h-[520px] flex items-center justify-center bg-slate-50">
+      <Loader2 size={28} className="animate-spin text-slate-400" />
+    </div>
+  ),
+});
 
 export interface MapProfessional {
   id: string;
@@ -50,33 +55,6 @@ interface Center { lat: number; lng: number }
 
 const RADIUS_OPTIONS = [0, 5, 10, 50] as const;
 
-const onlineIcon = L.divIcon({
-  className: "",
-  html: `<div style="width:28px;height:28px;border-radius:50%;background:#10b981;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.25);"></div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-});
-
-const offlineIcon = L.divIcon({
-  className: "",
-  html: `<div style="width:24px;height:24px;border-radius:50%;background:#64748b;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.2);"></div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
-
-function MapRecenter({ center, radiusKm }: { center: Center; radiusKm: number }) {
-  const map = useMap();
-  useEffect(() => {
-    if (radiusKm > 0) {
-      const bounds = L.circle([center.lat, center.lng], { radius: radiusKm * 1000 }).getBounds();
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-    } else {
-      map.setView([center.lat, center.lng], 12);
-    }
-  }, [center.lat, center.lng, radiusKm, map]);
-  return null;
-}
-
 function professionLabel(t: (k: string) => string, type: string): string {
   const key = `map.profession.${type}`;
   const v = t(key);
@@ -84,21 +62,27 @@ function professionLabel(t: (k: string) => string, type: string): string {
 }
 
 function StarRating({ avg, count, size = 12 }: { avg: number | null; count: number; size?: number }) {
-  if (!avg || count === 0) return null;
+  const n = avg != null ? Number(avg) : 0;
+  if (!Number.isFinite(n) || n <= 0 || count === 0) return null;
   return (
     <span className="inline-flex items-center gap-0.5 text-amber-500">
       <Star size={size} fill="currentColor" />
-      <span className="text-xs font-semibold text-slate-700">{avg.toFixed(1)}</span>
+      <span className="text-xs font-semibold text-slate-700">{n.toFixed(1)}</span>
       <span className="text-[10px] text-slate-400">({count})</span>
     </span>
   );
 }
 
 function fmtPrice(cents: number, currency: string, locale: string): string {
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: currency || "BRL",
-  }).format(cents / 100);
+  const code = (currency || "BRL").toUpperCase();
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: code,
+    }).format((cents || 0) / 100);
+  } catch {
+    return `R$ ${((cents || 0) / 100).toFixed(2)}`;
+  }
 }
 
 function ProListItem({
@@ -177,12 +161,18 @@ export default function PatientMapClient() {
   const [filterMode, setFilterMode]       = useState<"all" | "online" | "favorites">("all");
   const [specialty, setSpecialty]         = useState("");
   const [radiusKm, setRadiusKm]           = useState<number>(10);
-  const [mounted, setMounted]             = useState(false);
+  const [mapReady, setMapReady]           = useState(false);
   const [reviewRating, setReviewRating]   = useState(5);
   const [reviewSaving, setReviewSaving]   = useState(false);
   const [reviewMsg, setReviewMsg]         = useState("");
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const t = window.setTimeout(() => setMapReady(true), 0);
+    return () => {
+      window.clearTimeout(t);
+      setMapReady(false);
+    };
+  }, []);
 
   const loadProfessionals = useCallback(async (
     lat?: number, lng?: number, q?: string,
@@ -328,7 +318,7 @@ export default function PatientMapClient() {
 
   const mapPins = filtered.filter((p) => p.showOnMap && p.lat != null && p.lng != null);
   const teleconsultList = filtered.filter((p) => p.teleconsultOnly && p.isOnline);
-  const regularList = filtered.filter((p) => !(p.teleconsultOnly && p.isOnline) || p.showOnMap);
+  const regularList = filtered.filter((p) => !(p.teleconsultOnly && p.isOnline));
 
   const mapCenter: Center = center ?? { lat: -23.5505, lng: -46.6333 };
 
@@ -424,62 +414,32 @@ export default function PatientMapClient() {
               <Loader2 size={32} className="animate-spin text-slate-400" />
             </div>
           )}
-          {mounted && (
-            <MapContainer center={[mapCenter.lat, mapCenter.lng]} zoom={12}
-              className="w-full h-[360px] lg:h-[520px]" scrollWheelZoom>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {center && (
-                <>
-                  {radiusKm > 0 && (
-                    <Circle
-                      center={[center.lat, center.lng]}
-                      radius={radiusKm * 1000}
-                      pathOptions={{ color: "#10b981", fillColor: "#10b981", fillOpacity: 0.06, weight: 2, dashArray: "6 4" }}
-                    />
-                  )}
-                  <Marker
-                    position={[center.lat, center.lng]}
-                    icon={L.divIcon({
-                      className: "",
-                      html: `<div style="width:14px;height:14px;border-radius:50%;background:#3b82f6;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);"></div>`,
-                      iconSize: [14, 14],
-                      iconAnchor: [7, 7],
-                    })}
-                  />
-                  <MapRecenter center={center} radiusKm={radiusKm} />
-                </>
-              )}
-              {mapPins.map((pro) => (
-                <Marker
-                  key={pro.id}
-                  position={[pro.lat!, pro.lng!]}
-                  icon={pro.isOnline ? onlineIcon : offlineIcon}
-                  eventHandlers={{ click: () => setSelected(pro) }}
-                >
-                  <Popup>
-                    <div className="text-sm min-w-[180px] space-y-1">
-                      <p className="font-bold">{pro.name}</p>
-                      <p className="text-slate-500 text-xs">{pro.specialty}</p>
-                      <StarRating avg={pro.ratingAvg} count={pro.ratingCount} />
-                      {pro.isOnline && (
-                        <p className="text-xs text-emerald-600 font-medium">
-                          {pro.jitIsFree ? t("map.free") : fmtPrice(pro.displayPriceCents, pro.currency, locale)}
-                          {pro.estimatedWaitMinutes != null && pro.estimatedWaitMinutes > 0 && (
-                            <> · ~{pro.estimatedWaitMinutes} {t("map.mins")}</>
-                          )}
-                        </p>
+          {mapReady && (
+            <PatientMapView
+              mapCenter={mapCenter}
+              center={center}
+              radiusKm={radiusKm}
+              pins={mapPins}
+              onSelect={setSelected}
+              renderPopup={(pro) => (
+                <div className="text-sm min-w-[180px] space-y-1">
+                  <p className="font-bold">{pro.name}</p>
+                  <p className="text-slate-500 text-xs">{pro.specialty}</p>
+                  <StarRating avg={pro.ratingAvg} count={pro.ratingCount} />
+                  {pro.isOnline && (
+                    <p className="text-xs text-emerald-600 font-medium">
+                      {pro.jitIsFree ? t("map.free") : fmtPrice(pro.displayPriceCents, pro.currency, locale)}
+                      {pro.estimatedWaitMinutes != null && pro.estimatedWaitMinutes > 0 && (
+                        <> · ~{pro.estimatedWaitMinutes} {t("map.mins")}</>
                       )}
-                      <button onClick={() => setSelected(pro)} className="mt-1 text-emerald-600 font-semibold text-xs">
-                        {t("map.viewProfile")} →
-                      </button>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
+                    </p>
+                  )}
+                  <button type="button" onClick={() => setSelected(pro)} className="mt-1 text-emerald-600 font-semibold text-xs">
+                    {t("map.viewProfile")} →
+                  </button>
+                </div>
+              )}
+            />
           )}
         </div>
 
