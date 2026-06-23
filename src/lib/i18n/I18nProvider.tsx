@@ -5,7 +5,8 @@
 // Persists the choice to the user account (User.language) via API,
 // and mirrors it in localStorage for instant load on next visit.
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Lang, translate, TranslationKey } from "./translations";
 
 interface I18nContextValue {
@@ -27,6 +28,12 @@ function normalize(value: string | null | undefined): Lang {
   return "en";
 }
 
+function persistLangCookie(l: Lang) {
+  try {
+    document.cookie = `${STORAGE_KEY}=${l};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+  } catch { /* ignore */ }
+}
+
 export function I18nProvider({
   initialLang,
   children,
@@ -34,6 +41,8 @@ export function I18nProvider({
   initialLang?: string;
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const syncedCookie = useRef(false);
   const [lang, setLangState] = useState<Lang>(normalize(initialLang));
 
   // On mount, prefer localStorage (instant), then fall back to session value.
@@ -41,7 +50,14 @@ export function I18nProvider({
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        setLangState(normalize(stored));
+        const l = normalize(stored);
+        setLangState(l);
+        const hadCookie = document.cookie.includes(`${STORAGE_KEY}=`);
+        persistLangCookie(l);
+        if (!hadCookie && !syncedCookie.current) {
+          syncedCookie.current = true;
+          router.refresh();
+        }
         return;
       }
     } catch { /* ignore */ }
@@ -52,21 +68,27 @@ export function I18nProvider({
         const res = await fetch("/api/auth/session");
         const session = await res.json();
         const fromUser = session?.user?.language;
-        if (fromUser) setLangState(normalize(fromUser));
+        if (fromUser) {
+          const l = normalize(fromUser);
+          setLangState(l);
+          persistLangCookie(l);
+        }
       } catch { /* ignore */ }
     })();
-  }, []);
+  }, [router]);
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
     try { localStorage.setItem(STORAGE_KEY, l); } catch { /* ignore */ }
+    persistLangCookie(l);
+    router.refresh();
     // Persist to the account (best-effort, no blocking).
     fetch("/api/user/language", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ language: l }),
     }).catch(() => { /* ignore */ });
-  }, []);
+  }, [router]);
 
   const t = useCallback((key: TranslationKey | string) => translate(lang, key), [lang]);
 

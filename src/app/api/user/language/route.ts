@@ -22,5 +22,11 @@ export async function POST(req: NextRequest) {
     data: { language: parsed.data.language },
   });
 
-  return NextResponse.json({ ok: true, language: parsed.data.language });
+  const res = NextResponse.json({ ok: true, language: parsed.data.language });
+  res.cookies.set("doctor8.lang", parsed.data.language, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
+  return res;
 }

@@ -6,7 +6,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
-import { translate, normalizeLang, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
+import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
+import { getUserLang } from "@/lib/i18n/server-lang";
 import {
   Calendar, Users, DollarSign, Clock, ChevronRight, Video, Radio,
   Inbox, MessageSquare, Stethoscope, BookOpen, UserCog, Settings,
@@ -21,8 +22,7 @@ export default async function ProfessionalDashboard() {
   if (session.user.role !== "PROFESSIONAL") redirect("/patient");
 
   const userId = session.user.id;
-  const userRow = await db.user.findUnique({ where: { id: userId }, select: { language: true } });
-  const lang: Lang = normalizeLang(userRow?.language);
+  const lang: Lang = await getUserLang(userId);
   const t = (key: string) => translate(lang, key);
   const locale = localeOf(lang);
 

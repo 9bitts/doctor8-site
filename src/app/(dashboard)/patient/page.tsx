@@ -7,7 +7,8 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
 import { decryptPatientFields, decrypt } from "@/lib/encryption";
-import { translate, normalizeLang, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
+import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
+import { getUserLang } from "@/lib/i18n/server-lang";
 import {
   Calendar, FileText, Pill, AlertCircle, Radio, Stethoscope,
   Clock, ChevronRight, Activity, AlertTriangle, MessageSquare,
@@ -27,8 +28,7 @@ export default async function PatientDashboard() {
 
   const userId = session.user.id;
 
-  const userRow = await db.user.findUnique({ where: { id: userId }, select: { language: true } });
-  const lang: Lang = normalizeLang(userRow?.language);
+  const lang: Lang = await getUserLang(userId);
   const t = (key: string) => translate(lang, key);
   const locale = localeOf(lang);
 
@@ -218,6 +218,26 @@ export default async function PatientDashboard() {
         </h1>
         <p className="text-slate-500 mt-1">{t("pdash.subtitle")}</p>
       </div>
+
+      {/* Encontrar profissionais no mapa */}
+      <Link
+        href="/patient/find"
+        className="block rounded-2xl border border-teal-200 bg-teal-50 shadow-sm overflow-hidden transition hover:shadow-md hover:border-teal-300"
+      >
+        <div className="p-5 sm:p-6 flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-teal-100">
+            <MapPin size={28} className="text-teal-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-lg font-bold text-slate-900">{t("pdash.find.title")}</p>
+            <p className="text-sm mt-1 text-teal-700">{t("pdash.find.desc")}</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-1 text-sm font-semibold shrink-0 text-teal-700">
+            {t("pdash.find.action")}
+            <ChevronRight size={16} />
+          </div>
+        </div>
+      </Link>
 
       {/* Atendimento imediato — priority hero */}
       <Link
