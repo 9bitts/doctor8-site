@@ -162,6 +162,8 @@ export async function getSignatureSession(
   }
 
   const data = (await res.json()) as SignatureSession;
+  console.log("[LACUNA] sessão consultada, status:", data.status,
+    "docs:", Array.isArray(data.documents) ? data.documents.length : "?");
   return data;
 }
 
@@ -194,10 +196,25 @@ export async function downloadSignedPdf(location: string): Promise<Buffer> {
 
 /**
  * Helper: extrai a location do primeiro documento assinado de uma sessão.
+ * Tolerante a variações de capitalização/estrutura da resposta da API.
  */
 export function getSignedLocation(
   session: SignatureSession
 ): string | null {
-  const doc = session.documents?.[0];
-  return doc?.signedFile?.location || null;
+  const anySession = session as unknown as Record<string, any>;
+  const docs = anySession.documents || anySession.Documents || [];
+  const doc = docs?.[0];
+  if (!doc) return null;
+
+  const signedFile =
+    doc.signedFile || doc.SignedFile || doc.signed_file || null;
+  if (!signedFile) return null;
+
+  const location =
+    signedFile.location || signedFile.Location || signedFile.url || signedFile.Url || null;
+
+  if (!location) {
+    console.error("[LACUNA] não achei location no documento:", JSON.stringify(doc).slice(0, 400));
+  }
+  return location || null;
 }
