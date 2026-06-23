@@ -19,6 +19,10 @@ import { audit } from "@/lib/audit";
 import { createSignatureSession } from "@/lib/lacuna";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
 
+// Garante runtime Node (pdf-lib e Buffer não rodam em edge) e tempo extra.
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 function safeDecrypt(v: string | null | undefined): string {
   if (v == null) return "";
   try { return decrypt(v); } catch { return v; }
@@ -188,9 +192,21 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Cria a Signature Session na Lacuna ──
-  const origin = req.nextUrl.origin;
+  // Atrás do Cloudflare/Railway, req.nextUrl.origin pode retornar a URL interna
+  // (localhost:8080). Preferimos uma base pública explícita.
+  const publicBase =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    (req.headers.get("x-forwarded-host")
+      ? `https://${req.headers.get("x-forwarded-host")}`
+      : req.headers.get("host")
+        ? `https://${req.headers.get("host")}`
+        : req.nextUrl.origin);
+
   const returnUrl =
-    `${origin}/api/professional/prescriptions/sign/callback?prescriptionId=${encodeURIComponent(prescription.id)}`;
+    `${publicBase.replace(/\/+$/, "")}/api/professional/prescriptions/sign/callback?prescriptionId=${encodeURIComponent(prescription.id)}`;
+
+  console.log("[SIGN] returnUrl:", returnUrl);
 
   let lacuna;
   try {

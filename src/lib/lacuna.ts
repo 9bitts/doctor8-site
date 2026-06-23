@@ -94,11 +94,26 @@ export async function createSignatureSession(opts: {
   // https://docs.lacunasoftware.com/pt-br/articles/rest-pki/core/integration/signature-sessions/certificate-requirements.html
   void opts.cpf;
 
-  const res = await fetch(`${ENDPOINT}/api/signature-sessions`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
+  console.log("[LACUNA] criando sessão, endpoint:", ENDPOINT, "pdf bytes:", opts.pdfBytes.length);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+
+  let res: Response;
+  try {
+    res = await fetch(`${ENDPOINT}/api/signature-sessions`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timeout);
+    throw new Error(`Lacuna fetch falhou: ${(e as Error).message}`);
+  }
+  clearTimeout(timeout);
+
+  console.log("[LACUNA] status:", res.status);
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
