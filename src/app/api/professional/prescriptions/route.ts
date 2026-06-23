@@ -216,6 +216,8 @@ export async function GET(req: NextRequest) {
       createdAt: p.createdAt,
       validUntil: p.validUntil,
       medications: p.medications,
+      signatureStatus: (p as { signatureStatus?: string | null }).signatureStatus ?? null,
+      signed: (p as { signatureStatus?: string | null }).signatureStatus === "SIGNED",
       document: {
         patient: firstName || lastName ? { firstName, lastName } : null,
       },

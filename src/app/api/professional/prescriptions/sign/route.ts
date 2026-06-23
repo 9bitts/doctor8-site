@@ -1,293 +1,221 @@
 // src/app/api/professional/prescriptions/sign/route.ts
-// POST — assina digitalmente uma receita usando BirdID ou VIDaaS via CESS API.
+// POST — inicia a assinatura digital de uma receita via Lacuna Rest PKI Core.
+//
 // Fluxo:
-//  1. Gera o PDF da receita em HTML → bytes (via html-pdf-node ou puppeteer-less)
-//  2. Autentica no CESS com CPF + OTP do médico
-//  3. Cria transação de assinatura PDFSignature
-//  4. Faz upload do PDF
-//  5. Aguarda assinatura (polling)
-//  6. Baixa o PDF assinado
-//  7. Salva no S3 e atualiza o campo digitalSignature da prescrição
+//   1. Valida que o usuário é o profissional dono da receita.
+//   2. Gera o PDF REAL da receita (pdf-lib).
+//   3. Cria uma Signature Session na Lacuna (PAdES) com o PDF em base64,
+//      restringindo ao CPF do médico.
+//   4. Salva signatureSessionId + signatureStatus=PENDING na prescrição.
+//   5. Devolve { redirectUrl } para o front redirecionar o médico.
+//
+// O retorno (PDF assinado) é tratado em sign/callback/route.ts.
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { audit } from "@/lib/audit";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { z } from "zod";
+import { createSignatureSession } from "@/lib/lacuna";
+import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
 
-const schema = z.object({
-  prescriptionId: z.string(),
-  otp:            z.string().min(4).max(8),
-});
-
-// CESS endpoints por provedor
-const CESS_BASE = "https://cess.lab.vaultid.com.br"; // sandbox — trocar para prod depois
-
-function safeDecrypt(v: string | null): string {
-  if (!v) return "";
+function safeDecrypt(v: string | null | undefined): string {
+  if (v == null) return "";
   try { return decrypt(v); } catch { return v; }
 }
 
-// Autentica no CESS e retorna token de sessão
-async function cessAuthenticate(cpf: string, otp: string): Promise<string> {
-  const schema = Buffer.from(`${cpf}:${otp}`).toString("base64");
-  const res = await fetch(`${CESS_BASE}/signature-service`, {
-    method:  "POST",
-    headers: {
-      "Authorization": `Basic ${schema}`,
-      "Content-Type":  "application/json",
-      "Accept":        "application/json",
-      "VCSchemaCfg":   "returnAccessToken=true;lifetime=300;autoRevoke=true",
-    },
-    body: JSON.stringify({
-      certificate_alias:  "",
-      type:               "PDFSignature",
-      hash_algorithm:     "SHA256",
-      auto_fix_document:  true,
-      documents_source:   "UPLOAD_REFERENCE",
-      signature_settings: [{
-        id:                   "default",
-        contact:              "",
-        location:             "Brasil",
-        reason:               "Assinatura médica — Doctor8",
-        visible_signature:    true,
-        visible_sign_x:       0,
-        visible_sign_y:       750,
-        visible_sign_width:   200,
-        visible_sign_height:  40,
-        visible_sign_page:    1,
-      }],
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`CESS auth failed: ${err}`);
-  }
-
-  // Token vem no header VCSchemaData: accessToken;lifetime;provider
-  const vcData   = res.headers.get("VCSchemaData") || "";
-  const tcnData  = await res.json();
-  const tcn      = tcnData.tcn as string;
-  const token    = vcData.split(";")[0] || "";
-
-  return `${tcn}|${token}`;
+function normLang(v: string | null | undefined): Lang {
+  if (v === "pt" || v === "es") return v;
+  return "en";
 }
 
-// Cria transação de assinatura e retorna TCN
-async function cessCreateTransaction(token: string): Promise<string> {
-  const res = await fetch(`${CESS_BASE}/signature-service`, {
-    method:  "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type":  "application/json",
-      "Accept":        "application/json",
-    },
-    body: JSON.stringify({
-      certificate_alias:  "",
-      type:               "PDFSignature",
-      hash_algorithm:     "SHA256",
-      auto_fix_document:  true,
-      documents_source:   "UPLOAD_REFERENCE",
-      signature_settings: [{
-        id:                   "default",
-        contact:              "",
-        location:             "Brasil",
-        reason:               "Assinatura médica — Doctor8",
-        visible_signature:    true,
-        visible_sign_x:       0,
-        visible_sign_y:       750,
-        visible_sign_width:   200,
-        visible_sign_height:  40,
-        visible_sign_page:    1,
-      }],
-    }),
-  });
-  const data = await res.json();
-  return data.tcn as string;
+function computeAge(dob: Date | null): number | null {
+  if (!dob || isNaN(dob.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const m = now.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+  if (age < 0 || age > 130) return null;
+  return age;
 }
 
-// Upload do PDF para o CESS
-async function cessUploadPdf(tcn: string, token: string, pdfBytes: Buffer): Promise<void> {
-  const form = new FormData();
-  form.append("document", new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }), "receita.pdf");
-
-  const res = await fetch(`${CESS_BASE}/file-transfer/${tcn}/eot/default`, {
-    method:  "POST",
-    headers: { "Authorization": `Bearer ${token}` },
-    body:    form,
-  });
-  if (!res.ok) throw new Error(`CESS upload failed: ${await res.text()}`);
+function joinAddress(parts: (string | null | undefined)[]): string {
+  return parts.map((p) => (p || "").trim()).filter(Boolean).join(", ");
 }
 
-// Aguarda assinatura (polling até 30s)
-async function cessWaitSigned(tcn: string, token: string): Promise<string> {
-  for (let i = 0; i < 15; i++) {
-    await new Promise(r => setTimeout(r, 2000));
-    const res  = await fetch(`${CESS_BASE}/signature-service/${tcn}`, {
-      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
-    });
-    const data = await res.json();
-    const doc  = data.documents?.[0];
-    if (doc?.status === "SIGNED") return doc.result as string;
-    if (doc?.status === "ERROR")  throw new Error("CESS signing error");
-  }
-  throw new Error("CESS signing timeout");
-}
-
-// Baixa o PDF assinado do CESS
-async function cessDownloadSigned(tcn: string, docId: string, token: string): Promise<Buffer> {
-  const res = await fetch(`${CESS_BASE}/file-transfer/${tcn}/${docId}`, {
-    headers: { "Authorization": `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("CESS download failed");
-  const buf = await res.arrayBuffer();
-  return Buffer.from(buf);
-}
-
-// Gera PDF a partir do HTML da receita (fetch interno)
-async function generatePdfHtml(prescriptionId: string, token: string, appUrl: string): Promise<Buffer> {
-  const res = await fetch(`${appUrl}/api/professional/prescriptions/${prescriptionId}/pdf`, {
-    headers: { "Cookie": `next-auth.session-token=${token}` },
-  });
-  if (!res.ok) throw new Error("Failed to generate PDF HTML");
-  const html = await res.text();
-  // Return HTML as Buffer — CESS can handle HTML-based PDFs via auto_fix_document
-  // In production, use puppeteer or html-pdf-node to convert to true PDF bytes
-  return Buffer.from(html, "utf-8");
-}
-
-// Upload para S3
-async function uploadSignedToS3(prescriptionId: string, pdfBytes: Buffer): Promise<string> {
-  const s3 = new S3Client({
-    region:      process.env.AWS_REGION || "eu-north-1",
-    credentials: {
-      accessKeyId:     process.env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
-  });
-
-  const key = `prescriptions/signed/${prescriptionId}.pdf`;
-  await s3.send(new PutObjectCommand({
-    Bucket:      process.env.AWS_S3_BUCKET!,
-    Key:         key,
-    Body:        pdfBytes,
-    ContentType: "application/pdf",
-  }));
-
-  return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-}
+const FREQ: Record<Lang, Record<string, string>> = {
+  en: {}, // mantém o valor original em inglês
+  pt: {
+    "Once daily": "Uma vez ao dia", "Twice daily": "Duas vezes ao dia",
+    "Three times daily": "Três vezes ao dia", "Every 8 hours": "A cada 8 horas",
+    "Every 12 hours": "A cada 12 horas", "As needed": "Quando necessário", "Weekly": "Semanalmente",
+  },
+  es: {
+    "Once daily": "Una vez al día", "Twice daily": "Dos veces al día",
+    "Three times daily": "Tres veces al día", "Every 8 hours": "Cada 8 horas",
+    "Every 12 hours": "Cada 12 horas", "As needed": "Cuando sea necesario", "Weekly": "Semanalmente",
+  },
+};
+const LOCALE: Record<Lang, string> = { en: "en-US", pt: "pt-BR", es: "es-ES" };
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const body   = await req.json();
-  const parsed = schema.safeParse(body);
-  if (!parsed.success)
-    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
-
-  const { prescriptionId, otp } = parsed.data;
-
-  // 1. Verificar que a receita pertence ao profissional
-  const professional = await db.professionalProfile.findUnique({
-    where:  { userId: session.user.id },
-    select: {
-      id:                  true,
-      digitalSignProvider: true,
-      digitalSignCpf:      true,
-    } as any,
-  });
-
-  if (!professional) return NextResponse.json({ error: "Perfil não encontrado" }, { status: 404 });
-
-  const p = professional as any;
-  if (!p.digitalSignProvider || !p.digitalSignCpf)
-    return NextResponse.json({ error: "Configure sua assinatura digital no perfil primeiro." }, { status: 400 });
-
-  const prescription = await db.prescription.findFirst({
-    where: { id: prescriptionId, professionalId: p.id },
-  });
-  if (!prescription)
-    return NextResponse.json({ error: "Receita não encontrada" }, { status: 404 });
-
-  // 2. Descriptografar CPF
-  const cpf = safeDecrypt(p.digitalSignCpf);
-  if (!cpf) return NextResponse.json({ error: "CPF não configurado" }, { status: 400 });
-
-  try {
-    // 3. Autenticar no CESS com CPF + OTP
-    const authResult = await cessAuthenticate(cpf, otp);
-    const [tcn, accessToken] = authResult.split("|");
-
-    if (!tcn || !accessToken)
-      return NextResponse.json({ error: "OTP inválido ou expirado. Tente novamente." }, { status: 401 });
-
-    // 4. Buscar o HTML da receita e converter para bytes
-    // Em produção: converter HTML → PDF real via puppeteer
-    // Por ora enviamos os bytes do HTML — o CESS com auto_fix trata
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org";
-    const sessionCookie = req.headers.get("cookie") || "";
-
-    // Gerar PDF via fetch interno (reutilizando a rota existente)
-    const pdfRes = await fetch(`${appUrl}/api/professional/prescriptions/${prescriptionId}/pdf`, {
-      headers: { "cookie": sessionCookie },
-    });
-    const htmlBytes = Buffer.from(await pdfRes.text(), "utf-8");
-
-    // 5. Criar nova transação CESS e fazer upload
-    const signTcn = await cessCreateTransaction(accessToken);
-    await cessUploadPdf(signTcn, accessToken, htmlBytes);
-
-    // 6. Aguardar assinatura
-    const resultUrl = await cessWaitSigned(signTcn, accessToken);
-    const [, docId]  = resultUrl.split(`${CESS_BASE}/file-transfer/${signTcn}/`);
-
-    // 7. Baixar PDF assinado
-    const signedPdf = await cessDownloadSigned(signTcn, docId || "0", accessToken);
-
-    // 8. Salvar no S3
-    const signedUrl = await uploadSignedToS3(prescriptionId, signedPdf);
-
-    // 9. Atualizar registro da prescrição
-    await db.prescription.update({
-      where: { id: prescriptionId },
-      data:  {
-        digitalSignature: `CESS:${p.digitalSignProvider}:${signTcn}:${new Date().toISOString()}`,
-      },
-    });
-
-    // 10. Salvar URL do PDF assinado no documento relacionado
-    if (prescription.documentId) {
-      await db.medicalDocument.update({
-        where: { id: prescription.documentId },
-        data:  { fileUrl: signedUrl },
-      });
-    }
-
-    await audit.updateRecord(session.user.id, "Prescription", prescriptionId);
-
-    return NextResponse.json({
-      success:    true,
-      signedUrl,
-      provider:   p.digitalSignProvider,
-      signedAt:   new Date().toISOString(),
-    });
-
-  } catch (err: any) {
-    console.error("[DIGITAL SIGN ERROR]", err?.message);
-
-    // Mensagens amigáveis para erros comuns
-    if (err?.message?.includes("auth failed") || err?.message?.includes("401"))
-      return NextResponse.json({ error: "OTP inválido ou expirado. Abra o app e tente com um código novo." }, { status: 401 });
-
-    if (err?.message?.includes("timeout"))
-      return NextResponse.json({ error: "Tempo esgotado. A assinatura no app demorou muito. Tente novamente." }, { status: 408 });
-
-    return NextResponse.json({ error: "Erro ao assinar. Verifique sua conexão e tente novamente." }, { status: 500 });
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  let prescriptionId = "";
+  try {
+    const body = await req.json();
+    prescriptionId = String(body.prescriptionId || "");
+  } catch {
+    return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
+  }
+  if (!prescriptionId) {
+    return NextResponse.json({ error: "prescriptionId é obrigatório" }, { status: 400 });
+  }
+
+  // ── Carrega a receita + profissional + paciente ──
+  const prescription = await db.prescription.findUnique({
+    where: { id: prescriptionId },
+    include: {
+      professional: true,
+      document: {
+        include: {
+          patient: {
+            select: {
+              firstName: true, lastName: true, dateOfBirth: true, cpf: true,
+              addressLine1: true, city: true, state: true, country: true, zipCode: true,
+            },
+          },
+          patientRecord: {
+            select: {
+              firstName: true, lastName: true, dateOfBirth: true, cpf: true,
+              addressLine1: true, city: true, state: true, country: true, zipCode: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!prescription) {
+    return NextResponse.json({ error: "Receita não encontrada" }, { status: 404 });
+  }
+
+  // Só o profissional dono pode assinar
+  if (prescription.professional.userId !== session.user.id) {
+    return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+  }
+
+  // CPF do médico para a assinatura digital (do ProfessionalProfile)
+  const pro = prescription.professional;
+  const proCpf = safeDecrypt((pro as { digitalSignCpf?: string | null }).digitalSignCpf ?? null);
+  if (!proCpf) {
+    return NextResponse.json(
+      { error: "Configure seu CPF de assinatura digital nas configurações da conta antes de assinar." },
+      { status: 400 }
+    );
+  }
+
+  // ── Idioma do médico (quem assina) ──
+  const viewer = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { language: true },
+  });
+  const lang = normLang(viewer?.language);
+  const locale = LOCALE[lang];
+
+  // ── Resolve dados do paciente (ficha tem prioridade) ──
+  const rec = prescription.document?.patientRecord;
+  const acc = prescription.document?.patient;
+  const src = rec || acc;
+
+  let patientName = "—", patientDob: Date | null = null, patientCpf = "";
+  let addrLine = "", city = "", state = "", country = "", zip = "";
+  if (src) {
+    patientName = `${safeDecrypt(src.firstName)} ${safeDecrypt(src.lastName)}`.trim();
+    patientDob = src.dateOfBirth ? new Date(safeDecrypt(src.dateOfBirth)) : null;
+    patientCpf = safeDecrypt((src as { cpf?: string | null }).cpf ?? null);
+    addrLine = safeDecrypt(src.addressLine1);
+    city = src.city || ""; state = src.state || "";
+    country = src.country || ""; zip = safeDecrypt(src.zipCode);
+  }
+
+  const clinicAddressFull = joinAddress([
+    (pro as { clinicName?: string | null }).clinicName,
+    (pro as { clinicAddress?: string | null }).clinicAddress,
+    (pro as { clinicCity?: string | null }).clinicCity,
+    (pro as { clinicState?: string | null }).clinicState,
+    (pro as { clinicZip?: string | null }).clinicZip,
+  ]);
+
+  const meds = (prescription.medications as {
+    name: string; dosage: string; frequency: string; duration?: string; instructions?: string;
+  }[]).map((m) => ({
+    ...m,
+    frequency: FREQ[lang][m.frequency] || m.frequency,
+  }));
+
+  const today = new Date().toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
+  const validUntil = prescription.validUntil
+    ? new Date(prescription.validUntil).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" })
+    : (lang === "pt" ? "Sem validade" : lang === "es" ? "Sin caducidad" : "No expiry");
+
+  // ── Gera o PDF real ──
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = await buildPrescriptionPdf({
+      lang,
+      proFirstName: pro.firstName, proLastName: pro.lastName,
+      proSpecialty: pro.specialty, proLicense: pro.licenseNumber,
+      clinicAddressFull,
+      patientName,
+      patientAge: computeAge(patientDob),
+      patientCpf,
+      patientAddressFull: joinAddress([addrLine, city, state, zip, country]),
+      prescriptionId: prescription.id,
+      todayText: today, validUntilText: validUntil,
+      medications: meds,
+      instructions: prescription.instructions ? safeDecrypt(prescription.instructions) : "",
+      signed: false,
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: `Erro ao gerar PDF: ${(e as Error).message}` }, { status: 500 }
+    );
+  }
+
+  // ── Cria a Signature Session na Lacuna ──
+  const origin = req.nextUrl.origin;
+  const returnUrl =
+    `${origin}/api/professional/prescriptions/sign/callback?prescriptionId=${encodeURIComponent(prescription.id)}`;
+
+  let lacuna;
+  try {
+    lacuna = await createSignatureSession({
+      pdfBytes,
+      fileName: `receita-${prescription.id.slice(0, 8)}.pdf`,
+      returnUrl,
+      cpf: proCpf,
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: `Erro ao criar sessão de assinatura: ${(e as Error).message}` },
+      { status: 502 }
+    );
+  }
+
+  // ── Salva o estado na prescrição ──
+  await db.prescription.update({
+    where: { id: prescription.id },
+    data: {
+      signatureSessionId: lacuna.sessionId,
+      signatureStatus: "PENDING",
+    },
+  });
+
+  await audit.viewRecord(session.user.id, "PrescriptionSignStart", prescription.id);
+
+  return NextResponse.json({ redirectUrl: lacuna.redirectUrl });
 }

@@ -59,6 +59,7 @@ interface MedItem {
 interface Prescription {
   id: string; createdAt: string; validUntil?: string;
   digitalSignature?: string | null;
+  signatureStatus?: string | null;
   document?: { patient?: { firstName: string; lastName: string } | null };
   medications: MedItem[];
 }
@@ -68,40 +69,40 @@ function SignModal({
   prescription,
   signConfig,
   onClose,
-  onSigned,
 }: {
   prescription: Prescription;
   signConfig: { configured: boolean; provider: string; cpfMasked: string } | null;
   onClose: () => void;
-  onSigned: (id: string) => void;
 }) {
-  const [otp,     setOtp]     = useState("");
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
-  const [success, setSuccess] = useState(false);
-  const [signedUrl, setSignedUrl] = useState("");
 
-  const provider = signConfig?.provider || "BirdID";
-
-  async function handleSign() {
-    if (otp.trim().length < 4) { setError("Digite o código OTP do app."); return; }
+  // Inicia a assinatura: chama o backend, que cria a sessão na Lacuna e
+  // devolve a redirectUrl. Redirecionamos o médico para lá (ele assina com
+  // o certificado em nuvem — BirdID/VIDaaS/etc — e volta automaticamente).
+  async function handleStartSign() {
     setLoading(true); setError("");
     try {
       const res  = await fetch("/api/professional/prescriptions/sign", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ prescriptionId: prescription.id, otp: otp.trim() }),
+        body:    JSON.stringify({ prescriptionId: prescription.id }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Erro ao assinar."); setLoading(false); return; }
-      setSuccess(true);
-      setSignedUrl(data.signedUrl || "");
-      onSigned(prescription.id);
-    } catch { setError("Erro de rede. Tente novamente."); }
-    setLoading(false);
+      if (!res.ok || !data.redirectUrl) {
+        setError(data.error || "Erro ao iniciar assinatura.");
+        setLoading(false);
+        return;
+      }
+      // Redireciona o médico para a página de assinatura da Lacuna
+      window.location.href = data.redirectUrl;
+    } catch {
+      setError("Erro de rede. Tente novamente.");
+      setLoading(false);
+    }
   }
 
-  // Sem configuração
+  // Sem configuração de CPF
   if (!signConfig?.configured) {
     return (
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -113,7 +114,7 @@ function SignModal({
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-            Configure sua assinatura digital (BirdID ou VIDaaS) nas configurações da conta antes de assinar receitas.
+            Configure o CPF da sua assinatura digital nas configurações da conta antes de assinar receitas.
           </div>
           <a href="/professional/account" onClick={onClose}
             className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
@@ -124,102 +125,55 @@ function SignModal({
     );
   }
 
+  const patientName = prescription.document?.patient
+    ? `${prescription.document.patient.firstName} ${prescription.document.patient.lastName}`
+    : "Paciente";
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-slate-900 flex items-center gap-2">
-            <PenLine size={18} className="text-blue-500" /> Assinar com {provider}
+            <PenLine size={18} className="text-blue-500" /> Assinatura Digital ICP-Brasil
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
         </div>
 
-        {success ? (
-          <div className="space-y-4 text-center py-2">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
-              <CheckCircle2 size={32} className="text-emerald-500" />
-            </div>
-            <div>
-              <p className="font-bold text-slate-900">Receita assinada!</p>
-              <p className="text-sm text-slate-500 mt-1">
-                Assinatura ICP-Brasil aplicada com sucesso via {provider}.
-              </p>
-            </div>
-            {signedUrl && (
-              <a href={signedUrl} target="_blank" rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
-                <Download size={14} /> Baixar PDF assinado
-              </a>
-            )}
-            <button onClick={onClose}
-              className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 transition">
-              Fechar
-            </button>
+        {/* Como funciona */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+          <p className="text-sm font-semibold text-blue-800 flex items-center gap-2">
+            <Smartphone size={15} /> Como funciona
+          </p>
+          <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
+            <li>Você será levado à página segura de assinatura</li>
+            <li>Escolha seu certificado (BirdID, VIDaaS, etc.)</li>
+            <li>Autorize a assinatura no app do seu celular</li>
+            <li>Você volta automaticamente com a receita assinada</li>
+          </ol>
+        </div>
+
+        <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-1">
+          <p className="text-xs text-slate-500">Receita</p>
+          <p className="font-medium text-slate-800 text-xs">{patientName}</p>
+          <p className="text-xs text-slate-400">CPF de assinatura: {signConfig.cpfMasked}</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 flex items-center gap-2">
+            <AlertCircle size={14} /> {error}
           </div>
-        ) : (
-          <>
-            {/* Instruções */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
-              <p className="text-sm font-semibold text-blue-800 flex items-center gap-2">
-                <Smartphone size={15} /> Como obter o código OTP
-              </p>
-              <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
-                <li>Abra o app <strong>{provider}</strong> no seu celular</li>
-                <li>Toque em <strong>Gerar OTP</strong> ou <strong>Assinar</strong></li>
-                <li>Copie o código de 6 dígitos</li>
-                <li>Cole abaixo e clique em Assinar</li>
-              </ol>
-            </div>
-
-            <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-1">
-              <p className="text-xs text-slate-500">Receita</p>
-              <p className="font-medium text-slate-800 text-xs">
-                {prescription.document?.patient
-                  ? `${prescription.document.patient.firstName} ${prescription.document.patient.lastName}`
-                  : "Paciente"
-                }
-              </p>
-              <p className="text-xs text-slate-400">CPF no {provider}: {signConfig.cpfMasked}</p>
-            </div>
-
-            {/* OTP input */}
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">
-                Código OTP do app {provider}
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                placeholder="000000"
-                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-2xl text-center font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition"
-                autoFocus
-                onKeyDown={(e) => { if (e.key === "Enter") handleSign(); }}
-              />
-              <p className="text-xs text-slate-400 mt-1 text-center">
-                O código expira em ~30 segundos. Use um código novo.
-              </p>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 flex items-center gap-2">
-                <AlertCircle size={14} /> {error}
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <button onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 transition">
-                Cancelar
-              </button>
-              <button onClick={handleSign} disabled={loading || otp.length < 4}
-                className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold text-sm transition flex items-center justify-center gap-2">
-                {loading ? <><Loader2 size={13} className="animate-spin" /> Assinando...</> : <><Lock size={13} /> Assinar</>}
-              </button>
-            </div>
-          </>
         )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 transition">
+            Cancelar
+          </button>
+          <button onClick={handleStartSign} disabled={loading}
+            className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold text-sm transition flex items-center justify-center gap-2">
+            {loading ? <><Loader2 size={13} className="animate-spin" /> Abrindo...</> : <><Lock size={13} /> Assinar agora</>}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -261,10 +215,21 @@ export default function PrescriptionsPage() {
   // Assinatura digital
   const [signConfig,    setSignConfig]    = useState<{ configured: boolean; provider: string; cpfMasked: string } | null>(null);
   const [signModal,     setSignModal]     = useState<Prescription | null>(null);
+  const [signResult,    setSignResult]    = useState<string | null>(null);
 
   useEffect(() => {
     fetchPrescriptions();
     loadSignConfig();
+    // Detecta retorno da Lacuna (?sign=success|cancelled|error|processing)
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get("sign");
+    if (s) {
+      setSignResult(s);
+      // limpa o parâmetro da URL sem recarregar
+      window.history.replaceState({}, "", window.location.pathname);
+      // remove o aviso após alguns segundos
+      setTimeout(() => setSignResult(null), 6000);
+    }
   }, []);
 
   async function fetchPrescriptions() {
@@ -415,6 +380,37 @@ export default function PrescriptionsPage() {
         </button>
       </div>
 
+      {/* Resultado do retorno da Lacuna */}
+      {signResult === "success" && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
+          <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-emerald-800">Receita assinada com sucesso!</p>
+            <p className="text-xs text-emerald-700 mt-1">
+              A assinatura digital ICP-Brasil foi aplicada. O PDF assinado já está disponível para download.
+            </p>
+          </div>
+        </div>
+      )}
+      {signResult === "cancelled" && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-800">Assinatura cancelada. Você pode tentar novamente quando quiser.</p>
+        </div>
+      )}
+      {signResult === "processing" && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+          <Loader2 size={18} className="text-blue-600 shrink-0 mt-0.5 animate-spin" />
+          <p className="text-sm text-blue-800">Assinatura em processamento. Atualize a página em instantes.</p>
+        </div>
+      )}
+      {signResult === "error" && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle size={18} className="text-red-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-red-800">Houve um erro ao assinar. Tente novamente ou verifique seu certificado.</p>
+        </div>
+      )}
+
       {/* Aviso de assinatura não configurada */}
       {signConfig && !signConfig.configured && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
@@ -422,7 +418,7 @@ export default function PrescriptionsPage() {
           <div className="flex-1">
             <p className="text-sm font-semibold text-blue-800">Assinatura digital não configurada</p>
             <p className="text-xs text-blue-600 mt-1">
-              Configure BirdID ou VIDaaS para assinar receitas com validade ICP-Brasil.
+              Configure o CPF da sua assinatura digital para assinar receitas com validade ICP-Brasil.
             </p>
           </div>
           <a href="/professional/account"
@@ -454,7 +450,7 @@ export default function PrescriptionsPage() {
         <div className="space-y-3">
           {filtered.map((p) => {
             const meds   = p.medications as MedItem[];
-            const signed = !!p.digitalSignature;
+            const signed = p.signatureStatus === "SIGNED" || !!p.digitalSignature;
             return (
               <div key={p.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -510,7 +506,6 @@ export default function PrescriptionsPage() {
           prescription={signModal}
           signConfig={signConfig}
           onClose={() => setSignModal(null)}
-          onSigned={(id) => { markSigned(id); setSignModal(null); }}
         />
       )}
 

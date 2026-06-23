@@ -42,7 +42,7 @@ export async function GET() {
   const cpfDecrypted = safeDecrypt(p.digitalSignCpf);
 
   return NextResponse.json({
-    configured: !!(p.digitalSignProvider && p.digitalSignCpf),
+    configured: !!p.digitalSignCpf,
     provider:   p.digitalSignProvider || null,
     cpfMasked:  cpfDecrypted ? maskCpf(cpfDecrypted) : null,
   });
