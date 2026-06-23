@@ -1,8 +1,6 @@
 // src/app/(dashboard)/patient/page.tsx
-// Patient home dashboard (i18n: translated server-side from User.language)
-// P1-e follow-up: shows a persistent banner at the top while the patient's
-// registration data (name, address, date of birth) is incomplete, linking to
-// the Account page where they complete it. The banner disappears once complete.
+// Patient home dashboard — reorganized with immediate care priority, clickable stats,
+// grouped quick actions, and verified navigation targets.
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -11,8 +9,9 @@ import { audit } from "@/lib/audit";
 import { decryptPatientFields, decrypt } from "@/lib/encryption";
 import { translate, normalizeLang, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
 import {
-  Calendar, FileText, Pill, AlertCircle,
-  Clock, ChevronRight, Heart, Activity, AlertTriangle,
+  Calendar, FileText, Pill, AlertCircle, Radio, Stethoscope,
+  Clock, ChevronRight, Activity, AlertTriangle, MessageSquare,
+  ClipboardList, Settings, Heart, Video,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -28,13 +27,11 @@ export default async function PatientDashboard() {
 
   const userId = session.user.id;
 
-  // Language for this user (server-side translation)
   const userRow = await db.user.findUnique({ where: { id: userId }, select: { language: true } });
   const lang: Lang = normalizeLang(userRow?.language);
   const t = (key: string) => translate(lang, key);
   const locale = localeOf(lang);
 
-  // Load patient data
   const patient = await db.patientProfile.findUnique({
     where: { userId },
     include: {
@@ -49,10 +46,10 @@ export default async function PatientDashboard() {
           status: { in: ["CONFIRMED", "PENDING"] },
         },
         orderBy: { scheduledAt: "asc" },
-        take: 3,
+        take: 5,
         include: {
           professional: {
-            select: { firstName: true, lastName: true, specialty: true, avatarUrl: true },
+            select: { firstName: true, lastName: true, specialty: true },
           },
         },
       },
@@ -72,16 +69,81 @@ export default async function PatientDashboard() {
     ["firstName", "lastName"]
   );
 
-  // ── Registration completeness (same rule as the prescription warning) ──
-  // address counts as present when there is a street line OR a city.
   const hasName = !!(decrypted.firstName && decrypted.lastName);
   const hasDob = !!patient.dateOfBirth;
   const hasAddress = !!(safeDecrypt(patient.addressLine1) || (patient.city || ""));
   const profileIncomplete = !hasName || !hasDob || !hasAddress;
 
+  const [
+    prescriptionCount,
+    unreadMessages,
+    onlineDoctors,
+    activeQueue,
+  ] = await Promise.all([
+    db.prescription.count({
+      where: { document: { patientId: patient.id } },
+    }),
+    db.message.count({
+      where: { receiverId: userId, readAt: null, deletedAt: null },
+    }),
+    db.jitSession.count({ where: { status: "ONLINE" } }),
+    db.jitQueue.findFirst({
+      where: {
+        patientUserId: userId,
+        status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] },
+      },
+      include: {
+        session: {
+          select: {
+            specialty: true,
+            professional: { select: { firstName: true, lastName: true } },
+          },
+        },
+      },
+      orderBy: { enteredAt: "desc" },
+    }),
+  ]);
+
   const upcomingCount = patient.appointments.length;
   const medicationCount = patient.medications.length;
   const documentCount = patient.medicalDocuments.length;
+
+  const queueActive = !!activeQueue;
+  const queueCalled = activeQueue?.status === "CALLED";
+  const queueInProgress = activeQueue?.status === "IN_PROGRESS";
+
+  const quickGroups = [
+    {
+      title: t("pdash.quick.group.attend"),
+      items: [
+        { href: "/urgent", labelKey: "nav.urgent", icon: <Radio size={20} />, accent: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
+        { href: "/patient/appointments", labelKey: "nav.appointments", icon: <Calendar size={20} />, accent: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200" },
+      ],
+    },
+    {
+      title: t("pdash.quick.group.health"),
+      items: [
+        { href: "/patient/history", labelKey: "nav.medicalHistory", icon: <Heart size={20} />, accent: "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200" },
+        { href: "/patient/medications", labelKey: "nav.medications", icon: <Pill size={20} />, accent: "bg-violet-50 hover:bg-violet-100 text-violet-700 border-violet-200" },
+        { href: "/patient/prescriptions", labelKey: "nav.myPrescriptions", icon: <Stethoscope size={20} />, accent: "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200" },
+        { href: "/patient/documents", labelKey: "nav.documents", icon: <ClipboardList size={20} />, accent: "bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200" },
+      ],
+    },
+    {
+      title: t("pdash.quick.group.communicate"),
+      items: [
+        { href: "/patient/messages", labelKey: "nav.messages", icon: <MessageSquare size={20} />, accent: "bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200", badge: unreadMessages || undefined },
+        { href: "/patient/history/share", labelKey: "pdash.quick.share", icon: <FileText size={20} />, accent: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200" },
+        { href: "/api/patient/history/pdf", labelKey: "pdash.quick.export", icon: <FileText size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200" },
+      ],
+    },
+    {
+      title: t("pdash.quick.group.account"),
+      items: [
+        { href: "/patient/account", labelKey: "nav.account", icon: <Settings size={20} />, accent: "bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200" },
+      ],
+    },
+  ];
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -94,7 +156,72 @@ export default async function PatientDashboard() {
         <p className="text-slate-500 mt-1">{t("pdash.subtitle")}</p>
       </div>
 
-      {/* P1-e: incomplete-registration banner (persistent until complete) */}
+      {/* Atendimento imediato — priority hero */}
+      <Link
+        href="/urgent"
+        className={`block rounded-2xl border shadow-sm overflow-hidden transition hover:shadow-md ${
+          queueCalled || queueInProgress
+            ? "bg-gradient-to-r from-blue-600 to-blue-500 border-blue-400 text-white"
+            : queueActive
+              ? "bg-gradient-to-r from-emerald-600 to-emerald-500 border-emerald-400 text-white"
+              : onlineDoctors > 0
+                ? "bg-white border-emerald-200 hover:border-emerald-300"
+                : "bg-white border-slate-200 hover:border-emerald-300"
+        }`}
+      >
+        <div className="p-5 sm:p-6 flex items-center gap-4">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
+            queueActive ? "bg-white/20" : "bg-emerald-50"
+          }`}>
+            <Radio size={28} className={queueActive ? "text-white" : "text-emerald-600"} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className={`text-lg font-bold ${queueActive ? "text-white" : "text-slate-900"}`}>
+                {t("nav.urgent")}
+              </p>
+              {queueActive && (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white/25 text-white">
+                  {queueInProgress
+                    ? t("pdash.urgent.status.inProgress")
+                    : queueCalled
+                      ? t("pdash.urgent.status.called")
+                      : t("pdash.urgent.status.waiting")}
+                </span>
+              )}
+              {!queueActive && onlineDoctors > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                  {onlineDoctors} {onlineDoctors === 1 ? t("pdash.urgent.doctorOnline") : t("pdash.urgent.doctorsOnline")}
+                </span>
+              )}
+            </div>
+            <p className={`text-sm mt-1 ${queueActive ? "text-white/85" : "text-slate-500"}`}>
+              {queueInProgress
+                ? t("pdash.urgent.desc.inProgress").replace(
+                    "{{doctor}}",
+                    activeQueue?.session.professional
+                      ? `Dr. ${activeQueue.session.professional.firstName} ${activeQueue.session.professional.lastName}`
+                      : ""
+                  )
+                : queueCalled
+                  ? t("pdash.urgent.desc.called")
+                  : queueActive
+                    ? t("pdash.urgent.desc.waiting").replace("{{position}}", String(activeQueue?.position ?? ""))
+                    : onlineDoctors > 0
+                      ? t("pdash.urgent.desc.available")
+                      : t("pdash.urgent.desc.offline")}
+            </p>
+          </div>
+          <div className={`hidden sm:flex items-center gap-1 text-sm font-semibold shrink-0 ${
+            queueActive ? "text-white" : "text-emerald-600"
+          }`}>
+            {queueActive ? t("pdash.urgent.action.manage") : t("pdash.urgent.action.start")}
+            <ChevronRight size={16} />
+          </div>
+        </div>
+      </Link>
+
+      {/* Incomplete profile banner */}
       {profileIncomplete && (
         <Link
           href="/patient/account"
@@ -111,7 +238,7 @@ export default async function PatientDashboard() {
         </Link>
       )}
 
-      {/* Stats row */}
+      {/* Clickable stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={<Calendar className="text-blue-500" size={20} />}
@@ -135,11 +262,11 @@ export default async function PatientDashboard() {
           href="/patient/documents"
         />
         <StatCard
-          icon={<Heart className="text-rose-500" size={20} />}
-          label={t("pdash.stat.healthScore")}
-          value="—"
-          bg="bg-rose-50"
-          href="/patient/history"
+          icon={<Stethoscope className="text-indigo-500" size={20} />}
+          label={t("pdash.stat.prescriptions")}
+          value={prescriptionCount}
+          bg="bg-indigo-50"
+          href="/patient/prescriptions"
         />
       </div>
 
@@ -184,10 +311,50 @@ export default async function PatientDashboard() {
                       {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
+                  {apt.meetingUrl && (
+                    <a
+                      href={apt.meetingUrl}
+                      className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-emerald-400 transition"
+                    >
+                      <Video size={12} /> {t("pdash.join")}
+                    </a>
+                  )}
                 </div>
               ))}
             </div>
           )}
+        </Section>
+
+        {/* Attention items */}
+        <Section title={t("pdash.attention.title")} icon={<AlertCircle size={16} />} viewAllLabel={t("common.viewAll")}>
+          <div className="space-y-3">
+            <AttentionRow
+              href="/urgent"
+              icon={<Radio size={18} className="text-emerald-600" />}
+              label={t("nav.urgent")}
+              detail={queueActive
+                ? t("pdash.urgent.desc.waiting").replace("{{position}}", String(activeQueue?.position ?? ""))
+                : onlineDoctors > 0
+                  ? `${onlineDoctors} ${t("pdash.urgent.doctorsOnline")}`
+                  : t("pdash.attention.urgentNone")}
+            />
+            <AttentionRow
+              href="/patient/messages"
+              icon={<MessageSquare size={18} className="text-blue-600" />}
+              label={t("pdash.attention.messages")}
+              count={unreadMessages}
+              emptyLabel={t("pdash.attention.none")}
+              pendingLabel={t("pdash.attention.pending").replace("{{count}}", String(unreadMessages))}
+            />
+            <AttentionRow
+              href="/patient/prescriptions"
+              icon={<Stethoscope size={18} className="text-indigo-600" />}
+              label={t("pdash.attention.prescriptions")}
+              detail={prescriptionCount > 0
+                ? `${prescriptionCount} ${prescriptionCount === 1 ? t("pdash.attention.rxOne") : t("pdash.attention.rxMany")}`
+                : t("pdash.attention.rxNone")}
+            />
+          </div>
         </Section>
 
         {/* Active medications */}
@@ -212,9 +379,10 @@ export default async function PatientDashboard() {
                   ["name", "dosage", "frequency"]
                 );
                 return (
-                  <div
+                  <Link
                     key={med.id}
-                    className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl"
+                    href="/patient/medications"
+                    className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
                   >
                     <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
                       <Pill size={18} className="text-emerald-600" />
@@ -228,7 +396,7 @@ export default async function PatientDashboard() {
                     <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium shrink-0">
                       {t("common.active")}
                     </span>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -252,9 +420,10 @@ export default async function PatientDashboard() {
           ) : (
             <div className="space-y-3">
               {patient.medicalDocuments.map((doc) => (
-                <div
+                <Link
                   key={doc.id}
-                  className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                  href="/patient/documents"
+                  className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
                 >
                   <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
                     <FileText size={18} className="text-violet-600" />
@@ -265,37 +434,46 @@ export default async function PatientDashboard() {
                     </p>
                     <p className="text-xs text-slate-500">
                       {new Date(doc.createdAt).toLocaleDateString(locale, {
-                        month: "short", day: "numeric", year: "numeric"
+                        month: "short", day: "numeric", year: "numeric",
                       })}
                     </p>
                   </div>
                   <ChevronRight size={16} className="text-slate-400 shrink-0" />
-                </div>
+                </Link>
               ))}
             </div>
           )}
         </Section>
 
-        {/* Quick actions */}
-        <Section title={t("pdash.quick.title")} icon={<Activity size={16} />} viewAllLabel={t("common.viewAll")}>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: t("pdash.quick.book"), icon: "📅", href: "/patient/appointments", color: "bg-blue-50 hover:bg-blue-100 text-blue-700" },
-              { label: t("pdash.quick.export"), icon: "📄", href: "/api/patient/history/pdf", color: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700" },
-              { label: t("pdash.quick.addMed"), icon: "💊", href: "/patient/medications", color: "bg-violet-50 hover:bg-violet-100 text-violet-700" },
-              { label: t("pdash.quick.share"), icon: "🔗", href: "/patient/history/share", color: "bg-rose-50 hover:bg-rose-100 text-rose-700" },
-            ].map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl text-center transition font-medium text-sm ${action.color}`}
-              >
-                <span className="text-2xl">{action.icon}</span>
-                {action.label}
-              </Link>
-            ))}
-          </div>
-        </Section>
+        {/* Quick access — grouped */}
+        <div className="lg:col-span-2">
+          <Section title={t("pdash.quick.title")} icon={<Activity size={16} />} viewAllLabel={t("common.viewAll")}>
+            <div className="space-y-6">
+              {quickGroups.map((group) => (
+                <div key={group.title}>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">{group.title}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {group.items.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`relative flex flex-col items-center gap-2 p-4 rounded-xl text-center transition font-medium text-sm border ${item.accent}`}
+                      >
+                        {"badge" in item && item.badge ? (
+                          <span className="absolute top-2 right-2 min-w-[1.25rem] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                            {item.badge > 9 ? "9+" : item.badge}
+                          </span>
+                        ) : null}
+                        {item.icon}
+                        <span className="leading-tight">{t(item.labelKey)}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        </div>
       </div>
 
       {/* Privacy notice */}
@@ -351,5 +529,37 @@ function EmptyState({ icon, message, action, href }: {
       <p className="text-sm text-slate-500 mb-3">{message}</p>
       <Link href={href} className="text-xs text-emerald-600 hover:underline font-medium">{action} →</Link>
     </div>
+  );
+}
+
+function AttentionRow({ href, icon, label, count, detail, emptyLabel, pendingLabel }: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  count?: number;
+  detail?: string;
+  emptyLabel?: string;
+  pendingLabel?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
+    >
+      <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-slate-800 text-sm">{label}</p>
+        {detail ? (
+          <p className="text-xs text-slate-500 mt-0.5">{detail}</p>
+        ) : count && count > 0 ? (
+          <p className="text-xs text-rose-600 font-medium mt-0.5">{pendingLabel}</p>
+        ) : (
+          <p className="text-xs text-slate-400 mt-0.5">{emptyLabel}</p>
+        )}
+      </div>
+      <ChevronRight size={16} className="text-slate-400 shrink-0" />
+    </Link>
   );
 }
