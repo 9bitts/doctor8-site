@@ -112,6 +112,68 @@ export default async function PatientDashboard() {
   const queueCalled = activeQueue?.status === "CALLED";
   const queueInProgress = activeQueue?.status === "IN_PROGRESS";
 
+  type UrgentVariant = "inConsult" | "called" | "waiting" | "available" | "offline";
+  const urgentVariant: UrgentVariant = queueInProgress
+    ? "inConsult"
+    : queueCalled
+      ? "called"
+      : queueActive
+        ? "waiting"
+        : onlineDoctors > 0
+          ? "available"
+          : "offline";
+
+  const urgentStyles: Record<UrgentVariant, {
+    card: string; iconWrap: string; icon: string; title: string; desc: string; action: string; badge: string;
+  }> = {
+    inConsult: {
+      card:    "bg-blue-50 border-blue-200 hover:border-blue-300",
+      iconWrap:"bg-blue-100",
+      icon:    "text-blue-600",
+      title:   "text-blue-900",
+      desc:    "text-blue-700",
+      action:  "text-blue-700",
+      badge:   "bg-blue-100 text-blue-800",
+    },
+    called: {
+      card:    "bg-blue-50 border-blue-300 hover:border-blue-400",
+      iconWrap:"bg-blue-100",
+      icon:    "text-blue-600",
+      title:   "text-blue-900",
+      desc:    "text-blue-700",
+      action:  "text-blue-700",
+      badge:   "bg-blue-200 text-blue-900",
+    },
+    waiting: {
+      card:    "bg-emerald-50 border-emerald-200 hover:border-emerald-300",
+      iconWrap:"bg-emerald-100",
+      icon:    "text-emerald-600",
+      title:   "text-emerald-900",
+      desc:    "text-emerald-700",
+      action:  "text-emerald-700",
+      badge:   "bg-emerald-100 text-emerald-800",
+    },
+    available: {
+      card:    "bg-emerald-50 border-emerald-200 hover:border-emerald-300",
+      iconWrap:"bg-emerald-100",
+      icon:    "text-emerald-600",
+      title:   "text-slate-900",
+      desc:    "text-emerald-700",
+      action:  "text-emerald-700",
+      badge:   "bg-emerald-100 text-emerald-700",
+    },
+    offline: {
+      card:    "bg-white border-slate-200 hover:border-emerald-300",
+      iconWrap:"bg-emerald-50",
+      icon:    "text-emerald-600",
+      title:   "text-slate-900",
+      desc:    "text-slate-500",
+      action:  "text-emerald-600",
+      badge:   "bg-slate-100 text-slate-600",
+    },
+  };
+  const urgent = urgentStyles[urgentVariant];
+
   const quickGroups = [
     {
       title: t("pdash.quick.group.attend"),
@@ -159,29 +221,19 @@ export default async function PatientDashboard() {
       {/* Atendimento imediato — priority hero */}
       <Link
         href="/urgent"
-        className={`block rounded-2xl border shadow-sm overflow-hidden transition hover:shadow-md ${
-          queueCalled || queueInProgress
-            ? "bg-gradient-to-r from-blue-600 to-blue-500 border-blue-400 text-white"
-            : queueActive
-              ? "bg-gradient-to-r from-emerald-600 to-emerald-500 border-emerald-400 text-white"
-              : onlineDoctors > 0
-                ? "bg-white border-emerald-200 hover:border-emerald-300"
-                : "bg-white border-slate-200 hover:border-emerald-300"
-        }`}
+        className={`block rounded-2xl border shadow-sm overflow-hidden transition hover:shadow-md ${urgent.card}`}
       >
         <div className="p-5 sm:p-6 flex items-center gap-4">
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
-            queueActive ? "bg-white/20" : "bg-emerald-50"
-          }`}>
-            <Radio size={28} className={queueActive ? "text-white" : "text-emerald-600"} />
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${urgent.iconWrap}`}>
+            <Radio size={28} className={urgent.icon} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className={`text-lg font-bold ${queueActive ? "text-white" : "text-slate-900"}`}>
+              <p className={`text-lg font-bold ${urgent.title}`}>
                 {t("nav.urgent")}
               </p>
               {queueActive && (
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white/25 text-white">
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${urgent.badge}`}>
                   {queueInProgress
                     ? t("pdash.urgent.status.inProgress")
                     : queueCalled
@@ -190,12 +242,12 @@ export default async function PatientDashboard() {
                 </span>
               )}
               {!queueActive && onlineDoctors > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${urgent.badge}`}>
                   {onlineDoctors} {onlineDoctors === 1 ? t("pdash.urgent.doctorOnline") : t("pdash.urgent.doctorsOnline")}
                 </span>
               )}
             </div>
-            <p className={`text-sm mt-1 ${queueActive ? "text-white/85" : "text-slate-500"}`}>
+            <p className={`text-sm mt-1 ${urgent.desc}`}>
               {queueInProgress
                 ? t("pdash.urgent.desc.inProgress").replace(
                     "{{doctor}}",
@@ -212,9 +264,7 @@ export default async function PatientDashboard() {
                       : t("pdash.urgent.desc.offline")}
             </p>
           </div>
-          <div className={`hidden sm:flex items-center gap-1 text-sm font-semibold shrink-0 ${
-            queueActive ? "text-white" : "text-emerald-600"
-          }`}>
+          <div className={`hidden sm:flex items-center gap-1 text-sm font-semibold shrink-0 ${urgent.action}`}>
             {queueActive ? t("pdash.urgent.action.manage") : t("pdash.urgent.action.start")}
             <ChevronRight size={16} />
           </div>

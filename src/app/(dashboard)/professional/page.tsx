@@ -110,6 +110,27 @@ export default async function ProfessionalDashboard() {
   const jitPaused = jitSession?.status === "PAUSED";
   const jitWaiting = jitSession?._count.queue ?? 0;
 
+  const jitStyles = jitOnline
+    ? {
+        card: "bg-emerald-50 border-emerald-200 hover:border-emerald-300",
+        iconWrap: "bg-emerald-100", icon: "text-emerald-600",
+        title: "text-emerald-900", desc: "text-emerald-700", action: "text-emerald-700",
+        badge: "bg-emerald-100 text-emerald-800",
+      }
+    : jitPaused
+      ? {
+          card: "bg-amber-50 border-amber-200 hover:border-amber-300",
+          iconWrap: "bg-amber-100", icon: "text-amber-600",
+          title: "text-amber-900", desc: "text-amber-700", action: "text-amber-700",
+          badge: "bg-amber-100 text-amber-800",
+        }
+      : {
+          card: "bg-white border-slate-200 hover:border-emerald-300",
+          iconWrap: "bg-emerald-50", icon: "text-emerald-600",
+          title: "text-slate-900", desc: "text-slate-500", action: "text-emerald-600",
+          badge: "bg-slate-100 text-slate-600",
+        };
+
   const fmtCurrency = (cents: number) =>
     new Intl.NumberFormat(locale, { style: "currency", currency: professional.currency }).format(cents / 100);
 
@@ -162,32 +183,18 @@ export default async function ProfessionalDashboard() {
       {/* Plantão Online — priority hero */}
       <Link
         href="/professional/jit"
-        className={`block rounded-2xl border shadow-sm overflow-hidden transition hover:shadow-md ${
-          jitOnline
-            ? "bg-gradient-to-r from-emerald-600 to-emerald-500 border-emerald-400 text-white"
-            : jitPaused
-              ? "bg-gradient-to-r from-amber-500 to-amber-400 border-amber-300 text-white"
-              : "bg-white border-slate-200 hover:border-emerald-300"
-        }`}
+        className={`block rounded-2xl border shadow-sm overflow-hidden transition hover:shadow-md ${jitStyles.card}`}
       >
         <div className="p-5 sm:p-6 flex items-center gap-4">
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
-            jitOnline || jitPaused ? "bg-white/20" : "bg-emerald-50"
-          }`}>
-            <Radio size={28} className={jitOnline || jitPaused ? "text-white" : "text-emerald-600"} />
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${jitStyles.iconWrap}`}>
+            <Radio size={28} className={jitStyles.icon} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className={`text-lg font-bold ${jitOnline || jitPaused ? "text-white" : "text-slate-900"}`}>
+              <p className={`text-lg font-bold ${jitStyles.title}`}>
                 {t("nav.jit")}
               </p>
-              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                jitOnline
-                  ? "bg-white/25 text-white"
-                  : jitPaused
-                    ? "bg-white/25 text-white"
-                    : "bg-slate-100 text-slate-600"
-              }`}>
+              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${jitStyles.badge}`}>
                 {jitOnline
                   ? t("prodash.jit.status.online")
                   : jitPaused
@@ -195,7 +202,7 @@ export default async function ProfessionalDashboard() {
                     : t("prodash.jit.status.offline")}
               </span>
             </div>
-            <p className={`text-sm mt-1 ${jitOnline || jitPaused ? "text-white/85" : "text-slate-500"}`}>
+            <p className={`text-sm mt-1 ${jitStyles.desc}`}>
               {jitOnline
                 ? t("prodash.jit.desc.online").replace("{{count}}", String(jitWaiting))
                 : jitPaused
@@ -203,9 +210,7 @@ export default async function ProfessionalDashboard() {
                   : t("prodash.jit.desc.offline")}
             </p>
           </div>
-          <div className={`hidden sm:flex items-center gap-1 text-sm font-semibold shrink-0 ${
-            jitOnline || jitPaused ? "text-white" : "text-emerald-600"
-          }`}>
+          <div className={`hidden sm:flex items-center gap-1 text-sm font-semibold shrink-0 ${jitStyles.action}`}>
             {jitOnline || jitPaused ? t("prodash.jit.action.manage") : t("prodash.jit.action.start")}
             <ChevronRight size={16} />
           </div>
