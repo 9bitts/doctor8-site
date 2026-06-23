@@ -76,9 +76,8 @@ export async function createSignatureSession(opts: {
     returnUrl: opts.returnUrl,
     documents: [
       {
+        // Para PDF, o Rest PKI Core aplica PAdES automaticamente.
         file: { content: base64, name: opts.fileName },
-        // PAdES = assinatura embutida no próprio PDF (padrão para receita).
-        signatureFormat: "Pades",
       },
     ],
   };
@@ -88,13 +87,12 @@ export async function createSignatureSession(opts: {
     body.securityContextId = SECURITY_CONTEXT;
   }
 
-  // Restringe ao CPF do médico, se informado (só dígitos).
-  const cpfDigits = (opts.cpf || "").replace(/\D/g, "");
-  if (cpfDigits.length === 11) {
-    body.certificateRequirements = [
-      { type: "CpfEquals", cpf: cpfDigits },
-    ];
-  }
+  // Observação: a restrição por CPF (certificateRequirements) foi removida —
+  // o médico escolhe o próprio certificado na tela da Lacuna. O formato exato
+  // do requisito varia por versão da API e estava causando rejeição do request.
+  // Se quiser reativar no futuro, confira o formato em:
+  // https://docs.lacunasoftware.com/pt-br/articles/rest-pki/core/integration/signature-sessions/certificate-requirements.html
+  void opts.cpf;
 
   const res = await fetch(`${ENDPOINT}/api/signature-sessions`, {
     method: "POST",
