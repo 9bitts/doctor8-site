@@ -121,10 +121,10 @@ export default function ShareHistoryPrompt({
         </div>
         <Link
           href="/patient/history"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 px-4 py-2.5 rounded-xl transition"
+          className="flex w-full items-center justify-center gap-2 text-sm font-semibold text-amber-950 bg-amber-300 hover:bg-amber-400 border-2 border-amber-600 px-4 py-2.5 rounded-xl transition shadow-sm"
         >
-          <FileText size={16} /> {t("shareHist.fillAction")}
-          <ArrowRight size={14} />
+          <FileText size={16} className="text-amber-900" /> {t("shareHist.fillAction")}
+          <ArrowRight size={14} className="text-amber-900" />
         </Link>
       </div>
     );
@@ -146,7 +146,7 @@ export default function ShareHistoryPrompt({
         type="button"
         onClick={shareHistory}
         disabled={sharing || !resolvedProUserId}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2.5 rounded-xl transition"
+        className="flex w-full items-center justify-center gap-2 text-sm font-semibold text-blue-950 bg-blue-200 hover:bg-blue-300 border-2 border-blue-600 disabled:opacity-50 px-4 py-2.5 rounded-xl transition shadow-sm"
       >
         {sharing ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
         {sharing ? t("shareHist.sharing") : t("shareHist.shareAction")}
