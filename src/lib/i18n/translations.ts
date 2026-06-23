@@ -29,6 +29,7 @@ const en = {
   "nav.prescriptions": "Prescriptions",
   "nav.library": "Library",
   "nav.jit": "Online Duty",
+  "nav.financeiro": "Financial",
   "nav.availability": "Availability",
   // Navigation — admin
   "nav.adminCategories": "Categories",
@@ -773,6 +774,7 @@ const pt: LocaleDict = {
   "nav.prescriptions": "Prescrições",
   "nav.library": "Biblioteca",
   "nav.jit": "Plantão Online",
+  "nav.financeiro": "Financeiro",
   "nav.availability": "Disponibilidade",
   "nav.adminCategories": "Categorias",
   "nav.adminDoctors": "Médicos",
@@ -1485,6 +1487,7 @@ const es: LocaleDict = {
   "nav.prescriptions": "Recetas",
   "nav.library": "Biblioteca",
   "nav.jit": "Guardia Online",
+  "nav.financeiro": "Finanzas",
   "nav.availability": "Disponibilidad",
   "nav.adminCategories": "Categorías",
   "nav.adminDoctors": "Médicos",

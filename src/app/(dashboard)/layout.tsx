@@ -14,7 +14,7 @@ import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
-  BookOpen, Radio,
+  BookOpen, Radio, TrendingUp,
 } from "lucide-react";
 
 interface NavItem {
@@ -46,6 +46,7 @@ const PROFESSIONAL_NAV: NavItem[] = [
   { href: "/professional/prescriptions", labelKey: "nav.prescriptions", icon: <Stethoscope size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/jit", labelKey: "nav.jit", icon: <Radio size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/professional/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PROFESSIONAL"] },
