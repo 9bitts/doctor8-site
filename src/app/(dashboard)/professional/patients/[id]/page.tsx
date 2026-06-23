@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { decrypt } from "@/lib/encryption";
+import { Suspense } from "react";
 import RecordDetailClient from "./RecordDetailClient";
 
 function safeDecrypt(v: string | null): string {
@@ -71,5 +72,9 @@ export default async function PatientChartDetail({
     createdAt: d.createdAt.toISOString(),
   }));
 
-  return <RecordDetailClient chart={chart} initialDocuments={documents} />;
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">...</div>}>
+      <RecordDetailClient chart={chart} initialDocuments={documents} />
+    </Suspense>
+  );
 }

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
           select: {
             estimatedMinutesPerPatient: true,
             status: true,
-            professional: { select: { firstName: true, lastName: true, specialty: true } },
+            professional: { select: { id: true, userId: true, firstName: true, lastName: true, specialty: true } },
           },
         },
       },
@@ -75,6 +75,8 @@ export async function GET(req: NextRequest) {
         meetingUrl:            entry.meetingUrl ?? null,
         sessionStatus:         entry.session.status,
         professionalName:      `Dr. ${entry.session.professional.firstName} ${entry.session.professional.lastName}`,
+        professionalId:        entry.session.professional.id,
+        professionalUserId:    entry.session.professional.userId,
         specialty:             entry.session.professional.specialty,
       },
     });

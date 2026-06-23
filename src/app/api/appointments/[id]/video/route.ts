@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { getOrCreateRoom, createMeetingToken } from "@/lib/daily";
+import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 
 export async function GET(
   req: NextRequest,
@@ -74,18 +75,13 @@ export async function GET(
 
   await audit.viewRecord(session.user.id, "Appointment", appointment.id);
 
-  // For professionals: find the patient record linked to this patient user
+  // For professionals: ensure patient chart exists (auto-link registered patients)
   let patientRecordId: string | null = null;
   if (isProfessional) {
-    const record = await db.patientRecord.findFirst({
-      where: {
-        professionalId: appointment.professional.id,
-        linkedUserId:   appointment.patient.userId,
-      },
-      select: { id: true },
-      orderBy: { updatedAt: "desc" },
-    });
-    patientRecordId = record?.id ?? null;
+    patientRecordId = await ensurePatientRecord(
+      appointment.professional.id,
+      appointment.patient.userId,
+    );
   }
 
   return NextResponse.json({

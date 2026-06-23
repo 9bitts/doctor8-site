@@ -6,8 +6,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { encrypt } from "@/lib/encryption";
+import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
+
+function safeDecrypt(v: string | null): string {
+  if (v == null) return "";
+  try { return decrypt(v); } catch { return v; }
+}
 
 const patchSchema = z.object({
   email:        z.string().email().or(z.literal("")).optional(),
@@ -20,6 +25,50 @@ const patchSchema = z.object({
   country:      z.string().max(60).optional().or(z.literal("")),
   zipCode:      z.string().max(30).optional().or(z.literal("")),
 });
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "PROFESSIONAL") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const professional = await db.professionalProfile.findUnique({
+    where: { userId: session.user.id },
+  });
+  if (!professional) {
+    return NextResponse.json({ error: "No profile" }, { status: 404 });
+  }
+
+  const record = await db.patientRecord.findFirst({
+    where: { id: params.id, professionalId: professional.id },
+    include: {
+      medicalDocuments: {
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: { category: { select: { name: true } } },
+      },
+    },
+  });
+  if (!record) {
+    return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    id: record.id,
+    firstName: safeDecrypt(record.firstName),
+    lastName: safeDecrypt(record.lastName),
+    documents: record.medicalDocuments.map((d) => ({
+      id: d.id,
+      title: safeDecrypt(d.title),
+      content: d.content ? safeDecrypt(d.content) : null,
+      categoryName: d.category?.name ?? null,
+      createdAt: d.createdAt.toISOString(),
+    })),
+  });
+}
 
 export async function PATCH(
   req: NextRequest,

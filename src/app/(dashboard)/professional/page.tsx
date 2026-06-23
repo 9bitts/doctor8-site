@@ -311,9 +311,9 @@ export default async function ProfessionalDashboard() {
                       {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
-                  {apt.meetingUrl && (
+                  {apt.type === "TELECONSULT" && (
                     <a
-                      href={apt.meetingUrl}
+                      href={`/video/${apt.id}`}
                       className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-emerald-400 transition"
                     >
                       <Video size={12} /> {t("prodash.join")}

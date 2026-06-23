@@ -8,6 +8,7 @@
 // P2: "Diagnóstico / Título" label (trilíngue) + botão WhatsApp no cabeçalho da ficha.
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
@@ -97,6 +98,7 @@ export default function RecordDetailClient({
   initialDocuments: Doc[];
 }) {
   const t = useT();
+  const searchParams = useSearchParams();
   // Detect current language via a known key, then serve inline rec.* texts
   const _lang = t("common.cancel") === "Cancelar" ? "pt" : t("common.cancel") === "Cancelar" ? "es" : t("common.cancel") === "Cancel" ? "en" : "en";
   const _langFull = t("greeting.morning") === "Bom dia" ? "pt" : t("greeting.morning") === "Buenos días" ? "es" : "en";
@@ -174,6 +176,12 @@ export default function RecordDetailClient({
     })();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("newRecord") === "1") {
+      setShowForm(true);
+    }
+  }, [searchParams]);
 
   function resetForm() {
     const first = groups[0]?.items[0];

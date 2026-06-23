@@ -5,6 +5,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
+import Link from "next/link";
 import {
   Stethoscope, Search, Loader2, Clock, Users, CheckCircle2,
   AlertCircle, Radio, ArrowLeft, Phone, X, Heart, Lock, CreditCard,
@@ -61,7 +63,29 @@ interface QueueEntry {
   meetingUrl:           string | null;
   sessionStatus:        string;
   professionalName:     string;
+  professionalId?:      string;
+  professionalUserId?:  string;
   specialty:            string;
+}
+
+function QueueSharePrompt({
+  entry,
+  careProfessional,
+}: {
+  entry: QueueEntry;
+  careProfessional: { id: string; name: string } | null;
+}) {
+  const proId = entry.professionalId || careProfessional?.id;
+  const proName = entry.professionalName || careProfessional?.name;
+  if (!proId || !proName) return null;
+  return (
+    <ShareHistoryPrompt
+      professionalId={proId}
+      professionalUserId={entry.professionalUserId}
+      professionalName={proName}
+      className="mb-6 text-left"
+    />
+  );
 }
 
 export default function UrgentPage() {
@@ -89,6 +113,7 @@ export default function UrgentPage() {
 
   // Active queue entry
   const [queueEntry, setQueueEntry] = useState<QueueEntry | null>(null);
+  const [careProfessional, setCareProfessional] = useState<{ id: string; name: string } | null>(null);
   const [entering,   setEntering]   = useState(false);
   const [highlightSessionId, setHighlightSessionId] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout>();
@@ -117,8 +142,17 @@ export default function UrgentPage() {
   }
 
   // ── Free session: join directly ────────────────────────────────────────────
-  async function joinQueue(sessionId: string, specialty: string, paymentIntentId?: string) {
+  async function joinQueue(
+    sessionId: string,
+    specialty: string,
+    professionalId?: string,
+    professionalName?: string,
+    paymentIntentId?: string,
+  ) {
     setJoining(sessionId); setError(null);
+    if (professionalId && professionalName) {
+      setCareProfessional({ id: professionalId, name: professionalName });
+    }
     try {
       const res  = await fetch("/api/jit/queue", {
         method:  "POST",
@@ -189,7 +223,13 @@ export default function UrgentPage() {
 
       if (paymentIntent.status === "succeeded") {
         setPayModal(null);
-        await joinQueue(payModal.sessionId, payModal.specialty, paymentIntent.id);
+        await joinQueue(
+          payModal.sessionId,
+          payModal.specialty,
+          payModal.professional.id,
+          payModal.professional.name,
+          paymentIntent.id,
+        );
       }
     } catch { setError("Erro de rede."); }
     setPayLoading(false);
@@ -207,6 +247,12 @@ export default function UrgentPage() {
       const data = await res.json();
       if (res.ok) {
         setQueueEntry(data.entry);
+        if (data.entry.professionalId && data.entry.professionalName) {
+          setCareProfessional({
+            id: data.entry.professionalId,
+            name: data.entry.professionalName,
+          });
+        }
         if (["DONE", "CANCELLED", "NO_SHOW"].includes(data.entry.status)) clearInterval(pollRef.current);
       }
     } catch { /* ignore */ }
@@ -223,8 +269,7 @@ export default function UrgentPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Erro."); setEntering(false); return; }
-      if (data.meetingUrl) window.open(data.meetingUrl, "_blank");
-      await pollQueue(queueEntry.id);
+      window.location.href = `/video/jit/${queueEntry.id}`;
     } catch { setError("Erro de rede."); }
     setEntering(false);
   }
@@ -273,7 +318,8 @@ export default function UrgentPage() {
           </div>
           <h2 className="text-2xl font-bold text-emerald-700 mb-2">{t("urgent.calledTitle")}</h2>
           <p className="text-sm text-slate-500 mb-2">{queueEntry.professionalName}</p>
-          <p className="text-sm text-slate-500 mb-6">{t("urgent.calledSub")}</p>
+          <p className="text-sm text-slate-500 mb-4">{t("urgent.calledSub")}</p>
+          <QueueSharePrompt entry={queueEntry} careProfessional={careProfessional} />
           {queueEntry.expiresAt && <CountdownTimer expiresAt={queueEntry.expiresAt} />}
           {error && <p className="text-xs text-rose-600 mb-3 mt-3">{error}</p>}
           <button onClick={enterConsultation} disabled={entering}
@@ -291,13 +337,14 @@ export default function UrgentPage() {
             <Stethoscope size={28} className="text-blue-500" />
           </div>
           <h2 className="text-lg font-bold text-slate-900 mb-2">{t("urgent.inProgressTitle")}</h2>
-          <p className="text-sm text-slate-500 mb-6">{queueEntry.professionalName}</p>
-          {queueEntry.meetingUrl && (
-            <a href={queueEntry.meetingUrl} target="_blank" rel="noopener noreferrer"
-              className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm transition inline-flex items-center justify-center gap-2">
-              <Phone size={16} /> {t("urgent.enterRoom")}
-            </a>
-          )}
+          <p className="text-sm text-slate-500 mb-4">{queueEntry.professionalName}</p>
+          <QueueSharePrompt entry={queueEntry} careProfessional={careProfessional} />
+          <Link
+            href={`/video/jit/${queueEntry.id}`}
+            className="w-full py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm transition inline-flex items-center justify-center gap-2"
+          >
+            <Phone size={16} /> {t("urgent.enterRoom")}
+          </Link>
         </div>
       </div>
     );
@@ -310,7 +357,8 @@ export default function UrgentPage() {
             <Radio size={28} className="text-emerald-500 animate-pulse" />
           </div>
           <h2 className="text-lg font-bold text-slate-900 mb-1">{t("urgent.waitTitle")}</h2>
-          <p className="text-sm text-slate-500 mb-6">{queueEntry.professionalName} · {queueEntry.specialty}</p>
+          <p className="text-sm text-slate-500 mb-4">{queueEntry.professionalName} · {queueEntry.specialty}</p>
+          <QueueSharePrompt entry={queueEntry} careProfessional={careProfessional} />
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-slate-50 rounded-xl p-4">
               <p className="text-3xl font-bold text-emerald-600">{queueEntry.position}</p>
@@ -425,7 +473,7 @@ export default function UrgentPage() {
                         <AlertCircle size={13} /> {t("urgent.full")}
                       </span>
                     ) : pro.isFree ? (
-                      <button onClick={() => joinQueue(pro.sessionId, pro.specialty)} disabled={joining === pro.sessionId}
+                      <button onClick={() => joinQueue(pro.sessionId, pro.specialty, pro.professional.id, pro.professional.name)} disabled={joining === pro.sessionId}
                         className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
                         {joining === pro.sessionId ? <><Loader2 size={14} className="animate-spin" /> {t("urgent.entering")}</> : t("urgent.enter")}
                       </button>

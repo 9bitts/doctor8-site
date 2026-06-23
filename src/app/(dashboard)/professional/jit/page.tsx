@@ -4,6 +4,7 @@
 // Fix 1: campo de preço em valor real (R$ 1,00) em vez de centavos
 // Fix 2: sessionIdRef para evitar closure stale no polling
 
+import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import {
   Radio, Power, PowerOff, Users, Clock, ChevronRight,
@@ -405,12 +406,13 @@ export default function JitPage() {
                     {(inProgressEntry || calledEntry)?.patientName}
                   </p>
                 </div>
-                {(inProgressEntry?.meetingUrl || calledEntry?.meetingUrl) && (
-                  <a href={(inProgressEntry?.meetingUrl || calledEntry?.meetingUrl) ?? "#"}
-                    target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm">
+                {(inProgressEntry?.id || calledEntry?.id) && (
+                  <Link
+                    href={`/video/jit/${(inProgressEntry?.id || calledEntry?.id) ?? ""}`}
+                    className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+                  >
                     <Phone size={16} /> Entrar na sala
-                  </a>
+                  </Link>
                 )}
               </div>
               {calledEntry?.expiresAt && <CountdownTimer expiresAt={calledEntry.expiresAt} />}

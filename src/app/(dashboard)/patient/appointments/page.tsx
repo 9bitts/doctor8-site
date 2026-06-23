@@ -10,6 +10,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
   CreditCard, Loader2, CheckCircle2, AlertCircle, Star, MapPin, Lock,
@@ -596,6 +597,10 @@ export default function AppointmentsPage() {
               <span className="font-semibold text-emerald-600">{priceDisplay}</span>
             </div>
           </div>
+          <ShareHistoryPrompt
+            professionalId={selectedPro.id}
+            professionalName={`Dr. ${selectedPro.firstName} ${selectedPro.lastName}`}
+          />
           <p className="text-sm text-slate-500">{t("appt.emailSent")}</p>
           <button onClick={resetFlow} className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl hover:bg-slate-700 transition">
             {t("appt.backToAppts")}
