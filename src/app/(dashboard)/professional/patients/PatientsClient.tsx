@@ -5,10 +5,10 @@
 // P1-a: added phone (required) + registration data (birth, sex, CPF, address) used by the
 // prescription (CFM superinscription). Registration fields can be filled now or later.
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/I18nProvider";
-import { Users, Plus, X, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
+import { Users, Plus, X, ChevronRight, CheckCircle2, AlertCircle, Search } from "lucide-react";
 
 interface Chart {
   id: string;
@@ -22,6 +22,7 @@ interface Chart {
 export default function PatientsClient({ initialCharts }: { initialCharts: Chart[] }) {
   const t = useT();
   const [charts, setCharts] = useState<Chart[]>(initialCharts);
+  const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +96,19 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
     setSaving(false);
   }
 
+  const filteredCharts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return charts;
+    return charts.filter((c) => {
+      const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
+      const email = (c.email || "").toLowerCase();
+      return fullName.includes(q)
+        || c.firstName.toLowerCase().includes(q)
+        || c.lastName.toLowerCase().includes(q)
+        || email.includes(q);
+    });
+  }, [charts, search]);
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -112,6 +126,19 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
         </button>
       </div>
 
+      {charts.length > 0 && (
+        <div className="relative">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("pat.searchPlaceholder")}
+            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+          />
+        </div>
+      )}
+
       {/* List */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {charts.length === 0 ? (
@@ -120,9 +147,14 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
             <p className="text-slate-400 text-sm">{t("pat.empty")}</p>
             <p className="text-slate-400 text-xs mt-1">{t("pat.emptyHint")}</p>
           </div>
+        ) : filteredCharts.length === 0 ? (
+          <div className="text-center py-16">
+            <Search className="mx-auto text-slate-300 mb-3" size={40} />
+            <p className="text-slate-400 text-sm">{t("pat.searchEmpty")}</p>
+          </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {charts.map((c) => (
+            {filteredCharts.map((c) => (
               <Link
                 key={c.id}
                 href={`/professional/patients/${c.id}`}
