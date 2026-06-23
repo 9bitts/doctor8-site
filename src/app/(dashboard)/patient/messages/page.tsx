@@ -34,6 +34,14 @@ interface PatientChart {
   hasAccount: boolean;
 }
 
+interface ProfessionalContact {
+  professionalId: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  specialty: string;
+}
+
 export default function MessagesPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
@@ -50,11 +58,12 @@ export default function MessagesPage() {
   const pollRef = useRef<NodeJS.Timeout>();
 
   // P4: new conversation modal
-  const [role, setRole] = useState<string>("PATIENT");
+  const [role, setRole] = useState<string>("");
   const [showNewConv, setShowNewConv] = useState(false);
   const [charts, setCharts] = useState<PatientChart[]>([]);
-  const [chartsLoading, setChartsLoading] = useState(false);
-  const [chartSearch, setChartSearch] = useState("");
+  const [professionals, setProfessionals] = useState<ProfessionalContact[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [contactSearch, setContactSearch] = useState("");
 
   useEffect(() => {
     // Detect role
@@ -183,19 +192,29 @@ export default function MessagesPage() {
     }
   }
 
-  // P4: Load patient charts for "new conversation"
+  // New conversation modal
   async function openNewConv() {
     setShowNewConv(true);
-    setChartSearch("");
-    if (charts.length === 0) {
-      setChartsLoading(true);
+    setContactSearch("");
+    if (role === "PROFESSIONAL") {
+      if (charts.length > 0) return;
+      setContactsLoading(true);
       try {
         const res = await fetch("/api/professional/records");
         const data = await res.json();
         setCharts((data.records || []).filter((r: PatientChart) => r.hasAccount && r.linkedUserId));
       } catch { /* ignore */ }
-      setChartsLoading(false);
+      setContactsLoading(false);
+      return;
     }
+    if (professionals.length > 0) return;
+    setContactsLoading(true);
+    try {
+      const res = await fetch("/api/patient/message-contacts");
+      const data = await res.json();
+      setProfessionals(data.contacts || []);
+    } catch { /* ignore */ }
+    setContactsLoading(false);
   }
 
   function startConvWithPatient(chart: PatientChart) {
@@ -217,13 +236,38 @@ export default function MessagesPage() {
     lastMessageTime.current = "";
   }
 
+  function startConvWithProfessional(pro: ProfessionalContact) {
+    const name = `Dr. ${pro.firstName} ${pro.lastName}`;
+    const existing = conversations.find(c => c.userId === pro.userId);
+    if (existing) {
+      setActiveConv(existing);
+    } else {
+      setActiveConv({
+        userId: pro.userId,
+        name,
+        lastMessage: "",
+        lastAt: new Date().toISOString(),
+        unread: 0,
+      });
+    }
+    setShowNewConv(false);
+    setMessages([]);
+    lastMessageTime.current = "";
+  }
+
   const filtered = conversations.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const filteredCharts = charts.filter(c =>
-    `${c.firstName} ${c.lastName}`.toLowerCase().includes(chartSearch.toLowerCase())
+    `${c.firstName} ${c.lastName}`.toLowerCase().includes(contactSearch.toLowerCase())
   );
+
+  const filteredProfessionals = professionals.filter(p =>
+    `${p.firstName} ${p.lastName} ${p.specialty}`.toLowerCase().includes(contactSearch.toLowerCase())
+  );
+
+  const canStartNewConv = role === "PROFESSIONAL" || role === "PATIENT";
 
   const formatTime = (iso: string) => {
     const date = new Date(iso);
@@ -241,14 +285,13 @@ export default function MessagesPage() {
         <div className="p-4 border-b border-slate-100">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-slate-900">{t("msg.title")}</h2>
-            {/* P4: New conversation button — only for professionals */}
-            {role === "PROFESSIONAL" && (
+            {canStartNewConv && (
               <button
                 onClick={openNewConv}
                 className="inline-flex items-center gap-1 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-2.5 py-1.5 rounded-lg transition"
-                title="Nova conversa"
+                title={t("msg.newConversation")}
               >
-                <Plus size={13} /> Nova
+                <Plus size={13} /> {t("msg.newShort")}
               </button>
             )}
           </div>
@@ -271,12 +314,12 @@ export default function MessagesPage() {
             <div className="text-center py-12">
               <MessageSquare size={32} className="text-slate-300 mx-auto mb-3" />
               <p className="text-slate-400 text-sm">{t("msg.noConversations")}</p>
-              {role === "PROFESSIONAL" && (
+              {canStartNewConv && (
                 <button
                   onClick={openNewConv}
                   className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700"
                 >
-                  <Plus size={13} /> Iniciar conversa
+                  <Plus size={13} /> {t("msg.startConversation")}
                 </button>
               )}
             </div>
@@ -372,17 +415,25 @@ export default function MessagesPage() {
           <div className="text-center">
             <MessageSquare size={48} className="text-slate-200 mx-auto mb-4" />
             <p className="text-slate-400">{t("msg.selectConversation")}</p>
+            {canStartNewConv && (
+              <button
+                onClick={openNewConv}
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-xl transition"
+              >
+                <Plus size={15} /> {t("msg.startConversation")}
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {/* P4: New conversation modal — list patients with account */}
+      {/* New conversation modal */}
       {showNewConv && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                <Users size={18} className="text-emerald-500" /> Nova conversa
+                <Users size={18} className="text-emerald-500" /> {t("msg.newConversation")}
               </h2>
               <button onClick={() => setShowNewConv(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
@@ -392,40 +443,64 @@ export default function MessagesPage() {
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
-                  value={chartSearch}
-                  onChange={(e) => setChartSearch(e.target.value)}
-                  placeholder="Buscar paciente..."
+                  value={contactSearch}
+                  onChange={(e) => setContactSearch(e.target.value)}
+                  placeholder={role === "PROFESSIONAL" ? t("msg.searchPatient") : t("msg.searchProfessional")}
                   className="w-full pl-8 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                   autoFocus
                 />
               </div>
             </div>
             <div className="flex-1 overflow-y-auto">
-              {chartsLoading ? (
+              {contactsLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 size={20} className="animate-spin text-slate-400" />
                 </div>
-              ) : filteredCharts.length === 0 ? (
+              ) : role === "PROFESSIONAL" ? (
+                filteredCharts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400 text-sm">
+                      {charts.length === 0 ? t("msg.noContactsPatient") : t("msg.noContactFound")}
+                    </p>
+                  </div>
+                ) : (
+                  filteredCharts.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => startConvWithPatient(c)}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 transition text-left border-b border-slate-100 last:border-0"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                        {c.firstName.charAt(0)}
+                      </div>
+                      <span className="text-sm font-medium text-slate-800">
+                        {c.firstName} {c.lastName}
+                      </span>
+                    </button>
+                  ))
+                )
+              ) : filteredProfessionals.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-slate-400 text-sm">
-                    {charts.length === 0
-                      ? "Nenhum paciente com conta Doctor8 ainda."
-                      : "Nenhum paciente encontrado."}
+                    {professionals.length === 0 ? t("msg.noContactsProfessional") : t("msg.noContactFound")}
                   </p>
                 </div>
               ) : (
-                filteredCharts.map((c) => (
+                filteredProfessionals.map((p) => (
                   <button
-                    key={c.id}
-                    onClick={() => startConvWithPatient(c)}
+                    key={p.professionalId}
+                    onClick={() => startConvWithProfessional(p)}
                     className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 transition text-left border-b border-slate-100 last:border-0"
                   >
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                      {c.firstName.charAt(0)}
+                      {p.firstName.charAt(0)}
                     </div>
-                    <span className="text-sm font-medium text-slate-800">
-                      {c.firstName} {c.lastName}
-                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-800 truncate">
+                        Dr. {p.firstName} {p.lastName}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">{p.specialty}</p>
+                    </div>
                   </button>
                 ))
               )}
