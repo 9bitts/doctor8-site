@@ -6,8 +6,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { decrypt } from "@/lib/encryption";
 import { JitQueueStatus } from "@prisma/client";
 import { z } from "zod";
+
+function safeDecrypt(v: string | null | undefined): string {
+  if (!v) return "";
+  try { return decrypt(v); } catch { return v; }
+}
 
 const createSchema = z.object({
   mode:                        z.enum(["QUEUE", "SHOWCASE"]),
@@ -74,7 +80,7 @@ function serializeJitSession(jitSession: {
       expiresAt:   q.expiresAt?.toISOString() ?? null,
       meetingUrl:  q.meetingUrl ?? null,
       patientName: q.patientUser?.patientProfile
-        ? `${q.patientUser.patientProfile.firstName} ${q.patientUser.patientProfile.lastName}`.trim()
+        ? `${safeDecrypt(q.patientUser.patientProfile.firstName)} ${safeDecrypt(q.patientUser.patientProfile.lastName)}`.trim()
         : "Paciente",
     })),
   };

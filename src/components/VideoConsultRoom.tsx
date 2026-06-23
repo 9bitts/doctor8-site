@@ -81,7 +81,7 @@ export default function VideoConsultRoom({
   const [opensAt, setOpensAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [records, setRecords] = useState<ClinicalRecord[]>([]);
   const [noteText, setNoteText] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
@@ -119,6 +119,11 @@ export default function VideoConsultRoom({
   useEffect(() => {
     setLang(detectLang());
     loadRoom();
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setSidebarOpen(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -261,18 +266,26 @@ export default function VideoConsultRoom({
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden relative">
-        <div className={`flex flex-col transition-all duration-300 min-w-0 ${isPro && sidebarOpen ? "w-full md:w-[60%] lg:w-[65%]" : "w-full"}`}>
+      <div className="flex flex-1 overflow-hidden relative flex-col lg:flex-row min-h-0">
+        {/* Video — always visible; on mobile stays above the chart drawer */}
+        <div
+          className={`flex flex-col min-h-0 shrink-0 transition-all duration-300 ${
+            isPro && sidebarOpen
+              ? "h-[52vh] lg:h-auto lg:flex-1 lg:w-[65%]"
+              : "flex-1 w-full"
+          }`}
+        >
           <iframe
             src={`${data.url}?t=${data.token}`}
             allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
-            className="flex-1 w-full border-0 min-h-[50vh]"
+            className="flex-1 w-full h-full border-0 min-h-[200px]"
             title="Teleconsultation"
           />
         </div>
 
+        {/* Chart sidebar — bottom drawer on mobile, side panel on desktop */}
         {isPro && sidebarOpen && (
-          <div className="w-full md:w-[40%] lg:w-[35%] flex flex-col bg-slate-900 border-l border-slate-800 overflow-hidden absolute md:relative inset-0 md:inset-auto z-20 md:z-0">
+          <div className="flex flex-col bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 overflow-hidden z-20 flex-1 min-h-0 lg:flex-none lg:w-[35%] rounded-t-2xl lg:rounded-none shadow-[0_-8px_30px_rgba(0,0,0,0.4)] lg:shadow-none">
             <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <Stethoscope size={16} className="text-emerald-400 shrink-0" />

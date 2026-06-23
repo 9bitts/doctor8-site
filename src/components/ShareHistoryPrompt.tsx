@@ -5,7 +5,21 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FileText, Share2, Loader2, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { translate, normalizeLang, Lang, TranslationKey } from "@/lib/i18n/translations";
+
+const LANG_KEY = "doctor8.lang";
+
+function detectLang(): Lang {
+  if (typeof window === "undefined") return "pt";
+  try {
+    const stored = localStorage.getItem(LANG_KEY);
+    if (stored) return normalizeLang(stored);
+  } catch { /* ignore */ }
+  const l = document.documentElement.lang || navigator.language || "pt";
+  if (l.startsWith("en")) return "en";
+  if (l.startsWith("es")) return "es";
+  return "pt";
+}
 
 interface ShareHistoryPromptProps {
   professionalUserId?: string;
@@ -20,7 +34,8 @@ export default function ShareHistoryPrompt({
   professionalName,
   className = "",
 }: ShareHistoryPromptProps) {
-  const t = useT();
+  const [lang, setLang] = useState<Lang>("pt");
+  const t = (key: TranslationKey) => translate(lang, key);
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [historyFilled, setHistoryFilled] = useState(false);
@@ -28,6 +43,8 @@ export default function ShareHistoryPrompt({
   const [justShared, setJustShared] = useState(false);
   const [error, setError] = useState("");
   const [resolvedProUserId, setResolvedProUserId] = useState<string | null>(professionalUserId ?? null);
+
+  useEffect(() => { setLang(detectLang()); }, []);
 
   useEffect(() => {
     let active = true;
