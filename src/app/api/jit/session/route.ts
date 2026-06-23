@@ -164,6 +164,9 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  const { notifyFavoritePatientsOnline } = await import("@/lib/notify-favorites");
+  notifyFavoritePatientsOnline(professional.id).catch(() => {});
+
   return NextResponse.json({ session: jitSession }, { status: 201 });
 }
 
@@ -189,11 +192,19 @@ export async function PATCH(req: NextRequest) {
   if (!activeSession)
     return NextResponse.json({ error: "No active session" }, { status: 404 });
 
+  const wasPaused = activeSession.status === "PAUSED";
+  const goingOnline = parsed.data.status === "ONLINE";
+
   const updated = await db.jitSession.update({
     where: { id: activeSession.id },
     data: parsed.data,
     include: jitSessionInclude,
   });
+
+  if (wasPaused && goingOnline) {
+    const { notifyFavoritePatientsOnline } = await import("@/lib/notify-favorites");
+    notifyFavoritePatientsOnline(professional.id).catch(() => {});
+  }
 
   return NextResponse.json({ session: serializeJitSession(updated) });
 }

@@ -1,5 +1,5 @@
-// GET — professionals for the patient map (location, online status, credentials).
-// Query: lat, lng (optional — for distance sort), q (optional — search location text)
+// GET — professionals for the patient map.
+// Query: lat, lng, q, specialty, radiusKm (5|10|50|0=all)
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -8,6 +8,16 @@ import { geocodeAddress, buildClinicAddress, haversineKm, GeoPoint } from "@/lib
 import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
 
 const GEOCODE_BATCH = 8;
+const RADIUS_OPTIONS = [5, 10, 50];
+
+function hasClinicLocation(pro: {
+  clinicAddress?: string | null;
+  clinicCity?: string | null;
+  clinicState?: string | null;
+  acceptsInPerson: boolean;
+}): boolean {
+  return pro.acceptsInPerson || !!(pro.clinicAddress || pro.clinicCity);
+}
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -19,6 +29,9 @@ export async function GET(req: NextRequest) {
   const latParam = searchParams.get("lat");
   const lngParam = searchParams.get("lng");
   const q = searchParams.get("q")?.trim() || "";
+  const specialtyFilter = searchParams.get("specialty")?.trim() || "";
+  const radiusParam = parseInt(searchParams.get("radiusKm") || "0", 10);
+  const radiusKm = RADIUS_OPTIONS.includes(radiusParam) ? radiusParam : 0;
 
   let center: GeoPoint | null = null;
   if (latParam && lngParam) {
@@ -28,8 +41,57 @@ export async function GET(req: NextRequest) {
   }
   if (!center && q) center = await geocodeAddress(q);
 
+  const patient = await db.patientProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true },
+  });
+
+  const [favorites, reviewAgg, specialtyRows] = await Promise.all([
+    db.patientFavorite.findMany({
+      where: { patientUserId: session.user.id },
+      select: { professionalId: true, notifyOnline: true },
+    }),
+    db.professionalReview.groupBy({
+      by: ["professionalId"],
+      _avg: { rating: true },
+      _count: { rating: true },
+    }),
+    db.professionalProfile.findMany({
+      where: { verified: true },
+      select: { specialty: true },
+      distinct: ["specialty"],
+      orderBy: { specialty: "asc" },
+    }),
+  ]);
+
+  const favoriteSet = new Set(favorites.map((f) => f.professionalId));
+  const reviewMap = new Map(
+    reviewAgg.map((r) => [
+      r.professionalId,
+      {
+        avg: Math.round((r._avg.rating ?? 0) * 10) / 10,
+        count: r._count.rating,
+      },
+    ])
+  );
+
+  const completedProIds = patient
+    ? new Set(
+        (
+          await db.appointment.findMany({
+            where: { patientId: patient.id, status: "COMPLETED" },
+            select: { professionalId: true },
+            distinct: ["professionalId"],
+          })
+        ).map((a) => a.professionalId)
+      )
+    : new Set<string>();
+
   const professionals = await db.professionalProfile.findMany({
-    where: { verified: true },
+    where: {
+      verified: true,
+      ...(specialtyFilter ? { specialty: { equals: specialtyFilter, mode: "insensitive" } } : {}),
+    },
     select: {
       id: true,
       firstName: true,
@@ -52,7 +114,19 @@ export async function GET(req: NextRequest) {
       clinicLongitude: true,
       jitSessions: {
         where: { status: "ONLINE" },
-        select: { id: true, specialty: true, isFree: true, priceAmount: true },
+        select: {
+          id: true,
+          specialty: true,
+          isFree: true,
+          priceAmount: true,
+          currency: true,
+          estimatedMinutesPerPatient: true,
+          _count: {
+            select: {
+              queue: { where: { status: { in: ["WAITING", "CALLED"] } } },
+            },
+          },
+        },
         take: 1,
       },
     },
@@ -60,11 +134,11 @@ export async function GET(req: NextRequest) {
     take: 200,
   });
 
-  // Geocode missing coordinates (batched)
   let geocoded = 0;
   for (const pro of professionals) {
     if (geocoded >= GEOCODE_BATCH) break;
     if (pro.clinicLatitude != null && pro.clinicLongitude != null) continue;
+    if (!hasClinicLocation(pro)) continue;
     const addr = buildClinicAddress(pro);
     if (!addr) continue;
     const point = await geocodeAddress(addr);
@@ -81,10 +155,19 @@ export async function GET(req: NextRequest) {
   const mapped = professionals.map((pro) => {
     const profInfo = getProfessionInfo(pro.specialty);
     const jit = pro.jitSessions[0] ?? null;
+    const queueCount = jit?._count.queue ?? 0;
+    const waitMins = jit
+      ? queueCount * (jit.estimatedMinutesPerPatient || 20)
+      : null;
+
     const hasCoords = pro.clinicLatitude != null && pro.clinicLongitude != null;
     const point: GeoPoint | null = hasCoords
       ? { lat: pro.clinicLatitude!, lng: pro.clinicLongitude! }
       : null;
+
+    const clinicLoc = hasClinicLocation(pro);
+    const showOnMap = !!(point && clinicLoc);
+    const teleconsultOnly = pro.acceptsTeleconsult && !showOnMap;
 
     const displayName = (() => {
       const full = `${pro.firstName} ${pro.lastName}`.trim();
@@ -98,6 +181,15 @@ export async function GET(req: NextRequest) {
       }
     })();
 
+    const rev = reviewMap.get(pro.id);
+    const distanceKm = center && point
+      ? Math.round(haversineKm(center, point) * 10) / 10
+      : null;
+
+    const priceCents = jit
+      ? (jit.isFree ? 0 : jit.priceAmount)
+      : Math.round(pro.consultPrice);
+
     return {
       id:               pro.id,
       name:             displayName,
@@ -108,25 +200,43 @@ export async function GET(req: NextRequest) {
       license:          formatLicense(pro.licenseNumber, pro.licenseState, profInfo.councilKey),
       avatarUrl:        pro.avatarUrl,
       consultPrice:     pro.consultPrice,
-      currency:         pro.currency,
+      currency:         jit?.currency || pro.currency,
       acceptsTeleconsult: pro.acceptsTeleconsult,
       acceptsInPerson:    pro.acceptsInPerson,
       clinicName:       pro.clinicName,
       clinicCity:       pro.clinicCity,
       clinicState:      pro.clinicState,
       clinicCountry:    pro.clinicCountry,
-      lat:              point?.lat ?? null,
-      lng:              point?.lng ?? null,
-      distanceKm:       center && point ? Math.round(haversineKm(center, point) * 10) / 10 : null,
+      lat:              showOnMap ? point!.lat : null,
+      lng:              showOnMap ? point!.lng : null,
+      showOnMap,
+      teleconsultOnly,
+      distanceKm,
       isOnline:         !!jit,
+      isFavorite:       favoriteSet.has(pro.id),
       jitSessionId:     jit?.id ?? null,
       jitIsFree:        jit?.isFree ?? false,
       jitPriceAmount:   jit?.priceAmount ?? 0,
+      jitQueueCount:    queueCount,
+      estimatedWaitMinutes: waitMins,
+      displayPriceCents: priceCents,
+      ratingAvg:        rev?.avg ?? null,
+      ratingCount:      rev?.count ?? 0,
+      canReview:        completedProIds.has(pro.id),
     };
   });
 
-  // Sort: online first, then by distance if center known, then name
-  mapped.sort((a, b) => {
+  const withinRadius = (p: typeof mapped[0]) => {
+    if (!radiusKm || !center) return true;
+    if (p.teleconsultOnly && p.isOnline) return true;
+    if (p.distanceKm == null) return !radiusKm;
+    return p.distanceKm <= radiusKm;
+  };
+
+  const filtered = mapped.filter(withinRadius);
+
+  filtered.sort((a, b) => {
+    if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
     if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
     if (a.distanceKm != null && b.distanceKm != null) return a.distanceKm - b.distanceKm;
     if (a.distanceKm != null) return -1;
@@ -136,8 +246,12 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     center,
-    professionals: mapped,
-    withLocation: mapped.filter((p) => p.lat != null).length,
-    total: mapped.length,
+    radiusKm,
+    specialties: specialtyRows.map((s) => s.specialty),
+    favoriteIds: [...favoriteSet],
+    professionals: filtered,
+    withLocation: filtered.filter((p) => p.showOnMap).length,
+    teleconsultOnline: filtered.filter((p) => p.teleconsultOnly && p.isOnline).length,
+    total: filtered.length,
   });
 }

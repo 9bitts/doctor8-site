@@ -147,6 +147,8 @@ model User {
   notifications     Notification[]
   subscription      Subscription?
   dataExportRequests DataExportRequest[]
+  patientFavorites  PatientFavorite[]  @relation("PatientFavorites")
+  professionalReviews ProfessionalReview[] @relation("PatientReviews")
 
   @@index([email])
   @@index([role])
@@ -306,6 +308,8 @@ model ProfessionalProfile {
   resources      Resource[]
 
   jitSessions       JitSession[]
+  favorites         PatientFavorite[]
+  reviews           ProfessionalReview[]
 
   @@index([userId])
   @@index([specialty])
@@ -574,6 +578,36 @@ model Notification {
 
   @@index([userId])
   @@index([readAt])
+}
+
+// Patient favorites (map) + optional online alert
+model PatientFavorite {
+  id             String              @id @default(cuid())
+  patientUserId  String
+  patientUser    User                @relation("PatientFavorites", fields: [patientUserId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  notifyOnline   Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+
+  @@unique([patientUserId, professionalId])
+  @@index([professionalId])
+}
+
+// Patient reviews of professionals (1 per patient per professional)
+model ProfessionalReview {
+  id             String              @id @default(cuid())
+  patientUserId  String
+  patientUser    User                @relation("PatientReviews", fields: [patientUserId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  rating         Int                 // 1–5
+  comment        String?             @db.Text
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([patientUserId, professionalId])
+  @@index([professionalId])
 }
 
 // ─────────────────────────────────────────

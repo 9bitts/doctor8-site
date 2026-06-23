@@ -11,7 +11,8 @@ type NotificationType =
   | "appointment_reminder"
   | "appointment_confirmed"
   | "payment"
-  | "system";
+  | "system"
+  | "favorite_online";
 
 export async function createNotification(params: {
   userId: string;
