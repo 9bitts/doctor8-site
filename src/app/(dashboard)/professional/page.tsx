@@ -1,27 +1,33 @@
 // src/app/(dashboard)/professional/page.tsx
-// Professional home dashboard (i18n: translated server-side from User.language)
+// Professional home dashboard — reorganized with JIT priority, clickable stats,
+// grouped quick actions, and verified navigation targets.
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
-import { translate, normalizeLang, localeOf, Lang } from "@/lib/i18n/translations";
-import { Calendar, Users, DollarSign, Clock, ChevronRight, Video } from "lucide-react";
+import { translate, normalizeLang, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
+import {
+  Calendar, Users, DollarSign, Clock, ChevronRight, Video, Radio,
+  Inbox, MessageSquare, Stethoscope, BookOpen, UserCog, Settings,
+  Layers, TrendingUp, Activity, AlertTriangle,
+} from "lucide-react";
 import Link from "next/link";
+import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
 
 export default async function ProfessionalDashboard() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "PROFESSIONAL") redirect("/patient");
 
-  // Language for this user (server-side translation)
-  const userRow = await db.user.findUnique({ where: { id: session.user.id }, select: { language: true } });
+  const userId = session.user.id;
+  const userRow = await db.user.findUnique({ where: { id: userId }, select: { language: true } });
   const lang: Lang = normalizeLang(userRow?.language);
   const t = (key: string) => translate(lang, key);
   const locale = localeOf(lang);
 
   const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId },
     include: {
       appointments: {
         where: {
@@ -39,83 +45,272 @@ export default async function ProfessionalDashboard() {
 
   if (!professional) redirect("/onboarding");
 
-  await audit.viewRecord(session.user.id, "ProfessionalProfile", professional.id);
+  await audit.viewRecord(userId, "ProfessionalProfile", professional.id);
 
-  const [totalPatients, totalEarnings, completedToday] = await Promise.all([
-    db.appointment.count({ where: { professionalId: professional.id, status: "COMPLETED" } }),
-    db.appointment.aggregate({
-      where: { professionalId: professional.id, status: "COMPLETED" },
-      _sum: { priceAmount: true },
-    }),
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+  const [
+    completedToday,
+    patientCount,
+    monthEarnings,
+    jitSession,
+    sharedPending,
+    unreadMessages,
+  ] = await Promise.all([
     db.appointment.count({
       where: {
         professionalId: professional.id,
-        scheduledAt: {
-          gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          lte: new Date(new Date().setHours(23, 59, 59, 999)),
-        },
+        scheduledAt: { gte: todayStart, lte: todayEnd },
         status: { in: ["CONFIRMED", "COMPLETED"] },
+      },
+    }),
+    db.patientRecord.count({ where: { professionalId: professional.id } }),
+    db.appointment.aggregate({
+      where: {
+        professionalId: professional.id,
+        status: "COMPLETED",
+        paidAt: { not: null },
+        scheduledAt: { gte: monthStart },
+      },
+      _sum: { priceAmount: true },
+    }),
+    db.jitSession.findFirst({
+      where: { professionalId: professional.id },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        _count: {
+          select: {
+            queue: { where: { status: { in: ["WAITING", "CALLED"] } } },
+          },
+        },
+      },
+    }),
+    db.sharedRecord.count({
+      where: {
+        sharedWithProfessionalId: professional.id,
+        viewedAt: null,
+      },
+    }),
+    db.message.count({
+      where: {
+        receiverId: userId,
+        readAt: null,
+        deletedAt: null,
       },
     }),
   ]);
 
-  const earningsTotal = totalEarnings._sum.priceAmount || 0;
+  const monthEarningsTotal = monthEarnings._sum.priceAmount || 0;
+  const upcomingCount = professional.appointments.length;
+  const jitOnline = jitSession?.status === "ONLINE";
+  const jitPaused = jitSession?.status === "PAUSED";
+  const jitWaiting = jitSession?._count.queue ?? 0;
+
+  const fmtCurrency = (cents: number) =>
+    new Intl.NumberFormat(locale, { style: "currency", currency: professional.currency }).format(cents / 100);
+
+  const quickGroups = [
+    {
+      title: t("prodash.quick.group.attend"),
+      items: [
+        { href: "/professional/jit", labelKey: "nav.jit", icon: <Radio size={20} />, accent: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
+        { href: "/professional/appointments", labelKey: "nav.appointments", icon: <Calendar size={20} />, accent: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200" },
+        { href: "/professional/settings/availability", labelKey: "nav.availability", icon: <Clock size={20} />, accent: "bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200" },
+      ],
+    },
+    {
+      title: t("prodash.quick.group.patients"),
+      items: [
+        { href: "/professional/patients", labelKey: "nav.patients", icon: <Users size={20} />, accent: "bg-violet-50 hover:bg-violet-100 text-violet-700 border-violet-200" },
+        { href: "/professional/shared", labelKey: "nav.sharedWithMe", icon: <Inbox size={20} />, accent: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200", badge: sharedPending || undefined },
+        { href: "/professional/categories", labelKey: "nav.categories", icon: <Layers size={20} />, accent: "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200" },
+      ],
+    },
+    {
+      title: t("prodash.quick.group.clinical"),
+      items: [
+        { href: "/professional/prescriptions", labelKey: "nav.prescriptions", icon: <Stethoscope size={20} />, accent: "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200" },
+        { href: "/professional/resources", labelKey: "nav.library", icon: <BookOpen size={20} />, accent: "bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200" },
+      ],
+    },
+    {
+      title: t("prodash.quick.group.manage"),
+      items: [
+        { href: "/professional/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={20} />, accent: "bg-green-50 hover:bg-green-100 text-green-700 border-green-200" },
+        { href: "/professional/messages", labelKey: "nav.messages", icon: <MessageSquare size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200", badge: unreadMessages || undefined },
+        { href: "/professional/settings", labelKey: "nav.myProfile", icon: <UserCog size={20} />, accent: "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200" },
+        { href: "/professional/account", labelKey: "nav.account", icon: <Settings size={20} />, accent: "bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200" },
+      ],
+    },
+  ];
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
-          {t("prodash.welcome")} {professional.firstName} 👋
+          {t(greetingKey())}, Dr. {professional.firstName} 👋
         </h1>
-        <p className="text-slate-500 mt-1">{professional.specialty}</p>
+        <p className="text-slate-500 mt-1">{professional.specialty || t("prodash.subtitle")}</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { icon: <Calendar className="text-blue-500" size={20} />, label: t("prodash.stat.today"), value: completedToday, bg: "bg-blue-50" },
-          { icon: <Users className="text-violet-500" size={20} />, label: t("prodash.stat.totalConsults"), value: totalPatients, bg: "bg-violet-50" },
-          { icon: <DollarSign className="text-emerald-500" size={20} />, label: t("prodash.stat.earnings"), value: new Intl.NumberFormat(locale, { style: "currency", currency: professional.currency }).format(earningsTotal / 100), bg: "bg-emerald-50" },
-          { icon: <Clock className="text-rose-500" size={20} />, label: t("prodash.stat.upcoming"), value: professional.appointments.length, bg: "bg-rose-50" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-            <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>{s.icon}</div>
-            <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-            <p className="text-xs text-slate-500 mt-1">{s.label}</p>
+      {/* Plantão Online — priority hero */}
+      <Link
+        href="/professional/jit"
+        className={`block rounded-2xl border shadow-sm overflow-hidden transition hover:shadow-md ${
+          jitOnline
+            ? "bg-gradient-to-r from-emerald-600 to-emerald-500 border-emerald-400 text-white"
+            : jitPaused
+              ? "bg-gradient-to-r from-amber-500 to-amber-400 border-amber-300 text-white"
+              : "bg-white border-slate-200 hover:border-emerald-300"
+        }`}
+      >
+        <div className="p-5 sm:p-6 flex items-center gap-4">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
+            jitOnline || jitPaused ? "bg-white/20" : "bg-emerald-50"
+          }`}>
+            <Radio size={28} className={jitOnline || jitPaused ? "text-white" : "text-emerald-600"} />
           </div>
-        ))}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className={`text-lg font-bold ${jitOnline || jitPaused ? "text-white" : "text-slate-900"}`}>
+                {t("nav.jit")}
+              </p>
+              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                jitOnline
+                  ? "bg-white/25 text-white"
+                  : jitPaused
+                    ? "bg-white/25 text-white"
+                    : "bg-slate-100 text-slate-600"
+              }`}>
+                {jitOnline
+                  ? t("prodash.jit.status.online")
+                  : jitPaused
+                    ? t("prodash.jit.status.paused")
+                    : t("prodash.jit.status.offline")}
+              </span>
+            </div>
+            <p className={`text-sm mt-1 ${jitOnline || jitPaused ? "text-white/85" : "text-slate-500"}`}>
+              {jitOnline
+                ? t("prodash.jit.desc.online").replace("{{count}}", String(jitWaiting))
+                : jitPaused
+                  ? t("prodash.jit.desc.paused")
+                  : t("prodash.jit.desc.offline")}
+            </p>
+          </div>
+          <div className={`hidden sm:flex items-center gap-1 text-sm font-semibold shrink-0 ${
+            jitOnline || jitPaused ? "text-white" : "text-emerald-600"
+          }`}>
+            {jitOnline || jitPaused ? t("prodash.jit.action.manage") : t("prodash.jit.action.start")}
+            <ChevronRight size={16} />
+          </div>
+        </div>
+      </Link>
+
+      {/* Profile verification banner */}
+      {!professional.verified && (
+        <Link
+          href="/professional/settings"
+          className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition"
+        >
+          <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900">{t("prodash.verify.title")}</p>
+            <p className="text-xs text-amber-700 mt-0.5">{t("prodash.verify.text")}</p>
+            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-900">
+              {t("prodash.verify.action")} <ChevronRight size={13} />
+            </span>
+          </div>
+        </Link>
+      )}
+
+      <ProfessionalChecklistWrapper />
+
+      {/* Clickable stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={<Calendar className="text-blue-500" size={20} />}
+          label={t("prodash.stat.today")}
+          value={completedToday}
+          bg="bg-blue-50"
+          href="/professional/appointments"
+        />
+        <StatCard
+          icon={<Clock className="text-rose-500" size={20} />}
+          label={t("prodash.stat.upcoming")}
+          value={upcomingCount}
+          bg="bg-rose-50"
+          href="/professional/appointments"
+        />
+        <StatCard
+          icon={<Users className="text-violet-500" size={20} />}
+          label={t("prodash.stat.patients")}
+          value={patientCount}
+          bg="bg-violet-50"
+          href="/professional/patients"
+        />
+        <StatCard
+          icon={<DollarSign className="text-emerald-500" size={20} />}
+          label={t("prodash.stat.monthEarnings")}
+          value={fmtCurrency(monthEarningsTotal)}
+          bg="bg-emerald-50"
+          href="/professional/financeiro"
+        />
       </div>
 
-      {/* Upcoming appointments */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <p className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-            <Calendar size={16} /> {t("prodash.upcoming.title")}
-          </p>
-          <Link href="/professional/appointments" className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-            {t("common.viewAll")} <ChevronRight size={13} />
-          </Link>
-        </div>
-        <div className="p-5">
+      <div className="grid lg:grid-cols-2 gap-6">
+
+        {/* Upcoming appointments */}
+        <Section
+          title={t("prodash.upcoming.title")}
+          href="/professional/appointments"
+          icon={<Calendar size={16} />}
+          viewAllLabel={t("common.viewAll")}
+        >
           {professional.appointments.length === 0 ? (
-            <p className="text-center text-slate-400 py-8 text-sm">{t("prodash.upcoming.empty")}</p>
+            <EmptyState
+              icon={<Calendar size={28} className="text-slate-300" />}
+              message={t("prodash.upcoming.empty")}
+              action={t("prodash.upcoming.action")}
+              href="/professional/appointments"
+            />
           ) : (
             <div className="space-y-3">
               {professional.appointments.map((apt) => (
-                <div key={apt.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+                <div
+                  key={apt.id}
+                  className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
+                >
                   <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm shrink-0">
                     {apt.patient.firstName[0]}{apt.patient.lastName[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 text-sm">{apt.patient.firstName} {apt.patient.lastName}</p>
-                    <p className="text-xs text-slate-500">{apt.type === "TELECONSULT" ? t("prodash.type.teleconsult") : t("prodash.type.inPerson")}</p>
+                    <p className="font-semibold text-slate-800 text-sm">
+                      {apt.patient.firstName} {apt.patient.lastName}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {apt.type === "TELECONSULT" ? t("prodash.type.teleconsult") : t("prodash.type.inPerson")}
+                    </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs font-semibold text-slate-700">{new Date(apt.scheduledAt).toLocaleDateString(locale, { month: "short", day: "numeric" })}</p>
-                    <p className="text-xs text-slate-500">{new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</p>
+                    <p className="text-xs font-semibold text-slate-700">
+                      {new Date(apt.scheduledAt).toLocaleDateString(locale, { month: "short", day: "numeric" })}
+                    </p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1 justify-end">
+                      <Clock size={10} />
+                      {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
+                    </p>
                   </div>
                   {apt.meetingUrl && (
-                    <a href={apt.meetingUrl} className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-emerald-400 transition">
+                    <a
+                      href={apt.meetingUrl}
+                      className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-emerald-400 transition"
+                    >
                       <Video size={12} /> {t("prodash.join")}
                     </a>
                   )}
@@ -123,19 +318,147 @@ export default async function ProfessionalDashboard() {
               ))}
             </div>
           )}
+        </Section>
+
+        {/* Attention items */}
+        <Section
+          title={t("prodash.attention.title")}
+          icon={<Inbox size={16} />}
+          viewAllLabel={t("common.viewAll")}
+        >
+          <div className="space-y-3">
+            <AttentionRow
+              href="/professional/shared"
+              icon={<Inbox size={18} className="text-amber-600" />}
+              label={t("prodash.attention.shared")}
+              count={sharedPending}
+              emptyLabel={t("prodash.attention.none")}
+              pendingLabel={t("prodash.attention.pending").replace("{{count}}", String(sharedPending))}
+            />
+            <AttentionRow
+              href="/professional/messages"
+              icon={<MessageSquare size={18} className="text-blue-600" />}
+              label={t("prodash.attention.messages")}
+              count={unreadMessages}
+              emptyLabel={t("prodash.attention.none")}
+              pendingLabel={t("prodash.attention.pending").replace("{{count}}", String(unreadMessages))}
+            />
+            <AttentionRow
+              href="/professional/financeiro"
+              icon={<TrendingUp size={18} className="text-emerald-600" />}
+              label={t("prodash.attention.earnings")}
+              detail={fmtCurrency(monthEarningsTotal)}
+            />
+          </div>
+        </Section>
+
+        {/* Quick actions — grouped */}
+        <div className="lg:col-span-2">
+          <Section title={t("prodash.quick.title")} icon={<Activity size={16} />} viewAllLabel={t("common.viewAll")}>
+            <div className="space-y-6">
+              {quickGroups.map((group) => (
+                <div key={group.title}>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">{group.title}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {group.items.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`relative flex flex-col items-center gap-2 p-4 rounded-xl text-center transition font-medium text-sm border ${item.accent}`}
+                      >
+                        {item.badge ? (
+                          <span className="absolute top-2 right-2 min-w-[1.25rem] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                            {item.badge > 9 ? "9+" : item.badge}
+                          </span>
+                        ) : null}
+                        {item.icon}
+                        <span className="leading-tight">{t(item.labelKey)}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
         </div>
       </div>
-
-      {/* Quick setup if not fully configured */}
-      {!professional.verified && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-          <p className="font-semibold text-amber-800 mb-1">{t("prodash.verify.title")}</p>
-          <p className="text-sm text-amber-700 mb-3">{t("prodash.verify.text")}</p>
-          <Link href="/professional/settings" className="text-sm font-semibold text-amber-800 underline">
-            {t("prodash.verify.action")} →
-          </Link>
-        </div>
-      )}
     </div>
+  );
+}
+
+function StatCard({ icon, label, value, bg, href }: {
+  icon: React.ReactNode; label: string; value: string | number; bg: string; href: string;
+}) {
+  return (
+    <Link href={href} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition block">
+      <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-3`}>{icon}</div>
+      <p className="text-2xl font-bold text-slate-900">{value}</p>
+      <p className="text-xs text-slate-500 mt-1">{label}</p>
+    </Link>
+  );
+}
+
+function Section({ title, href, icon, children, viewAllLabel }: {
+  title: string; href?: string; icon: React.ReactNode; children: React.ReactNode; viewAllLabel: string;
+}) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm">
+          {icon}
+          {title}
+        </div>
+        {href && (
+          <Link href={href} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
+            {viewAllLabel} <ChevronRight size={14} />
+          </Link>
+        )}
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
+}
+
+function EmptyState({ icon, message, action, href }: {
+  icon: React.ReactNode; message: string; action: string; href: string;
+}) {
+  return (
+    <div className="text-center py-6">
+      <div className="flex justify-center mb-3">{icon}</div>
+      <p className="text-sm text-slate-500 mb-3">{message}</p>
+      <Link href={href} className="text-xs text-emerald-600 hover:underline font-medium">{action} →</Link>
+    </div>
+  );
+}
+
+function AttentionRow({ href, icon, label, count, detail, emptyLabel, pendingLabel }: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  count?: number;
+  detail?: string;
+  emptyLabel?: string;
+  pendingLabel?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
+    >
+      <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-slate-800 text-sm">{label}</p>
+        {detail ? (
+          <p className="text-xs text-slate-500 mt-0.5">{detail}</p>
+        ) : count && count > 0 ? (
+          <p className="text-xs text-rose-600 font-medium mt-0.5">{pendingLabel}</p>
+        ) : (
+          <p className="text-xs text-slate-400 mt-0.5">{emptyLabel}</p>
+        )}
+      </div>
+      <ChevronRight size={16} className="text-slate-400 shrink-0" />
+    </Link>
   );
 }
