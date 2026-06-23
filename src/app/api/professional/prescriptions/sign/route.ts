@@ -1,74 +1,72 @@
-// DIAGNÓSTICO 2 — gera o PDF real mas NÃO chama a Lacuna.
-// Se isto funcionar, o problema é a chamada à Lacuna (rede/memória do fetch).
-// Se travar/502, o problema é a geração do PDF (memória).
-
+// DIAGNÓSTICO 3 — gera PDF real + chama Lacuna com o PDF, capturando tudo.
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { decrypt } from "@/lib/encryption";
-import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
+import { buildPrescriptionPdf } from "@/lib/prescription-pdf";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-function safeDecrypt(v: string | null | undefined): string {
-  if (v == null) return "";
-  try { return decrypt(v); } catch { return v; }
-}
-function normLang(v: string | null | undefined): Lang {
-  if (v === "pt" || v === "es") return v;
-  return "en";
-}
 
 export async function POST(req: NextRequest) {
   const steps: string[] = [];
   try {
     const session = await auth();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    steps.push("auth-ok");
 
     const body = await req.json();
     const prescriptionId = String(body.prescriptionId || "");
-    steps.push("body-ok");
-
     const prescription = await db.prescription.findUnique({
       where: { id: prescriptionId },
-      include: {
-        professional: true,
-        document: { include: { patient: true, patientRecord: true } },
-      },
+      include: { professional: true },
     });
     if (!prescription) return NextResponse.json({ error: "não encontrada", steps }, { status: 404 });
-    steps.push("prescription-ok");
-
     const pro = prescription.professional;
-    const lang = normLang(session.user.id ? "pt" : "pt");
-    steps.push("antes-pdf");
 
     const meds = (prescription.medications as any[]).map((m) => ({
-      name: m.name, dosage: m.dosage, frequency: m.frequency,
-      duration: m.duration, instructions: m.instructions,
+      name: m.name, dosage: m.dosage, frequency: m.frequency, duration: m.duration, instructions: m.instructions,
     }));
-    steps.push("meds:" + meds.length);
 
     const pdfBytes = await buildPrescriptionPdf({
       lang: "pt",
       proFirstName: pro.firstName, proLastName: pro.lastName,
       proSpecialty: pro.specialty, proLicense: pro.licenseNumber,
-      clinicAddressFull: "",
-      patientName: "Paciente",
-      patientAge: null, patientCpf: "",
-      patientAddressFull: "",
-      prescriptionId: prescription.id,
-      todayText: "hoje", validUntilText: "depois",
-      medications: meds,
-      instructions: "",
-      signed: false,
+      clinicAddressFull: "", patientName: "Paciente", patientAge: null, patientCpf: "",
+      patientAddressFull: "", prescriptionId: prescription.id,
+      todayText: "hoje", validUntilText: "depois", medications: meds, instructions: "", signed: false,
     });
-    steps.push("pdf-gerado:" + pdfBytes.length + "bytes");
+    steps.push("pdf:" + pdfBytes.length);
 
     const base64 = Buffer.from(pdfBytes).toString("base64");
-    steps.push("base64-len:" + base64.length);
+    const ENDPOINT = (process.env.LACUNA_ENDPOINT || "").replace(/\/+$/, "");
+    const API_KEY = process.env.LACUNA_API_KEY || "";
+    const CTX = process.env.LACUNA_SECURITY_CONTEXT || "";
+
+    const lacunaBody = {
+      returnUrl: "https://app.doctor8.org/api/professional/prescriptions/sign/callback?prescriptionId=" + prescription.id,
+      documents: [{ file: { content: base64, name: "receita.pdf" } }],
+      securityContextId: CTX,
+    };
+    steps.push("body-pronto:" + JSON.stringify(lacunaBody).length + "chars");
+
+    const controller = new AbortController();
+    const to = setTimeout(() => controller.abort(), 40000);
+    let res: Response;
+    try {
+      res = await fetch(`${ENDPOINT}/api/signature-sessions`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${API_KEY}`, "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(lacunaBody),
+        signal: controller.signal,
+      });
+    } catch (e) {
+      clearTimeout(to);
+      steps.push("FETCH-FAIL:" + (e as Error).name + ":" + (e as Error).message);
+      return NextResponse.json({ error: "fetch falhou", steps }, { status: 500 });
+    }
+    clearTimeout(to);
+    steps.push("lacuna-status:" + res.status);
+    const txt = await res.text();
+    steps.push("lacuna-resp:" + txt.slice(0, 400));
 
     return NextResponse.json({ ok: true, steps });
   } catch (e) {
