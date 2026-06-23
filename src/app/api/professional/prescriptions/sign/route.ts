@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  try {
   let prescriptionId = "";
   try {
     const body = await req.json();
@@ -215,7 +216,14 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  await audit.viewRecord(session.user.id, "PrescriptionSignStart", prescription.id);
+    await audit.viewRecord(session.user.id, "PrescriptionSignStart", prescription.id);
 
-  return NextResponse.json({ redirectUrl: lacuna.redirectUrl });
+    return NextResponse.json({ redirectUrl: lacuna.redirectUrl });
+  } catch (e) {
+    console.error("[SIGN] erro inesperado:", e);
+    return NextResponse.json(
+      { error: `Erro interno: ${(e as Error).message || String(e)}` },
+      { status: 500 }
+    );
+  }
 }
