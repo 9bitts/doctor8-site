@@ -10,6 +10,7 @@ import {
   ChevronDown, ChevronUp, Search, Stethoscope, Phone, Mail,
   UserPlus,
 } from "lucide-react";
+import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useT } from "@/lib/i18n/I18nProvider";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -305,7 +306,8 @@ export default function ResourcesPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                  <AiSummarizeButton resourceId={r.id} />
                   <button
                     onClick={() => shareResId === r.id ? setShareResId(null) : openSharePanel(r.id)}
                     className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition

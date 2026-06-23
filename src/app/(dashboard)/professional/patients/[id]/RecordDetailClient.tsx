@@ -13,6 +13,7 @@ import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
 } from "lucide-react";
+import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useT } from "@/lib/i18n/I18nProvider";
 
 // P2: inline texts for rec.* keys (not yet in translations.ts)
@@ -731,6 +732,7 @@ export default function RecordDetailClient({
 
                   {/* Share row */}
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    <AiSummarizeButton documentId={d.id} />
                     {status === "shared" ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg">
                         <CheckCircle2 size={14} /> Shared with patient

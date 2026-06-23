@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useT } from "@/lib/i18n/I18nProvider";
 import {
   FileText, Download, Loader2, Tag, User, FolderPlus, FolderOpen, FilePlus2, CheckCircle2,
@@ -161,6 +162,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
 
                 {/* Chart actions */}
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  <AiSummarizeButton documentId={it.documentId} />
                   {it.existingChartId ? (
                     <>
                       <Link

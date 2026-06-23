@@ -79,3 +79,11 @@ export async function getSignedReadUrl(key: string, expiresInSeconds = 900): Pro
 export async function deleteFromS3(key: string): Promise<void> {
   await client().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
+
+// Downloads a private object from S3 (for server-side processing).
+export async function downloadFromS3(key: string): Promise<{ body: Buffer; contentType: string | undefined }> {
+  const res = await client().send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+  const bytes = await res.Body?.transformToByteArray();
+  if (!bytes) throw new Error("Empty file");
+  return { body: Buffer.from(bytes), contentType: res.ContentType };
+}

@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useT } from "@/lib/i18n/I18nProvider";
 import {
   Layers, ChevronRight, ChevronDown, FileText, Paperclip, Loader2,
@@ -112,14 +113,17 @@ export default function CategoriesClient() {
                     <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap line-clamp-2">{r.content}</p>
                   )}
                 </div>
-                {r.chartId && (
-                  <Link
-                    href={`/professional/patients/${r.chartId}`}
-                    className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
-                  >
-                    <FolderOpen size={14} /> {t("cat.openChart")}
-                  </Link>
-                )}
+                <div className="shrink-0 flex items-center gap-2">
+                  <AiSummarizeButton documentId={r.id} />
+                  {r.chartId && (
+                    <Link
+                      href={`/professional/patients/${r.chartId}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
+                    >
+                      <FolderOpen size={14} /> {t("cat.openChart")}
+                    </Link>
+                  )}
+                </div>
               </div>
             ))}
           </div>
