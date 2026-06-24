@@ -118,7 +118,7 @@ export default function CategoriesClient() {
                   {r.chartId && (
                     <Link
                       href={`/professional/patients/${r.chartId}`}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 hover:text-brand-600 border border-brand-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
                     >
                       <FolderOpen size={14} /> {t("cat.openChart")}
                     </Link>
@@ -158,7 +158,7 @@ export default function CategoriesClient() {
                 onClick={() => toggleGroup(g.group)}
                 className="w-full flex items-center gap-3 px-5 py-4 hover:bg-slate-50 transition text-left"
               >
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center text-brand-500 shrink-0">
                   <Layers size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -174,7 +174,7 @@ export default function CategoriesClient() {
                     <button
                       key={c.id}
                       onClick={() => openCategory(c, g.group)}
-                      className="w-full flex items-center gap-3 pl-16 pr-5 py-3 hover:bg-emerald-50 transition text-left"
+                      className="w-full flex items-center gap-3 pl-16 pr-5 py-3 hover:bg-brand-50 transition text-left"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-slate-700">{c.name}</p>

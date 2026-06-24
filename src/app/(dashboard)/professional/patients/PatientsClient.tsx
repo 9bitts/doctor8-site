@@ -120,7 +120,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
         </div>
         <button
           onClick={() => { setShowForm(true); resetForm(); }}
-          className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+          className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
         >
           <Plus size={18} /> {t("pat.new")}
         </button>
@@ -134,7 +134,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("pat.searchPlaceholder")}
-            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400"
           />
         </div>
       )}
@@ -160,7 +160,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                 href={`/professional/patients/${c.id}`}
                 className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition"
               >
-                <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-600 text-sm shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
                   {c.firstName[0]}{c.lastName[0]}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -169,7 +169,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   </p>
                   <p className="text-xs mt-0.5">
                     {c.hasAccount ? (
-                      <span className="text-emerald-600 inline-flex items-center gap-1">
+                      <span className="text-brand-500 inline-flex items-center gap-1">
                         <CheckCircle2 size={12} /> {t("pat.hasAccount")}
                       </span>
                     ) : (
@@ -203,7 +203,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                   />
                 </div>
                 <div>
@@ -211,7 +211,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   <input
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                   />
                 </div>
               </div>
@@ -221,7 +221,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+55 11 99999-9999"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                 />
               </div>
               <div>
@@ -233,7 +233,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="patient@email.com"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                 />
               </div>
 
@@ -249,7 +249,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                       type="date"
                       value={dateOfBirth}
                       onChange={(e) => setDateOfBirth(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                     />
                   </div>
                   <div>
@@ -257,7 +257,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                     <select
                       value={sex}
                       onChange={(e) => setSex(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                     >
                       <option value="">{t("pat.sexSelect")}</option>
                       <option value="F">{t("pat.sexF")}</option>
@@ -275,7 +275,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                     value={cpf}
                     onChange={(e) => setCpf(e.target.value)}
                     placeholder="000.000.000-00"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                   />
                 </div>
 
@@ -285,7 +285,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                     value={addressLine1}
                     onChange={(e) => setAddressLine1(e.target.value)}
                     placeholder={t("pat.addressPlaceholder")}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                   />
                 </div>
 
@@ -295,7 +295,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                     <input
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                     />
                   </div>
                   <div>
@@ -303,7 +303,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                     <input
                       value={stateField}
                       onChange={(e) => setStateField(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                     />
                   </div>
                 </div>
@@ -314,7 +314,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                     <input
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                     />
                   </div>
                   <div>
@@ -322,7 +322,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                     <input
                       value={zipCode}
                       onChange={(e) => setZipCode(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                     />
                   </div>
                 </div>
@@ -334,7 +334,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm resize-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-none"
                 />
               </div>
 
@@ -352,7 +352,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                 <button
                   onClick={handleCreate}
                   disabled={saving}
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50"
                 >
                   {saving ? t("pat.creating") : t("pat.create")}
                 </button>

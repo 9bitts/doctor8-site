@@ -81,9 +81,9 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  "Teleconsulta":   "bg-blue-100 text-blue-700",
+  "Teleconsulta":   "bg-brand-100 text-brand-600",
   "Presencial":     "bg-purple-100 text-purple-700",
-  "Plantão Online": "bg-emerald-100 text-emerald-700",
+  "Plantão Online": "bg-brand-100 text-brand-600",
 };
 
 // ── Mini bar chart (pure CSS) ─────────────────────────────────────────────────
@@ -104,7 +104,7 @@ function BarChart({ data, currency }: { data: ChartPoint[]; currency: string }) 
             <div className="w-full flex flex-col items-center justify-end h-32 gap-0.5">
               {/* Gross bar (lighter) */}
               <div
-                className="w-full bg-emerald-100 rounded-t-sm"
+                className="w-full bg-brand-100 rounded-t-sm"
                 style={{ height: `${Math.round((d.gross / maxNet) * 100)}%`, minHeight: d.gross > 0 ? 4 : 0 }}
               />
               {/* Net bar (on top, same color but darker — overlaid) */}
@@ -134,7 +134,7 @@ function BarChart({ data, currency }: { data: ChartPoint[]; currency: string }) 
               />
               {/* Net segment */}
               <div
-                className="w-full bg-emerald-500 rounded-t-sm"
+                className="w-full bg-brand-500 rounded-t-sm"
                 style={{ height: Math.round(netH) }}
               />
             </div>
@@ -154,7 +154,7 @@ function BarChart({ data, currency }: { data: ChartPoint[]; currency: string }) 
       {/* Legend */}
       <div className="flex items-center gap-4 justify-center mt-1">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-emerald-500" />
+          <div className="w-3 h-3 rounded-sm bg-brand-500" />
           <span className="text-xs text-slate-500">Líquido (seu)</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -197,7 +197,7 @@ export default function FinanceiroPage() {
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <TrendingUp size={24} className="text-emerald-500" /> Financeiro
+            <TrendingUp size={24} className="text-brand-500" /> Financeiro
           </h1>
           <p className="text-slate-500 text-sm mt-1">
             Seus ganhos e repasses · comissão Doctor8: 15%
@@ -209,7 +209,7 @@ export default function FinanceiroPage() {
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as Period)}
-            className="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 shadow-sm cursor-pointer"
+            className="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30 shadow-sm cursor-pointer"
           >
             {Object.entries(PERIOD_LABELS).map(([v, l]) => (
               <option key={v} value={v}>{l}</option>
@@ -237,8 +237,8 @@ export default function FinanceiroPage() {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 col-span-2 lg:col-span-1">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Seu ganho líquido</p>
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                  <DollarSign size={15} className="text-emerald-600" />
+                <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
+                  <DollarSign size={15} className="text-brand-500" />
                 </div>
               </div>
               <p className="text-2xl font-bold text-slate-900">{fmt(data.totalNetCents, currency)}</p>
@@ -249,8 +249,8 @@ export default function FinanceiroPage() {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Valor bruto</p>
-                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <ArrowUpRight size={15} className="text-blue-600" />
+                <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
+                  <ArrowUpRight size={15} className="text-brand-500" />
                 </div>
               </div>
               <p className="text-xl font-bold text-slate-900">{fmt(data.totalGrossCents, currency)}</p>
@@ -284,7 +284,7 @@ export default function FinanceiroPage() {
 
           {/* ── Projeção do mês ── */}
           {data.projectionCents != null && data.projectionCents > 0 && (
-            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white flex items-center justify-between gap-4 flex-wrap">
+            <div className="bg-gradient-to-r from-brand-500 to-accent-500 rounded-2xl p-5 text-white flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <p className="text-sm font-semibold opacity-90 flex items-center gap-1.5">
                   <Calendar size={15} /> Projeção para este mês
@@ -311,7 +311,7 @@ export default function FinanceiroPage() {
             {/* Gráfico */}
             <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4">
-                <BarChart3 size={16} className="text-emerald-500" /> Evolução mensal
+                <BarChart3 size={16} className="text-brand-500" /> Evolução mensal
               </h2>
               <BarChart
                 data={data.chartData.map(d => ({ label: d.label, net: d.net, gross: d.gross, count: d.count, commissionCents: d.gross - d.net }))}
@@ -340,7 +340,7 @@ export default function FinanceiroPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
+                            <div className="h-full bg-brand-500 rounded-full" style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-xs font-semibold text-slate-700 w-16 text-right">
                             {fmt(info.netCents, currency)}
@@ -360,7 +360,7 @@ export default function FinanceiroPage() {
                       <span>Comissão Doctor8 (15%)</span>
                       <span>− {fmt(data.totalCommissionCents, currency)}</span>
                     </div>
-                    <div className="flex justify-between text-sm font-bold text-emerald-700 pt-1 border-t border-slate-100">
+                    <div className="flex justify-between text-sm font-bold text-brand-600 pt-1 border-t border-slate-100">
                       <span>Seu líquido</span>
                       <span>{fmt(data.totalNetCents, currency)}</span>
                     </div>
@@ -404,7 +404,7 @@ export default function FinanceiroPage() {
                   <div className="col-span-1 text-center">Pac.</div>
                   <div className="col-span-2 text-right">Bruto</div>
                   <div className="col-span-2 text-right text-rose-500">Comissão</div>
-                  <div className="col-span-2 text-right text-emerald-600">Líquido</div>
+                  <div className="col-span-2 text-right text-brand-500">Líquido</div>
                 </div>
 
                 <div className="divide-y divide-slate-100">
@@ -421,7 +421,7 @@ export default function FinanceiroPage() {
                           <p className="text-xs text-slate-400 mt-1">{fmtDate(tx.date)}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-emerald-700">{fmt(tx.netCents, tx.currency)}</p>
+                          <p className="text-sm font-bold text-brand-600">{fmt(tx.netCents, tx.currency)}</p>
                           <p className="text-xs text-slate-400">de {fmt(tx.grossCents, tx.currency)}</p>
                         </div>
                       </div>
@@ -441,7 +441,7 @@ export default function FinanceiroPage() {
                         </div>
                         <div className="col-span-2 text-right text-sm text-slate-600">{fmt(tx.grossCents, tx.currency)}</div>
                         <div className="col-span-2 text-right text-sm text-rose-500">− {fmt(tx.commissionCents, tx.currency)}</div>
-                        <div className="col-span-2 text-right text-sm font-bold text-emerald-700">{fmt(tx.netCents, tx.currency)}</div>
+                        <div className="col-span-2 text-right text-sm font-bold text-brand-600">{fmt(tx.netCents, tx.currency)}</div>
                       </div>
                     </div>
                   ))}
@@ -452,7 +452,7 @@ export default function FinanceiroPage() {
                   <div className="px-5 py-4 border-t border-slate-100 text-center">
                     <button
                       onClick={() => setShowAll(v => !v)}
-                      className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold"
+                      className="text-sm text-brand-500 hover:text-brand-600 font-semibold"
                     >
                       {showAll
                         ? "Mostrar menos"

@@ -112,10 +112,10 @@ export default async function ProfessionalDashboard() {
 
   const jitStyles = jitOnline
     ? {
-        card: "bg-emerald-50 border-emerald-200 hover:border-emerald-300",
-        iconWrap: "bg-emerald-100", icon: "text-emerald-600",
-        title: "text-emerald-900", desc: "text-emerald-700", action: "text-emerald-700",
-        badge: "bg-emerald-100 text-emerald-800",
+        card: "bg-brand-50 border-brand-200 hover:border-brand-200",
+        iconWrap: "bg-brand-100", icon: "text-brand-500",
+        title: "text-brand-900", desc: "text-brand-600", action: "text-brand-600",
+        badge: "bg-brand-100 text-brand-700",
       }
     : jitPaused
       ? {
@@ -125,9 +125,9 @@ export default async function ProfessionalDashboard() {
           badge: "bg-amber-100 text-amber-800",
         }
       : {
-          card: "bg-white border-slate-200 hover:border-emerald-300",
-          iconWrap: "bg-emerald-50", icon: "text-emerald-600",
-          title: "text-slate-900", desc: "text-slate-500", action: "text-emerald-600",
+          card: "bg-white border-slate-200 hover:border-brand-200",
+          iconWrap: "bg-brand-50", icon: "text-brand-500",
+          title: "text-slate-900", desc: "text-slate-500", action: "text-brand-500",
           badge: "bg-slate-100 text-slate-600",
         };
 
@@ -138,30 +138,30 @@ export default async function ProfessionalDashboard() {
     {
       title: t("prodash.quick.group.attend"),
       items: [
-        { href: "/professional/jit", labelKey: "nav.jit", icon: <Radio size={20} />, accent: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
-        { href: "/professional/appointments", labelKey: "nav.appointments", icon: <Calendar size={20} />, accent: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200" },
-        { href: "/professional/settings/availability", labelKey: "nav.availability", icon: <Clock size={20} />, accent: "bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200" },
+        { href: "/professional/jit", labelKey: "nav.jit", icon: <Radio size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
+        { href: "/professional/appointments", labelKey: "nav.appointments", icon: <Calendar size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
+        { href: "/professional/settings/availability", labelKey: "nav.availability", icon: <Clock size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
       ],
     },
     {
       title: t("prodash.quick.group.patients"),
       items: [
-        { href: "/professional/patients", labelKey: "nav.patients", icon: <Users size={20} />, accent: "bg-violet-50 hover:bg-violet-100 text-violet-700 border-violet-200" },
+        { href: "/professional/patients", labelKey: "nav.patients", icon: <Users size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
         { href: "/professional/shared", labelKey: "nav.sharedWithMe", icon: <Inbox size={20} />, accent: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200", badge: sharedPending || undefined },
-        { href: "/professional/categories", labelKey: "nav.categories", icon: <Layers size={20} />, accent: "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200" },
+        { href: "/professional/categories", labelKey: "nav.categories", icon: <Layers size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
       ],
     },
     {
       title: t("prodash.quick.group.clinical"),
       items: [
-        { href: "/professional/prescriptions", labelKey: "nav.prescriptions", icon: <Stethoscope size={20} />, accent: "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200" },
-        { href: "/professional/resources", labelKey: "nav.library", icon: <BookOpen size={20} />, accent: "bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200" },
+        { href: "/professional/prescriptions", labelKey: "nav.prescriptions", icon: <Stethoscope size={20} />, accent: "bg-accent-50 hover:bg-accent-100 text-accent-600 border-accent-100" },
+        { href: "/professional/resources", labelKey: "nav.library", icon: <BookOpen size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
       ],
     },
     {
       title: t("prodash.quick.group.manage"),
       items: [
-        { href: "/professional/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={20} />, accent: "bg-green-50 hover:bg-green-100 text-green-700 border-green-200" },
+        { href: "/professional/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
         { href: "/professional/messages", labelKey: "nav.messages", icon: <MessageSquare size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200", badge: unreadMessages || undefined },
         { href: "/professional/settings", labelKey: "nav.myProfile", icon: <UserCog size={20} />, accent: "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200" },
         { href: "/professional/account", labelKey: "nav.account", icon: <Settings size={20} />, accent: "bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200" },
@@ -239,10 +239,10 @@ export default async function ProfessionalDashboard() {
       {/* Clickable stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          icon={<Calendar className="text-blue-500" size={20} />}
+          icon={<Calendar className="text-brand-500" size={20} />}
           label={t("prodash.stat.today")}
           value={completedToday}
-          bg="bg-blue-50"
+          bg="bg-brand-50"
           href="/professional/appointments"
         />
         <StatCard
@@ -253,17 +253,17 @@ export default async function ProfessionalDashboard() {
           href="/professional/appointments"
         />
         <StatCard
-          icon={<Users className="text-violet-500" size={20} />}
+          icon={<Users className="text-brand-500" size={20} />}
           label={t("prodash.stat.patients")}
           value={patientCount}
-          bg="bg-violet-50"
+          bg="bg-brand-50"
           href="/professional/patients"
         />
         <StatCard
-          icon={<DollarSign className="text-emerald-500" size={20} />}
+          icon={<DollarSign className="text-brand-500" size={20} />}
           label={t("prodash.stat.monthEarnings")}
           value={fmtCurrency(monthEarningsTotal)}
-          bg="bg-emerald-50"
+          bg="bg-brand-50"
           href="/professional/financeiro"
         />
       </div>
@@ -291,7 +291,7 @@ export default async function ProfessionalDashboard() {
                   key={apt.id}
                   className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
                     {apt.patient.firstName[0]}{apt.patient.lastName[0]}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -314,7 +314,7 @@ export default async function ProfessionalDashboard() {
                   {apt.type === "TELECONSULT" && (
                     <a
                       href={`/video/${apt.id}`}
-                      className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-emerald-400 transition"
+                      className="shrink-0 bg-brand-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-brand-400 transition"
                     >
                       <Video size={12} /> {t("prodash.join")}
                     </a>
@@ -342,7 +342,7 @@ export default async function ProfessionalDashboard() {
             />
             <AttentionRow
               href="/professional/messages"
-              icon={<MessageSquare size={18} className="text-blue-600" />}
+              icon={<MessageSquare size={18} className="text-brand-500" />}
               label={t("prodash.attention.messages")}
               count={unreadMessages}
               emptyLabel={t("prodash.attention.none")}
@@ -350,7 +350,7 @@ export default async function ProfessionalDashboard() {
             />
             <AttentionRow
               href="/professional/financeiro"
-              icon={<TrendingUp size={18} className="text-emerald-600" />}
+              icon={<TrendingUp size={18} className="text-brand-500" />}
               label={t("prodash.attention.earnings")}
               detail={fmtCurrency(monthEarningsTotal)}
             />
@@ -414,7 +414,7 @@ function Section({ title, href, icon, children, viewAllLabel }: {
           {title}
         </div>
         {href && (
-          <Link href={href} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
+          <Link href={href} className="text-xs text-brand-500 hover:text-brand-600 font-medium flex items-center gap-1">
             {viewAllLabel} <ChevronRight size={14} />
           </Link>
         )}
@@ -431,7 +431,7 @@ function EmptyState({ icon, message, action, href }: {
     <div className="text-center py-6">
       <div className="flex justify-center mb-3">{icon}</div>
       <p className="text-sm text-slate-500 mb-3">{message}</p>
-      <Link href={href} className="text-xs text-emerald-600 hover:underline font-medium">{action} →</Link>
+      <Link href={href} className="text-xs text-brand-500 hover:underline font-medium">{action} →</Link>
     </div>
   );
 }

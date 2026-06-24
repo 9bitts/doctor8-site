@@ -152,7 +152,7 @@ export default function AvailabilityPage() {
           <p className="text-slate-500 text-sm mt-1">{t("avail.subtitle")}</p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-emerald-600">{totalWeeklySlots}</p>
+          <p className="text-2xl font-bold text-brand-500">{totalWeeklySlots}</p>
           <p className="text-xs text-slate-400">{t("avail.slotsPerWeek")}</p>
         </div>
       </div>
@@ -162,7 +162,7 @@ export default function AvailabilityPage() {
           <div key={schedule.dayOfWeek} className={`p-5 transition-colors ${schedule.enabled ? "" : "opacity-50 bg-slate-50"}`}>
             <div className="flex items-center gap-4 flex-wrap">
               <button type="button" onClick={() => updateSchedule(schedule.dayOfWeek, (s) => ({ ...s, enabled: !s.enabled }))}
-                className={`w-11 h-6 rounded-full transition-colors shrink-0 ${schedule.enabled ? "bg-emerald-500" : "bg-slate-200"}`}>
+                className={`w-11 h-6 rounded-full transition-colors shrink-0 ${schedule.enabled ? "bg-brand-500" : "bg-slate-200"}`}>
                 <div className={`w-4 h-4 bg-white rounded-full mx-1 shadow transition-transform ${schedule.enabled ? "translate-x-5" : ""}`} />
               </button>
 
@@ -188,7 +188,7 @@ export default function AvailabilityPage() {
                       <div className="flex items-center gap-2">
                         <label className="text-xs text-slate-400">{t("avail.from")}</label>
                         <select value={block.startTime} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "startTime", e.target.value)}
-                          className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
+                          className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
                           {TIMES.map((tm) => <option key={tm.value} value={tm.value}>{tm.label}</option>)}
                         </select>
                       </div>
@@ -196,7 +196,7 @@ export default function AvailabilityPage() {
                       <div className="flex items-center gap-2">
                         <label className="text-xs text-slate-400">{t("avail.to")}</label>
                         <select value={block.endTime} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "endTime", e.target.value)}
-                          className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
+                          className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
                           {TIMES.map((tm) => <option key={tm.value} value={tm.value}>{tm.label}</option>)}
                         </select>
                       </div>
@@ -204,7 +204,7 @@ export default function AvailabilityPage() {
                       <div className="flex items-center gap-2">
                         <label className="text-xs text-slate-400">{t("avail.slot")}</label>
                         <select value={block.slotDuration} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "slotDuration", Number(e.target.value))}
-                          className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 bg-white">
+                          className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
                           <option value={15}>{t("avail.min15")}</option>
                           <option value={30}>{t("avail.min30")}</option>
                           <option value={45}>{t("avail.min45")}</option>
@@ -212,7 +212,7 @@ export default function AvailabilityPage() {
                         </select>
                       </div>
 
-                      <p className="text-xs text-emerald-600 font-medium ml-auto shrink-0">
+                      <p className="text-xs text-brand-500 font-medium ml-auto shrink-0">
                         {count > 0 ? formatSlotCount(lang, count) : t("avail.invalidRange")}
                       </p>
 
@@ -233,7 +233,7 @@ export default function AvailabilityPage() {
                 <button
                   type="button"
                   onClick={() => addBlock(schedule.dayOfWeek)}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-brand-500 hover:text-brand-600 transition"
                 >
                   <Plus size={14} /> {t("avail.addBlock")}
                 </button>
@@ -244,12 +244,12 @@ export default function AvailabilityPage() {
       </div>
 
       <button onClick={handleSave} disabled={saving}
-        className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-50">
+        className="w-full flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-50">
         {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <CheckCircle2 size={18} /> : <Save size={18} />}
         {saving ? t("avail.saving") : saved ? t("avail.saved") : t("avail.save")}
       </button>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
+      <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-600">
         <strong>{t("avail.noteBold")}</strong> {t("avail.noteText")}
       </div>
     </div>

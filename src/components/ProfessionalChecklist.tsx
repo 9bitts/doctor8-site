@@ -143,12 +143,12 @@ export default function ProfessionalChecklist() {
   const pct       = Math.round((doneCount / items.length) * 100);
 
   return (
-    <div className={`rounded-2xl border shadow-sm overflow-hidden ${allDone ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-white"}`}>
+    <div className={`rounded-2xl border shadow-sm overflow-hidden ${allDone ? "border-brand-200 bg-brand-50" : "border-slate-200 bg-white"}`}>
       {/* Header */}
       <div className="px-5 py-4 flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-0.5">
-            <Sparkles size={16} className={allDone ? "text-emerald-500" : "text-amber-500"} />
+            <Sparkles size={16} className={allDone ? "text-brand-500" : "text-amber-500"} />
             <h2 className="font-bold text-slate-900 text-sm">{t("title")}</h2>
           </div>
           <p className="text-xs text-slate-500">
@@ -165,11 +165,11 @@ export default function ProfessionalChecklist() {
         <div className="px-5 pb-3">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs text-slate-500">{doneCount}/{items.length} {t("progress")}</span>
-            <span className="text-xs font-semibold text-emerald-600">{pct}%</span>
+            <span className="text-xs font-semibold text-brand-500">{pct}%</span>
           </div>
           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+              className="h-full bg-brand-500 rounded-full transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -177,7 +177,7 @@ export default function ProfessionalChecklist() {
       )}
 
       {/* Items */}
-      <div className={`divide-y ${allDone ? "divide-emerald-100" : "divide-slate-100"}`}>
+      <div className={`divide-y ${allDone ? "divide-brand-100" : "divide-slate-100"}`}>
         {items.map((item) => (
           <Link
             key={item.id}
@@ -190,16 +190,16 @@ export default function ProfessionalChecklist() {
             }`}
           >
             {/* Status icon */}
-            <div className={`shrink-0 ${item.done ? "text-emerald-500" : "text-slate-300"}`}>
+            <div className={`shrink-0 ${item.done ? "text-brand-500" : "text-slate-300"}`}>
               {item.done
-                ? <CheckCircle2 size={20} className="text-emerald-500" />
+                ? <CheckCircle2 size={20} className="text-brand-500" />
                 : <Circle size={20} />
               }
             </div>
 
             {/* Icon + text */}
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-              item.done ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition"
+              item.done ? "bg-brand-100 text-brand-500" : "bg-slate-100 text-slate-500 group-hover:bg-brand-50 group-hover:text-brand-500 transition"
             }`}>
               {item.icon}
             </div>
@@ -212,7 +212,7 @@ export default function ProfessionalChecklist() {
             </div>
 
             {!item.done && (
-              <ChevronRight size={16} className="text-slate-300 group-hover:text-emerald-500 shrink-0 transition" />
+              <ChevronRight size={16} className="text-slate-300 group-hover:text-brand-500 shrink-0 transition" />
             )}
           </Link>
         ))}
@@ -222,7 +222,7 @@ export default function ProfessionalChecklist() {
       {allDone && (
         <div className="px-5 py-4 text-center">
           <p className="text-2xl mb-1">🎉</p>
-          <button onClick={dismiss} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">
+          <button onClick={dismiss} className="text-xs text-brand-500 hover:text-brand-600 font-medium">
             {t("dismiss")}
           </button>
         </div>

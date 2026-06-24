@@ -36,9 +36,9 @@ export default async function ProfessionalAppointments() {
   await audit.viewRecord(session.user.id, "Appointment", "list");
 
   const statusColors: Record<string, string> = {
-    CONFIRMED: "bg-emerald-100 text-emerald-700",
+    CONFIRMED: "bg-brand-100 text-brand-600",
     PENDING: "bg-amber-100 text-amber-700",
-    COMPLETED: "bg-blue-100 text-blue-700",
+    COMPLETED: "bg-brand-100 text-brand-600",
     CANCELLED: "bg-rose-100 text-rose-700",
   };
 
@@ -58,7 +58,7 @@ export default async function ProfessionalAppointments() {
           <div className="divide-y divide-slate-100">
             {appointments.map((apt) => (
               <div key={apt.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition">
-                <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
                   {apt.patient.firstName[0]}{apt.patient.lastName[0]}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -87,7 +87,7 @@ export default async function ProfessionalAppointments() {
                 {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
                   <a
                     href={`/video/${apt.id}`}
-                    className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-emerald-400 transition"
+                    className="shrink-0 bg-brand-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-brand-400 transition"
                   >
                     <Video size={12} /> {t("proappt.join")}
                   </a>

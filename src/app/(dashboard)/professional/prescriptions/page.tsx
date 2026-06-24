@@ -95,13 +95,13 @@ function PrescriptionCard({
     : t("rx.patient");
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 hover:border-indigo-200 transition">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 hover:border-brand-200 transition">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-slate-800">{patientName}</p>
             {signed && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 bg-brand-100 px-2 py-0.5 rounded-full">
                 <CheckCircle2 size={11} /> {t("rx.signed")}
               </span>
             )}
@@ -121,12 +121,12 @@ function PrescriptionCard({
         </div>
         <div className="flex flex-col gap-2 shrink-0">
           <button onClick={onReuse}
-            className="flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
+            className="flex items-center justify-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
             <Copy size={13} /> {t("rx.reuse")}
           </button>
           {!signed && (
             <button onClick={onSign}
-              className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
+              className="flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
               <PenLine size={13} /> {t("rx.sign")}
             </button>
           )}
@@ -154,14 +154,14 @@ function ClinicalDocCard({
   const pdfUrl = `/api/professional/documents/${d.id}/pdf`;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 hover:border-indigo-200 transition">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 hover:border-brand-200 transition">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{kindLabel}</span>
+            <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-2 py-0.5 rounded-full">{kindLabel}</span>
             <p className="font-semibold text-slate-800 truncate">{d.title}</p>
             {signed && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 bg-brand-100 px-2 py-0.5 rounded-full">
                 <CheckCircle2 size={11} /> {t("rx.signed")}
               </span>
             )}
@@ -183,12 +183,12 @@ function ClinicalDocCard({
         </div>
         <div className="flex flex-col gap-2 shrink-0">
           <button onClick={onReuse}
-            className="flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
+            className="flex items-center justify-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
             <Copy size={13} /> {t("rx.reuse")}
           </button>
           {!signed && (
             <button onClick={onSign}
-              className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
+              className="flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
               <PenLine size={13} /> {t("rx.sign")}
             </button>
           )}
@@ -537,7 +537,7 @@ export default function PrescriptionsPage() {
     return (
       <div className="max-w-3xl mx-auto space-y-5 pb-24">
         <button onClick={closeCreate}
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition font-medium">
+          className="flex items-center gap-2 text-sm text-slate-500 hover:text-brand-500 transition font-medium">
           <ArrowLeft size={16} /> {t("rx.backToList")}
         </button>
 
@@ -547,11 +547,11 @@ export default function PrescriptionsPage() {
         </div>
 
         {reuseSource && (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex items-start gap-3">
-            <Copy size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+          <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex items-start gap-3">
+            <Copy size={18} className="text-brand-500 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-indigo-800">{t("rx.reuseTitle")}</p>
-              <p className="text-xs text-indigo-700 mt-1">{t("rx.reuseHint")}</p>
+              <p className="text-sm font-semibold text-brand-700">{t("rx.reuseTitle")}</p>
+              <p className="text-xs text-brand-600 mt-1">{t("rx.reuseHint")}</p>
             </div>
           </div>
         )}
@@ -559,20 +559,20 @@ export default function PrescriptionsPage() {
         {successPatient ? (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
             <div className="flex flex-col items-center text-center">
-              <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
-                <CheckCircle2 size={28} className="text-emerald-600" />
+              <div className="w-14 h-14 rounded-full bg-brand-100 flex items-center justify-center mb-3">
+                <CheckCircle2 size={28} className="text-brand-500" />
               </div>
               <p className="font-bold text-slate-900 text-lg">{t("rx3.savedTitle")}</p>
               <p className="text-slate-500 text-sm mt-1">{successPatient.firstName} {successPatient.lastName}</p>
             </div>
             {successPatient.hasAccount ? (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
+              <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700 flex items-start gap-3">
+                <CheckCircle2 size={18} className="text-brand-500 shrink-0 mt-0.5" />
                 <p>{t("rx3.notifiedText")}</p>
               </div>
             ) : successPatient.email ? (
               inviteSent ? (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800">
+                <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700">
                   {t("rx3.inviteSent")} <strong>{successPatient.email}</strong>
                 </div>
               ) : (
@@ -581,7 +581,7 @@ export default function PrescriptionsPage() {
                   <p className="text-sm font-semibold text-amber-900">{successPatient.email}</p>
                   {inviteError && <p className="text-sm text-rose-600">{inviteError}</p>}
                   <button onClick={sendInvite} disabled={inviteSending}
-                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
+                    className="w-full py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
                     {inviteSending && <Loader2 size={14} className="animate-spin" />}
                     {t("rx3.sendInvite")}
                   </button>
@@ -593,14 +593,14 @@ export default function PrescriptionsPage() {
               </div>
             )}
             <button onClick={closeCreate}
-              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition">
+              className="w-full py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm transition">
               {t("rx3.done")}
             </button>
           </div>
         ) : (
           <>
             {/* Patient card */}
-            <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <label className="text-sm font-semibold text-slate-800">{t("rx2.selectPatient")}</label>
                 <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -610,8 +610,8 @@ export default function PrescriptionsPage() {
               </div>
 
               {selectedPatient ? (
-                <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl p-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-sm shrink-0">
+                <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl p-3">
+                  <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
                     {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -621,7 +621,7 @@ export default function PrescriptionsPage() {
                     </p>
                   </div>
                   <button onClick={() => { setSelectedPatient(null); setPatientQuery(""); }}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold shrink-0">
+                    className="text-xs text-brand-500 hover:text-brand-700 font-semibold shrink-0">
                     {t("rx2.changePatient")}
                   </button>
                 </div>
@@ -639,7 +639,7 @@ export default function PrescriptionsPage() {
                         <div className="p-4 text-center text-sm text-slate-500">{t("rx2.noPatientFound")}</div>
                       ) : filteredCharts.map((c) => (
                         <button key={c.id} onClick={() => setSelectedPatient(c)}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 transition text-left">
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 transition text-left">
                           <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
                             {c.firstName[0]}{c.lastName[0]}
                           </div>
@@ -666,11 +666,11 @@ export default function PrescriptionsPage() {
             </div>
 
             {/* Add item card */}
-            <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
               <div className="flex items-center justify-between gap-2">
                 <label className="text-sm font-semibold text-slate-800">{t("rx2.addItem")}</label>
                 <select value={drugCountry} onChange={(e) => setDrugCountry(e.target.value)}
-                  className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                  className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
                   <option value="">{t("rx2.countryAll")}</option>
                   <option value="BR">🇧🇷 BR</option>
                   <option value="US">🇺🇸 US</option>
@@ -678,7 +678,7 @@ export default function PrescriptionsPage() {
               </div>
 
               <div className="relative">
-                <Pill size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400" />
+                <Pill size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" />
                 <input type="text" value={drugQuery} onChange={(e) => setDrugQuery(e.target.value)}
                   placeholder={t("rx2.searchDrug")} className="rx-inp pl-10" />
                 {drugSearching && <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />}
@@ -686,7 +686,7 @@ export default function PrescriptionsPage() {
 
               {/* Always visible manual add */}
               <button type="button" onClick={addManual}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 text-indigo-700 font-semibold text-sm transition">
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 hover:bg-brand-50 text-brand-600 font-semibold text-sm transition">
                 <Plus size={16} /> {t("rx2.addManual")}
               </button>
               <p className="text-xs text-slate-400 text-center -mt-2">{t("rx.manualAlways")}</p>
@@ -697,7 +697,7 @@ export default function PrescriptionsPage() {
                     const ci = controlInfo(drug.prescriptionType);
                     return (
                       <button key={drug.id} onClick={() => addDrug(drug)}
-                        className="w-full flex items-start gap-3 px-4 py-3 hover:bg-indigo-50 transition text-left">
+                        className="w-full flex items-start gap-3 px-4 py-3 hover:bg-brand-50 transition text-left">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-slate-800 text-sm flex items-center gap-2 flex-wrap">
                             {drug.name}
@@ -710,7 +710,7 @@ export default function PrescriptionsPage() {
                           <p className="text-xs text-slate-500">{drug.activeIngredient}</p>
                           <p className="text-xs text-slate-400">{drug.presentation}</p>
                         </div>
-                        <Plus size={16} className="text-indigo-500 shrink-0 mt-1" />
+                        <Plus size={16} className="text-brand-500 shrink-0 mt-1" />
                       </button>
                     );
                   })}
@@ -719,7 +719,7 @@ export default function PrescriptionsPage() {
             </div>
 
             {/* Prescription items */}
-            <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
               <label className="text-sm font-semibold text-slate-800">{t("rx2.selectedMeds")}</label>
               {medications.length === 0 ? (
                 <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -783,7 +783,7 @@ export default function PrescriptionsPage() {
             </div>
 
             {/* Instructions + validity */}
-            <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-800 mb-1.5">{t("rx2.generalInstructions")}</label>
                 <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2}
@@ -815,7 +815,7 @@ export default function PrescriptionsPage() {
                 {t("rx2.cancel")}
               </button>
               <button type="button" onClick={handleSubmit} disabled={saving}
-                className="flex-[2] py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-indigo-600/20">
+                className="flex-[2] py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-brand-500/20">
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
                 {saving ? t("rx2.saving") : t("rx2.save")}
               </button>
@@ -837,15 +837,15 @@ export default function PrescriptionsPage() {
           <p className="text-slate-500 text-sm mt-1">{t("rx.subtitle")}</p>
         </div>
         <button onClick={openCreate}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-indigo-600/20">
+          className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-brand-500/20">
           <Plus size={16} /> {t("rx.new")}
         </button>
       </div>
 
       {signResult === "success" && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
-          <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
-          <p className="text-sm text-emerald-800 font-medium">Documento assinado com sucesso! O PDF assinado já está disponível.</p>
+        <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 flex items-start gap-3">
+          <CheckCircle2 size={18} className="text-brand-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-brand-700 font-medium">Documento assinado com sucesso! O PDF assinado já está disponível.</p>
         </div>
       )}
       {signResult === "cancelled" && (
@@ -856,14 +856,14 @@ export default function PrescriptionsPage() {
       )}
 
       {signConfig && !signConfig.configured && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex items-start gap-3">
-          <PenLine size={18} className="text-indigo-500 shrink-0 mt-0.5" />
+        <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex items-start gap-3">
+          <PenLine size={18} className="text-brand-500 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-indigo-800">Assinatura digital não configurada</p>
-            <p className="text-xs text-indigo-600 mt-1">Configure o CPF para assinar documentos com validade ICP-Brasil.</p>
+            <p className="text-sm font-semibold text-brand-700">Assinatura digital não configurada</p>
+            <p className="text-xs text-brand-500 mt-1">Configure o CPF para assinar documentos com validade ICP-Brasil.</p>
           </div>
           <a href="/professional/account"
-            className="text-xs font-semibold text-indigo-700 border border-indigo-300 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition shrink-0">
+            className="text-xs font-semibold text-brand-600 border border-brand-200 px-3 py-1.5 rounded-lg hover:bg-brand-100 transition shrink-0">
             Configurar
           </a>
         </div>
@@ -871,20 +871,20 @@ export default function PrescriptionsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <button onClick={openCreate}
-          className="text-left p-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 hover:bg-indigo-50 transition">
-          <Pill size={20} className="text-indigo-600 mb-2" />
-          <p className="font-semibold text-indigo-900 text-sm">{t("rx.createAction")}</p>
-          <p className="text-xs text-indigo-600/80 mt-0.5">{t("rx.createActionDesc")}</p>
+          className="text-left p-4 rounded-2xl border border-accent-100 bg-gradient-to-br from-brand-50 to-accent-50/40 hover:border-accent-200 transition">
+          <Pill size={20} className="text-accent-500 mb-2" />
+          <p className="font-semibold text-brand-900 text-sm">{t("rx.createAction")}</p>
+          <p className="text-xs text-brand-500/80 mt-0.5">{t("rx.createActionDesc")}</p>
         </button>
         <button onClick={openExamCreate}
-          className="text-left p-4 rounded-2xl border border-indigo-100 bg-white hover:bg-indigo-50/40 transition">
-          <FlaskConical size={20} className="text-indigo-500 mb-2" />
+          className="text-left p-4 rounded-2xl border border-brand-100 bg-white hover:bg-brand-50/40 transition">
+          <FlaskConical size={20} className="text-brand-500 mb-2" />
           <p className="font-semibold text-slate-800 text-sm">{t("rx.examAction")}</p>
           <p className="text-xs text-slate-500 mt-0.5">{t("rx.examActionDesc")}</p>
         </button>
         <button onClick={openDocumentCreate}
-          className="text-left p-4 rounded-2xl border border-indigo-100 bg-white hover:bg-indigo-50/40 transition">
-          <ScrollText size={20} className="text-indigo-500 mb-2" />
+          className="text-left p-4 rounded-2xl border border-brand-100 bg-white hover:bg-brand-50/40 transition">
+          <ScrollText size={20} className="text-brand-500 mb-2" />
           <p className="font-semibold text-slate-800 text-sm">{t("rx.documentAction")}</p>
           <p className="text-xs text-slate-500 mt-0.5">{t("rx.documentActionDesc")}</p>
         </button>
@@ -895,7 +895,7 @@ export default function PrescriptionsPage() {
         {(["all", "prescription", "exam", "document"] as ListFilter[]).map((f) => (
           <button key={f} onClick={() => { setListFilter(f); setShowAllHistory(true); }}
             className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition ${
-              listFilter === f ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              listFilter === f ? "bg-brand-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}>
             {t(f === "all" ? "rx.filterAll" : f === "prescription" ? "rx.filterPrescription" : f === "exam" ? "rx.filterExam" : "rx.filterDocument")}
           </button>
@@ -907,7 +907,7 @@ export default function PrescriptionsPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-800">{t("rx.recent")}</h2>
-            <button onClick={() => setShowAllHistory(true)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+            <button onClick={() => setShowAllHistory(true)} className="text-xs font-semibold text-brand-500 hover:text-brand-700">
               {t("rx.showAll")}
             </button>
           </div>
@@ -918,8 +918,8 @@ export default function PrescriptionsPage() {
                 ? `${p.document.patient.firstName} ${p.document.patient.lastName}` : t("rx.patient");
               return (
                 <div key={`rx-${p.id}`} onClick={() => openReuse(p)}
-                  className="snap-start shrink-0 w-64 bg-white rounded-2xl border border-slate-200 p-4 hover:border-indigo-200 transition cursor-pointer">
-                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{t("rx.kindPrescription")}</span>
+                  className="snap-start shrink-0 w-64 bg-white rounded-2xl border border-slate-200 p-4 hover:border-brand-200 transition cursor-pointer">
+                  <span className="text-[10px] font-bold text-brand-500 bg-brand-50 px-2 py-0.5 rounded-full">{t("rx.kindPrescription")}</span>
                   <p className="text-xs text-slate-400 mt-2">{new Date(p.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
                   <p className="font-semibold text-slate-800 text-sm mt-1 truncate">{patientName}</p>
                   <ol className="mt-2 space-y-0.5">
@@ -928,7 +928,7 @@ export default function PrescriptionsPage() {
                     ))}
                   </ol>
                   <button onClick={(e) => { e.stopPropagation(); openReuse(p); }}
-                    className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 py-1.5 rounded-lg">
+                    className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-semibold text-brand-500 bg-brand-50 py-1.5 rounded-lg">
                     <Copy size={12} /> {t("rx.reuse")}
                   </button>
                 </div>
@@ -939,7 +939,7 @@ export default function PrescriptionsPage() {
                 ? `${d.document.patient.firstName} ${d.document.patient.lastName}` : t("rx.patient");
               return (
                 <div key={`doc-${d.id}`} onClick={() => openReuseClinical(d)}
-                  className="snap-start shrink-0 w-64 bg-white rounded-2xl border border-slate-200 p-4 hover:border-indigo-200 transition cursor-pointer">
+                  className="snap-start shrink-0 w-64 bg-white rounded-2xl border border-slate-200 p-4 hover:border-brand-200 transition cursor-pointer">
                   <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
                     {isExamDocType(d.type) ? t("rx.kindExam") : t("rx.kindDocument")}
                   </span>
@@ -947,7 +947,7 @@ export default function PrescriptionsPage() {
                   <p className="font-semibold text-slate-800 text-sm mt-1 truncate">{d.title}</p>
                   <p className="text-xs text-slate-500 truncate">{patientName}</p>
                   <button onClick={(e) => { e.stopPropagation(); openReuseClinical(d); }}
-                    className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 py-1.5 rounded-lg">
+                    className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-semibold text-brand-500 bg-brand-50 py-1.5 rounded-lg">
                     <Copy size={12} /> {t("rx.reuse")}
                   </button>
                 </div>
@@ -963,10 +963,10 @@ export default function PrescriptionsPage() {
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input type="text" placeholder={t("rx.search")} value={search} onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
           </div>
           {showAllHistory && (
-            <button onClick={() => setShowAllHistory(false)} className="text-xs text-slate-500 hover:text-indigo-600 flex items-center gap-1">
+            <button onClick={() => setShowAllHistory(false)} className="text-xs text-slate-500 hover:text-brand-500 flex items-center gap-1">
               <ArrowLeft size={12} /> {t("rx.recent")}
             </button>
           )}
@@ -974,7 +974,7 @@ export default function PrescriptionsPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-indigo-400" /></div>
+        <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-brand-400" /></div>
       ) : filtered.length === 0 && filteredClinical.length === 0 && !showAllHistory ? null
       : (showAllHistory || search.trim().length > 0) ? (
         <div className="space-y-3">

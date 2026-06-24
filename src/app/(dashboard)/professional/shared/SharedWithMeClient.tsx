@@ -136,7 +136,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                 <div className="flex items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
                         <Tag size={11} /> {label}
                       </span>
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -152,7 +152,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                     <button
                       onClick={() => handleDownload(it.documentId)}
                       disabled={downloadingId === it.documentId}
-                      className="shrink-0 text-slate-400 hover:text-emerald-500 transition p-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
+                      className="shrink-0 text-slate-400 hover:text-brand-500 transition p-2 rounded-lg hover:bg-brand-50 disabled:opacity-50"
                       aria-label={t("shared.download")}
                     >
                       {downloadingId === it.documentId ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
@@ -167,7 +167,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                     <>
                       <Link
                         href={`/professional/patients/${it.existingChartId}`}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 hover:text-brand-600 border border-brand-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
                       >
                         <FolderOpen size={14} /> {t("shared.openChart")}
                       </Link>
@@ -179,7 +179,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                         <button
                           onClick={() => handleAddToChart(it)}
                           disabled={isBusy}
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                         >
                           {isBusy ? <Loader2 size={14} className="animate-spin" /> : <FilePlus2 size={14} />}
                           {t("shared.addToChart")}
@@ -190,7 +190,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                     <button
                       onClick={() => handleCreateChart(it)}
                       disabled={isBusy}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                     >
                       {isBusy ? <Loader2 size={14} className="animate-spin" /> : <FolderPlus size={14} />}
                       {t("shared.createFirstChart")}

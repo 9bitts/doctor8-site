@@ -60,7 +60,7 @@ export function EmissionsSignModal({
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-slate-900 flex items-center gap-2">
-              <PenLine size={18} className="text-indigo-500" /> Assinatura Digital
+              <PenLine size={18} className="text-brand-500" /> Assinatura Digital
             </h2>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
@@ -68,7 +68,7 @@ export function EmissionsSignModal({
             Configure o CPF da assinatura digital nas configurações da conta antes de assinar.
           </div>
           <a href="/professional/account" onClick={onClose}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+            className="w-full flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 rounded-xl text-sm transition">
             <ExternalLink size={14} /> Ir para configurações
           </a>
         </div>
@@ -81,15 +81,15 @@ export function EmissionsSignModal({
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-slate-900 flex items-center gap-2">
-            <PenLine size={18} className="text-indigo-500" /> Assinatura ICP-Brasil
+            <PenLine size={18} className="text-brand-500" /> Assinatura ICP-Brasil
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
         </div>
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-2">
-          <p className="text-sm font-semibold text-indigo-800 flex items-center gap-2">
+        <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 space-y-2">
+          <p className="text-sm font-semibold text-brand-700 flex items-center gap-2">
             <Smartphone size={15} /> Como funciona
           </p>
-          <ol className="text-xs text-indigo-700 space-y-1 list-decimal list-inside">
+          <ol className="text-xs text-brand-600 space-y-1 list-decimal list-inside">
             <li>Você será levado à página segura de assinatura</li>
             <li>Escolha seu certificado (BirdID, VIDaaS, etc.)</li>
             <li>Autorize no app do celular</li>
@@ -112,7 +112,7 @@ export function EmissionsSignModal({
             Cancelar
           </button>
           <button onClick={handleStartSign} disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-semibold text-sm transition flex items-center justify-center gap-2">
+            className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white font-semibold text-sm transition flex items-center justify-center gap-2">
             {loading ? <><Loader2 size={13} className="animate-spin" /> Abrindo...</> : <><Lock size={13} /> Assinar</>}
           </button>
         </div>
@@ -123,7 +123,7 @@ export function EmissionsSignModal({
 
 export const RX_STYLES = `
   .rx-inp { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #1e293b; outline: none; background: white; }
-  .rx-inp:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+  .rx-inp:focus { border-color: #216a86; box-shadow: 0 0 0 3px rgba(33,106,134,.12); }
   .rx-inp-sm { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; font-size: 13px; color: #1e293b; outline: none; background: white; }
-  .rx-inp-sm:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+  .rx-inp-sm:focus { border-color: #216a86; box-shadow: 0 0 0 3px rgba(33,106,134,.1); }
 `;

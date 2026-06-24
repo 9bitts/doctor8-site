@@ -36,7 +36,7 @@ const PROFESSION_GROUPS: { groupKey: string; options: string[] }[] = [
 ];
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
-const inputClass = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
+const inputClass = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40";
 
 export default function ProfessionalSettings() {
   const t = useT();
@@ -169,7 +169,7 @@ export default function ProfessionalSettings() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-emerald-500" size={28} /></div>;
+    return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-brand-500" size={28} /></div>;
   }
 
   const initials = (firstName[0] || "") + (lastName[0] || "");
@@ -182,9 +182,9 @@ export default function ProfessionalSettings() {
       </div>
 
       {saved && (
-        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-          <CheckCircle2 className="text-emerald-500" size={20} />
-          <p className="text-emerald-700 text-sm font-medium">{t("set.savedMsg")}</p>
+        <div className="flex items-center gap-3 bg-brand-50 border border-brand-200 rounded-xl p-4">
+          <CheckCircle2 className="text-brand-500" size={20} />
+          <p className="text-brand-600 text-sm font-medium">{t("set.savedMsg")}</p>
         </div>
       )}
       {error && (
@@ -193,13 +193,13 @@ export default function ProfessionalSettings() {
 
       {/* Photo + Identity */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><User size={18} className="text-emerald-500" /> {t("set.photoIdentity")}</h2>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><User size={18} className="text-brand-500" /> {t("set.photoIdentity")}</h2>
         <div className="flex items-center gap-5">
           <div className="relative">
             {avatarUrl ? (
               <img src={avatarUrl} alt="Profile" className="w-24 h-24 rounded-2xl object-cover border border-slate-200" />
             ) : (
-              <div className="w-24 h-24 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 text-2xl font-bold">
+              <div className="w-24 h-24 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-500 text-2xl font-bold">
                 {initials || <Camera size={28} />}
               </div>
             )}
@@ -213,7 +213,7 @@ export default function ProfessionalSettings() {
           <div>
             <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
             <button type="button" onClick={() => fileRef.current?.click()}
-              className="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm flex items-center gap-2">
+              className="bg-white border border-slate-200 hover:border-brand-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm flex items-center gap-2">
               <Camera size={15} /> {avatarUrl ? t("set.changePhoto") : t("set.uploadPhoto")}
             </button>
             <p className="text-xs text-slate-400 mt-2">{t("set.photoHint")}</p>
@@ -233,7 +233,7 @@ export default function ProfessionalSettings() {
 
       {/* Profession & credentials */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><Award size={18} className="text-emerald-500" /> {t("set.profCreds")}</h2>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><Award size={18} className="text-brand-500" /> {t("set.profCreds")}</h2>
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.profSpecialty")}</label>
           <select className={inputClass + " bg-white"} value={profession} onChange={(e) => setProfession(e.target.value)}>
@@ -250,12 +250,12 @@ export default function ProfessionalSettings() {
             <input className={inputClass} value={subInput} onChange={(e) => setSubInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSub(); } }}
               placeholder={t("set.expertisePlaceholder")} />
-            <button type="button" onClick={addSub} className="bg-emerald-500 text-white rounded-xl px-3 shrink-0"><Plus size={16} /></button>
+            <button type="button" onClick={addSub} className="bg-brand-500 text-white rounded-xl px-3 shrink-0"><Plus size={16} /></button>
           </div>
           {subspecialties.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
               {subspecialties.map((s) => (
-                <span key={s} className="bg-emerald-50 text-emerald-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                <span key={s} className="bg-brand-50 text-brand-600 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
                   {s}
                   <button type="button" onClick={() => setSubspecialties(subspecialties.filter((x) => x !== s))}><X size={12} /></button>
                 </span>
@@ -282,7 +282,7 @@ export default function ProfessionalSettings() {
 
       {/* Consultation */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><DollarSign size={18} className="text-emerald-500" /> {t("set.consultation")}</h2>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><DollarSign size={18} className="text-brand-500" /> {t("set.consultation")}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.pricePerConsult")}</label>
@@ -297,11 +297,11 @@ export default function ProfessionalSettings() {
         </div>
         <div className="flex flex-col gap-3 pt-2">
           <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={acceptsTeleconsult} onChange={(e) => setAcceptsTeleconsult(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
+            <input type="checkbox" checked={acceptsTeleconsult} onChange={(e) => setAcceptsTeleconsult(e.target.checked)} className="w-4 h-4 accent-brand-500" />
             <span className="text-sm text-slate-700 flex items-center gap-2"><Video size={15} /> {t("set.acceptTele")}</span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={acceptsInPerson} onChange={(e) => setAcceptsInPerson(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
+            <input type="checkbox" checked={acceptsInPerson} onChange={(e) => setAcceptsInPerson(e.target.checked)} className="w-4 h-4 accent-brand-500" />
             <span className="text-sm text-slate-700 flex items-center gap-2"><Building2 size={15} /> {t("set.acceptInPerson")}</span>
           </label>
         </div>
@@ -309,7 +309,7 @@ export default function ProfessionalSettings() {
 
       {/* Clinic / Address */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><Building2 size={18} className="text-emerald-500" /> {t("set.clinicAddress")} <span className="text-slate-400 text-sm font-normal">{t("set.optional")}</span></h2>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><Building2 size={18} className="text-brand-500" /> {t("set.clinicAddress")} <span className="text-slate-400 text-sm font-normal">{t("set.optional")}</span></h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.clinicName")}</label>
@@ -343,10 +343,10 @@ export default function ProfessionalSettings() {
       {/* Save bar */}
       <div className="flex items-center justify-between gap-4 sticky bottom-4 bg-white/80 backdrop-blur rounded-2xl border border-slate-100 shadow-lg p-3">
         <p className="text-xs text-slate-400 pl-2">
-          {t("set.availabilityNote")} <a href="/professional/settings/availability" className="text-emerald-600 underline">{t("set.availabilityLink")}</a>.
+          {t("set.availabilityNote")} <a href="/professional/settings/availability" className="text-brand-500 underline">{t("set.availabilityLink")}</a>.
         </p>
         <button onClick={handleSave} disabled={saving}
-          className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shrink-0">
+          className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shrink-0">
           {saving && <Loader2 className="animate-spin" size={16} />}
           {saving ? t("set.saving") : t("set.saveProfile")}
         </button>

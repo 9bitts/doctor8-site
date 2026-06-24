@@ -231,13 +231,13 @@ export default function ResourcesPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <BookOpen className="text-emerald-500" size={24} /> {t("lib.title")}
+            <BookOpen className="text-brand-500" size={24} /> {t("lib.title")}
           </h1>
           <p className="text-slate-500 text-sm mt-1">{t("lib.subtitle")}</p>
         </div>
         <button
           onClick={() => { setShowForm(true); setFormError(null); }}
-          className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm shrink-0"
+          className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm shrink-0"
         >
           <Plus size={18} /> {t("lib.add")}
         </button>
@@ -259,8 +259,8 @@ export default function ResourcesPage() {
           {resources.map((r) => (
             <div key={r.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                  {r.url ? <Link2 size={18} className="text-emerald-600" /> : <Paperclip size={18} className="text-emerald-600" />}
+                <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
+                  {r.url ? <Link2 size={18} className="text-brand-500" /> : <Paperclip size={18} className="text-brand-500" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800">{r.title}</p>
@@ -273,7 +273,7 @@ export default function ResourcesPage() {
                       {r.content.length > 120 && (
                         <button
                           onClick={() => setExpanded((e) => ({ ...e, [r.id]: !e[r.id] }))}
-                          className="text-xs text-emerald-600 hover:underline mt-0.5 inline-flex items-center gap-0.5"
+                          className="text-xs text-brand-500 hover:underline mt-0.5 inline-flex items-center gap-0.5"
                         >
                           {expanded[r.id] ? <><ChevronUp size={12} /> ver menos</> : <><ChevronDown size={12} /> ver mais</>}
                         </button>
@@ -287,7 +287,7 @@ export default function ResourcesPage() {
                         href={r.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-full transition"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-500 hover:text-brand-600 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-full transition"
                       >
                         <ExternalLink size={11} /> {t("lib.openLink")}
                       </a>
@@ -298,7 +298,7 @@ export default function ResourcesPage() {
                       </span>
                     )}
                     {r.shareCount > 0 && (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-xs text-brand-500 bg-brand-50 px-2.5 py-1 rounded-full">
                         <Users size={11} /> {r.shareCount} {t("lib.sharesCount")}
                       </span>
                     )}
@@ -312,8 +312,8 @@ export default function ResourcesPage() {
                     onClick={() => shareResId === r.id ? setShareResId(null) : openSharePanel(r.id)}
                     className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition
                       ${shareResId === r.id
-                        ? "bg-emerald-500 text-white border-emerald-500"
-                        : "text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-600"}`}
+                        ? "bg-brand-500 text-white border-brand-500"
+                        : "text-slate-600 border-slate-200 hover:border-brand-200 hover:text-brand-500"}`}
                   >
                     <Share2 size={13} /> {t("lib.shareWith")}
                   </button>
@@ -325,8 +325,8 @@ export default function ResourcesPage() {
                     }}
                     className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition
                       ${shareProResId === r.id
-                        ? "bg-blue-500 text-white border-blue-500"
-                        : "text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600"}`}
+                        ? "bg-brand-500 text-white border-brand-500"
+                        : "text-slate-600 border-slate-200 hover:border-brand-200 hover:text-brand-500"}`}
                   >
                     <Stethoscope size={13} /> {t("lib.shareWithPro")}
                   </button>
@@ -349,7 +349,7 @@ export default function ResourcesPage() {
                       value={chartSearch}
                       onChange={(e) => setChartSearch(e.target.value)}
                       placeholder={t("lib.shareSearch")}
-                      className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none"
+                      className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none"
                     />
                   </div>
                   {chartsLoading ? (
@@ -367,7 +367,7 @@ export default function ResourcesPage() {
                           <div key={c.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50">
                             <span className="text-sm text-slate-700">{c.firstName} {c.lastName}</span>
                             {status === "ok" ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
+                              <span className="inline-flex items-center gap-1 text-xs text-brand-500">
                                 <CheckCircle2 size={13} /> {t("lib.shared")}
                               </span>
                             ) : status === "error" ? (
@@ -378,7 +378,7 @@ export default function ResourcesPage() {
                               <button
                                 onClick={() => shareWith(r.id, c.id)}
                                 disabled={sharingId === c.id}
-                                className="inline-flex items-center gap-1 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-2.5 py-1 rounded-lg disabled:opacity-50 transition"
+                                className="inline-flex items-center gap-1 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-2.5 py-1 rounded-lg disabled:opacity-50 transition"
                               >
                                 {sharingId === c.id
                                   ? <Loader2 size={12} className="animate-spin" />
@@ -407,7 +407,7 @@ export default function ResourcesPage() {
                       value={proQuery}
                       onChange={(e) => setProQuery(e.target.value)}
                       placeholder={t("lib.proSearch")}
-                      className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none"
+                      className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none"
                     />
                   </div>
                   {proSearching ? (
@@ -427,7 +427,7 @@ export default function ResourcesPage() {
                               <p className="text-xs text-slate-400">{p.specialty}</p>
                             </div>
                             {status === "ok" ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-blue-600">
+                              <span className="inline-flex items-center gap-1 text-xs text-brand-500">
                                 <CheckCircle2 size={13} /> {t("lib.proNotified")}
                               </span>
                             ) : status === "error" ? (
@@ -438,7 +438,7 @@ export default function ResourcesPage() {
                               <button
                                 onClick={() => shareWithPro(r.id, p.id)}
                                 disabled={proSharingId === p.id}
-                                className="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 px-2.5 py-1 rounded-lg disabled:opacity-50 transition"
+                                className="inline-flex items-center gap-1 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-2.5 py-1 rounded-lg disabled:opacity-50 transition"
                               >
                                 {proSharingId === p.id ? <Loader2 size={12} className="animate-spin" /> : <Share2 size={12} />}
                                 Compartilhar
@@ -454,7 +454,7 @@ export default function ResourcesPage() {
                   <div className="border-t border-slate-100 pt-3">
                     <button
                       onClick={() => setShowInviteForm(!showInviteForm)}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-blue-600 transition"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 transition"
                     >
                       <UserPlus size={13} /> {t("lib.proNoAccount")}
                     </button>
@@ -464,23 +464,23 @@ export default function ResourcesPage() {
                           value={inviteName}
                           onChange={(e) => setInviteName(e.target.value)}
                           placeholder={t("lib.proNameLabel")}
-                          className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+                          className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-brand-400 outline-none"
                         />
                         <input
                           value={inviteEmail}
                           onChange={(e) => setInviteEmail(e.target.value)}
                           placeholder={t("lib.proEmailLabel")}
                           type="email"
-                          className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+                          className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-brand-400 outline-none"
                         />
                         <input
                           value={invitePhone}
                           onChange={(e) => setInvitePhone(e.target.value)}
                           placeholder={t("lib.proPhoneLabel")}
-                          className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+                          className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:border-brand-400 outline-none"
                         />
                         {inviteMsg === "ok" && (
-                          <p className="text-xs text-blue-600 flex items-center gap-1">
+                          <p className="text-xs text-brand-500 flex items-center gap-1">
                             <CheckCircle2 size={12} /> {t("lib.proInvited")}
                           </p>
                         )}
@@ -490,7 +490,7 @@ export default function ResourcesPage() {
                         <button
                           onClick={() => sendProInvite(r.id)}
                           disabled={inviteSending}
-                          className="w-full py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                          className="w-full py-2 rounded-xl bg-brand-500 hover:bg-brand-500 text-white text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
                         >
                           {inviteSending ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
                           {t("lib.proInvite")}
@@ -523,7 +523,7 @@ export default function ResourcesPage() {
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
                   placeholder={t("lib.titlePlaceholder")}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                 />
               </div>
 
@@ -535,7 +535,7 @@ export default function ResourcesPage() {
                   onChange={(e) => setFormDesc(e.target.value)}
                   placeholder={t("lib.descPlaceholder")}
                   rows={3}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm resize-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-none"
                 />
               </div>
 
@@ -544,13 +544,13 @@ export default function ResourcesPage() {
                 <div className="flex rounded-xl border border-slate-200 overflow-hidden text-sm font-medium">
                   <button
                     onClick={() => setFormType("link")}
-                    className={`flex-1 py-2 flex items-center justify-center gap-1.5 transition ${formType === "link" ? "bg-emerald-500 text-white" : "text-slate-600 hover:bg-slate-50"}`}
+                    className={`flex-1 py-2 flex items-center justify-center gap-1.5 transition ${formType === "link" ? "bg-brand-500 text-white" : "text-slate-600 hover:bg-slate-50"}`}
                   >
                     <Link2 size={14} /> {t("lib.typeLink")}
                   </button>
                   <button
                     onClick={() => setFormType("file")}
-                    className={`flex-1 py-2 flex items-center justify-center gap-1.5 transition ${formType === "file" ? "bg-emerald-500 text-white" : "text-slate-600 hover:bg-slate-50"}`}
+                    className={`flex-1 py-2 flex items-center justify-center gap-1.5 transition ${formType === "file" ? "bg-brand-500 text-white" : "text-slate-600 hover:bg-slate-50"}`}
                   >
                     <Paperclip size={14} /> {t("lib.typeFile")}
                   </button>
@@ -565,7 +565,7 @@ export default function ResourcesPage() {
                     onChange={(e) => setFormUrl(e.target.value)}
                     placeholder={t("lib.urlPlaceholder")}
                     type="url"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                   />
                 </div>
               ) : (
@@ -577,7 +577,7 @@ export default function ResourcesPage() {
                     type="file"
                     accept=".pdf,image/*"
                     onChange={(e) => setFormFile(e.target.files?.[0] || null)}
-                    className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 file:text-sm file:font-medium hover:file:bg-emerald-100"
+                    className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-600 file:text-sm file:font-medium hover:file:bg-brand-100"
                   />
                   {formFile && (
                     <p className="text-xs text-slate-500 mt-1">{formFile.name} ({(formFile.size / 1024 / 1024).toFixed(1)} MB)</p>
@@ -599,7 +599,7 @@ export default function ResourcesPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={saving}
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50"
                 >
                   {saving ? t("lib.saving") : t("lib.save")}
                 </button>

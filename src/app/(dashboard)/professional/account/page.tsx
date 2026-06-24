@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 const inputClass =
-  "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition";
+  "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-400 transition";
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProfessionalAccountPage() {
@@ -98,8 +98,8 @@ export default function ProfessionalAccountPage() {
 
       {/* Email atual */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-          <Shield size={18} className="text-emerald-600" />
+        <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center">
+          <Shield size={18} className="text-brand-500" />
         </div>
         <div>
           <p className="text-sm font-semibold text-slate-800">{currentEmail || t("common.loading")}</p>
@@ -110,10 +110,10 @@ export default function ProfessionalAccountPage() {
       {/* Alterar senha */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Lock size={18} className="text-emerald-500" /> {t("acct.changePassword")}
+          <Lock size={18} className="text-brand-500" /> {t("acct.changePassword")}
         </h2>
         {pwdSuccess && (
-          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-700">
+          <div className="flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-xl p-3 text-sm text-brand-600">
             <CheckCircle2 size={16} /> {t("acct.pwdSuccess")}
           </div>
         )}
@@ -144,8 +144,8 @@ export default function ProfessionalAccountPage() {
               <div className="mt-2 space-y-1">
                 {PASSWORD_RULES.map((rule) => (
                   <div key={rule.key} className="flex items-center gap-2">
-                    <CheckCircle2 size={12} className={rule.test(newPwd) ? "text-emerald-500" : "text-slate-300"} />
-                    <span className={`text-xs ${rule.test(newPwd) ? "text-emerald-600" : "text-slate-400"}`}>{t(rule.key)}</span>
+                    <CheckCircle2 size={12} className={rule.test(newPwd) ? "text-brand-500" : "text-slate-300"} />
+                    <span className={`text-xs ${rule.test(newPwd) ? "text-brand-500" : "text-slate-400"}`}>{t(rule.key)}</span>
                   </div>
                 ))}
               </div>
@@ -157,7 +157,7 @@ export default function ProfessionalAccountPage() {
             {confirmPwd && !passwordsMatch && <p className="text-xs text-red-500 mt-1">{t("acct.pwdNoMatch")}</p>}
           </div>
           <button type="submit" disabled={pwdLoading || !isPasswordValid || !passwordsMatch || !currentPwd}
-            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2">
+            className="bg-brand-500 hover:bg-brand-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2">
             {pwdLoading && <Loader2 size={15} className="animate-spin" />}
             {pwdLoading ? t("acct.saving") : t("acct.changePasswordBtn")}
           </button>
@@ -167,14 +167,14 @@ export default function ProfessionalAccountPage() {
       {/* Alterar email */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Mail size={18} className="text-emerald-500" /> {t("acct.changeEmail")}
+          <Mail size={18} className="text-brand-500" /> {t("acct.changeEmail")}
         </h2>
         {emailSuccess ? (
-          <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-            <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-3 bg-brand-50 border border-brand-200 rounded-xl p-4">
+            <CheckCircle2 size={18} className="text-brand-500 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-emerald-700">{t("acct.emailSentTitle")}</p>
-              <p className="text-xs text-emerald-600 mt-1">{t("acct.emailSentText")}</p>
+              <p className="text-sm font-semibold text-brand-600">{t("acct.emailSentTitle")}</p>
+              <p className="text-xs text-brand-500 mt-1">{t("acct.emailSentText")}</p>
             </div>
           </div>
         ) : (
@@ -199,7 +199,7 @@ export default function ProfessionalAccountPage() {
                 </div>
               </div>
               <button type="submit" disabled={emailLoading || !newEmail}
-                className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2">
+                className="bg-brand-500 hover:bg-brand-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2">
                 {emailLoading && <Loader2 size={15} className="animate-spin" />}
                 {emailLoading ? t("acct.sending") : t("acct.sendVerification")}
               </button>

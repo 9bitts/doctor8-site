@@ -3,8 +3,8 @@
 import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "pdf-lib";
 import type { SignLang } from "@/lib/sign-helpers";
 
-const BLUE = rgb(10 / 255, 77 / 255, 110 / 255);
-const GREEN = rgb(0 / 255, 184 / 255, 122 / 255);
+const BLUE = rgb(33 / 255, 106 / 255, 134 / 255);   // #216a86
+const GREEN = rgb(224 / 255, 89 / 255, 48 / 255);   // #e05930
 const DARK = rgb(0.1, 0.1, 0.1);
 const GRAY = rgb(0.42, 0.42, 0.42);
 const LIGHTGRAY = rgb(0.6, 0.6, 0.6);

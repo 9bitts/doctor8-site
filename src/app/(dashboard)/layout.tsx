@@ -83,6 +83,15 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
   const navItems = role === "ADMIN" ? ADMIN_NAV : role === "PROFESSIONAL" ? PROFESSIONAL_NAV : PATIENT_NAV;
   const roleLabel = role === "PROFESSIONAL" ? t("role.professional") : role === "ADMIN" ? t("role.admin") : t("role.patient");
+  const isProfessional = role === "PROFESSIONAL";
+  const logoAccent = isProfessional ? "text-accent-500" : "text-emerald-400";
+  const logoAccentHeader = isProfessional ? "text-accent-500" : "text-emerald-500";
+  const navActive = isProfessional
+    ? "bg-brand-500/10 text-brand-400 border border-brand-500/20"
+    : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+  const avatarBg = isProfessional ? "bg-brand-500/20" : "bg-emerald-500/20";
+  const avatarIcon = isProfessional ? "text-brand-400" : "text-emerald-400";
+  const headerAvatar = isProfessional ? "bg-brand-500" : "bg-emerald-500";
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -100,7 +109,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/50">
           <Link href="/" className="text-2xl font-black text-white tracking-tight">
-            Doctor<span className="text-emerald-400">8</span>
+            Doctor<span className={logoAccent}>8</span>
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
             <X size={20} />
@@ -109,8 +118,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         <div className="px-4 py-4 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <User size={16} className="text-emerald-400" />
+            <div className={`w-9 h-9 rounded-xl ${avatarBg} flex items-center justify-center`}>
+              <User size={16} className={avatarIcon} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{userName}</p>
@@ -131,10 +140,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                   onClick={() => setSidebarOpen(false)}
                   className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                    ${isActive
-                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800"
-                    }
+                    ${isActive ? navActive : "text-slate-400 hover:text-white hover:bg-slate-800"}
                   `}
                 >
                   {item.icon}
@@ -166,14 +172,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
           <div className="lg:hidden">
             <span className="text-lg font-bold text-slate-900">
-              Doctor<span className="text-emerald-500">8</span>
+              Doctor<span className={logoAccentHeader}>8</span>
             </span>
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
             <LanguageSwitcher variant="header" />
             <NotificationBell />
-            <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-sm font-bold">
+            <div className={`w-8 h-8 rounded-xl ${headerAvatar} flex items-center justify-center text-white text-sm font-bold`}>
               {userName.charAt(0).toUpperCase()}
             </div>
           </div>

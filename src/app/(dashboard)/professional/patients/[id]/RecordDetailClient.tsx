@@ -392,7 +392,7 @@ export default function RecordDetailClient({
       {/* Chart header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center font-bold text-emerald-600 text-lg shrink-0">
+          <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-lg shrink-0">
             {chart.firstName[0]}{chart.lastName[0]}
           </div>
           <div className="flex-1 min-w-0">
@@ -410,7 +410,7 @@ export default function RecordDetailClient({
                     target="_blank"
                     rel="noopener noreferrer"
                     title={rt("whatsapp")}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-full transition"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-brand-500 hover:text-brand-600 bg-brand-50 hover:bg-brand-100 px-2 py-0.5 rounded-full transition"
                   >
                     <MessageCircle size={12} /> WhatsApp
                   </a>
@@ -419,7 +419,7 @@ export default function RecordDetailClient({
             </div>
             <p className="text-xs mt-2">
               {hasAccount ? (
-                <span className="text-emerald-600 inline-flex items-center gap-1">
+                <span className="text-brand-500 inline-flex items-center gap-1">
                   <CheckCircle2 size={12} /> Has Doctor8 account
                 </span>
               ) : (
@@ -433,14 +433,14 @@ export default function RecordDetailClient({
               <div className="mt-3 flex gap-2 flex-wrap">
                 <a
                   href={`/professional/messages?with=${chart.linkedUserId}`}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-lg transition"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg transition"
                 >
                   <MessageCircle size={13} /> {rt("sendMessage")}
                 </a>
                 {hasConversation && (
                   <a
                     href={`/professional/messages?with=${chart.linkedUserId}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg transition"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition"
                   >
                     <ExternalLink size={13} /> {rt("verConv")}
                   </a>
@@ -457,7 +457,7 @@ export default function RecordDetailClient({
             {!editingReg && (
               <button
                 onClick={openRegEditor}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
               >
                 <Pencil size={13} /> {regEmpty ? "Adicionar dados" : "Editar dados"}
               </button>
@@ -473,7 +473,7 @@ export default function RecordDetailClient({
                     type="date"
                     value={regDraft.dateOfBirth}
                     onChange={(e) => setRegDraft({ ...regDraft, dateOfBirth: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                   />
                 </div>
                 <div>
@@ -481,7 +481,7 @@ export default function RecordDetailClient({
                   <select
                     value={regDraft.sex}
                     onChange={(e) => setRegDraft({ ...regDraft, sex: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                   >
                     <option value="">Selecione</option>
                     <option value="F">Feminino</option>
@@ -496,7 +496,7 @@ export default function RecordDetailClient({
                   value={regDraft.cpf}
                   onChange={(e) => setRegDraft({ ...regDraft, cpf: e.target.value })}
                   placeholder="000.000.000-00"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                 />
               </div>
               <div>
@@ -505,7 +505,7 @@ export default function RecordDetailClient({
                   value={regDraft.addressLine1}
                   onChange={(e) => setRegDraft({ ...regDraft, addressLine1: e.target.value })}
                   placeholder="Rua, número, complemento"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -514,7 +514,7 @@ export default function RecordDetailClient({
                   <input
                     value={regDraft.city}
                     onChange={(e) => setRegDraft({ ...regDraft, city: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                   />
                 </div>
                 <div>
@@ -522,7 +522,7 @@ export default function RecordDetailClient({
                   <input
                     value={regDraft.state}
                     onChange={(e) => setRegDraft({ ...regDraft, state: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                   />
                 </div>
               </div>
@@ -532,7 +532,7 @@ export default function RecordDetailClient({
                   <input
                     value={regDraft.country}
                     onChange={(e) => setRegDraft({ ...regDraft, country: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                   />
                 </div>
                 <div>
@@ -540,7 +540,7 @@ export default function RecordDetailClient({
                   <input
                     value={regDraft.zipCode}
                     onChange={(e) => setRegDraft({ ...regDraft, zipCode: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                   />
                 </div>
               </div>
@@ -561,7 +561,7 @@ export default function RecordDetailClient({
                 <button
                   onClick={saveReg}
                   disabled={regSaving}
-                  className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                  className="flex-1 py-2 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
                 >
                   {regSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                   Salvar
@@ -589,7 +589,7 @@ export default function RecordDetailClient({
           )}
 
           {regMsg === "saved" && !editingReg && (
-            <p className="text-xs text-emerald-600 mt-2 inline-flex items-center gap-1">
+            <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1">
               <CheckCircle2 size={12} /> Dados salvos.
             </p>
           )}
@@ -609,12 +609,12 @@ export default function RecordDetailClient({
                     value={emailDraft}
                     onChange={(e) => setEmailDraft(e.target.value)}
                     placeholder="patient@email.com"
-                    className="flex-1 min-w-[200px] px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                    className="flex-1 min-w-[200px] px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                   />
                   <button
                     onClick={saveEmail}
                     disabled={emailSaving}
-                    className="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50"
                   >
                     {emailSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                     Save
@@ -634,7 +634,7 @@ export default function RecordDetailClient({
                 </span>
                 <button
                   onClick={() => { setEditingEmail(true); setEmailMsg(null); }}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
                 >
                   <Pencil size={13} /> {chartEmail ? "Edit email" : "Add email"}
                 </button>
@@ -643,7 +643,7 @@ export default function RecordDetailClient({
                   <button
                     onClick={resendInvite}
                     disabled={inviteSending}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                   >
                     {inviteSending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
                     Send invite
@@ -654,12 +654,12 @@ export default function RecordDetailClient({
 
             {/* messages */}
             {emailMsg === "saved" && (
-              <p className="text-xs text-emerald-600 mt-2 inline-flex items-center gap-1">
+              <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1">
                 <CheckCircle2 size={12} /> Email updated.
               </p>
             )}
             {emailMsg === "linked" && (
-              <p className="text-xs text-emerald-600 mt-2 inline-flex items-center gap-1">
+              <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1">
                 <CheckCircle2 size={12} /> Email updated and linked to an existing account.
               </p>
             )}
@@ -669,7 +669,7 @@ export default function RecordDetailClient({
               </p>
             )}
             {inviteMsg === "sent" && (
-              <p className="text-xs text-blue-600 mt-2 inline-flex items-center gap-1">
+              <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1">
                 <Mail size={12} /> Invite sent to {chartEmail}.
               </p>
             )}
@@ -694,7 +694,7 @@ export default function RecordDetailClient({
         <h2 className="text-lg font-bold text-slate-900">Clinical records</h2>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+          className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
         >
           <Plus size={18} /> Add record
         </button>
@@ -715,7 +715,7 @@ export default function RecordDetailClient({
               return (
                 <div key={d.id} className="px-5 py-4">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
                       <Tag size={12} /> {label}
                     </span>
                     {d.categoryGroup && (
@@ -742,11 +742,11 @@ export default function RecordDetailClient({
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
                     <AiSummarizeButton documentId={d.id} />
                     {status === "shared" ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">
                         <CheckCircle2 size={14} /> Shared with patient
                       </span>
                     ) : status === "invited" ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">
                         <Mail size={14} /> Invitation sent
                       </span>
                     ) : status === "needsInvite" ? (
@@ -757,7 +757,7 @@ export default function RecordDetailClient({
                         <button
                           onClick={() => handleInvite(d.id)}
                           disabled={isSharing}
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg disabled:opacity-50"
                         >
                           {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
                           Send invite email
@@ -781,7 +781,7 @@ export default function RecordDetailClient({
                       <button
                         onClick={() => handleShare(d.id)}
                         disabled={isSharing}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-600 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                       >
                         {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
                         Share with patient
@@ -818,7 +818,7 @@ export default function RecordDetailClient({
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                   >
                     {groups.map((g) => (
                       <optgroup key={g.group} label={g.group}>
@@ -839,7 +839,7 @@ export default function RecordDetailClient({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={rt("titlePlaceholder")}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                 />
               </div>
               <div>
@@ -848,7 +848,7 @@ export default function RecordDetailClient({
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm resize-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-none"
                 />
               </div>
               <div>
@@ -859,7 +859,7 @@ export default function RecordDetailClient({
                   type="file"
                   accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 file:text-sm file:font-medium hover:file:bg-emerald-100"
+                  className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-600 file:text-sm file:font-medium hover:file:bg-brand-100"
                 />
                 {file && (
                   <p className="text-xs text-slate-500 mt-1">{file.name} ({(file.size/1024/1024).toFixed(1)} MB)</p>
@@ -880,7 +880,7 @@ export default function RecordDetailClient({
                 <button
                   onClick={handleCreate}
                   disabled={saving || categoriesLoading}
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Save record"}
                 </button>

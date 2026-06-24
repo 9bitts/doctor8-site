@@ -160,7 +160,7 @@ export default function TourGuide({ steps, texts, lang, storageKey, onComplete }
       <button
         onClick={startTour}
         title={BUTTON_LABEL[l]}
-        className="fixed bottom-20 left-4 z-40 w-10 h-10 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:border-emerald-300 transition"
+        className="fixed bottom-20 left-4 z-40 w-10 h-10 rounded-full bg-white border border-slate-200 shadow-md flex items-center justify-center text-slate-500 hover:text-brand-500 hover:border-brand-200 transition"
       >
         <HelpCircle size={20} />
       </button>
@@ -199,12 +199,12 @@ export default function TourGuide({ steps, texts, lang, storageKey, onComplete }
           >
             <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-slate-800 to-emerald-700 px-4 py-3 flex items-center justify-between">
+              <div className="bg-gradient-to-r from-slate-800 to-brand-600 px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {/* Step dots */}
                   <div className="flex gap-1">
                     {steps.map((_, i) => (
-                      <div key={i} className={`w-1.5 h-1.5 rounded-full transition ${i === step ? "bg-emerald-300 w-4" : i < step ? "bg-emerald-500" : "bg-white/30"}`} />
+                      <div key={i} className={`w-1.5 h-1.5 rounded-full transition ${i === step ? "bg-accent-400 w-4" : i < step ? "bg-brand-400" : "bg-white/30"}`} />
                     ))}
                   </div>
                   <span className="text-white/60 text-xs ml-1">{step + 1} {STEP_OF[l]} {steps.length}</span>
@@ -239,7 +239,7 @@ export default function TourGuide({ steps, texts, lang, storageKey, onComplete }
                   )}
                   <button
                     onClick={next}
-                    className={`flex items-center gap-1 text-xs font-semibold text-white px-4 py-1.5 rounded-lg transition ${step === steps.length - 1 ? "bg-emerald-500 hover:bg-emerald-600" : "bg-slate-800 hover:bg-slate-700"}`}
+                    className={`flex items-center gap-1 text-xs font-semibold text-white px-4 py-1.5 rounded-lg transition ${step === steps.length - 1 ? "bg-brand-500 hover:bg-brand-600" : "bg-slate-800 hover:bg-slate-700"}`}
                   >
                     {step === steps.length - 1 ? (
                       <><CheckCircle2 size={13} /> {FINISH[l]}</>

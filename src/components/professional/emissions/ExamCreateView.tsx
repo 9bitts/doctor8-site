@@ -77,7 +77,7 @@ export function ExamCreateView({
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-24">
-      <button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 font-medium">
+      <button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-500 hover:text-brand-500 font-medium">
         <ArrowLeft size={16} /> {t("rx.backToList")}
       </button>
 
@@ -87,7 +87,7 @@ export function ExamCreateView({
       </div>
 
       {reuseHint && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 text-sm text-indigo-800">
+        <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">
           {t("rx.reuseHint")}
         </div>
       )}
@@ -107,7 +107,7 @@ export function ExamCreateView({
               <div className="mt-2 border rounded-xl divide-y max-h-48 overflow-y-auto">
                 {filteredCharts.map((c) => (
                   <button key={c.id} onClick={() => setSelectedPatient(c)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 text-left">
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left">
                     <span className="font-medium text-sm">{c.firstName} {c.lastName}</span>
                     <ChevronRight size={14} className="ml-auto text-slate-300" />
                   </button>
@@ -123,13 +123,13 @@ export function ExamCreateView({
         <input value={title} onChange={(e) => setTitle(e.target.value)}
           placeholder={t("rx.examDefaultTitle")} className="rx-inp mb-3" />
         <div className="relative">
-          <FlaskConical size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400" />
+          <FlaskConical size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" />
           <input value={examQuery} onChange={(e) => setExamQuery(e.target.value)}
             placeholder={t("rx.searchExam")} className="rx-inp pl-10"
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addExamManual())} />
         </div>
         <button type="button" onClick={addExamManual}
-          className="w-full mt-3 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 text-indigo-700 font-semibold text-sm transition">
+          className="w-full mt-3 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 hover:bg-brand-50 text-brand-600 font-semibold text-sm transition">
           <Plus size={16} /> {t("rx.addExamManual")}
         </button>
         <p className="text-xs text-slate-400 text-center mt-1">{t("rx.manualAlways")}</p>
@@ -142,7 +142,7 @@ export function ExamCreateView({
           <div className="space-y-2">
             {items.map((item, i) => (
               <div key={i} className="flex gap-2 items-center">
-                <span className="text-xs text-indigo-500 font-bold w-5">{i + 1}.</span>
+                <span className="text-xs text-brand-500 font-bold w-5">{i + 1}.</span>
                 <input value={item} onChange={(e) => {
                   const next = [...items];
                   next[i] = e.target.value;
@@ -175,7 +175,7 @@ export function ExamCreateView({
             {t("rx2.cancel")}
           </button>
           <button onClick={handleSave} disabled={saving}
-            className="flex-[2] py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+            className="flex-[2] py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
             {saving ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
             {saving ? t("rx2.saving") : t("rx.generateExam")}
           </button>
@@ -187,7 +187,7 @@ export function ExamCreateView({
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 space-y-3">
+    <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-3">
       <label className="text-sm font-semibold text-slate-800">{title}</label>
       {children}
     </div>
@@ -196,15 +196,15 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 function PatientChip({ patient, t, onClear }: { patient: Chart; t: (k: string) => string; onClear: () => void }) {
   return (
-    <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl p-3">
-      <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-sm">
+    <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl p-3">
+      <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm">
         {patient.firstName[0]}{patient.lastName[0]}
       </div>
       <div className="flex-1">
         <p className="font-semibold text-sm">{patient.firstName} {patient.lastName}</p>
         <p className="text-xs text-slate-500">{patient.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}</p>
       </div>
-      <button onClick={onClear} className="text-xs text-indigo-600 font-semibold">{t("rx2.changePatient")}</button>
+      <button onClick={onClear} className="text-xs text-brand-500 font-semibold">{t("rx2.changePatient")}</button>
     </div>
   );
 }

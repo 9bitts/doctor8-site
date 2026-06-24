@@ -67,7 +67,7 @@ export function DocumentCreateView({
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-24">
-      <button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 font-medium">
+      <button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-500 hover:text-brand-500 font-medium">
         <ArrowLeft size={16} /> {t("rx.backToList")}
       </button>
 
@@ -77,22 +77,22 @@ export function DocumentCreateView({
       </div>
 
       {reuseHint && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 text-sm text-indigo-800">
+        <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">
           {t("rx.reuseHint")}
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 space-y-4">
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
         <label className="text-sm font-semibold text-slate-800">{t("rx2.selectPatient")}</label>
         {selectedPatient ? (
-          <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl p-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-sm">
+          <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl p-3">
+            <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm">
               {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
             </div>
             <div className="flex-1">
               <p className="font-semibold text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</p>
             </div>
-            <button onClick={() => setSelectedPatient(null)} className="text-xs text-indigo-600 font-semibold">
+            <button onClick={() => setSelectedPatient(null)} className="text-xs text-brand-500 font-semibold">
               {t("rx2.changePatient")}
             </button>
           </div>
@@ -107,7 +107,7 @@ export function DocumentCreateView({
               <div className="border rounded-xl divide-y max-h-48 overflow-y-auto">
                 {filteredCharts.map((c) => (
                   <button key={c.id} onClick={() => setSelectedPatient(c)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 text-left">
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left">
                     <span className="font-medium text-sm">{c.firstName} {c.lastName}</span>
                     <ChevronRight size={14} className="ml-auto text-slate-300" />
                   </button>
@@ -118,13 +118,13 @@ export function DocumentCreateView({
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-5 space-y-4">
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
         <label className="text-sm font-semibold text-slate-800">{t("rx.documentType")}</label>
         <div className="grid grid-cols-2 gap-2">
           {DOC_TYPES.map((dt) => (
             <button key={dt.value} type="button" onClick={() => setDocType(dt.value)}
               className={`p-3 rounded-xl border-2 text-left text-sm font-semibold transition ${
-                docType === dt.value ? "border-indigo-500 bg-indigo-50 text-indigo-800" : "border-slate-200 text-slate-600 hover:border-slate-300"
+                docType === dt.value ? "border-brand-500 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-600 hover:border-slate-300"
               }`}>
               {t(dt.labelKey)}
             </button>
@@ -149,7 +149,7 @@ export function DocumentCreateView({
             {t("rx2.cancel")}
           </button>
           <button onClick={handleSave} disabled={saving}
-            className="flex-[2] py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+            className="flex-[2] py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
             {saving ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
             {saving ? t("rx2.saving") : t("rx.generateDocument")}
           </button>
