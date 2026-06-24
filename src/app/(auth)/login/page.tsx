@@ -326,7 +326,7 @@ function LoginForm() {
             <p className="text-slate-400 text-sm">
               {t("login.noAccount")}{" "}
               <Link
-                href="/register"
+                href={callbackUrl ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/register"}
                 className="text-emerald-400 hover:text-emerald-300 font-medium transition"
               >
                 {t("login.createAccount")}

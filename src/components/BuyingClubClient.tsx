@@ -166,10 +166,10 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
   function shareLink(): string {
     const base = typeof window !== "undefined" ? window.location.origin : "";
     if (club?.shareToken) {
-      return `${base}${pagePath}?club=${club.shareToken}`;
+      return `${base}/club/join?club=${club.shareToken}`;
     }
     if (selected) {
-      return `${base}${pagePath}?drug=${selected.id}`;
+      return `${base}/club/join?drug=${selected.id}`;
     }
     return base;
   }

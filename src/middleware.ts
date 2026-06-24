@@ -18,6 +18,7 @@ const PUBLIC_ROUTES = [
   "/hipaa",
   "/dr/",        // professional virtual cards (public)
   "/share/",     // shared medical records (token-based)
+  "/club/join",  // buying club invite landing (public)
 ];
 
 // Role-based route prefixes
@@ -38,10 +39,23 @@ export default auth((req) => {
   // Allow API auth routes
   if (pathname.startsWith("/api/auth")) return NextResponse.next();
 
+  // Public buying-club invite preview
+  if (pathname.startsWith("/api/buying-club/public")) return NextResponse.next();
+
   // Redirect to login if not authenticated
   if (!session?.user) {
+    const clubToken = req.nextUrl.searchParams.get("club");
+    if (clubToken && pathname.includes("/buying-club")) {
+      return NextResponse.redirect(new URL(`/club/join?club=${clubToken}`, req.url));
+    }
+    const drugId = req.nextUrl.searchParams.get("drug");
+    if (drugId && pathname.includes("/buying-club")) {
+      return NextResponse.redirect(new URL(`/club/join?drug=${drugId}`, req.url));
+    }
+
     const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    const callbackUrl = pathname + req.nextUrl.search;
+    loginUrl.searchParams.set("callbackUrl", callbackUrl);
     return NextResponse.redirect(loginUrl);
   }
 

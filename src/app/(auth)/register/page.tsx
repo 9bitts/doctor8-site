@@ -36,6 +36,15 @@ function detectInitialLang(): Lang {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [callbackUrl, setCallbackUrl] = useState("");
+
+  useEffect(() => {
+    setCallbackUrl(new URLSearchParams(window.location.search).get("callbackUrl") || "");
+  }, []);
+
+  const loginHref = callbackUrl
+    ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : "/login";
 
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => { setLang(detectInitialLang()); }, []);
@@ -171,7 +180,7 @@ export default function RegisterPage() {
         {step === 1 && (
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
             <Link
-              href="/login"
+              href={loginHref}
               className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-emerald-500 hover:bg-emerald-500/10 transition text-left group mb-6"
             >
               <div className="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition">
