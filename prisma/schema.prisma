@@ -319,6 +319,8 @@ model ProfessionalProfile {
   favorites         PatientFavorite[]
   reviews           ProfessionalReview[]
 
+  healthPlans       ProfessionalHealthPlan[]
+
   @@index([userId])
   @@index([specialty])
 }
@@ -382,6 +384,8 @@ model PsychoanalystProfile {
   virtualCard         VirtualCard?        @relation("PsychoanalystVirtualCard")
   favorites           PsychoanalystFavorite[]
   reviews             PsychoanalystReview[]
+
+  healthPlans         PsychoanalystHealthPlan[]
 
   @@index([userId])
 }
@@ -668,6 +672,42 @@ model VirtualCard {
   updatedAt       DateTime              @updatedAt
 
   @@index([specialtySlug, citySlug])
+}
+
+// ─────────────────────────────────────────
+// HEALTH PLANS (convênios) — public search filter
+// ─────────────────────────────────────────
+
+model HealthPlan {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  sortOrder Int      @default(0)
+
+  professionals  ProfessionalHealthPlan[]
+  psychoanalysts PsychoanalystHealthPlan[]
+
+  @@index([sortOrder])
+}
+
+model ProfessionalHealthPlan {
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  healthPlanId   String
+  healthPlan     HealthPlan          @relation(fields: [healthPlanId], references: [id], onDelete: Cascade)
+
+  @@id([professionalId, healthPlanId])
+  @@index([healthPlanId])
+}
+
+model PsychoanalystHealthPlan {
+  psychoanalystId String
+  psychoanalyst   PsychoanalystProfile @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+  healthPlanId    String
+  healthPlan      HealthPlan           @relation(fields: [healthPlanId], references: [id], onDelete: Cascade)
+
+  @@id([psychoanalystId, healthPlanId])
+  @@index([healthPlanId])
 }
 
 // ─────────────────────────────────────────

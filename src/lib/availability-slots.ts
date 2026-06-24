@@ -123,3 +123,17 @@ function buildDaysFromBlocks(
 
   return days;
 }
+
+/** Compact slot preview for search result cards (next N days). */
+export async function getProviderSlotPreview(
+  providerId: string,
+  providerType: ProviderType,
+  locale: string,
+  maxDays = 4
+): Promise<DaySlots[]> {
+  const days = await getProviderAvailableDays(providerId, providerType, locale, 14);
+  return days.slice(0, maxDays).map((day) => ({
+    ...day,
+    slots: day.slots.filter((s) => s.available).slice(0, 4),
+  }));
+}

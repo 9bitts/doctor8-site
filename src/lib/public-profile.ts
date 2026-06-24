@@ -6,71 +6,26 @@ import { getProfessionLabel, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions"
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import type { ProviderType } from "@/lib/providers";
 
-export const APP_BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
+export {
+  APP_BASE_URL,
+  slugify,
+  specialtyToSeoSlug,
+  cityToSeoSlug,
+  citySlugToLabel,
+  seoSlugToSpecialtyLabel,
+  buildPublicSearchPath,
+  buildPublicSearchUrl,
+  buildProviderSlug,
+  buildPublicProfilePath,
+  buildPublicProfileUrl,
+} from "@/lib/public-slugs";
 
-/** Portuguese SEO slugs for common specialties (Doctoralia-style URLs). */
-const SPECIALTY_SEO_SLUG: Record<string, string> = {
-  "Gynecology and Obstetrics": "ginecologista",
-  "Psychiatry": "psiquiatra",
-  "Psychologist": "psicologo",
-  "Psychoanalyst": "psicanalista",
-  "Nutritionist": "nutricionista",
-  "Dietitian": "nutricionista",
-  "Orthopedics and Traumatology": "ortopedista",
-  "Dermatology": "dermatologista",
-  "Endocrinology and Metabolism": "endocrinologista",
-  "Ophthalmology": "oftalmologista",
-  "Cardiology": "cardiologista",
-  "Urology": "urologista",
-  "Neurology": "neurologista",
-  "Dentist (General)": "dentista",
-  "General Practice": "clinico-geral",
-  "Pediatrics": "pediatra",
-  "Physiotherapist": "fisioterapeuta",
-};
-
-export function slugify(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-export function specialtyToSeoSlug(specialty: string): string {
-  if (specialty === PSYCHOANALYSIS_SPECIALTY) return "psicanalista";
-  const mapped = SPECIALTY_SEO_SLUG[specialty];
-  if (mapped) return mapped;
-  return slugify(getProfessionLabel("pt", specialty));
-}
-
-export function cityToSeoSlug(city: string | null | undefined): string {
-  const trimmed = city?.trim();
-  if (!trimmed) return "online";
-  return slugify(trimmed);
-}
-
-export function buildProviderSlug(firstName: string, lastName: string): string {
-  return slugify(`${firstName} ${lastName}`);
-}
-
-export function buildPublicProfilePath(card: {
-  specialtySlug: string;
-  citySlug: string;
-  slug: string;
-}): string {
-  return `/especialistas/${card.specialtySlug}/${card.citySlug}/${card.slug}`;
-}
-
-export function buildPublicProfileUrl(card: {
-  specialtySlug: string;
-  citySlug: string;
-  slug: string;
-}): string {
-  return `${APP_BASE_URL}${buildPublicProfilePath(card)}`;
-}
+import {
+  specialtyToSeoSlug,
+  cityToSeoSlug,
+  buildProviderSlug,
+  buildPublicProfilePath,
+} from "@/lib/public-slugs";
 
 export type PublicListingStatus = "pending_approval" | "hidden" | "live";
 
