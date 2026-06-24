@@ -203,6 +203,14 @@ export async function POST(req: NextRequest) {
   // ── 3h EMAIL ───────────────────────────────────────────────────────────────
   if (type === "3h_email") {
     try {
+      const rawPhone = appointment.patient.phone ? safeDecrypt(appointment.patient.phone) : null;
+      let whatsappUrl: string | undefined;
+      if (rawPhone) {
+        const phone = rawPhone.replace(/\D/g, "");
+        const message = buildWhatsAppMessage(patientName, doctorName, scheduledAt, appointment.meetingUrl);
+        whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
+      }
+
       const { sendAppointmentReminder } = await import("@/lib/email");
       await sendAppointmentReminder({
         patientEmail: patientUser.email,
@@ -212,6 +220,7 @@ export async function POST(req: NextRequest) {
         meetingUrl: appointment.meetingUrl ?? undefined,
         hoursUntil: 3,
         language: patientUser.language,
+        whatsappUrl,
       });
       console.log(`[REMINDER] 3h email sent to ${patientUser.email}`);
     } catch (e) {

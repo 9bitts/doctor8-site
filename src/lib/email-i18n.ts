@@ -154,6 +154,7 @@ export const EMAIL_APPOINTMENT_CONFIRM: Record<EmailLang, {
   reminderNote: string;
   view: string;
   cancel: string;
+  addToCalendar: string;
 }> = {
   en: {
     subject: (d) => `Appointment confirmed – ${d}`,
@@ -171,6 +172,7 @@ export const EMAIL_APPOINTMENT_CONFIRM: Record<EmailLang, {
     reminderNote: "You will receive a reminder 24 hours and 1 hour before your appointment.",
     view: "View appointment",
     cancel: "Cancel",
+    addToCalendar: "Add to calendar",
   },
   pt: {
     subject: (d) => `Consulta confirmada – ${d}`,
@@ -188,6 +190,7 @@ export const EMAIL_APPOINTMENT_CONFIRM: Record<EmailLang, {
     reminderNote: "Você receberá lembretes 24 horas e 1 hora antes da consulta.",
     view: "Ver consulta",
     cancel: "Cancelar",
+    addToCalendar: "Adicionar ao calendário",
   },
   es: {
     subject: (d) => `Cita confirmada – ${d}`,
@@ -205,6 +208,7 @@ export const EMAIL_APPOINTMENT_CONFIRM: Record<EmailLang, {
     reminderNote: "Recibirás recordatorios 24 horas y 1 hora antes de tu cita.",
     view: "Ver cita",
     cancel: "Cancelar",
+    addToCalendar: "Añadir al calendario",
   },
 };
 

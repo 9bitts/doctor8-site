@@ -290,6 +290,7 @@ const en = {
   "appt.doctor": "Doctor",
   "appt.amountPaid": "Amount paid",
   "appt.emailSent": "A confirmation email has been sent. You will receive reminders 24h and 1h before.",
+  "appt.addToCalendar": "Add to calendar",
   "appt.backToAppts": "Back to appointments",
   "appt.book": "Book",
   // Patient medications
@@ -1552,6 +1553,7 @@ const pt: LocaleDict = {
   "appt.doctor": "Médico",
   "appt.amountPaid": "Valor pago",
   "appt.emailSent": "Um e-mail de confirmação foi enviado. Você receberá lembretes 24h e 1h antes.",
+  "appt.addToCalendar": "Adicionar ao calendário",
   "appt.backToAppts": "Voltar às consultas",
   "appt.book": "Agendar",
   "med.title": "Medicações",
@@ -2791,6 +2793,7 @@ const es: LocaleDict = {
   "appt.doctor": "Médico",
   "appt.amountPaid": "Monto pagado",
   "appt.emailSent": "Se ha enviado un correo de confirmación. Recibirás recordatorios 24h y 1h antes.",
+  "appt.addToCalendar": "Añadir al calendario",
   "appt.backToAppts": "Volver a las citas",
   "appt.book": "Reservar",
   "med.title": "Medicaciones",

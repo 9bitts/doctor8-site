@@ -104,6 +104,7 @@ export async function sendAppointmentConfirmation({
     hour: "2-digit", minute: "2-digit",
   });
   const appUrl = getAppUrl();
+  const calendarUrl = `${appUrl}/api/appointments/${appointmentId}/calendar`;
 
   const body = `
     <p style="color:#1a2a3a;font-size:16px;">${c.hi(patientName)}</p>
@@ -124,6 +125,11 @@ export async function sendAppointmentConfirmation({
         </a>
       </div>
     ` : ""}
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${calendarUrl}" style="background:#f0fdf9;color:#0a4d6e;border:2px solid #0a4d6e;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;">
+        ${c.addToCalendar}
+      </a>
+    </div>
     <p style="color:#6b7280;font-size:13px;text-align:center;">
       ${c.reminderNote}<br>
       <a href="${appUrl}/patient/appointments/${appointmentId}" style="color:#0a4d6e;">${c.view}</a> &middot;
@@ -147,6 +153,7 @@ export async function sendAppointmentReminder({
   meetingUrl,
   hoursUntil,
   language,
+  whatsappUrl,
 }: {
   patientEmail: string;
   patientName: string;
@@ -155,6 +162,7 @@ export async function sendAppointmentReminder({
   meetingUrl?: string;
   hoursUntil: number;
   language?: string;
+  whatsappUrl?: string;
 }) {
   const lang = normEmailLang(language);
   const c = EMAIL_APPOINTMENT_REMINDER[lang];
@@ -169,6 +177,13 @@ export async function sendAppointmentReminder({
       <div style="text-align:center;margin:24px 0;">
         <a href="${meetingUrl}" style="background:#00b87a;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;">
           ${c.join}
+        </a>
+      </div>
+    ` : ""}
+    ${whatsappUrl ? `
+      <div style="text-align:center;margin:16px 0;">
+        <a href="${whatsappUrl}" style="background:#25D366;color:white;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;">
+          WhatsApp
         </a>
       </div>
     ` : ""}`;

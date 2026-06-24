@@ -5,6 +5,8 @@ import { sendSlotAvailableAlert } from "@/lib/email";
 import { buildPublicProfileUrl } from "@/lib/public-slugs";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 
+const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
 export async function notifySlotAlerts(opts: {
   professionalId?: string | null;
   psychoanalystId?: string | null;
@@ -58,6 +60,10 @@ export async function notifySlotAlerts(opts: {
 
   await Promise.allSettled(
     alerts.map(async (alert) => {
+      if (alert.notifiedAt && Date.now() - alert.notifiedAt.getTime() < ALERT_COOLDOWN_MS) {
+        return;
+      }
+
       await sendSlotAvailableAlert({
         email: alert.email,
         providerName,
@@ -67,7 +73,7 @@ export async function notifySlotAlerts(opts: {
       });
       await db.slotAvailabilityAlert.update({
         where: { id: alert.id },
-        data: { notifiedAt: new Date(), active: false },
+        data: { notifiedAt: new Date() },
       });
     })
   );

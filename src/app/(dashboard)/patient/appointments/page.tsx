@@ -794,6 +794,15 @@ export default function AppointmentsPage() {
             professionalId={selectedPro.id}
             professionalName={`Dr. ${selectedPro.firstName} ${selectedPro.lastName}`}
           />
+          {confirmedId && (
+            <a
+              href={`/api/appointments/${confirmedId}/calendar`}
+              className="inline-flex items-center justify-center gap-2 w-full border-2 border-brand-500 text-brand-600 font-semibold py-3 rounded-xl hover:bg-brand-50 transition"
+            >
+              <Calendar size={18} />
+              {t("appt.addToCalendar")}
+            </a>
+          )}
           <p className="text-sm text-slate-500">{t("appt.emailSent")}</p>
           <button onClick={resetFlow} className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl hover:bg-slate-700 transition">
             {t("appt.backToAppts")}
