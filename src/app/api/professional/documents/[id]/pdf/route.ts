@@ -10,6 +10,7 @@ import {
   computeAge, isExamType, joinAddress, LOCALE, normLang,
   parseExamContent, resolvePatient, safeDecrypt,
 } from "@/lib/sign-helpers";
+import { parseRecordContent } from "@/lib/record-content";
 
 export const runtime = "nodejs";
 
@@ -46,6 +47,7 @@ export async function GET(
       professional: true,
       patientRecord: {
         select: {
+          professionalId: true,
           firstName: true, lastName: true, dateOfBirth: true, cpf: true,
           addressLine1: true, city: true, state: true, country: true, zipCode: true,
         },
@@ -59,12 +61,23 @@ export async function GET(
     },
   });
 
-  if (!document?.professional) return new NextResponse("Not found", { status: 404 });
+  if (!document) return new NextResponse("Not found", { status: 404 });
 
-  const isOwner = document.professional.userId === session.user.id;
-  if (!isOwner && session.user.role !== "PATIENT") {
-    return new NextResponse("Forbidden", { status: 403 });
-  }
+  const viewerProfessional = session.user.role === "PROFESSIONAL"
+    ? await db.professionalProfile.findUnique({ where: { userId: session.user.id } })
+    : null;
+
+  const isDocOwner = document.professional?.userId === session.user.id;
+  const isChartOwner = !!(
+    viewerProfessional &&
+    document.patientRecord?.professionalId === viewerProfessional.id
+  );
+  const canAccess =
+    isDocOwner ||
+    isChartOwner ||
+    session.user.role === "PATIENT";
+
+  if (!canAccess) return new NextResponse("Forbidden", { status: 403 });
 
   if (document.signatureStatus === "SIGNED" && document.signedFileUrl) {
     try {
@@ -88,11 +101,17 @@ export async function GET(
   });
   const lang = normLang(viewer?.language);
   const locale = LOCALE[lang];
-  const pro = document.professional;
+  // Use the professional who is printing (when applicable), not necessarily the record creator.
+  const pro = viewerProfessional || document.professional;
+  if (!pro) return new NextResponse("Not found", { status: 404 });
   const patient = resolvePatient(document.patientRecord, document.patient);
   const contentRaw = document.content ? safeDec(document.content) : "";
   const title = safeDec(document.title);
   const exam = isExamType(document.type) ? parseExamContent(contentRaw) : null;
+  const record = exam ? null : parseRecordContent(contentRaw);
+  const bodyText = exam ? undefined : (record?.body || (record?.cid ? "" : contentRaw));
+  const cidCode = exam?.cid || record?.cid;
+  const cidLabel = record?.cidLabel;
 
   const pdfBytes = await buildClinicalDocumentPdf({
     lang,
@@ -115,8 +134,9 @@ export async function GET(
     documentId: document.id,
     examItems: exam?.items,
     examNotes: exam?.notes,
-    cid: exam?.cid,
-    body: exam ? undefined : contentRaw,
+    cid: cidCode,
+    cidLabel,
+    body: bodyText,
   });
 
   return new NextResponse(Buffer.from(pdfBytes), {

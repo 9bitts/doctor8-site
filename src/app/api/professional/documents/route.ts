@@ -32,6 +32,7 @@ const createSchema = z.object({
   fileKey: z.string().optional().or(z.literal("")),
   examItems: z.array(z.string().min(1).max(500)).optional(),
   cid: z.string().max(50).optional(),
+  cidLabel: z.string().max(500).optional(),
   notes: z.string().max(5000).optional(),
 });
 
@@ -83,7 +84,13 @@ export async function POST(req: NextRequest) {
   }
 
   let contentToStore = d.content || "";
-  if (d.examItems && d.examItems.length > 0) {
+  if (d.cid || d.cidLabel) {
+    contentToStore = JSON.stringify({
+      cid: d.cid || "",
+      cidLabel: d.cidLabel || "",
+      body: d.content || "",
+    });
+  } else if (d.examItems && d.examItems.length > 0) {
     derivedType = derivedType === "OTHER" ? "EXAM_REQUEST" : derivedType;
     contentToStore = JSON.stringify({
       items: d.examItems,

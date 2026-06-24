@@ -62,6 +62,7 @@ export interface ClinicalDocumentPdfData {
   examItems?: string[];
   examNotes?: string;
   cid?: string;
+  cidLabel?: string;
   body?: string;
 }
 
@@ -177,6 +178,14 @@ export async function buildClinicalDocumentPdf(data: ClinicalDocumentPdfData): P
       }
     }
   } else {
+    if (data.cid) {
+      ensureSpace(24);
+      const cidText = data.cidLabel
+        ? `${tr.cid}: ${data.cid} — ${data.cidLabel}`
+        : `${tr.cid}: ${data.cid}`;
+      text(page, cidText, margin, y, 11, fontBold, DARK);
+      y -= 22;
+    }
     const body = data.body || "";
     for (const ln of wrap(body, maxW, 11, font)) {
       ensureSpace(16);

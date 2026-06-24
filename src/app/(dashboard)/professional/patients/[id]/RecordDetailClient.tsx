@@ -13,20 +13,35 @@ import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
+  Copy, Printer, RotateCw,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
+import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
+import {
+  buildRecordCopyText, formatRecordContentForDisplay, parseRecordContent,
+} from "@/lib/record-content";
+import { isImageFile, rotateImageFile } from "@/lib/image-rotate";
 
 // P2: inline texts for rec.* keys (not yet in translations.ts)
 const REC_TEXTS: Record<string, Record<string, string>> = {
-  titleLabel:       { pt: "Diagnóstico / Título", en: "Diagnosis / Title", es: "Diagnóstico / Título" },
-  titlePlaceholder: { pt: "ex.: Hipertensão arterial — ou o assunto do registro", en: "e.g. Hypertension — or the subject of this record", es: "ej.: Hipertensión arterial — o el asunto del registro" },
+  titleLabel:       { pt: "Título complementar", en: "Additional title", es: "Título complementario" },
+  titlePlaceholder: { pt: "opcional — assunto extra do registro", en: "optional — extra subject for this record", es: "opcional — asunto adicional del registro" },
   whatsapp:         { pt: "Abrir WhatsApp", en: "Open WhatsApp", es: "Abrir WhatsApp" },
-  errTitle:         { pt: "O título é obrigatório.", en: "Title is required.", es: "El título es obligatorio." },
+  errCid:           { pt: "Selecione um CID para o registro.", en: "Select an ICD code for this record.", es: "Seleccione un CIE para el registro." },
   errCategory:      { pt: "Escolha uma categoria.", en: "Please choose a category.", es: "Elige una categoría." },
   sendMessage:      { pt: "Enviar mensagem", en: "Send message", es: "Enviar mensaje" },
   verConv:          { pt: "Ver conversa", en: "View conversation", es: "Ver conversación" },
+  copy:             { pt: "Copiar texto", en: "Copy text", es: "Copiar texto" },
+  copied:           { pt: "Copiado!", en: "Copied!", es: "¡Copiado!" },
+  print:            { pt: "Imprimir", en: "Print", es: "Imprimir" },
+  edit:             { pt: "Editar", en: "Edit", es: "Editar" },
+  sharedReadOnly:   { pt: "Compartilhado pelo paciente — somente leitura", en: "Shared by patient — read only", es: "Compartido por el paciente — solo lectura" },
+  rotateLeft:       { pt: "Girar esquerda", en: "Rotate left", es: "Girar izquierda" },
+  rotateRight:      { pt: "Girar direita", en: "Rotate right", es: "Girar derecha" },
+  editRecord:       { pt: "Editar registro", en: "Edit record", es: "Editar registro" },
+  saveChanges:      { pt: "Salvar alterações", en: "Save changes", es: "Guardar cambios" },
 };
 
 interface Chart {
@@ -57,6 +72,8 @@ interface Doc {
   content: string | null;
   hasFile: boolean;
   createdAt: string;
+  sourceDocumentId?: string | null;
+  canEdit?: boolean;
 }
 
 interface CategoryItem {
@@ -108,8 +125,12 @@ export default function RecordDetailClient({
   const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [showForm, setShowForm] = useState(false);
+  const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [rotating, setRotating] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Chart contact (email) state — Etapa 3c
   const [chartEmail, setChartEmail] = useState<string | null>(chart.email);
@@ -148,6 +169,7 @@ export default function RecordDetailClient({
 
   // Form fields
   const [categoryId, setCategoryId] = useState("");
+  const [cidSelection, setCidSelection] = useState<CidSelection | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -189,7 +211,74 @@ export default function RecordDetailClient({
   function resetForm() {
     const first = groups[0]?.items[0];
     setCategoryId(first ? first.id : "");
-    setTitle(""); setContent(""); setFile(null); setError(null);
+    setCidSelection(null);
+    setTitle("");
+    setContent("");
+    setFile(null);
+    setImagePreview(null);
+    setError(null);
+    setEditingDoc(null);
+  }
+
+  function openEditForm(doc: Doc) {
+    resetForm();
+    setEditingDoc(doc);
+    const parsed = parseRecordContent(doc.content);
+    if (parsed.cid) {
+      setCidSelection({
+        code: parsed.cid,
+        description: parsed.cidLabel || doc.title,
+      });
+    }
+    const titleMatch = doc.title.match(/^[^\s—-]+[\s—-]+(.+)$/);
+    if (!parsed.cid && doc.title) setTitle(doc.title);
+    else if (parsed.cid && titleMatch && titleMatch[1] !== parsed.cidLabel) {
+      setTitle(titleMatch[1].trim());
+    }
+    setContent(parsed.body || parsed.notes || (parsed.items ? "" : (doc.content || "")));
+    setShowForm(true);
+  }
+
+  async function handleRotateImage(direction: "left" | "right") {
+    if (!file || !isImageFile(file)) return;
+    setRotating(true);
+    try {
+      const degrees = direction === "left" ? 270 : 90;
+      const rotated = await rotateImageFile(file, degrees as 90 | 270);
+      setFile(rotated);
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+      setImagePreview(URL.createObjectURL(rotated));
+    } catch {
+      setError("Could not rotate image.");
+    }
+    setRotating(false);
+  }
+
+  function handleFileChange(f: File | null) {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setFile(f);
+    setImagePreview(f && isImageFile(f) ? URL.createObjectURL(f) : null);
+  }
+
+  async function handleCopy(doc: Doc, label: string) {
+    const locale = _langFull === "pt" ? "pt-BR" : _langFull === "es" ? "es-ES" : "en-US";
+    const text = buildRecordCopyText({
+      categoryLabel: label,
+      title: doc.title,
+      content: doc.content,
+      createdAt: doc.createdAt,
+      patientName: `${chart.firstName} ${chart.lastName}`,
+      locale,
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(doc.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch { /* ignore */ }
+  }
+
+  function handlePrint(docId: string) {
+    window.open(`/api/professional/documents/${docId}/pdf`, "_blank", "noopener,noreferrer");
   }
 
   // ── Etapa 3c: save edited email ──
@@ -313,8 +402,8 @@ export default function RecordDetailClient({
   }
 
   async function handleCreate() {
-    if (!title.trim()) {
-      setError(rt("errTitle"));
+    if (!cidSelection) {
+      setError(rt("errCid"));
       return;
     }
     if (!categoryId) {
@@ -323,6 +412,10 @@ export default function RecordDetailClient({
     }
     setSaving(true);
     setError(null);
+
+    const recordTitle = title.trim()
+      ? `${cidSelection.code} — ${title.trim()}`
+      : `${cidSelection.code} — ${cidSelection.description}`;
 
     try {
       let fileKey = "";
@@ -346,8 +439,10 @@ export default function RecordDetailClient({
         body: JSON.stringify({
           patientRecordId: chart.id,
           categoryId,
-          title,
+          title: recordTitle,
           content,
+          cid: cidSelection.code,
+          cidLabel: cidSelection.description,
           fileKey,
         }),
       });
@@ -368,9 +463,53 @@ export default function RecordDetailClient({
           content: data.content,
           hasFile: data.hasFile,
           createdAt: new Date().toISOString(),
+          canEdit: true,
+          sourceDocumentId: null,
         },
         ...prev,
       ]);
+      resetForm();
+      setShowForm(false);
+    } catch {
+      setError("Network error. Try again.");
+    }
+    setSaving(false);
+  }
+
+  async function handleUpdate() {
+    if (!editingDoc) return;
+    if (!cidSelection && !title.trim()) {
+      setError(rt("errCid"));
+      return;
+    }
+    setSaving(true);
+    setError(null);
+
+    const recordTitle = cidSelection
+      ? (title.trim()
+        ? `${cidSelection.code} — ${title.trim()}`
+        : `${cidSelection.code} — ${cidSelection.description}`)
+      : title.trim();
+
+    try {
+      const res = await fetch(`/api/professional/documents/${editingDoc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: recordTitle,
+          content,
+          cid: cidSelection?.code || "",
+          cidLabel: cidSelection?.description || "",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(typeof data.error === "string" ? data.error : "Could not update record.");
+        setSaving(false);
+        return;
+      }
+
+      setDocs((prev) => prev.map((d) => (d.id === editingDoc.id ? { ...d, ...data } : d)));
       resetForm();
       setShowForm(false);
     } catch {
@@ -740,11 +879,40 @@ export default function RecordDetailClient({
                     )}
                   </p>
                   {d.content && (
-                    <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{d.content}</p>
+                    <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">
+                      {formatRecordContentForDisplay(d.content)}
+                    </p>
+                  )}
+                  {d.sourceDocumentId && (
+                    <p className="text-xs text-amber-600 mt-1">{rt("sharedReadOnly")}</p>
                   )}
 
-                  {/* Share row */}
+                  {/* Actions row */}
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(d, label)}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
+                    >
+                      {copiedId === d.id ? <CheckCircle2 size={14} className="text-brand-500" /> : <Copy size={14} />}
+                      {copiedId === d.id ? rt("copied") : rt("copy")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePrint(d.id)}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
+                    >
+                      <Printer size={14} /> {rt("print")}
+                    </button>
+                    {d.canEdit !== false && !d.sourceDocumentId && (
+                      <button
+                        type="button"
+                        onClick={() => openEditForm(d)}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
+                      >
+                        <Pencil size={14} /> {rt("edit")}
+                      </button>
+                    )}
                     <AiSummarizeButton documentId={d.id} />
                     {status === "shared" ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">
@@ -800,17 +968,20 @@ export default function RecordDetailClient({
         )}
       </div>
 
-      {/* Add record modal */}
+      {/* Add / edit record modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
-              <h2 className="font-bold text-slate-800">New clinical record</h2>
-              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="font-bold text-slate-800">
+                {editingDoc ? rt("editRecord") : "New clinical record"}
+              </h2>
+              <button onClick={() => { setShowForm(false); resetForm(); }} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
             <div className="p-5 space-y-4">
+              {!editingDoc && (
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
                 {categoriesLoading ? (
@@ -835,10 +1006,15 @@ export default function RecordDetailClient({
                   </select>
                 )}
               </div>
-              {/* P2: "Diagnóstico / Título" label — trilíngue */}
+              )}
+              <CidSearchInput
+                value={cidSelection}
+                onChange={setCidSelection}
+                required={!editingDoc}
+              />
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  {rt("titleLabel")} *
+                  {cidSelection ? rt("titleLabel") : `${rt("titleLabel")} *`}
                 </label>
                 <input
                   value={title}
@@ -856,6 +1032,7 @@ export default function RecordDetailClient({
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-none"
                 />
               </div>
+              {!editingDoc && (
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
                   Attachment <span className="text-slate-400">(PDF, image or video — max 50MB)</span>
@@ -863,13 +1040,40 @@ export default function RecordDetailClient({
                 <input
                   type="file"
                   accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
                   className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-600 file:text-sm file:font-medium hover:file:bg-brand-100"
                 />
                 {file && (
                   <p className="text-xs text-slate-500 mt-1">{file.name} ({(file.size/1024/1024).toFixed(1)} MB)</p>
                 )}
+                {imagePreview && (
+                  <div className="mt-3 space-y-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imagePreview} alt="Preview" className="max-h-40 rounded-lg border border-slate-200 object-contain" />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleRotateImage("left")}
+                        disabled={rotating}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        {rotating ? <Loader2 size={12} className="animate-spin" /> : <RotateCw size={12} className="-scale-x-100" />}
+                        {rt("rotateLeft")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRotateImage("right")}
+                        disabled={rotating}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        {rotating ? <Loader2 size={12} className="animate-spin" /> : <RotateCw size={12} />}
+                        {rt("rotateRight")}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+              )}
 
               {error && (
                 <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{error}</p>
@@ -877,17 +1081,17 @@ export default function RecordDetailClient({
 
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={() => { setShowForm(false); resetForm(); }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleCreate}
-                  disabled={saving || categoriesLoading}
+                  onClick={editingDoc ? handleUpdate : handleCreate}
+                  disabled={saving || (!editingDoc && categoriesLoading)}
                   className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50"
                 >
-                  {saving ? "Saving..." : "Save record"}
+                  {saving ? "Saving..." : editingDoc ? rt("saveChanges") : "Save record"}
                 </button>
               </div>
             </div>

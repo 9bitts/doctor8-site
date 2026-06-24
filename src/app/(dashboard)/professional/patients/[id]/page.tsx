@@ -70,6 +70,8 @@ export default async function PatientChartDetail({
     content: d.content ? safeDecrypt(d.content) : null,
     hasFile: !!d.fileUrl,
     createdAt: d.createdAt.toISOString(),
+    sourceDocumentId: d.sourceDocumentId ?? null,
+    canEdit: !d.sourceDocumentId,
   }));
 
   return (
