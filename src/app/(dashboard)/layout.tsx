@@ -14,7 +14,7 @@ import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
-  BookOpen, Radio, TrendingUp, MapPin,
+  BookOpen, Radio, TrendingUp, MapPin, ShoppingBag,
 } from "lucide-react";
 
 interface NavItem {
@@ -28,6 +28,7 @@ const PATIENT_NAV: NavItem[] = [
   { href: "/patient", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PATIENT"] },
   { href: "/patient/history", labelKey: "nav.medicalHistory", icon: <FileText size={18} />, roles: ["PATIENT"] },
   { href: "/patient/medications", labelKey: "nav.medications", icon: <Pill size={18} />, roles: ["PATIENT"] },
+  { href: "/patient/buying-club", labelKey: "nav.buyingClub", icon: <ShoppingBag size={18} />, roles: ["PATIENT"] },
   { href: "/patient/prescriptions", labelKey: "nav.myPrescriptions", icon: <Stethoscope size={18} />, roles: ["PATIENT"] },
   { href: "/patient/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PATIENT"] },
   { href: "/patient/documents", labelKey: "nav.documents", icon: <ClipboardList size={18} />, roles: ["PATIENT"] },
@@ -59,6 +60,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/patients", labelKey: "nav.adminPatients", icon: <Users size={18} />, roles: ["ADMIN"] },
   { href: "/admin/payments", labelKey: "nav.adminPayments", icon: <CreditCard size={18} />, roles: ["ADMIN"] },
   { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", icon: <Radio size={18} />, roles: ["ADMIN"] },
+  { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", icon: <ShoppingBag size={18} />, roles: ["ADMIN"] },
 ];
 
 function DashboardInner({ children }: { children: React.ReactNode }) {

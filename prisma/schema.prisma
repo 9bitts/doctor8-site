@@ -149,6 +149,7 @@ model User {
   dataExportRequests DataExportRequest[]
   patientFavorites  PatientFavorite[]  @relation("PatientFavorites")
   professionalReviews ProfessionalReview[] @relation("PatientReviews")
+  buyingClubMembers BuyingClubMember[]
 
   @@index([email])
   @@index([role])
@@ -782,6 +783,40 @@ model DrugCatalog {
   @@index([searchIngredient])
   @@index([country])
   @@index([active])
+
+  buyingClub BuyingClub?
+}
+
+// ─────────────────────────────────────────
+// BUYING CLUB — collective medication purchase groups
+// One club per DrugCatalog entry. Patients join to get group discounts.
+// ─────────────────────────────────────────
+model BuyingClub {
+  id            String   @id @default(cuid())
+  drugCatalogId String   @unique
+  drugCatalog   DrugCatalog @relation(fields: [drugCatalogId], references: [id], onDelete: Cascade)
+  shareToken    String   @unique @default(cuid())
+  status        String   @default("OPEN") // OPEN, READY, CLOSED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  members       BuyingClubMember[]
+
+  @@index([status])
+}
+
+model BuyingClubMember {
+  id           String     @id @default(cuid())
+  buyingClubId String
+  buyingClub   BuyingClub @relation(fields: [buyingClubId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  active       Boolean    @default(true)
+  joinedAt     DateTime   @default(now())
+  leftAt       DateTime?
+
+  @@unique([buyingClubId, userId])
+  @@index([buyingClubId, active])
+  @@index([userId])
 }
 
 model Resource {
