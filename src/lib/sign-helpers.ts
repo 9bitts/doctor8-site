@@ -17,6 +17,31 @@ export function getPublicBase(req: NextRequest): string {
   ).replace(/\/+$/, "");
 }
 
+/** Builds a stable HTTPS callback URL for Lacuna signature sessions. */
+export function buildSignReturnUrl(
+  base: string,
+  path: string,
+  params?: Record<string, string>,
+): string {
+  const url = new URL(path, `${base}/`);
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      if (v) url.searchParams.set(k, v);
+    }
+  }
+  return url.toString();
+}
+
+export function assertPublicSignBase(base: string): string | null {
+  if (!base || base.includes("localhost") || base.includes("127.0.0.1")) {
+    return "Configure NEXT_PUBLIC_APP_URL com a URL pública HTTPS do app (ex.: https://doctor8.app).";
+  }
+  if (!base.startsWith("https://")) {
+    return "A URL pública do app deve usar HTTPS para assinatura digital.";
+  }
+  return null;
+}
+
 export function safeDecrypt(v: string | null | undefined): string {
   if (v == null) return "";
   try { return decrypt(v); } catch { return String(v); }

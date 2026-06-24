@@ -60,22 +60,26 @@ export async function GET(req: NextRequest) {
   }
 
   const signatureSessionId = req.nextUrl.searchParams.get("signatureSessionId") || "";
-  const prescriptionId = req.nextUrl.searchParams.get("prescriptionId") || "";
+  let prescriptionId = req.nextUrl.searchParams.get("prescriptionId") || "";
   console.log("[CALLBACK] prescriptionId:", prescriptionId, "sessionId:", signatureSessionId);
 
-  if (!prescriptionId) {
-    return redirectTo(req, "error");
-  }
+  let prescription = prescriptionId
+    ? await db.prescription.findUnique({
+        where: { id: prescriptionId },
+        include: { professional: true },
+      })
+    : signatureSessionId
+      ? await db.prescription.findFirst({
+          where: { signatureSessionId },
+          include: { professional: true },
+        })
+      : null;
 
-  // Carrega a receita e valida dono
-  const prescription = await db.prescription.findUnique({
-    where: { id: prescriptionId },
-    include: { professional: true },
-  });
   if (!prescription || prescription.professional.userId !== session.user.id) {
     console.error("[CALLBACK] receita nao encontrada ou sem permissao");
     return redirectTo(req, "error");
   }
+  prescriptionId = prescription.id;
 
   // Sem signatureSessionId: tratamos como cancelamento defensivo.
   if (!signatureSessionId) {

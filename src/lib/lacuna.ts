@@ -87,14 +87,14 @@ export async function createSignatureSession(opts: {
     body.securityContextId = SECURITY_CONTEXT;
   }
 
-  // Observação: a restrição por CPF (certificateRequirements) foi removida —
-  // o médico escolhe o próprio certificado na tela da Lacuna. O formato exato
-  // do requisito varia por versão da API e estava causando rejeição do request.
-  // Se quiser reativar no futuro, confira o formato em:
-  // https://docs.lacunasoftware.com/pt-br/articles/rest-pki/core/integration/signature-sessions/certificate-requirements.html
-  void opts.cpf;
+  if (opts.cpf) {
+    const digits = opts.cpf.replace(/\D/g, "");
+    if (digits.length === 11) {
+      body.certificateRequirements = [{ type: "Cpf", argument: digits }];
+    }
+  }
 
-  console.log("[LACUNA] criando sessão, endpoint:", ENDPOINT, "pdf bytes:", opts.pdfBytes.length);
+  console.log("[LACUNA] criando sessão, endpoint:", ENDPOINT, "pdf bytes:", opts.pdfBytes.length, "returnUrl:", opts.returnUrl);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 45000);

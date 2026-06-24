@@ -7,7 +7,8 @@ import { audit } from "@/lib/audit";
 import { createSignatureSession } from "@/lib/lacuna";
 import { buildClinicalDocumentPdf } from "@/lib/clinical-document-pdf";
 import {
-  computeAge, getPublicBase, isExamType, joinAddress, LOCALE, normLang,
+  computeAge, getPublicBase, buildSignReturnUrl, assertPublicSignBase,
+  isExamType, joinAddress, LOCALE, normLang,
   parseExamContent, resolvePatient, safeDecrypt,
 } from "@/lib/sign-helpers";
 
@@ -111,8 +112,19 @@ export async function POST(
       body: exam ? undefined : contentRaw,
     });
 
-    const returnUrl =
-      `${getPublicBase(req)}/api/professional/documents/sign/callback?documentId=${encodeURIComponent(document.id)}${deliverAfter ? "&deliverAfter=1" : ""}`;
+    const publicBase = getPublicBase(req);
+    const baseError = assertPublicSignBase(publicBase);
+    if (baseError) {
+      return NextResponse.json({ error: baseError }, { status: 400 });
+    }
+
+    const returnUrl = buildSignReturnUrl(
+      publicBase,
+      "/api/professional/documents/sign/callback",
+      { documentId: document.id, ...(deliverAfter ? { deliverAfter: "1" } : {}) },
+    );
+
+    console.log("[DOC SIGN] returnUrl:", returnUrl);
 
     const lacuna = await createSignatureSession({
       pdfBytes,
