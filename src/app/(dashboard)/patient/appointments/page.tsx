@@ -9,7 +9,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { localeOf } from "@/lib/i18n/translations";
+import { localeOf, formatSlotCount } from "@/lib/i18n/translations";
+import { parseLocalDate } from "@/lib/scheduling";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
@@ -166,9 +167,11 @@ export default function AppointmentsPage() {
   async function selectProfessional(pro: Professional) {
     setSelectedPro(pro);
     setStep("slots");
+    setSelectedDay(null);
+    setSelectedSlot("");
     setSlotsLoading(true);
     try {
-      const res  = await fetch(`/api/professionals/${pro.id}/slots`);
+      const res  = await fetch(`/api/professionals/${pro.id}/slots?lang=${lang}`);
       const d    = await res.json();
       const days = (d.days || []).filter((day: SlotDay) => day.slots.some((s) => s.available));
       setSlots(days);
@@ -252,7 +255,7 @@ export default function AppointmentsPage() {
     setRescheduleModal(apt);
     const proId = apt.professional ? (apt as any).professionalId : null;
     if (proId) {
-      const res  = await fetch(`/api/professionals/${proId}/slots`);
+      const res  = await fetch(`/api/professionals/${proId}/slots?lang=${lang}`);
       const d    = await res.json();
       const days = (d.days || []).filter((day: SlotDay) => day.slots.some((s) => s.available));
       setRescheduleSlots(days);
@@ -430,19 +433,22 @@ export default function AppointmentsPage() {
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {slots.map((day) => {
                       const avail = day.slots.filter((s) => s.available).length;
+                      const dayDate = parseLocalDate(day.date);
+                      const weekday = dayDate.toLocaleDateString(locale, { weekday: "short" });
+                      const dayNum = dayDate.getDate();
                       return (
                         <button key={day.date} onClick={() => { setSelectedDay(day); setSelectedSlot(""); }}
                           className={`shrink-0 flex flex-col items-center px-4 py-3 rounded-xl border-2 transition ${selectedDay?.date === day.date ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-slate-300"}`}>
-                          <span className="text-xs text-slate-500 font-medium">{day.label.split(",")[0]}</span>
-                          <span className="text-lg font-bold text-slate-800 mt-0.5">{day.label.split(" ").pop()}</span>
-                          <span className="text-xs text-emerald-600 font-semibold mt-1">{avail} {t("appt.slots")}</span>
+                          <span className="text-xs text-slate-500 font-medium">{weekday}</span>
+                          <span className="text-lg font-bold text-slate-800 mt-0.5">{dayNum}</span>
+                          <span className="text-xs text-emerald-600 font-semibold mt-1">{formatSlotCount(lang, avail)}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
                 {selectedDay && (
-                  <div>
+                  <div key={selectedDay.date}>
                     <p className="text-sm font-semibold text-slate-700 mb-3">{selectedDay.label} — {t("appt.availableTimes")}</p>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                       {selectedDay.slots.map((slot) => (
@@ -455,8 +461,8 @@ export default function AppointmentsPage() {
                   </div>
                 )}
                 {selectedSlot && (
-                  <button onClick={() => setStep("payment")} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl transition text-base">
-                    {t("appt.continueToPayment")} <ChevronRight size={18} />
+                  <button onClick={() => setStep("payment")} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-4 rounded-xl transition text-base">
+                    {t("appt.continueToPayment")} <ChevronRight size={18} className="shrink-0" />
                   </button>
                 )}
               </>
@@ -670,13 +676,18 @@ export default function AppointmentsPage() {
             ) : (
               <>
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {rescheduleSlots.map((day) => (
+                  {rescheduleSlots.map((day) => {
+                    const dayDate = parseLocalDate(day.date);
+                    const weekday = dayDate.toLocaleDateString(locale, { weekday: "short" });
+                    const dayNum = dayDate.getDate();
+                    return (
                     <button key={day.date} onClick={() => { setRescheduleDay(day); setRescheduleSlot(""); }}
                       className={`shrink-0 flex flex-col items-center px-3 py-2 rounded-xl border-2 transition text-center ${rescheduleDay?.date === day.date ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}>
-                      <span className="text-xs text-slate-500">{day.label.split(",")[0]}</span>
-                      <span className="text-base font-bold text-slate-800">{day.label.split(" ").pop()}</span>
+                      <span className="text-xs text-slate-500">{weekday}</span>
+                      <span className="text-base font-bold text-slate-800">{dayNum}</span>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
                 {rescheduleDay && (
                   <div className="grid grid-cols-3 gap-2">

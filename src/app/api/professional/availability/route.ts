@@ -13,10 +13,17 @@ export async function GET() {
 
   const slots = await db.availabilitySlot.findMany({
     where: { professionalId: professional.id, isActive: true },
-    orderBy: { dayOfWeek: "asc" },
+    orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
   });
 
-  return NextResponse.json({ slots });
+  return NextResponse.json({
+    slots: slots.map((s) => ({
+      dayOfWeek: s.dayOfWeek,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      slotDuration: s.slotDurationMins,
+    })),
+  });
 }
 
 export async function PUT(req: NextRequest) {

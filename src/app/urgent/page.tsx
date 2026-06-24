@@ -466,7 +466,9 @@ export default function UrgentPage() {
                       </div>
                     </div>
                   </div>
-                  {pro.professional.bio && <p className="text-xs text-slate-400 mt-2 line-clamp-2">{pro.professional.bio}</p>}
+                  {pro.professional.bio && (
+                    <BioText bio={pro.professional.bio} readMore={t("urgent.readMore")} readLess={t("urgent.readLess")} />
+                  )}
                   <div className="mt-3">
                     {pro.isFull ? (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg">
@@ -543,6 +545,28 @@ export default function UrgentPage() {
             </p>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function BioText({ bio, readMore, readLess }: { bio: string; readMore: string; readLess: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = bio.length > 120;
+
+  return (
+    <div className="mt-2">
+      <p className={`text-xs text-slate-500 leading-relaxed ${!expanded && isLong ? "line-clamp-3" : ""}`}>
+        {bio}
+      </p>
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 mt-1"
+        >
+          {expanded ? readLess : readMore}
+        </button>
       )}
     </div>
   );

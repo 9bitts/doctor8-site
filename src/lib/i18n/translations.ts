@@ -251,7 +251,9 @@ const en = {
   "appt.noSlots": "No available slots in the next 14 days.",
   "appt.availableTimes": "available times",
   "appt.slots": "slots",
-  "appt.continueToPayment": "Continue to payment",
+  "appt.slotSingular": "slot",
+  "appt.slotPlural": "slots",
+  "appt.continueToPayment": "Continue",
   "appt.completePayment": "Complete payment",
   "appt.orderSummary": "Order summary",
   "appt.consultWith": "Consultation with Dr.",
@@ -287,7 +289,10 @@ const en = {
   "med.clinicalLabel": "Clinical medications",
   "med.purchaseLabel": "Purchase list",
   "med.clinicalTab": "Clinical medications",
-  "med.purchaseTab": "Purchase list",
+  "med.purchaseTab": "Shopping list",
+  "med.edit": "Edit",
+  "med.editMed": "Edit medication",
+  "med.updateMed": "Save changes",
   "med.shareWithDoctor": "Share with doctor",
   "med.exportPDF": "Export PDF",
   "med.emptyClinical": "No clinical medications added yet",
@@ -609,6 +614,8 @@ const en = {
   "avail.saving": "Saving...",
   "avail.saved": "Saved!",
   "avail.save": "Save availability",
+  "avail.addBlock": "Add time block",
+  "avail.removeBlock": "Remove block",
   "avail.noteBold": "Note:",
   "avail.noteText": "Changes take effect immediately. Patients who already have confirmed bookings will not be affected.",
   "day.0": "Sunday",
@@ -766,6 +773,8 @@ const en = {
   "urgent.loading": "Loading...",
   "urgent.mins": "min",
   "urgent.refresh": "Refresh",
+  "urgent.readMore": "Read more",
+  "urgent.readLess": "Show less",
   "urgent.polling": "Updating every 4 seconds...",
   // Professional JIT (online duty)
   "jit.title": "Online Duty",
@@ -1106,7 +1115,9 @@ const pt: LocaleDict = {
   "appt.noSlots": "Nenhum horário disponível nos próximos 14 dias.",
   "appt.availableTimes": "horários disponíveis",
   "appt.slots": "horários",
-  "appt.continueToPayment": "Continuar para pagamento",
+  "appt.slotSingular": "horário",
+  "appt.slotPlural": "horários",
+  "appt.continueToPayment": "Continuar",
   "appt.completePayment": "Concluir pagamento",
   "appt.orderSummary": "Resumo do pedido",
   "appt.consultWith": "Consulta com Dr.",
@@ -1139,9 +1150,12 @@ const pt: LocaleDict = {
   "med.clinicalDesc": "visíveis aos seus médicos durante as consultas",
   "med.purchaseDesc": "medicações que você quer comprar (não compartilhadas com médicos)",
   "med.clinicalLabel": "Medicações clínicas",
-  "med.purchaseLabel": "Lista de compras",
+  "med.purchaseLabel": "Lista de uso",
   "med.clinicalTab": "Medicações clínicas",
-  "med.purchaseTab": "Lista de compras",
+  "med.purchaseTab": "Lista de uso",
+  "med.edit": "Editar",
+  "med.editMed": "Editar medicação",
+  "med.updateMed": "Salvar alterações",
   "med.shareWithDoctor": "Compartilhar com médico",
   "med.exportPDF": "Exportar PDF",
   "med.emptyClinical": "Nenhuma medicação clínica adicionada ainda",
@@ -1453,6 +1467,8 @@ const pt: LocaleDict = {
   "avail.saving": "Salvando...",
   "avail.saved": "Salvo!",
   "avail.save": "Salvar disponibilidade",
+  "avail.addBlock": "Adicionar intervalo",
+  "avail.removeBlock": "Remover intervalo",
   "avail.noteBold": "Observação:",
   "avail.noteText": "As alterações entram em vigor imediatamente. Pacientes que já têm agendamentos confirmados não serão afetados.",
   "day.0": "Domingo",
@@ -1606,6 +1622,8 @@ const pt: LocaleDict = {
   "urgent.loading": "Carregando...",
   "urgent.mins": "min",
   "urgent.refresh": "Atualizar",
+  "urgent.readMore": "Ler mais",
+  "urgent.readLess": "Ver menos",
   "urgent.polling": "Atualizando a cada 4 segundos...",
   "jit.title": "Plantão Online",
   "jit.subtitle": "Atenda pacientes agora, sem agendamento prévio.",
@@ -1940,7 +1958,9 @@ const es: LocaleDict = {
   "appt.noSlots": "No hay horarios disponibles en los próximos 14 días.",
   "appt.availableTimes": "horarios disponibles",
   "appt.slots": "horarios",
-  "appt.continueToPayment": "Continuar al pago",
+  "appt.slotSingular": "horario",
+  "appt.slotPlural": "horarios",
+  "appt.continueToPayment": "Continuar",
   "appt.completePayment": "Completar pago",
   "appt.orderSummary": "Resumen del pedido",
   "appt.consultWith": "Consulta con Dr.",
@@ -1973,9 +1993,12 @@ const es: LocaleDict = {
   "med.clinicalDesc": "visibles para tus médicos durante las consultas",
   "med.purchaseDesc": "medicaciones que quieres comprar (no compartidas con médicos)",
   "med.clinicalLabel": "Medicaciones clínicas",
-  "med.purchaseLabel": "Lista de compras",
+  "med.purchaseLabel": "Lista de uso",
   "med.clinicalTab": "Medicaciones clínicas",
-  "med.purchaseTab": "Lista de compras",
+  "med.purchaseTab": "Lista de uso",
+  "med.edit": "Editar",
+  "med.editMed": "Editar medicación",
+  "med.updateMed": "Guardar cambios",
   "med.shareWithDoctor": "Compartir con médico",
   "med.exportPDF": "Exportar PDF",
   "med.emptyClinical": "Aún no hay medicaciones clínicas",
@@ -2287,6 +2310,8 @@ const es: LocaleDict = {
   "avail.saving": "Guardando...",
   "avail.saved": "¡Guardado!",
   "avail.save": "Guardar disponibilidad",
+  "avail.addBlock": "Agregar intervalo",
+  "avail.removeBlock": "Eliminar intervalo",
   "avail.noteBold": "Nota:",
   "avail.noteText": "Los cambios surten efecto de inmediato. Los pacientes que ya tienen reservas confirmadas no se verán afectados.",
   "day.0": "Domingo",
@@ -2440,6 +2465,8 @@ const es: LocaleDict = {
   "urgent.loading": "Cargando...",
   "urgent.mins": "min",
   "urgent.refresh": "Actualizar",
+  "urgent.readMore": "Leer más",
+  "urgent.readLess": "Ver menos",
   "urgent.polling": "Actualizando cada 4 segundos...",
   "jit.title": "Guardia Online",
   "jit.subtitle": "Atiende pacientes ahora, sin cita previa.",
@@ -2566,6 +2593,18 @@ export function normalizeLang(value: string | null | undefined): Lang {
 // Locale code for date/number formatting based on language
 export function localeOf(lang: Lang): string {
   return lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
+}
+
+/** Formats a slot count with correct singular/plural (e.g. "1 horário" vs "5 horários"). */
+export function formatSlotCount(lang: Lang, count: number): string {
+  if (count <= 0) return "";
+  if (lang === "pt") {
+    return count === 1 ? "1 horário" : `${count} horários`;
+  }
+  if (lang === "es") {
+    return count === 1 ? "1 horario" : `${count} horarios`;
+  }
+  return count === 1 ? "1 slot" : `${count} slots`;
 }
 
 // Time-of-day greeting key

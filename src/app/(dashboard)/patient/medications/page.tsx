@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useT } from "@/lib/i18n/I18nProvider";
-import { Pill, Plus, Eye, EyeOff, Trash2, ShoppingCart, Stethoscope, X, Loader2, Share2, Download } from "lucide-react";
+import { Pill, Plus, Trash2, ShoppingCart, Stethoscope, X, Loader2, Share2, Download, Pencil } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 
 type Flow = "CLINICAL" | "PURCHASE";
@@ -29,6 +29,7 @@ export default function MedicationsPage() {
   const [loading, setLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
 
@@ -57,23 +58,42 @@ export default function MedicationsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch("/api/patient/medications", {
-        method: "POST",
+      const url = editingId ? `/api/patient/medications/${editingId}` : "/api/patient/medications";
+      const res = await fetch(url, {
+        method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, flow: activeTab }),
+        body: JSON.stringify({ ...form, flow: form.flow }),
       });
       if (res.ok) {
-        setShowForm(false);
-        setForm({ name: "", dosage: "", frequency: "", prescribedBy: "", notes: "", flow: "CLINICAL" });
+        closeForm();
         fetchMedications();
       }
     } finally { setSaving(false); }
   }
 
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ name: "", dosage: "", frequency: "", prescribedBy: "", notes: "", flow: "CLINICAL" });
+  }
+
+  function openEdit(med: Medication) {
+    setEditingId(med.id);
+    setForm({
+      name: med.name,
+      dosage: med.dosage || "",
+      frequency: med.frequency || "",
+      prescribedBy: med.prescribedBy || "",
+      notes: med.notes || "",
+      flow: med.flow,
+    });
+    setShowForm(true);
+  }
+
   async function handleDelete(id: string) {
     if (!confirm(t("med.removeConfirm"))) return;
-    await fetch(`/api/patient/medications/${id}`, { method: "DELETE" });
-    fetchMedications();
+    const res = await fetch(`/api/patient/medications/${id}`, { method: "DELETE" });
+    if (res.ok) fetchMedications();
   }
 
   async function handleShare() {
@@ -96,6 +116,12 @@ export default function MedicationsPage() {
   const purchaseMeds = medications.filter((m) => m.flow === "PURCHASE");
   const displayed = activeTab === "CLINICAL" ? clinicalMeds : purchaseMeds;
 
+  function openAddForm() {
+    setEditingId(null);
+    setForm({ name: "", dosage: "", frequency: "", prescribedBy: "", notes: "", flow: activeTab });
+    setShowForm(true);
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
 
@@ -106,7 +132,7 @@ export default function MedicationsPage() {
           <p className="text-slate-500 text-sm mt-1">{t("med.subtitle")}</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openAddForm}
           className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition"
         >
           <Plus size={16} /> {t("med.add")}
@@ -181,7 +207,7 @@ export default function MedicationsPage() {
                 {activeTab === "CLINICAL" ? t("med.emptyClinical") : t("med.emptyPurchase")}
               </p>
               <button
-                onClick={() => setShowForm(true)}
+                onClick={openAddForm}
                 className="text-emerald-600 text-sm font-semibold hover:underline"
               >
                 + {t("med.addMed")}
@@ -193,6 +219,7 @@ export default function MedicationsPage() {
                 <MedCard
                   key={med.id}
                   medication={med}
+                  onEdit={() => openEdit(med)}
                   onDelete={() => handleDelete(med.id)}
                   t={t}
                 />
@@ -208,8 +235,8 @@ export default function MedicationsPage() {
           <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
 
             <div className="flex items-center justify-between p-5 border-b border-slate-200">
-              <h2 className="font-bold text-slate-900">{t("med.modalTitle")}</h2>
-              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="font-bold text-slate-900">{editingId ? t("med.editMed") : t("med.modalTitle")}</h2>
+              <button onClick={closeForm} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
@@ -314,7 +341,7 @@ export default function MedicationsPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={closeForm}
                   className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition"
                 >
                   {t("common.cancel")}
@@ -325,7 +352,7 @@ export default function MedicationsPage() {
                   className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {saving && <Loader2 size={14} className="animate-spin" />}
-                  {saving ? t("docs.modal.saving") : t("med.saveMed")}
+                  {saving ? t("docs.modal.saving") : editingId ? t("med.updateMed") : t("med.saveMed")}
                 </button>
               </div>
             </form>
@@ -369,29 +396,29 @@ function Field({ label, required, children }: { label: string; required?: boolea
   );
 }
 
-function MedCard({ medication, onDelete, t }: { medication: Medication; onDelete: () => void; t: (k: string) => string }) {
+function MedCard({ medication, onEdit, onDelete, t }: { medication: Medication; onEdit: () => void; onDelete: () => void; t: (k: string) => string }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 transition">
-      <div
-        className="flex items-center gap-4 p-4 cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+      <div className="flex items-center gap-4 p-4">
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 cursor-pointer ${
           medication.flow === "CLINICAL" ? "bg-emerald-100" : "bg-blue-100"
-        }`}>
+        }`}
+          onClick={() => setExpanded(!expanded)}
+        >
           {medication.flow === "CLINICAL"
             ? <Pill size={18} className="text-emerald-600" />
             : <ShoppingCart size={18} className="text-blue-600" />
           }
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpanded(!expanded)}>
           <p className="font-semibold text-slate-800 text-sm">{medication.name}</p>
           <p className="text-xs text-slate-500">
             {[medication.dosage, medication.frequency].filter(Boolean).join(" · ") || t("med.noDetails")}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
             medication.flow === "CLINICAL"
               ? "bg-emerald-100 text-emerald-700"
@@ -399,7 +426,20 @@ function MedCard({ medication, onDelete, t }: { medication: Medication; onDelete
           }`}>
             {medication.flow === "CLINICAL" ? t("med.clinical") : t("med.purchase")}
           </span>
-          {expanded ? <EyeOff size={14} className="text-slate-400" /> : <Eye size={14} className="text-slate-400" />}
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+            title={t("med.edit")}
+          >
+            <Pencil size={15} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+            title={t("med.remove")}
+          >
+            <Trash2 size={15} />
+          </button>
         </div>
       </div>
       {expanded && (
@@ -410,12 +450,6 @@ function MedCard({ medication, onDelete, t }: { medication: Medication; onDelete
           {medication.notes && (
             <p className="text-xs text-slate-600 mt-1"><strong>{t("med.notesLabel")}</strong> {medication.notes}</p>
           )}
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="mt-3 flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium transition"
-          >
-            <Trash2 size={12} /> {t("med.remove")}
-          </button>
         </div>
       )}
     </div>
