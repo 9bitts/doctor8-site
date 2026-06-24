@@ -17,6 +17,11 @@ export interface ProfessionInfo {
   councilKey: "crm" | "crp" | "crn" | "crn_nutrition" | "crefito" | "cro" | "council";
 }
 
+export function isPsychologist(specialty: string | null | undefined): boolean {
+  if (!specialty) return false;
+  return getProfessionInfo(specialty).typeKey === "psychologist";
+}
+
 export function getProfessionInfo(specialty: string): ProfessionInfo {
   const s = specialty.trim();
   if (PSYCHOLOGY.has(s)) return { typeKey: "psychologist", councilKey: "crp" };
