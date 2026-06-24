@@ -9,7 +9,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { localeOf, formatSlotCount } from "@/lib/i18n/translations";
+import { localeOf, formatSlotCount, Lang } from "@/lib/i18n/translations";
+import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
+import { getProfessionInfo } from "@/lib/profession-label";
 import { parseLocalDate } from "@/lib/scheduling";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import {
@@ -65,7 +67,21 @@ export default function AppointmentsPage() {
   const locale = localeOf(lang);
   const l = (lang === "pt" || lang === "es") ? lang : "en";
 
-  const SPECIALTIES = ["All", "General Practice", "Cardiology", "Psychology", "Nutrition", "Cannabis Medicine", "Dermatology"];
+  const SPECIALTIES = ["All", "General Practice", "Cardiology", "Psychology", "Nutrition", "Cannabis Medicine", "Dermatology"] as const;
+
+  function specialtyFilterLabel(value: string): string {
+    if (value === "All") return t("map.specialty.all");
+    return getProfessionLabel(lang, value);
+  }
+
+  function matchesSpecialtyFilter(filter: string, proSpecialty: string): boolean {
+    if (filter === "All") return true;
+    if (proSpecialty === filter) return true;
+    const typeKey = getProfessionInfo(proSpecialty).typeKey;
+    if (filter === "Psychology") return typeKey === "psychologist";
+    if (filter === "Nutrition") return typeKey === "nutritionist";
+    return false;
+  }
 
   const [step, setStep]                   = useState<Step>("browse");
   const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -271,8 +287,8 @@ export default function AppointmentsPage() {
   }
 
   const filtered = professionals.filter((p) => {
-    const matchSearch = search === "" || `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) || p.specialty.toLowerCase().includes(search.toLowerCase());
-    const matchSpec   = specialty === "All" || p.specialty === specialty;
+    const matchSearch = search === "" || `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) || specialtyMatchesSearch(lang, p.specialty, search);
+    const matchSpec   = matchesSpecialtyFilter(specialty, p.specialty);
     return matchSearch && matchSpec;
   });
 
@@ -329,7 +345,7 @@ export default function AppointmentsPage() {
                     <p className="text-sm font-semibold text-slate-800 truncate">
                       Dr. {apt.professional?.firstName} {apt.professional?.lastName}
                     </p>
-                    <p className="text-xs text-slate-500">{apt.professional?.specialty}</p>
+                    <p className="text-xs text-slate-500">{getProfessionLabel(lang, apt.professional?.specialty)}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-semibold text-emerald-700">
@@ -385,7 +401,7 @@ export default function AppointmentsPage() {
             <div className="flex gap-2 overflow-x-auto pb-1">
               {SPECIALTIES.map((s) => (
                 <button key={s} onClick={() => setSpecialty(s)} className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-semibold transition ${specialty === s ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
-                  {s}
+                  {specialtyFilterLabel(s)}
                 </button>
               ))}
             </div>
@@ -401,7 +417,7 @@ export default function AppointmentsPage() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {filtered.map((pro) => (
-                <DoctorCard key={pro.id} pro={pro} onSelect={() => selectProfessional(pro)} locale={locale} t={t} />
+                <DoctorCard key={pro.id} pro={pro} onSelect={() => selectProfessional(pro)} locale={locale} lang={lang} t={t} />
               ))}
             </div>
           )}
@@ -417,7 +433,7 @@ export default function AppointmentsPage() {
             </div>
             <div>
               <h2 className="text-white font-bold text-lg">Dr. {selectedPro.firstName} {selectedPro.lastName}</h2>
-              <p className="text-slate-400 text-sm">{selectedPro.specialty}</p>
+              <p className="text-slate-400 text-sm">{getProfessionLabel(lang, selectedPro.specialty)}</p>
               <p className="text-emerald-400 font-semibold text-sm mt-1">{priceDisplay} {t("appt.perConsult")}</p>
             </div>
           </div>
@@ -715,7 +731,7 @@ export default function AppointmentsPage() {
   );
 }
 
-function DoctorCard({ pro, onSelect, locale, t }: { pro: Professional; onSelect: () => void; locale: string; t: (k: string) => string }) {
+function DoctorCard({ pro, onSelect, locale, lang, t }: { pro: Professional; onSelect: () => void; locale: string; lang: Lang; t: (k: string) => string }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-emerald-300 transition cursor-pointer" onClick={onSelect}>
       <div className="flex items-start gap-4">
@@ -724,7 +740,7 @@ function DoctorCard({ pro, onSelect, locale, t }: { pro: Professional; onSelect:
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-slate-900">Dr. {pro.firstName} {pro.lastName}</p>
-          <p className="text-sm text-emerald-600 font-medium">{pro.specialty}</p>
+          <p className="text-sm text-emerald-600 font-medium">{getProfessionLabel(lang, pro.specialty)}</p>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs text-slate-500 flex items-center gap-1"><Star size={11} className="text-yellow-400 fill-yellow-400" /> {pro.rating}</span>
             {pro.clinicCity && <span className="text-xs text-slate-500 flex items-center gap-1"><MapPin size={11} /> {pro.clinicCity}</span>}

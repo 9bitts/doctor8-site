@@ -40,11 +40,11 @@ export async function GET() {
   const categories = await db.category.findMany({
     where: { active: true },
     orderBy: [{ groupOrder: "asc" }, { itemOrder: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, groupName: true },
+    select: { id: true, name: true, slug: true, groupName: true },
   });
 
   // Build groups -> categories (only those with count > 0)
-  const groupsMap = new Map<string, { group: string; total: number; items: { id: string; name: string; count: number }[] }>();
+  const groupsMap = new Map<string, { group: string; total: number; items: { id: string; name: string; slug: string; count: number }[] }>();
   for (const c of categories) {
     const count = countByCategory.get(c.id) || 0;
     if (count === 0) continue;
@@ -52,7 +52,7 @@ export async function GET() {
       groupsMap.set(c.groupName, { group: c.groupName, total: 0, items: [] });
     }
     const g = groupsMap.get(c.groupName)!;
-    g.items.push({ id: c.id, name: c.name, count });
+    g.items.push({ id: c.id, name: c.name, slug: c.slug, count });
     g.total += count;
   }
 

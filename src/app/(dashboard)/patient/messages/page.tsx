@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import { Send, Search, Loader2, MessageSquare, ArrowLeft, Plus, X, Users } from "lucide-react";
 
 interface Conversation {
@@ -266,7 +267,8 @@ export default function MessagesPage() {
   );
 
   const filteredProfessionals = professionals.filter(p =>
-    `${p.firstName} ${p.lastName} ${p.specialty}`.toLowerCase().includes(contactSearch.toLowerCase())
+    `${p.firstName} ${p.lastName}`.toLowerCase().includes(contactSearch.toLowerCase())
+    || specialtyMatchesSearch(lang, p.specialty, contactSearch)
   );
 
   const canStartNewConv = role === "PROFESSIONAL" || role === "PATIENT";
@@ -500,7 +502,7 @@ export default function MessagesPage() {
                       <p className="text-sm font-medium text-slate-800 truncate">
                         Dr. {p.firstName} {p.lastName}
                       </p>
-                      <p className="text-xs text-slate-500 truncate">{p.specialty}</p>
+                      <p className="text-xs text-slate-500 truncate">{getProfessionLabel(lang, p.specialty)}</p>
                     </div>
                   </button>
                 ))

@@ -6,13 +6,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
 import {
   Layers, ChevronRight, ChevronDown, FileText, Paperclip, Loader2,
   ArrowLeft, User, FolderOpen,
 } from "lucide-react";
 
-interface CatItem { id: string; name: string; count: number; }
+interface CatItem { id: string; name: string; slug: string; count: number; }
 interface Group { group: string; total: number; items: CatItem[]; }
 
 interface CategoryRecord {
@@ -26,7 +27,7 @@ interface CategoryRecord {
 }
 
 export default function CategoriesClient() {
-  const t = useT();
+  const { lang, t } = useI18n();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -80,8 +81,8 @@ export default function CategoriesClient() {
         </button>
 
         <div>
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{selected.group}</p>
-          <h1 className="text-2xl font-bold text-slate-900">{selected.name}</h1>
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{getCategoryGroupLabel(lang, selected.group)}</p>
+          <h1 className="text-2xl font-bold text-slate-900">{getCategoryLabel(lang, { name: selected.name })}</h1>
         </div>
 
         {recordsLoading ? (
@@ -162,7 +163,7 @@ export default function CategoriesClient() {
                   <Layers size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-slate-800 text-sm">{g.group}</p>
+                  <p className="font-bold text-slate-800 text-sm">{getCategoryGroupLabel(lang, g.group)}</p>
                   <p className="text-xs text-slate-400">{g.total} {g.total === 1 ? t("cat.record") : t("cat.records")}</p>
                 </div>
                 {openGroups[g.group] ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
@@ -177,7 +178,7 @@ export default function CategoriesClient() {
                       className="w-full flex items-center gap-3 pl-16 pr-5 py-3 hover:bg-brand-50 transition text-left"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-700">{c.name}</p>
+                        <p className="text-sm text-slate-700">{getCategoryLabel(lang, { slug: c.slug, name: c.name })}</p>
                       </div>
                       <span className="text-xs font-medium text-slate-400">{c.count}</span>
                       <ChevronRight size={16} className="text-slate-300" />

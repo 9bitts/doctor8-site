@@ -2,44 +2,20 @@
 
 // src/app/(dashboard)/professional/settings/page.tsx
 // Complete, editable professional profile. i18n via useT().
-// NOTE: the long specialty list is kept in English for now; group headers and
-// all surrounding UI are translated.
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { PROFESSION_GROUPS, getProfessionLabel } from "@/lib/professions";
 import {
   Loader2, CheckCircle2, Video, Building2, DollarSign, User, Award, Camera, X, Plus,
 } from "lucide-react";
-
-// group key -> options. The group label is translated via t(groupKey).
-const PROFESSION_GROUPS: { groupKey: string; options: string[] }[] = [
-  { groupKey: "set.profGroup.medical", options: [
-    "Acupuncture","Allergy and Immunology","Anesthesiology","Angiology","Cardiology","Cardiovascular Surgery",
-    "Hand Surgery","Head and Neck Surgery","Digestive System Surgery","General Surgery","Pediatric Surgery",
-    "Plastic Surgery","Thoracic Surgery","Vascular Surgery","Internal Medicine","Coloproctology","Dermatology",
-    "Endocrinology and Metabolism","Endoscopy","Gastroenterology","Medical Genetics","Geriatrics",
-    "Gynecology and Obstetrics","Hematology and Hemotherapy","Homeopathy","Infectious Diseases","Mastology",
-    "Family and Community Medicine","Physical Medicine and Rehabilitation","Occupational Medicine","Sports Medicine",
-    "Emergency Medicine","Legal Medicine and Forensics","Nuclear Medicine","Intensive Care Medicine",
-    "Preventive and Social Medicine","Nephrology","Neurosurgery","Neurology","Nutrology","Ophthalmology","Oncology",
-    "Orthopedics and Traumatology","Otorhinolaryngology (ENT)","Pathology","Clinical Pathology / Laboratory Medicine",
-    "Pediatrics","Pneumology","Psychiatry","Radiology and Diagnostic Imaging","Radiotherapy","Rheumatology","Urology",
-    "Cannabis Medicine","General Practice",
-  ]},
-  { groupKey: "set.profGroup.psychology", options: ["Psychologist","Psychoanalyst","Neuropsychologist","Psychotherapist","Behavioral Therapist"] },
-  { groupKey: "set.profGroup.nutrition", options: ["Nutritionist","Dietitian","Sports Nutritionist"] },
-  { groupKey: "set.profGroup.rehab", options: ["Physiotherapist","Occupational Therapist","Speech Therapist (Speech-Language Pathologist)","Osteopath","Chiropractor"] },
-  { groupKey: "set.profGroup.nursing", options: ["Nurse","Nurse Practitioner","Midwife","Obstetric Nurse"] },
-  { groupKey: "set.profGroup.dentistry", options: ["Dentist (General)","Orthodontist","Endodontist","Periodontist","Oral and Maxillofacial Surgeon","Pediatric Dentist"] },
-  { groupKey: "set.profGroup.other", options: ["Pharmacist","Biomedical Scientist","Physical Educator / Personal Trainer","Social Worker (Health)","Optometrist","Podiatrist","Acupuncturist (non-medical)","Naturopath","Veterinarian","Other"] },
-];
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
 const inputClass = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40";
 
 export default function ProfessionalSettings() {
-  const t = useT();
+  const { lang, t } = useI18n();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
@@ -239,7 +215,7 @@ export default function ProfessionalSettings() {
           <select className={inputClass + " bg-white"} value={profession} onChange={(e) => setProfession(e.target.value)}>
             {PROFESSION_GROUPS.map((g) => (
               <optgroup key={g.groupKey} label={t(g.groupKey)}>
-                {g.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                {g.options.map((o) => <option key={o} value={o}>{getProfessionLabel(lang, o)}</option>)}
               </optgroup>
             ))}
           </select>

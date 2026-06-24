@@ -12,6 +12,7 @@ import {
   Stethoscope, Settings, X,
 } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/I18nProvider";
+import { getProfessionLabel } from "@/lib/professions";
 
 interface QueueEntry {
   id: string;
@@ -387,7 +388,7 @@ export default function JitPage() {
               <p className="text-xs text-slate-500 mt-0.5">{t("jit.inProgress")}</p>
             </div>
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
-              <p className="text-sm font-semibold text-slate-700">{session.specialty}</p>
+              <p className="text-sm font-semibold text-slate-700">{getProfessionLabel(lang, session.specialty)}</p>
               <p className="text-xs text-slate-500 mt-0.5">
                 {session.isFree ? t("jit.free") : formatCurrency(session.priceAmount, session.currency)}
               </p>

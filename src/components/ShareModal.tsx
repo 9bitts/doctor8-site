@@ -8,6 +8,8 @@
 //   3. Send directly to a Doctor8 professional (message + notification)
 
 import { useState, useEffect } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import {
   X, Link2, FileDown, Send, Copy, CheckCircle2, Loader2,
   Clock, Search, User,
@@ -28,6 +30,7 @@ interface ShareModalProps {
 }
 
 export default function ShareModal({ type, onClose }: ShareModalProps) {
+  const { lang } = useI18n();
   const [tab, setTab] = useState<"link" | "professional">("link");
   const [expiry, setExpiry] = useState<24 | 72 | 168 | 0>(72);
   const [shareUrl, setShareUrl] = useState("");
@@ -111,7 +114,8 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
   }
 
   const filteredPros = professionals.filter((p) =>
-    `${p.firstName} ${p.lastName} ${p.specialty}`.toLowerCase().includes(search.toLowerCase())
+    `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase())
+    || specialtyMatchesSearch(lang, p.specialty, search)
   );
 
   return (
@@ -300,7 +304,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-slate-800">Dr. {pro.firstName} {pro.lastName}</p>
-                            <p className="text-xs text-slate-400">{pro.specialty}</p>
+                            <p className="text-xs text-slate-400">{getProfessionLabel(lang, pro.specialty)}</p>
                           </div>
                           {selectedPro?.id === pro.id && (
                             <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />

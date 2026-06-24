@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
 import { decrypt } from "@/lib/encryption";
+import { getProfessionLabel } from "@/lib/professions";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -183,7 +184,7 @@ export default async function ProfessionalDashboard() {
         <h1 className="text-2xl font-bold text-slate-900">
           {t(greetingKey())}, Dr. {professional.firstName} 👋
         </h1>
-        <p className="text-slate-500 mt-1">{professional.specialty || t("prodash.subtitle")}</p>
+        <p className="text-slate-500 mt-1">{getProfessionLabel(lang, professional.specialty) || t("prodash.subtitle")}</p>
       </div>
 
       {/* Plantão Online — priority hero */}

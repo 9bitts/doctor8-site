@@ -11,7 +11,8 @@ import {
   UserPlus,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getProfessionLabel } from "@/lib/professions";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Resource {
@@ -37,7 +38,7 @@ interface ProResult {
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function ResourcesPage() {
-  const t = useT();
+  const { lang, t } = useI18n();
 
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -432,7 +433,7 @@ export default function ResourcesPage() {
                           <div key={p.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50">
                             <div>
                               <p className="text-sm text-slate-700 font-medium">{p.name}</p>
-                              <p className="text-xs text-slate-400">{p.specialty}</p>
+                              <p className="text-xs text-slate-400">{getProfessionLabel(lang, p.specialty)}</p>
                             </div>
                             {status === "ok" ? (
                               <span className="inline-flex items-center gap-1 text-xs text-brand-500">

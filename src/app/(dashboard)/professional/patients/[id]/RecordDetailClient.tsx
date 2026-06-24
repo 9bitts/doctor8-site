@@ -15,7 +15,8 @@ import {
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
 
 // P2: inline texts for rec.* keys (not yet in translations.ts)
 const REC_TEXTS: Record<string, Record<string, string>> = {
@@ -61,6 +62,7 @@ interface Doc {
 interface CategoryItem {
   id: string;
   name: string;
+  slug: string;
   groupName: string;
   icon: string | null;
   legacyType: string | null;
@@ -71,14 +73,14 @@ interface CategoryGroup {
 }
 
 // Fallback labels for legacy `type` (records created before dynamic categories).
-const LEGACY_LABELS: Record<string, string> = {
-  PRESCRIPTION: "Prescription",
-  EXAM_REQUEST: "Exam request",
-  EXAM_RESULT: "Exam result",
-  CERTIFICATE: "Certificate",
-  REFERRAL: "Referral",
-  CLINICAL_NOTE: "Clinical note",
-  OTHER: "Other",
+const LEGACY_KEYS: Record<string, string> = {
+  PRESCRIPTION: "doctype.PRESCRIPTION",
+  EXAM_REQUEST: "doctype.EXAM_REQUEST",
+  EXAM_RESULT: "doctype.EXAM_RESULT",
+  CERTIFICATE: "doctype.CERTIFICATE",
+  REFERRAL: "doctype.REFERRAL",
+  CLINICAL_NOTE: "doctype.CLINICAL_NOTE",
+  OTHER: "doctype.OTHER",
 };
 
 // Clean phone for wa.me (digits only, add country code if starts with 0 or missing +)
@@ -97,11 +99,12 @@ export default function RecordDetailClient({
   chart: Chart;
   initialDocuments: Doc[];
 }) {
-  const t = useT();
+  const { lang, t } = useI18n();
   const searchParams = useSearchParams();
   // Detect current language via a known key, then serve inline rec.* texts
   const _lang = t("common.cancel") === "Cancelar" ? "pt" : t("common.cancel") === "Cancelar" ? "es" : t("common.cancel") === "Cancel" ? "en" : "en";
   const _langFull = t("greeting.morning") === "Bom dia" ? "pt" : t("greeting.morning") === "Buenos días" ? "es" : "en";
+  const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [showForm, setShowForm] = useState(false);
@@ -709,7 +712,9 @@ export default function RecordDetailClient({
         ) : (
           <div className="divide-y divide-slate-100">
             {docs.map((d) => {
-              const label = d.categoryName || LEGACY_LABELS[d.type] || "Other";
+              const label = d.categoryName
+                ? getCategoryLabel(lang, { name: d.categoryName })
+                : legacyLabel(d.type);
               const status = shareStatus[d.id] || "";
               const isSharing = sharingId === d.id;
               return (
@@ -719,7 +724,7 @@ export default function RecordDetailClient({
                       <Tag size={12} /> {label}
                     </span>
                     {d.categoryGroup && (
-                      <span className="text-xs text-slate-400">{d.categoryGroup}</span>
+                      <span className="text-xs text-slate-400">{getCategoryGroupLabel(lang, d.categoryGroup)}</span>
                     )}
                     {d.hasFile && (
                       <span className="inline-flex items-center gap-1 text-xs text-slate-400">
@@ -821,9 +826,9 @@ export default function RecordDetailClient({
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                   >
                     {groups.map((g) => (
-                      <optgroup key={g.group} label={g.group}>
+                      <optgroup key={g.group} label={getCategoryGroupLabel(lang, g.group)}>
                         {g.items.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
+                          <option key={c.id} value={c.id}>{getCategoryLabel(lang, { slug: c.slug, name: c.name })}</option>
                         ))}
                       </optgroup>
                     ))}

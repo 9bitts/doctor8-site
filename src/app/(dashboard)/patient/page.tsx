@@ -9,6 +9,7 @@ import { audit } from "@/lib/audit";
 import { decryptPatientFields, decrypt } from "@/lib/encryption";
 import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
 import { getUserLang } from "@/lib/i18n/server-lang";
+import { getProfessionLabel } from "@/lib/professions";
 import {
   Calendar, FileText, Pill, AlertCircle, Radio, Stethoscope,
   Clock, ChevronRight, Activity, AlertTriangle, MessageSquare,
@@ -371,7 +372,7 @@ export default async function PatientDashboard() {
                     <p className="font-semibold text-slate-800 text-sm">
                       Dr. {apt.professional.firstName} {apt.professional.lastName}
                     </p>
-                    <p className="text-xs text-slate-500">{apt.professional.specialty}</p>
+                    <p className="text-xs text-slate-500">{getProfessionLabel(lang, apt.professional.specialty)}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-semibold text-slate-700">

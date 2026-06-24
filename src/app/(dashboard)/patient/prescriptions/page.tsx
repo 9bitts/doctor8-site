@@ -7,6 +7,7 @@
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { getProfessionLabel } from "@/lib/professions";
 import { FileText, Download, Loader2, Pill, Calendar } from "lucide-react";
 
 interface MedItem {
@@ -74,7 +75,7 @@ export default function PatientPrescriptionsPage() {
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-800">
                       Dr. {p.doctor.name}
-                      {p.doctor.specialty && <span className="text-slate-400 font-normal text-sm"> · {p.doctor.specialty}</span>}
+                      {p.doctor.specialty && <span className="text-slate-400 font-normal text-sm"> · {getProfessionLabel(lang, p.doctor.specialty)}</span>}
                     </p>
                     <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
                       <Calendar size={12} />

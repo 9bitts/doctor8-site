@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
+import { getProfessionLabel } from "@/lib/professions";
 import {
   Search, Loader2, MapPin, Radio, Calendar, X, Navigation,
   Stethoscope, ChevronRight, AlertCircle, Star, Heart, Clock, DollarSign,
@@ -86,10 +88,11 @@ function fmtPrice(cents: number, currency: string, locale: string): string {
 }
 
 function ProListItem({
-  pro, t, onSelect, onToggleFavorite, locale,
+  pro, t, lang, onSelect, onToggleFavorite, locale,
 }: {
   pro: MapProfessional;
   t: (k: string) => string;
+  lang: import("@/lib/i18n/translations").Lang;
   onSelect: () => void;
   onToggleFavorite: (id: string) => void;
   locale: string;
@@ -112,7 +115,7 @@ function ProListItem({
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500">{professionLabel(t, pro.professionType)} · {pro.specialty}</p>
+          <p className="text-xs text-slate-500">{professionLabel(t, pro.professionType)} · {getProfessionLabel(lang, pro.specialty)}</p>
           {pro.license && <p className="text-xs text-slate-400 mt-0.5">{pro.license}</p>}
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <StarRating avg={pro.ratingAvg} count={pro.ratingCount} />
@@ -147,8 +150,8 @@ function ProListItem({
 }
 
 export default function PatientMapClient() {
-  const t = useT();
-  const locale = typeof navigator !== "undefined" && navigator.language?.startsWith("en") ? "en-US" : "pt-BR";
+  const { lang, t } = useI18n();
+  const locale = localeOf(lang);
 
   const [professionals, setProfessionals] = useState<MapProfessional[]>([]);
   const [specialties, setSpecialties]     = useState<string[]>([]);
@@ -361,7 +364,7 @@ export default function PatientMapClient() {
         >
           <option value="">{t("map.specialty.all")}</option>
           {specialties.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>{getProfessionLabel(lang, s)}</option>
           ))}
         </select>
 
@@ -421,10 +424,11 @@ export default function PatientMapClient() {
               radiusKm={radiusKm}
               pins={mapPins}
               onSelect={setSelected}
+              lang={lang}
               renderPopup={(pro) => (
                 <div className="text-sm min-w-[180px] space-y-1">
                   <p className="font-bold">{pro.name}</p>
-                  <p className="text-slate-500 text-xs">{pro.specialty}</p>
+                  <p className="text-slate-500 text-xs">{getProfessionLabel(lang, pro.specialty)}</p>
                   <StarRating avg={pro.ratingAvg} count={pro.ratingCount} />
                   {pro.isOnline && (
                     <p className="text-xs text-emerald-600 font-medium">
@@ -458,13 +462,13 @@ export default function PatientMapClient() {
                       {t("map.teleconsultSection")} ({teleconsultList.length})
                     </p>
                     {teleconsultList.map((pro) => (
-                      <ProListItem key={pro.id} pro={pro} t={t} onSelect={() => setSelected(pro)}
+                      <ProListItem key={pro.id} pro={pro} t={t} lang={lang} onSelect={() => setSelected(pro)}
                         onToggleFavorite={toggleFavorite} locale={locale} />
                     ))}
                   </div>
                 )}
                 {regularList.map((pro) => (
-                  <ProListItem key={pro.id} pro={pro} t={t} onSelect={() => setSelected(pro)}
+                  <ProListItem key={pro.id} pro={pro} t={t} lang={lang} onSelect={() => setSelected(pro)}
                     onToggleFavorite={toggleFavorite} locale={locale} />
                 ))}
               </>
@@ -484,7 +488,7 @@ export default function PatientMapClient() {
                     <Heart size={20} fill={selected.isFavorite ? "currentColor" : "none"} />
                   </button>
                 </div>
-                <p className="text-sm text-slate-500">{professionLabel(t, selected.professionType)} · {selected.specialty}</p>
+                <p className="text-sm text-slate-500">{professionLabel(t, selected.professionType)} · {getProfessionLabel(lang, selected.specialty)}</p>
                 <div className="mt-1"><StarRating avg={selected.ratingAvg} count={selected.ratingCount} size={14} /></div>
               </div>
               <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600 p-1">

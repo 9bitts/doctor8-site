@@ -12,6 +12,7 @@ import {
   AlertCircle, Radio, ArrowLeft, Phone, X, Heart, Lock, CreditCard,
 } from "lucide-react";
 import { translate, normalizeLang, Lang, TranslationKey } from "@/lib/i18n/translations";
+import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 
 const LANG_KEY = "doctor8.lang";
 
@@ -281,7 +282,7 @@ export default function UrgentPage() {
   }
 
   const filtered = available.filter(p =>
-    p.specialty.toLowerCase().includes(search.toLowerCase()) ||
+    specialtyMatchesSearch(lang, p.specialty, search) ||
     p.professional.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -357,7 +358,7 @@ export default function UrgentPage() {
             <Radio size={28} className="text-emerald-500 animate-pulse" />
           </div>
           <h2 className="text-lg font-bold text-slate-900 mb-1">{t("urgent.waitTitle")}</h2>
-          <p className="text-sm text-slate-500 mb-4">{queueEntry.professionalName} · {queueEntry.specialty}</p>
+          <p className="text-sm text-slate-500 mb-4">{queueEntry.professionalName} · {getProfessionLabel(lang, queueEntry.specialty)}</p>
           <QueueSharePrompt entry={queueEntry} careProfessional={careProfessional} />
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-slate-50 rounded-xl p-4">
@@ -448,7 +449,7 @@ export default function UrgentPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900">{pro.professional.name}</p>
-                      <p className="text-sm text-slate-500">{pro.specialty}</p>
+                      <p className="text-sm text-slate-500">{getProfessionLabel(lang, pro.specialty)}</p>
                       <div className="flex items-center gap-3 mt-2 flex-wrap">
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                           pro.isFree ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
@@ -511,7 +512,7 @@ export default function UrgentPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Especialidade</span>
-                <span>{payModal.specialty}</span>
+                <span>{getProfessionLabel(lang, payModal.specialty)}</span>
               </div>
               <div className="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-200 mt-1">
                 <span>Total</span>

@@ -7,7 +7,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getCategoryLabel } from "@/lib/category-i18n";
 import {
   FileText, Download, Loader2, Tag, User, FolderPlus, FolderOpen, FilePlus2, CheckCircle2,
 } from "lucide-react";
@@ -41,7 +42,7 @@ const LEGACY_KEYS: Record<string, string> = {
 };
 
 export default function SharedWithMeClient({ initialItems }: { initialItems: Item[] }) {
-  const t = useT();
+  const { lang, t } = useI18n();
   const router = useRouter();
   const [items, setItems] = useState<Item[]>(initialItems);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -137,7 +138,9 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
           {items.map((it) => {
-            const label = it.categoryName || legacyLabel(it.type);
+            const label = it.categoryName
+              ? getCategoryLabel(lang, { name: it.categoryName })
+              : legacyLabel(it.type);
             const isBusy = busyId === it.shareId;
             return (
               <div id={`shared-doc-${it.documentId}`} key={it.shareId} className="px-5 py-4 hover:bg-slate-50 transition">

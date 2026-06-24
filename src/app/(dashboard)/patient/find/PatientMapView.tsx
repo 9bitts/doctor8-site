@@ -6,6 +6,8 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { MapProfessional } from "./PatientMapClient";
+import type { Lang } from "@/lib/i18n/translations";
+import { getProfessionLabel } from "@/lib/professions";
 
 interface Center { lat: number; lng: number }
 
@@ -52,12 +54,14 @@ export default function PatientMapView({
   radiusKm,
   pins,
   onSelect,
+  lang,
 }: {
   mapCenter: Center;
   center: Center | null;
   radiusKm: number;
   pins: MapProfessional[];
   onSelect: (pro: MapProfessional) => void;
+  lang: Lang;
   renderPopup?: (pro: MapProfessional) => React.ReactNode;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -149,7 +153,7 @@ export default function PatientMapView({
         marker.bindPopup(
           `<div style="font-size:13px;min-width:160px">
             <strong>${escapeHtml(pro.name || "")}</strong><br/>
-            <span style="color:#64748b;font-size:12px">${escapeHtml(pro.specialty || "")}</span>
+            <span style="color:#64748b;font-size:12px">${escapeHtml(getProfessionLabel(lang, pro.specialty) || "")}</span>
           </div>`,
         );
 
@@ -162,7 +166,7 @@ export default function PatientMapView({
       circle: nextCircle,
       userMarker: nextUserMarker,
     };
-  }, [center, radiusKm, pins, mapCenter]);
+  }, [center, radiusKm, pins, mapCenter, lang]);
 
   return (
     <div

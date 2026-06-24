@@ -5,7 +5,9 @@
 // share own documents WITH A DOCTOR + UN-SHARE (4D-2). i18n via useT().
 
 import { useState, useEffect } from "react";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
+import { getProfessionLabel } from "@/lib/professions";
 import {
   FileText, Plus, X, Download, Loader2, UserCheck, Tag, Share2, CheckCircle2,
   Stethoscope, AlertCircle, XCircle,
@@ -29,7 +31,7 @@ interface Item {
 }
 
 interface CategoryItem {
-  id: string; name: string; groupName: string; icon: string | null; legacyType: string | null;
+  id: string; name: string; slug: string; groupName: string; icon: string | null; legacyType: string | null;
 }
 interface CategoryGroup { group: string; items: CategoryItem[]; }
 
@@ -48,7 +50,7 @@ const LEGACY_KEYS: Record<string, string> = {
 };
 
 export default function DocumentsClient({ initialItems }: { initialItems: Item[] }) {
-  const t = useT();
+  const { lang, t } = useI18n();
   const [items, setItems] = useState<Item[]>(initialItems);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -269,12 +271,18 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
             <div key={grp}>
               <div className="flex items-center gap-2 mb-2 px-1">
                 <Tag size={16} className="text-emerald-500" />
-                <h2 className="text-sm font-bold text-slate-700">{grp}</h2>
+                <h2 className="text-sm font-bold text-slate-700">
+                  {groupedByGroup[grp][0]?.categoryGroup
+                    ? getCategoryGroupLabel(lang, groupedByGroup[grp][0].categoryGroup!)
+                    : grp}
+                </h2>
                 <span className="text-xs text-slate-400">({groupedByGroup[grp].length})</span>
               </div>
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
                 {groupedByGroup[grp].map((it) => {
-                  const itemLabel = it.categoryName || legacyLabel(it.type);
+                  const itemLabel = it.categoryName
+                    ? getCategoryLabel(lang, { name: it.categoryName })
+                    : legacyLabel(it.type);
                   const isOwn = !it.sharedBy;
                   return (
                     <div id={`patient-doc-${it.id}`} key={it.id} className="px-5 py-4 hover:bg-slate-50 transition">
@@ -371,9 +379,9 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm bg-white"
                   >
                     {groups.map((g) => (
-                      <optgroup key={g.group} label={g.group}>
+                      <optgroup key={g.group} label={getCategoryGroupLabel(lang, g.group)}>
                         {g.items.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
+                          <option key={c.id} value={c.id}>{getCategoryLabel(lang, { slug: c.slug, name: c.name })}</option>
                         ))}
                       </optgroup>
                     ))}
@@ -476,7 +484,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-slate-800 text-sm">{d.name}</p>
-                          <p className="text-xs text-slate-500">{d.specialty}</p>
+                          <p className="text-xs text-slate-500">{getProfessionLabel(lang, d.specialty)}</p>
                         </div>
                         {alreadyShared ? (
                           <span className="text-xs text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 size={14} /> {t("docs.share.shared")}</span>

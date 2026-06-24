@@ -6,6 +6,9 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Video, Building2, Star, Calendar, Globe, ExternalLink } from "lucide-react";
+import { cookies } from "next/headers";
+import { normalizeLang } from "@/lib/i18n/translations";
+import { getProfessionLabel } from "@/lib/professions";
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const card = await db.virtualCard.findUnique({
@@ -13,9 +16,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     include: { professional: { select: { firstName: true, lastName: true, specialty: true } } },
   });
   if (!card) return { title: "Not found" };
+  const lang = normalizeLang(cookies().get("doctor8.lang")?.value);
   return {
     title: `Dr. ${card.professional.firstName} ${card.professional.lastName} — Doctor8`,
-    description: `${card.professional.specialty} available on Doctor8`,
+    description: `${getProfessionLabel(lang, card.professional.specialty)} available on Doctor8`,
   };
 }
 
@@ -33,6 +37,7 @@ export default async function PublicProfilePage({ params }: { params: { slug: st
 
   if (!card) notFound();
   const pro = card.professional;
+  const lang = normalizeLang(cookies().get("doctor8.lang")?.value);
   const socialLinks = card.socialLinks as Record<string, string> | null;
 
   return (
@@ -52,7 +57,7 @@ export default async function PublicProfilePage({ params }: { params: { slug: st
             <h1 className="text-2xl font-black text-white">
               Dr. {pro.firstName} {pro.lastName}
             </h1>
-            <p className="text-emerald-400 font-semibold mt-1">{pro.specialty}</p>
+            <p className="text-emerald-400 font-semibold mt-1">{getProfessionLabel(lang, pro.specialty)}</p>
             <p className="text-slate-400 text-sm mt-1">{pro.licenseNumber}</p>
             {card.headline && <p className="text-slate-300 text-sm mt-3 italic">"{card.headline}"</p>}
           </div>

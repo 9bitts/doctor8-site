@@ -3,6 +3,8 @@
 // src/app/(dashboard)/admin/doctors/DoctorsAdminClient.tsx
 import { useState, useEffect } from "react";
 import { Stethoscope, Loader2, CheckCircle2, XCircle, Search } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 
 interface Doctor {
   id: string;
@@ -20,6 +22,7 @@ interface Doctor {
 }
 
 export default function DoctorsAdminClient() {
+  const { lang } = useI18n();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -51,7 +54,7 @@ export default function DoctorsAdminClient() {
   const filtered = doctors.filter((d) =>
     !q || d.name.toLowerCase().includes(q.toLowerCase()) ||
     (d.email || "").toLowerCase().includes(q.toLowerCase()) ||
-    d.specialty.toLowerCase().includes(q.toLowerCase())
+    specialtyMatchesSearch(lang, d.specialty, q)
   );
 
   return (
@@ -97,7 +100,7 @@ export default function DoctorsAdminClient() {
                   )}
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  {d.specialty} · {d.email || "sem e-mail"} · {d.region || "—"}
+                  {getProfessionLabel(lang, d.specialty)} · {d.email || "sem e-mail"} · {d.region || "—"}
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Licença {d.licenseNumber} ({d.licenseCountry}) · {d.appointments} consultas · {d.charts} fichas
