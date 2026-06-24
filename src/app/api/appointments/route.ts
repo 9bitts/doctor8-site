@@ -108,6 +108,7 @@ const createSchema = z.object({
   priceAmount: z.number(),
   currency: z.string(),
   acceptedCancellationPolicy: z.boolean().default(false),
+  bookingSource: z.enum(["patient_panel", "public_profile", "public_search"]).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -219,6 +220,7 @@ export async function POST(req: NextRequest) {
       stripePaymentId: intent.id,
       paidAt: new Date(),
       durationMins,
+      bookingSource: parsed.data.bookingSource ?? "patient_panel",
       ...(acceptedCancellationPolicy
         ? {
             chiefComplaint: JSON.stringify({

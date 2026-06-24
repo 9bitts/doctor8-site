@@ -19,6 +19,7 @@ const PUBLIC_ROUTES = [
   "/hipaa",
   "/dr/",        // short links → canonical public profiles
   "/especialistas/", // public professional directory + profiles
+  "/embed/",       // embeddable booking widget (iframe)
   "/share/",     // shared medical records (token-based)
   "/club/join",  // buying club invite landing (public)
 ];
@@ -40,6 +41,13 @@ const ADMIN_ROUTES = ["/admin"];
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
+
+  if (pathname.startsWith("/embed/")) {
+    const res = NextResponse.next();
+    res.headers.delete("X-Frame-Options");
+    res.headers.set("Content-Security-Policy", "frame-ancestors *");
+    return res;
+  }
 
   if (isPublicRoute(pathname)) return NextResponse.next();
 

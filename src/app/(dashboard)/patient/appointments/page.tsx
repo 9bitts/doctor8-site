@@ -136,21 +136,29 @@ export default function AppointmentsPage() {
     providerName?: string;
   } | null>(null);
 
+  const [bookingSource, setBookingSource] = useState<
+    "patient_panel" | "public_profile" | "public_search"
+  >("patient_panel");
+
   useEffect(() => { fetchProfessionals(); fetchAppointments(); }, []);
   useEffect(() => { if (step === "payment" && !stripeLoaded) loadStripe(); }, [step]);
   useEffect(() => { setShowTip(true); }, [step]);
 
-  // Deep link: /patient/appointments?pro=ID&providerType=psychoanalyst
+  // Deep link: /patient/appointments?pro=ID&providerType=...&slot=...&from=public_profile
   useEffect(() => {
     if (professionals.length === 0 || selectedPro) return;
     const params = new URLSearchParams(window.location.search);
     const proId = params.get("pro");
     if (!proId) return;
     const providerType = params.get("providerType") || undefined;
+    const from = params.get("from");
+    if (from === "public_profile" || from === "public_search") {
+      setBookingSource(from);
+    }
     const pro = professionals.find((p) =>
       p.id === proId && (!providerType || p.providerType === providerType)
     );
-    if (pro) selectProfessional(pro);
+    if (pro) selectProfessional(pro, params.get("slot") || undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionals]);
 
@@ -212,7 +220,7 @@ export default function AppointmentsPage() {
     setAppointments(d.appointments || []);
   }
 
-  async function selectProfessional(pro: Professional) {
+  async function selectProfessional(pro: Professional, preselectSlot?: string) {
     setSelectedPro(pro);
     setStep("slots");
     setSelectedDay(null);
@@ -223,7 +231,18 @@ export default function AppointmentsPage() {
       const d    = await res.json();
       const days = (d.days || []).filter((day: SlotDay) => day.slots.some((s) => s.available));
       setSlots(days);
-      if (days.length > 0) setSelectedDay(days[0]);
+      if (days.length > 0) {
+        const dayWithSlot = preselectSlot
+          ? days.find((day: SlotDay) =>
+              day.slots.some((s) => s.datetime === preselectSlot && s.available)
+            )
+          : null;
+        const day = dayWithSlot ?? days[0];
+        setSelectedDay(day);
+        if (preselectSlot && day.slots.some((s: SlotDay["slots"][number]) => s.datetime === preselectSlot && s.available)) {
+          setSelectedSlot(preselectSlot);
+        }
+      }
     } finally { setSlotsLoading(false); }
   }
 
@@ -266,6 +285,7 @@ export default function AppointmentsPage() {
             priceAmount:                intentData.amount,
             currency:                   intentData.currency,
             acceptedCancellationPolicy: acceptedPolicy,
+            bookingSource,
           }),
         });
         const apptData = await apptRes.json();

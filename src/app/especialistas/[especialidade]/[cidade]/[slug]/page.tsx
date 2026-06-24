@@ -18,6 +18,7 @@ import PublicBookingPanel from "@/components/public/PublicBookingPanel";
 import PublicProfilePlaces from "@/components/public/PublicProfilePlaces";
 import PublicServicesList from "@/components/public/PublicServicesList";
 import PublicReviewsSection from "@/components/public/PublicReviewsSection";
+import PublicProfileTracker from "@/components/public/PublicProfileTracker";
 
 export async function generateMetadata({
   params,
@@ -87,6 +88,7 @@ export default async function PublicSpecialistPage({
 
   return (
     <>
+      <PublicProfileTracker slug={profile.slug} source="public_profile" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

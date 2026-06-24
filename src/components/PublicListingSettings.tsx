@@ -1,11 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   Globe, Copy, CheckCircle2, Loader2, ExternalLink, Eye, EyeOff, Clock, MapPin,
+  BarChart3, MousePointerClick, CalendarCheck,
 } from "lucide-react";
+
+type ProfileAnalytics = {
+  views7d: number;
+  views30d: number;
+  bookClicks7d: number;
+  bookClicks30d: number;
+  bookings30d: number;
+  conversionRate30d: number | null;
+};
 
 type ListingInfo = {
   slug: string;
@@ -15,6 +25,7 @@ type ListingInfo = {
   status: "pending_approval" | "hidden" | "live";
   verified: boolean;
   googleBusinessUrl: string | null;
+  analytics?: ProfileAnalytics;
 };
 
 export default function PublicListingSettings({ apiPath }: { apiPath: string }) {
@@ -176,6 +187,52 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
         )}
       </div>
 
+      {info.analytics && (
+        <div className="border-t border-slate-100 pt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <BarChart3 size={16} className="text-brand-500" />
+            {t("pubAnalytics.title")}
+          </h3>
+          <p className="text-xs text-slate-500">{t("pubAnalytics.subtitle")}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <StatCard
+              label={t("pubAnalytics.views7d")}
+              value={info.analytics.views7d}
+              icon={<Eye size={14} className="text-brand-500" />}
+            />
+            <StatCard
+              label={t("pubAnalytics.views30d")}
+              value={info.analytics.views30d}
+              icon={<Eye size={14} className="text-slate-400" />}
+            />
+            <StatCard
+              label={t("pubAnalytics.clicks7d")}
+              value={info.analytics.bookClicks7d}
+              icon={<MousePointerClick size={14} className="text-brand-500" />}
+            />
+            <StatCard
+              label={t("pubAnalytics.clicks30d")}
+              value={info.analytics.bookClicks30d}
+              icon={<MousePointerClick size={14} className="text-slate-400" />}
+            />
+            <StatCard
+              label={t("pubAnalytics.bookings30d")}
+              value={info.analytics.bookings30d}
+              icon={<CalendarCheck size={14} className="text-emerald-500" />}
+            />
+            <StatCard
+              label={t("pubAnalytics.conversion30d")}
+              value={
+                info.analytics.conversionRate30d != null
+                  ? `${info.analytics.conversionRate30d}%`
+                  : "?"
+              }
+              icon={<BarChart3 size={14} className="text-amber-500" />}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="border-t border-slate-100 pt-4 space-y-2">
         <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
           <MapPin size={16} className="text-brand-500" />
@@ -200,6 +257,26 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: number | string;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mb-1">
+        {icon}
+        <span className="leading-tight">{label}</span>
+      </div>
+      <p className="text-lg font-bold text-slate-800">{value}</p>
     </div>
   );
 }

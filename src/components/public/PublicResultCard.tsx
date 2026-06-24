@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { PublicSearchResult } from "@/lib/public-search";
 import { cityToSeoSlug } from "@/lib/public-slugs";
+import { trackPublicBookClick } from "@/components/public/PublicProfileTracker";
 
 function StarRating({ avg, count }: { avg: number | null; count: number }) {
   if (!avg || count === 0) return null;
@@ -175,8 +176,9 @@ export default function PublicResultCard({
                         <Link
                           key={slot.datetime}
                           href={`/login?callbackUrl=${encodeURIComponent(
-                            `/patient/appointments?pro=${pro.providerId}&providerType=${pro.providerType}&slot=${slot.datetime}`
+                            `/patient/appointments?pro=${pro.providerId}&providerType=${pro.providerType}&slot=${slot.datetime}&from=public_search`
                           )}`}
+                          onClick={() => trackPublicBookClick(pro.slug, "public_search")}
                           className="block text-center text-xs font-medium bg-white border border-brand-100 text-brand-600 hover:bg-brand-50 rounded-lg py-1.5 transition"
                         >
                           {slot.time}

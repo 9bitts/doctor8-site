@@ -7,6 +7,7 @@ import { localeOf } from "@/lib/i18n/translations";
 import { Calendar, ChevronRight, Loader2 } from "lucide-react";
 import type { PublicProfileData } from "@/lib/public-profile";
 import SlotAlertForm from "@/components/public/SlotAlertForm";
+import { trackPublicBookClick } from "@/components/public/PublicProfileTracker";
 
 type DaySlots = {
   date: string;
@@ -60,6 +61,7 @@ export default function PublicBookingPanel({ profile }: { profile: PublicProfile
   const bookParams = new URLSearchParams({
     pro: profile.providerId,
     providerType: profile.providerType,
+    from: "public_profile",
     ...(selectedSlot ? { slot: selectedSlot } : {}),
   });
   const loginUrl = `/login?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
@@ -131,6 +133,7 @@ export default function PublicBookingPanel({ profile }: { profile: PublicProfile
 
       <Link
         href={loginUrl}
+        onClick={() => trackPublicBookClick(profile.slug, "public_profile")}
         className="flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-400 text-white font-semibold py-3.5 rounded-xl transition"
       >
         <Calendar size={18} />

@@ -8,6 +8,7 @@ import {
   getPublicListingStatus,
   ensureVirtualCard,
 } from "@/lib/public-profile";
+import { getPublicProfileAnalytics } from "@/lib/public-analytics";
 
 function parseGoogleBusinessUrl(raw: unknown): string | null | false {
   if (raw === null || raw === "") return null;
@@ -49,6 +50,7 @@ export async function GET() {
   if (!card) return NextResponse.json({ error: "Card not found" }, { status: 500 });
 
   const status = getPublicListingStatus(profile.verified, card.isPublic);
+  const analytics = await getPublicProfileAnalytics(card.id, profile.id, "health");
 
   return NextResponse.json({
     slug: card.slug,
@@ -60,6 +62,7 @@ export async function GET() {
     specialtySlug: card.specialtySlug,
     citySlug: card.citySlug,
     googleBusinessUrl: card.googleBusinessUrl,
+    analytics,
   });
 }
 

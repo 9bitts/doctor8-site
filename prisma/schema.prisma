@@ -490,6 +490,8 @@ model Appointment {
   reminder1hSent   Boolean @default(false)
   reviewRequestSent Boolean @default(false)
 
+  bookingSource    String?  // patient_panel | public_profile | public_search
+
   cancelledAt      DateTime?
   cancelledBy      String?
   cancelReason     String?
@@ -676,10 +678,29 @@ model VirtualCard {
   socialLinks     Json?
   isPublic        Boolean               @default(false)
 
+  profileEvents   PublicProfileEvent[]
+
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
 
   @@index([specialtySlug, citySlug])
+}
+
+enum PublicProfileEventType {
+  VIEW
+  BOOK_CLICK
+}
+
+model PublicProfileEvent {
+  id            String                 @id @default(cuid())
+  virtualCardId String
+  virtualCard   VirtualCard            @relation(fields: [virtualCardId], references: [id], onDelete: Cascade)
+  type          PublicProfileEventType
+  source        String?
+  createdAt     DateTime               @default(now())
+
+  @@index([virtualCardId, createdAt])
+  @@index([virtualCardId, type, createdAt])
 }
 
 // ─────────────────────────────────────────
