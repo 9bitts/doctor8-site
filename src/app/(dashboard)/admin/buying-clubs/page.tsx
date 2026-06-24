@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ShoppingBag, Loader2, Search, Users } from "lucide-react";
+import { ShoppingBag, Loader2, Search, Users, Stethoscope, User } from "lucide-react";
 
 interface Club {
   id: string;
   status: string;
   activeCount: number;
+  patientCount: number;
+  professionalCount: number;
   drugName: string;
   activeIngredient: string;
   presentation: string;
@@ -47,6 +49,8 @@ export default function BuyingClubsAdminClient() {
   });
 
   const totalMembers = clubs.reduce((sum, c) => sum + c.activeCount, 0);
+  const totalPatients = clubs.reduce((sum, c) => sum + c.patientCount, 0);
+  const totalProfessionals = clubs.reduce((sum, c) => sum + c.professionalCount, 0);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -54,6 +58,7 @@ export default function BuyingClubsAdminClient() {
         <h1 className="text-2xl font-bold text-slate-900">Clubes de Compras</h1>
         <p className="text-slate-500 mt-1">
           {clubs.length} clube(s) · {totalMembers} participante(s) ativos no total
+          {" "}({totalPatients} paciente(s) · {totalProfessionals} profissional(is))
         </p>
       </div>
 
@@ -93,6 +98,14 @@ export default function BuyingClubsAdminClient() {
               <div className="text-right shrink-0 space-y-1">
                 <p className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
                   <Users size={14} /> {c.activeCount} ativo(s)
+                </p>
+                <p className="text-[11px] text-slate-500 flex items-center justify-end gap-2">
+                  <span className="inline-flex items-center gap-0.5">
+                    <User size={11} /> {c.patientCount}
+                  </span>
+                  <span className="inline-flex items-center gap-0.5">
+                    <Stethoscope size={11} /> {c.professionalCount}
+                  </span>
                 </p>
                 <p className="text-[11px] text-slate-400">
                   {STATUS_LABELS[c.status] || c.status}

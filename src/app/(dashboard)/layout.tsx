@@ -46,6 +46,7 @@ const PROFESSIONAL_NAV: NavItem[] = [
   { href: "/professional/categories", labelKey: "nav.categories", icon: <Layers size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/prescriptions", labelKey: "nav.prescriptions", icon: <Stethoscope size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/professional/buying-club", labelKey: "nav.buyingClub", icon: <ShoppingBag size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/jit", labelKey: "nav.jit", icon: <Radio size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["PROFESSIONAL"] },
