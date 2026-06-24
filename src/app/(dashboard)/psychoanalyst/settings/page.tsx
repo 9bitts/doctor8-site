@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import PublicListingSettings from "@/components/PublicListingSettings";
 import { Loader2, CheckCircle2, Video, Building2, DollarSign } from "lucide-react";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
@@ -131,6 +132,8 @@ export default function PsychoanalystSettingsPage() {
       </div>
 
       {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl p-3">{error}</p>}
+
+      <PublicListingSettings apiPath="/api/psychoanalyst/public-profile" />
 
       <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-sm">
         <div className="grid sm:grid-cols-2 gap-4">

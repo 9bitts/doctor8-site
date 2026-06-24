@@ -10,6 +10,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { getOrCreateRoom, createMeetingToken } from "@/lib/daily";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
+import { safeDecrypt } from "@/lib/psychoanalyst-api";
 
 export async function GET(
   req: NextRequest,
@@ -70,10 +71,18 @@ export async function GET(
 
   const room = await getOrCreateRoom(appointment.id, appointment.scheduledAt, duration);
 
+  const providerLabel = provider
+    ? `${appointment.professional ? "Dr. " : ""}${
+        appointment.psychoanalyst
+          ? `${safeDecrypt(provider.firstName)} ${safeDecrypt(provider.lastName)}`
+          : `${provider.firstName} ${provider.lastName}`
+      }`
+    : "";
+
   const userName = isPatient
     ? `${appointment.patient.firstName} ${appointment.patient.lastName}`
     : provider
-      ? `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
+      ? providerLabel || "Provider"
       : "Provider";
 
   const tokenExp = Math.floor(joinClosesAt / 1000);
@@ -89,10 +98,6 @@ export async function GET(
       appointment.patient.userId,
     );
   }
-
-  const providerLabel = provider
-    ? `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
-    : "";
 
   return NextResponse.json({
     url:            room.url,

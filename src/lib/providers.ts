@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
 
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
+import { safeDecrypt } from "@/lib/psychoanalyst-api";
 
 export { PSYCHOANALYSIS_SPECIALTY };
 
@@ -166,8 +167,8 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
   const analystMapped: UnifiedProvider[] = analysts.map((p) => ({
     id: p.id,
     providerType: "psychoanalyst" as const,
-    firstName: p.firstName,
-    lastName: p.lastName,
+    firstName: safeDecrypt(p.firstName),
+    lastName: safeDecrypt(p.lastName),
     specialty: PSYCHOANALYSIS_SPECIALTY,
     bio: p.bio,
     avatarUrl: p.avatarUrl,
@@ -288,8 +289,8 @@ export async function getUnifiedProvider(
   return {
     id: p.id,
     providerType: "psychoanalyst",
-    firstName: p.firstName,
-    lastName: p.lastName,
+    firstName: safeDecrypt(p.firstName),
+    lastName: safeDecrypt(p.lastName),
     specialty: PSYCHOANALYSIS_SPECIALTY,
     bio: p.bio,
     avatarUrl: p.avatarUrl,

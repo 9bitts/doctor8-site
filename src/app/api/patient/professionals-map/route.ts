@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { geocodeAddress, buildClinicAddress, haversineKm, GeoPoint } from "@/lib/geo";
 import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
+import { safeDecrypt } from "@/lib/psychoanalyst-api";
 
 const GEOCODE_BATCH = 8;
 const RADIUS_OPTIONS = [5, 10, 50];
@@ -301,9 +302,9 @@ export async function GET(req: NextRequest) {
     return {
       id:               pa.id,
       providerType:     "psychoanalyst" as const,
-      name:             `${pa.firstName} ${pa.lastName}`.trim(),
-      firstName:        pa.firstName,
-      lastName:         pa.lastName,
+      name:             `${safeDecrypt(pa.firstName)} ${safeDecrypt(pa.lastName)}`.trim(),
+      firstName:        safeDecrypt(pa.firstName),
+      lastName:         safeDecrypt(pa.lastName),
       specialty:        PSYCHOANALYSIS_SPECIALTY,
       professionType:   "psychoanalyst",
       license:          "",

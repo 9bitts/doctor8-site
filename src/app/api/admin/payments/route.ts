@@ -34,7 +34,7 @@ export async function GET() {
       doctorName: a.professional
         ? `${a.professional.firstName} ${a.professional.lastName}`.trim()
         : a.psychoanalyst
-          ? `${a.psychoanalyst.firstName} ${a.psychoanalyst.lastName}`.trim()
+          ? `${safeDecrypt(a.psychoanalyst.firstName)} ${safeDecrypt(a.psychoanalyst.lastName)}`.trim()
           : "—",
       amount: a.priceAmount,          // cents
       currency: a.currency,

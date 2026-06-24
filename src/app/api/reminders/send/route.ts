@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
   const doctorName = appointment.professional
     ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
     : appointment.psychoanalyst
-      ? `${appointment.psychoanalyst.firstName} ${appointment.psychoanalyst.lastName}`
+      ? `${safeDecrypt(appointment.psychoanalyst.firstName)} ${safeDecrypt(appointment.psychoanalyst.lastName)}`
       : "Provider";
   const scheduledAt = new Date(appointment.scheduledAt);
   const hoursUntil = Math.round((scheduledAt.getTime() - Date.now()) / 3600000);

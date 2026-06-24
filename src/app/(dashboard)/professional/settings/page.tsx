@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { PROFESSION_GROUPS, getProfessionLabel } from "@/lib/professions";
+import PublicListingSettings from "@/components/PublicListingSettings";
 import {
   Loader2, CheckCircle2, Video, Building2, DollarSign, User, Award, Camera, X, Plus,
 } from "lucide-react";
@@ -166,6 +167,8 @@ export default function ProfessionalSettings() {
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-4"><p className="text-rose-700 text-sm">{error}</p></div>
       )}
+
+      <PublicListingSettings apiPath="/api/professional/public-profile" />
 
       {/* Photo + Identity */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">

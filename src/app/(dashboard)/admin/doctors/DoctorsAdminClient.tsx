@@ -2,7 +2,7 @@
 
 // src/app/(dashboard)/admin/doctors/DoctorsAdminClient.tsx
 import { useState, useEffect } from "react";
-import { Stethoscope, Loader2, CheckCircle2, XCircle, Search } from "lucide-react";
+import { Stethoscope, Loader2, CheckCircle2, XCircle, Search, Globe, ExternalLink } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 
@@ -19,6 +19,8 @@ interface Doctor {
   appointments: number;
   charts: number;
   createdAt: string;
+  publicUrl: string | null;
+  isPublic: boolean;
 }
 
 export default function DoctorsAdminClient() {
@@ -60,8 +62,8 @@ export default function DoctorsAdminClient() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Médicos</h1>
-        <p className="text-slate-500 mt-1">{doctors.length} profissionais cadastrados</p>
+        <h1 className="text-2xl font-bold text-slate-900">Profissionais</h1>
+        <p className="text-slate-500 mt-1">{doctors.length} cadastrados — aprovação libera listagem pública</p>
       </div>
 
       <div className="relative">
@@ -91,11 +93,16 @@ export default function DoctorsAdminClient() {
                   <p className="font-semibold text-slate-800 text-sm">{d.name}</p>
                   {d.verified ? (
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 size={11} /> Verificado
+                      <CheckCircle2 size={11} /> Listagem aprovada
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-                      Pendente
+                      Aguardando aprovação
+                    </span>
+                  )}
+                  {d.isPublic && d.verified && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
+                      <Globe size={11} /> Público
                     </span>
                   )}
                 </div>
@@ -105,6 +112,12 @@ export default function DoctorsAdminClient() {
                 <p className="text-xs text-slate-400 mt-0.5">
                   Licença {d.licenseNumber} ({d.licenseCountry}) · {d.appointments} consultas · {d.charts} fichas
                 </p>
+                {d.publicUrl && (
+                  <a href={d.publicUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline mt-1">
+                    <ExternalLink size={11} /> {d.publicUrl.replace(/^https?:\/\//, "")}
+                  </a>
+                )}
               </div>
               <button onClick={() => toggleVerified(d)} disabled={busyId === d.id}
                 className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition disabled:opacity-50 ${
@@ -113,7 +126,7 @@ export default function DoctorsAdminClient() {
                     : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"
                 }`}>
                 {busyId === d.id ? <Loader2 size={14} className="animate-spin" /> : d.verified ? <XCircle size={14} /> : <CheckCircle2 size={14} />}
-                {d.verified ? "Desaprovar" : "Aprovar"}
+                {d.verified ? "Revogar" : "Aprovar listagem"}
               </button>
             </div>
           ))}

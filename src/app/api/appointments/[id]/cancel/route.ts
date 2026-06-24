@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
+import { safeDecrypt } from "@/lib/psychoanalyst-api";
 
 export async function POST(
   req: NextRequest,
@@ -103,7 +104,9 @@ export async function POST(
   const cancellerName = isPatient
     ? `${appointment.patient.firstName} ${appointment.patient.lastName}`
     : provider
-      ? `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
+      ? appointment.psychoanalyst
+        ? `${safeDecrypt(provider.firstName)} ${safeDecrypt(provider.lastName)}`
+        : `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
       : "Provider";
 
   await createNotification({

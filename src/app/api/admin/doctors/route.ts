@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { buildPublicProfileUrl } from "@/lib/public-profile";
 
 export async function GET() {
   const session = await getAdminSession();
@@ -12,6 +13,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     include: {
       user: { select: { email: true, region: true, createdAt: true } },
+      virtualCard: true,
       _count: { select: { appointments: true, patientRecords: true } },
     },
   });
@@ -29,6 +31,11 @@ export async function GET() {
     appointments: p._count.appointments,
     charts: p._count.patientRecords,
     createdAt: p.createdAt.toISOString(),
+    isPublic: p.virtualCard?.isPublic ?? false,
+    publicUrl:
+      p.verified && p.virtualCard?.isPublic && p.virtualCard.specialtySlug && p.virtualCard.citySlug
+        ? buildPublicProfileUrl(p.virtualCard)
+        : null,
   }));
 
   return NextResponse.json({ doctors });

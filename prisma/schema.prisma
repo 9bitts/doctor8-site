@@ -310,7 +310,7 @@ model ProfessionalProfile {
   medicalDocuments    MedicalDocument[]
   prescriptions       Prescription[]
   availabilitySlots   AvailabilitySlot[]
-  virtualCard         VirtualCard?
+  virtualCard         VirtualCard?        @relation("ProfessionalVirtualCard")
   patientRecords      PatientRecord[]
   sharedDocuments  SharedRecord[]  @relation("DocsSharedWithProfessional")
   resources      Resource[]
@@ -379,6 +379,7 @@ model PsychoanalystProfile {
   medicalDocuments    MedicalDocument[]
   analysandRecords    AnalysandRecord[]
   availabilitySlots   PsychoanalystAvailabilitySlot[]
+  virtualCard         VirtualCard?        @relation("PsychoanalystVirtualCard")
   favorites           PsychoanalystFavorite[]
   reviews             PsychoanalystReview[]
 
@@ -649,18 +650,24 @@ model Subscription {
 // ─────────────────────────────────────────
 
 model VirtualCard {
-  id             String              @id @default(cuid())
-  professionalId String              @unique
-  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id])
+  id              String                @id @default(cuid())
+  professionalId  String?               @unique
+  professional    ProfessionalProfile?  @relation("ProfessionalVirtualCard", fields: [professionalId], references: [id])
+  psychoanalystId String?               @unique
+  psychoanalyst   PsychoanalystProfile? @relation("PsychoanalystVirtualCard", fields: [psychoanalystId], references: [id])
 
-  slug           String              @unique  // doctor8.app/dr/slug
-  headline       String?
-  website        String?
-  socialLinks    Json?
-  isPublic       Boolean             @default(true)
+  slug            String                @unique
+  specialtySlug   String                @default("")
+  citySlug        String                @default("")
+  headline        String?
+  website         String?
+  socialLinks     Json?
+  isPublic        Boolean               @default(false)
 
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([specialtySlug, citySlug])
 }
 
 // ─────────────────────────────────────────

@@ -7,6 +7,7 @@ import { audit } from "@/lib/audit";
 import { stripe } from "@/lib/stripe";
 import { scheduleAppointmentReminders } from "@/lib/qstash";
 import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
+import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { z } from "zod";
 
 export async function GET(req: NextRequest) {
@@ -82,8 +83,8 @@ export async function GET(req: NextRequest) {
         ...a,
         providerType: "psychoanalyst",
         professional: {
-          firstName: a.psychoanalyst.firstName,
-          lastName: a.psychoanalyst.lastName,
+          firstName: safeDecrypt(a.psychoanalyst.firstName),
+          lastName: safeDecrypt(a.psychoanalyst.lastName),
           specialty: PSYCHOANALYSIS_SPECIALTY,
           avatarUrl: a.psychoanalyst.avatarUrl,
         },
@@ -150,7 +151,7 @@ export async function POST(req: NextRequest) {
       where: { id: providerId, verified: true },
     });
     if (!psychoanalyst) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
-    providerName = `${psychoanalyst.firstName} ${psychoanalyst.lastName}`;
+    providerName = `${safeDecrypt(psychoanalyst.firstName)} ${safeDecrypt(psychoanalyst.lastName)}`;
     providerSpecialty = PSYCHOANALYSIS_SPECIALTY;
     durationMins = psychoanalyst.sessionDurationMins;
   } else {

@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { scheduleAppointmentReminders } from "@/lib/qstash";
+import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { z } from "zod";
 
 const schema = z.object({
@@ -91,7 +92,7 @@ export async function POST(
         patientName:   `${patientProfile.firstName} ${patientProfile.lastName}`,
         doctorName:    appointment.professional
           ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
-          : `${appointment.psychoanalyst!.firstName} ${appointment.psychoanalyst!.lastName}`,
+          : `${safeDecrypt(appointment.psychoanalyst!.firstName)} ${safeDecrypt(appointment.psychoanalyst!.lastName)}`,
         specialty:     "",
         scheduledAt:   new Date(newScheduledAt),
         type:          appointment.type,

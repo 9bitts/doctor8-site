@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
 import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
 import { getUserLang } from "@/lib/i18n/server-lang";
+import { decryptPsychoanalystNameFields, safeDecrypt } from "@/lib/psychoanalyst-api";
 import { Calendar, Users, ChevronRight, Video, Settings, FileText } from "lucide-react";
 import Link from "next/link";
 
@@ -21,6 +22,8 @@ export default async function PsychoanalystDashboard() {
     where: { userId },
   });
   if (!profile) redirect("/psychoanalyst/settings");
+
+  const displayProfile = decryptPsychoanalystNameFields(profile);
 
   await audit.viewRecord(userId, "PsychoanalystProfile", profile.id);
 
@@ -59,7 +62,7 @@ export default async function PsychoanalystDashboard() {
       <div>
         <p className="text-slate-500 text-sm">{greet}</p>
         <h1 className="text-2xl font-bold text-slate-900">
-          {profile.firstName} {profile.lastName}
+          {displayProfile.firstName} {displayProfile.lastName}
         </h1>
         <p className="text-violet-600 text-sm font-medium mt-1">{t("pa.dash.subtitle")}</p>
       </div>
@@ -122,7 +125,7 @@ export default async function PsychoanalystDashboard() {
               <div key={apt.id} className="px-5 py-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="font-medium text-slate-800 text-sm">
-                    {apt.patient.firstName} {apt.patient.lastName}
+                    {safeDecrypt(apt.patient.firstName)} {safeDecrypt(apt.patient.lastName)}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {new Date(apt.scheduledAt).toLocaleString(locale)}

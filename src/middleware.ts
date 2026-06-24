@@ -17,7 +17,8 @@ const PUBLIC_ROUTES = [
   "/privacy",
   "/terms",
   "/hipaa",
-  "/dr/",        // professional virtual cards (public)
+  "/dr/",        // short links → canonical public profiles
+  "/especialistas/", // public professional directory + profiles
   "/share/",     // shared medical records (token-based)
   "/club/join",  // buying club invite landing (public)
 ];
@@ -44,6 +45,9 @@ export default auth((req) => {
 
   // Allow API auth routes
   if (pathname.startsWith("/api/auth")) return NextResponse.next();
+
+  // Public read-only APIs (professional profiles, slots)
+  if (pathname.startsWith("/api/public/")) return NextResponse.next();
 
   // Public buying-club invite preview
   if (pathname.startsWith("/api/buying-club/public")) return NextResponse.next();

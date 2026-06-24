@@ -9,6 +9,7 @@ import { createMeetingToken } from "@/lib/video";
 import { audit } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
 import { decrypt } from "@/lib/encryption";
+import { safeDecrypt } from "@/lib/psychoanalyst-api";
 
 export async function GET(
   req: NextRequest,
@@ -64,7 +65,9 @@ export async function GET(
   if (isPatient) {
     participantName = `${decrypt(appointment.patient.firstName)} ${decrypt(appointment.patient.lastName)}`;
   } else if (provider) {
-    participantName = `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`;
+    const fn = appointment.psychoanalyst ? safeDecrypt(provider.firstName) : provider.firstName;
+    const ln = appointment.psychoanalyst ? safeDecrypt(provider.lastName) : provider.lastName;
+    participantName = `${appointment.professional ? "Dr. " : ""}${fn} ${ln}`;
   } else {
     participantName = "Provider";
   }

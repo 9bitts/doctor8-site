@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
-import { requirePsychoanalyst } from "@/lib/psychoanalyst-api";
+import { decryptPsychoanalystNameFields, requirePsychoanalyst } from "@/lib/psychoanalyst-api";
 
 export async function GET() {
   const ctx = await requirePsychoanalyst();
@@ -13,7 +13,7 @@ export async function GET() {
     where: { id: psychoanalyst.id },
   });
 
-  return NextResponse.json({ profile });
+  return NextResponse.json({ profile: profile ? decryptPsychoanalystNameFields(profile) : null });
 }
 
 export async function POST(req: NextRequest) {
@@ -97,8 +97,6 @@ export async function POST(req: NextRequest) {
     clinicState: clinicState || null,
     clinicCountry: clinicCountry || null,
     clinicZip: clinicZip || null,
-    verified: isComplete,
-    verifiedAt: isComplete ? new Date() : null,
   };
 
   const profile = await db.psychoanalystProfile.update({
@@ -106,6 +104,16 @@ export async function POST(req: NextRequest) {
     data,
   });
 
+  const { ensureVirtualCard } = await import("@/lib/public-profile");
+  const { PSYCHOANALYSIS_SPECIALTY } = await import("@/lib/professions");
+  await ensureVirtualCard({
+    psychoanalystId: profile.id,
+    firstName,
+    lastName,
+    specialty: PSYCHOANALYSIS_SPECIALTY,
+    clinicCity: profile.clinicCity,
+  });
+
   await audit.updateRecord(session.user.id, "PsychoanalystProfile", profile.id);
-  return NextResponse.json({ profile, success: true });
+  return NextResponse.json({ profile, success: true, profileComplete: isComplete });
 }

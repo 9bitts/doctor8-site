@@ -85,13 +85,13 @@ export async function POST(
   await createNotification({
     userId: linkedUserId,
     title: "New session note shared",
-    body: `${psychoanalyst.firstName} ${psychoanalyst.lastName} shared a session note with you.`,
+    body: `${safeDecrypt(psychoanalyst.firstName)} ${safeDecrypt(psychoanalyst.lastName)} shared a session note with you.`,
     type: "shared_record",
     data: {
       documentId: doc.id,
       titleKey: "notif.sessionShared.title",
       bodyKey: "notif.sessionShared.body",
-      bodyParams: { analyst: `${psychoanalyst.firstName} ${psychoanalyst.lastName}` },
+      bodyParams: { analyst: `${safeDecrypt(psychoanalyst.firstName)} ${safeDecrypt(psychoanalyst.lastName)}` },
     },
   });
 
@@ -124,7 +124,7 @@ export async function PUT(
     await sendPatientInvite({
       email: record.email,
       patientName: `${safeDecrypt(record.firstName)} ${safeDecrypt(record.lastName)}`.trim(),
-      doctorName: `${psychoanalyst.firstName} ${psychoanalyst.lastName}`.trim(),
+      doctorName: `${safeDecrypt(psychoanalyst.firstName)} ${safeDecrypt(psychoanalyst.lastName)}`.trim(),
       language: sender?.language,
     });
   } catch {

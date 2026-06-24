@@ -1,0 +1,275 @@
+// Public professional profile ? SEO URL: /especialistas/[especialidade]/[cidade]/[slug]
+
+import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import {
+  MapPin, Video, Building2, Star, CheckCircle2, Stethoscope, Award,
+} from "lucide-react";
+import { cookies } from "next/headers";
+import { normalizeLang, translate } from "@/lib/i18n/translations";
+import { getProfessionLabel } from "@/lib/professions";
+import {
+  getLivePublicProfileBySlug,
+  buildPublicProfilePath,
+  buildPublicProfileUrl,
+  buildPhysicianJsonLd,
+} from "@/lib/public-profile";
+import PublicBookingPanel from "@/components/public/PublicBookingPanel";
+
+const PublicMiniMap = dynamic(() => import("@/components/public/PublicMiniMap"), {
+  ssr: false,
+  loading: () => <div className="w-full h-[200px] bg-slate-50 rounded-xl animate-pulse" />,
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { especialidade: string; cidade: string; slug: string };
+}) {
+  const profile = await getLivePublicProfileBySlug(params.slug);
+  if (!profile) return { title: "N?o encontrado ? Doctor8" };
+
+  const lang = normalizeLang(cookies().get("doctor8.lang")?.value);
+  const specialtyLabel = getProfessionLabel(lang, profile.specialty);
+  const name = `${profile.firstName} ${profile.lastName}`.trim();
+  const city = profile.clinicCity || params.cidade.replace(/-/g, " ");
+
+  return {
+    title: `${name} ? ${specialtyLabel} em ${city} | Doctor8`,
+    description:
+      profile.bio?.slice(0, 160) ||
+      `Agende consulta com ${name}, ${specialtyLabel} em ${city}.`,
+    alternates: {
+      canonical: buildPublicProfileUrl(profile),
+    },
+    openGraph: {
+      title: `${name} ? ${specialtyLabel}`,
+      description: profile.bio?.slice(0, 160) || `Agende sua consulta no Doctor8`,
+      url: buildPublicProfileUrl(profile),
+      type: "profile",
+      ...(profile.avatarUrl ? { images: [{ url: profile.avatarUrl }] } : {}),
+    },
+  };
+}
+
+function StarRating({ avg, count }: { avg: number | null; count: number }) {
+  if (!avg || count === 0) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-amber-500">
+      <Star size={14} fill="currentColor" />
+      <span className="text-sm font-semibold text-slate-700">{avg.toFixed(1)}</span>
+      <span className="text-xs text-slate-400">({count})</span>
+    </span>
+  );
+}
+
+export default async function PublicSpecialistPage({
+  params,
+}: {
+  params: { especialidade: string; cidade: string; slug: string };
+}) {
+  const profile = await getLivePublicProfileBySlug(params.slug);
+  if (!profile) notFound();
+
+  const canonicalPath = buildPublicProfilePath(profile);
+  const requestedPath = `/especialistas/${params.especialidade}/${params.cidade}/${params.slug}`;
+  if (requestedPath !== canonicalPath) {
+    redirect(canonicalPath);
+  }
+
+  const lang = normalizeLang(cookies().get("doctor8.lang")?.value);
+  const t = (key: string) => translate(lang, key);
+  const specialtyLabel = getProfessionLabel(lang, profile.specialty);
+  const name = `${profile.firstName} ${profile.lastName}`.trim();
+  const initials = `${profile.firstName[0] || ""}${profile.lastName[0] || ""}`;
+  const hasCoords =
+    profile.clinicLatitude != null &&
+    profile.clinicLongitude != null &&
+    Number.isFinite(profile.clinicLatitude) &&
+    Number.isFinite(profile.clinicLongitude);
+
+  const addressParts = [
+    profile.clinicAddress,
+    profile.clinicCity,
+    profile.clinicState,
+    profile.clinicCountry,
+  ].filter(Boolean);
+
+  const jsonLd = buildPhysicianJsonLd(profile, buildPublicProfileUrl(profile));
+
+  const currency = profile.currency || "BRL";
+  function fmtPrice(cents: number): string {
+    try {
+      return new Intl.NumberFormat(lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en-US", {
+        style: "currency",
+        currency,
+      }).format(cents / 100);
+    } catch {
+      return `R$ ${(cents / 100).toFixed(2)}`;
+    }
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <div className="min-h-screen bg-slate-50">
+        {/* Header */}
+        <header className="bg-brand-500 text-white">
+          <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <Link href="/register" className="text-xl font-black tracking-tight">
+              Doctor<span className="text-accent-400">8</span>
+            </Link>
+            <div className="flex items-center gap-3 text-sm">
+              <Link href="/login" className="hover:underline opacity-90">
+                {t("pub.headerLogin")}
+              </Link>
+              <Link
+                href="/register"
+                className="bg-white text-brand-600 font-semibold px-4 py-2 rounded-full hover:bg-brand-50 transition"
+              >
+                {t("pub.headerRegister")}
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-6xl mx-auto px-4 py-6 lg:py-8">
+          <div className="grid lg:grid-cols-[1fr_340px_280px] gap-5">
+            {/* Left ? profile info */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+              <div className="flex items-start gap-4">
+                {profile.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt={name}
+                    className="w-20 h-20 rounded-2xl object-cover border border-slate-100 shrink-0"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-brand-100 text-brand-600 flex items-center justify-center text-2xl font-bold shrink-0">
+                    {initials}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-xl font-bold text-slate-900">{name}</h1>
+                    {profile.verified && (
+                      <CheckCircle2 size={18} className="text-brand-500 shrink-0" />
+                    )}
+                  </div>
+                  <p className="text-brand-600 font-medium mt-0.5">{specialtyLabel}</p>
+                  <div className="flex items-center gap-3 mt-2 flex-wrap">
+                    <StarRating avg={profile.ratingAvg} count={profile.ratingCount} />
+                    {profile.license && (
+                      <span className="text-xs text-slate-500">{profile.license}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {profile.headline && (
+                <p className="text-slate-600 italic text-sm border-l-2 border-brand-200 pl-3">
+                  {profile.headline}
+                </p>
+              )}
+
+              <div className="space-y-2">
+                {profile.yearsOfPractice != null && profile.yearsOfPractice > 0 && (
+                  <p className="flex items-center gap-2 text-sm text-slate-600">
+                    <Stethoscope size={15} className="text-brand-400 shrink-0" />
+                    {t("pub.yearsExp").replace("{n}", String(profile.yearsOfPractice))}
+                  </p>
+                )}
+                {profile.trainingInstitution && (
+                  <p className="flex items-center gap-2 text-sm text-slate-600">
+                    <Award size={15} className="text-brand-400 shrink-0" />
+                    {profile.trainingInstitution}
+                  </p>
+                )}
+                {profile.subspecialties.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {profile.subspecialties.map((s) => (
+                      <span
+                        key={s}
+                        className="text-xs bg-brand-50 text-brand-600 px-2.5 py-1 rounded-full"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {profile.bio && (
+                <p className="text-sm text-slate-600 leading-relaxed">{profile.bio}</p>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                {profile.acceptsTeleconsult && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 bg-brand-50 px-3 py-1.5 rounded-full">
+                    <Video size={13} /> {t("pub.teleconsult")}
+                  </span>
+                )}
+                {profile.acceptsInPerson && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-slate-100 px-3 py-1.5 rounded-full">
+                    <Building2 size={13} /> {t("pub.inPerson")}
+                  </span>
+                )}
+              </div>
+
+              {addressParts.length > 0 && (
+                <div className="border-t border-slate-100 pt-4">
+                  <p className="flex items-start gap-2 text-sm text-slate-600">
+                    <MapPin size={15} className="text-brand-400 shrink-0 mt-0.5" />
+                    <span>
+                      {profile.clinicName && (
+                        <span className="font-medium text-slate-800 block">{profile.clinicName}</span>
+                      )}
+                      {addressParts.join(", ")}
+                    </span>
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-400">{t("pub.consultPrice")}</p>
+                  <p className="text-2xl font-bold text-slate-900">{fmtPrice(profile.consultPrice)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Center ? booking */}
+            <PublicBookingPanel profile={profile} />
+
+            {/* Right ? map */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+              {hasCoords ? (
+                <PublicMiniMap
+                  lat={profile.clinicLatitude!}
+                  lng={profile.clinicLongitude!}
+                  label={profile.clinicName || name}
+                />
+              ) : (
+                <div className="h-[200px] lg:h-full min-h-[200px] bg-slate-50 rounded-xl flex items-center justify-center text-sm text-slate-400 text-center px-4">
+                  {profile.acceptsTeleconsult ? t("pub.teleconsultOnly") : t("pub.noMap")}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+
+        <footer className="text-center text-xs text-slate-400 py-8">
+          Powered by{" "}
+          <Link href="/register" className="font-black text-brand-500">
+            Doctor8
+          </Link>
+        </footer>
+      </div>
+    </>
+  );
+}

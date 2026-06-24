@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // A profile becomes "verified" (visible in search) once it has the essentials
+  // A profile is complete when essentials are filled; public listing requires admin approval (verified).
   const isComplete = Boolean(firstName && lastName && licenseNumber && specialty && consultPrice > 0);
 
   // subspecialties is an array column
@@ -68,8 +68,6 @@ export async function POST(req: NextRequest) {
     clinicState: clinicState || null,
     clinicCountry: clinicCountry || null,
     clinicZip: clinicZip || null,
-    verified: isComplete,
-    verifiedAt: isComplete ? new Date() : null,
   };
 
   const existing = await db.professionalProfile.findUnique({
@@ -82,10 +80,24 @@ export async function POST(req: NextRequest) {
     await audit.updateRecord(session.user.id, "ProfessionalProfile", profile.id);
   } else {
     profile = await db.professionalProfile.create({
-      data: { userId: session.user.id, licenseCountry: clinicCountry || "US", ...data },
+      data: {
+        userId: session.user.id,
+        licenseCountry: clinicCountry || "US",
+        verified: false,
+        ...data,
+      },
     });
     await audit.createRecord(session.user.id, "ProfessionalProfile", profile.id);
   }
 
-  return NextResponse.json({ profile, success: true });
+  const { ensureVirtualCard } = await import("@/lib/public-profile");
+  await ensureVirtualCard({
+    professionalId: profile.id,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    specialty: profile.specialty,
+    clinicCity: profile.clinicCity,
+  });
+
+  return NextResponse.json({ profile, success: true, profileComplete: isComplete });
 }

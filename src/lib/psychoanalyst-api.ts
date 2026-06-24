@@ -12,6 +12,17 @@ export function safeDecrypt(v: string | null): string {
   }
 }
 
+/** Plain-text in DB; legacy rows may still hold PatientProfile ciphertext after manual conversion. */
+export function decryptPsychoanalystNameFields<T extends { firstName: string; lastName: string }>(
+  row: T
+): T {
+  return {
+    ...row,
+    firstName: safeDecrypt(row.firstName),
+    lastName: safeDecrypt(row.lastName),
+  };
+}
+
 export async function requirePsychoanalyst() {
   const session = await auth();
   if (!session?.user) {
