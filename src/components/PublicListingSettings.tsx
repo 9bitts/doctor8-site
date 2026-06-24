@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
-  Globe, Copy, CheckCircle2, Loader2, ExternalLink, Eye, EyeOff, Clock,
+  Globe, Copy, CheckCircle2, Loader2, ExternalLink, Eye, EyeOff, Clock, MapPin,
 } from "lucide-react";
 
 type ListingInfo = {
@@ -14,21 +14,28 @@ type ListingInfo = {
   shortUrl: string;
   status: "pending_approval" | "hidden" | "live";
   verified: boolean;
+  googleBusinessUrl: string | null;
 };
 
 export default function PublicListingSettings({ apiPath }: { apiPath: string }) {
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingGoogle, setSavingGoogle] = useState(false);
   const [copied, setCopied] = useState(false);
   const [info, setInfo] = useState<ListingInfo | null>(null);
+  const [googleUrl, setGoogleUrl] = useState("");
   const [error, setError] = useState("");
 
   async function load() {
     setLoading(true);
     try {
       const res = await fetch(apiPath);
-      if (res.ok) setInfo(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setInfo(data);
+        setGoogleUrl(data.googleBusinessUrl || "");
+      }
     } catch { /* ignore */ }
     setLoading(false);
   }
@@ -52,6 +59,26 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
       setError(e instanceof Error ? e.message : t("pub.errGeneric"));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveGoogleUrl() {
+    setSavingGoogle(true);
+    setError("");
+    try {
+      const res = await fetch(apiPath, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ googleBusinessUrl: googleUrl.trim() || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t("pub.googleBusinessInvalid"));
+      setInfo((prev) => prev ? { ...prev, googleBusinessUrl: data.googleBusinessUrl } : prev);
+      setGoogleUrl(data.googleBusinessUrl || "");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("pub.googleBusinessInvalid"));
+    } finally {
+      setSavingGoogle(false);
     }
   }
 
@@ -147,6 +174,31 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
             <ExternalLink size={16} />
           </Link>
         )}
+      </div>
+
+      <div className="border-t border-slate-100 pt-4 space-y-2">
+        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+          <MapPin size={16} className="text-brand-500" />
+          {t("pub.googleBusinessLabel")}
+        </label>
+        <p className="text-xs text-slate-500">{t("pub.googleBusinessHint")}</p>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={googleUrl}
+            onChange={(e) => setGoogleUrl(e.target.value)}
+            placeholder={t("pub.googleBusinessPlaceholder")}
+            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          />
+          <button
+            type="button"
+            onClick={saveGoogleUrl}
+            disabled={savingGoogle}
+            className="shrink-0 bg-brand-500 hover:bg-brand-400 text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50 transition"
+          >
+            {savingGoogle ? <Loader2 size={16} className="animate-spin" /> : t("pub.googleBusinessSave")}
+          </button>
+        </div>
       </div>
     </div>
   );

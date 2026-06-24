@@ -78,6 +78,7 @@ export type PublicProfileData = {
   ratingAvg: number | null;
   ratingCount: number;
   publicPath: string;
+  googleBusinessUrl: string | null;
   locations: PracticeLocationDto[];
   services: ProviderServiceDto[];
 };
@@ -176,6 +177,7 @@ function mapCardToPublicProfile(
     specialtySlug: string;
     citySlug: string;
     headline: string | null;
+    googleBusinessUrl: string | null;
     professional: {
       id: string;
       firstName: string;
@@ -261,6 +263,7 @@ function mapCardToPublicProfile(
       ratingAvg: reviews.avg,
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),
+      googleBusinessUrl: card.googleBusinessUrl,
       locations: [],
       services: [],
     };
@@ -301,6 +304,7 @@ function mapCardToPublicProfile(
       ratingAvg: reviews.avg,
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),
+      googleBusinessUrl: card.googleBusinessUrl,
       locations: [],
       services: [],
     };
@@ -424,6 +428,10 @@ export function buildPhysicianJsonLd(
       bestRating: 5,
       worstRating: 1,
     };
+  }
+
+  if (profile.googleBusinessUrl) {
+    jsonLd.sameAs = [profile.googleBusinessUrl];
   }
 
   const price = profile.consultPrice / 100;

@@ -18,6 +18,7 @@ import {
   EMAIL_APPOINTMENT_REMINDER,
   EMAIL_PATIENT_INVITE,
   EMAIL_COLLEAGUE_INVITE,
+  EMAIL_SLOT_ALERT,
 } from "./email-i18n";
 
 // ─── EMAIL VERIFICATION ──────────────────────────────────────────────────────
@@ -356,5 +357,45 @@ export async function sendColleagueResourceInvite({
     subject: c.subject(senderName),
     html: emailShell(c.heading, body, lang),
     tag: "colleague-invite",
+  });
+}
+
+export async function sendSlotAvailableAlert({
+  email,
+  providerName,
+  timeLabel,
+  bookUrl,
+  language,
+}: {
+  email: string;
+  providerName: string;
+  timeLabel: string;
+  bookUrl: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_SLOT_ALERT[lang];
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(providerName, timeLabel)}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${bookUrl}" style="background:#216a86;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.5;">${c.footnote}</p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject(providerName),
+    html: emailShell(c.heading, body, lang),
+    text: [
+      c.hi,
+      c.body(providerName, timeLabel).replace(/<[^>]+>/g, ""),
+      `${c.cta}: ${bookUrl}`,
+      c.footnote,
+    ].join("\n\n"),
+    tag: "slot-alert",
   });
 }

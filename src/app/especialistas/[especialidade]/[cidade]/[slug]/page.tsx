@@ -3,7 +3,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  Video, Building2, Star, CheckCircle2, Stethoscope, Award,
+  Video, Building2, Star, CheckCircle2, Stethoscope, Award, MapPin, ExternalLink,
 } from "lucide-react";
 import { cookies } from "next/headers";
 import { normalizeLang, translate } from "@/lib/i18n/translations";
@@ -95,7 +95,7 @@ export default async function PublicSpecialistPage({
         {/* Header */}
         <header className="bg-brand-500 text-white">
           <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/register" className="text-xl font-black tracking-tight">
+            <Link href="/" className="text-xl font-black tracking-tight">
               Doctor<span className="text-accent-400">8</span>
             </Link>
             <div className="flex items-center gap-3 text-sm">
@@ -200,6 +200,19 @@ export default async function PublicSpecialistPage({
                 defaultPrice={profile.consultPrice}
                 currency={profile.currency}
               />
+
+              {profile.googleBusinessUrl && (
+                <a
+                  href={profile.googleBusinessUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-500 transition"
+                >
+                  <MapPin size={15} />
+                  {t("pub.viewOnGoogle")}
+                  <ExternalLink size={13} className="opacity-60" />
+                </a>
+              )}
             </div>
 
             {/* Center ? booking */}

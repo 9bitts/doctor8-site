@@ -9,6 +9,20 @@ import {
   ensureVirtualCard,
 } from "@/lib/public-profile";
 
+function parseGoogleBusinessUrl(raw: unknown): string | null | false {
+  if (raw === null || raw === "") return null;
+  if (typeof raw !== "string") return false;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    return u.toString();
+  } catch {
+    return false;
+  }
+}
+
 export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,6 +59,7 @@ export async function GET() {
     verified: profile.verified,
     specialtySlug: card.specialtySlug,
     citySlug: card.citySlug,
+    googleBusinessUrl: card.googleBusinessUrl,
   });
 }
 
@@ -55,7 +70,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const isPublic = Boolean(body.isPublic);
 
   const profile = await db.professionalProfile.findUnique({
     where: { userId: session.user.id },
@@ -64,16 +78,33 @@ export async function PATCH(req: NextRequest) {
   if (!profile?.virtualCard)
     return NextResponse.json({ error: "Complete your profile first" }, { status: 400 });
 
-  if (isPublic && !profile.verified) {
-    return NextResponse.json(
-      { error: "Your profile must be approved by an admin before going public" },
-      { status: 403 }
-    );
+  const updateData: { isPublic?: boolean; googleBusinessUrl?: string | null } = {};
+
+  if (typeof body.isPublic === "boolean") {
+    if (body.isPublic && !profile.verified) {
+      return NextResponse.json(
+        { error: "Your profile must be approved by an admin before going public" },
+        { status: 403 }
+      );
+    }
+    updateData.isPublic = body.isPublic;
+  }
+
+  if ("googleBusinessUrl" in body) {
+    const parsed = parseGoogleBusinessUrl(body.googleBusinessUrl);
+    if (parsed === false) {
+      return NextResponse.json({ error: "Invalid Google Business URL" }, { status: 400 });
+    }
+    updateData.googleBusinessUrl = parsed;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
   const card = await db.virtualCard.update({
     where: { id: profile.virtualCard.id },
-    data: { isPublic },
+    data: updateData,
   });
 
   const status = getPublicListingStatus(profile.verified, card.isPublic);
@@ -82,5 +113,6 @@ export async function PATCH(req: NextRequest) {
     isPublic: card.isPublic,
     status,
     publicUrl: status === "live" ? buildPublicProfileUrl(card) : null,
+    googleBusinessUrl: card.googleBusinessUrl,
   });
 }

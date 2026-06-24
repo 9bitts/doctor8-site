@@ -671,6 +671,7 @@ model VirtualCard {
   citySlug        String                @default("")
   headline        String?
   website         String?
+  googleBusinessUrl String?
   socialLinks     Json?
   isPublic        Boolean               @default(false)
 

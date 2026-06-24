@@ -208,6 +208,40 @@ export const EMAIL_APPOINTMENT_CONFIRM: Record<EmailLang, {
   },
 };
 
+export const EMAIL_SLOT_ALERT: Record<EmailLang, {
+  subject: (provider: string) => string;
+  heading: string;
+  hi: string;
+  body: (provider: string, time: string) => string;
+  cta: string;
+  footnote: string;
+}> = {
+  en: {
+    subject: (p) => `New appointment time with ${p}`,
+    heading: "A time slot opened up",
+    hi: "Hello,",
+    body: (p, t) => `A consultation with <strong>${p}</strong> is now available on <strong>${t}</strong>. Book before someone else takes it.`,
+    cta: "Book now",
+    footnote: "You received this because you asked to be notified about new times on Doctor8.",
+  },
+  pt: {
+    subject: (p) => `Novo horário disponível com ${p}`,
+    heading: "Um horário foi liberado",
+    hi: "Olá,",
+    body: (p, t) => `Uma consulta com <strong>${p}</strong> está disponível em <strong>${t}</strong>. Agende antes que o horário seja preenchido.`,
+    cta: "Agendar agora",
+    footnote: "Você recebeu este e-mail porque pediu para ser avisado sobre novos horários no Doctor8.",
+  },
+  es: {
+    subject: (p) => `Nuevo horario disponible con ${p}`,
+    heading: "Se liberó un horario",
+    hi: "Hola,",
+    body: (p, t) => `Una consulta con <strong>${p}</strong> está disponible el <strong>${t}</strong>. Reserva antes de que se ocupe.`,
+    cta: "Reservar ahora",
+    footnote: "Recibiste este correo porque pediste avisos de nuevos horarios en Doctor8.",
+  },
+};
+
 export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
   subject: (doctor: string, hours: number) => string;
   heading: string;

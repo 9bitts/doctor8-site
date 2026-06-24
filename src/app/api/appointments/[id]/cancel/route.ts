@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
+import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 
 export async function POST(
@@ -122,6 +123,12 @@ export async function POST(
       bodyParams: { name: cancellerName, scheduledAt: appointment.scheduledAt.toISOString() },
     },
   }).catch(() => {});
+
+  notifySlotAlerts({
+    professionalId: appointment.professionalId,
+    psychoanalystId: appointment.psychoanalystId,
+    freedAt: appointment.scheduledAt,
+  }).catch((err) => console.error("[CANCEL] Slot alert notify failed:", err));
 
   return NextResponse.json({
     success:       true,

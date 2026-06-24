@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { scheduleAppointmentReminders } from "@/lib/qstash";
+import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { z } from "zod";
 
@@ -65,6 +66,8 @@ export async function POST(
   });
   if (conflict) return NextResponse.json({ error: "This slot is no longer available." }, { status: 409 });
 
+  const previousScheduledAt = appointment.scheduledAt;
+
   await db.appointment.update({
     where: { id: params.id },
     data:  { scheduledAt: new Date(newScheduledAt) },
@@ -74,6 +77,12 @@ export async function POST(
 
   // Reschedule QStash reminders for new time
   scheduleAppointmentReminders(params.id, new Date(newScheduledAt)).catch(() => {});
+
+  notifySlotAlerts({
+    professionalId: appointment.professionalId,
+    psychoanalystId: appointment.psychoanalystId,
+    freedAt: previousScheduledAt,
+  }).catch((err) => console.error("[RESCHEDULE] Slot alert notify failed:", err));
 
   // Send confirmation email
   try {
