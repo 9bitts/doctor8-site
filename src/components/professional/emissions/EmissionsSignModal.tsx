@@ -124,8 +124,11 @@ export function EmissionsSignModal({
 }
 
 export const RX_STYLES = `
-  .rx-inp { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #1e293b; outline: none; background: white; }
+  .rx-inp { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #1e293b; outline: none; background: white; box-sizing: border-box; }
   .rx-inp:focus { border-color: #216a86; box-shadow: 0 0 0 3px rgba(33,106,134,.12); }
-  .rx-inp-sm { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; font-size: 13px; color: #1e293b; outline: none; background: white; }
+  .rx-inp.rx-inp-pl-9 { padding-left: 2.25rem; }
+  .rx-inp.rx-inp-pl-10 { padding-left: 2.5rem; }
+  .rx-inp.rx-inp-pr-9 { padding-right: 2.25rem; }
+  .rx-inp-sm { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; font-size: 13px; color: #1e293b; outline: none; background: white; box-sizing: border-box; }
   .rx-inp-sm:focus { border-color: #216a86; box-shadow: 0 0 0 3px rgba(33,106,134,.1); }
 `;

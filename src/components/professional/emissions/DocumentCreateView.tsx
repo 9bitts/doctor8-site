@@ -109,7 +109,7 @@ export function DocumentCreateView({
             <div className="relative">
               <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)}
-                placeholder={t("rx2.searchPatient")} className="rx-inp pl-9" />
+                placeholder={t("rx2.searchPatient")} className="rx-inp rx-inp-pl-9" />
             </div>
             {patientQuery.trim() && (
               <div className="border rounded-xl divide-y max-h-48 overflow-y-auto">

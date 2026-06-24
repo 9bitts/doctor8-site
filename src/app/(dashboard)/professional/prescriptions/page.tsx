@@ -655,7 +655,7 @@ export default function PrescriptionsPage() {
                     <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input type="text" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)}
                       placeholder={t("rx2.searchPatient")}
-                      className="rx-inp pl-9" />
+                      className="rx-inp rx-inp-pl-9" />
                   </div>
                   {patientQuery.trim().length > 0 && (
                     <div className="border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-48 overflow-y-auto">
@@ -704,7 +704,7 @@ export default function PrescriptionsPage() {
               <div className="relative">
                 <Pill size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" />
                 <input type="text" value={drugQuery} onChange={(e) => setDrugQuery(e.target.value)}
-                  placeholder={t("rx2.searchDrug")} className="rx-inp pl-10" />
+                  placeholder={t("rx2.searchDrug")} className="rx-inp rx-inp-pl-10" />
                 {drugSearching && <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />}
               </div>
 

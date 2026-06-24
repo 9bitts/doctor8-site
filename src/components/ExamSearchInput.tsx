@@ -110,7 +110,7 @@ export default function ExamSearchInput({
             }
           }}
           placeholder={placeholder}
-          className="rx-inp pl-10 pr-9"
+          className="rx-inp rx-inp-pl-10 rx-inp-pr-9"
         />
         {loading && (
           <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-400" />
