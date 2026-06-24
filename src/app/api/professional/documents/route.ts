@@ -96,32 +96,42 @@ export async function POST(req: NextRequest) {
       items: d.examItems,
       notes: d.notes || "",
       cid: d.cid || "",
+      cidLabel: d.cidLabel || "",
     });
   }
 
-  const doc = await db.medicalDocument.create({
-    data: {
-      patientRecordId: d.patientRecordId,
-      professionalId: professional.id,
-      categoryId,
-      type: derivedType,
-      title: encrypt(d.title),
-      content: contentToStore ? encrypt(contentToStore) : null,
-      fileUrl: d.fileKey ? encrypt(d.fileKey) : null,
-    },
-  });
+  try {
+    const doc = await db.medicalDocument.create({
+      data: {
+        patientRecordId: d.patientRecordId,
+        professionalId: professional.id,
+        categoryId,
+        type: derivedType,
+        title: encrypt(d.title),
+        content: contentToStore ? encrypt(contentToStore) : null,
+        fileUrl: d.fileKey ? encrypt(d.fileKey) : null,
+      },
+    });
 
-  return NextResponse.json({
-    id: doc.id,
-    type: doc.type,
-    categoryId,
-    categoryName,
-    title: d.title,
-    content: contentToStore || null,
-    examItems: d.examItems || null,
-    cid: d.cid || null,
-    notes: d.notes || null,
-    hasFile: !!d.fileKey,
-    createdAt: doc.createdAt,
-  }, { status: 201 });
+    return NextResponse.json({
+      id: doc.id,
+      type: doc.type,
+      categoryId,
+      categoryName,
+      title: d.title,
+      content: contentToStore || null,
+      examItems: d.examItems || null,
+      cid: d.cid || null,
+      notes: d.notes || null,
+      hasFile: !!d.fileKey,
+      createdAt: doc.createdAt,
+    }, { status: 201 });
+  } catch (err) {
+    console.error("[documents POST]", err);
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    if (msg.includes("ENCRYPTION_KEY")) {
+      return NextResponse.json({ error: "Server configuration error. Contact support." }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Could not save document. Try again." }, { status: 500 });
+  }
 }

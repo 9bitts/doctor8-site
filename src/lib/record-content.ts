@@ -18,6 +18,7 @@ export function parseRecordContent(raw: string | null): RecordContent {
           items: parsed.items.filter((i: unknown) => typeof i === "string" && i.trim()),
           notes: parsed.notes || "",
           cid: parsed.cid || "",
+          cidLabel: parsed.cidLabel || "",
         };
       }
       if (parsed.cid || parsed.body || parsed.cidLabel) {
@@ -38,6 +39,7 @@ export function serializeRecordContent(data: RecordContent): string {
       items: data.items,
       notes: data.notes || "",
       cid: data.cid || "",
+      cidLabel: data.cidLabel || "",
     });
   }
   if (data.cid || data.cidLabel) {

@@ -788,6 +788,29 @@ model DrugCatalog {
 }
 
 // ─────────────────────────────────────────
+// CBHPM CATALOG (exam / procedure reference — CBHPM 2012)
+// Searchable list for exam requests. Not PHI.
+// ─────────────────────────────────────────
+model CbhpmCatalog {
+  id          String   @id @default(cuid())
+  code        String   @unique   // e.g. "4.03.01.84-2"
+  name        String             // e.g. "Ferro sérico, dosagem"
+  chapter     String             // e.g. "4" (diagnostic procedures)
+  groupName   String?            // e.g. "BIOQUÍMICA"
+  searchName  String             // lowercase normalized name
+  searchCode  String             // digits only for partial code search
+  edition     String   @default("2012")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([searchName])
+  @@index([searchCode])
+  @@index([chapter])
+  @@index([active])
+}
+
+// ─────────────────────────────────────────
 // BUYING CLUB — collective medication purchase groups
 // One club per DrugCatalog entry. Patients join to get group discounts.
 // ─────────────────────────────────────────

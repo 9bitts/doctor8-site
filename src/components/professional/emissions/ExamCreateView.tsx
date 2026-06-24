@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import {
-  Search, User, ChevronRight, Plus, Trash2, Loader2, FlaskConical, ArrowLeft, FileText,
+  User, ChevronRight, Trash2, Loader2, ArrowLeft, FileText,
 } from "lucide-react";
 import type { Chart } from "./types";
 import type { SavedEmission } from "./EmissionPostSaveFlow";
+import ExamSearchInput, { formatExamItem, parseExamItemLine } from "@/components/ExamSearchInput";
+import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 
 interface ExamCreateViewProps {
   t: (k: string) => string;
@@ -28,10 +30,13 @@ export function ExamCreateView({
   const [patientQuery, setPatientQuery] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(initialPatient);
   const [title, setTitle] = useState(initialTitle || t("rx.examDefaultTitle"));
-  const [examQuery, setExamQuery] = useState("");
-  const [items, setItems] = useState<string[]>(initialItems.length ? initialItems : []);
+  const [items, setItems] = useState<string[]>(
+    initialItems.length ? initialItems : []
+  );
   const [notes, setNotes] = useState(initialNotes);
-  const [cid, setCid] = useState(initialCid);
+  const [cid, setCid] = useState<CidSelection | null>(
+    initialCid ? { code: initialCid, description: "" } : null
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,14 +44,10 @@ export function ExamCreateView({
     ? charts.filter((c) => `${c.firstName} ${c.lastName}`.toLowerCase().includes(patientQuery.toLowerCase()))
     : charts.slice(0, 8);
 
-  function addExamManual() {
-    const name = examQuery.trim();
-    if (!name) {
-      setItems((prev) => [...prev, ""]);
-      return;
-    }
-    setItems((prev) => [...prev, name]);
-    setExamQuery("");
+  function addExam(exam: { code?: string; name: string }) {
+    const line = formatExamItem(exam);
+    if (!line.trim()) return;
+    setItems((prev) => [...prev, line]);
   }
 
   async function handleSave() {
@@ -65,7 +66,8 @@ export function ExamCreateView({
           title,
           examItems: cleanItems,
           notes,
-          cid,
+          cid: cid?.code || "",
+          cidLabel: cid?.description || "",
         }),
       });
       if (res.ok) {
@@ -78,9 +80,16 @@ export function ExamCreateView({
         });
       } else {
         const d = await res.json().catch(() => ({}));
-        setError(typeof d.error === "string" ? d.error : t("rx.saveError"));
+        const errMsg = typeof d.error === "string"
+          ? d.error
+          : d.error?.formErrors?.[0] || t("rx.saveError");
+        setError(errMsg);
       }
-    } finally { setSaving(false); }
+    } catch {
+      setError(t("rx.saveError"));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -100,7 +109,6 @@ export function ExamCreateView({
         </div>
       )}
 
-      {/* Patient */}
       <Card title={t("rx2.selectPatient")}>
         {selectedPatient ? (
           <PatientChip patient={selectedPatient} t={t} onClear={() => setSelectedPatient(null)} />
@@ -126,21 +134,16 @@ export function ExamCreateView({
         )}
       </Card>
 
-      {/* Exams */}
       <Card title={t("rx2.addItem")}>
         <input value={title} onChange={(e) => setTitle(e.target.value)}
           placeholder={t("rx.examDefaultTitle")} className="rx-inp mb-3" />
-        <div className="relative">
-          <FlaskConical size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" />
-          <input value={examQuery} onChange={(e) => setExamQuery(e.target.value)}
-            placeholder={t("rx.searchExam")} className="rx-inp pl-10"
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addExamManual())} />
-        </div>
-        <button type="button" onClick={addExamManual}
-          className="w-full mt-3 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 hover:bg-brand-50 text-brand-600 font-semibold text-sm transition">
-          <Plus size={16} /> {t("rx.addExamManual")}
-        </button>
-        <p className="text-xs text-slate-400 text-center mt-1">{t("rx.manualAlways")}</p>
+        <ExamSearchInput
+          placeholder={t("rx.searchExam")}
+          manualLabel={t("rx.addExamManual")}
+          manualHint={t("rx.manualExamHint")}
+          noResults={t("rx.examNoResults")}
+          onAdd={addExam}
+        />
       </Card>
 
       <Card title={t("rx.examItems")}>
@@ -148,27 +151,39 @@ export function ExamCreateView({
           <p className="text-sm text-slate-400 text-center py-6">{t("rx.noExamItems")}</p>
         ) : (
           <div className="space-y-2">
-            {items.map((item, i) => (
-              <div key={i} className="flex gap-2 items-center">
-                <span className="text-xs text-brand-500 font-bold w-5">{i + 1}.</span>
-                <input value={item} onChange={(e) => {
-                  const next = [...items];
-                  next[i] = e.target.value;
-                  setItems(next);
-                }} className="rx-inp-sm flex-1" placeholder={t("rx.examItemPlaceholder")} />
-                <button onClick={() => setItems(items.filter((_, j) => j !== i))} className="text-red-400 p-1">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+            {items.map((item, i) => {
+              const parsed = parseExamItemLine(item);
+              return (
+                <div key={i} className="flex gap-2 items-start">
+                  <span className="text-xs text-brand-500 font-bold w-5 pt-2.5">{i + 1}.</span>
+                  <div className="flex-1 min-w-0">
+                    {parsed.code && (
+                      <p className="text-[10px] font-semibold text-brand-600 mb-0.5">{parsed.code}</p>
+                    )}
+                    <input
+                      value={parsed.name}
+                      onChange={(e) => {
+                        const next = [...items];
+                        next[i] = formatExamItem({ code: parsed.code, name: e.target.value });
+                        setItems(next);
+                      }}
+                      className="rx-inp-sm w-full"
+                      placeholder={t("rx.examItemPlaceholder")}
+                    />
+                  </div>
+                  <button onClick={() => setItems(items.filter((_, j) => j !== i))} className="text-red-400 p-1 pt-2">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
         <div className="grid sm:grid-cols-2 gap-3 mt-4">
-          <div>
-            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.cidLabel")}</label>
-            <input value={cid} onChange={(e) => setCid(e.target.value)} className="rx-inp-sm" placeholder="E11" />
+          <div className="sm:col-span-2">
+            <CidSearchInput value={cid} onChange={setCid} />
           </div>
-          <div className="sm:col-span-1">
+          <div className="sm:col-span-2">
             <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.examNotes")}</label>
             <input value={notes} onChange={(e) => setNotes(e.target.value)} className="rx-inp-sm" placeholder={t("rx.examNotesPlaceholder")} />
           </div>
