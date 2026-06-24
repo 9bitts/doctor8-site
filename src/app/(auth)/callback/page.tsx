@@ -7,6 +7,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { consumeAuthCallback } from "@/lib/auth-callback";
 
 export default function CallbackPage() {
   const router = useRouter();
@@ -18,6 +19,11 @@ export default function CallbackPage() {
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((session) => {
+        const savedCallback = consumeAuthCallback();
+        if (savedCallback) {
+          router.replace(savedCallback);
+          return;
+        }
         if (session?.user?.role === "PROFESSIONAL") {
           router.replace("/professional");
         } else {

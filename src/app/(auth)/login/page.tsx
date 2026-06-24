@@ -10,6 +10,7 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
+import { persistAuthCallback } from "@/lib/auth-callback";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail,
 } from "lucide-react";
@@ -138,6 +139,7 @@ function LoginForm() {
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
     setError("");
+    persistAuthCallback(callbackUrl);
     await signIn("google", { callbackUrl: "/callback" });
   }
 

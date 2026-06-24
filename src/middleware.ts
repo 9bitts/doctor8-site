@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = [
   "/",
   "/login",
   "/register",
+  "/callback",
   "/forgot-password",
   "/reset-password",
   "/verify-email",
@@ -21,6 +22,14 @@ const PUBLIC_ROUTES = [
   "/club/join",  // buying club invite landing (public)
 ];
 
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_ROUTES.some((route) => {
+    // "/" must be exact — every path starts with "/"
+    if (route === "/") return pathname === "/";
+    return pathname === route || pathname.startsWith(route);
+  });
+}
+
 // Role-based route prefixes
 const PATIENT_ROUTES = ["/patient"];
 const PROFESSIONAL_ROUTES = ["/professional"];
@@ -30,11 +39,7 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
 
-  // Allow public routes
-  const isPublic = PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route)
-  );
-  if (isPublic) return NextResponse.next();
+  if (isPublicRoute(pathname)) return NextResponse.next();
 
   // Allow API auth routes
   if (pathname.startsWith("/api/auth")) return NextResponse.next();

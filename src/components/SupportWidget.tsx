@@ -6,6 +6,7 @@
 // i18n: detects language from localStorage (same key as dashboard) or browser
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { MessageCircle, X, Send, Loader2, Bot, User, Minimize2 } from "lucide-react";
 
 interface Message {
@@ -70,6 +71,7 @@ function detectLang(): Lang {
 }
 
 export default function SupportWidget() {
+  const pathname = usePathname();
   const [lang, setLang] = useState<Lang>("en");
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -159,6 +161,11 @@ export default function SupportWidget() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     sendMessage(input);
+  }
+
+  const hideOnPaths = ["/login", "/register", "/verify-email", "/club/join", "/callback"];
+  if (hideOnPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return null;
   }
 
   return (

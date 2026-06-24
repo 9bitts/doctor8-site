@@ -176,6 +176,19 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
 
   async function handleShare() {
     const link = shareLink();
+    const shareText = selected?.name ?? t("buyClub.title");
+
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: t("buyClub.title"), text: shareText, url: link });
+        setShareMsg("ok");
+        setTimeout(() => setShareMsg(null), 3000);
+        return;
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+      }
+    }
+
     try {
       await navigator.clipboard.writeText(link);
       setShareMsg("ok");
@@ -230,7 +243,7 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => results.length > 0 && setShowDropdown(true)}
               placeholder={t("buyClub.searchPlaceholder")}
-              className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+              className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-base sm:text-sm"
               autoComplete="off"
             />
             {searching && (

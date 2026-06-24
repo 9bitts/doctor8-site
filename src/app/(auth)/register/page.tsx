@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
+import { persistAuthCallback } from "@/lib/auth-callback";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2,
   User, Stethoscope, ArrowLeft, LogIn,
@@ -100,6 +101,7 @@ export default function RegisterPage() {
   async function handleGoogleSignUp() {
     document.cookie = `signup_role=${role}; path=/; max-age=600; SameSite=Lax`;
     setGoogleLoading(true);
+    persistAuthCallback(callbackUrl);
     await signIn("google", { callbackUrl: "/callback" });
   }
 
@@ -136,7 +138,11 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+      router.push(
+        callbackUrl
+          ? `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+          : `/verify-email?email=${encodeURIComponent(email)}`
+      );
     } catch {
       setErrors({ general: [t("reg.genericError")] });
     } finally {
@@ -299,7 +305,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Name */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.firstName")}</label>
                   <input

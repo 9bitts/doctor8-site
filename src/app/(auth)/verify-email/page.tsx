@@ -12,6 +12,10 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const emailParam = searchParams.get("email") || "";
   const errorParam = searchParams.get("error");
+  const callbackUrl = searchParams.get("callbackUrl") || "";
+  const loginHref = callbackUrl
+    ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : "/login";
 
   const [resendLoading, setResendLoading] = useState(false);
   const [resendStatus, setResendStatus] = useState<"idle" | "sent" | "error">("idle");
@@ -141,7 +145,7 @@ function VerifyEmailContent() {
             </Link>
             <span className="text-slate-600 mx-3">·</span>
             <Link
-              href="/login"
+              href={loginHref}
               className="text-slate-400 hover:text-slate-300 text-sm transition"
             >
               Sign in

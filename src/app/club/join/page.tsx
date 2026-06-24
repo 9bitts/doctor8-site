@@ -23,13 +23,12 @@ function detectInitialLang(): Lang {
   return "en";
 }
 
-function ClubJoinContent() {
+function ClubJoinContent({ lang }: { lang: Lang }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("club") || searchParams.get("token") || "";
   const drugId = searchParams.get("drug") || "";
 
-  const [lang, setLang] = useState<Lang>("en");
   const [loading, setLoading] = useState(true);
   const [checkingSession, setCheckingSession] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -42,8 +41,6 @@ function ClubJoinContent() {
   const [activeCount, setActiveCount] = useState(0);
 
   const t = (key: string) => translate(lang, key);
-
-  useEffect(() => { setLang(detectInitialLang()); }, []);
 
   const destination = token
     ? `/patient/buying-club?club=${encodeURIComponent(token)}`
@@ -178,18 +175,20 @@ export default function ClubJoinPage() {
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => { setLang(detectInitialLang()); }, []);
 
+  function changeLang(l: Lang) {
+    setLang(l);
+    try { window.localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center p-4 pb-20">
       <div className="w-full max-w-md">
         <div className="flex justify-end mb-4">
           <div className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full p-1 shadow-sm">
             {LANGUAGES.map((l) => (
               <button
                 key={l.code}
-                onClick={() => {
-                  setLang(l.code);
-                  try { window.localStorage.setItem(LANG_KEY, l.code); } catch { /* ignore */ }
-                }}
+                onClick={() => changeLang(l.code)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 ${
                   lang === l.code ? "bg-emerald-500 text-white" : "text-slate-500 hover:text-slate-800"
                 }`}
@@ -215,7 +214,7 @@ export default function ClubJoinPage() {
               </div>
             }
           >
-            <ClubJoinContent />
+            <ClubJoinContent lang={lang} />
           </Suspense>
         </div>
       </div>
