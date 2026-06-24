@@ -428,9 +428,13 @@ export default function AppointmentsPage() {
       {step === "slots" && selectedPro && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-400/20 flex items-center justify-center text-2xl font-black text-emerald-300">
-              {selectedPro.firstName[0]}
-            </div>
+            {selectedPro.avatarUrl ? (
+              <img src={selectedPro.avatarUrl} alt="" className="w-14 h-14 rounded-2xl object-cover shrink-0" />
+            ) : (
+              <div className="w-14 h-14 rounded-2xl bg-emerald-400/20 flex items-center justify-center text-2xl font-black text-emerald-300 shrink-0">
+                {selectedPro.firstName[0]}
+              </div>
+            )}
             <div>
               <h2 className="text-white font-bold text-lg">Dr. {selectedPro.firstName} {selectedPro.lastName}</h2>
               <p className="text-slate-400 text-sm">{getProfessionLabel(lang, selectedPro.specialty)}</p>
@@ -731,13 +735,22 @@ export default function AppointmentsPage() {
   );
 }
 
+function ProAvatar({ pro, className = "w-14 h-14 rounded-2xl" }: { pro: Pick<Professional, "firstName" | "avatarUrl">; className?: string }) {
+  if (pro.avatarUrl) {
+    return <img src={pro.avatarUrl} alt="" className={`${className} object-cover shrink-0`} />;
+  }
+  return (
+    <div className={`${className} bg-gradient-to-br from-blue-400 to-emerald-500 flex items-center justify-center text-2xl font-black text-white shrink-0`}>
+      {pro.firstName[0]}
+    </div>
+  );
+}
+
 function DoctorCard({ pro, onSelect, locale, lang, t }: { pro: Professional; onSelect: () => void; locale: string; lang: Lang; t: (k: string) => string }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-emerald-300 transition cursor-pointer" onClick={onSelect}>
       <div className="flex items-start gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-400 to-emerald-500 flex items-center justify-center text-2xl font-black text-white shrink-0">
-          {pro.firstName[0]}
-        </div>
+        <ProAvatar pro={pro} />
         <div className="flex-1 min-w-0">
           <p className="font-bold text-slate-900">Dr. {pro.firstName} {pro.lastName}</p>
           <p className="text-sm text-emerald-600 font-medium">{getProfessionLabel(lang, pro.specialty)}</p>

@@ -91,6 +91,8 @@ const LABELS: Record<string, Record<Lang, string>> = {
   "Urology": { en: "Urology", pt: "Urologia", es: "Urología" },
   "Cannabis Medicine": { en: "Cannabis Medicine", pt: "Cannabis Medicinal", es: "Cannabis Medicinal" },
   "General Practice": { en: "General Practice", pt: "Clínico Geral", es: "Medicina General" },
+  "Psychology": { en: "Psychology", pt: "Psicologia", es: "Psicología" },
+  "Nutrition": { en: "Nutrition", pt: "Nutrição", es: "Nutrición" },
   "Psychologist": { en: "Psychologist", pt: "Psicólogo", es: "Psicólogo" },
   "Psychoanalyst": { en: "Psychoanalyst", pt: "Psicanalista", es: "Psicoanalista" },
   "Neuropsychologist": { en: "Neuropsychologist", pt: "Neuropsicólogo", es: "Neuropsicólogo" },
