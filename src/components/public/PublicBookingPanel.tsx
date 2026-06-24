@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { Calendar, ChevronRight, Loader2 } from "lucide-react";
 import type { PublicProfileData } from "@/lib/public-profile";
+import SlotAlertForm from "@/components/public/SlotAlertForm";
 
 type DaySlots = {
   date: string;
@@ -143,6 +144,8 @@ export default function PublicBookingPanel({ profile }: { profile: PublicProfile
           {t("pub.register")}
         </Link>
       </p>
+
+      <SlotAlertForm slug={profile.slug} />
     </div>
   );
 }

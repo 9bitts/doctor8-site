@@ -10,6 +10,7 @@ import {
   specialtyToSeoSlug,
 } from "@/lib/public-slugs";
 import { getProviderSlotPreview } from "@/lib/availability-slots";
+import { getProviderServices, getPracticeLocations } from "@/lib/practice";
 import type { ProviderType } from "@/lib/providers";
 import type { DaySlots } from "@/lib/availability-slots";
 
@@ -37,6 +38,8 @@ export type PublicSearchResult = {
   ratingAvg: number | null;
   ratingCount: number;
   healthPlans: { name: string; slug: string }[];
+  services: { name: string; priceCents: number | null; currency: string }[];
+  locationCount: number;
   publicPath: string;
   slotPreview: DaySlots[];
 };
@@ -159,6 +162,8 @@ export async function searchPublicListings(
       const reviews = reviewMap.get(p.id) ?? { avg: null, count: 0 };
 
       const slotPreview = await getProviderSlotPreview(p.id, "health", locale);
+      const svcRows = await getProviderServices(p.id, "health", true);
+      const locRows = await getPracticeLocations(p.id, "health");
 
       results.push({
         providerType: "health",
@@ -192,6 +197,12 @@ export async function searchPublicListings(
           citySlug: card.citySlug || cityToSeoSlug(p.clinicCity),
           slug: card.slug,
         }),
+        services: svcRows.slice(0, 3).map((s) => ({
+          name: s.name,
+          priceCents: s.priceCents,
+          currency: s.currency,
+        })),
+        locationCount: locRows.length,
         slotPreview,
       });
     }
@@ -237,6 +248,8 @@ export async function searchPublicListings(
       const lastName = safeDecrypt(p.lastName);
       const reviews = reviewMap.get(p.id) ?? { avg: null, count: 0 };
       const slotPreview = await getProviderSlotPreview(p.id, "psychoanalyst", locale);
+      const svcRows = await getProviderServices(p.id, "psychoanalyst", true);
+      const locRows = await getPracticeLocations(p.id, "psychoanalyst");
 
       results.push({
         providerType: "psychoanalyst",
@@ -270,6 +283,12 @@ export async function searchPublicListings(
           citySlug: card.citySlug || cityToSeoSlug(p.clinicCity),
           slug: card.slug,
         }),
+        services: svcRows.slice(0, 3).map((s) => ({
+          name: s.name,
+          priceCents: s.priceCents,
+          currency: s.currency,
+        })),
+        locationCount: locRows.length,
         slotPreview,
       });
     }

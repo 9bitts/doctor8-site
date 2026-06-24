@@ -26,6 +26,13 @@ import {
   buildProviderSlug,
   buildPublicProfilePath,
 } from "@/lib/public-slugs";
+import {
+  ensureLegacyLocation,
+  getPracticeLocations,
+  getProviderServices,
+  type PracticeLocationDto,
+  type ProviderServiceDto,
+} from "@/lib/practice";
 
 export type PublicListingStatus = "pending_approval" | "hidden" | "live";
 
@@ -71,6 +78,8 @@ export type PublicProfileData = {
   ratingAvg: number | null;
   ratingCount: number;
   publicPath: string;
+  locations: PracticeLocationDto[];
+  services: ProviderServiceDto[];
 };
 
 async function uniqueSlug(base: string): Promise<string> {
@@ -252,6 +261,8 @@ function mapCardToPublicProfile(
       ratingAvg: reviews.avg,
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),
+      locations: [],
+      services: [],
     };
   }
 
@@ -290,10 +301,32 @@ function mapCardToPublicProfile(
       ratingAvg: reviews.avg,
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),
+      locations: [],
+      services: [],
     };
   }
 
   return null;
+}
+
+async function enrichPublicProfile(
+  base: PublicProfileData,
+  legacy: {
+    clinicName?: string | null;
+    clinicAddress?: string | null;
+    clinicCity?: string | null;
+    clinicState?: string | null;
+    clinicCountry?: string | null;
+    clinicZip?: string | null;
+    clinicLatitude?: number | null;
+    clinicLongitude?: number | null;
+  }
+): Promise<PublicProfileData> {
+  await ensureLegacyLocation(base.providerId, base.providerType, legacy);
+  const locations = await getPracticeLocations(base.providerId, base.providerType);
+  const services = await getProviderServices(base.providerId, base.providerType, true);
+
+  return { ...base, locations, services };
 }
 
 const cardInclude = {
@@ -317,8 +350,11 @@ export async function getLivePublicProfileBySlug(
   const providerType = card.professional ? "health" : "psychoanalyst";
   const providerId = card.professional?.id ?? card.psychoanalyst!.id;
   const reviews = await loadReviewStats(providerType, providerId);
+  const base = mapCardToPublicProfile(card, reviews);
+  if (!base) return null;
 
-  return mapCardToPublicProfile(card, reviews);
+  const legacy = card.professional ?? card.psychoanalyst!;
+  return enrichPublicProfile(base, legacy);
 }
 
 /** Resolve by slug without visibility checks (for redirects / preview). */
@@ -336,7 +372,11 @@ export async function getPublicProfileBySlug(
   if (!providerId) return null;
 
   const reviews = await loadReviewStats(providerType, providerId);
-  return mapCardToPublicProfile(card, reviews);
+  const base = mapCardToPublicProfile(card, reviews);
+  if (!base) return null;
+
+  const legacy = card.professional ?? card.psychoanalyst!;
+  return enrichPublicProfile(base, legacy);
 }
 
 export function buildPhysicianJsonLd(

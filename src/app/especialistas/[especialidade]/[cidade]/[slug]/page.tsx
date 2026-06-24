@@ -2,9 +2,8 @@
 
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import {
-  MapPin, Video, Building2, Star, CheckCircle2, Stethoscope, Award,
+  Video, Building2, Star, CheckCircle2, Stethoscope, Award,
 } from "lucide-react";
 import { cookies } from "next/headers";
 import { normalizeLang, translate } from "@/lib/i18n/translations";
@@ -16,11 +15,8 @@ import {
   buildPhysicianJsonLd,
 } from "@/lib/public-profile";
 import PublicBookingPanel from "@/components/public/PublicBookingPanel";
-
-const PublicMiniMap = dynamic(() => import("@/components/public/PublicMiniMap"), {
-  ssr: false,
-  loading: () => <div className="w-full h-[200px] bg-slate-50 rounded-xl animate-pulse" />,
-});
+import PublicProfilePlaces from "@/components/public/PublicProfilePlaces";
+import PublicServicesList from "@/components/public/PublicServicesList";
 
 export async function generateMetadata({
   params,
@@ -83,32 +79,10 @@ export default async function PublicSpecialistPage({
   const specialtyLabel = getProfessionLabel(lang, profile.specialty);
   const name = `${profile.firstName} ${profile.lastName}`.trim();
   const initials = `${profile.firstName[0] || ""}${profile.lastName[0] || ""}`;
-  const hasCoords =
-    profile.clinicLatitude != null &&
-    profile.clinicLongitude != null &&
-    Number.isFinite(profile.clinicLatitude) &&
-    Number.isFinite(profile.clinicLongitude);
-
-  const addressParts = [
-    profile.clinicAddress,
-    profile.clinicCity,
-    profile.clinicState,
-    profile.clinicCountry,
-  ].filter(Boolean);
 
   const jsonLd = buildPhysicianJsonLd(profile, buildPublicProfileUrl(profile));
 
   const currency = profile.currency || "BRL";
-  function fmtPrice(cents: number): string {
-    try {
-      return new Intl.NumberFormat(lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en-US", {
-        style: "currency",
-        currency,
-      }).format(cents / 100);
-    } catch {
-      return `R$ ${(cents / 100).toFixed(2)}`;
-    }
-  }
 
   return (
     <>
@@ -221,45 +195,31 @@ export default async function PublicSpecialistPage({
                 )}
               </div>
 
-              {addressParts.length > 0 && (
-                <div className="border-t border-slate-100 pt-4">
-                  <p className="flex items-start gap-2 text-sm text-slate-600">
-                    <MapPin size={15} className="text-brand-400 shrink-0 mt-0.5" />
-                    <span>
-                      {profile.clinicName && (
-                        <span className="font-medium text-slate-800 block">{profile.clinicName}</span>
-                      )}
-                      {addressParts.join(", ")}
-                    </span>
-                  </p>
-                </div>
-              )}
-
-              <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-slate-400">{t("pub.consultPrice")}</p>
-                  <p className="text-2xl font-bold text-slate-900">{fmtPrice(profile.consultPrice)}</p>
-                </div>
-              </div>
+              <PublicServicesList
+                services={profile.services}
+                defaultPrice={profile.consultPrice}
+                currency={profile.currency}
+              />
             </div>
 
             {/* Center ? booking */}
             <PublicBookingPanel profile={profile} />
 
-            {/* Right ? map */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-              {hasCoords ? (
-                <PublicMiniMap
-                  lat={profile.clinicLatitude!}
-                  lng={profile.clinicLongitude!}
-                  label={profile.clinicName || name}
-                />
-              ) : (
-                <div className="h-[200px] lg:h-full min-h-[200px] bg-slate-50 rounded-xl flex items-center justify-center text-sm text-slate-400 text-center px-4">
-                  {profile.acceptsTeleconsult ? t("pub.teleconsultOnly") : t("pub.noMap")}
-                </div>
-              )}
-            </div>
+            {/* Right ? locations + map */}
+            <PublicProfilePlaces
+              locations={profile.locations}
+              fallback={{
+                clinicName: profile.clinicName,
+                clinicAddress: profile.clinicAddress,
+                clinicCity: profile.clinicCity,
+                clinicState: profile.clinicState,
+                clinicCountry: profile.clinicCountry,
+                clinicLatitude: profile.clinicLatitude,
+                clinicLongitude: profile.clinicLongitude,
+                acceptsTeleconsult: profile.acceptsTeleconsult,
+              }}
+              providerName={name}
+            />
           </div>
         </main>
 

@@ -113,6 +113,27 @@ export default function PublicResultCard({
             </div>
           )}
 
+          {pro.services.length > 0 && (
+            <div className="mt-2 space-y-0.5">
+              {pro.services.slice(0, 2).map((svc, i) => (
+                <p key={i} className="text-xs text-slate-600 flex justify-between gap-2">
+                  <span className="truncate">{svc.name}</span>
+                  <span className="font-medium text-slate-800 shrink-0">
+                    {svc.priceCents != null
+                      ? fmtPrice(svc.priceCents, svc.currency, locale)
+                      : "?"}
+                  </span>
+                </p>
+              ))}
+            </div>
+          )}
+
+          {pro.locationCount > 1 && (
+            <p className="text-[10px] text-brand-600 mt-1">
+              {pro.locationCount} {t("pubPhase3.addresses")}
+            </p>
+          )}
+
           <p className="text-sm font-bold text-slate-800 mt-3">
             {fmtPrice(pro.consultPrice, pro.currency, locale)}
           </p>

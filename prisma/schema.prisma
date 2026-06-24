@@ -320,6 +320,9 @@ model ProfessionalProfile {
   reviews           ProfessionalReview[]
 
   healthPlans       ProfessionalHealthPlan[]
+  practiceLocations PracticeLocation[]      @relation("ProfessionalLocations")
+  services          ProviderService[]       @relation("ProfessionalServices")
+  slotAlerts        SlotAvailabilityAlert[] @relation("ProfessionalSlotAlerts")
 
   @@index([userId])
   @@index([specialty])
@@ -386,6 +389,9 @@ model PsychoanalystProfile {
   reviews             PsychoanalystReview[]
 
   healthPlans         PsychoanalystHealthPlan[]
+  practiceLocations   PracticeLocation[]        @relation("PsychoanalystLocations")
+  services            ProviderService[]         @relation("PsychoanalystServices")
+  slotAlerts          SlotAvailabilityAlert[]   @relation("PsychoanalystSlotAlerts")
 
   @@index([userId])
 }
@@ -708,6 +714,75 @@ model PsychoanalystHealthPlan {
 
   @@id([psychoanalystId, healthPlanId])
   @@index([healthPlanId])
+}
+
+// ─────────────────────────────────────────
+// PRACTICE LOCATIONS + SERVICES (public profile)
+// ─────────────────────────────────────────
+
+model PracticeLocation {
+  id              String                @id @default(cuid())
+  professionalId  String?
+  professional    ProfessionalProfile?  @relation("ProfessionalLocations", fields: [professionalId], references: [id], onDelete: Cascade)
+  psychoanalystId String?
+  psychoanalyst   PsychoanalystProfile? @relation("PsychoanalystLocations", fields: [psychoanalystId], references: [id], onDelete: Cascade)
+
+  name            String
+  address         String
+  city            String
+  state           String?
+  country         String?
+  zip             String?
+  latitude        Float?
+  longitude       Float?
+  isPrimary       Boolean  @default(false)
+  sortOrder       Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([professionalId])
+  @@index([psychoanalystId])
+}
+
+model ProviderService {
+  id              String                @id @default(cuid())
+  professionalId  String?
+  professional    ProfessionalProfile?  @relation("ProfessionalServices", fields: [professionalId], references: [id], onDelete: Cascade)
+  psychoanalystId String?
+  psychoanalyst   PsychoanalystProfile? @relation("PsychoanalystServices", fields: [psychoanalystId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String?
+  priceCents      Int?
+  currency        String   @default("BRL")
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([professionalId])
+  @@index([psychoanalystId])
+}
+
+model SlotAvailabilityAlert {
+  id              String                @id @default(cuid())
+  professionalId  String?
+  professional    ProfessionalProfile?  @relation("ProfessionalSlotAlerts", fields: [professionalId], references: [id], onDelete: Cascade)
+  psychoanalystId String?
+  psychoanalyst   PsychoanalystProfile? @relation("PsychoanalystSlotAlerts", fields: [psychoanalystId], references: [id], onDelete: Cascade)
+
+  email           String
+  slug            String
+  active          Boolean  @default(true)
+  notifiedAt      DateTime?
+
+  createdAt       DateTime @default(now())
+
+  @@unique([email, professionalId])
+  @@unique([email, psychoanalystId])
+  @@index([slug])
 }
 
 // ─────────────────────────────────────────

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import { Loader2, CheckCircle2, Video, Building2, DollarSign } from "lucide-react";
@@ -136,6 +137,7 @@ export default function PsychoanalystSettingsPage() {
 
       <PublicListingSettings apiPath="/api/psychoanalyst/public-profile" />
       <HealthPlansSettings apiPath="/api/psychoanalyst/health-plans" />
+      <PracticeSettings apiPath="/api/psychoanalyst/practice" />
 
       <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-sm">
         <div className="grid sm:grid-cols-2 gap-4">

@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { PROFESSION_GROUPS, getProfessionLabel } from "@/lib/professions";
+import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import {
@@ -171,6 +172,7 @@ export default function ProfessionalSettings() {
 
       <PublicListingSettings apiPath="/api/professional/public-profile" />
       <HealthPlansSettings apiPath="/api/professional/health-plans" />
+      <PracticeSettings apiPath="/api/professional/practice" />
 
       {/* Photo + Identity */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
