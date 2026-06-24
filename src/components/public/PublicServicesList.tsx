@@ -3,6 +3,7 @@
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import type { ProviderServiceDto } from "@/lib/practice";
+import { SERVICE_EVENT } from "@/components/public/PublicBookingPanel";
 
 function fmtPrice(cents: number, currency: string, locale: string): string {
   try {
@@ -15,14 +16,24 @@ function fmtPrice(cents: number, currency: string, locale: string): string {
   }
 }
 
+function selectService(serviceId: string) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("service", serviceId);
+  window.history.replaceState({}, "", url);
+  window.dispatchEvent(new CustomEvent(SERVICE_EVENT, { detail: { serviceId } }));
+  document.getElementById("public-booking")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export default function PublicServicesList({
   services,
   defaultPrice,
   currency,
+  interactive = true,
 }: {
   services: ProviderServiceDto[];
   defaultPrice: number;
   currency: string;
+  interactive?: boolean;
 }) {
   const { lang, t } = useI18n();
   const locale = localeOf(lang);
@@ -41,28 +52,39 @@ export default function PublicServicesList({
   const visible = services.filter((s) => s.isActive);
   const [first, ...rest] = visible;
 
+  function ServiceRow({ svc }: { svc: ProviderServiceDto }) {
+    const price =
+      svc.priceCents != null
+        ? fmtPrice(svc.priceCents, svc.currency || currency, locale)
+        : t("pubPhase3.priceUnavailable");
+
+    if (!interactive) {
+      return (
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-700">{svc.name}</span>
+          <span className="font-semibold text-slate-900">{price}</span>
+        </div>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => selectService(svc.id)}
+        className="flex items-center justify-between text-sm w-full text-left rounded-lg px-2 py-1.5 -mx-2 hover:bg-brand-50 transition"
+      >
+        <span className="text-slate-700">{svc.name}</span>
+        <span className="font-semibold text-brand-600">{price}</span>
+      </button>
+    );
+  }
+
   return (
     <div className="border-t border-slate-100 pt-4 space-y-3">
       <p className="text-sm font-semibold text-slate-800">{t("pubPhase3.servicesTitle")}</p>
-      {first && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-700">{first.name}</span>
-          <span className="font-semibold text-slate-900">
-            {first.priceCents != null
-              ? fmtPrice(first.priceCents, first.currency || currency, locale)
-              : t("pubPhase3.priceUnavailable")}
-          </span>
-        </div>
-      )}
+      {first && <ServiceRow svc={first} />}
       {rest.slice(0, 4).map((svc) => (
-        <div key={svc.id} className="flex items-center justify-between text-sm">
-          <span className="text-slate-600">{svc.name}</span>
-          <span className="font-medium text-slate-800">
-            {svc.priceCents != null
-              ? fmtPrice(svc.priceCents, svc.currency || currency, locale)
-              : t("pubPhase3.priceUnavailable")}
-          </span>
-        </div>
+        <ServiceRow key={svc.id} svc={svc} />
       ))}
       {rest.length > 4 && (
         <p className="text-xs text-brand-600 font-medium">{t("pubPhase3.moreServices")}</p>

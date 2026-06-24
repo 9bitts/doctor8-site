@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { translate, normalizeLang, localeOf, Lang } from "@/lib/i18n/translations";
 import { Calendar, Video, MapPin } from "lucide-react";
+import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import { decrypt } from "@/lib/encryption";
 
 function safeDecrypt(v: string | null): string {
@@ -54,6 +55,7 @@ export default async function PsychoanalystAppointmentsPage() {
             {appointments.map((apt) => {
               const firstName = safeDecrypt(apt.patient.firstName);
               const lastName = safeDecrypt(apt.patient.lastName);
+              const intake = parseAppointmentIntake(apt.chiefComplaint);
               return (
                 <div key={apt.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition">
                   <div className="w-11 h-11 rounded-xl bg-violet-100 flex items-center justify-center font-bold text-violet-600 text-sm shrink-0">
@@ -64,6 +66,15 @@ export default async function PsychoanalystAppointmentsPage() {
                     <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                       {apt.type === "TELECONSULT" ? <><Video size={12} /> {t("proappt.teleconsult")}</> : <><MapPin size={12} /> {t("proappt.inPerson")}</>}
                     </p>
+                    {intake?.healthPlanLabel && (
+                      <p className="text-[11px] text-violet-600 mt-1">{intake.healthPlanLabel}</p>
+                    )}
+                    {intake?.serviceName && (
+                      <p className="text-[11px] text-slate-600 mt-1">{intake.serviceName}</p>
+                    )}
+                    {intake?.visitReason && (
+                      <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">{intake.visitReason}</p>
+                    )}
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-semibold text-slate-700">

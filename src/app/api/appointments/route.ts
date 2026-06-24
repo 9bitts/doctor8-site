@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { stripe } from "@/lib/stripe";
 import { scheduleAppointmentReminders, scheduleReviewRequest } from "@/lib/qstash";
+import { buildAppointmentIntakePayload } from "@/lib/appointment-intake";
 import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { z } from "zod";
@@ -109,6 +110,11 @@ const createSchema = z.object({
   currency: z.string(),
   acceptedCancellationPolicy: z.boolean().default(false),
   bookingSource: z.enum(["patient_panel", "public_profile", "public_search", "public_embed"]).optional(),
+  visitReason: z.string().max(2000).optional(),
+  healthPlanSlug: z.string().max(80).optional(),
+  healthPlanLabel: z.string().max(120).optional(),
+  serviceId: z.string().optional(),
+  serviceName: z.string().max(120).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -126,6 +132,11 @@ export async function POST(req: NextRequest) {
     stripePaymentIntentId,
     acceptedCancellationPolicy,
     providerType,
+    visitReason,
+    healthPlanSlug,
+    healthPlanLabel,
+    serviceId,
+    serviceName,
   } = parsed.data;
 
   const providerId =
@@ -206,6 +217,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: { general: ["This slot is no longer available."] } }, { status: 409 });
   }
 
+  const planSlug = healthPlanSlug?.trim() || "particular";
+  const planLabel =
+    healthPlanLabel?.trim() ||
+    (planSlug === "particular" ? "Particular" : planSlug);
+
+  const intakePayload =
+    visitReason?.trim() || healthPlanSlug || serviceId || acceptedCancellationPolicy
+      ? buildAppointmentIntakePayload({
+          visitReason: visitReason?.trim(),
+          healthPlanSlug: planSlug,
+          healthPlanLabel: planLabel,
+          serviceId: serviceId?.trim() || undefined,
+          serviceName: serviceName?.trim() || undefined,
+          policyAccepted: acceptedCancellationPolicy,
+        })
+      : null;
+
   const appointment = await db.appointment.create({
     data: {
       patientId: patient.id,
@@ -221,14 +249,7 @@ export async function POST(req: NextRequest) {
       paidAt: new Date(),
       durationMins,
       bookingSource: parsed.data.bookingSource ?? "patient_panel",
-      ...(acceptedCancellationPolicy
-        ? {
-            chiefComplaint: JSON.stringify({
-              policyAccepted: true,
-              acceptedAt: new Date().toISOString(),
-            }),
-          }
-        : {}),
+      ...(intakePayload ? { chiefComplaint: intakePayload } : {}),
     },
   });
 

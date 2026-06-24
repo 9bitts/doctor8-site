@@ -15,6 +15,7 @@ const schema = z.object({
   scheduledAt: z.string().datetime(),
   type: z.enum(["TELECONSULT", "IN_PERSON"]),
   paymentMethod: z.enum(["card", "pix", "paypal"]).default("card"),
+  serviceId: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -50,8 +51,23 @@ export async function POST(req: NextRequest) {
 
   const currency = "usd";
   const isMember = await hasActiveClub(session.user.id);
+
+  let baseAmount = provider.consultPrice;
+  if (parsed.data.serviceId) {
+    const svc = await db.providerService.findFirst({
+      where: {
+        id: parsed.data.serviceId,
+        isActive: true,
+        ...(providerType === "psychoanalyst"
+          ? { psychoanalystId: providerId }
+          : { professionalId: providerId }),
+      },
+    });
+    if (svc?.priceCents != null) baseAmount = svc.priceCents;
+  }
+
   const { finalAmount, discountApplied, originalAmount } = applyClubDiscount(
-    provider.consultPrice,
+    baseAmount,
     isMember
   );
 

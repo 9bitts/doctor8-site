@@ -139,6 +139,11 @@ export default function AppointmentsPage() {
   const [bookingSource, setBookingSource] = useState<
     "patient_panel" | "public_profile" | "public_search" | "public_embed"
   >("patient_panel");
+  const [providerPlans, setProviderPlans] = useState<{ slug: string; name: string }[]>([]);
+  const [providerServices, setProviderServices] = useState<{ id: string; name: string; priceCents: number | null; currency: string }[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState("");
+  const [healthPlanSlug, setHealthPlanSlug] = useState("particular");
+  const [visitReason, setVisitReason] = useState("");
 
   useEffect(() => { fetchProfessionals(); fetchAppointments(); }, []);
   useEffect(() => { if (step === "payment" && !stripeLoaded) loadStripe(); }, [step]);
@@ -158,7 +163,7 @@ export default function AppointmentsPage() {
     const pro = professionals.find((p) =>
       p.id === proId && (!providerType || p.providerType === providerType)
     );
-    if (pro) selectProfessional(pro, params.get("slot") || undefined);
+    if (pro) selectProfessional(pro, params.get("slot") || undefined, params.get("service") || undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionals]);
 
@@ -220,17 +225,40 @@ export default function AppointmentsPage() {
     setAppointments(d.appointments || []);
   }
 
-  async function selectProfessional(pro: Professional, preselectSlot?: string) {
+  async function selectProfessional(pro: Professional, preselectSlot?: string, preselectService?: string) {
     setSelectedPro(pro);
     setStep("slots");
     setSelectedDay(null);
     setSelectedSlot("");
+    setVisitReason("");
+    setHealthPlanSlug("particular");
+    setProviderPlans([]);
+    setProviderServices([]);
+    setSelectedServiceId("");
     setSlotsLoading(true);
     try {
-      const res  = await fetch(`/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${pro.providerType || "health"}`);
-      const d    = await res.json();
+      const providerType = pro.providerType || "health";
+      const [slotsRes, plansRes, servicesRes] = await Promise.all([
+        fetch(`/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${providerType}`),
+        fetch(`/api/professionals/${pro.id}/health-plans?providerType=${providerType}`),
+        fetch(`/api/professionals/${pro.id}/services?providerType=${providerType}`),
+      ]);
+      const d = await slotsRes.json();
       const days = (d.days || []).filter((day: SlotDay) => day.slots.some((s) => s.available));
       setSlots(days);
+      if (plansRes.ok) {
+        const plansData = await plansRes.json();
+        setProviderPlans(plansData.plans || []);
+      }
+      let services: typeof providerServices = [];
+      if (servicesRes.ok) {
+        const servicesData = await servicesRes.json();
+        services = servicesData.services || [];
+        setProviderServices(services);
+      }
+      if (preselectService && services.some((s) => s.id === preselectService)) {
+        setSelectedServiceId(preselectService);
+      }
       if (days.length > 0) {
         const dayWithSlot = preselectSlot
           ? days.find((day: SlotDay) =>
@@ -250,6 +278,8 @@ export default function AppointmentsPage() {
     if (!selectedPro || !selectedSlot || !stripeRef.current || !cardElementRef.current || !acceptedPolicy) return;
     setPayLoading(true); setError("");
     try {
+      const selectedService = providerServices.find((s) => s.id === selectedServiceId);
+
       const intentRes = await fetch("/api/payments/create-intent", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
@@ -260,6 +290,7 @@ export default function AppointmentsPage() {
           scheduledAt: selectedSlot,
           type,
           paymentMethod: "card",
+          ...(selectedServiceId ? { serviceId: selectedServiceId } : {}),
         }),
       });
       const intentData = await intentRes.json();
@@ -272,6 +303,14 @@ export default function AppointmentsPage() {
       if (stripeError) { setError(stripeError.message || t("appt.errPaymentFailed")); return; }
 
       if (paymentIntent.status === "succeeded") {
+        const selectedPlan =
+          healthPlanSlug === "particular"
+            ? { slug: "particular", name: t("appt.healthPlanPrivate") }
+            : providerPlans.find((p) => p.slug === healthPlanSlug) ?? {
+                slug: healthPlanSlug,
+                name: healthPlanSlug,
+              };
+
         const apptRes = await fetch("/api/appointments", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
@@ -286,6 +325,12 @@ export default function AppointmentsPage() {
             currency:                   intentData.currency,
             acceptedCancellationPolicy: acceptedPolicy,
             bookingSource,
+            visitReason: visitReason.trim() || undefined,
+            healthPlanSlug: selectedPlan.slug,
+            healthPlanLabel: selectedPlan.name,
+            ...(selectedServiceId && selectedService
+              ? { serviceId: selectedServiceId, serviceName: selectedService.name }
+              : {}),
           }),
         });
         const apptData = await apptRes.json();
@@ -354,8 +399,12 @@ export default function AppointmentsPage() {
     return matchSearch && matchSpec;
   });
 
+  const selectedService = providerServices.find((s) => s.id === selectedServiceId);
+  const checkoutPriceCents = selectedService?.priceCents ?? selectedPro?.consultPrice ?? 0;
+  const checkoutCurrency = selectedService?.currency || selectedPro?.currency || "USD";
+
   const priceDisplay = selectedPro
-    ? new Intl.NumberFormat(locale, { style: "currency", currency: selectedPro.currency || "USD" }).format(selectedPro.consultPrice / 100)
+    ? new Intl.NumberFormat(locale, { style: "currency", currency: checkoutCurrency }).format(checkoutPriceCents / 100)
     : "";
 
   const canPay = stripeLoaded && cardComplete && acceptedPolicy;
@@ -588,6 +637,59 @@ export default function AppointmentsPage() {
             <div className="border-t border-slate-200 mt-3 pt-3 flex justify-between font-bold text-slate-900">
               <span>{t("appt.total")}</span>
               <span>{priceDisplay}</span>
+            </div>
+          </div>
+
+          <div className="space-y-4 border-t border-slate-100 pt-4">
+            <p className="text-sm font-semibold text-slate-800">{t("appt.preConsultTitle")}</p>
+            <p className="text-xs text-slate-500">{t("appt.preConsultHint")}</p>
+
+            {providerServices.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  {t("appt.serviceLabel")}
+                </label>
+                <select
+                  value={selectedServiceId}
+                  onChange={(e) => setSelectedServiceId(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                >
+                  <option value="">{t("appt.serviceDefault")}</option>
+                  {providerServices.map((svc) => (
+                    <option key={svc.id} value={svc.id}>{svc.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                {t("appt.healthPlanLabel")}
+              </label>
+              <select
+                value={healthPlanSlug}
+                onChange={(e) => setHealthPlanSlug(e.target.value)}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              >
+                <option value="particular">{t("appt.healthPlanPrivate")}</option>
+                {providerPlans.map((plan) => (
+                  <option key={plan.slug} value={plan.slug}>{plan.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                {t("appt.visitReasonLabel")}
+              </label>
+              <textarea
+                value={visitReason}
+                onChange={(e) => setVisitReason(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder={t("appt.visitReasonPlaceholder")}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              />
             </div>
           </div>
 

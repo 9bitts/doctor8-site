@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -16,6 +16,8 @@ type DaySlots = {
   slots: { time: string; datetime: string; available: boolean }[];
 };
 
+const SERVICE_EVENT = "doctor8:select-service";
+
 function fmtPrice(cents: number, currency: string, locale: string): string {
   try {
     return new Intl.NumberFormat(locale, {
@@ -25,6 +27,30 @@ function fmtPrice(cents: number, currency: string, locale: string): string {
   } catch {
     return `R$ ${(cents / 100).toFixed(2)}`;
   }
+}
+
+function readUrlParams() {
+  if (typeof window === "undefined") return { slot: null as string | null, service: null as string | null };
+  const params = new URLSearchParams(window.location.search);
+  return {
+    slot: params.get("slot"),
+    service: params.get("service"),
+  };
+}
+
+function applySlotPreselect(
+  days: DaySlots[],
+  preselectSlot: string | null
+): { dayIndex: number; slot: string | null } {
+  if (!preselectSlot || days.length === 0) return { dayIndex: 0, slot: null };
+  const dayIndex = days.findIndex((day) =>
+    day.slots.some((s) => s.datetime === preselectSlot && s.available)
+  );
+  if (dayIndex < 0) return { dayIndex: 0, slot: null };
+  const available = days[dayIndex].slots.some(
+    (s) => s.datetime === preselectSlot && s.available
+  );
+  return { dayIndex, slot: available ? preselectSlot : null };
 }
 
 export default function PublicBookingPanel({
@@ -44,6 +70,31 @@ export default function PublicBookingPanel({
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+
+  const activeServices = profile.services.filter((s) => s.isActive);
+
+  const resolveServiceId = useCallback(
+    (id: string | null) => {
+      if (!id) return null;
+      return activeServices.some((s) => s.id === id) ? id : null;
+    },
+    [activeServices]
+  );
+
+  useEffect(() => {
+    const { service } = readUrlParams();
+    setSelectedServiceId(resolveServiceId(service));
+  }, [resolveServiceId]);
+
+  useEffect(() => {
+    function onServiceSelect(e: Event) {
+      const id = (e as CustomEvent<{ serviceId: string }>).detail?.serviceId;
+      if (id) setSelectedServiceId(resolveServiceId(id));
+    }
+    window.addEventListener(SERVICE_EVENT, onServiceSelect);
+    return () => window.removeEventListener(SERVICE_EVENT, onServiceSelect);
+  }, [resolveServiceId]);
 
   useEffect(() => {
     async function load() {
@@ -54,7 +105,12 @@ export default function PublicBookingPanel({
         );
         if (res.ok) {
           const data = await res.json();
-          setDays(data.days || []);
+          const loadedDays: DaySlots[] = data.days || [];
+          setDays(loadedDays);
+          const { slot } = readUrlParams();
+          const { dayIndex, slot: picked } = applySlotPreselect(loadedDays, slot);
+          setSelectedDay(dayIndex);
+          setSelectedSlot(picked);
         }
       } catch { /* ignore */ }
       setLoading(false);
@@ -69,11 +125,16 @@ export default function PublicBookingPanel({
     .flatMap((d) => d.slots.filter((s) => s.available).map((s) => ({ ...s, dayLabel: d.label, date: d.date })))
     [0];
 
+  const selectedService = activeServices.find((s) => s.id === selectedServiceId) ?? null;
+  const displayPriceCents = selectedService?.priceCents ?? profile.consultPrice;
+  const displayCurrency = selectedService?.currency || profile.currency;
+
   const bookParams = new URLSearchParams({
     pro: profile.providerId,
     providerType: profile.providerType,
     from: bookingFrom,
     ...(selectedSlot ? { slot: selectedSlot } : {}),
+    ...(selectedServiceId ? { service: selectedServiceId } : {}),
   });
   const loginUrl = `/login?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
   const registerUrl = `/register?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
@@ -83,15 +144,38 @@ export default function PublicBookingPanel({
     : "bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4";
 
   return (
-    <div className={shellClass}>
+    <div id="public-booking" className={shellClass}>
       <div className="flex items-center justify-between">
         <h2 className={`font-semibold text-slate-800 ${embed ? "text-sm" : ""}`}>
           {t("pub.bookTitle")}
         </h2>
         <p className={`font-bold text-brand-600 ${embed ? "text-sm" : "text-sm"}`}>
-          {fmtPrice(profile.consultPrice, profile.currency, locale)}
+          {fmtPrice(displayPriceCents, displayCurrency, locale)}
         </p>
       </div>
+
+      {activeServices.length > 0 && (
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+            {t("pub.selectService")}
+          </label>
+          <select
+            value={selectedServiceId ?? ""}
+            onChange={(e) => setSelectedServiceId(e.target.value || null)}
+            className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          >
+            <option value="">{t("pub.defaultService")}</option>
+            {activeServices.map((svc) => (
+              <option key={svc.id} value={svc.id}>
+                {svc.name}
+                {svc.priceCents != null
+                  ? ` ? ${fmtPrice(svc.priceCents, svc.currency || profile.currency, locale)}`
+                  : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-sm">
@@ -174,3 +258,5 @@ export default function PublicBookingPanel({
     </div>
   );
 }
+
+export { SERVICE_EVENT };
