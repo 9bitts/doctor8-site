@@ -163,7 +163,7 @@ export default function SupportWidget() {
     sendMessage(input);
   }
 
-  const hideOnPaths = ["/login", "/register", "/verify-email", "/club/join", "/callback"];
+  const hideOnPaths = ["/login", "/register", "/verify-email", "/club/join", "/callback", "/embed"];
   if (hideOnPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return null;
   }

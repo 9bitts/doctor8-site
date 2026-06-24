@@ -108,7 +108,7 @@ const createSchema = z.object({
   priceAmount: z.number(),
   currency: z.string(),
   acceptedCancellationPolicy: z.boolean().default(false),
-  bookingSource: z.enum(["patient_panel", "public_profile", "public_search"]).optional(),
+  bookingSource: z.enum(["patient_panel", "public_profile", "public_search", "public_embed"]).optional(),
 });
 
 export async function POST(req: NextRequest) {

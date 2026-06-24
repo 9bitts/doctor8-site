@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { Calendar, ChevronRight, Loader2 } from "lucide-react";
 import type { PublicProfileData } from "@/lib/public-profile";
+import type { PublicAnalyticsSource } from "@/lib/public-analytics";
 import SlotAlertForm from "@/components/public/SlotAlertForm";
 import { trackPublicBookClick } from "@/components/public/PublicProfileTracker";
 
@@ -26,7 +27,17 @@ function fmtPrice(cents: number, currency: string, locale: string): string {
   }
 }
 
-export default function PublicBookingPanel({ profile }: { profile: PublicProfileData }) {
+export default function PublicBookingPanel({
+  profile,
+  embed = false,
+  analyticsSource = "public_profile",
+  bookingFrom = "public_profile",
+}: {
+  profile: PublicProfileData;
+  embed?: boolean;
+  analyticsSource?: PublicAnalyticsSource;
+  bookingFrom?: "public_profile" | "public_search" | "public_embed";
+}) {
   const { lang, t } = useI18n();
   const locale = localeOf(lang);
   const [days, setDays] = useState<DaySlots[]>([]);
@@ -61,27 +72,33 @@ export default function PublicBookingPanel({ profile }: { profile: PublicProfile
   const bookParams = new URLSearchParams({
     pro: profile.providerId,
     providerType: profile.providerType,
-    from: "public_profile",
+    from: bookingFrom,
     ...(selectedSlot ? { slot: selectedSlot } : {}),
   });
   const loginUrl = `/login?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
   const registerUrl = `/register?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
 
+  const shellClass = embed
+    ? "space-y-3"
+    : "bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4";
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+    <div className={shellClass}>
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-slate-800">{t("pub.bookTitle")}</h2>
-        <p className="text-sm font-bold text-brand-600">
+        <h2 className={`font-semibold text-slate-800 ${embed ? "text-sm" : ""}`}>
+          {t("pub.bookTitle")}
+        </h2>
+        <p className={`font-bold text-brand-600 ${embed ? "text-sm" : "text-sm"}`}>
           {fmtPrice(profile.consultPrice, profile.currency, locale)}
         </p>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-10 text-slate-400 gap-2 text-sm">
+        <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-sm">
           <Loader2 size={18} className="animate-spin" /> {t("pub.loadingSlots")}
         </div>
       ) : days.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="text-center py-6">
           <p className="text-sm text-slate-500">{t("pub.noSlots")}</p>
           {nextAvailable && (
             <p className="text-xs text-slate-400 mt-2">
@@ -108,7 +125,7 @@ export default function PublicBookingPanel({ profile }: { profile: PublicProfile
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-2 min-h-[40px]">
+          <div className="flex flex-wrap gap-2 min-h-[36px]">
             {availableSlots.length === 0 ? (
               <span className="text-sm text-slate-400">?</span>
             ) : (
@@ -133,8 +150,9 @@ export default function PublicBookingPanel({ profile }: { profile: PublicProfile
 
       <Link
         href={loginUrl}
-        onClick={() => trackPublicBookClick(profile.slug, "public_profile")}
-        className="flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-400 text-white font-semibold py-3.5 rounded-xl transition"
+        target={embed ? "_top" : undefined}
+        onClick={() => trackPublicBookClick(profile.slug, analyticsSource)}
+        className="flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-400 text-white font-semibold py-3 rounded-xl transition text-sm"
       >
         <Calendar size={18} />
         {selectedSlot ? t("pub.bookSlot") : t("pub.bookCta")}
@@ -143,12 +161,16 @@ export default function PublicBookingPanel({ profile }: { profile: PublicProfile
 
       <p className="text-center text-xs text-slate-400">
         {t("pub.noAccount")}{" "}
-        <Link href={registerUrl} className="text-brand-500 font-semibold hover:underline">
+        <Link
+          href={registerUrl}
+          target={embed ? "_top" : undefined}
+          className="text-brand-500 font-semibold hover:underline"
+        >
           {t("pub.register")}
         </Link>
       </p>
 
-      <SlotAlertForm slug={profile.slug} />
+      {!embed && <SlotAlertForm slug={profile.slug} />}
     </div>
   );
 }

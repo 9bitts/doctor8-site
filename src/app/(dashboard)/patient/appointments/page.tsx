@@ -137,7 +137,7 @@ export default function AppointmentsPage() {
   } | null>(null);
 
   const [bookingSource, setBookingSource] = useState<
-    "patient_panel" | "public_profile" | "public_search"
+    "patient_panel" | "public_profile" | "public_search" | "public_embed"
   >("patient_panel");
 
   useEffect(() => { fetchProfessionals(); fetchAppointments(); }, []);
@@ -152,7 +152,7 @@ export default function AppointmentsPage() {
     if (!proId) return;
     const providerType = params.get("providerType") || undefined;
     const from = params.get("from");
-    if (from === "public_profile" || from === "public_search") {
+    if (from === "public_profile" || from === "public_search" || from === "public_embed") {
       setBookingSource(from);
     }
     const pro = professionals.find((p) =>

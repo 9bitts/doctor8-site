@@ -9,6 +9,7 @@ import {
   ensureVirtualCard,
 } from "@/lib/public-profile";
 import { getPublicProfileAnalytics } from "@/lib/public-analytics";
+import { buildEmbedAgendaUrl } from "@/lib/public-slugs";
 
 function parseGoogleBusinessUrl(raw: unknown): string | null | false {
   if (raw === null || raw === "") return null;
@@ -62,6 +63,7 @@ export async function GET() {
     specialtySlug: card.specialtySlug,
     citySlug: card.citySlug,
     googleBusinessUrl: card.googleBusinessUrl,
+    embedUrl: buildEmbedAgendaUrl(card.slug),
     analytics,
   });
 }

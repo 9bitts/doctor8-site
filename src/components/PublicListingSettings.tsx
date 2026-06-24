@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   Globe, Copy, CheckCircle2, Loader2, ExternalLink, Eye, EyeOff, Clock, MapPin,
-  BarChart3, MousePointerClick, CalendarCheck,
+  BarChart3, MousePointerClick, CalendarCheck, Code2,
 } from "lucide-react";
 
 type ProfileAnalytics = {
@@ -25,6 +25,7 @@ type ListingInfo = {
   status: "pending_approval" | "hidden" | "live";
   verified: boolean;
   googleBusinessUrl: string | null;
+  embedUrl?: string;
   analytics?: ProfileAnalytics;
 };
 
@@ -34,6 +35,7 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
   const [saving, setSaving] = useState(false);
   const [savingGoogle, setSavingGoogle] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [info, setInfo] = useState<ListingInfo | null>(null);
   const [googleUrl, setGoogleUrl] = useState("");
   const [error, setError] = useState("");
@@ -98,6 +100,18 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
+
+  async function copyEmbed() {
+    if (!info?.embedUrl) return;
+    const code = `<iframe src="${info.embedUrl}" width="100%" height="520" style="border:0;border-radius:12px" title="${t("pubEmbed.iframeTitle")}"></iframe>`;
+    await navigator.clipboard.writeText(code);
+    setCopiedEmbed(true);
+    setTimeout(() => setCopiedEmbed(false), 2000);
+  }
+
+  const embedSnippet = info?.embedUrl
+    ? `<iframe src="${info.embedUrl}" width="100%" height="520" style="border:0;border-radius:12px" title="${t("pubEmbed.iframeTitle")}"></iframe>`
+    : "";
 
   if (loading) {
     return (
@@ -229,6 +243,37 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
               }
               icon={<BarChart3 size={14} className="text-amber-500" />}
             />
+          </div>
+        </div>
+      )}
+
+      {info.status === "live" && info.embedUrl && (
+        <div className="border-t border-slate-100 pt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <Code2 size={16} className="text-brand-500" />
+            {t("pubEmbed.title")}
+          </h3>
+          <p className="text-xs text-slate-500">{t("pubEmbed.subtitle")}</p>
+          <pre className="text-[11px] bg-slate-50 border border-slate-100 rounded-xl p-3 overflow-x-auto text-slate-600 whitespace-pre-wrap break-all">
+            {embedSnippet}
+          </pre>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={copyEmbed}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 px-4 py-2 rounded-xl transition"
+            >
+              {copiedEmbed ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+              {t("pubEmbed.copyCode")}
+            </button>
+            <Link
+              href={info.embedUrl}
+              target="_blank"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 px-4 py-2 rounded-xl transition"
+            >
+              <ExternalLink size={16} />
+              {t("pubEmbed.preview")}
+            </Link>
           </div>
         </div>
       )}

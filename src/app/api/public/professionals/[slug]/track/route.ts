@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const schema = z.object({
   type: z.enum(["view", "book_click"]),
-  source: z.enum(["public_profile", "public_search"]).optional(),
+  source: z.enum(["public_profile", "public_search", "public_embed"]).optional(),
 });
 
 export async function POST(

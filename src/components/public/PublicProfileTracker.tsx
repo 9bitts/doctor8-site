@@ -7,7 +7,7 @@ export default function PublicProfileTracker({
   source = "public_profile",
 }: {
   slug: string;
-  source?: "public_profile" | "public_search";
+  source?: "public_profile" | "public_search" | "public_embed";
 }) {
   useEffect(() => {
     const key = `d8_view_${slug}`;
@@ -26,7 +26,7 @@ export default function PublicProfileTracker({
 
 export function trackPublicBookClick(
   slug: string,
-  source: "public_profile" | "public_search"
+  source: "public_profile" | "public_search" | "public_embed"
 ) {
   fetch(`/api/public/professionals/${slug}/track`, {
     method: "POST",

@@ -93,3 +93,11 @@ export function buildPublicProfileUrl(card: {
 }): string {
   return `${APP_BASE_URL}${buildPublicProfilePath(card)}`;
 }
+
+export function buildEmbedAgendaPath(slug: string): string {
+  return `/embed/agenda/${slug}`;
+}
+
+export function buildEmbedAgendaUrl(slug: string): string {
+  return `${APP_BASE_URL}${buildEmbedAgendaPath(slug)}`;
+}
