@@ -1,4 +1,7 @@
-// Helpers for clinical record content (CID, exam items, plain text).
+// Helpers for clinical record content (CID, exam items, plain text, psychology notes).
+
+import { formatSessionNoteBody, type SessionFormat } from "@/lib/psychology-templates";
+import { getScale, type ScaleId } from "@/lib/psychology-scales";
 
 export interface RecordContent {
   cid?: string;
@@ -8,11 +11,49 @@ export interface RecordContent {
   notes?: string;
 }
 
+export function isPsychologyStructuredContent(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw);
+    return !!(parsed && typeof parsed === "object" && (parsed.psychologyNote || parsed.psychologyScale));
+  } catch {
+    return false;
+  }
+}
+
+function psychologyBodyFromParsed(parsed: Record<string, unknown>): string {
+  if (parsed.psychologyNote) {
+    if (typeof parsed.renderedBody === "string" && parsed.renderedBody.trim()) {
+      return parsed.renderedBody;
+    }
+    return formatSessionNoteBody(
+      parsed.format as SessionFormat,
+      (parsed.fields as Record<string, string>) || {},
+      typeof parsed.sessionDurationMins === "number" ? parsed.sessionDurationMins : undefined,
+    );
+  }
+
+  if (parsed.psychologyScale) {
+    const scaleId = String(parsed.scaleId || "");
+    const score = typeof parsed.score === "number" ? parsed.score : 0;
+    const interp = parsed.interpretation as { levelPt?: string } | undefined;
+    const scale = getScale(scaleId as ScaleId);
+    const name = scale?.namePt || scaleId;
+    const level = interp?.levelPt ? ` — ${interp.levelPt}` : "";
+    return `${name}\nPontuação: ${score}${level}`;
+  }
+
+  return "";
+}
+
 export function parseRecordContent(raw: string | null): RecordContent {
   if (!raw) return { body: "" };
   try {
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === "object") {
+      if (parsed.psychologyNote || parsed.psychologyScale) {
+        return { body: psychologyBodyFromParsed(parsed as Record<string, unknown>) };
+      }
       if (Array.isArray(parsed.items)) {
         return {
           items: parsed.items.filter((i: unknown) => typeof i === "string" && i.trim()),

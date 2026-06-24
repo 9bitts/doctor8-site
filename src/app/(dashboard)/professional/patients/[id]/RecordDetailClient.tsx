@@ -21,6 +21,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
 import {
   buildRecordCopyText, formatRecordContentForDisplay, parseRecordContent,
+  isPsychologyStructuredContent,
 } from "@/lib/record-content";
 import { isImageFile, rotateImageFile } from "@/lib/image-rotate";
 
@@ -904,7 +905,7 @@ export default function RecordDetailClient({
                     >
                       <Printer size={14} /> {rt("print")}
                     </button>
-                    {d.canEdit !== false && !d.sourceDocumentId && (
+                    {d.canEdit !== false && !d.sourceDocumentId && !isPsychologyStructuredContent(d.content) && (
                       <button
                         type="button"
                         onClick={() => openEditForm(d)}

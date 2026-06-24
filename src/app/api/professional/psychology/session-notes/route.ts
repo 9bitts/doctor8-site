@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
     title,
     format: d.format,
     fields: d.fields,
+    sessionDurationMins: d.sessionDurationMins ?? null,
     renderedBody: payload.renderedBody,
     createdAt: doc.createdAt.toISOString(),
   }, { status: 201 });

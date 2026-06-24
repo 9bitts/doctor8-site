@@ -8,6 +8,7 @@ import { decrypt } from "@/lib/encryption";
 import { generateClinicalSummary } from "@/lib/ai-summarize";
 import { downloadFromS3 } from "@/lib/s3";
 import { normalizeLang, Lang } from "@/lib/i18n/translations";
+import { formatRecordContentForDisplay } from "@/lib/record-content";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -80,7 +81,8 @@ export async function POST(req: NextRequest) {
       if (!doc) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
       title = safeDecrypt(doc.title);
-      content = doc.content ? safeDecrypt(doc.content) : null;
+      const contentRaw = doc.content ? safeDecrypt(doc.content) : null;
+      content = contentRaw ? formatRecordContentForDisplay(contentRaw) : null;
       category = doc.category?.name ?? doc.type ?? null;
       if (doc.patientRecord) {
         patientName = `${safeDecrypt(doc.patientRecord.firstName)} ${safeDecrypt(doc.patientRecord.lastName)}`.trim();
