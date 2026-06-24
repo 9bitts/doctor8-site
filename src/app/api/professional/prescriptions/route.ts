@@ -125,7 +125,6 @@ export async function POST(req: NextRequest) {
       medications: medications as any,
       instructions: instructions ? encrypt(instructions) : null,
       validUntil,
-      digitalSignature: `${professional.id}-${Date.now()}`,
     },
   });
 

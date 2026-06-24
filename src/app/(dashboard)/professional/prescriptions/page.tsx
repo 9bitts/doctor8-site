@@ -89,7 +89,7 @@ function PrescriptionCard({
   onReuse: () => void; onSign: () => void;
 }) {
   const meds = p.medications as MedItem[];
-  const signed = p.signatureStatus === "SIGNED" || !!p.digitalSignature;
+  const signed = p.signatureStatus === "SIGNED";
   const patientName = p.document?.patient
     ? `${p.document.patient.firstName} ${p.document.patient.lastName}`
     : t("rx.patient");
@@ -146,7 +146,7 @@ function ClinicalDocCard({
   d: ClinicalDocument; locale: string; t: (k: string) => string;
   onReuse: () => void; onSign: () => void;
 }) {
-  const signed = d.signatureStatus === "SIGNED" || !!d.digitalSignature;
+  const signed = d.signatureStatus === "SIGNED";
   const patientName = d.document?.patient
     ? `${d.document.patient.firstName} ${d.document.patient.lastName}`
     : t("rx.patient");
