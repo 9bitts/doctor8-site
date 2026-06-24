@@ -76,7 +76,7 @@ export async function POST(
   try {
     const patientUser = await db.user.findUnique({
       where:  { id: session.user.id },
-      select: { email: true },
+      select: { email: true, language: true },
     });
     const patientProfile = await db.patientProfile.findUnique({
       where:  { userId: session.user.id },
@@ -92,6 +92,7 @@ export async function POST(
         scheduledAt:   new Date(newScheduledAt),
         type:          appointment.type,
         appointmentId: params.id,
+        language:      patientUser.language,
       });
     }
   } catch (e) {

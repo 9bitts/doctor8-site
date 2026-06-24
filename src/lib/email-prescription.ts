@@ -6,27 +6,19 @@
 // any clinical data — only a notice that a new prescription is available and a
 // link to sign in. The patient sees the content only after logging in.
 
-import { Resend } from "resend";
+import {
+  getAppUrl,
+  normEmailLang,
+  sendTransactionalEmail,
+  emailShell,
+  type EmailLang,
+} from "./email-core";
 
-let resendInstance: Resend | null = null;
-function getResend(): Resend {
-  if (!resendInstance) {
-    resendInstance = new Resend(process.env.RESEND_API_KEY || "re_placeholder");
-  }
-  return resendInstance;
+function normLang(v: string | null | undefined): EmailLang {
+  return normEmailLang(v);
 }
 
-const FROM = process.env.EMAIL_FROM || "Doctor8 <noreply@doctor8.app>";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
-
-type Lang = "en" | "pt" | "es";
-
-function normLang(v: string | null | undefined): Lang {
-  if (v === "pt" || v === "es") return v;
-  return "en";
-}
-
-const COPY: Record<Lang, {
+const COPY: Record<EmailLang, {
   subject: string;
   heading: string;
   hi: (n: string) => string;
@@ -77,36 +69,23 @@ export async function sendPrescriptionNotification({
 }) {
   const lang = normLang(language);
   const c = COPY[lang];
-  const link = `${APP_URL}/patient/documents`;
+  const link = `${getAppUrl()}/patient/documents`;
 
-  await getResend().emails.send({
-    from: FROM,
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(patientName)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(doctorName)}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${link}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:13px;line-height:1.6;">${c.footnote}</p>`;
+
+  await sendTransactionalEmail({
     to: patientEmail,
     subject: c.subject,
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 20px;background:#f8fafc;">
-        <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08);">
-          <div style="background:linear-gradient(135deg,#0a4d6e,#00b87a);padding:32px;text-align:center;">
-            <h1 style="color:white;font-size:28px;font-weight:900;margin:0;">Doctor<span style="color:#a7f3d0;">8</span></h1>
-            <p style="color:rgba(255,255,255,.85);margin:8px 0 0;font-size:15px;">${c.heading}</p>
-          </div>
-          <div style="padding:32px;">
-            <p style="color:#1a2a3a;font-size:16px;">${c.hi(patientName)}</p>
-            <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(doctorName)}</p>
-            <div style="text-align:center;margin:32px 0;">
-              <a href="${link}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
-                ${c.cta}
-              </a>
-            </div>
-            <p style="color:#6b7280;font-size:13px;line-height:1.6;">${c.footnote}</p>
-          </div>
-        </div>
-        <p style="text-align:center;color:#9ca3af;font-size:11px;margin-top:20px;">
-          Doctor8 &middot; HIPAA &amp; GDPR Compliant &middot;
-          <a href="${APP_URL}/privacy" style="color:#9ca3af;">${c.privacy}</a>
-        </p>
-      </div>
-    `,
+    html: emailShell(c.heading, body, lang),
+    tag: "prescription-notification",
   });
 }
 
@@ -115,7 +94,7 @@ export async function sendPrescriptionNotification({
 // Invites them to create an account so the prescription becomes accessible.
 // Language follows the doctor's panel language (passed in).
 
-const INVITE: Record<Lang, {
+const INVITE: Record<EmailLang, {
   subject: (d: string) => string;
   heading: string;
   hi: (n: string) => string;
@@ -170,38 +149,25 @@ export async function sendPrescriptionInvite({
 }) {
   const lang = normLang(language);
   const c = INVITE[lang];
-  const signupUrl = `${APP_URL}/register?email=${encodeURIComponent(patientEmail)}`;
+  const signupUrl = `${getAppUrl()}/register?email=${encodeURIComponent(patientEmail)}`;
 
-  await getResend().emails.send({
-    from: FROM,
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(patientName)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(doctorName)}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${signupUrl}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:13px;line-height:1.6;">${c.footnote}</p>
+    <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+      ${c.orCopy} <a href="${signupUrl}" style="color:#0a4d6e;">${signupUrl}</a>
+    </p>`;
+
+  await sendTransactionalEmail({
     to: patientEmail,
     subject: c.subject(doctorName),
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 20px;background:#f8fafc;">
-        <div style="background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08);">
-          <div style="background:linear-gradient(135deg,#0a4d6e,#00b87a);padding:32px;text-align:center;">
-            <h1 style="color:white;font-size:28px;font-weight:900;margin:0;">Doctor<span style="color:#a7f3d0;">8</span></h1>
-            <p style="color:rgba(255,255,255,.85);margin:8px 0 0;font-size:15px;">${c.heading}</p>
-          </div>
-          <div style="padding:32px;">
-            <p style="color:#1a2a3a;font-size:16px;">${c.hi(patientName)}</p>
-            <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(doctorName)}</p>
-            <div style="text-align:center;margin:32px 0;">
-              <a href="${signupUrl}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
-                ${c.cta}
-              </a>
-            </div>
-            <p style="color:#6b7280;font-size:13px;line-height:1.6;">${c.footnote}</p>
-            <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
-              ${c.orCopy} <a href="${signupUrl}" style="color:#0a4d6e;">${signupUrl}</a>
-            </p>
-          </div>
-        </div>
-        <p style="text-align:center;color:#9ca3af;font-size:11px;margin-top:20px;">
-          Doctor8 &middot; HIPAA &amp; GDPR Compliant &middot;
-          <a href="${APP_URL}/privacy" style="color:#9ca3af;">${c.privacy}</a>
-        </p>
-      </div>
-    `,
+    html: emailShell(c.heading, body, lang),
+    tag: "prescription-invite",
   });
 }

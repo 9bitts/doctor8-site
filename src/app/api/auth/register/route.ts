@@ -229,6 +229,7 @@ export async function POST(req: NextRequest) {
         email: email.toLowerCase(),
         name: firstName,
         token,
+        language: normalizedLanguage || language,
       });
     } catch (emailError) {
       console.error("[EMAIL VERIFICATION SEND ERROR]", emailError);

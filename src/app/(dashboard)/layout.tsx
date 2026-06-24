@@ -16,14 +16,12 @@ import {
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
   BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain,
 } from "lucide-react";
-import { isPsychologist } from "@/lib/profession-label";
 
 interface NavItem {
   href: string;
   labelKey: string;   // i18n key
   icon: React.ReactNode;
   roles: string[];
-  psychologistOnly?: boolean;
 }
 
 const PATIENT_NAV: NavItem[] = [
@@ -44,7 +42,7 @@ const PROFESSIONAL_NAV: NavItem[] = [
   { href: "/professional", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/patients", labelKey: "nav.patients", icon: <Users size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/psychology", labelKey: "nav.psychologyArea", icon: <Brain size={18} />, roles: ["PROFESSIONAL"], psychologistOnly: true },
+  { href: "/professional/psychology", labelKey: "nav.psychologyArea", icon: <Brain size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/shared", labelKey: "nav.sharedWithMe", icon: <Inbox size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/categories", labelKey: "nav.categories", icon: <Layers size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
@@ -73,7 +71,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [role, setRole] = useState<string>("PATIENT");
   const [userName, setUserName] = useState<string>("User");
-  const [specialty, setSpecialty] = useState<string>("");
 
   useEffect(() => {
     async function loadSession() {
@@ -83,22 +80,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         if (session?.user?.role) setRole(session.user.role);
         if (session?.user?.name) setUserName(session.user.name);
         else if (session?.user?.email) setUserName(session.user.email.split("@")[0]);
-
-        if (session?.user?.role === "PROFESSIONAL") {
-          const profRes = await fetch("/api/professional/profile");
-          const profData = await profRes.json();
-          if (profData.profile?.specialty) setSpecialty(profData.profile.specialty);
-        }
       } catch { /* keep defaults */ }
     }
     loadSession();
   }, []);
 
-  const baseNav = role === "ADMIN" ? ADMIN_NAV : role === "PROFESSIONAL" ? PROFESSIONAL_NAV : PATIENT_NAV;
-  const navItems = baseNav.filter((item) => {
-    if (item.psychologistOnly && !isPsychologist(specialty)) return false;
-    return true;
-  });
+  const navItems = role === "ADMIN" ? ADMIN_NAV : role === "PROFESSIONAL" ? PROFESSIONAL_NAV : PATIENT_NAV;
   const roleLabel = role === "PROFESSIONAL" ? t("role.professional") : role === "ADMIN" ? t("role.admin") : t("role.patient");
   const isProfessional = role === "PROFESSIONAL";
   const logoAccent = isProfessional ? "text-accent-500" : "text-emerald-400";

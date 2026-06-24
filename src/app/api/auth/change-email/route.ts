@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   // Fetch user with profile names separately
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { email: true, passwordHash: true },
+    select: { email: true, passwordHash: true, language: true },
   });
 
   if (!user) {
@@ -81,29 +81,13 @@ export async function POST(req: NextRequest) {
   });
 
   try {
-    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
-    const verifyUrl = `${APP_URL}/api/auth/confirm-email-change?token=${token}`;
-    const { Resend } = await import("resend");
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const FROM = process.env.EMAIL_FROM || "Doctor8 <noreply@doctor8.app>";
-
-    await resend.emails.send({
-      from: FROM,
-      to: newEmail.toLowerCase(),
-      subject: "Confirm your new email address — Doctor8",
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:32px 20px;">
-          <h1 style="color:#0a4d6e;">Doctor<span style="color:#00b87a;">8</span></h1>
-          <h2 style="color:#1a2a3a;">Confirm your new email</h2>
-          <p style="color:#6b7280;">Hi ${firstName}, click below to confirm <strong>${newEmail}</strong> as your new email address. This link expires in 24 hours.</p>
-          <div style="text-align:center;margin:32px 0;">
-            <a href="${verifyUrl}" style="background:#00b87a;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;">
-              Confirm new email
-            </a>
-          </div>
-          <p style="color:#9ca3af;font-size:12px;">If you didn't request this, ignore this email.</p>
-        </div>
-      `,
+    const { sendEmailChangeVerification } = await import("@/lib/email");
+    await sendEmailChangeVerification({
+      email: newEmail.toLowerCase(),
+      name: firstName,
+      token,
+      isOldEmail: false,
+      language: user.language,
     });
   } catch (e) {
     console.error("[CHANGE EMAIL SEND ERROR]", e);

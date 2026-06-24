@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
   const patientUser = await db.user.findFirst({
     where: { patientProfile: { id: appointment.patientId } },
-    select: { id: true, email: true },
+    select: { id: true, email: true, language: true },
   });
 
   if (!patientUser) return NextResponse.json({ skipped: true, reason: "Patient user not found" });
@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
         scheduledAt,
         meetingUrl: appointment.meetingUrl ?? undefined,
         hoursUntil: 24,
+        language: patientUser.language,
       });
       console.log(`[REMINDER] 24h email sent to ${patientUser.email}`);
     } catch (e) {
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
         scheduledAt,
         meetingUrl: appointment.meetingUrl ?? undefined,
         hoursUntil: 3,
+        language: patientUser.language,
       });
       console.log(`[REMINDER] 3h email sent to ${patientUser.email}`);
     } catch (e) {

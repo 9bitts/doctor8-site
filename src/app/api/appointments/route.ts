@@ -151,7 +151,10 @@ export async function POST(req: NextRequest) {
 
   // Send confirmation email (non-blocking)
   try {
-    const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true } });
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { email: true, language: true },
+    });
     if (user) {
       const { sendAppointmentConfirmation } = await import("@/lib/email");
       await sendAppointmentConfirmation({
@@ -162,6 +165,7 @@ export async function POST(req: NextRequest) {
         scheduledAt:  new Date(scheduledAt),
         type,
         appointmentId: appointment.id,
+        language: user.language,
       });
     }
   } catch (e) {

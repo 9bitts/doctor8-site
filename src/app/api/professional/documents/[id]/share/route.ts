@@ -132,10 +132,16 @@ export async function PUT(
   }
 
   try {
+    const sender = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { language: true },
+    });
+
     await sendPatientInvite({
       email: record.email,
       patientName: `${safeDecrypt(record.firstName)} ${safeDecrypt(record.lastName)}`.trim(),
       doctorName: `${professional.firstName} ${professional.lastName}`.trim(),
+      language: sender?.language,
     });
   } catch (e) {
     return NextResponse.json({ error: "Could not send invite email." }, { status: 500 });

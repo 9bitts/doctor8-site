@@ -81,6 +81,9 @@ Substitua SEU_USUARIO pelo seu usuário do GitHub.
 2. "API Keys" → "Create API Key"
 3. Copie a chave → RESEND_API_KEY
 4. Adicione seu domínio em "Domains" (ou use onboarding@resend.dev para testes)
+5. **Importante para evitar spam:** no painel Resend → Domains, configure SPF, DKIM e DMARC conforme as instruções. Sem isso, Gmail/Outlook podem marcar os emails como spam.
+6. Use `EMAIL_FROM=Doctor8 <noreply@seu-dominio.com>` com domínio verificado
+7. Configure `EMAIL_REPLY_TO=support@seu-dominio.com` (endereço real de resposta)
 
 ### Daily.co (vídeo)
 1. Acesse https://dashboard.daily.co e crie uma conta
@@ -122,7 +125,8 @@ STRIPE_PRICE_CLUB_DOCTOR_EU=price_...
 
 # Resend
 RESEND_API_KEY=re_...
-EMAIL_FROM=Doctor8 <noreply@doctor8.app>
+EMAIL_FROM=Doctor8 <noreply@doctor8.org>
+EMAIL_REPLY_TO=support@doctor8.org
 
 # Daily.co
 DAILY_API_KEY=...

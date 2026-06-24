@@ -113,6 +113,6 @@ export async function DELETE(req: NextRequest) {
     success: true,
     message: "Your account has been scheduled for deletion.",
     scheduledFor: deletionDate,
-    notice: "You have 30 days to cancel this request by contacting support@doctor8.app",
+    notice: "You have 30 days to cancel this request by contacting support@doctor8.org",
   });
 }

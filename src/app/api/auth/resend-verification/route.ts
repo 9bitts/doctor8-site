@@ -16,7 +16,9 @@ export async function POST(req: NextRequest) {
 
     const user = await db.user.findUnique({
       where: { email: email.toLowerCase() },
-      include: {
+      select: {
+        emailVerified: true,
+        language: true,
         patientProfile: { select: { firstName: true } },
         professionalProfile: { select: { firstName: true } },
       },
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
       email: email.toLowerCase(),
       name: firstName,
       token,
+      language: user.language,
     });
 
     return NextResponse.json({ success: true });

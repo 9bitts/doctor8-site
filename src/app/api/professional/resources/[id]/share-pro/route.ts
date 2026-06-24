@@ -38,6 +38,12 @@ export async function POST(
   const body = await req.json();
   const { professionalId, email, name, phone } = body;
 
+  const sender = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { language: true },
+  });
+  const senderLanguage = sender?.language;
+
   const senderName = `Dr. ${professional.firstName} ${professional.lastName}`;
   const resourceTitle = safeDecrypt(resource.title);
   const resourceUrl = resource.url || null;
@@ -75,6 +81,7 @@ export async function POST(
       resourceTitle,
       resourceUrl,
       loginUrl:      true,
+      language:      senderLanguage,
     }).catch(() => {});
 
     return NextResponse.json({ ok: true, mode: "notified" });
@@ -91,6 +98,7 @@ export async function POST(
     resourceUrl,
     loginUrl: false,
     whatsappPhone: phone || null,
+    language: senderLanguage,
   }).catch(() => {});
 
   return NextResponse.json({ ok: true, mode: "invited" });

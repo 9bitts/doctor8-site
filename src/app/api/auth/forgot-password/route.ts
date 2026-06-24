@@ -13,7 +13,11 @@ export async function POST(req: NextRequest) {
   // Always return success to prevent email enumeration (security best practice)
   const user = await db.user.findUnique({
     where: { email: email.toLowerCase() },
-    include: {
+    select: {
+      id: true,
+      email: true,
+      deletedAt: true,
+      language: true,
       patientProfile: { select: { firstName: true } },
       professionalProfile: { select: { firstName: true } },
     },
@@ -33,7 +37,7 @@ export async function POST(req: NextRequest) {
       ? decrypt(user.patientProfile.firstName)
       : user.professionalProfile?.firstName || "there";
 
-    await sendPasswordReset({ email: user.email, name: firstName, token });
+    await sendPasswordReset({ email: user.email, name: firstName, token, language: user.language });
   }
 
   return NextResponse.json({ success: true });

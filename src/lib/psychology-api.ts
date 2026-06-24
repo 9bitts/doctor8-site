@@ -2,10 +2,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { isPsychologist } from "@/lib/profession-label";
 import { decrypt } from "@/lib/encryption";
 
-export async function requirePsychologist() {
+export async function requireProfessional() {
   const session = await auth();
   if (!session?.user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   if (session.user.role !== "PROFESSIONAL")
@@ -15,8 +14,6 @@ export async function requirePsychologist() {
     where: { userId: session.user.id },
   });
   if (!professional) return { error: NextResponse.json({ error: "No profile" }, { status: 404 }) };
-  if (!isPsychologist(professional.specialty))
-    return { error: NextResponse.json({ error: "Psychologist area only" }, { status: 403 }) };
 
   return { session, professional };
 }
