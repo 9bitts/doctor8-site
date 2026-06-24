@@ -14,7 +14,7 @@ import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2,
-  User, Stethoscope, ArrowLeft,
+  User, Stethoscope, ArrowLeft, LogIn,
 } from "lucide-react";
 
 type Role = "PATIENT" | "PROFESSIONAL";
@@ -160,23 +160,31 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Logo — "Já tem uma conta?" fica aqui, no lugar do subtítulo */}
+        {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black text-white tracking-tight">
             Doctor<span className="text-emerald-400">8</span>
           </h1>
-          {/* Link de login substituindo o subtítulo "Crie sua conta" */}
-          <p className="text-slate-400 mt-2 text-sm">
-            {t("reg.haveAccount")}{" "}
-            <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition">
-              {t("reg.signIn")}
-            </Link>
-          </p>
         </div>
 
         {/* STEP 1: ROLE CHOICE */}
         {step === 1 && (
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
+            <Link
+              href="/login"
+              className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-emerald-500 hover:bg-emerald-500/10 transition text-left group mb-6"
+            >
+              <div className="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition">
+                <LogIn className="w-7 h-7 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-white font-semibold text-base">
+                  {t("reg.haveAccount")}{" "}
+                  <span className="text-emerald-400 group-hover:text-emerald-300">{t("reg.signIn")}</span>
+                </p>
+              </div>
+            </Link>
+
             <p className="text-center text-slate-300 text-sm mb-6">
               {t("reg.howUse")}
             </p>
@@ -208,7 +216,6 @@ export default function RegisterPage() {
                 </div>
               </button>
             </div>
-            {/* Removido o bloco "Já tem uma conta?" daqui — foi para o topo */}
           </div>
         )}
 
