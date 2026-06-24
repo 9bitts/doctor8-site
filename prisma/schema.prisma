@@ -435,6 +435,13 @@ model MedicalDocument {
   // Sharing
   sharedRecords    SharedRecord[]
 
+  // Digital signature via Lacuna (same flow as Prescription)
+  signatureSessionId String?
+  signatureStatus    String?   // PENDING | SIGNED | CANCELLED | ERROR
+  signedFileUrl      String?   // S3 key of signed PDF
+  signedAt           DateTime?
+  digitalSignature   String?
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

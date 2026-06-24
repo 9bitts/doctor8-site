@@ -7,10 +7,14 @@ import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import {
-  Plus, Trash2, FileText, Download, Loader2, X, CheckCircle2, Search,
-  AlertCircle, ChevronRight, AlertTriangle, PenLine, Smartphone, Lock,
-  ExternalLink, Pill, ArrowLeft, Copy, Clock, User,
+  Plus, Trash2, FileText, Download, Loader2, CheckCircle2, Search,
+  AlertCircle, ChevronRight, AlertTriangle, PenLine, Pill, ArrowLeft, Copy,
+  Clock, User, FlaskConical, ScrollText,
 } from "lucide-react";
+import { EmissionsSignModal, RX_STYLES, type SignTarget, type EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
+import { ExamCreateView } from "@/components/professional/emissions/ExamCreateView";
+import { DocumentCreateView } from "@/components/professional/emissions/DocumentCreateView";
+import type { Chart } from "@/components/professional/emissions/types";
 
 function controlInfo(type: string | null | undefined): {
   tarja: "preta" | "vermelha"; label: string; receita: string;
@@ -40,10 +44,18 @@ function missingLabel(code: string): string {
   return ({ name: "nome completo", address: "endereço", dob: "data de nascimento" } as Record<string, string>)[code] || code;
 }
 
-interface Chart {
-  id: string; firstName: string; lastName: string;
-  email: string | null; hasAccount: boolean; missingForRx?: string[];
+interface ClinicalDocument {
+  id: string; type: string; title: string; createdAt: string;
+  content?: string | null; examItems?: string[]; examNotes?: string; cid?: string;
+  patientRecordId?: string | null;
+  signatureStatus?: string | null; digitalSignature?: string | null; signed?: boolean;
+  categoryName?: string | null;
+  document?: { patient?: { firstName: string; lastName: string } | null };
 }
+
+type View = "hub" | "prescription" | "exam" | "document";
+type ListFilter = "all" | "prescription" | "exam" | "document";
+
 interface Drug {
   id: string; name: string; activeIngredient: string; presentation: string;
   manufacturer: string | null; country: string; category: string | null;
@@ -62,106 +74,12 @@ interface Prescription {
   medications: MedItem[];
 }
 
-function SignModal({
-  prescription, signConfig, onClose,
-}: {
-  prescription: Prescription;
-  signConfig: { configured: boolean; provider: string; cpfMasked: string } | null;
-  onClose: () => void;
-}) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+function isExamDocType(type: string) {
+  return type === "EXAM_REQUEST" || type === "EXAM_RESULT";
+}
 
-  async function handleStartSign() {
-    setLoading(true); setError("");
-    try {
-      const res = await fetch("/api/professional/prescriptions/sign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prescriptionId: prescription.id }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.redirectUrl) {
-        setError(data.error || "Erro ao iniciar assinatura.");
-        setLoading(false);
-        return;
-      }
-      window.location.href = data.redirectUrl;
-    } catch {
-      setError("Erro de rede. Tente novamente.");
-      setLoading(false);
-    }
-  }
-
-  if (!signConfig?.configured) {
-    return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-slate-900 flex items-center gap-2">
-              <PenLine size={18} className="text-indigo-500" /> Assinatura Digital
-            </h2>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
-          </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-            Configure o CPF da sua assinatura digital nas configurações da conta antes de assinar receitas.
-          </div>
-          <a href="/professional/account" onClick={onClose}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
-            <ExternalLink size={14} /> Ir para configurações
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  const patientName = prescription.document?.patient
-    ? `${prescription.document.patient.firstName} ${prescription.document.patient.lastName}`
-    : "Paciente";
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold text-slate-900 flex items-center gap-2">
-            <PenLine size={18} className="text-indigo-500" /> Assinatura Digital ICP-Brasil
-          </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
-        </div>
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-2">
-          <p className="text-sm font-semibold text-indigo-800 flex items-center gap-2">
-            <Smartphone size={15} /> Como funciona
-          </p>
-          <ol className="text-xs text-indigo-700 space-y-1 list-decimal list-inside">
-            <li>Você será levado à página segura de assinatura</li>
-            <li>Escolha seu certificado (BirdID, VIDaaS, etc.)</li>
-            <li>Autorize a assinatura no app do seu celular</li>
-            <li>Você volta automaticamente com a receita assinada</li>
-          </ol>
-        </div>
-        <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-1">
-          <p className="text-xs text-slate-500">Receita</p>
-          <p className="font-medium text-slate-800 text-xs">{patientName}</p>
-          <p className="text-xs text-slate-400">CPF de assinatura: {signConfig.cpfMasked}</p>
-        </div>
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 flex items-center gap-2">
-            <AlertCircle size={14} /> {error}
-          </div>
-        )}
-        <div className="flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 transition">
-            Cancelar
-          </button>
-          <button onClick={handleStartSign} disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-semibold text-sm transition flex items-center justify-center gap-2">
-            {loading ? <><Loader2 size={13} className="animate-spin" /> Abrindo...</> : <><Lock size={13} /> Assinar agora</>}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+function emissionKindFromDoc(type: string): EmissionKind {
+  return isExamDocType(type) ? "exam" : "document";
 }
 
 function PrescriptionCard({
@@ -222,15 +140,82 @@ function PrescriptionCard({
   );
 }
 
+function ClinicalDocCard({
+  d, locale, t, onReuse, onSign,
+}: {
+  d: ClinicalDocument; locale: string; t: (k: string) => string;
+  onReuse: () => void; onSign: () => void;
+}) {
+  const signed = d.signatureStatus === "SIGNED" || !!d.digitalSignature;
+  const patientName = d.document?.patient
+    ? `${d.document.patient.firstName} ${d.document.patient.lastName}`
+    : t("rx.patient");
+  const kindLabel = isExamDocType(d.type) ? t("rx.kindExam") : t("rx.kindDocument");
+  const pdfUrl = `/api/professional/documents/${d.id}/pdf`;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 hover:border-indigo-200 transition">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{kindLabel}</span>
+            <p className="font-semibold text-slate-800 truncate">{d.title}</p>
+            {signed && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                <CheckCircle2 size={11} /> {t("rx.signed")}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-slate-600 mt-1">{patientName}</p>
+          <p className="text-xs text-slate-400 mt-1">
+            {new Date(d.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" })}
+          </p>
+          {isExamDocType(d.type) && d.examItems && d.examItems.length > 0 && (
+            <ol className="mt-2 space-y-0.5">
+              {d.examItems.slice(0, 3).map((item, i) => (
+                <li key={i} className="text-xs text-slate-600 truncate">{i + 1}. {item}</li>
+              ))}
+            </ol>
+          )}
+          {!isExamDocType(d.type) && d.content && (
+            <p className="text-xs text-slate-500 mt-2 line-clamp-2">{d.content}</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2 shrink-0">
+          <button onClick={onReuse}
+            className="flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
+            <Copy size={13} /> {t("rx.reuse")}
+          </button>
+          {!signed && (
+            <button onClick={onSign}
+              className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
+              <PenLine size={13} /> {t("rx.sign")}
+            </button>
+          )}
+          <a href={pdfUrl} target="_blank"
+            className="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
+            <Download size={13} /> {t("rx.downloadPDF")}
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PrescriptionsPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
 
-  const [view, setView] = useState<"list" | "create">("list");
+  const [view, setView] = useState<View>("hub");
+  const [listFilter, setListFilter] = useState<ListFilter>("all");
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [clinicalDocs, setClinicalDocs] = useState<ClinicalDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showAllHistory, setShowAllHistory] = useState(false);
+
+  const [reuseClinical, setReuseClinical] = useState<ClinicalDocument | null>(null);
+  const [reusePatient, setReusePatient] = useState<Chart | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -256,11 +241,11 @@ export default function PrescriptionsPage() {
   const [validDays, setValidDays] = useState(30);
 
   const [signConfig, setSignConfig] = useState<{ configured: boolean; provider: string; cpfMasked: string } | null>(null);
-  const [signModal, setSignModal] = useState<Prescription | null>(null);
+  const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
   const [signResult, setSignResult] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchPrescriptions();
+    fetchAll();
     loadSignConfig();
     const params = new URLSearchParams(window.location.search);
     const s = params.get("sign");
@@ -271,13 +256,21 @@ export default function PrescriptionsPage() {
     }
   }, []);
 
-  async function fetchPrescriptions() {
+  async function fetchAll() {
+    setLoading(true);
     try {
-      const res = await fetch("/api/professional/prescriptions");
-      const d = await res.json();
-      setPrescriptions(d.prescriptions || []);
+      const [rxRes, docRes] = await Promise.all([
+        fetch("/api/professional/prescriptions"),
+        fetch("/api/professional/documents/issued"),
+      ]);
+      const rxData = await rxRes.json();
+      const docData = await docRes.json();
+      setPrescriptions(rxData.prescriptions || []);
+      setClinicalDocs(docData.documents || []);
     } finally { setLoading(false); }
   }
+
+  async function fetchPrescriptions() { await fetchAll(); }
 
   async function loadSignConfig() {
     try {
@@ -304,14 +297,70 @@ export default function PrescriptionsPage() {
 
   async function openCreate() {
     resetForm();
-    setView("create");
+    setView("prescription");
     await loadCharts();
+  }
+
+  async function openExamCreate() {
+    setReuseClinical(null);
+    setReusePatient(null);
+    setView("exam");
+    await loadCharts();
+  }
+
+  async function openDocumentCreate() {
+    setReuseClinical(null);
+    setReusePatient(null);
+    setView("document");
+    await loadCharts();
+  }
+
+  async function resolvePatientChart(patientRecordId?: string | null, patient?: { firstName: string; lastName: string } | null) {
+    const recordsRes = await fetch("/api/professional/records");
+    const recordsData = await recordsRes.json();
+    const records: Chart[] = recordsData.records || [];
+    setCharts(records);
+    if (patientRecordId) {
+      return records.find((c) => c.id === patientRecordId) || null;
+    }
+    if (patient) {
+      const target = `${patient.firstName} ${patient.lastName}`.toLowerCase();
+      return records.find((c) => `${c.firstName} ${c.lastName}`.toLowerCase() === target) || null;
+    }
+    return null;
+  }
+
+  async function openReuseClinical(d: ClinicalDocument) {
+    setReuseClinical(d);
+    const chart = await resolvePatientChart(d.patientRecordId, d.document?.patient);
+    setReusePatient(chart);
+    setView(isExamDocType(d.type) ? "exam" : "document");
+  }
+
+  function closeCreate() {
+    setView("hub");
+    resetForm();
+    setReuseClinical(null);
+    setReusePatient(null);
+    fetchAll();
+  }
+
+  function signPrescription(p: Prescription) {
+    const label = p.document?.patient
+      ? `${p.document.patient.firstName} ${p.document.patient.lastName}`
+      : t("rx.patient");
+    setSignTarget({ kind: "prescription", id: p.id, label });
+  }
+
+  function signClinicalDoc(d: ClinicalDocument) {
+    const label = d.title;
+    setSignTarget({ kind: emissionKindFromDoc(d.type), id: d.id, label });
   }
 
   async function openReuse(p: Prescription) {
     resetForm();
     setReuseSource(p);
-    setView("create");
+    setView("prescription");
     await loadCharts();
 
     const meds = (p.medications as MedItem[]).map((m) => ({ ...m }));
@@ -331,12 +380,6 @@ export default function PrescriptionsPage() {
       const chart = records.find((c) => `${c.firstName} ${c.lastName}`.toLowerCase() === target);
       if (chart) setSelectedPatient(chart);
     }
-  }
-
-  function closeCreate() {
-    setView("list");
-    resetForm();
-    fetchPrescriptions();
   }
 
   const filteredCharts = patientQuery.trim().length === 0
@@ -427,17 +470,70 @@ export default function PrescriptionsPage() {
   }
 
   const filtered = prescriptions.filter((p) => {
+    if (listFilter === "exam" || listFilter === "document") return false;
     const name = p.document?.patient
       ? `${p.document.patient.firstName} ${p.document.patient.lastName}`.toLowerCase() : "";
     return name.includes(search.toLowerCase());
   });
 
-  const recentPrescriptions = prescriptions.slice(0, 12);
+  const recentPrescriptions = prescriptions.slice(0, 8);
+  const recentClinical = clinicalDocs.slice(0, 8);
   const selectedMissing = selectedPatient?.missingForRx ?? [];
   const todayLabel = new Date().toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
 
-  // ── CREATE VIEW (Memed-style full page) ──────────────────────────────────
-  if (view === "create") {
+  const filteredClinical = clinicalDocs.filter((d) => {
+    const name = d.document?.patient
+      ? `${d.document.patient.firstName} ${d.document.patient.lastName}`.toLowerCase() : "";
+    const matchSearch = name.includes(search.toLowerCase()) || d.title.toLowerCase().includes(search.toLowerCase());
+    if (!matchSearch) return false;
+    if (listFilter === "exam") return isExamDocType(d.type);
+    if (listFilter === "document") return !isExamDocType(d.type);
+    if (listFilter === "prescription") return false;
+    return true;
+  });
+
+  const showPrescriptionList = listFilter === "all" || listFilter === "prescription";
+  const showClinicalList = listFilter === "all" || listFilter === "exam" || listFilter === "document";
+
+  if (view === "exam") {
+    return (
+      <>
+        <ExamCreateView
+          t={t} locale={locale} charts={charts}
+          reuseHint={!!reuseClinical}
+          initialPatient={reusePatient}
+          initialItems={reuseClinical?.examItems || []}
+          initialNotes={reuseClinical?.examNotes || ""}
+          initialCid={reuseClinical?.cid || ""}
+          initialTitle={reuseClinical?.title || ""}
+          onBack={closeCreate}
+          onSaved={closeCreate}
+        />
+        <style>{RX_STYLES}</style>
+      </>
+    );
+  }
+
+  if (view === "document") {
+    return (
+      <>
+        <DocumentCreateView
+          t={t} charts={charts}
+          reuseHint={!!reuseClinical}
+          initialPatient={reusePatient}
+          initialTitle={reuseClinical?.title || ""}
+          initialBody={reuseClinical?.content || ""}
+          initialType={reuseClinical?.type || "CERTIFICATE"}
+          onBack={closeCreate}
+          onSaved={closeCreate}
+        />
+        <style>{RX_STYLES}</style>
+      </>
+    );
+  }
+
+  // ── PRESCRIPTION CREATE VIEW ──────────────────────────────────────────────
+  if (view === "prescription") {
     return (
       <div className="max-w-3xl mx-auto space-y-5 pb-24">
         <button onClick={closeCreate}
@@ -727,17 +823,12 @@ export default function PrescriptionsPage() {
           </div>
         )}
 
-        <style>{`
-          .rx-inp { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #1e293b; outline: none; background: white; }
-          .rx-inp:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
-          .rx-inp-sm { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; font-size: 13px; color: #1e293b; outline: none; background: white; }
-          .rx-inp-sm:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
-        `}</style>
+        <style>{RX_STYLES}</style>
       </div>
     );
   }
 
-  // ── LIST VIEW ─────────────────────────────────────────────────────────────
+  // ── HUB VIEW ──────────────────────────────────────────────────────────────
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -754,7 +845,7 @@ export default function PrescriptionsPage() {
       {signResult === "success" && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
           <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
-          <p className="text-sm text-emerald-800 font-medium">Receita assinada com sucesso! O PDF assinado já está disponível.</p>
+          <p className="text-sm text-emerald-800 font-medium">Documento assinado com sucesso! O PDF assinado já está disponível.</p>
         </div>
       )}
       {signResult === "cancelled" && (
@@ -769,7 +860,7 @@ export default function PrescriptionsPage() {
           <PenLine size={18} className="text-indigo-500 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-indigo-800">Assinatura digital não configurada</p>
-            <p className="text-xs text-indigo-600 mt-1">Configure o CPF para assinar receitas com validade ICP-Brasil.</p>
+            <p className="text-xs text-indigo-600 mt-1">Configure o CPF para assinar documentos com validade ICP-Brasil.</p>
           </div>
           <a href="/professional/account"
             className="text-xs font-semibold text-indigo-700 border border-indigo-300 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition shrink-0">
@@ -778,24 +869,41 @@ export default function PrescriptionsPage() {
         </div>
       )}
 
-      {/* Quick actions (Memed-style) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <button onClick={openCreate}
-          className="text-left p-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 hover:bg-indigo-50 transition group">
+          className="text-left p-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 hover:bg-indigo-50 transition">
           <Pill size={20} className="text-indigo-600 mb-2" />
           <p className="font-semibold text-indigo-900 text-sm">{t("rx.createAction")}</p>
           <p className="text-xs text-indigo-600/80 mt-0.5">{t("rx.createActionDesc")}</p>
         </button>
-        <button onClick={() => setShowAllHistory(true)}
-          className="text-left p-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition">
-          <Clock size={20} className="text-slate-500 mb-2" />
-          <p className="font-semibold text-slate-800 text-sm">{t("rx.historyAction")}</p>
-          <p className="text-xs text-slate-500 mt-0.5">{t("rx.historyActionDesc")}</p>
+        <button onClick={openExamCreate}
+          className="text-left p-4 rounded-2xl border border-indigo-100 bg-white hover:bg-indigo-50/40 transition">
+          <FlaskConical size={20} className="text-indigo-500 mb-2" />
+          <p className="font-semibold text-slate-800 text-sm">{t("rx.examAction")}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{t("rx.examActionDesc")}</p>
+        </button>
+        <button onClick={openDocumentCreate}
+          className="text-left p-4 rounded-2xl border border-indigo-100 bg-white hover:bg-indigo-50/40 transition">
+          <ScrollText size={20} className="text-indigo-500 mb-2" />
+          <p className="font-semibold text-slate-800 text-sm">{t("rx.documentAction")}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{t("rx.documentActionDesc")}</p>
         </button>
       </div>
 
-      {/* Recent prescriptions carousel */}
-      {!loading && recentPrescriptions.length > 0 && !showAllHistory && (
+      {/* Filter tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {(["all", "prescription", "exam", "document"] as ListFilter[]).map((f) => (
+          <button key={f} onClick={() => { setListFilter(f); setShowAllHistory(true); }}
+            className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold transition ${
+              listFilter === f ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}>
+            {t(f === "all" ? "rx.filterAll" : f === "prescription" ? "rx.filterPrescription" : f === "exam" ? "rx.filterExam" : "rx.filterDocument")}
+          </button>
+        ))}
+      </div>
+
+      {/* Recent carousel */}
+      {!loading && !showAllHistory && (recentPrescriptions.length > 0 || recentClinical.length > 0) && (
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-800">{t("rx.recent")}</h2>
@@ -803,18 +911,16 @@ export default function PrescriptionsPage() {
               {t("rx.showAll")}
             </button>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-thin">
+          <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
             {recentPrescriptions.map((p) => {
               const meds = p.medications as MedItem[];
               const patientName = p.document?.patient
                 ? `${p.document.patient.firstName} ${p.document.patient.lastName}` : t("rx.patient");
               return (
-                <div key={p.id}
-                  className="snap-start shrink-0 w-64 bg-white rounded-2xl border border-slate-200 p-4 hover:border-indigo-200 transition cursor-pointer"
-                  onClick={() => openReuse(p)}>
-                  <p className="text-xs text-indigo-500 font-medium">
-                    {new Date(p.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" })}
-                  </p>
+                <div key={`rx-${p.id}`} onClick={() => openReuse(p)}
+                  className="snap-start shrink-0 w-64 bg-white rounded-2xl border border-slate-200 p-4 hover:border-indigo-200 transition cursor-pointer">
+                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{t("rx.kindPrescription")}</span>
+                  <p className="text-xs text-slate-400 mt-2">{new Date(p.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
                   <p className="font-semibold text-slate-800 text-sm mt-1 truncate">{patientName}</p>
                   <ol className="mt-2 space-y-0.5">
                     {meds.slice(0, 2).map((m, i) => (
@@ -822,7 +928,26 @@ export default function PrescriptionsPage() {
                     ))}
                   </ol>
                   <button onClick={(e) => { e.stopPropagation(); openReuse(p); }}
-                    className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1.5 rounded-lg transition">
+                    className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 py-1.5 rounded-lg">
+                    <Copy size={12} /> {t("rx.reuse")}
+                  </button>
+                </div>
+              );
+            })}
+            {recentClinical.map((d) => {
+              const patientName = d.document?.patient
+                ? `${d.document.patient.firstName} ${d.document.patient.lastName}` : t("rx.patient");
+              return (
+                <div key={`doc-${d.id}`} onClick={() => openReuseClinical(d)}
+                  className="snap-start shrink-0 w-64 bg-white rounded-2xl border border-slate-200 p-4 hover:border-indigo-200 transition cursor-pointer">
+                  <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {isExamDocType(d.type) ? t("rx.kindExam") : t("rx.kindDocument")}
+                  </span>
+                  <p className="text-xs text-slate-400 mt-2">{new Date(d.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
+                  <p className="font-semibold text-slate-800 text-sm mt-1 truncate">{d.title}</p>
+                  <p className="text-xs text-slate-500 truncate">{patientName}</p>
+                  <button onClick={(e) => { e.stopPropagation(); openReuseClinical(d); }}
+                    className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 py-1.5 rounded-lg">
                     <Copy size={12} /> {t("rx.reuse")}
                   </button>
                 </div>
@@ -833,7 +958,7 @@ export default function PrescriptionsPage() {
       )}
 
       {/* Search + full list */}
-      {(showAllHistory || recentPrescriptions.length === 0) && (
+      {(showAllHistory || (recentPrescriptions.length === 0 && recentClinical.length === 0)) && (
         <>
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -850,28 +975,34 @@ export default function PrescriptionsPage() {
 
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-indigo-400" /></div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
-          <FileText size={40} className="text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-500">{t("rx.empty")}</p>
-          <button onClick={openCreate} className="mt-4 text-indigo-600 text-sm font-semibold hover:underline">
-            {t("rx.createFirst")} →
-          </button>
-        </div>
-      ) : (showAllHistory || search.trim().length > 0) && (
+      ) : filtered.length === 0 && filteredClinical.length === 0 && !showAllHistory ? null
+      : (showAllHistory || search.trim().length > 0) ? (
         <div className="space-y-3">
-          {filtered.map((p) => (
+          {showPrescriptionList && filtered.map((p) => (
             <PrescriptionCard
               key={p.id} p={p} locale={locale} t={t}
               onReuse={() => openReuse(p)}
-              onSign={() => setSignModal(p)}
+              onSign={() => signPrescription(p)}
             />
           ))}
+          {showClinicalList && filteredClinical.map((d) => (
+            <ClinicalDocCard
+              key={d.id} d={d} locale={locale} t={t}
+              onReuse={() => openReuseClinical(d)}
+              onSign={() => signClinicalDoc(d)}
+            />
+          ))}
+          {showPrescriptionList && showClinicalList && filtered.length === 0 && filteredClinical.length === 0 && (
+            <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+              <FileText size={40} className="text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-500">{t("rx.empty")}</p>
+            </div>
+          )}
         </div>
-      )}
+      ) : null}
 
-      {signModal && (
-        <SignModal prescription={signModal} signConfig={signConfig} onClose={() => setSignModal(null)} />
+      {signTarget && (
+        <EmissionsSignModal target={signTarget} signConfig={signConfig} onClose={() => setSignTarget(null)} />
       )}
     </div>
   );

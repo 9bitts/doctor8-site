@@ -26,11 +26,13 @@ type DocType = (typeof DOC_TYPES)[number];
 const createSchema = z.object({
   patientRecordId: z.string(),
   categoryId: z.string().optional(),
-  // type stays optional for backward compatibility (older clients)
   type: z.enum(DOC_TYPES).optional(),
   title: z.string().min(1).max(200),
   content: z.string().max(20000).optional().or(z.literal("")),
-  fileKey: z.string().optional().or(z.literal("")), // S3 key from /api/uploads
+  fileKey: z.string().optional().or(z.literal("")),
+  examItems: z.array(z.string().min(1).max(500)).optional(),
+  cid: z.string().max(50).optional(),
+  notes: z.string().max(5000).optional(),
 });
 
 function normalizeType(v: string | null | undefined): DocType {
@@ -80,6 +82,16 @@ export async function POST(req: NextRequest) {
     derivedType = normalizeType(category.legacyType);
   }
 
+  let contentToStore = d.content || "";
+  if (d.examItems && d.examItems.length > 0) {
+    derivedType = derivedType === "OTHER" ? "EXAM_REQUEST" : derivedType;
+    contentToStore = JSON.stringify({
+      items: d.examItems,
+      notes: d.notes || "",
+      cid: d.cid || "",
+    });
+  }
+
   const doc = await db.medicalDocument.create({
     data: {
       patientRecordId: d.patientRecordId,
@@ -87,7 +99,7 @@ export async function POST(req: NextRequest) {
       categoryId,
       type: derivedType,
       title: encrypt(d.title),
-      content: d.content ? encrypt(d.content) : null,
+      content: contentToStore ? encrypt(contentToStore) : null,
       fileUrl: d.fileKey ? encrypt(d.fileKey) : null,
     },
   });
@@ -98,7 +110,10 @@ export async function POST(req: NextRequest) {
     categoryId,
     categoryName,
     title: d.title,
-    content: d.content || null,
+    content: contentToStore || null,
+    examItems: d.examItems || null,
+    cid: d.cid || null,
+    notes: d.notes || null,
     hasFile: !!d.fileKey,
     createdAt: doc.createdAt,
   }, { status: 201 });
