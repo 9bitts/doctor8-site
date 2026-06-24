@@ -61,6 +61,14 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    const documentId = new URLSearchParams(window.location.search).get("documentId");
+    if (!documentId) return;
+    const el = document.getElementById(`shared-doc-${documentId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.classList.add("ring-2", "ring-brand-400", "bg-brand-50/40");
+  }, [items]);
+
   async function handleDownload(documentId: string) {
     setDownloadingId(documentId);
     try {
@@ -132,7 +140,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
             const label = it.categoryName || legacyLabel(it.type);
             const isBusy = busyId === it.shareId;
             return (
-              <div key={it.shareId} className="px-5 py-4 hover:bg-slate-50 transition">
+              <div id={`shared-doc-${it.documentId}`} key={it.shareId} className="px-5 py-4 hover:bg-slate-50 transition">
                 <div className="flex items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">

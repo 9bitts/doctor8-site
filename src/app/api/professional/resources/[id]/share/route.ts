@@ -69,7 +69,12 @@ export async function POST(
         type:   "DOCUMENT_SHARED",
         title:  "Novo recurso compartilhado",
         body:   `O seu médico compartilhou um recurso: ${title}`,
-        data:   JSON.stringify({ documentId: doc.id }),
+        data:   JSON.stringify({
+          documentId: doc.id,
+          titleKey: "notif.newResource.title",
+          bodyKey: "notif.newResource.body",
+          bodyParams: { title },
+        }),
       },
     }).catch(() => {});
   }

@@ -111,7 +111,13 @@ export async function deliverEmissionToPatient(
           title: copy.title,
           body: copy.body(doctorName),
           type: "system",
-          data: { prescriptionId: prescription.id, documentId: prescription.documentId },
+          data: {
+            prescriptionId: prescription.id,
+            documentId: prescription.documentId,
+            titleKey: "notif.prescription.title",
+            bodyKey: "notif.prescription.body",
+            bodyParams: { doctor: doctorName },
+          },
         });
       } catch (e) {
         console.error("[DELIVER] prescription notification failed:", e);
@@ -185,7 +191,13 @@ export async function deliverEmissionToPatient(
         title: copy.title,
         body: copy.body(doctorName),
         type: "system",
-        data: { documentId: document.id, type: document.type },
+        data: {
+          documentId: document.id,
+          type: document.type,
+          titleKey: docKind === "exam" ? "notif.exam.title" : "notif.document.title",
+          bodyKey: docKind === "exam" ? "notif.exam.body" : "notif.document.body",
+          bodyParams: { doctor: doctorName },
+        },
       });
     } catch (e) {
       console.error("[DELIVER] document notification failed:", e);

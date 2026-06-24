@@ -102,7 +102,12 @@ export async function POST(
     title: "New medical record shared",
     body: `Dr. ${professional.firstName} ${professional.lastName} shared a record with you.`,
     type: "shared_record",
-    data: { documentId: doc.id },
+    data: {
+      documentId: doc.id,
+      titleKey: "notif.recordShared.title",
+      bodyKey: "notif.recordShared.body",
+      bodyParams: { doctor: `${professional.firstName} ${professional.lastName}` },
+    },
   });
 
   return NextResponse.json({ shared: true });

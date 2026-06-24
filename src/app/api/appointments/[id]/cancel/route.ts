@@ -105,7 +105,13 @@ export async function POST(
     title:  "Consulta cancelada",
     body:   `${cancellerName} cancelou a consulta do dia ${new Date(appointment.scheduledAt).toLocaleDateString("pt-BR")}.`,
     type:   "system",
-    data:   { appointmentId: params.id, refunded },
+    data:   {
+      appointmentId: params.id,
+      refunded,
+      titleKey: "notif.apptCancelled.title",
+      bodyKey: "notif.apptCancelled.body",
+      bodyParams: { name: cancellerName, scheduledAt: appointment.scheduledAt.toISOString() },
+    },
   }).catch(() => {});
 
   return NextResponse.json({

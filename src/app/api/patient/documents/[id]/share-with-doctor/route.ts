@@ -103,7 +103,14 @@ export async function POST(
     title: "Document shared",
     body: `${patientName} shared a document with you: ${docTitle}`,
     type: "shared_record",
-    data: { fromUserId: session.user.id, documentId: doc.id, kind: "patient_shared_document" },
+    data: {
+      fromUserId: session.user.id,
+      documentId: doc.id,
+      kind: "patient_shared_document",
+      titleKey: "notif.docShared.title",
+      bodyKey: "notif.docShared.body",
+      bodyParams: { name: patientName, title: docTitle },
+    },
   });
 
   return NextResponse.json({ shared: true });
@@ -169,7 +176,14 @@ export async function DELETE(
       title: "Document unshared",
       body: `${patientName} unshared a document: ${docTitle}`,
       type: "shared_record",
-      data: { fromUserId: session.user.id, documentId: doc.id, kind: "patient_unshared_document" },
+      data: {
+        fromUserId: session.user.id,
+        documentId: doc.id,
+        kind: "patient_unshared_document",
+        titleKey: "notif.docUnshared.title",
+        bodyKey: "notif.docUnshared.body",
+        bodyParams: { name: patientName, title: docTitle },
+      },
     });
   }
 

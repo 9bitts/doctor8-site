@@ -88,6 +88,14 @@ export default function ResourcesPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    const resourceId = new URLSearchParams(window.location.search).get("resourceId");
+    if (!resourceId) return;
+    const el = document.getElementById(`resource-${resourceId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.classList.add("ring-2", "ring-brand-400", "bg-brand-50/40");
+  }, [resources]);
+
   // Load charts for share panel
   async function openSharePanel(resId: string) {
     setShareResId(resId);
@@ -257,7 +265,7 @@ export default function ResourcesPage() {
       ) : (
         <div className="space-y-3">
           {resources.map((r) => (
-            <div key={r.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div id={`resource-${r.id}`} key={r.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
                   {r.url ? <Link2 size={18} className="text-brand-500" /> : <Paperclip size={18} className="text-brand-500" />}

@@ -116,7 +116,14 @@ export async function POST(req: NextRequest) {
         title: `${patientName} shared their ${label}`,
         body: `Tap to view the ${label} they shared with you.`,
         type: "shared_record",
-        data: { shareUrl, patientName, type },
+        data: {
+          shareUrl,
+          patientName,
+          type,
+          titleKey: type === "history" ? "notif.patientShare.titleHistory" : "notif.patientShare.titleMeds",
+          bodyKey: type === "history" ? "notif.patientShare.bodyHistory" : "notif.patientShare.bodyMeds",
+          bodyParams: { name: patientName },
+        },
       },
     });
   }

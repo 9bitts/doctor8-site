@@ -143,7 +143,12 @@ export async function POST(req: NextRequest) {
     title: "New message",
     body: `${displayName(sender)} sent you a message.`,
     type: "message",
-    data: { fromUserId: session.user.id },
+    data: {
+      fromUserId: session.user.id,
+      titleKey: "notif.message.title",
+      bodyKey: "notif.message.body",
+      bodyParams: { name: displayName(sender) },
+    },
   });
 
   return NextResponse.json({

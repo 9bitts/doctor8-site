@@ -32,6 +32,9 @@ export async function notifyFavoritePatientsOnline(professionalId: string): Prom
           kind: "favorite_online",
           professionalId,
           link: `/patient/find?pro=${professionalId}`,
+          titleKey: "notif.favoriteOnline.title",
+          bodyKey: "notif.favoriteOnline.body",
+          bodyParams: { name, specialty: pro.specialty },
         },
       })
     )

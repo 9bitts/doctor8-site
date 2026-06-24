@@ -223,7 +223,11 @@ export async function PATCH(req: NextRequest) {
         title:  "Você perdeu sua vez",
         body:   "Você não entrou na consulta a tempo. Se ainda precisar de atendimento, entre na fila novamente.",
         type:   "system",
-        data:   { sessionId },
+        data:   {
+          sessionId,
+          titleKey: "notif.jit.missed.title",
+          bodyKey: "notif.jit.missed.body",
+        },
       }).catch(() => {});
     }
 
@@ -307,7 +311,13 @@ export async function PATCH(req: NextRequest) {
       title:  "É a sua vez!",
       body:   "O médico está pronto para te atender. Você tem 2 minutos para entrar na consulta.",
       type:   "message",
-      data:   { queueId: called.id, meetingUrl, sessionId },
+      data:   {
+        queueId: called.id,
+        meetingUrl,
+        sessionId,
+        titleKey: "notif.jit.yourTurn.title",
+        bodyKey: "notif.jit.yourTurn.body",
+      },
     }).catch(() => {});
 
     return NextResponse.json({

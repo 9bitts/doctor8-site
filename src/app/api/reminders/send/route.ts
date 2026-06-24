@@ -134,7 +134,14 @@ export async function POST(req: NextRequest) {
         title: "Lembrete de consulta",
         body: `Sua consulta com Dr. ${doctorName} é em 3 horas.`,
         type: "appointment_reminder",
-        data: { appointmentId, whatsappUrl: waUrl, phone },
+        data: {
+          appointmentId,
+          whatsappUrl: waUrl,
+          phone,
+          titleKey: "notif.apptReminder.title",
+          bodyKey: "notif.apptReminder.body3h",
+          bodyParams: { doctor: doctorName },
+        },
       }).catch(() => {});
       console.log(`[REMINDER] 3h WhatsApp notification created for ${phone}`);
     }
@@ -147,7 +154,13 @@ export async function POST(req: NextRequest) {
       title: `Consulta em ${hoursUntil}h`,
       body: `Lembrete: sua consulta com Dr. ${doctorName} é ${hoursUntil >= 24 ? "amanhã" : "em breve"}.`,
       type: "appointment_reminder",
-      data: { appointmentId, meetingUrl: appointment.meetingUrl },
+      data: {
+        appointmentId,
+        meetingUrl: appointment.meetingUrl,
+        titleKey: "notif.apptReminder.titleHours",
+        bodyKey: hoursUntil >= 24 ? "notif.apptReminder.bodyTomorrow" : "notif.apptReminder.bodySoon",
+        bodyParams: { doctor: doctorName, hours: hoursUntil },
+      },
     }).catch(() => {});
     console.log(`[REMINDER] Bell notification sent to user ${patientUser.id}`);
   }

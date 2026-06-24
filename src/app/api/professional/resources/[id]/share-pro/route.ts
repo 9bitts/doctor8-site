@@ -57,7 +57,13 @@ export async function POST(
         type:   "DOCUMENT_SHARED",
         title:  "Recurso compartilhado por colega",
         body:   `${senderName} compartilhou "${resourceTitle}" com você.`,
-        data:   JSON.stringify({ resourceId: params.id, resourceUrl }),
+        data:   JSON.stringify({
+          resourceId: params.id,
+          resourceUrl,
+          titleKey: "notif.colleagueResource.title",
+          bodyKey: "notif.colleagueResource.body",
+          bodyParams: { sender: senderName, title: resourceTitle },
+        }),
       },
     }).catch(() => {});
 
