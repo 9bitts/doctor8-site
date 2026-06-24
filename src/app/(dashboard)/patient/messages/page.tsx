@@ -53,7 +53,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageTime = useRef<string>("");
   const pollRef = useRef<NodeJS.Timeout>();
 
@@ -109,7 +109,9 @@ export default function MessagesPage() {
   }, [activeConv]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   async function fetchConversations() {
@@ -361,13 +363,13 @@ export default function MessagesPage() {
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
               {activeConv.name.charAt(0)}
             </div>
-            <div>
-              <p className="font-semibold text-slate-900 text-sm">{activeConv.name}</p>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-slate-900 text-sm truncate">{activeConv.name}</p>
               <p className="text-xs text-emerald-500">{t("msg.encrypted")}</p>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-slate-50">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-5 space-y-3 bg-slate-50">
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <p className="text-slate-400 text-sm">{t("msg.noMessages")}</p>
@@ -389,7 +391,6 @@ export default function MessagesPage() {
                 </div>
               ))
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           <form onSubmit={sendMessage} className="px-4 py-4 bg-white border-t border-slate-200 flex items-end gap-3">

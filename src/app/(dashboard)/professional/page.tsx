@@ -15,6 +15,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
+import { decrypt } from "@/lib/encryption";
+
+function safeDecrypt(v: string | null): string {
+  if (!v) return "";
+  try { return decrypt(v); } catch { return v; }
+}
 
 export default async function ProfessionalDashboard() {
   const session = await auth();
@@ -286,17 +292,20 @@ export default async function ProfessionalDashboard() {
             />
           ) : (
             <div className="space-y-3">
-              {professional.appointments.map((apt) => (
+              {professional.appointments.map((apt) => {
+                const firstName = safeDecrypt(apt.patient.firstName);
+                const lastName = safeDecrypt(apt.patient.lastName);
+                return (
                 <div
                   key={apt.id}
                   className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
                 >
                   <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
-                    {apt.patient.firstName[0]}{apt.patient.lastName[0]}
+                    {firstName[0]}{lastName[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 text-sm">
-                      {apt.patient.firstName} {apt.patient.lastName}
+                    <p className="font-semibold text-slate-800 text-sm truncate">
+                      {firstName} {lastName}
                     </p>
                     <p className="text-xs text-slate-500">
                       {apt.type === "TELECONSULT" ? t("prodash.type.teleconsult") : t("prodash.type.inPerson")}
@@ -320,7 +329,8 @@ export default async function ProfessionalDashboard() {
                     </a>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </Section>

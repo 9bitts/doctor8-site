@@ -15,13 +15,22 @@ const sendSchema = z.object({
   content: z.string().min(1).max(2000),
 });
 
+function safeDecrypt(v: string | null | undefined): string {
+  if (!v) return "";
+  try { return decrypt(v); } catch { return v; }
+}
+
 // Helper: display name of a user from either profile.
 function displayName(u: any): string {
   if (!u) return "Someone";
   if (u.role === "PATIENT") {
-    return `${u.patientProfile?.firstName ?? ""} ${u.patientProfile?.lastName ?? ""}`.trim() || "Patient";
+    const first = safeDecrypt(u.patientProfile?.firstName);
+    const last = safeDecrypt(u.patientProfile?.lastName);
+    return `${first} ${last}`.trim() || "Patient";
   }
-  return `Dr. ${u.professionalProfile?.firstName ?? ""} ${u.professionalProfile?.lastName ?? ""}`.trim() || "Professional";
+  const first = u.professionalProfile?.firstName ?? "";
+  const last = u.professionalProfile?.lastName ?? "";
+  return `Dr. ${first} ${last}`.trim() || "Professional";
 }
 
 // GET — fetch conversation with a specific user, or list all conversations

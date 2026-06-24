@@ -7,6 +7,12 @@ import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
 import { translate, normalizeLang, localeOf, Lang } from "@/lib/i18n/translations";
 import { Calendar, Video, MapPin } from "lucide-react";
+import { decrypt } from "@/lib/encryption";
+
+function safeDecrypt(v: string | null): string {
+  if (!v) return "";
+  try { return decrypt(v); } catch { return v; }
+}
 
 export default async function ProfessionalAppointments() {
   const session = await auth();
@@ -56,14 +62,17 @@ export default async function ProfessionalAppointments() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {appointments.map((apt) => (
+            {appointments.map((apt) => {
+              const firstName = safeDecrypt(apt.patient.firstName);
+              const lastName = safeDecrypt(apt.patient.lastName);
+              return (
               <div key={apt.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition">
                 <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
-                  {apt.patient.firstName[0]}{apt.patient.lastName[0]}
+                  {firstName[0]}{lastName[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-800 text-sm">
-                    {apt.patient.firstName} {apt.patient.lastName}
+                  <p className="font-semibold text-slate-800 text-sm truncate">
+                    {firstName} {lastName}
                   </p>
                   <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                     {apt.type === "TELECONSULT" ? (
@@ -93,7 +102,8 @@ export default async function ProfessionalAppointments() {
                   </a>
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
