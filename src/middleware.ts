@@ -33,6 +33,7 @@ function isPublicRoute(pathname: string): boolean {
 // Role-based route prefixes
 const PATIENT_ROUTES = ["/patient"];
 const PROFESSIONAL_ROUTES = ["/professional"];
+const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
 const ADMIN_ROUTES = ["/admin"];
 
 export default auth((req) => {
@@ -74,6 +75,14 @@ export default auth((req) => {
   if (
     PROFESSIONAL_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "PROFESSIONAL" &&
+    role !== "ADMIN"
+  ) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+
+  if (
+    PSYCHOANALYST_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "PSYCHOANALYST" &&
     role !== "ADMIN"
   ) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));

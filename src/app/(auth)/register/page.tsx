@@ -15,10 +15,10 @@ import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translatio
 import { persistAuthCallback } from "@/lib/auth-callback";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2,
-  User, Stethoscope, ArrowLeft, LogIn,
+  User, Stethoscope, ArrowLeft, LogIn, Brain,
 } from "lucide-react";
 
-type Role = "PATIENT" | "PROFESSIONAL";
+type Role = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST";
 type Region = "US" | "EU" | "BR";
 
 const LANG_KEY = "doctor8.lang";
@@ -151,6 +151,7 @@ export default function RegisterPage() {
   }
 
   const isProfessional = role === "PROFESSIONAL";
+  const isPsychoanalyst = role === "PSYCHOANALYST";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
@@ -230,6 +231,18 @@ export default function RegisterPage() {
                   <p className="text-slate-400 text-sm mt-0.5">{t("reg.imProDesc")}</p>
                 </div>
               </button>
+              <button
+                onClick={() => chooseRole("PSYCHOANALYST")}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-violet-500 hover:bg-violet-500/10 transition text-left group"
+              >
+                <div className="w-14 h-14 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0 group-hover:bg-violet-500/20 transition">
+                  <Brain className="w-7 h-7 text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-base">{t("reg.imPsychoanalyst")}</p>
+                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imPsychoanalystDesc")}</p>
+                </div>
+              </button>
             </div>
           </div>
         )}
@@ -246,14 +259,16 @@ export default function RegisterPage() {
               {t("reg.back")}
             </button>
 
-            <div className="flex items-center gap-3 mb-6 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+            <div className={`flex items-center gap-3 mb-6 p-3 rounded-xl border ${isPsychoanalyst ? "bg-violet-500/10 border-violet-500/20" : "bg-emerald-500/10 border-emerald-500/20"}`}>
               {isProfessional ? (
                 <Stethoscope className="w-5 h-5 text-emerald-400 shrink-0" />
+              ) : isPsychoanalyst ? (
+                <Brain className="w-5 h-5 text-violet-400 shrink-0" />
               ) : (
                 <User className="w-5 h-5 text-emerald-400 shrink-0" />
               )}
-              <p className="text-emerald-300 text-sm font-medium">
-                {isProfessional ? t("reg.proAccount") : t("reg.patientAccount")}
+              <p className={`text-sm font-medium ${isPsychoanalyst ? "text-violet-300" : "text-emerald-300"}`}>
+                {isProfessional ? t("reg.proAccount") : isPsychoanalyst ? t("reg.psychoanalystAccount") : t("reg.patientAccount")}
               </p>
             </div>
 
@@ -279,7 +294,7 @@ export default function RegisterPage() {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
               )}
-              {isProfessional ? t("reg.googlePro") : t("reg.googlePatient")}
+              {isProfessional ? t("reg.googlePro") : isPsychoanalyst ? t("reg.googlePsychoanalyst") : t("reg.googlePatient")}
             </button>
 
             <div className="flex items-center gap-4 mb-4">
@@ -381,6 +396,11 @@ export default function RegisterPage() {
               {isProfessional && (
                 <p className="text-xs text-slate-400 bg-white/5 border border-white/10 rounded-xl p-3">
                   {t("reg.proNote")}
+                </p>
+              )}
+              {isPsychoanalyst && (
+                <p className="text-xs text-slate-400 bg-white/5 border border-white/10 rounded-xl p-3">
+                  {t("reg.psychoanalystNote")}
                 </p>
               )}
 

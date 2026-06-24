@@ -10,7 +10,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, formatSlotCount, Lang } from "@/lib/i18n/translations";
-import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
+import { getProfessionLabel, specialtyMatchesSearch, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { getProfessionInfo } from "@/lib/profession-label";
 import { parseLocalDate } from "@/lib/scheduling";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
@@ -24,6 +24,7 @@ type Step = "browse" | "slots" | "payment" | "confirmed";
 
 interface Professional {
   id: string;
+  providerType?: "health" | "psychoanalyst";
   firstName: string;
   lastName: string;
   specialty: string;
@@ -36,6 +37,9 @@ interface Professional {
   rating: number;
   clinicCity?: string;
   clinicCountry?: string;
+  license?: string | null;
+  trainingInstitution?: string | null;
+  yearsOfPractice?: number | null;
 }
 
 interface SlotDay {
@@ -67,17 +71,19 @@ export default function AppointmentsPage() {
   const locale = localeOf(lang);
   const l = (lang === "pt" || lang === "es") ? lang : "en";
 
-  const SPECIALTIES = ["All", "General Practice", "Cardiology", "Psychology", "Nutrition", "Cannabis Medicine", "Dermatology"] as const;
+  const SPECIALTIES = ["All", "General Practice", "Cardiology", "Psychology", PSYCHOANALYSIS_SPECIALTY, "Nutrition", "Cannabis Medicine", "Dermatology"] as const;
 
   function specialtyFilterLabel(value: string): string {
     if (value === "All") return t("map.specialty.all");
     return getProfessionLabel(lang, value);
   }
 
-  function matchesSpecialtyFilter(filter: string, proSpecialty: string): boolean {
+  function matchesSpecialtyFilter(filter: string, pro: Professional): boolean {
     if (filter === "All") return true;
-    if (proSpecialty === filter) return true;
-    const typeKey = getProfessionInfo(proSpecialty).typeKey;
+    if (filter === PSYCHOANALYSIS_SPECIALTY) return pro.providerType === "psychoanalyst" || pro.specialty === PSYCHOANALYSIS_SPECIALTY;
+    if (pro.providerType === "psychoanalyst") return false;
+    if (pro.specialty === filter) return true;
+    const typeKey = getProfessionInfo(pro.specialty).typeKey;
     if (filter === "Psychology") return typeKey === "psychologist";
     if (filter === "Nutrition") return typeKey === "nutritionist";
     return false;
@@ -127,12 +133,16 @@ export default function AppointmentsPage() {
   useEffect(() => { if (step === "payment" && !stripeLoaded) loadStripe(); }, [step]);
   useEffect(() => { setShowTip(true); }, [step]);
 
-  // Deep link from map: /patient/appointments?pro=ID
+  // Deep link: /patient/appointments?pro=ID&providerType=psychoanalyst
   useEffect(() => {
     if (professionals.length === 0 || selectedPro) return;
-    const proId = new URLSearchParams(window.location.search).get("pro");
+    const params = new URLSearchParams(window.location.search);
+    const proId = params.get("pro");
     if (!proId) return;
-    const pro = professionals.find((p) => p.id === proId);
+    const providerType = params.get("providerType") || undefined;
+    const pro = professionals.find((p) =>
+      p.id === proId && (!providerType || p.providerType === providerType)
+    );
     if (pro) selectProfessional(pro);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionals]);
@@ -187,7 +197,7 @@ export default function AppointmentsPage() {
     setSelectedSlot("");
     setSlotsLoading(true);
     try {
-      const res  = await fetch(`/api/professionals/${pro.id}/slots?lang=${lang}`);
+      const res  = await fetch(`/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${pro.providerType || "health"}`);
       const d    = await res.json();
       const days = (d.days || []).filter((day: SlotDay) => day.slots.some((s) => s.available));
       setSlots(days);
@@ -202,7 +212,14 @@ export default function AppointmentsPage() {
       const intentRes = await fetch("/api/payments/create-intent", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ professionalId: selectedPro.id, scheduledAt: selectedSlot, type, paymentMethod: "card" }),
+        body:    JSON.stringify({
+          providerType: selectedPro.providerType || "health",
+          professionalId: selectedPro.providerType === "health" ? selectedPro.id : undefined,
+          psychoanalystId: selectedPro.providerType === "psychoanalyst" ? selectedPro.id : undefined,
+          scheduledAt: selectedSlot,
+          type,
+          paymentMethod: "card",
+        }),
       });
       const intentData = await intentRes.json();
       if (!intentRes.ok) { setError(intentData.error?.general?.[0] || t("appt.errInitPayment")); return; }
@@ -218,7 +235,9 @@ export default function AppointmentsPage() {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({
-            professionalId:             selectedPro.id,
+            providerType:             selectedPro.providerType || "health",
+            professionalId:           selectedPro.providerType === "health" ? selectedPro.id : undefined,
+            psychoanalystId:          selectedPro.providerType === "psychoanalyst" ? selectedPro.id : undefined,
             scheduledAt:                selectedSlot,
             type,
             stripePaymentIntentId:      paymentIntent.id,
@@ -269,9 +288,10 @@ export default function AppointmentsPage() {
 
   async function openReschedule(apt: Appointment) {
     setRescheduleModal(apt);
-    const proId = apt.professional ? (apt as any).professionalId : null;
+    const proId = (apt as any).professionalId || (apt as any).psychoanalystId;
+    const providerType = (apt as any).providerType === "psychoanalyst" ? "psychoanalyst" : "health";
     if (proId) {
-      const res  = await fetch(`/api/professionals/${proId}/slots?lang=${lang}`);
+      const res  = await fetch(`/api/professionals/${proId}/slots?lang=${lang}&providerType=${providerType}`);
       const d    = await res.json();
       const days = (d.days || []).filter((day: SlotDay) => day.slots.some((s) => s.available));
       setRescheduleSlots(days);
@@ -288,7 +308,7 @@ export default function AppointmentsPage() {
 
   const filtered = professionals.filter((p) => {
     const matchSearch = search === "" || `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) || specialtyMatchesSearch(lang, p.specialty, search);
-    const matchSpec   = matchesSpecialtyFilter(specialty, p.specialty);
+    const matchSpec   = matchesSpecialtyFilter(specialty, p);
     return matchSearch && matchSpec;
   });
 
@@ -417,7 +437,7 @@ export default function AppointmentsPage() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {filtered.map((pro) => (
-                <DoctorCard key={pro.id} pro={pro} onSelect={() => selectProfessional(pro)} locale={locale} lang={lang} t={t} />
+                <DoctorCard key={`${pro.providerType || "health"}-${pro.id}`} pro={pro} onSelect={() => selectProfessional(pro)} locale={locale} lang={lang} t={t} />
               ))}
             </div>
           )}
@@ -436,7 +456,10 @@ export default function AppointmentsPage() {
               </div>
             )}
             <div>
-              <h2 className="text-white font-bold text-lg">Dr. {selectedPro.firstName} {selectedPro.lastName}</h2>
+              <h2 className="text-white font-bold text-lg">
+                {selectedPro.providerType === "psychoanalyst" ? "" : "Dr. "}
+                {selectedPro.firstName} {selectedPro.lastName}
+              </h2>
               <p className="text-slate-400 text-sm">{getProfessionLabel(lang, selectedPro.specialty)}</p>
               <p className="text-emerald-400 font-semibold text-sm mt-1">{priceDisplay} {t("appt.perConsult")}</p>
             </div>
@@ -747,17 +770,29 @@ function ProAvatar({ pro, className = "w-14 h-14 rounded-2xl" }: { pro: Pick<Pro
 }
 
 function DoctorCard({ pro, onSelect, locale, lang, t }: { pro: Professional; onSelect: () => void; locale: string; lang: Lang; t: (k: string) => string }) {
+  const isAnalyst = pro.providerType === "psychoanalyst";
+  const displayName = isAnalyst
+    ? `${pro.firstName} ${pro.lastName}`
+    : `Dr. ${pro.firstName} ${pro.lastName}`;
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-emerald-300 transition cursor-pointer" onClick={onSelect}>
       <div className="flex items-start gap-4">
         <ProAvatar pro={pro} />
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-slate-900">Dr. {pro.firstName} {pro.lastName}</p>
-          <p className="text-sm text-emerald-600 font-medium">{getProfessionLabel(lang, pro.specialty)}</p>
+          <p className="font-bold text-slate-900">{displayName}</p>
+          <p className={`text-sm font-medium ${isAnalyst ? "text-violet-600" : "text-emerald-600"}`}>{getProfessionLabel(lang, pro.specialty)}</p>
+          {isAnalyst && pro.trainingInstitution && (
+            <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{pro.trainingInstitution}{pro.yearsOfPractice ? ` · ${pro.yearsOfPractice} ${t("pa.settings.years").toLowerCase()}` : ""}</p>
+          )}
+          {!isAnalyst && (
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs text-slate-500 flex items-center gap-1"><Star size={11} className="text-yellow-400 fill-yellow-400" /> {pro.rating}</span>
             {pro.clinicCity && <span className="text-xs text-slate-500 flex items-center gap-1"><MapPin size={11} /> {pro.clinicCity}</span>}
           </div>
+          )}
+          {isAnalyst && pro.clinicCity && (
+            <span className="text-xs text-slate-500 flex items-center gap-1 mt-1"><MapPin size={11} /> {pro.clinicCity}</span>
+          )}
         </div>
         <div className="text-right shrink-0">
           <p className="font-bold text-slate-900 text-base">

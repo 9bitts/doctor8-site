@@ -2,6 +2,8 @@
 
 import type { Lang } from "@/lib/i18n/translations";
 
+export const PSYCHOANALYSIS_SPECIALTY = "Psychoanalysis";
+
 export const PROFESSION_GROUPS: { groupKey: string; options: string[] }[] = [
   { groupKey: "set.profGroup.medical", options: [
     "Acupuncture", "Allergy and Immunology", "Anesthesiology", "Angiology", "Cardiology", "Cardiovascular Surgery",
@@ -126,6 +128,7 @@ const LABELS: Record<string, Record<Lang, string>> = {
   "Naturopath": { en: "Naturopath", pt: "Naturopata", es: "Naturopata" },
   "Veterinarian": { en: "Veterinarian", pt: "Veterinário", es: "Veterinario" },
   "Other": { en: "Other", pt: "Outro", es: "Otro" },
+  [PSYCHOANALYSIS_SPECIALTY]: { en: "Psychoanalysis", pt: "Psicanálise", es: "Psicoanálisis" },
 };
 
 export function getProfessionLabel(lang: Lang, value: string | null | undefined): string {

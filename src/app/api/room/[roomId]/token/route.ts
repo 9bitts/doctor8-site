@@ -23,6 +23,7 @@ export async function GET(
     include: {
       patient: { select: { userId: true, firstName: true, lastName: true } },
       professional: { select: { userId: true, firstName: true, lastName: true } },
+      psychoanalyst: { select: { userId: true, firstName: true, lastName: true } },
     },
   });
 
@@ -30,9 +31,12 @@ export async function GET(
     return NextResponse.json({ error: "Room not found" }, { status: 404 });
   }
 
+  const provider = appointment.professional ?? appointment.psychoanalyst;
+  const providerUserId = provider?.userId;
+
   // Verify user belongs to this appointment
   const isPatient = appointment.patient.userId === session.user.id;
-  const isProfessional = appointment.professional.userId === session.user.id;
+  const isProfessional = providerUserId === session.user.id;
 
   if (!isPatient && !isProfessional) {
     return NextResponse.json({ error: "Access denied" }, { status: 403 });
@@ -59,8 +63,10 @@ export async function GET(
   let participantName: string;
   if (isPatient) {
     participantName = `${decrypt(appointment.patient.firstName)} ${decrypt(appointment.patient.lastName)}`;
+  } else if (provider) {
+    participantName = `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`;
   } else {
-    participantName = `Dr. ${appointment.professional.firstName} ${appointment.professional.lastName}`;
+    participantName = "Provider";
   }
 
   const roomName = `doctor8-${params.roomId}`;

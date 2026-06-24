@@ -1,65 +1,47 @@
-// src/app/api/professionals/route.ts
-// Returns list of verified professionals for patient to browse and book
+// Returns verified health professionals + psychoanalysts for patient booking.
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { listUnifiedProviders } from "@/lib/providers";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const specialty = searchParams.get("specialty");
-  const type = searchParams.get("type"); // TELECONSULT or IN_PERSON
+  const specialty = searchParams.get("specialty") || undefined;
+  const type = searchParams.get("type") || undefined;
 
-  const professionals = await db.professionalProfile.findMany({
-    where: {
-      verified: true,
-      ...(specialty ? { specialty: { contains: specialty, mode: "insensitive" } } : {}),
-      ...(type === "TELECONSULT" ? { acceptsTeleconsult: true } : {}),
-      ...(type === "IN_PERSON" ? { acceptsInPerson: true } : {}),
-    },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      specialty: true,
-      subspecialties: true,
-      bio: true,
-      avatarUrl: true,
-      consultPrice: true,
-      currency: true,
-      acceptsTeleconsult: true,
-      acceptsInPerson: true,
-      clinicCity: true,
-      clinicState: true,
-      clinicCountry: true,
-      virtualCard: { select: { slug: true } },
-      availabilitySlots: {
-        where: { isActive: true },
-        select: { dayOfWeek: true, startTime: true, endTime: true, slotDurationMins: true },
-      },
-    },
-    orderBy: { firstName: "asc" },
-    take: 50,
+  const providers = await listUnifiedProviders({
+    specialty: specialty && specialty !== "All" ? specialty : null,
+    consultType: type || null,
+    verifiedOnly: true,
+    take: 80,
   });
 
-  // Calculate available slots for next 7 days
   const enriched = await Promise.all(
-    professionals.map(async (pro) => {
-      const appointmentCount = await db.appointment.count({
-        where: {
-          professionalId: pro.id,
-          status: { in: ["CONFIRMED", "PENDING"] },
-          scheduledAt: { gte: new Date() },
-        },
-      });
+    providers.map(async (pro) => {
+      const appointmentCount =
+        pro.providerType === "health"
+          ? await db.appointment.count({
+              where: {
+                professionalId: pro.id,
+                status: { in: ["CONFIRMED", "PENDING"] },
+                scheduledAt: { gte: new Date() },
+              },
+            })
+          : await db.appointment.count({
+              where: {
+                psychoanalystId: pro.id,
+                status: { in: ["CONFIRMED", "PENDING"] },
+                scheduledAt: { gte: new Date() },
+              },
+            });
 
       return {
         ...pro,
         upcomingAppointments: appointmentCount,
-        // Rating would come from a reviews system (future feature)
         rating: 4.8,
         reviewCount: 0,
       };

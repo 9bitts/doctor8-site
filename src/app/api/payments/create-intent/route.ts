@@ -1,22 +1,19 @@
-// src/app/api/payments/create-intent/route.ts
 // Creates a Stripe PaymentIntent for a consultation booking.
-// Payment must succeed before appointment is confirmed (pre-paid model).
-//
-// Club Doctor rules (as of this version):
-//  - Consultations are ALWAYS charged in USD, regardless of user region.
-//  - Active Club members get a 20% discount on the consultation price.
+
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stripe, getOrCreateStripeCustomer } from "@/lib/stripe";
 import { hasActiveClub, applyClubDiscount } from "@/lib/subscription";
+import { getUnifiedProvider, type ProviderType } from "@/lib/providers";
 import { z } from "zod";
 
 const schema = z.object({
-  professionalId: z.string(),
+  professionalId: z.string().optional(),
+  psychoanalystId: z.string().optional(),
+  providerType: z.enum(["health", "psychoanalyst"]).default("health"),
   scheduledAt: z.string().datetime(),
   type: z.enum(["TELECONSULT", "IN_PERSON"]),
-  // Kept for compatibility, but consultations only use "card" for now.
   paymentMethod: z.enum(["card", "pix", "paypal"]).default("card"),
 });
 
@@ -28,44 +25,45 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { professionalId, scheduledAt, type } = parsed.data;
+  const { scheduledAt, type, providerType } = parsed.data;
+  const providerId =
+    providerType === "psychoanalyst"
+      ? parsed.data.psychoanalystId || parsed.data.professionalId
+      : parsed.data.professionalId || parsed.data.psychoanalystId;
 
-  // Get professional pricing
-  const professional = await db.professionalProfile.findUnique({
-    where: { id: professionalId },
-    select: { consultPrice: true, currency: true, firstName: true, lastName: true, specialty: true },
-  });
-  if (!professional) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+  if (!providerId) {
+    return NextResponse.json({ error: "Provider id required" }, { status: 400 });
+  }
 
-  // Get patient info for Stripe customer
+  const provider = await getUnifiedProvider(providerId, providerType as ProviderType);
+  if (!provider) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+
   const patient = await db.patientProfile.findUnique({
     where: { userId: session.user.id },
     select: { firstName: true, lastName: true },
   });
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { email: true, region: true },
+    select: { email: true },
   });
   if (!patient || !user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  // Consultations are always charged in USD now.
   const currency = "usd";
-
-  // Apply Club Doctor discount if the patient has an active subscription.
   const isMember = await hasActiveClub(session.user.id);
   const { finalAmount, discountApplied, originalAmount } = applyClubDiscount(
-    professional.consultPrice, // already in cents
+    provider.consultPrice,
     isMember
   );
 
-  // Stripe customer
   const customerId = await getOrCreateStripeCustomer(
     session.user.id,
     user.email,
     `${patient.firstName} ${patient.lastName}`
   );
 
-  // Create PaymentIntent (card only)
+  const providerName = `${provider.firstName} ${provider.lastName}`;
+  const metaKey = providerType === "psychoanalyst" ? "psychoanalystId" : "professionalId";
+
   const intent = await stripe.paymentIntents.create({
     amount: finalAmount,
     currency,
@@ -73,15 +71,16 @@ export async function POST(req: NextRequest) {
     payment_method_types: ["card"],
     metadata: {
       userId: session.user.id,
-      professionalId,
+      providerType,
+      [metaKey]: providerId,
       scheduledAt,
       type,
       patientName: `${patient.firstName} ${patient.lastName}`,
-      doctorName: `${professional.firstName} ${professional.lastName}`,
+      doctorName: providerName,
       clubDiscount: discountApplied ? "true" : "false",
       originalAmount: String(originalAmount),
     },
-    description: `Doctor8 — Consultation with Dr. ${professional.lastName} · ${new Date(scheduledAt).toLocaleDateString()}`,
+    description: `Doctor8 — Consultation with ${providerName} · ${new Date(scheduledAt).toLocaleDateString()}`,
   });
 
   return NextResponse.json({
@@ -92,8 +91,9 @@ export async function POST(req: NextRequest) {
     discountApplied,
     currency,
     professional: {
-      name: `${professional.firstName} ${professional.lastName}`,
-      specialty: professional.specialty,
+      name: providerName,
+      specialty: provider.specialty,
+      providerType,
     },
   });
 }

@@ -29,13 +29,17 @@ export async function POST(
     include: {
       patient:      { select: { userId: true, firstName: true, lastName: true } },
       professional: { select: { userId: true, firstName: true, lastName: true } },
+      psychoanalyst: { select: { userId: true, firstName: true, lastName: true } },
     },
   });
 
   if (!appointment) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const providerUserId = appointment.professional?.userId ?? appointment.psychoanalyst?.userId;
+  const provider = appointment.professional ?? appointment.psychoanalyst;
+
   const isPatient      = appointment.patient.userId === session.user.id;
-  const isProfessional = appointment.professional.userId === session.user.id;
+  const isProfessional = providerUserId === session.user.id;
   const isAdmin        = session.user.role === "ADMIN";
 
   if (!isPatient && !isProfessional && !isAdmin) {
@@ -95,10 +99,12 @@ export async function POST(
   await audit.updateRecord(session.user.id, "Appointment", params.id);
 
   // Notify the other party
-  const notifyUserId = isPatient ? appointment.professional.userId : appointment.patient.userId;
+  const notifyUserId = isPatient ? providerUserId! : appointment.patient.userId;
   const cancellerName = isPatient
     ? `${appointment.patient.firstName} ${appointment.patient.lastName}`
-    : `Dr. ${appointment.professional.firstName} ${appointment.professional.lastName}`;
+    : provider
+      ? `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
+      : "Provider";
 
   await createNotification({
     userId: notifyUserId,

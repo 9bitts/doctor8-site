@@ -26,6 +26,8 @@ export default function CallbackPage() {
         }
         if (session?.user?.role === "PROFESSIONAL") {
           router.replace("/professional");
+        } else if (session?.user?.role === "PSYCHOANALYST") {
+          router.replace("/psychoanalyst");
         } else {
           router.replace("/patient");
         }

@@ -25,6 +25,7 @@ export async function GET(
     include: {
       patient: { select: { userId: true, firstName: true, lastName: true } },
       professional: { select: { userId: true, firstName: true, lastName: true, id: true } },
+      psychoanalyst: { select: { userId: true, firstName: true, lastName: true, id: true } },
     },
   });
 
@@ -32,8 +33,11 @@ export async function GET(
     return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
   }
 
+  const providerUserId = appointment.professional?.userId ?? appointment.psychoanalyst?.userId;
+  const provider = appointment.professional ?? appointment.psychoanalyst;
+
   const isPatient      = appointment.patient.userId === session.user.id;
-  const isProfessional = appointment.professional.userId === session.user.id;
+  const isProfessional = providerUserId === session.user.id;
 
   if (!isPatient && !isProfessional) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -68,7 +72,9 @@ export async function GET(
 
   const userName = isPatient
     ? `${appointment.patient.firstName} ${appointment.patient.lastName}`
-    : `Dr. ${appointment.professional.firstName} ${appointment.professional.lastName}`;
+    : provider
+      ? `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
+      : "Provider";
 
   const tokenExp = Math.floor(joinClosesAt / 1000);
   const token    = await createMeetingToken(room.name, userName, isProfessional, tokenExp);
@@ -77,12 +83,16 @@ export async function GET(
 
   // For professionals: ensure patient chart exists (auto-link registered patients)
   let patientRecordId: string | null = null;
-  if (isProfessional) {
+  if (isProfessional && appointment.professional) {
     patientRecordId = await ensurePatientRecord(
       appointment.professional.id,
       appointment.patient.userId,
     );
   }
+
+  const providerLabel = provider
+    ? `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
+    : "";
 
   return NextResponse.json({
     url:            room.url,
@@ -91,7 +101,7 @@ export async function GET(
     role:           isPatient ? "patient" : "professional",
     patientRecordId,
     otherParty:     isPatient
-      ? `Dr. ${appointment.professional.firstName} ${appointment.professional.lastName}`
+      ? providerLabel
       : `${appointment.patient.firstName} ${appointment.patient.lastName}`,
     patientUserId:  appointment.patient.userId,
     scheduledAt:    appointment.scheduledAt.toISOString(),

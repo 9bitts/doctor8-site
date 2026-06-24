@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { geocodeAddress, buildClinicAddress, haversineKm, GeoPoint } from "@/lib/geo";
 import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
+import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 
 const GEOCODE_BATCH = 8;
 const RADIUS_OPTIONS = [5, 10, 50];
@@ -96,7 +97,10 @@ export async function GET(req: NextRequest) {
       )
     : new Set<string>();
 
-  const professionals = await db.professionalProfile.findMany({
+  const psychoOnly = specialtyFilter === PSYCHOANALYSIS_SPECIALTY;
+  const healthOnly = specialtyFilter && specialtyFilter !== PSYCHOANALYSIS_SPECIALTY;
+
+  const professionals = healthOnly ? [] : await db.professionalProfile.findMany({
     where: {
       verified: true,
       ...(specialtyFilter ? { specialty: { equals: specialtyFilter, mode: "insensitive" } } : {}),
@@ -143,7 +147,35 @@ export async function GET(req: NextRequest) {
     take: 200,
   });
 
+  const analysts = psychoOnly || !specialtyFilter ? await db.psychoanalystProfile.findMany({
+    where: { verified: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      avatarUrl: true,
+      trainingInstitution: true,
+      yearsOfPractice: true,
+      associations: true,
+      consultPrice: true,
+      currency: true,
+      acceptsTeleconsult: true,
+      acceptsInPerson: true,
+      clinicName: true,
+      clinicAddress: true,
+      clinicCity: true,
+      clinicState: true,
+      clinicCountry: true,
+      clinicZip: true,
+      clinicLatitude: true,
+      clinicLongitude: true,
+    },
+    orderBy: { firstName: "asc" },
+    take: 100,
+  }) : [];
+
   let geocoded = 0;
+  if (!psychoOnly) {
   for (const pro of professionals) {
     if (geocoded >= GEOCODE_BATCH) break;
     if (pro.clinicLatitude != null && pro.clinicLongitude != null) continue;
@@ -158,6 +190,24 @@ export async function GET(req: NextRequest) {
     });
     pro.clinicLatitude = point.lat;
     pro.clinicLongitude = point.lng;
+    geocoded++;
+  }
+  }
+
+  for (const pa of analysts) {
+    if (geocoded >= GEOCODE_BATCH) break;
+    if (pa.clinicLatitude != null && pa.clinicLongitude != null) continue;
+    if (!hasClinicLocation(pa)) continue;
+    const addr = buildClinicAddress(pa);
+    if (!addr) continue;
+    const point = await geocodeAddress(addr);
+    if (!point) continue;
+    await db.psychoanalystProfile.update({
+      where: { id: pa.id },
+      data: { clinicLatitude: point.lat, clinicLongitude: point.lng },
+    });
+    pa.clinicLatitude = point.lat;
+    pa.clinicLongitude = point.lng;
     geocoded++;
   }
 
@@ -201,6 +251,7 @@ export async function GET(req: NextRequest) {
 
     return {
       id:               pro.id,
+      providerType:     "health" as const,
       name:             displayName,
       firstName:        pro.firstName,
       lastName:         pro.lastName,
@@ -235,14 +286,67 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const withinRadius = (p: typeof mapped[0]) => {
+  const analystMapped = analysts.map((pa) => {
+    const hasCoords = pa.clinicLatitude != null && pa.clinicLongitude != null;
+    const point: GeoPoint | null = hasCoords
+      ? { lat: pa.clinicLatitude!, lng: pa.clinicLongitude! }
+      : null;
+    const clinicLoc = hasClinicLocation(pa);
+    const showOnMap = !!(point && clinicLoc);
+    const teleconsultOnly = pa.acceptsTeleconsult && !showOnMap;
+    const distanceKm = center && point
+      ? Math.round(haversineKm(center, point) * 10) / 10
+      : null;
+
+    return {
+      id:               pa.id,
+      providerType:     "psychoanalyst" as const,
+      name:             `${pa.firstName} ${pa.lastName}`.trim(),
+      firstName:        pa.firstName,
+      lastName:         pa.lastName,
+      specialty:        PSYCHOANALYSIS_SPECIALTY,
+      professionType:   "psychoanalyst",
+      license:          "",
+      trainingInstitution: pa.trainingInstitution,
+      yearsOfPractice:  pa.yearsOfPractice,
+      avatarUrl:        pa.avatarUrl,
+      consultPrice:     pa.consultPrice,
+      currency:         pa.currency,
+      acceptsTeleconsult: pa.acceptsTeleconsult,
+      acceptsInPerson:    pa.acceptsInPerson,
+      clinicName:       pa.clinicName,
+      clinicCity:       pa.clinicCity,
+      clinicState:      pa.clinicState,
+      clinicCountry:    pa.clinicCountry,
+      lat:              showOnMap ? point!.lat : null,
+      lng:              showOnMap ? point!.lng : null,
+      showOnMap,
+      teleconsultOnly,
+      distanceKm,
+      isOnline:         false,
+      isFavorite:       false,
+      jitSessionId:     null,
+      jitIsFree:        false,
+      jitPriceAmount:   0,
+      jitQueueCount:    0,
+      estimatedWaitMinutes: null,
+      displayPriceCents: Math.round(pa.consultPrice),
+      ratingAvg:        null,
+      ratingCount:      0,
+      canReview:        false,
+    };
+  });
+
+  const allMapped = [...mapped, ...analystMapped];
+
+  const withinRadius = (p: (typeof allMapped)[number]) => {
     if (!radiusKm || !center) return true;
     if (p.teleconsultOnly && p.isOnline) return true;
     if (p.distanceKm == null) return !radiusKm;
     return p.distanceKm <= radiusKm;
   };
 
-  const filtered = mapped.filter(withinRadius);
+  const filtered = allMapped.filter(withinRadius);
 
   filtered.sort((a, b) => {
     if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
@@ -256,7 +360,10 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     center,
     radiusKm,
-    specialties: specialtyRows.map((s) => s.specialty),
+    specialties: [
+      ...specialtyRows.map((s) => s.specialty),
+      ...(specialtyRows.some((s) => s.specialty === PSYCHOANALYSIS_SPECIALTY) ? [] : [PSYCHOANALYSIS_SPECIALTY]),
+    ],
     favoriteIds: [...favoriteSet],
     professionals: filtered,
     withLocation: filtered.filter((p) => p.showOnMap).length,

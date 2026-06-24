@@ -22,6 +22,7 @@ export async function GET() {
     include: {
       patient: { select: { firstName: true, lastName: true } },
       professional: { select: { firstName: true, lastName: true } },
+      psychoanalyst: { select: { firstName: true, lastName: true } },
     },
   });
 
@@ -30,7 +31,11 @@ export async function GET() {
     return {
       id: a.id,
       patientName: `${safeDecrypt(a.patient.firstName)} ${safeDecrypt(a.patient.lastName)}`.trim() || "—",
-      doctorName: `${a.professional.firstName} ${a.professional.lastName}`.trim() || "—",
+      doctorName: a.professional
+        ? `${a.professional.firstName} ${a.professional.lastName}`.trim()
+        : a.psychoanalyst
+          ? `${a.psychoanalyst.firstName} ${a.psychoanalyst.lastName}`.trim()
+          : "—",
       amount: a.priceAmount,          // cents
       currency: a.currency,
       status: a.status,                // appointment status

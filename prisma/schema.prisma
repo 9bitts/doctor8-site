@@ -24,7 +24,13 @@ datasource db {
 enum UserRole {
   PATIENT
   PROFESSIONAL
+  PSYCHOANALYST
   ADMIN
+}
+
+enum ProviderType {
+  HEALTH
+  PSYCHOANALYST
 }
 
 enum UserRegion {
@@ -136,8 +142,9 @@ model User {
   updatedAt       DateTime   @updatedAt
 
   // Relations
-  patientProfile    PatientProfile?
+  patientProfile      PatientProfile?
   professionalProfile ProfessionalProfile?
+  psychoanalystProfile PsychoanalystProfile?
   accounts          Account[]
   sessions          Session[]
   consents          Consent[]
@@ -317,6 +324,82 @@ model ProfessionalProfile {
 }
 
 // ─────────────────────────────────────────
+// PSYCHOANALYST PROFILE (non-regulated profession)
+// ─────────────────────────────────────────
+
+model PsychoanalystProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName       String
+  lastName        String
+  avatarUrl       String?
+  phone           String?  // @encrypted
+
+  // Formation triad (declaratory — no council registry)
+  trainingInstitution   String
+  personalAnalysisDone  Boolean  @default(false)
+  theoreticalStudyDone  Boolean  @default(false)
+  clinicalSupervision   Boolean  @default(false)
+  yearsOfPractice       Int      @default(0)
+  theoreticalLineage    String?
+  associations          String[] @default([])
+  publications          String?
+  otherRegulatedProfession String?
+
+  bio             String?
+
+  // Practice info
+  clinicName      String?
+  clinicAddress   String?
+  clinicCity      String?
+  clinicState     String?
+  clinicCountry   String?
+  clinicZip       String?
+  clinicLatitude  Float?
+  clinicLongitude Float?
+
+  acceptsTeleconsult  Boolean @default(true)
+  acceptsInPerson     Boolean @default(false)
+  consultPrice        Float
+  currency            String  @default("USD")
+  sessionDurationMins Int     @default(50)
+
+  availability    Json?
+
+  verified        Boolean  @default(false)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  appointments        Appointment[]
+  medicalDocuments    MedicalDocument[]
+  analysandRecords    AnalysandRecord[]
+  availabilitySlots   PsychoanalystAvailabilitySlot[]
+  favorites           PsychoanalystFavorite[]
+  reviews             PsychoanalystReview[]
+
+  @@index([userId])
+}
+
+model PsychoanalystAvailabilitySlot {
+  id               String              @id @default(cuid())
+  psychoanalystId  String
+  psychoanalyst    PsychoanalystProfile  @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+
+  dayOfWeek        Int
+  startTime        String
+  endTime          String
+  slotDurationMins Int    @default(50)
+  isActive         Boolean @default(true)
+
+  @@index([psychoanalystId])
+}
+
+// ─────────────────────────────────────────
 // MEDICATIONS (FIX: two separate flows)
 // ─────────────────────────────────────────
 
@@ -366,8 +449,11 @@ model Appointment {
   id               String              @id @default(cuid())
   patientId        String
   patient          PatientProfile      @relation(fields: [patientId], references: [id])
-  professionalId   String
-  professional     ProfessionalProfile @relation(fields: [professionalId], references: [id])
+  providerType     ProviderType        @default(HEALTH)
+  professionalId   String?
+  professional     ProfessionalProfile? @relation(fields: [professionalId], references: [id])
+  psychoanalystId  String?
+  psychoanalyst    PsychoanalystProfile? @relation(fields: [psychoanalystId], references: [id])
 
   scheduledAt      DateTime
   durationMins     Int                 @default(30)
@@ -403,6 +489,8 @@ model Appointment {
 
   @@index([patientId])
   @@index([professionalId])
+  @@index([psychoanalystId])
+  @@index([providerType])
   @@index([scheduledAt])
   @@index([status])
 }
@@ -419,6 +507,10 @@ model MedicalDocument {
   patientRecord    PatientRecord?      @relation(fields: [patientRecordId], references: [id])
   professionalId   String?
   professional     ProfessionalProfile? @relation(fields: [professionalId], references: [id])
+  psychoanalystId  String?
+  psychoanalyst    PsychoanalystProfile? @relation(fields: [psychoanalystId], references: [id])
+  analysandRecordId String?
+  analysandRecord  AnalysandRecord?    @relation(fields: [analysandRecordId], references: [id])
   appointmentId    String?
   appointment      Appointment?        @relation(fields: [appointmentId], references: [id])
 
@@ -451,6 +543,8 @@ model MedicalDocument {
 
   @@index([patientId])
   @@index([patientRecordId])
+  @@index([analysandRecordId])
+  @@index([psychoanalystId])
   @@index([type])
   @@index([categoryId])
 }
@@ -604,6 +698,18 @@ model PatientFavorite {
   @@index([professionalId])
 }
 
+model PsychoanalystFavorite {
+  id              String              @id @default(cuid())
+  patientUserId   String
+  psychoanalystId String
+  psychoanalyst   PsychoanalystProfile  @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+  notifyOnline    Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+
+  @@unique([patientUserId, psychoanalystId])
+  @@index([psychoanalystId])
+}
+
 // Patient reviews of professionals (1 per patient per professional)
 model ProfessionalReview {
   id             String              @id @default(cuid())
@@ -618,6 +724,20 @@ model ProfessionalReview {
 
   @@unique([patientUserId, professionalId])
   @@index([professionalId])
+}
+
+model PsychoanalystReview {
+  id              String              @id @default(cuid())
+  patientUserId   String
+  psychoanalystId String
+  psychoanalyst   PsychoanalystProfile @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+  rating          Int
+  comment         String?             @db.Text
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([patientUserId, psychoanalystId])
+  @@index([psychoanalystId])
 }
 
 // ─────────────────────────────────────────
@@ -720,6 +840,34 @@ model PatientRecord {
   @@index([linkedUserId])
 
 }
+
+// Analysand chart — separate from medical PatientRecord
+model AnalysandRecord {
+  id              String   @id @default(cuid())
+  psychoanalystId String
+  psychoanalyst   PsychoanalystProfile @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+
+  firstName       String   // @encrypted
+  lastName        String   // @encrypted
+  email           String?
+  phone           String?  // @encrypted
+  dateOfBirth     String?  // @encrypted
+  processStartDate DateTime?
+  sessionFrequency String?
+  notes           String?  @db.Text // @encrypted
+
+  linkedUserId    String?
+
+  medicalDocuments MedicalDocument[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([psychoanalystId])
+  @@index([email])
+  @@index([linkedUserId])
+}
+
 // ────────────────────────────────────────────
 // CATEGORY (dynamic document categories, grouped)
 // Managed centrally (admin). Documents point here via categoryId.

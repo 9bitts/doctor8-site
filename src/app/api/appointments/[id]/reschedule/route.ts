@@ -33,6 +33,7 @@ export async function POST(
     include: {
       patient:      { select: { userId: true } },
       professional: { select: { id: true, firstName: true, lastName: true } },
+      psychoanalyst: { select: { id: true, firstName: true, lastName: true } },
     },
   });
 
@@ -54,10 +55,11 @@ export async function POST(
   // Check new slot is available
   const conflict = await db.appointment.findFirst({
     where: {
-      professionalId: appointment.professionalId,
+      ...(appointment.professionalId ? { professionalId: appointment.professionalId } : {}),
+      ...(appointment.psychoanalystId ? { psychoanalystId: appointment.psychoanalystId } : {}),
       scheduledAt:    new Date(newScheduledAt),
       status:         { in: ["CONFIRMED", "PENDING"] },
-      id:             { not: params.id }, // exclude self
+      id:             { not: params.id },
     },
   });
   if (conflict) return NextResponse.json({ error: "This slot is no longer available." }, { status: 409 });
@@ -87,7 +89,9 @@ export async function POST(
       await sendAppointmentConfirmation({
         patientEmail:  patientUser.email,
         patientName:   `${patientProfile.firstName} ${patientProfile.lastName}`,
-        doctorName:    `${appointment.professional.firstName} ${appointment.professional.lastName}`,
+        doctorName:    appointment.professional
+          ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
+          : `${appointment.psychoanalyst!.firstName} ${appointment.psychoanalyst!.lastName}`,
         specialty:     "",
         scheduledAt:   new Date(newScheduledAt),
         type:          appointment.type,

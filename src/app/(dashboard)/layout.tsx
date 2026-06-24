@@ -56,6 +56,14 @@ const PROFESSIONAL_NAV: NavItem[] = [
   { href: "/professional/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PROFESSIONAL"] },
 ];
 
+const PSYCHOANALYST_NAV: NavItem[] = [
+  { href: "/psychoanalyst", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/psychoanalyst/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/psychoanalyst/analysands", labelKey: "pa.nav.analysands", icon: <Users size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/psychoanalyst/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
+];
+
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin/categories", labelKey: "nav.adminCategories", icon: <Layers size={18} />, roles: ["ADMIN"] },
   { href: "/admin/doctors", labelKey: "nav.adminDoctors", icon: <Stethoscope size={18} />, roles: ["ADMIN"] },
@@ -85,17 +93,28 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     loadSession();
   }, []);
 
-  const navItems = role === "ADMIN" ? ADMIN_NAV : role === "PROFESSIONAL" ? PROFESSIONAL_NAV : PATIENT_NAV;
-  const roleLabel = role === "PROFESSIONAL" ? t("role.professional") : role === "ADMIN" ? t("role.admin") : t("role.patient");
+  const navItems =
+    role === "ADMIN" ? ADMIN_NAV
+    : role === "PROFESSIONAL" ? PROFESSIONAL_NAV
+    : role === "PSYCHOANALYST" ? PSYCHOANALYST_NAV
+    : PATIENT_NAV;
+  const roleLabel =
+    role === "PROFESSIONAL" ? t("role.professional")
+    : role === "PSYCHOANALYST" ? t("role.psychoanalyst")
+    : role === "ADMIN" ? t("role.admin")
+    : t("role.patient");
   const isProfessional = role === "PROFESSIONAL";
-  const logoAccent = isProfessional ? "text-accent-500" : "text-emerald-400";
-  const logoAccentHeader = isProfessional ? "text-accent-500" : "text-emerald-500";
+  const isPsychoanalyst = role === "PSYCHOANALYST";
+  const logoAccent = isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-400" : "text-emerald-400";
+  const logoAccentHeader = isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-500" : "text-emerald-500";
   const navActive = isProfessional
     ? "bg-brand-500/10 text-brand-400 border border-brand-500/20"
-    : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-  const avatarBg = isProfessional ? "bg-brand-500/20" : "bg-emerald-500/20";
-  const avatarIcon = isProfessional ? "text-brand-400" : "text-emerald-400";
-  const headerAvatar = isProfessional ? "bg-brand-500" : "bg-emerald-500";
+    : isPsychoanalyst
+      ? "bg-violet-500/10 text-violet-400 border border-violet-500/20"
+      : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+  const avatarBg = isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : "bg-emerald-500/20";
+  const avatarIcon = isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : "text-emerald-400";
+  const headerAvatar = isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : "bg-emerald-500";
 
   return (
     <div className="min-h-screen bg-slate-50 flex">

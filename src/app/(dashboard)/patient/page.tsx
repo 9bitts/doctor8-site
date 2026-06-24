@@ -52,6 +52,9 @@ export default async function PatientDashboard() {
           professional: {
             select: { firstName: true, lastName: true, specialty: true },
           },
+          psychoanalyst: {
+            select: { firstName: true, lastName: true },
+          },
         },
       },
       medicalDocuments: {
@@ -360,19 +363,24 @@ export default async function PatientDashboard() {
             />
           ) : (
             <div className="space-y-3">
-              {patient.appointments.map((apt) => (
+              {patient.appointments.map((apt) => {
+                const pro = apt.professional ?? apt.psychoanalyst;
+                const specialty = apt.professional?.specialty ?? "Psychoanalysis";
+                const prefix = apt.professional ? "Dr. " : "";
+                if (!pro) return null;
+                return (
                 <div
                   key={apt.id}
                   className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
                 >
                   <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
-                    {apt.professional.firstName.charAt(0)}{apt.professional.lastName.charAt(0)}
+                    {pro.firstName.charAt(0)}{pro.lastName.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-800 text-sm">
-                      Dr. {apt.professional.firstName} {apt.professional.lastName}
+                      {prefix}{pro.firstName} {pro.lastName}
                     </p>
-                    <p className="text-xs text-slate-500">{getProfessionLabel(lang, apt.professional.specialty)}</p>
+                    <p className="text-xs text-slate-500">{getProfessionLabel(lang, specialty)}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-semibold text-slate-700">
@@ -392,7 +400,8 @@ export default async function PatientDashboard() {
                     </a>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Section>

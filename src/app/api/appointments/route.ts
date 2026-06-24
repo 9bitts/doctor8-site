@@ -1,7 +1,4 @@
-// src/app/api/appointments/route.ts
-// List and create appointments.
-// On creation: schedules QStash reminders (24h email + 3h email/WhatsApp/bell).
-// Cancellation policy checkbox is recorded in appointment metadata.
+// List and create appointments (health professionals + psychoanalysts).
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -9,6 +6,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { stripe } from "@/lib/stripe";
 import { scheduleAppointmentReminders } from "@/lib/qstash";
+import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { z } from "zod";
 
 export async function GET(req: NextRequest) {
@@ -35,6 +33,9 @@ export async function GET(req: NextRequest) {
         professional: {
           select: { firstName: true, lastName: true, specialty: true, avatarUrl: true },
         },
+        psychoanalyst: {
+          select: { firstName: true, lastName: true, avatarUrl: true },
+        },
       },
       orderBy: { scheduledAt: upcoming ? "asc" : "desc" },
       take: 50,
@@ -55,22 +56,56 @@ export async function GET(req: NextRequest) {
       orderBy: { scheduledAt: upcoming ? "asc" : "desc" },
       take: 50,
     });
+  } else if (session.user.role === "PSYCHOANALYST") {
+    const psychoanalyst = await db.psychoanalystProfile.findUnique({ where: { userId: session.user.id } });
+    if (!psychoanalyst) return NextResponse.json({ appointments: [] });
+
+    appointments = await db.appointment.findMany({
+      where: {
+        psychoanalystId: psychoanalyst.id,
+        ...(status ? { status: status as any } : {}),
+        ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
+      },
+      include: {
+        patient: { select: { firstName: true, lastName: true, avatarUrl: true } },
+      },
+      orderBy: { scheduledAt: upcoming ? "asc" : "desc" },
+      take: 50,
+    });
   } else {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const normalized = (appointments as any[]).map((a) => {
+    if (a.psychoanalyst && !a.professional) {
+      return {
+        ...a,
+        providerType: "psychoanalyst",
+        professional: {
+          firstName: a.psychoanalyst.firstName,
+          lastName: a.psychoanalyst.lastName,
+          specialty: PSYCHOANALYSIS_SPECIALTY,
+          avatarUrl: a.psychoanalyst.avatarUrl,
+        },
+        psychoanalystId: a.psychoanalystId,
+      };
+    }
+    return { ...a, providerType: "health", professionalId: a.professionalId };
+  });
+
   await audit.viewRecord(session.user.id, "Appointment", "list");
-  return NextResponse.json({ appointments });
+  return NextResponse.json({ appointments: normalized });
 }
 
 const createSchema = z.object({
-  professionalId:        z.string(),
-  scheduledAt:           z.string().datetime(),
-  type:                  z.enum(["TELECONSULT", "IN_PERSON"]),
+  professionalId: z.string().optional(),
+  psychoanalystId: z.string().optional(),
+  providerType: z.enum(["health", "psychoanalyst"]).default("health"),
+  scheduledAt: z.string().datetime(),
+  type: z.enum(["TELECONSULT", "IN_PERSON"]),
   stripePaymentIntentId: z.string(),
-  priceAmount:           z.number(),
-  currency:              z.string(),
-  // CDC checkbox — patient must accept cancellation policy
+  priceAmount: z.number(),
+  currency: z.string(),
   acceptedCancellationPolicy: z.boolean().default(false),
 });
 
@@ -83,17 +118,50 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { professionalId, scheduledAt, type, stripePaymentIntentId, acceptedCancellationPolicy } = parsed.data;
+  const {
+    scheduledAt,
+    type,
+    stripePaymentIntentId,
+    acceptedCancellationPolicy,
+    providerType,
+  } = parsed.data;
+
+  const providerId =
+    providerType === "psychoanalyst"
+      ? parsed.data.psychoanalystId || parsed.data.professionalId
+      : parsed.data.professionalId || parsed.data.psychoanalystId;
+
+  if (!providerId) {
+    return NextResponse.json({ error: { general: ["Provider not specified."] } }, { status: 400 });
+  }
 
   const patient = await db.patientProfile.findUnique({ where: { userId: session.user.id } });
   if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { id: professionalId, verified: true },
-  });
-  if (!professional) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true } });
+  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  // Verify Stripe payment server-side
+  let providerName = "";
+  let providerSpecialty = "";
+  let durationMins = 30;
+
+  if (providerType === "psychoanalyst") {
+    const psychoanalyst = await db.psychoanalystProfile.findUnique({
+      where: { id: providerId, verified: true },
+    });
+    if (!psychoanalyst) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+    providerName = `${psychoanalyst.firstName} ${psychoanalyst.lastName}`;
+    providerSpecialty = PSYCHOANALYSIS_SPECIALTY;
+    durationMins = psychoanalyst.sessionDurationMins;
+  } else {
+    const professional = await db.professionalProfile.findUnique({
+      where: { id: providerId, verified: true },
+    });
+    if (!professional) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+    providerName = `${professional.firstName} ${professional.lastName}`;
+    providerSpecialty = professional.specialty;
+  }
+
   let intent;
   try {
     intent = await stripe.paymentIntents.retrieve(stripePaymentIntentId);
@@ -106,73 +174,94 @@ export async function POST(req: NextRequest) {
   }
 
   const meta = intent.metadata || {};
+  const metaProviderId =
+    providerType === "psychoanalyst" ? meta.psychoanalystId : meta.professionalId;
   if (
     meta.userId !== session.user.id ||
-    meta.professionalId !== professionalId ||
-    meta.scheduledAt !== scheduledAt
+    metaProviderId !== providerId ||
+    meta.scheduledAt !== scheduledAt ||
+    (meta.providerType && meta.providerType !== providerType)
   ) {
     return NextResponse.json({ error: { general: ["Payment does not match this booking."] } }, { status: 400 });
   }
 
-  // Idempotency
   const alreadyUsed = await db.appointment.findFirst({ where: { stripePaymentId: intent.id } });
   if (alreadyUsed) return NextResponse.json({ success: true, appointmentId: alreadyUsed.id }, { status: 200 });
 
-  // Check slot still available
+  const slotWhere =
+    providerType === "psychoanalyst"
+      ? { psychoanalystId: providerId }
+      : { professionalId: providerId };
+
   const existing = await db.appointment.findFirst({
     where: {
-      professionalId,
+      ...slotWhere,
       scheduledAt: new Date(scheduledAt),
       status: { in: ["CONFIRMED", "PENDING"] },
     },
   });
-  if (existing) return NextResponse.json({ error: { general: ["This slot is no longer available."] } }, { status: 409 });
+  if (existing) {
+    return NextResponse.json({ error: { general: ["This slot is no longer available."] } }, { status: 409 });
+  }
 
   const appointment = await db.appointment.create({
     data: {
-      patientId:      patient.id,
-      professionalId,
-      scheduledAt:    new Date(scheduledAt),
-      type:           type as any,
-      status:         "CONFIRMED",
-      priceAmount:    intent.amount,
-      currency:       intent.currency,
+      patientId: patient.id,
+      providerType: providerType === "psychoanalyst" ? "PSYCHOANALYST" : "HEALTH",
+      professionalId: providerType === "health" ? providerId : null,
+      psychoanalystId: providerType === "psychoanalyst" ? providerId : null,
+      scheduledAt: new Date(scheduledAt),
+      type: type as any,
+      status: "CONFIRMED",
+      priceAmount: intent.amount,
+      currency: intent.currency,
       stripePaymentId: intent.id,
-      paidAt:         new Date(),
-      durationMins:   30,
-      // Store policy acceptance in notes field as JSON metadata
-      ...(acceptedCancellationPolicy ? {
-        chiefComplaint: JSON.stringify({ policyAccepted: true, acceptedAt: new Date().toISOString() }),
-      } : {}),
+      paidAt: new Date(),
+      durationMins,
+      ...(acceptedCancellationPolicy
+        ? {
+            chiefComplaint: JSON.stringify({
+              policyAccepted: true,
+              acceptedAt: new Date().toISOString(),
+            }),
+          }
+        : {}),
     },
   });
 
+  if (providerType === "psychoanalyst") {
+    await ensureAnalysandForPatient({
+      psychoanalystId: providerId,
+      patientUserId: session.user.id,
+      patientProfile: { firstName: patient.firstName, lastName: patient.lastName },
+      patientEmail: user.email,
+    });
+  }
+
   await audit.viewRecord(session.user.id, "Appointment", appointment.id);
 
-  // Send confirmation email (non-blocking)
   try {
-    const user = await db.user.findUnique({
+    const patientUser = await db.user.findUnique({
       where: { id: session.user.id },
       select: { email: true, language: true },
     });
-    if (user) {
+    if (patientUser) {
       const { sendAppointmentConfirmation } = await import("@/lib/email");
       await sendAppointmentConfirmation({
-        patientEmail: user.email,
-        patientName:  `${patient.firstName} ${patient.lastName}`,
-        doctorName:   `${professional.firstName} ${professional.lastName}`,
-        specialty:    professional.specialty,
-        scheduledAt:  new Date(scheduledAt),
+        patientEmail: patientUser.email,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        doctorName: providerName,
+        specialty: providerSpecialty,
+        scheduledAt: new Date(scheduledAt),
         type,
         appointmentId: appointment.id,
-        language: user.language,
+        language: patientUser.language,
       });
     }
   } catch (e) {
     console.error("[APPOINTMENT EMAIL ERROR]", e);
   }
 
-  // Schedule QStash reminders (non-blocking)
   scheduleAppointmentReminders(appointment.id, new Date(scheduledAt)).catch((e) => {
     console.error("[QSTASH SCHEDULE ERROR]", e);
   });

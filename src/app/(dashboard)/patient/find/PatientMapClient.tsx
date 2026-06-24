@@ -22,12 +22,15 @@ const PatientMapView = dynamic(() => import("./PatientMapView"), {
 
 export interface MapProfessional {
   id: string;
+  providerType?: "health" | "psychoanalyst";
   name: string;
   firstName: string;
   lastName: string;
   specialty: string;
   professionType: string;
   license: string;
+  trainingInstitution?: string;
+  yearsOfPractice?: number;
   avatarUrl: string | null;
   consultPrice: number;
   currency: string;
@@ -116,7 +119,11 @@ function ProListItem({
             )}
           </div>
           <p className="text-xs text-slate-500">{professionLabel(t, pro.professionType)} · {getProfessionLabel(lang, pro.specialty)}</p>
-          {pro.license && <p className="text-xs text-slate-400 mt-0.5">{pro.license}</p>}
+          {pro.professionType === "psychoanalyst" && pro.trainingInstitution ? (
+            <p className="text-xs text-slate-400 mt-0.5">{pro.trainingInstitution}{pro.yearsOfPractice ? ` · ${pro.yearsOfPractice}y` : ""}</p>
+          ) : pro.license ? (
+            <p className="text-xs text-slate-400 mt-0.5">{pro.license}</p>
+          ) : null}
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <StarRating avg={pro.ratingAvg} count={pro.ratingCount} />
             {pro.distanceKm != null && (
@@ -577,7 +584,7 @@ export default function PatientMapClient() {
                   <Radio size={18} /> {t("map.action.now")}
                 </Link>
                 <Link
-                  href={`/patient/appointments?pro=${selected.id}`}
+                  href={`/patient/appointments?pro=${selected.id}&providerType=${selected.providerType || "health"}`}
                   className="flex items-center justify-center gap-2 py-3.5 rounded-xl border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50 font-semibold text-sm transition"
                   onClick={() => setSelected(null)}
                 >

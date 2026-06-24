@@ -64,6 +64,12 @@ export async function POST(req: NextRequest) {
           specialty: true,
         },
       },
+      psychoanalyst: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
 
@@ -80,7 +86,11 @@ export async function POST(req: NextRequest) {
   if (!patientUser) return NextResponse.json({ skipped: true, reason: "Patient user not found" });
 
   const patientName = `${safeDecrypt(appointment.patient.firstName)} ${safeDecrypt(appointment.patient.lastName)}`.trim();
-  const doctorName = `${appointment.professional.firstName} ${appointment.professional.lastName}`;
+  const doctorName = appointment.professional
+    ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
+    : appointment.psychoanalyst
+      ? `${appointment.psychoanalyst.firstName} ${appointment.psychoanalyst.lastName}`
+      : "Provider";
   const scheduledAt = new Date(appointment.scheduledAt);
   const hoursUntil = Math.round((scheduledAt.getTime() - Date.now()) / 3600000);
 
