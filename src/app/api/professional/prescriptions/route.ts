@@ -189,7 +189,7 @@ export async function GET(req: NextRequest) {
       document: {
         include: {
           patient: { select: { firstName: true, lastName: true } },
-          patientRecord: { select: { firstName: true, lastName: true } },
+          patientRecord: { select: { id: true, firstName: true, lastName: true } },
         },
       },
     },
@@ -216,7 +216,10 @@ export async function GET(req: NextRequest) {
       createdAt: p.createdAt,
       validUntil: p.validUntil,
       medications: p.medications,
+      instructions: p.instructions ? safeDecrypt(p.instructions) : "",
+      patientRecordId: p.document?.patientRecordId ?? null,
       signatureStatus: (p as { signatureStatus?: string | null }).signatureStatus ?? null,
+      digitalSignature: p.digitalSignature,
       signed: (p as { signatureStatus?: string | null }).signatureStatus === "SIGNED",
       document: {
         patient: firstName || lastName ? { firstName, lastName } : null,
