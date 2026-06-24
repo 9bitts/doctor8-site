@@ -1,10 +1,19 @@
-// GET — search CID-10 / ICD-10 codes by code or description (for clinical records).
+// GET — search Brazilian CID-10 codes by code or description (for clinical records).
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { lookupIcd10, searchIcd10 } from "icdwise";
+import { db } from "@/lib/db";
 
-export const runtime = "nodejs";
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalizeCode(s: string): string {
+  return s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -18,19 +27,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
-  // Direct code lookup (e.g. "E11", "E11.9")
-  const codeMatch = q.match(/^[A-Za-z]\d{2}(\.\d{1,4})?$/);
-  if (codeMatch) {
-    const hit = lookupIcd10(q.toUpperCase());
-    if (hit.found) {
-      return NextResponse.json({
-        results: [{ code: hit.code, description: hit.description }],
-      });
-    }
-  }
+  const qNorm = normalize(q);
+  const qCode = normalizeCode(q);
+  const isCodeQuery = /^[A-Za-z]/.test(q) && qCode.length >= 2;
 
-  const hits = searchIcd10(q, 12);
+  const rows = await db.cid10Catalog.findMany({
+    where: {
+      active: true,
+      OR: isCodeQuery
+        ? [
+            { code: { startsWith: q.toUpperCase() } },
+            { searchCode: { contains: qCode } },
+            { searchDescription: { contains: qNorm } },
+          ]
+        : [{ searchDescription: { contains: qNorm } }],
+    },
+    select: {
+      code: true,
+      description: true,
+    },
+    orderBy: [{ code: "asc" }],
+    take: 15,
+  });
+
   return NextResponse.json({
-    results: hits.results.map((h) => ({ code: h.code, description: h.description })),
+    results: rows.map((r) => ({ code: r.code, description: r.description })),
   });
 }

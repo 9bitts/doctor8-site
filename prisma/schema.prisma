@@ -811,6 +811,27 @@ model CbhpmCatalog {
 }
 
 // ─────────────────────────────────────────
+// CID-10 CATALOG (Brazilian DATASUS — diagnosis codes)
+// Searchable by code (e.g. A010) or description. Not PHI.
+// ─────────────────────────────────────────
+model Cid10Catalog {
+  id                String   @id @default(cuid())
+  code              String   @unique   // e.g. "A010" or "M8000/0"
+  description       String             // e.g. "Febre tifóide"
+  searchDescription String             // lowercase normalized description
+  searchCode        String             // uppercase alphanumeric only
+  source            String   @default("CID10") // CID10 | CID-O
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([searchDescription])
+  @@index([searchCode])
+  @@index([active])
+  @@index([source])
+}
+
+// ─────────────────────────────────────────
 // BUYING CLUB — collective medication purchase groups
 // One club per DrugCatalog entry. Patients join to get group discounts.
 // ─────────────────────────────────────────
