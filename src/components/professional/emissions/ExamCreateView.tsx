@@ -5,6 +5,7 @@ import {
   Search, User, ChevronRight, Plus, Trash2, Loader2, FlaskConical, ArrowLeft, FileText,
 } from "lucide-react";
 import type { Chart } from "./types";
+import type { SavedEmission } from "./EmissionPostSaveFlow";
 
 interface ExamCreateViewProps {
   t: (k: string) => string;
@@ -17,7 +18,7 @@ interface ExamCreateViewProps {
   initialCid: string;
   initialTitle: string;
   onBack: () => void;
-  onSaved: () => void;
+  onSaved: (emission: SavedEmission) => void;
 }
 
 export function ExamCreateView({
@@ -67,8 +68,15 @@ export function ExamCreateView({
           cid,
         }),
       });
-      if (res.ok) onSaved();
-      else {
+      if (res.ok) {
+        const data = await res.json();
+        onSaved({
+          kind: "exam",
+          id: data.id,
+          patient: selectedPatient,
+          label: title,
+        });
+      } else {
         const d = await res.json().catch(() => ({}));
         setError(typeof d.error === "string" ? d.error : t("rx.saveError"));
       }

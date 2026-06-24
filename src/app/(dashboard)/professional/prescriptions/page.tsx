@@ -12,6 +12,7 @@ import {
   Clock, User, FlaskConical, ScrollText,
 } from "lucide-react";
 import { EmissionsSignModal, RX_STYLES, type SignTarget, type EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
+import { EmissionPostSaveFlow, type SavedEmission } from "@/components/professional/emissions/EmissionPostSaveFlow";
 import { ExamCreateView } from "@/components/professional/emissions/ExamCreateView";
 import { DocumentCreateView } from "@/components/professional/emissions/DocumentCreateView";
 import type { Chart } from "@/components/professional/emissions/types";
@@ -221,10 +222,9 @@ export default function PrescriptionsPage() {
   const [formError, setFormError] = useState("");
   const [reuseSource, setReuseSource] = useState<Prescription | null>(null);
 
-  const [successPatient, setSuccessPatient] = useState<Chart | null>(null);
-  const [inviteSending, setInviteSending] = useState(false);
-  const [inviteSent, setInviteSent] = useState(false);
-  const [inviteError, setInviteError] = useState("");
+  const [savedEmission, setSavedEmission] = useState<SavedEmission | null>(null);
+  const [postSaveStep, setPostSaveStep] = useState<"choose" | "success">("choose");
+  const [postSaveShareUrl, setPostSaveShareUrl] = useState("");
 
   const [charts, setCharts] = useState<Chart[]>([]);
   const [patientQuery, setPatientQuery] = useState("");
@@ -248,9 +248,48 @@ export default function PrescriptionsPage() {
     fetchAll();
     loadSignConfig();
     const params = new URLSearchParams(window.location.search);
-    const s = params.get("sign");
-    if (s) {
-      setSignResult(s);
+    const sign = params.get("sign");
+    const flow = params.get("flow");
+    const kind = params.get("kind") as EmissionKind | null;
+    const id = params.get("id");
+
+    if (flow === "deliver" && sign === "success" && kind && id) {
+      (async () => {
+        const deliverKind = kind === "prescription" ? "prescription"
+          : kind === "exam" ? "exam" : "document";
+        try {
+          const res = await fetch("/api/professional/emissions/deliver", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ kind: deliverKind, id }),
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setSavedEmission({
+              kind,
+              id,
+              label: "",
+              patient: {
+                id: data.patientRecordId || "",
+                firstName: data.patient?.firstName || "",
+                lastName: data.patient?.lastName || "",
+                email: data.patient?.email || null,
+                hasAccount: !!data.patient?.hasAccount,
+              },
+            });
+            setPostSaveStep("success");
+            setPostSaveShareUrl(data.shareUrl || "");
+            fetchAll();
+          }
+        } catch { /* ignore */ }
+        window.history.replaceState({}, "", window.location.pathname);
+      })();
+    } else if (sign && sign !== "success") {
+      setSignResult(sign);
+      window.history.replaceState({}, "", window.location.pathname);
+      setTimeout(() => setSignResult(null), 6000);
+    } else if (sign === "success" && !flow) {
+      setSignResult("success");
       window.history.replaceState({}, "", window.location.pathname);
       setTimeout(() => setSignResult(null), 6000);
     }
@@ -291,8 +330,28 @@ export default function PrescriptionsPage() {
     setSelectedPatient(null); setPatientQuery(""); setDrugQuery("");
     setDrugResults([]); setDrugCountry(""); setMedications([]);
     setInstructions(""); setValidDays(30); setFormError("");
-    setSuccessPatient(null); setInviteSending(false);
-    setInviteSent(false); setInviteError(""); setReuseSource(null);
+    setReuseSource(null);
+    setSavedEmission(null);
+    setPostSaveStep("choose");
+    setPostSaveShareUrl("");
+  }
+
+  function handleEmissionSaved(emission: SavedEmission) {
+    setSavedEmission(emission);
+    setPostSaveStep("choose");
+    setPostSaveShareUrl("");
+    fetchAll();
+  }
+
+  function finishPostSave() {
+    setSavedEmission(null);
+    setPostSaveStep("choose");
+    setPostSaveShareUrl("");
+    setView("hub");
+    resetForm();
+    setReuseClinical(null);
+    setReusePatient(null);
+    fetchAll();
   }
 
   async function openCreate() {
@@ -444,29 +503,19 @@ export default function PrescriptionsPage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ patientRecordId: selectedPatient.id, medications: cleanMeds, instructions, validDays }),
       });
-      if (res.ok) { setSuccessPatient(selectedPatient); fetchPrescriptions(); }
-      else {
+      if (res.ok) {
+        const data = await res.json();
+        handleEmissionSaved({
+          kind: "prescription",
+          id: data.prescriptionId,
+          patient: selectedPatient,
+          label: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+        });
+      } else {
         const d = await res.json().catch(() => ({}));
         setFormError(typeof d.error === "string" ? d.error : t("rx2.needMeds"));
       }
     } finally { setSaving(false); }
-  }
-
-  async function sendInvite() {
-    if (!successPatient) return;
-    setInviteSending(true); setInviteError("");
-    try {
-      const res = await fetch(`/api/professional/records/${successPatient.id}/invite`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language: lang }),
-      });
-      if (res.ok) setInviteSent(true);
-      else {
-        const d = await res.json().catch(() => ({}));
-        setInviteError(typeof d.error === "string" ? d.error : t("rx3.inviteError"));
-      }
-    } catch { setInviteError(t("rx3.inviteError")); }
-    finally { setInviteSending(false); }
   }
 
   const filtered = prescriptions.filter((p) => {
@@ -495,6 +544,23 @@ export default function PrescriptionsPage() {
   const showPrescriptionList = listFilter === "all" || listFilter === "prescription";
   const showClinicalList = listFilter === "all" || listFilter === "exam" || listFilter === "document";
 
+  if (savedEmission) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-5 pb-8">
+        <EmissionPostSaveFlow
+          emission={savedEmission}
+          t={t}
+          lang={lang}
+          signConfig={signConfig}
+          initialStep={postSaveStep}
+          initialShareUrl={postSaveShareUrl}
+          onDone={finishPostSave}
+        />
+        <style>{RX_STYLES}</style>
+      </div>
+    );
+  }
+
   if (view === "exam") {
     return (
       <>
@@ -507,7 +573,7 @@ export default function PrescriptionsPage() {
           initialCid={reuseClinical?.cid || ""}
           initialTitle={reuseClinical?.title || ""}
           onBack={closeCreate}
-          onSaved={closeCreate}
+          onSaved={handleEmissionSaved}
         />
         <style>{RX_STYLES}</style>
       </>
@@ -525,7 +591,7 @@ export default function PrescriptionsPage() {
           initialBody={reuseClinical?.content || ""}
           initialType={reuseClinical?.type || "CERTIFICATE"}
           onBack={closeCreate}
-          onSaved={closeCreate}
+          onSaved={handleEmissionSaved}
         />
         <style>{RX_STYLES}</style>
       </>
@@ -556,49 +622,7 @@ export default function PrescriptionsPage() {
           </div>
         )}
 
-        {successPatient ? (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-14 h-14 rounded-full bg-brand-100 flex items-center justify-center mb-3">
-                <CheckCircle2 size={28} className="text-brand-500" />
-              </div>
-              <p className="font-bold text-slate-900 text-lg">{t("rx3.savedTitle")}</p>
-              <p className="text-slate-500 text-sm mt-1">{successPatient.firstName} {successPatient.lastName}</p>
-            </div>
-            {successPatient.hasAccount ? (
-              <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700 flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-brand-500 shrink-0 mt-0.5" />
-                <p>{t("rx3.notifiedText")}</p>
-              </div>
-            ) : successPatient.email ? (
-              inviteSent ? (
-                <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700">
-                  {t("rx3.inviteSent")} <strong>{successPatient.email}</strong>
-                </div>
-              ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
-                  <p className="text-sm text-amber-800">{t("rx3.noAccountText")}</p>
-                  <p className="text-sm font-semibold text-amber-900">{successPatient.email}</p>
-                  {inviteError && <p className="text-sm text-rose-600">{inviteError}</p>}
-                  <button onClick={sendInvite} disabled={inviteSending}
-                    className="w-full py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
-                    {inviteSending && <Loader2 size={14} className="animate-spin" />}
-                    {t("rx3.sendInvite")}
-                  </button>
-                </div>
-              )
-            ) : (
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600">
-                {t("rx3.noEmailText")}
-              </div>
-            )}
-            <button onClick={closeCreate}
-              className="w-full py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm transition">
-              {t("rx3.done")}
-            </button>
-          </div>
-        ) : (
-          <>
+        <>
             {/* Patient card */}
             <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
               <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -803,12 +827,10 @@ export default function PrescriptionsPage() {
             </div>
 
             {formError && <p className="text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">{formError}</p>}
-          </>
-        )}
+        </>
 
         {/* Sticky footer */}
-        {!successPatient && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 p-4 z-20">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 p-4 z-20">
             <div className="max-w-3xl mx-auto flex gap-3">
               <button type="button" onClick={closeCreate}
                 className="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition">
@@ -821,7 +843,6 @@ export default function PrescriptionsPage() {
               </button>
             </div>
           </div>
-        )}
 
         <style>{RX_STYLES}</style>
       </div>

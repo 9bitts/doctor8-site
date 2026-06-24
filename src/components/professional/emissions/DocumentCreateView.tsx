@@ -5,6 +5,7 @@ import {
   Search, User, ChevronRight, ArrowLeft, FileText, Loader2,
 } from "lucide-react";
 import type { Chart } from "./types";
+import type { SavedEmission } from "./EmissionPostSaveFlow";
 
 const DOC_TYPES = [
   { value: "CERTIFICATE", labelKey: "rx.docTypeCertificate" },
@@ -22,7 +23,7 @@ interface DocumentCreateViewProps {
   initialBody: string;
   initialType: string;
   onBack: () => void;
-  onSaved: () => void;
+  onSaved: (emission: SavedEmission) => void;
 }
 
 export function DocumentCreateView({
@@ -57,8 +58,15 @@ export function DocumentCreateView({
           content: body,
         }),
       });
-      if (res.ok) onSaved();
-      else {
+      if (res.ok) {
+        const data = await res.json();
+        onSaved({
+          kind: "document",
+          id: data.id,
+          patient: selectedPatient,
+          label: title,
+        });
+      } else {
         const d = await res.json().catch(() => ({}));
         setError(typeof d.error === "string" ? d.error : t("rx.saveError"));
       }

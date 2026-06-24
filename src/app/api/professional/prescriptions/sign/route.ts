@@ -70,9 +70,11 @@ export async function POST(req: NextRequest) {
 
   try {
   let prescriptionId = "";
+  let deliverAfter = false;
   try {
     const body = await req.json();
     prescriptionId = String(body.prescriptionId || "");
+    deliverAfter = body.deliverAfter === true;
   } catch {
     return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
   }
@@ -204,7 +206,7 @@ export async function POST(req: NextRequest) {
         : req.nextUrl.origin);
 
   const returnUrl =
-    `${publicBase.replace(/\/+$/, "")}/api/professional/prescriptions/sign/callback?prescriptionId=${encodeURIComponent(prescription.id)}`;
+    `${publicBase.replace(/\/+$/, "")}/api/professional/prescriptions/sign/callback?prescriptionId=${encodeURIComponent(prescription.id)}${deliverAfter ? "&deliverAfter=1" : ""}`;
 
   console.log("[SIGN] returnUrl:", returnUrl);
 

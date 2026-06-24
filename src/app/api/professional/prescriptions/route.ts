@@ -16,8 +16,6 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { encrypt, decrypt } from "@/lib/encryption";
-import { createNotification } from "@/lib/notifications";
-import { sendPrescriptionNotification } from "@/lib/email-prescription";
 import { z } from "zod";
 
 const medicationItemSchema = z.object({
@@ -65,14 +63,10 @@ export async function POST(req: NextRequest) {
   const validUntil = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000);
 
   // Resolve the patient target: prefer the chart (PatientRecord), fall back to account.
-  let documentPatientId: string | null = null;   // PatientProfile.id (old flow)
-  let documentPatientRecordId: string | null = null; // PatientRecord.id (new flow)
-  let notifyUserId: string | null = null;         // patient account to notify (if any)
-  let notifyEmail: string | null = null;          // patient email to notify (if any)
-  let notifyName = "";                             // patient first name for the email
+  let documentPatientId: string | null = null;
+  let documentPatientRecordId: string | null = null;
 
   if (patientRecordId) {
-    // New flow: prescribe for a chart (with or without account)
     const record = await db.patientRecord.findFirst({
       where: { id: patientRecordId, professionalId: professional.id },
     });
@@ -81,14 +75,9 @@ export async function POST(req: NextRequest) {
     }
     documentPatientRecordId = record.id;
 
-    // If this chart is linked to a real account, also attach the PatientProfile
-    // so the prescription shows up for the patient inside the app.
     if (record.linkedUserId) {
       const profile = await db.patientProfile.findUnique({ where: { userId: record.linkedUserId } });
       if (profile) documentPatientId = profile.id;
-      notifyUserId = record.linkedUserId;
-      notifyEmail = record.email || null;
-      try { notifyName = decrypt(record.firstName); } catch { notifyName = record.firstName; }
     }
   } else if (patientUserId) {
     // Old flow: prescribe for an existing account
@@ -97,12 +86,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
     documentPatientId = patient.id;
-    notifyUserId = patientUserId;
-    try {
-      const u = await db.user.findUnique({ where: { id: patientUserId }, select: { email: true } });
-      notifyEmail = u?.email || null;
-      notifyName = decrypt(patient.firstName);
-    } catch { notifyName = ""; }
   }
 
   // Create medical document entry (holds the link to patient and/or chart)
@@ -129,43 +112,6 @@ export async function POST(req: NextRequest) {
   });
 
   await audit.createRecord(session.user.id, "Prescription", prescription.id);
-
-  // Notify the patient — ONLY if they already have an account (linked user).
-  // Never let notification/email failures break the prescription creation.
-  if (notifyUserId) {
-    const doctorName = `${professional.firstName} ${professional.lastName}`.trim();
-
-    // In-app bell notification
-    try {
-      await createNotification({
-        userId: notifyUserId,
-        title: "Nova receita / New prescription",
-        body: `Dr. ${doctorName}`,
-        type: "system",
-        data: { prescriptionId: prescription.id, documentId: document.id },
-      });
-    } catch (e) {
-      console.error("[PRESCRIPTION] notification failed:", e);
-    }
-
-    // Email notice (no clinical data in the email)
-    if (notifyEmail) {
-      try {
-        const u = await db.user.findUnique({
-          where: { id: notifyUserId },
-          select: { language: true },
-        });
-        await sendPrescriptionNotification({
-          patientEmail: notifyEmail,
-          patientName: notifyName || "—",
-          doctorName,
-          language: u?.language,
-        });
-      } catch (e) {
-        console.error("[PRESCRIPTION] email failed:", e);
-      }
-    }
-  }
 
   return NextResponse.json(
     { success: true, prescriptionId: prescription.id, documentId: document.id },

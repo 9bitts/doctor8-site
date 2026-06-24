@@ -42,9 +42,14 @@ function publicBase(req: NextRequest): string {
   ).replace(/\/+$/, "");
 }
 
-function redirectTo(req: NextRequest, status: string) {
+function redirectTo(req: NextRequest, status: string, opts?: { flow?: string; kind?: string; id?: string }) {
   const url = new URL(`${publicBase(req)}/professional/prescriptions`);
   url.searchParams.set("sign", status);
+  if (opts?.flow === "deliver" && status === "success" && opts.kind && opts.id) {
+    url.searchParams.set("flow", "deliver");
+    url.searchParams.set("kind", opts.kind);
+    url.searchParams.set("id", opts.id);
+  }
   return NextResponse.redirect(url);
 }
 
@@ -184,5 +189,8 @@ export async function GET(req: NextRequest) {
   } catch { /* auditoria nao deve quebrar o fluxo */ }
 
   console.log("[CALLBACK] assinatura concluida com sucesso");
-  return redirectTo(req, "success");
+  const deliverAfter = req.nextUrl.searchParams.get("deliverAfter") === "1";
+  return redirectTo(req, "success", deliverAfter
+    ? { flow: "deliver", kind: "prescription", id: prescriptionId }
+    : undefined);
 }

@@ -16,10 +16,12 @@ export interface SignTarget {
 export function EmissionsSignModal({
   target,
   signConfig,
+  deliverAfter,
   onClose,
 }: {
   target: SignTarget;
   signConfig: { configured: boolean; cpfMasked: string } | null;
+  deliverAfter?: boolean;
   onClose: () => void;
 }) {
   const [loading, setLoading] = useState(false);
@@ -33,13 +35,13 @@ export function EmissionsSignModal({
         ? "/api/professional/prescriptions/sign"
         : `/api/professional/documents/${target.id}/sign`;
       const body = target.kind === "prescription"
-        ? { prescriptionId: target.id }
-        : undefined;
+        ? { prescriptionId: target.id, deliverAfter: !!deliverAfter }
+        : { deliverAfter: !!deliverAfter };
 
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: body ? JSON.stringify(body) : undefined,
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok || !data.redirectUrl) {

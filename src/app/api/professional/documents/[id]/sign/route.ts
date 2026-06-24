@@ -24,6 +24,12 @@ export async function POST(
   }
 
   try {
+    let deliverAfter = false;
+    try {
+      const body = await req.json();
+      deliverAfter = body?.deliverAfter === true;
+    } catch { /* empty body ok */ }
+
     const document = await db.medicalDocument.findUnique({
       where: { id: params.id },
       include: {
@@ -106,7 +112,7 @@ export async function POST(
     });
 
     const returnUrl =
-      `${getPublicBase(req)}/api/professional/documents/sign/callback?documentId=${encodeURIComponent(document.id)}`;
+      `${getPublicBase(req)}/api/professional/documents/sign/callback?documentId=${encodeURIComponent(document.id)}${deliverAfter ? "&deliverAfter=1" : ""}`;
 
     const lacuna = await createSignatureSession({
       pdfBytes,

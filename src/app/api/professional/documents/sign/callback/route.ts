@@ -20,9 +20,14 @@ const s3 = new S3Client({
 });
 const BUCKET = process.env.AWS_S3_BUCKET || "doctor8-files-prod";
 
-function redirectTo(req: NextRequest, status: string) {
+function redirectTo(req: NextRequest, status: string, opts?: { flow?: string; kind?: string; id?: string }) {
   const url = new URL(`${getPublicBase(req)}/professional/prescriptions`);
   url.searchParams.set("sign", status);
+  if (opts?.flow === "deliver" && status === "success" && opts.kind && opts.id) {
+    url.searchParams.set("flow", "deliver");
+    url.searchParams.set("kind", opts.kind);
+    url.searchParams.set("id", opts.id);
+  }
   return NextResponse.redirect(url);
 }
 
@@ -141,5 +146,10 @@ export async function GET(req: NextRequest) {
     await audit.viewRecord(session.user.id, "ClinicalDocumentSigned", documentId);
   } catch { /* ignore */ }
 
-  return redirectTo(req, "success");
+  const deliverAfter = req.nextUrl.searchParams.get("deliverAfter") === "1";
+  const docKind =
+    document.type === "EXAM_REQUEST" || document.type === "EXAM_RESULT" ? "exam" : "document";
+  return redirectTo(req, "success", deliverAfter
+    ? { flow: "deliver", kind: docKind, id: documentId }
+    : undefined);
 }

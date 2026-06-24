@@ -441,6 +441,7 @@ model MedicalDocument {
   signedFileUrl      String?   // S3 key of signed PDF
   signedAt           DateTime?
   digitalSignature   String?
+  patientNotifiedAt  DateTime?
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -498,6 +499,7 @@ model Prescription {
   signatureStatus    String?   // PENDING | SIGNED | CANCELLED | ERROR
   signedFileUrl      String?   // S3 key of the signed PDF
   signedAt           DateTime?
+  patientNotifiedAt  DateTime?
 
   createdAt        DateTime @default(now())
 
