@@ -14,6 +14,7 @@ import { getProfessionLabel, specialtyMatchesSearch, PSYCHOANALYSIS_SPECIALTY } 
 import { getProfessionInfo } from "@/lib/profession-label";
 import { parseLocalDate } from "@/lib/scheduling";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
+import ReviewPromptModal from "@/components/ReviewPromptModal";
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
   CreditCard, Loader2, CheckCircle2, AlertCircle, Star, MapPin, Lock,
@@ -129,6 +130,12 @@ export default function AppointmentsPage() {
   const stripeRef      = useRef<any>(null);
   const elementsRef    = useRef<any>(null);
 
+  const [reviewModal, setReviewModal] = useState<{
+    providerId: string;
+    providerType: "health" | "psychoanalyst";
+    providerName?: string;
+  } | null>(null);
+
   useEffect(() => { fetchProfessionals(); fetchAppointments(); }, []);
   useEffect(() => { if (step === "payment" && !stripeLoaded) loadStripe(); }, [step]);
   useEffect(() => { setShowTip(true); }, [step]);
@@ -145,6 +152,21 @@ export default function AppointmentsPage() {
     );
     if (pro) selectProfessional(pro);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionals]);
+
+  // Deep link: /patient/appointments?reviewPro=ID&providerType=health
+  useEffect(() => {
+    if (professionals.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const reviewPro = params.get("reviewPro");
+    if (!reviewPro) return;
+    const providerType = (params.get("providerType") || "health") as "health" | "psychoanalyst";
+    const pro = professionals.find((p) => p.id === reviewPro && (p.providerType || "health") === providerType);
+    setReviewModal({
+      providerId: reviewPro,
+      providerType,
+      providerName: pro ? `${pro.firstName} ${pro.lastName}`.trim() : undefined,
+    });
   }, [professionals]);
 
   async function loadStripe() {
@@ -753,6 +775,15 @@ export default function AppointmentsPage() {
             )}
           </div>
         </div>
+      )}
+
+      {reviewModal && (
+        <ReviewPromptModal
+          providerId={reviewModal.providerId}
+          providerType={reviewModal.providerType}
+          providerName={reviewModal.providerName}
+          onClose={() => setReviewModal(null)}
+        />
       )}
     </div>
   );

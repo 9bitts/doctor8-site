@@ -19,6 +19,7 @@ import {
   EMAIL_PATIENT_INVITE,
   EMAIL_COLLEAGUE_INVITE,
   EMAIL_SLOT_ALERT,
+  EMAIL_REVIEW_REQUEST,
 } from "./email-i18n";
 
 // ─── EMAIL VERIFICATION ──────────────────────────────────────────────────────
@@ -397,5 +398,45 @@ export async function sendSlotAvailableAlert({
       c.footnote,
     ].join("\n\n"),
     tag: "slot-alert",
+  });
+}
+
+export async function sendReviewRequest({
+  email,
+  patientName,
+  providerName,
+  reviewUrl,
+  language,
+}: {
+  email: string;
+  patientName: string;
+  providerName: string;
+  reviewUrl: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_REVIEW_REQUEST[lang];
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(patientName)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(providerName)}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${reviewUrl}" style="background:#216a86;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.5;">${c.footnote}</p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject(providerName),
+    html: emailShell(c.heading, body, lang),
+    text: [
+      c.hi(patientName).replace(/<[^>]+>/g, ""),
+      c.body(providerName).replace(/<[^>]+>/g, ""),
+      `${c.cta}: ${reviewUrl}`,
+      c.footnote,
+    ].join("\n\n"),
+    tag: "review-request",
   });
 }

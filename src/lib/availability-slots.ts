@@ -124,6 +124,21 @@ function buildDaysFromBlocks(
   return days;
 }
 
+export function buildSlotPreviewFromDays(days: DaySlots[], maxDays = 4): DaySlots[] {
+  return days.slice(0, maxDays).map((day) => ({
+    ...day,
+    slots: day.slots.filter((s) => s.available).slice(0, 4),
+  }));
+}
+
+export function firstAvailableSlot(days: DaySlots[]): string | null {
+  for (const day of days) {
+    const slot = day.slots.find((s) => s.available);
+    if (slot) return slot.datetime;
+  }
+  return null;
+}
+
 /** Compact slot preview for search result cards (next N days). */
 export async function getProviderSlotPreview(
   providerId: string,
@@ -132,8 +147,5 @@ export async function getProviderSlotPreview(
   maxDays = 4
 ): Promise<DaySlots[]> {
   const days = await getProviderAvailableDays(providerId, providerType, locale, 14);
-  return days.slice(0, maxDays).map((day) => ({
-    ...day,
-    slots: day.slots.filter((s) => s.available).slice(0, 4),
-  }));
+  return buildSlotPreviewFromDays(days, maxDays);
 }

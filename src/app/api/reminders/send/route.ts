@@ -13,7 +13,7 @@ import { z } from "zod";
 
 const schema = z.object({
   appointmentId: z.string(),
-  type: z.enum(["24h_email", "3h_email", "3h_whatsapp", "bell"]),
+  type: z.enum(["24h_email", "3h_email", "3h_whatsapp", "bell", "review_request"]),
 });
 
 function safeDecrypt(v: string | null): string {
@@ -73,8 +73,95 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Skip if cancelled or completed
-  if (!appointment || !["CONFIRMED", "PENDING"].includes(appointment.status)) {
+  if (!appointment) {
+    return NextResponse.json({ skipped: true, reason: "Appointment not found" });
+  }
+
+  if (type === "review_request") {
+    if (appointment.status === "CANCELLED" || appointment.reviewRequestSent) {
+      return NextResponse.json({ skipped: true, reason: "Review already sent or cancelled" });
+    }
+
+    const patientUser = await db.user.findFirst({
+      where: { patientProfile: { id: appointment.patientId } },
+      select: { id: true, email: true, language: true },
+    });
+    if (!patientUser) return NextResponse.json({ skipped: true, reason: "Patient user not found" });
+
+    const providerId = appointment.professionalId ?? appointment.psychoanalystId;
+    if (!providerId) return NextResponse.json({ skipped: true, reason: "No provider" });
+
+    const existingReview = appointment.professionalId
+      ? await db.professionalReview.findUnique({
+          where: {
+            patientUserId_professionalId: {
+              patientUserId: patientUser.id,
+              professionalId: appointment.professionalId,
+            },
+          },
+        })
+      : await db.psychoanalystReview.findUnique({
+          where: {
+            patientUserId_psychoanalystId: {
+              patientUserId: patientUser.id,
+              psychoanalystId: appointment.psychoanalystId!,
+            },
+          },
+        });
+
+    if (existingReview) {
+      await db.appointment.update({
+        where: { id: appointmentId },
+        data: { reviewRequestSent: true, status: "COMPLETED" },
+      });
+      return NextResponse.json({ skipped: true, reason: "Already reviewed" });
+    }
+
+    const patientName = `${safeDecrypt(appointment.patient.firstName)} ${safeDecrypt(appointment.patient.lastName)}`.trim();
+    const doctorName = appointment.professional
+      ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
+      : appointment.psychoanalyst
+        ? `${safeDecrypt(appointment.psychoanalyst.firstName)} ${safeDecrypt(appointment.psychoanalyst.lastName)}`
+        : "Profissional";
+
+    const providerType = appointment.professionalId ? "health" : "psychoanalyst";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
+    const reviewUrl = `${appUrl}/patient/appointments?reviewPro=${providerId}&providerType=${providerType}`;
+
+    try {
+      const { sendReviewRequest } = await import("@/lib/email");
+      await sendReviewRequest({
+        email: patientUser.email,
+        patientName,
+        providerName: doctorName,
+        reviewUrl,
+        language: patientUser.language,
+      });
+      await createNotification({
+        userId: patientUser.id,
+        title: "Avalie sua consulta",
+        body: `Como foi sua consulta com ${doctorName}?`,
+        type: "review_request",
+        data: { appointmentId, providerId, providerType },
+      }).catch(() => {});
+    } catch (e) {
+      console.error("[REMINDER] Review request failed:", e);
+      return NextResponse.json({ error: "Review email failed" }, { status: 500 });
+    }
+
+    await db.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        reviewRequestSent: true,
+        status: appointment.status === "CONFIRMED" ? "COMPLETED" : appointment.status,
+      },
+    });
+
+    return NextResponse.json({ success: true, type, appointmentId });
+  }
+
+  // Skip pre-appointment reminders if cancelled or completed
+  if (!["CONFIRMED", "PENDING"].includes(appointment.status)) {
     return NextResponse.json({ skipped: true, reason: "Appointment not active" });
   }
 

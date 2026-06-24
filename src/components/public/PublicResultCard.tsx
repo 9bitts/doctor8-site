@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
 import {
-  Star, CheckCircle2, Video, Building2, ChevronRight, MapPin,
+  Star, CheckCircle2, Video, Building2, ChevronRight, MapPin, Clock,
 } from "lucide-react";
 import type { PublicSearchResult } from "@/lib/public-search";
 import { cityToSeoSlug } from "@/lib/public-slugs";
@@ -43,6 +43,16 @@ export default function PublicResultCard({
   const locale = localeOf(lang);
   const initials = `${pro.firstName[0] || ""}${pro.lastName[0] || ""}`;
   const days = pro.slotPreview.slice(0, 4);
+
+  const nextSlotLabel = pro.nextSlotAt
+    ? new Date(pro.nextSlotAt).toLocaleString(locale, {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
 
   return (
     <article className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition">
@@ -137,6 +147,13 @@ export default function PublicResultCard({
           <p className="text-sm font-bold text-slate-800 mt-3">
             {fmtPrice(pro.consultPrice, pro.currency, locale)}
           </p>
+
+          {nextSlotLabel && (
+            <p className="text-[11px] text-brand-600 mt-1.5 flex items-center gap-1">
+              <Clock size={11} />
+              {t("pubSearch.nextSlot")}: {nextSlotLabel}
+            </p>
+          )}
         </div>
 
         {/* Slots grid */}

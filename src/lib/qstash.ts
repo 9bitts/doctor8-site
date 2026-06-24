@@ -8,7 +8,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org";
 
 interface ScheduleReminderParams {
   appointmentId: string;
-  type: "24h_email" | "3h_whatsapp" | "3h_email" | "bell";
+  type: "24h_email" | "3h_whatsapp" | "3h_email" | "bell" | "review_request";
   delaySeconds: number;
 }
 
@@ -72,6 +72,23 @@ export async function scheduleAppointmentReminders(
   }
 
   await Promise.allSettled(promises);
+}
+
+/** Schedule review request email ~2h after appointment ends. */
+export async function scheduleReviewRequest(
+  appointmentId: string,
+  scheduledAt: Date,
+  durationMins: number
+): Promise<void> {
+  const endTime = scheduledAt.getTime() + durationMins * 60 * 1000;
+  const delaySeconds = Math.floor((endTime + 2 * 60 * 60 * 1000 - Date.now()) / 1000);
+  if (delaySeconds < 60) return;
+
+  await scheduleReminder({
+    appointmentId,
+    type: "review_request",
+    delaySeconds,
+  });
 }
 
 // Verify QStash signature (security — ensures request came from QStash)

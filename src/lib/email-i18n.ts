@@ -242,6 +242,40 @@ export const EMAIL_SLOT_ALERT: Record<EmailLang, {
   },
 };
 
+export const EMAIL_REVIEW_REQUEST: Record<EmailLang, {
+  subject: (provider: string) => string;
+  heading: string;
+  hi: (name: string) => string;
+  body: (provider: string) => string;
+  cta: string;
+  footnote: string;
+}> = {
+  en: {
+    subject: (p) => `How was your visit with ${p}?`,
+    heading: "Rate your consultation",
+    hi: (n) => `Hi <strong>${n}</strong>,`,
+    body: (p) => `Your consultation with <strong>${p}</strong> is complete. Your feedback helps other patients choose with confidence.`,
+    cta: "Leave a review",
+    footnote: "You can only review professionals you have consulted on Doctor8.",
+  },
+  pt: {
+    subject: (p) => `Como foi sua consulta com ${p}?`,
+    heading: "Avalie sua consulta",
+    hi: (n) => `Olá <strong>${n}</strong>,`,
+    body: (p) => `Sua consulta com <strong>${p}</strong> foi concluída. Sua avaliação ajuda outros pacientes a escolher com confiança.`,
+    cta: "Deixar avaliação",
+    footnote: "Você só pode avaliar profissionais com quem já consultou no Doctor8.",
+  },
+  es: {
+    subject: (p) => `¿Cómo fue tu consulta con ${p}?`,
+    heading: "Califica tu consulta",
+    hi: (n) => `Hola <strong>${n}</strong>,`,
+    body: (p) => `Tu consulta con <strong>${p}</strong> ha finalizado. Tu opinión ayuda a otros pacientes a elegir con confianza.`,
+    cta: "Dejar calificación",
+    footnote: "Solo puedes calificar a profesionales con los que ya consultaste en Doctor8.",
+  },
+};
+
 export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
   subject: (doctor: string, hours: number) => string;
   heading: string;

@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { stripe } from "@/lib/stripe";
-import { scheduleAppointmentReminders } from "@/lib/qstash";
+import { scheduleAppointmentReminders, scheduleReviewRequest } from "@/lib/qstash";
 import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { z } from "zod";
@@ -265,6 +265,10 @@ export async function POST(req: NextRequest) {
 
   scheduleAppointmentReminders(appointment.id, new Date(scheduledAt)).catch((e) => {
     console.error("[QSTASH SCHEDULE ERROR]", e);
+  });
+
+  scheduleReviewRequest(appointment.id, new Date(scheduledAt), durationMins).catch((e) => {
+    console.error("[QSTASH REVIEW SCHEDULE ERROR]", e);
   });
 
   return NextResponse.json({ success: true, appointmentId: appointment.id }, { status: 201 });

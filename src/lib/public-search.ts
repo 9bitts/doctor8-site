@@ -9,7 +9,11 @@ import {
   cityToSeoSlug,
   specialtyToSeoSlug,
 } from "@/lib/public-slugs";
-import { getProviderSlotPreview } from "@/lib/availability-slots";
+import {
+  getProviderAvailableDays,
+  buildSlotPreviewFromDays,
+  firstAvailableSlot,
+} from "@/lib/availability-slots";
 import { getProviderServices, getPracticeLocations } from "@/lib/practice";
 import type { ProviderType } from "@/lib/providers";
 import type { DaySlots } from "@/lib/availability-slots";
@@ -42,7 +46,16 @@ export type PublicSearchResult = {
   locationCount: number;
   publicPath: string;
   slotPreview: DaySlots[];
+  nextSlotAt: string | null;
 };
+
+export type PublicSearchSort =
+  | "name"
+  | "rating"
+  | "reviews"
+  | "price_asc"
+  | "price_desc"
+  | "soonest";
 
 export type PublicSearchOpts = {
   especialidade: string;
@@ -50,6 +63,10 @@ export type PublicSearchOpts = {
   convenio?: string | null;
   teleconsult?: boolean;
   presencial?: boolean;
+  priceMax?: number | null;
+  minRating?: number | null;
+  availableOnly?: boolean;
+  sort?: PublicSearchSort;
   locale?: string;
 };
 
@@ -91,6 +108,58 @@ function matchesPsychoanalystSpecialty(especialidade: string): boolean {
   return especialidade === "psicanalista";
 }
 
+function filterAndSortResults(
+  results: PublicSearchResult[],
+  opts: Pick<PublicSearchOpts, "priceMax" | "minRating" | "availableOnly" | "sort">
+): PublicSearchResult[] {
+  const { priceMax, minRating, availableOnly, sort = "name" } = opts;
+
+  let list = results;
+
+  if (priceMax != null && priceMax > 0) {
+    const maxCents = Math.round(priceMax * 100);
+    list = list.filter((r) => r.consultPrice <= maxCents);
+  }
+
+  if (minRating != null && minRating > 0) {
+    list = list.filter((r) => r.ratingAvg != null && r.ratingAvg >= minRating);
+  }
+
+  if (availableOnly) {
+    list = list.filter((r) => r.nextSlotAt != null);
+  }
+
+  const sorted = [...list];
+  sorted.sort((a, b) => {
+    switch (sort) {
+      case "rating": {
+        const ra = a.ratingAvg ?? 0;
+        const rb = b.ratingAvg ?? 0;
+        if (rb !== ra) return rb - ra;
+        return b.ratingCount - a.ratingCount;
+      }
+      case "reviews":
+        if (b.ratingCount !== a.ratingCount) return b.ratingCount - a.ratingCount;
+        return (b.ratingAvg ?? 0) - (a.ratingAvg ?? 0);
+      case "price_asc":
+        return a.consultPrice - b.consultPrice;
+      case "price_desc":
+        return b.consultPrice - a.consultPrice;
+      case "soonest": {
+        if (!a.nextSlotAt && !b.nextSlotAt) return a.name.localeCompare(b.name);
+        if (!a.nextSlotAt) return 1;
+        if (!b.nextSlotAt) return -1;
+        return new Date(a.nextSlotAt).getTime() - new Date(b.nextSlotAt).getTime();
+      }
+      case "name":
+      default:
+        return a.name.localeCompare(b.name);
+    }
+  });
+
+  return sorted;
+}
+
 export async function searchPublicListings(
   opts: PublicSearchOpts
 ): Promise<PublicSearchResult[]> {
@@ -100,6 +169,10 @@ export async function searchPublicListings(
     convenio,
     teleconsult,
     presencial,
+    priceMax,
+    minRating,
+    availableOnly,
+    sort,
     locale = "pt-BR",
   } = opts;
 
@@ -161,7 +234,9 @@ export async function searchPublicListings(
       const info = getProfessionInfo(p.specialty);
       const reviews = reviewMap.get(p.id) ?? { avg: null, count: 0 };
 
-      const slotPreview = await getProviderSlotPreview(p.id, "health", locale);
+      const slotDays = await getProviderAvailableDays(p.id, "health", locale, 14);
+      const slotPreview = buildSlotPreviewFromDays(slotDays, 4);
+      const nextSlotAt = firstAvailableSlot(slotDays);
       const svcRows = await getProviderServices(p.id, "health", true);
       const locRows = await getPracticeLocations(p.id, "health");
 
@@ -204,6 +279,7 @@ export async function searchPublicListings(
         })),
         locationCount: locRows.length,
         slotPreview,
+        nextSlotAt,
       });
     }
   }
@@ -247,7 +323,9 @@ export async function searchPublicListings(
       const firstName = safeDecrypt(p.firstName);
       const lastName = safeDecrypt(p.lastName);
       const reviews = reviewMap.get(p.id) ?? { avg: null, count: 0 };
-      const slotPreview = await getProviderSlotPreview(p.id, "psychoanalyst", locale);
+      const slotDays = await getProviderAvailableDays(p.id, "psychoanalyst", locale, 14);
+      const slotPreview = buildSlotPreviewFromDays(slotDays, 4);
+      const nextSlotAt = firstAvailableSlot(slotDays);
       const svcRows = await getProviderServices(p.id, "psychoanalyst", true);
       const locRows = await getPracticeLocations(p.id, "psychoanalyst");
 
@@ -290,11 +368,12 @@ export async function searchPublicListings(
         })),
         locationCount: locRows.length,
         slotPreview,
+        nextSlotAt,
       });
     }
   }
 
-  return results.sort((a, b) => a.name.localeCompare(b.name));
+  return filterAndSortResults(results, { priceMax, minRating, availableOnly, sort });
 }
 
 export async function countPublicListings(

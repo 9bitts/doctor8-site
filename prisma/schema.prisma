@@ -488,6 +488,7 @@ model Appointment {
   // Reminders sent
   reminder24hSent  Boolean @default(false)
   reminder1hSent   Boolean @default(false)
+  reviewRequestSent Boolean @default(false)
 
   cancelledAt      DateTime?
   cancelledBy      String?

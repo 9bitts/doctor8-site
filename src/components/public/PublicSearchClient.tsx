@@ -5,10 +5,12 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 import {
   Search, Loader2, Video, Building2, Shield, ChevronRight, MapPin,
+  SlidersHorizontal, Star, Clock,
 } from "lucide-react";
-import type { PublicSearchResult } from "@/lib/public-search";
+import type { PublicSearchResult, PublicSearchSort } from "@/lib/public-search";
 import PublicResultCard from "@/components/public/PublicResultCard";
 import {
   seoSlugToSpecialtyLabel,
@@ -26,6 +28,46 @@ const PublicSearchMap = dynamic(() => import("@/components/public/PublicSearchMa
 
 type HealthPlan = { id: string; name: string; slug: string };
 
+type SearchFilters = {
+  convenio: string;
+  teleconsult: boolean;
+  presencial: boolean;
+  priceMax: string;
+  minRating: string;
+  availableOnly: boolean;
+  sort: PublicSearchSort;
+};
+
+function parseFilters(params: URLSearchParams): SearchFilters {
+  const sort = params.get("sort") as PublicSearchSort;
+  const validSorts: PublicSearchSort[] = [
+    "name", "rating", "reviews", "price_asc", "price_desc", "soonest",
+  ];
+  return {
+    convenio: params.get("convenio") || "",
+    teleconsult: params.get("teleconsult") === "1",
+    presencial: params.get("presencial") === "1",
+    priceMax: params.get("priceMax") || "",
+    minRating: params.get("minRating") || "",
+    availableOnly: params.get("availableOnly") === "1",
+    sort: validSorts.includes(sort) ? sort : "name",
+  };
+}
+
+function filtersToParams(f: SearchFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (f.convenio) params.set("convenio", f.convenio);
+  if (f.teleconsult) params.set("teleconsult", "1");
+  if (f.presencial) params.set("presencial", "1");
+  if (f.priceMax) params.set("priceMax", f.priceMax);
+  if (f.minRating) params.set("minRating", f.minRating);
+  if (f.availableOnly) params.set("availableOnly", "1");
+  if (f.sort && f.sort !== "name") params.set("sort", f.sort);
+  return params;
+}
+
+const PRICE_OPTIONS = ["", "150", "250", "400", "600", "1000"];
+
 export default function PublicSearchClient({
   especialidade,
   cidade,
@@ -34,19 +76,24 @@ export default function PublicSearchClient({
   cidade: string;
 }) {
   const { lang, t } = useI18n();
+  const locale = localeOf(lang);
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [results, setResults] = useState<PublicSearchResult[]>([]);
   const [plans, setPlans] = useState<HealthPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [convenio, setConvenio] = useState(searchParams.get("convenio") || "");
-  const [teleconsult, setTeleconsult] = useState(searchParams.get("teleconsult") === "1");
-  const [presencial, setPresencial] = useState(searchParams.get("presencial") === "1");
+  const [filters, setFilters] = useState<SearchFilters>(() =>
+    parseFilters(searchParams)
+  );
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const specialtyLabel = seoSlugToSpecialtyLabel(especialidade, lang);
   const cityLabel = citySlugToLabel(cidade);
+
+  useEffect(() => {
+    setFilters(parseFilters(searchParams));
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,9 +103,8 @@ export default function PublicSearchClient({
         cidade,
         lang,
       });
-      if (convenio) params.set("convenio", convenio);
-      if (teleconsult) params.set("teleconsult", "1");
-      if (presencial) params.set("presencial", "1");
+      const qs = filtersToParams(filters);
+      qs.forEach((v, k) => params.set(k, v));
 
       const [searchRes, plansRes] = await Promise.all([
         fetch(`/api/public/search?${params}`),
@@ -75,32 +121,43 @@ export default function PublicSearchClient({
       }
     } catch { /* ignore */ }
     setLoading(false);
-  }, [especialidade, cidade, convenio, teleconsult, presencial, lang]);
+  }, [especialidade, cidade, filters, lang]);
 
   useEffect(() => { load(); }, [load]);
 
-  function applyConvenio(slug: string) {
-    const next = convenio === slug ? "" : slug;
-    setConvenio(next);
-    const params = new URLSearchParams();
-    if (next) params.set("convenio", next);
-    if (teleconsult) params.set("teleconsult", "1");
-    if (presencial) params.set("presencial", "1");
-    const qs = params.toString();
+  function pushFilters(next: SearchFilters) {
+    setFilters(next);
+    const qs = filtersToParams(next).toString();
     router.replace(`/especialistas/${especialidade}/${cidade}${qs ? `?${qs}` : ""}`);
   }
 
+  function patchFilters(patch: Partial<SearchFilters>) {
+    pushFilters({ ...filters, ...patch });
+  }
+
+  function applyConvenio(slug: string) {
+    patchFilters({ convenio: filters.convenio === slug ? "" : slug });
+  }
+
   function toggleFilter(key: "teleconsult" | "presencial") {
-    const params = new URLSearchParams();
-    const nextTele = key === "teleconsult" ? !teleconsult : teleconsult;
-    const nextPres = key === "presencial" ? !presencial : presencial;
-    setTeleconsult(nextTele);
-    setPresencial(nextPres);
-    if (convenio) params.set("convenio", convenio);
-    if (nextTele) params.set("teleconsult", "1");
-    if (nextPres) params.set("presencial", "1");
-    const qs = params.toString();
-    router.replace(`/especialistas/${especialidade}/${cidade}${qs ? `?${qs}` : ""}`);
+    patchFilters({
+      teleconsult: key === "teleconsult" ? !filters.teleconsult : filters.teleconsult,
+      presencial: key === "presencial" ? !filters.presencial : filters.presencial,
+    });
+  }
+
+  function fmtPriceOption(value: string): string {
+    if (!value) return t("pubSearch.priceAny");
+    const n = Number(value);
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: "BRL",
+        maximumFractionDigits: 0,
+      }).format(n);
+    } catch {
+      return `R$ ${n}`;
+    }
   }
 
   return (
@@ -108,7 +165,7 @@ export default function PublicSearchClient({
       <header className="bg-brand-500 text-white sticky top-0 z-20 shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4">
-            <Link href="/especialistas" className="text-xl font-black shrink-0">
+            <Link href="/" className="text-xl font-black shrink-0">
               Doctor<span className="text-accent-400">8</span>
             </Link>
             <div className="flex items-center gap-3 text-sm shrink-0">
@@ -129,14 +186,14 @@ export default function PublicSearchClient({
         </div>
       </header>
 
-      {/* Filters */}
+      {/* Filters row 1 */}
       <div className="bg-white border-b border-slate-100 sticky top-[88px] z-10">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-2 overflow-x-auto">
           <button
             type="button"
             onClick={() => toggleFilter("teleconsult")}
             className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition ${
-              teleconsult ? "bg-brand-50 border-brand-300 text-brand-700" : "border-slate-200 text-slate-600"
+              filters.teleconsult ? "bg-brand-50 border-brand-300 text-brand-700" : "border-slate-200 text-slate-600"
             }`}
           >
             <Video size={13} /> {t("pubSearch.filterTele")}
@@ -145,11 +202,63 @@ export default function PublicSearchClient({
             type="button"
             onClick={() => toggleFilter("presencial")}
             className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition ${
-              presencial ? "bg-brand-50 border-brand-300 text-brand-700" : "border-slate-200 text-slate-600"
+              filters.presencial ? "bg-brand-50 border-brand-300 text-brand-700" : "border-slate-200 text-slate-600"
             }`}
           >
             <Building2 size={13} /> {t("pubSearch.filterInPerson")}
           </button>
+          <button
+            type="button"
+            onClick={() => patchFilters({ availableOnly: !filters.availableOnly })}
+            className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition ${
+              filters.availableOnly ? "bg-brand-50 border-brand-300 text-brand-700" : "border-slate-200 text-slate-600"
+            }`}
+          >
+            <Clock size={13} /> {t("pubSearch.filterAvailable")}
+          </button>
+        </div>
+
+        {/* Filters row 2 ? sort & price */}
+        <div className="max-w-6xl mx-auto px-4 pb-2 flex flex-wrap items-center gap-2 border-t border-slate-50">
+          <span className="text-[11px] text-slate-400 inline-flex items-center gap-1 shrink-0">
+            <SlidersHorizontal size={12} /> {t("pubSearch.sortLabel")}
+          </span>
+          <select
+            value={filters.sort}
+            onChange={(e) => patchFilters({ sort: e.target.value as PublicSearchSort })}
+            className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          >
+            <option value="name">{t("pubSearch.sortName")}</option>
+            <option value="rating">{t("pubSearch.sortRating")}</option>
+            <option value="reviews">{t("pubSearch.sortReviews")}</option>
+            <option value="price_asc">{t("pubSearch.sortPriceAsc")}</option>
+            <option value="price_desc">{t("pubSearch.sortPriceDesc")}</option>
+            <option value="soonest">{t("pubSearch.sortSoonest")}</option>
+          </select>
+
+          <select
+            value={filters.priceMax}
+            onChange={(e) => patchFilters({ priceMax: e.target.value })}
+            className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            aria-label={t("pubSearch.priceMaxLabel")}
+          >
+            {PRICE_OPTIONS.map((v) => (
+              <option key={v || "any"} value={v}>
+                {v ? t("pubSearch.priceUpTo").replace("{p}", fmtPriceOption(v)) : t("pubSearch.priceAny")}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filters.minRating}
+            onChange={(e) => patchFilters({ minRating: e.target.value })}
+            className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            aria-label={t("pubSearch.minRatingLabel")}
+          >
+            <option value="">{t("pubSearch.ratingAny")}</option>
+            <option value="4">{t("pubSearch.ratingMin").replace("{n}", "4")}</option>
+            <option value="4.5">{t("pubSearch.ratingMin").replace("{n}", "4.5")}</option>
+          </select>
         </div>
       </div>
 
@@ -167,7 +276,7 @@ export default function PublicSearchClient({
                   type="button"
                   onClick={() => applyConvenio(p.slug)}
                   className={`text-xs font-medium px-3 py-1.5 rounded-full transition ${
-                    convenio === p.slug
+                    filters.convenio === p.slug
                       ? "bg-white text-brand-600"
                       : "bg-brand-500/50 text-white hover:bg-brand-500"
                   }`}
@@ -194,7 +303,7 @@ export default function PublicSearchClient({
                 <p className="text-slate-600 font-medium">{t("pubSearch.empty")}</p>
                 <p className="text-sm text-slate-400 mt-2">{t("pubSearch.emptyHint")}</p>
                 <Link
-                  href="/especialistas"
+                  href="/"
                   className="inline-flex items-center gap-1 text-brand-600 font-semibold text-sm mt-4"
                 >
                   {t("pubSearch.newSearch")} <ChevronRight size={14} />
@@ -204,6 +313,7 @@ export default function PublicSearchClient({
               results.map((pro) => (
                 <div
                   key={`${pro.providerType}-${pro.providerId}`}
+                  id={`card-${pro.providerId}`}
                   className={highlightId === pro.providerId ? "ring-2 ring-brand-400 rounded-2xl" : ""}
                 >
                   <PublicResultCard pro={pro} onSelect={() => setHighlightId(pro.providerId)} />

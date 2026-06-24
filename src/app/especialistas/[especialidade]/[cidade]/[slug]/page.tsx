@@ -17,6 +17,7 @@ import {
 import PublicBookingPanel from "@/components/public/PublicBookingPanel";
 import PublicProfilePlaces from "@/components/public/PublicProfilePlaces";
 import PublicServicesList from "@/components/public/PublicServicesList";
+import PublicReviewsSection from "@/components/public/PublicReviewsSection";
 
 export async function generateMetadata({
   params,
@@ -213,6 +214,8 @@ export default async function PublicSpecialistPage({
                   <ExternalLink size={13} className="opacity-60" />
                 </a>
               )}
+
+              <PublicReviewsSection slug={profile.slug} />
             </div>
 
             {/* Center ? booking */}

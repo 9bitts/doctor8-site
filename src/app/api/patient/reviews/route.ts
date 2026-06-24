@@ -1,5 +1,5 @@
-// POST — submit or update a review { professionalId, rating, comment? }
-// Patient must have at least one COMPLETED appointment with the professional.
+// POST — submit or update a review
+// Patient must have at least one COMPLETED appointment with the provider.
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -7,9 +7,11 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 
 const schema = z.object({
-  professionalId: z.string(),
-  rating:         z.number().int().min(1).max(5),
-  comment:        z.string().max(1000).optional(),
+  professionalId: z.string().optional(),
+  psychoanalystId: z.string().optional(),
+  providerType: z.enum(["health", "psychoanalyst"]).optional(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(1000).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -23,6 +25,18 @@ export async function POST(req: NextRequest) {
   if (!parsed.success)
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+  const providerType =
+    parsed.data.providerType ??
+    (parsed.data.psychoanalystId ? "psychoanalyst" : "health");
+  const providerId =
+    providerType === "psychoanalyst"
+      ? parsed.data.psychoanalystId || parsed.data.professionalId
+      : parsed.data.professionalId || parsed.data.psychoanalystId;
+
+  if (!providerId) {
+    return NextResponse.json({ error: "Provider not specified" }, { status: 400 });
+  }
+
   const patient = await db.patientProfile.findUnique({
     where: { userId: session.user.id },
     select: { id: true },
@@ -32,28 +46,52 @@ export async function POST(req: NextRequest) {
   const hadAppointment = await db.appointment.findFirst({
     where: {
       patientId: patient.id,
-      professionalId: parsed.data.professionalId,
       status: "COMPLETED",
+      ...(providerType === "psychoanalyst"
+        ? { psychoanalystId: providerId }
+        : { professionalId: providerId }),
     },
   });
   if (!hadAppointment)
     return NextResponse.json({ error: "Review only after a completed consultation" }, { status: 403 });
 
+  if (providerType === "psychoanalyst") {
+    const review = await db.psychoanalystReview.upsert({
+      where: {
+        patientUserId_psychoanalystId: {
+          patientUserId: session.user.id,
+          psychoanalystId: providerId,
+        },
+      },
+      create: {
+        patientUserId: session.user.id,
+        psychoanalystId: providerId,
+        rating: parsed.data.rating,
+        comment: parsed.data.comment,
+      },
+      update: {
+        rating: parsed.data.rating,
+        comment: parsed.data.comment,
+      },
+    });
+    return NextResponse.json({ ok: true, reviewId: review.id });
+  }
+
   const review = await db.professionalReview.upsert({
     where: {
       patientUserId_professionalId: {
-        patientUserId:  session.user.id,
-        professionalId: parsed.data.professionalId,
+        patientUserId: session.user.id,
+        professionalId: providerId,
       },
     },
     create: {
-      patientUserId:  session.user.id,
-      professionalId: parsed.data.professionalId,
-      rating:         parsed.data.rating,
-      comment:        parsed.data.comment,
+      patientUserId: session.user.id,
+      professionalId: providerId,
+      rating: parsed.data.rating,
+      comment: parsed.data.comment,
     },
     update: {
-      rating:  parsed.data.rating,
+      rating: parsed.data.rating,
       comment: parsed.data.comment,
     },
   });
