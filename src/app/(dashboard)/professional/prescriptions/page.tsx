@@ -809,7 +809,7 @@ export default function PrescriptionsPage() {
             {/* Instructions + validity */}
             <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-1.5">{t("rx2.generalInstructions")}</label>
+                <label className="block text-sm font-semibold text-slate-800 mb-1.5">{t("rx.generalInstructions")}</label>
                 <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2}
                   placeholder={t("rx.generalInstructionsPlaceholder")} className="rx-inp resize-none" />
               </div>

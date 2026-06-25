@@ -13,6 +13,8 @@ const patchSchema = z.object({
   content: z.string().max(20000).optional().or(z.literal("")),
   cid: z.string().max(50).optional().or(z.literal("")),
   cidLabel: z.string().max(500).optional().or(z.literal("")),
+  fileKey: z.string().optional().or(z.literal("")),
+  removeFile: z.boolean().optional(),
 });
 
 function safeDecrypt(v: string): string {
@@ -61,6 +63,7 @@ export async function PATCH(
     title?: string;
     content?: string | null;
     categoryId?: string | null;
+    fileUrl?: string | null;
   } = {};
 
   if (d.categoryId) {
@@ -75,6 +78,12 @@ export async function PATCH(
   }
 
   if (d.title) updateData.title = encrypt(d.title);
+
+  if (d.removeFile) {
+    updateData.fileUrl = null;
+  } else if (d.fileKey) {
+    updateData.fileUrl = encrypt(d.fileKey);
+  }
 
   if (d.content !== undefined || d.cid !== undefined || d.cidLabel !== undefined) {
     const existingRaw = document.content ? safeDecrypt(document.content) : "";

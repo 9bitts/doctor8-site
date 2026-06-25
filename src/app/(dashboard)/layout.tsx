@@ -8,7 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import NotificationBell from "@/components/NotificationBell";
-import { I18nProvider, useI18n } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
@@ -217,9 +217,5 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <I18nProvider>
-      <DashboardInner>{children}</DashboardInner>
-    </I18nProvider>
-  );
+  return <DashboardInner>{children}</DashboardInner>;
 }

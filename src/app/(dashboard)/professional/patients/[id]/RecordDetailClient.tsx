@@ -174,7 +174,7 @@ export default function RecordDetailClient({
   const [cidSelection, setCidSelection] = useState<CidSelection | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -216,7 +216,7 @@ export default function RecordDetailClient({
     setCidSelection(null);
     setTitle("");
     setContent("");
-    setFile(null);
+    setFiles([]);
     setImagePreview(null);
     setError(null);
     setEditingDoc(null);
@@ -241,13 +241,27 @@ export default function RecordDetailClient({
     setShowForm(true);
   }
 
+  async function uploadRecordFile(f: File): Promise<string | null> {
+    const fd = new FormData();
+    fd.append("file", f);
+    fd.append("folder", `records/${chart.id}`);
+    const up = await fetch("/api/uploads", { method: "POST", body: fd });
+    const upData = await up.json();
+    if (!up.ok) {
+      setError(upData.error || "File upload failed.");
+      return null;
+    }
+    return upData.key as string;
+  }
+
   async function handleRotateImage(direction: "left" | "right") {
+    const file = files[0];
     if (!file || !isImageFile(file)) return;
     setRotating(true);
     try {
       const degrees = direction === "left" ? 270 : 90;
       const rotated = await rotateImageFile(file, degrees as 90 | 270);
-      setFile(rotated);
+      setFiles([rotated, ...files.slice(1)]);
       if (imagePreview) URL.revokeObjectURL(imagePreview);
       setImagePreview(URL.createObjectURL(rotated));
     } catch {
@@ -256,10 +270,13 @@ export default function RecordDetailClient({
     setRotating(false);
   }
 
-  function handleFileChange(f: File | null) {
+  function handleFilesChange(fileList: FileList | null) {
     if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setFile(f);
-    setImagePreview(f && isImageFile(f) ? URL.createObjectURL(f) : null);
+    const picked = fileList ? Array.from(fileList) : [];
+    const next = editingDoc ? picked.slice(0, 1) : picked;
+    setFiles(next);
+    const firstImage = next.find((f) => isImageFile(f));
+    setImagePreview(firstImage ? URL.createObjectURL(firstImage) : null);
   }
 
   async function handleCopy(doc: Doc, label: string) {
@@ -415,48 +432,50 @@ export default function RecordDetailClient({
     setSaving(true);
     setError(null);
 
-    const recordTitle = title.trim()
+    const baseTitle = title.trim()
       ? `${cidSelection.code} — ${title.trim()}`
       : `${cidSelection.code} — ${cidSelection.description}`;
 
+    const entries = files.length > 0 ? files : [null as File | null];
+
     try {
-      let fileKey = "";
-      if (file) {
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("folder", `records/${chart.id}`);
-        const up = await fetch("/api/uploads", { method: "POST", body: fd });
-        const upData = await up.json();
-        if (!up.ok) {
-          setError(upData.error || "File upload failed.");
+      const created: Doc[] = [];
+      for (const f of entries) {
+        let fileKey = "";
+        if (f) {
+          const key = await uploadRecordFile(f);
+          if (!key) {
+            setSaving(false);
+            return;
+          }
+          fileKey = key;
+        }
+
+        const recordTitle = f && entries.length > 1
+          ? `${baseTitle} — ${f.name.replace(/\.[^.]+$/, "")}`
+          : baseTitle;
+
+        const res = await fetch("/api/professional/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientRecordId: chart.id,
+            categoryId,
+            title: recordTitle,
+            content,
+            cid: cidSelection.code,
+            cidLabel: cidSelection.description,
+            fileKey,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(typeof data.error === "string" ? data.error : "Could not create record.");
           setSaving(false);
           return;
         }
-        fileKey = upData.key;
-      }
 
-      const res = await fetch("/api/professional/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientRecordId: chart.id,
-          categoryId,
-          title: recordTitle,
-          content,
-          cid: cidSelection.code,
-          cidLabel: cidSelection.description,
-          fileKey,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Could not create record.");
-        setSaving(false);
-        return;
-      }
-
-      setDocs((prev) => [
-        {
+        created.push({
           id: data.id,
           type: data.type,
           categoryName: data.categoryName ?? null,
@@ -467,9 +486,10 @@ export default function RecordDetailClient({
           createdAt: new Date().toISOString(),
           canEdit: true,
           sourceDocumentId: null,
-        },
-        ...prev,
-      ]);
+        });
+      }
+
+      setDocs((prev) => [...created, ...prev]);
       resetForm();
       setShowForm(false);
     } catch {
@@ -494,6 +514,16 @@ export default function RecordDetailClient({
       : title.trim();
 
     try {
+      let fileKey: string | undefined;
+      if (files.length > 0) {
+        const key = await uploadRecordFile(files[0]);
+        if (!key) {
+          setSaving(false);
+          return;
+        }
+        fileKey = key;
+      }
+
       const res = await fetch(`/api/professional/documents/${editingDoc.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -502,6 +532,7 @@ export default function RecordDetailClient({
           content,
           cid: cidSelection?.code || "",
           cidLabel: cidSelection?.description || "",
+          ...(fileKey ? { fileKey } : {}),
         }),
       });
       const data = await res.json();
@@ -1038,19 +1069,26 @@ export default function RecordDetailClient({
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-none"
                 />
               </div>
-              {!editingDoc && (
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Attachment <span className="text-slate-400">(PDF, image or video — max 50MB)</span>
+                  Attachment <span className="text-slate-400">(PDF, image or video — max 50MB{editingDoc ? "" : ", multiple allowed"})</span>
                 </label>
+                {editingDoc?.hasFile && files.length === 0 && (
+                  <p className="text-xs text-slate-500 mb-2">This record already has an attachment. Choose a file below to replace it.</p>
+                )}
                 <input
                   type="file"
+                  multiple={!editingDoc}
                   accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
-                  onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                  onChange={(e) => handleFilesChange(e.target.files)}
                   className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-600 file:text-sm file:font-medium hover:file:bg-brand-100"
                 />
-                {file && (
-                  <p className="text-xs text-slate-500 mt-1">{file.name} ({(file.size/1024/1024).toFixed(1)} MB)</p>
+                {files.length > 0 && (
+                  <div className="text-xs text-slate-500 mt-1 space-y-0.5">
+                    {files.map((f) => (
+                      <p key={`${f.name}-${f.size}`}>{f.name} ({(f.size / 1024 / 1024).toFixed(1)} MB)</p>
+                    ))}
+                  </div>
                 )}
                 {imagePreview && (
                   <div className="mt-3 space-y-2">
@@ -1079,7 +1117,6 @@ export default function RecordDetailClient({
                   </div>
                 )}
               </div>
-              )}
 
               {error && (
                 <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{error}</p>
