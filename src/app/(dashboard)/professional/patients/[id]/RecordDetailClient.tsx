@@ -48,6 +48,8 @@ const REC_TEXTS: Record<string, Record<string, string>> = {
   collapse:         { pt: "Recolher", en: "Collapse", es: "Contraer" },
   attachments:      { pt: "anexos", en: "attachments", es: "adjuntos" },
   attachLoading:    { pt: "Carregando anexos…", en: "Loading attachments…", es: "Cargando adjuntos…" },
+  addMoreFiles:     { pt: "Este registro já tem {n} anexo(s). Novos arquivos serão adicionados aos existentes.", en: "This record already has {n} attachment(s). New files will be added to the existing ones.", es: "Este registro ya tiene {n} adjunto(s). Los archivos nuevos se añadirán a los existentes." },
+  addFilesHint:     { pt: "Selecione um ou mais arquivos para adicionar.", en: "Select one or more files to add.", es: "Seleccione uno o más archivos para añadir." },
   openFile:         { pt: "Abrir arquivo", en: "Open file", es: "Abrir archivo" },
 };
 
@@ -366,9 +368,8 @@ export default function RecordDetailClient({
   function handleFilesChange(fileList: FileList | null) {
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     const picked = fileList ? Array.from(fileList) : [];
-    const next = editingDoc ? picked.slice(0, 1) : picked;
-    setFiles(next);
-    const firstImage = next.find((f) => isImageFile(f));
+    setFiles(picked);
+    const firstImage = picked.find((f) => isImageFile(f));
     setImagePreview(firstImage ? URL.createObjectURL(firstImage) : null);
   }
 
@@ -601,14 +602,14 @@ export default function RecordDetailClient({
       : title.trim();
 
     try {
-      let fileKey: string | undefined;
-      if (files.length > 0) {
-        const key = await uploadRecordFile(files[0]);
+      const appendFileKeys: string[] = [];
+      for (const f of files) {
+        const key = await uploadRecordFile(f);
         if (!key) {
           setSaving(false);
           return;
         }
-        fileKey = key;
+        appendFileKeys.push(key);
       }
 
       const res = await fetch(`/api/professional/documents/${editingDoc.id}`, {
@@ -619,7 +620,7 @@ export default function RecordDetailClient({
           content,
           cid: cidSelection?.code || "",
           cidLabel: cidSelection?.description || "",
-          ...(fileKey ? { fileKey } : {}),
+          ...(appendFileKeys.length ? { appendFileKeys } : {}),
         }),
       });
       const data = await res.json();
@@ -1025,7 +1026,7 @@ export default function RecordDetailClient({
                     </p>
                   )}
                   {attachmentCount > 0 && (
-                    <RecordAttachmentStrip docId={d.id} count={attachmentCount} rt={rt} />
+                    <RecordAttachmentStrip key={`${d.id}-${attachmentCount}`} docId={d.id} count={attachmentCount} rt={rt} />
                   )}
                   {d.sourceDocumentId && (
                     <p className="text-xs text-amber-600 mt-1">{rt("sharedReadOnly")}</p>
@@ -1189,14 +1190,19 @@ export default function RecordDetailClient({
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Attachment <span className="text-slate-400">(PDF, image or video — max 50MB{editingDoc ? "" : ", multiple allowed"})</span>
+                  Attachment <span className="text-slate-400">(PDF, image or video — max 50MB, multiple allowed)</span>
                 </label>
-                {editingDoc?.hasFile && files.length === 0 && (
-                  <p className="text-xs text-slate-500 mb-2">This record already has an attachment. Choose a file below to replace it.</p>
+                {editingDoc && (editingDoc.attachmentCount ?? (editingDoc.hasFile ? 1 : 0)) > 0 && files.length === 0 && (
+                  <p className="text-xs text-slate-500 mb-2">
+                    {rt("addMoreFiles").replace("{n}", String(editingDoc.attachmentCount ?? (editingDoc.hasFile ? 1 : 0)))}
+                  </p>
+                )}
+                {editingDoc && (editingDoc.attachmentCount ?? 0) === 0 && !editingDoc.hasFile && (
+                  <p className="text-xs text-slate-500 mb-2">{rt("addFilesHint")}</p>
                 )}
                 <input
                   type="file"
-                  multiple={!editingDoc}
+                  multiple
                   accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
                   onChange={(e) => handleFilesChange(e.target.files)}
                   className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-600 file:text-sm file:font-medium hover:file:bg-brand-100"

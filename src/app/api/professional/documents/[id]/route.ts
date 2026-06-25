@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
-import { serializeRecordContent } from "@/lib/record-content";
+import { serializeRecordContent, parseRecordContent, countRecordAttachments } from "@/lib/record-content";
 
 const patchSchema = z.object({
   categoryId: z.string().optional(),
@@ -14,8 +14,20 @@ const patchSchema = z.object({
   cid: z.string().max(50).optional().or(z.literal("")),
   cidLabel: z.string().max(500).optional().or(z.literal("")),
   fileKey: z.string().optional().or(z.literal("")),
+  appendFileKeys: z.array(z.string().min(1)).optional(),
   removeFile: z.boolean().optional(),
 });
+
+function collectFileKeys(fileUrl: string | null, contentRaw: string): string[] {
+  const keys: string[] = [];
+  const primary = fileUrl ? safeDecrypt(fileUrl) : "";
+  if (primary) keys.push(primary);
+  const parsed = parseRecordContent(contentRaw || null);
+  for (const k of parsed.attachments || []) {
+    if (k && !keys.includes(k)) keys.push(k);
+  }
+  return keys;
+}
 
 function safeDecrypt(v: string): string {
   try { return decrypt(v); } catch { return v; }
@@ -79,14 +91,34 @@ export async function PATCH(
 
   if (d.title) updateData.title = encrypt(d.title);
 
+  const existingRaw = document.content ? safeDecrypt(document.content) : "";
+  let attachmentKeys = collectFileKeys(document.fileUrl, existingRaw);
+
   if (d.removeFile) {
+    attachmentKeys = [];
     updateData.fileUrl = null;
-  } else if (d.fileKey) {
-    updateData.fileUrl = encrypt(d.fileKey);
+  } else {
+    const toAppend = [
+      ...(d.appendFileKeys || []),
+      ...(d.fileKey && !d.appendFileKeys?.length ? [d.fileKey] : []),
+    ];
+    for (const k of toAppend) {
+      if (!attachmentKeys.includes(k)) attachmentKeys.push(k);
+    }
+    if (toAppend.length > 0) {
+      updateData.fileUrl = attachmentKeys.length > 0 ? encrypt(attachmentKeys[0]) : null;
+    }
   }
 
-  if (d.content !== undefined || d.cid !== undefined || d.cidLabel !== undefined) {
-    const existingRaw = document.content ? safeDecrypt(document.content) : "";
+  const touchesContent =
+    d.content !== undefined
+    || d.cid !== undefined
+    || d.cidLabel !== undefined
+    || (d.appendFileKeys?.length ?? 0) > 0
+    || !!d.fileKey
+    || d.removeFile;
+
+  if (touchesContent) {
     let bodyText = d.content ?? "";
     let cid = d.cid ?? "";
     let cidLabel = d.cidLabel ?? "";
@@ -106,7 +138,12 @@ export async function PATCH(
       }
     }
 
-    const serialized = serializeRecordContent({ cid, cidLabel, body: bodyText });
+    const serialized = serializeRecordContent({
+      cid,
+      cidLabel,
+      body: bodyText,
+      attachments: attachmentKeys.length > 0 ? attachmentKeys : undefined,
+    });
     updateData.content = serialized ? encrypt(serialized) : null;
   }
 
@@ -117,6 +154,7 @@ export async function PATCH(
   });
 
   const contentRaw = updated.content ? safeDecrypt(updated.content) : null;
+  const finalCount = countRecordAttachments(!!updated.fileUrl, contentRaw);
 
   return NextResponse.json({
     id: updated.id,
@@ -125,7 +163,8 @@ export async function PATCH(
     categoryGroup: updated.category?.groupName ?? null,
     title: safeDecrypt(updated.title),
     content: contentRaw,
-    hasFile: !!updated.fileUrl,
+    hasFile: finalCount > 0,
+    attachmentCount: finalCount,
     createdAt: updated.createdAt.toISOString(),
     canEdit: true,
     sourceDocumentId: null,
