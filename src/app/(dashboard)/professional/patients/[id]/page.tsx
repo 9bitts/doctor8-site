@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { decrypt } from "@/lib/encryption";
+import { countRecordAttachments } from "@/lib/record-content";
 import { Suspense } from "react";
 import RecordDetailClient from "./RecordDetailClient";
 
@@ -69,6 +70,7 @@ export default async function PatientChartDetail({
     title: safeDecrypt(d.title),
     content: d.content ? safeDecrypt(d.content) : null,
     hasFile: !!d.fileUrl,
+    attachmentCount: countRecordAttachments(!!d.fileUrl, d.content ? safeDecrypt(d.content) : null),
     createdAt: d.createdAt.toISOString(),
     sourceDocumentId: d.sourceDocumentId ?? null,
     canEdit: !d.sourceDocumentId,

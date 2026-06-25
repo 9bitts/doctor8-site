@@ -30,6 +30,7 @@ const createSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().max(20000).optional().or(z.literal("")),
   fileKey: z.string().optional().or(z.literal("")),
+  fileKeys: z.array(z.string().min(1)).optional(),
   examItems: z.array(z.string().min(1).max(500)).optional(),
   cid: z.string().max(50).optional(),
   cidLabel: z.string().max(500).optional(),
@@ -84,11 +85,15 @@ export async function POST(req: NextRequest) {
   }
 
   let contentToStore = d.content || "";
-  if (d.cid || d.cidLabel) {
+  const allKeys = d.fileKeys?.length ? d.fileKeys : (d.fileKey ? [d.fileKey] : []);
+  const primaryKey = allKeys[0] || d.fileKey || "";
+
+  if (d.cid || d.cidLabel || allKeys.length > 0) {
     contentToStore = JSON.stringify({
       cid: d.cid || "",
       cidLabel: d.cidLabel || "",
       body: d.content || "",
+      ...(allKeys.length > 0 ? { attachments: allKeys } : {}),
     });
   } else if (d.examItems && d.examItems.length > 0) {
     derivedType = derivedType === "OTHER" ? "EXAM_REQUEST" : derivedType;
@@ -109,7 +114,7 @@ export async function POST(req: NextRequest) {
         type: derivedType,
         title: encrypt(d.title),
         content: contentToStore ? encrypt(contentToStore) : null,
-        fileUrl: d.fileKey ? encrypt(d.fileKey) : null,
+        fileUrl: primaryKey ? encrypt(primaryKey) : null,
       },
     });
 
@@ -123,7 +128,8 @@ export async function POST(req: NextRequest) {
       examItems: d.examItems || null,
       cid: d.cid || null,
       notes: d.notes || null,
-      hasFile: !!d.fileKey,
+      hasFile: allKeys.length > 0,
+      attachmentCount: allKeys.length,
       createdAt: doc.createdAt,
     }, { status: 201 });
   } catch (err) {

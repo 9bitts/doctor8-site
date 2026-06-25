@@ -9,6 +9,8 @@ export interface RecordContent {
   body?: string;
   items?: string[];
   notes?: string;
+  /** Additional S3 keys beyond fileUrl (multi-attachment records). */
+  attachments?: string[];
 }
 
 export function isPsychologyStructuredContent(raw: string | null): boolean {
@@ -62,11 +64,14 @@ export function parseRecordContent(raw: string | null): RecordContent {
           cidLabel: parsed.cidLabel || "",
         };
       }
-      if (parsed.cid || parsed.body || parsed.cidLabel) {
+      if (parsed.cid || parsed.body || parsed.cidLabel || Array.isArray(parsed.attachments)) {
         return {
           cid: parsed.cid || "",
           cidLabel: parsed.cidLabel || "",
           body: parsed.body || "",
+          attachments: Array.isArray(parsed.attachments)
+            ? parsed.attachments.filter((k: unknown) => typeof k === "string" && k.trim())
+            : undefined,
         };
       }
     }
@@ -81,16 +86,28 @@ export function serializeRecordContent(data: RecordContent): string {
       notes: data.notes || "",
       cid: data.cid || "",
       cidLabel: data.cidLabel || "",
+      ...(data.attachments?.length ? { attachments: data.attachments } : {}),
     });
   }
-  if (data.cid || data.cidLabel) {
+  if (data.cid || data.cidLabel || data.attachments?.length) {
     return JSON.stringify({
       cid: data.cid || "",
       cidLabel: data.cidLabel || "",
       body: data.body || "",
+      ...(data.attachments?.length ? { attachments: data.attachments } : {}),
     });
   }
   return data.body || "";
+}
+
+/** Count of viewable attachments on a record (primary fileUrl + extras in content). */
+export function countRecordAttachments(
+  hasFile: boolean,
+  content: string | null,
+): number {
+  const parsed = parseRecordContent(content);
+  if (parsed.attachments?.length) return parsed.attachments.length;
+  return hasFile ? 1 : 0;
 }
 
 export function formatRecordContentForDisplay(raw: string | null): string {

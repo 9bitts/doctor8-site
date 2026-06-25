@@ -13,7 +13,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
-  Copy, Printer, RotateCw,
+  Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import ReferralPanel from "@/components/professional/ReferralPanel";
@@ -22,7 +22,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
 import {
   buildRecordCopyText, formatRecordContentForDisplay, parseRecordContent,
-  isPsychologyStructuredContent,
+  isPsychologyStructuredContent, countRecordAttachments,
 } from "@/lib/record-content";
 import { isImageFile, rotateImageFile } from "@/lib/image-rotate";
 
@@ -44,6 +44,11 @@ const REC_TEXTS: Record<string, Record<string, string>> = {
   rotateRight:      { pt: "Girar direita", en: "Rotate right", es: "Girar derecha" },
   editRecord:       { pt: "Editar registro", en: "Edit record", es: "Editar registro" },
   saveChanges:      { pt: "Salvar alterações", en: "Save changes", es: "Guardar cambios" },
+  expand:           { pt: "Ver detalhes", en: "View details", es: "Ver detalles" },
+  collapse:         { pt: "Recolher", en: "Collapse", es: "Contraer" },
+  attachments:      { pt: "anexos", en: "attachments", es: "adjuntos" },
+  attachLoading:    { pt: "Carregando anexos…", en: "Loading attachments…", es: "Cargando adjuntos…" },
+  openFile:         { pt: "Abrir arquivo", en: "Open file", es: "Abrir archivo" },
 };
 
 interface Chart {
@@ -73,9 +78,96 @@ interface Doc {
   title: string;
   content: string | null;
   hasFile: boolean;
+  attachmentCount?: number;
   createdAt: string;
   sourceDocumentId?: string | null;
   canEdit?: boolean;
+}
+
+type RecordFilePreview = {
+  index: number;
+  url: string;
+  name: string;
+  kind: "image" | "pdf" | "video" | "other";
+};
+
+const CONTENT_PREVIEW_CHARS = 160;
+
+function RecordAttachmentStrip({
+  docId,
+  count,
+  rt,
+}: {
+  docId: string;
+  count: number;
+  rt: (k: string) => string;
+}) {
+  const [files, setFiles] = useState<RecordFilePreview[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (count === 0) return;
+    let active = true;
+    setLoading(true);
+    setError(false);
+    (async () => {
+      try {
+        const res = await fetch(`/api/professional/documents/${docId}/files`);
+        const data = await res.json();
+        if (!active) return;
+        if (!res.ok) {
+          setError(true);
+          return;
+        }
+        setFiles(data.files || []);
+      } catch {
+        if (active) setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [docId, count]);
+
+  if (count === 0) return null;
+
+  return (
+    <div className="mt-2">
+      {loading && (
+        <p className="text-xs text-slate-400 inline-flex items-center gap-1">
+          <Loader2 size={12} className="animate-spin" /> {rt("attachLoading")}
+        </p>
+      )}
+      {error && !loading && (
+        <p className="text-xs text-rose-500">{rt("attachLoading")}</p>
+      )}
+      {files.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin max-w-full">
+          {files.map((f) => (
+            <a
+              key={f.index}
+              href={f.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={f.name || rt("openFile")}
+              className="flex-shrink-0 snap-start w-20 h-20 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden hover:border-brand-300 hover:ring-2 hover:ring-brand-100 transition"
+            >
+              {f.kind === "image" ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={f.url} alt={f.name} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1 text-slate-500">
+                  {f.kind === "pdf" ? <FileType size={22} /> : f.kind === "video" ? <Film size={22} /> : <Paperclip size={22} />}
+                  <span className="text-[9px] text-center leading-tight line-clamp-2 px-0.5">{f.name}</span>
+                </div>
+              )}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface CategoryItem {
@@ -131,6 +223,7 @@ export default function RecordDetailClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [rotating, setRotating] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -436,46 +529,40 @@ export default function RecordDetailClient({
       ? `${cidSelection.code} — ${title.trim()}`
       : `${cidSelection.code} — ${cidSelection.description}`;
 
-    const entries = files.length > 0 ? files : [null as File | null];
-
     try {
-      const created: Doc[] = [];
-      for (const f of entries) {
-        let fileKey = "";
-        if (f) {
-          const key = await uploadRecordFile(f);
-          if (!key) {
-            setSaving(false);
-            return;
-          }
-          fileKey = key;
-        }
-
-        const recordTitle = f && entries.length > 1
-          ? `${baseTitle} — ${f.name.replace(/\.[^.]+$/, "")}`
-          : baseTitle;
-
-        const res = await fetch("/api/professional/documents", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            patientRecordId: chart.id,
-            categoryId,
-            title: recordTitle,
-            content,
-            cid: cidSelection.code,
-            cidLabel: cidSelection.description,
-            fileKey,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setError(typeof data.error === "string" ? data.error : "Could not create record.");
+      const fileKeys: string[] = [];
+      for (const f of files) {
+        const key = await uploadRecordFile(f);
+        if (!key) {
           setSaving(false);
           return;
         }
+        fileKeys.push(key);
+      }
 
-        created.push({
+      const res = await fetch("/api/professional/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientRecordId: chart.id,
+          categoryId,
+          title: baseTitle,
+          content,
+          cid: cidSelection.code,
+          cidLabel: cidSelection.description,
+          ...(fileKeys.length === 1 ? { fileKey: fileKeys[0] } : {}),
+          ...(fileKeys.length > 0 ? { fileKeys } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(typeof data.error === "string" ? data.error : "Could not create record.");
+        setSaving(false);
+        return;
+      }
+
+      setDocs((prev) => [
+        {
           id: data.id,
           type: data.type,
           categoryName: data.categoryName ?? null,
@@ -483,13 +570,13 @@ export default function RecordDetailClient({
           title: data.title,
           content: data.content,
           hasFile: data.hasFile,
+          attachmentCount: data.attachmentCount ?? (data.hasFile ? 1 : 0),
           createdAt: new Date().toISOString(),
           canEdit: true,
           sourceDocumentId: null,
-        });
-      }
-
-      setDocs((prev) => [...created, ...prev]);
+        },
+        ...prev,
+      ]);
       resetForm();
       setShowForm(false);
     } catch {
@@ -893,6 +980,23 @@ export default function RecordDetailClient({
                 : legacyLabel(d.type);
               const status = shareStatus[d.id] || "";
               const isSharing = sharingId === d.id;
+              const displayText = d.content ? formatRecordContentForDisplay(d.content) : "";
+              const isExpanded = expandedIds.has(d.id);
+              const canExpand = displayText.length > CONTENT_PREVIEW_CHARS;
+              const attachmentCount = d.attachmentCount ?? countRecordAttachments(d.hasFile, d.content);
+              const previewText = !isExpanded && displayText.length > CONTENT_PREVIEW_CHARS
+                ? `${displayText.slice(0, CONTENT_PREVIEW_CHARS).trim()}…`
+                : displayText;
+
+              function toggleExpanded() {
+                setExpandedIds((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(d.id)) next.delete(d.id);
+                  else next.add(d.id);
+                  return next;
+                });
+              }
+
               return (
                 <div key={d.id} className="px-5 py-4">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -902,9 +1006,9 @@ export default function RecordDetailClient({
                     {d.categoryGroup && (
                       <span className="text-xs text-slate-400">{getCategoryGroupLabel(lang, d.categoryGroup)}</span>
                     )}
-                    {d.hasFile && (
+                    {attachmentCount > 0 && (
                       <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                        <Paperclip size={12} /> attachment
+                        <Paperclip size={12} /> {attachmentCount} {rt("attachments")}
                       </span>
                     )}
                   </div>
@@ -915,13 +1019,27 @@ export default function RecordDetailClient({
                       { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }
                     )}
                   </p>
-                  {d.content && (
-                    <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">
-                      {formatRecordContentForDisplay(d.content)}
+                  {displayText && (
+                    <p className={`text-sm text-slate-600 mt-1 whitespace-pre-wrap ${!isExpanded && displayText.length > CONTENT_PREVIEW_CHARS ? "line-clamp-3" : ""}`}>
+                      {isExpanded || displayText.length <= CONTENT_PREVIEW_CHARS ? displayText : previewText}
                     </p>
+                  )}
+                  {attachmentCount > 0 && (
+                    <RecordAttachmentStrip docId={d.id} count={attachmentCount} rt={rt} />
                   )}
                   {d.sourceDocumentId && (
                     <p className="text-xs text-amber-600 mt-1">{rt("sharedReadOnly")}</p>
+                  )}
+
+                  {canExpand && (
+                    <button
+                      type="button"
+                      onClick={toggleExpanded}
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
+                    >
+                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      {isExpanded ? rt("collapse") : rt("expand")}
+                    </button>
                   )}
 
                   {/* Actions row */}
