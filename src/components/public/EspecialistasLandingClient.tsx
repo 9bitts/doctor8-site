@@ -1,17 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sora } from "next/font/google";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getLandingContent } from "@/lib/landing-content";
-import { Search, MapPin, Stethoscope, Loader2, Menu, X } from "lucide-react";
-import { cityToSeoSlug } from "@/lib/public-slugs";
+import { Search, MapPin, Stethoscope, Loader2, Menu, X, CreditCard, Map as MapIcon } from "lucide-react";
+import { cityToSeoSlug, buildPublicSearchConvenioPath } from "@/lib/public-slugs";
 import { matchSymptomQuery } from "@/lib/symptom-search";
 import LandingMarketingSections from "@/components/public/LandingMarketingSections";
 import CookieBanner from "@/components/public/CookieBanner";
 import type { Lang } from "@/lib/i18n/translations";
+
+const LandingMapPanel = dynamic(() => import("@/components/public/LandingMapPanel"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-48 items-center justify-center rounded-2xl bg-white shadow-2xl">
+      <Loader2 size={28} className="animate-spin text-accent-500" />
+    </div>
+  ),
+});
 
 const sora = Sora({ subsets: ["latin"], weight: ["600", "700", "800"] });
 
@@ -26,7 +36,7 @@ const POPULAR_SPECIALTIES = [
   { slug: "cardiologista", labelKey: "pubSearch.spec.cardiologista" },
 ];
 
-type SearchMode = "specialty" | "symptom";
+type SearchMode = "specialty" | "symptom" | "convenio" | "map";
 
 function nextLang(current: Lang): Lang {
   if (current === "pt") return "en";
@@ -50,7 +60,21 @@ export default function EspecialistasLandingClient() {
   const [symptom, setSymptom] = useState("");
   const [symptomLoading, setSymptomLoading] = useState(false);
   const [symptomError, setSymptomError] = useState("");
+  const [convenio, setConvenio] = useState("");
+  const [healthPlans, setHealthPlans] = useState<{ slug: string; name: string }[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/public/health-plans")
+      .then((r) => r.json())
+      .then((d) => {
+        const plans = d.plans || [];
+        setHealthPlans(plans);
+        if (plans.length > 0 && !convenio) setConvenio(plans[0].slug);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleSpecialtySearch(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +82,15 @@ export default function EspecialistasLandingClient() {
     const citySlug = cityToSeoSlug(city);
     if (!esp || !citySlug) return;
     router.push(`/especialistas/${esp}/${citySlug}`);
+  }
+
+  function handleConvenioSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const esp = specialty.trim();
+    const citySlug = cityToSeoSlug(city);
+    const plan = convenio.trim();
+    if (!esp || !citySlug || !plan) return;
+    router.push(buildPublicSearchConvenioPath(esp, citySlug, plan));
   }
 
   async function handleSymptomSearch(e: React.FormEvent) {
@@ -150,7 +183,7 @@ export default function EspecialistasLandingClient() {
         <div className="pointer-events-none absolute -right-16 top-0 h-80 w-80 rounded-full bg-accent-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-brand-500/15 blur-3xl" />
 
-        <div className="relative z-10 mx-auto max-w-3xl">
+        <div className={`relative z-10 mx-auto ${mode === "map" ? "max-w-6xl" : "max-w-3xl"}`}>
           <div className="mb-8 text-center text-white">
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
               {t("pubSearch.landingTitle")}
@@ -158,11 +191,11 @@ export default function EspecialistasLandingClient() {
             <p className="mt-3 text-lg text-white/70">{t("pubSearch.landingSubtitle")}</p>
           </div>
 
-          <div className="mb-4 flex justify-center gap-2">
+          <div className="mb-4 flex flex-wrap justify-center gap-2">
             <button
               type="button"
               onClick={() => setMode("specialty")}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${
                 mode === "specialty" ? "bg-white text-accent-600" : "bg-white/15 text-white hover:bg-white/25"
               }`}
             >
@@ -171,15 +204,35 @@ export default function EspecialistasLandingClient() {
             <button
               type="button"
               onClick={() => setMode("symptom")}
-              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${
                 mode === "symptom" ? "bg-white text-accent-600" : "bg-white/15 text-white hover:bg-white/25"
               }`}
             >
-              <Stethoscope size={15} /> {t("symptom.modeSymptom")}
+              <Stethoscope size={14} /> {t("symptom.modeSymptom")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("convenio")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${
+                mode === "convenio" ? "bg-white text-accent-600" : "bg-white/15 text-white hover:bg-white/25"
+              }`}
+            >
+              <CreditCard size={14} /> {t("symptom.modeConvenio")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("map")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${
+                mode === "map" ? "bg-white text-accent-600" : "bg-white/15 text-white hover:bg-white/25"
+              }`}
+            >
+              <MapIcon size={14} /> {t("symptom.modeMap")}
             </button>
           </div>
 
-          {mode === "specialty" ? (
+          {mode === "map" ? (
+            <LandingMapPanel defaultQuery={city} />
+          ) : mode === "specialty" ? (
             <form onSubmit={handleSpecialtySearch} className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-2xl sm:flex-row sm:p-6">
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-medium text-slate-500">{t("pubSearch.specialty")}</label>
@@ -209,6 +262,58 @@ export default function EspecialistasLandingClient() {
                 <button
                   type="submit"
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-8 py-3 font-bold text-white transition hover:bg-accent-600 sm:w-auto"
+                >
+                  <Search size={18} /> {t("pubSearch.search")}
+                </button>
+              </div>
+            </form>
+          ) : mode === "convenio" ? (
+            <form onSubmit={handleConvenioSearch} className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-2xl sm:flex-row sm:flex-wrap sm:p-6">
+              <div className="flex-1 min-w-[140px]">
+                <label className="mb-1 block text-xs font-medium text-slate-500">{t("pubSearch.specialty")}</label>
+                <select
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+                >
+                  {POPULAR_SPECIALTIES.map((s) => (
+                    <option key={s.slug} value={s.slug}>{t(s.labelKey)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 min-w-[140px]">
+                <label className="mb-1 block text-xs font-medium text-slate-500">{t("pubSearch.city")}</label>
+                <div className="relative">
+                  <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder={t("pubSearch.cityPlaceholder")}
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 min-w-[140px]">
+                <label className="mb-1 block text-xs font-medium text-slate-500">{t("pubSearch.healthPlan")}</label>
+                <select
+                  value={convenio}
+                  onChange={(e) => setConvenio(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+                >
+                  {healthPlans.length === 0 ? (
+                    <option value="">{t("pubSearch.selectHealthPlan")}</option>
+                  ) : (
+                    healthPlans.map((p) => (
+                      <option key={p.slug} value={p.slug}>{p.name}</option>
+                    ))
+                  )}
+                </select>
+              </div>
+              <div className="sm:self-end">
+                <button
+                  type="submit"
+                  disabled={!convenio}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-8 py-3 font-bold text-white transition hover:bg-accent-600 disabled:opacity-50 sm:w-auto"
                 >
                   <Search size={18} /> {t("pubSearch.search")}
                 </button>
