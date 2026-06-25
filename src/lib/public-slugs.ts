@@ -70,8 +70,24 @@ export function buildPublicSearchPath(especialidade: string, cidade: string): st
   return `/especialistas/${especialidade}/${cidade}`;
 }
 
+export function buildPublicSearchConvenioPath(
+  especialidade: string,
+  cidade: string,
+  convenio: string
+): string {
+  return `/especialistas/${especialidade}/${cidade}/convenio/${convenio}`;
+}
+
 export function buildPublicSearchUrl(especialidade: string, cidade: string): string {
   return `${APP_BASE_URL}${buildPublicSearchPath(especialidade, cidade)}`;
+}
+
+export function buildPublicSearchConvenioUrl(
+  especialidade: string,
+  cidade: string,
+  convenio: string
+): string {
+  return `${APP_BASE_URL}${buildPublicSearchConvenioPath(especialidade, cidade, convenio)}`;
 }
 
 export function buildProviderSlug(firstName: string, lastName: string): string {

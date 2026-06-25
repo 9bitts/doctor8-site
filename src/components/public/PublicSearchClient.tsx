@@ -15,6 +15,8 @@ import PublicResultCard from "@/components/public/PublicResultCard";
 import {
   seoSlugToSpecialtyLabel,
   citySlugToLabel,
+  buildPublicSearchConvenioPath,
+  buildPublicSearchPath,
 } from "@/lib/public-slugs";
 
 const PublicSearchMap = dynamic(() => import("@/components/public/PublicSearchMap"), {
@@ -71,9 +73,13 @@ const PRICE_OPTIONS = ["", "150", "250", "400", "600", "1000"];
 export default function PublicSearchClient({
   especialidade,
   cidade,
+  initialConvenio = "",
+  seoConvenioMode = false,
 }: {
   especialidade: string;
   cidade: string;
+  initialConvenio?: string;
+  seoConvenioMode?: boolean;
 }) {
   const { lang, t } = useI18n();
   const locale = localeOf(lang);
@@ -83,17 +89,28 @@ export default function PublicSearchClient({
   const [results, setResults] = useState<PublicSearchResult[]>([]);
   const [plans, setPlans] = useState<HealthPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<SearchFilters>(() =>
-    parseFilters(searchParams)
-  );
+  const [filters, setFilters] = useState<SearchFilters>(() => {
+    const base = parseFilters(searchParams);
+    if (initialConvenio && !base.convenio) {
+      return { ...base, convenio: initialConvenio };
+    }
+    return base;
+  });
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const specialtyLabel = seoSlugToSpecialtyLabel(especialidade, lang);
   const cityLabel = citySlugToLabel(cidade);
+  const activePlan = plans.find((p) => p.slug === filters.convenio);
 
   useEffect(() => {
     setFilters(parseFilters(searchParams));
   }, [searchParams]);
+
+  useEffect(() => {
+    if (initialConvenio && !searchParams.get("convenio")) {
+      setFilters((f) => ({ ...f, convenio: initialConvenio }));
+    }
+  }, [initialConvenio, searchParams]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,6 +144,13 @@ export default function PublicSearchClient({
 
   function pushFilters(next: SearchFilters) {
     setFilters(next);
+    if (seoConvenioMode && next.convenio) {
+      const qs = filtersToParams({ ...next, convenio: "" }).toString();
+      router.replace(
+        `${buildPublicSearchConvenioPath(especialidade, cidade, next.convenio)}${qs ? `?${qs}` : ""}`
+      );
+      return;
+    }
     const qs = filtersToParams(next).toString();
     router.replace(`/especialistas/${especialidade}/${cidade}${qs ? `?${qs}` : ""}`);
   }
@@ -136,7 +160,19 @@ export default function PublicSearchClient({
   }
 
   function applyConvenio(slug: string) {
-    patchFilters({ convenio: filters.convenio === slug ? "" : slug });
+    if (filters.convenio === slug) {
+      if (seoConvenioMode) {
+        router.replace(buildPublicSearchPath(especialidade, cidade));
+        return;
+      }
+      patchFilters({ convenio: "" });
+      return;
+    }
+    if (seoConvenioMode) {
+      router.push(buildPublicSearchConvenioPath(especialidade, cidade, slug));
+      return;
+    }
+    patchFilters({ convenio: slug });
   }
 
   function toggleFilter(key: "teleconsult" | "presencial") {
@@ -177,7 +213,14 @@ export default function PublicSearchClient({
           </div>
           <div className="mt-3">
             <h1 className="text-lg font-bold">
-              {specialtyLabel} <span className="opacity-80">?</span> {cityLabel}
+              {specialtyLabel}{" "}
+              <span className="opacity-80">·</span> {cityLabel}
+              {activePlan ? (
+                <>
+                  {" "}
+                  <span className="opacity-80">·</span> {activePlan.name}
+                </>
+              ) : null}
             </h1>
             <p className="text-sm text-brand-100 mt-0.5">
               {loading ? "..." : t("pubSearch.resultCount").replace("{n}", String(results.length))}

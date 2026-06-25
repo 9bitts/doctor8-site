@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
+import MarketPricingCard from "@/components/professional/MarketPricingCard";
 import { decrypt } from "@/lib/encryption";
 import { getProfessionLabel } from "@/lib/professions";
 
@@ -274,6 +275,8 @@ export default async function ProfessionalDashboard() {
           href="/professional/financeiro"
         />
       </div>
+
+      <MarketPricingCard />
 
       <div className="grid lg:grid-cols-2 gap-6">
 
