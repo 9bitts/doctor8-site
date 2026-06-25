@@ -16,6 +16,7 @@ import {
   Copy, Printer, RotateCw,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
+import ReferralPanel from "@/components/professional/ReferralPanel";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
@@ -591,6 +592,10 @@ export default function RecordDetailClient({
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <ReferralPanel chartId={chart.id} />
         </div>
 
         {/* ── P1-b: registration data (for the prescription) ── */}

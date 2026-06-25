@@ -1,9 +1,8 @@
-// src/app/api/professionals/[id]/route.ts
-// Returns full profile of a single professional
+// Returns full profile of a single provider (health or psychoanalyst).
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { getUnifiedProvider, type ProviderType } from "@/lib/providers";
 
 export async function GET(
   req: NextRequest,
@@ -12,32 +11,32 @@ export async function GET(
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { id: params.id, verified: true },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      specialty: true,
-      subspecialties: true,
-      bio: true,
-      avatarUrl: true,
-      consultPrice: true,
-      currency: true,
-      acceptsTeleconsult: true,
-      acceptsInPerson: true,
-      clinicName: true,
-      clinicCity: true,
-      clinicState: true,
-      clinicCountry: true,
-      licenseNumber: true,
-      licenseState: true,
-    },
-  });
+  const providerType = (req.nextUrl.searchParams.get("providerType") ||
+    "health") as ProviderType;
 
-  if (!professional) {
+  const provider = await getUnifiedProvider(params.id, providerType);
+  if (!provider) {
     return NextResponse.json({ error: "Professional not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ professional });
+  return NextResponse.json({
+    professional: {
+      id: provider.id,
+      providerType: provider.providerType,
+      firstName: provider.firstName,
+      lastName: provider.lastName,
+      specialty: provider.specialty,
+      bio: provider.bio,
+      avatarUrl: provider.avatarUrl,
+      consultPrice: provider.consultPrice,
+      currency: provider.currency,
+      acceptsTeleconsult: provider.acceptsTeleconsult,
+      acceptsInPerson: provider.acceptsInPerson,
+      clinicCity: provider.clinicCity,
+      clinicCountry: provider.clinicCountry,
+      license: provider.license ?? null,
+      trainingInstitution: provider.trainingInstitution ?? null,
+      yearsOfPractice: provider.yearsOfPractice ?? null,
+    },
+  });
 }

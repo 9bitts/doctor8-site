@@ -56,6 +56,9 @@ interface Appointment {
   type: string;
   meetingUrl?: string;
   paidAt?: string;
+  professionalId?: string;
+  psychoanalystId?: string;
+  providerType?: "health" | "psychoanalyst";
   professional: { firstName: string; lastName: string; specialty: string };
 }
 
@@ -105,6 +108,7 @@ export default function AppointmentsPage() {
   const [specialty, setSpecialty]         = useState("All");
   const [type, setType]                   = useState<"TELECONSULT" | "IN_PERSON">("TELECONSULT");
   const [appointments, setAppointments]   = useState<Appointment[]>([]);
+  const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
 
   // CDC policy checkbox
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
@@ -137,7 +141,7 @@ export default function AppointmentsPage() {
   } | null>(null);
 
   const [bookingSource, setBookingSource] = useState<
-    "patient_panel" | "public_profile" | "public_search" | "public_embed"
+    "patient_panel" | "public_profile" | "public_search" | "public_embed" | "referral"
   >("patient_panel");
   const [providerPlans, setProviderPlans] = useState<{ slug: string; name: string }[]>([]);
   const [providerServices, setProviderServices] = useState<{ id: string; name: string; priceCents: number | null; currency: string }[]>([]);
@@ -145,7 +149,7 @@ export default function AppointmentsPage() {
   const [healthPlanSlug, setHealthPlanSlug] = useState("particular");
   const [visitReason, setVisitReason] = useState("");
 
-  useEffect(() => { fetchProfessionals(); fetchAppointments(); }, []);
+  useEffect(() => { fetchProfessionals(); fetchAppointments(); fetchPastAppointments(); }, []);
   useEffect(() => { if (step === "payment" && !stripeLoaded) loadStripe(); }, [step]);
   useEffect(() => { setShowTip(true); }, [step]);
 
@@ -159,6 +163,8 @@ export default function AppointmentsPage() {
     const from = params.get("from");
     if (from === "public_profile" || from === "public_search" || from === "public_embed") {
       setBookingSource(from);
+    } else if (from === "referral") {
+      setBookingSource("referral");
     }
     const pro = professionals.find((p) =>
       p.id === proId && (!providerType || p.providerType === providerType)
@@ -223,6 +229,47 @@ export default function AppointmentsPage() {
     const res = await fetch("/api/appointments?upcoming=true");
     const d   = await res.json();
     setAppointments(d.appointments || []);
+  }
+
+  async function fetchPastAppointments() {
+    const res = await fetch("/api/appointments?status=COMPLETED");
+    const d = await res.json();
+    const past = (d.appointments || []).filter(
+      (a: Appointment) => new Date(a.scheduledAt).getTime() < Date.now()
+    );
+    setPastAppointments(past.slice(0, 5));
+  }
+
+  async function rebookFromPast(apt: Appointment) {
+    const proId = apt.professionalId || apt.psychoanalystId;
+    const providerType = apt.providerType || (apt.psychoanalystId ? "psychoanalyst" : "health");
+    if (!proId) return;
+
+    let pro = professionals.find(
+      (p) => p.id === proId && (p.providerType || "health") === providerType
+    );
+
+    if (!pro) {
+      const res = await fetch(
+        `/api/professionals/${proId}?providerType=${providerType}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const p = data.professional;
+        if (p) {
+          pro = {
+            ...p,
+            providerType,
+            rating: 4.8,
+          };
+        }
+      }
+    }
+
+    if (pro) {
+      setBookingSource("patient_panel");
+      selectProfessional(pro);
+    }
   }
 
   async function loadSlots(
@@ -523,6 +570,44 @@ export default function AppointmentsPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {pastAppointments.length > 0 && step === "browse" && (
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+          <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+            <RefreshCw size={15} /> {t("appt.rebookTitle")}
+          </p>
+          <div className="space-y-2">
+            {pastAppointments.map((apt) => (
+              <div
+                key={apt.id}
+                className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm flex-wrap"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-800 truncate">
+                    {apt.providerType === "psychoanalyst"
+                      ? `${apt.professional?.firstName} ${apt.professional?.lastName}`
+                      : `Dr. ${apt.professional?.firstName} ${apt.professional?.lastName}`}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {new Date(apt.scheduledAt).toLocaleDateString(locale, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => rebookFromPast(apt)}
+                  className="flex items-center gap-1 text-xs font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-2 rounded-lg transition"
+                >
+                  <Calendar size={13} /> {t("appt.rebookCta")}
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -7,6 +7,7 @@ import { audit } from "@/lib/audit";
 import { stripe } from "@/lib/stripe";
 import { scheduleAppointmentReminders, scheduleReviewRequest } from "@/lib/qstash";
 import { buildAppointmentIntakePayload } from "@/lib/appointment-intake";
+import { onAppointmentBooked } from "@/lib/post-booking";
 import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { z } from "zod";
@@ -109,7 +110,7 @@ const createSchema = z.object({
   priceAmount: z.number(),
   currency: z.string(),
   acceptedCancellationPolicy: z.boolean().default(false),
-  bookingSource: z.enum(["patient_panel", "public_profile", "public_search", "public_embed"]).optional(),
+  bookingSource: z.enum(["patient_panel", "public_profile", "public_search", "public_embed", "referral"]).optional(),
   visitReason: z.string().max(2000).optional(),
   healthPlanSlug: z.string().max(80).optional(),
   healthPlanLabel: z.string().max(120).optional(),
@@ -260,6 +261,15 @@ export async function POST(req: NextRequest) {
       patientProfile: { firstName: patient.firstName, lastName: patient.lastName },
       patientEmail: user.email,
     });
+  } else {
+    onAppointmentBooked({
+      appointmentId: appointment.id,
+      providerType: "health",
+      providerId,
+      patientUserId: session.user.id,
+      chiefComplaint: intakePayload,
+      scheduledAt: new Date(scheduledAt),
+    }).catch((e) => console.error("[POST-BOOKING]", e));
   }
 
   await audit.viewRecord(session.user.id, "Appointment", appointment.id);

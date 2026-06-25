@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   Globe, Copy, CheckCircle2, Loader2, ExternalLink, Eye, EyeOff, Clock, MapPin,
-  BarChart3, MousePointerClick, CalendarCheck, Code2,
+  BarChart3, MousePointerClick, CalendarCheck, Code2, DollarSign, Users, Repeat,
 } from "lucide-react";
+import { localeOf } from "@/lib/i18n/translations";
 
 type ProfileAnalytics = {
   views7d: number;
@@ -15,6 +16,10 @@ type ProfileAnalytics = {
   bookClicks30d: number;
   bookings30d: number;
   conversionRate30d: number | null;
+  revenue30dCents: number;
+  newPatients30d: number;
+  returnPatients30d: number;
+  returnRate30d: number | null;
 };
 
 type ListingInfo = {
@@ -30,7 +35,7 @@ type ListingInfo = {
 };
 
 export default function PublicListingSettings({ apiPath }: { apiPath: string }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingGoogle, setSavingGoogle] = useState(false);
@@ -250,6 +255,28 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
                   : "?"
               }
               icon={<BarChart3 size={14} className="text-amber-500" />}
+            />
+            <StatCard
+              label={t("pubAnalytics.revenue30d")}
+              value={new Intl.NumberFormat(localeOf(lang), {
+                style: "currency",
+                currency: "BRL",
+              }).format((info.analytics.revenue30dCents || 0) / 100)}
+              icon={<DollarSign size={14} className="text-emerald-600" />}
+            />
+            <StatCard
+              label={t("pubAnalytics.newPatients30d")}
+              value={info.analytics.newPatients30d}
+              icon={<Users size={14} className="text-blue-500" />}
+            />
+            <StatCard
+              label={t("pubAnalytics.returnRate30d")}
+              value={
+                info.analytics.returnRate30d != null
+                  ? `${info.analytics.returnRate30d}%`
+                  : "?"
+              }
+              icon={<Repeat size={14} className="text-violet-500" />}
             />
           </div>
         </div>
