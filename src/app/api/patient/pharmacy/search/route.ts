@@ -12,19 +12,14 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get("q") || "").trim();
+  const filters = {
+    name: searchParams.get("name") || searchParams.get("q") || undefined,
+    manufacturer: searchParams.get("manufacturer") || undefined,
+    activeIngredient: searchParams.get("activeIngredient") || undefined,
+    presentation: searchParams.get("presentation") || undefined,
+  };
   const cep = (searchParams.get("cep") || "").trim() || undefined;
 
-  if (q.length < 2) {
-    return NextResponse.json({
-      provider: "consulta-remedios",
-      mode: "disabled",
-      query: q,
-      cep,
-      results: [],
-    });
-  }
-
-  const data = await searchPharmacyCatalog(q, cep);
+  const data = await searchPharmacyCatalog(filters, cep);
   return NextResponse.json(data);
 }

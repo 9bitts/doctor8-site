@@ -47,10 +47,18 @@ export type PharmacyOffer = {
   purchaseUrl: string;
 };
 
+export type PharmacySearchFilters = {
+  name?: string;
+  manufacturer?: string;
+  activeIngredient?: string;
+  presentation?: string;
+};
+
 export type PharmacySearchResponse = {
   provider: PharmacyProviderId;
   mode: PharmacyIntegrationMode;
   query: string;
+  filters: PharmacySearchFilters;
   cep?: string;
   results: PharmacySearchHit[];
 };

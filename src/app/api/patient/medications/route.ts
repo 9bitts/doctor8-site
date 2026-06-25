@@ -14,6 +14,16 @@ const medicationSchema = z.object({
   prescribedBy: z.string().optional(),
   notes: z.string().optional(),
   flow: z.enum(["CLINICAL", "PURCHASE"]),
+  drugCatalogId: z.string().optional(),
+  referencePriceCents: z.number().int().positive().optional(),
+}).superRefine((data, ctx) => {
+  if (data.flow === "PURCHASE" && !data.drugCatalogId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "PURCHASE medications must be selected from the drug catalog",
+      path: ["drugCatalogId"],
+    });
+  }
 });
 
 // GET — list all medications for the logged-in patient
@@ -41,6 +51,8 @@ export async function GET() {
     dosage: m.dosage ? decrypt(m.dosage) : null,
     frequency: m.frequency ? decrypt(m.frequency) : null,
     notes: m.notes ? decrypt(m.notes) : null,
+    drugCatalogId: m.drugCatalogId,
+    referencePriceCents: m.referencePriceCents,
   }));
 
   return NextResponse.json({ medications: decrypted });
@@ -62,7 +74,7 @@ export async function POST(req: NextRequest) {
   });
   if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
 
-  const { name, dosage, frequency, prescribedBy, notes, flow } = parsed.data;
+  const { name, dosage, frequency, prescribedBy, notes, flow, drugCatalogId, referencePriceCents } = parsed.data;
 
   // Encrypt PHI fields before storing — HIPAA
   const medication = await db.medication.create({
@@ -73,7 +85,9 @@ export async function POST(req: NextRequest) {
       frequency: frequency ? encrypt(frequency) : null,
       prescribedBy: prescribedBy || null,
       notes: notes ? encrypt(notes) : null,
-      flow,  // THE FIX: explicitly stores CLINICAL or PURCHASE
+      flow,
+      drugCatalogId: drugCatalogId || null,
+      referencePriceCents: referencePriceCents ?? null,
     },
   });
 

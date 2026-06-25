@@ -437,6 +437,10 @@ model Medication {
   // THE FIX: separates clinical from purchase
   flow            MedicationFlow @default(CLINICAL)
 
+  // PURCHASE flow: linked to DrugCatalog + CMED reference at save time
+  drugCatalogId       String?
+  referencePriceCents Int?
+
   active          Boolean        @default(true)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt

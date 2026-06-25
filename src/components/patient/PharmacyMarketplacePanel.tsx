@@ -1,20 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, ExternalLink, Info, Loader2, Search } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  ExternalLink,
+  Info,
+  Loader2,
+  Search,
+  Tag,
+} from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
-
-type PharmacyMode = "disabled" | "deeplink" | "api";
-
-type PharmacyConfig = {
-  enabled: boolean;
-  referenceEnabled: boolean;
-  marketplaceEnabled: boolean;
-  provider: string;
-  mode: PharmacyMode;
-  requiresCep: boolean;
-  affiliateTrackingReady: boolean;
-};
 
 type SearchHit = {
   drugCatalogId?: string;
@@ -34,13 +29,18 @@ type ReferencePrice = {
   isRegulatedReference: true;
 };
 
-type PharmacyOffer = {
-  pharmacyName: string;
-  priceCents: number;
-  currency: "BRL";
-  deliveryEta?: string;
-  inStock: boolean;
-  purchaseUrl: string;
+type SearchFilters = {
+  name: string;
+  manufacturer: string;
+  activeIngredient: string;
+  presentation: string;
+};
+
+const EMPTY_FILTERS: SearchFilters = {
+  name: "",
+  manufacturer: "",
+  activeIngredient: "",
+  presentation: "",
 };
 
 function formatBrl(cents: number): string {
@@ -50,68 +50,65 @@ function formatBrl(cents: number): string {
   }).format(cents / 100);
 }
 
-function readStoredCep(): string {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem("doctor8_pharmacy_cep") || "";
+function hasAnyFilter(filters: SearchFilters): boolean {
+  return Object.values(filters).some((v) => v.trim().length >= 2);
 }
 
-function storeCep(cep: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("doctor8_pharmacy_cep", cep);
+interface PharmacyMarketplacePanelProps {
+  onSaved: () => void;
 }
 
-export default function PharmacyMarketplacePanel() {
+export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplacePanelProps) {
   const t = useT();
-  const [config, setConfig] = useState<PharmacyConfig | null>(null);
-  const [cep, setCep] = useState("");
-  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<SearchFilters>(EMPTY_FILTERS);
   const [results, setResults] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
   const [selected, setSelected] = useState<SearchHit | null>(null);
   const [reference, setReference] = useState<ReferencePrice | null>(null);
-  const [offers, setOffers] = useState<PharmacyOffer[]>([]);
-  const [purchaseUrl, setPurchaseUrl] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [referenceMissing, setReferenceMissing] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setCep(readStoredCep());
-    fetch("/api/patient/pharmacy/config")
-      .then((r) => r.json())
-      .then(setConfig)
-      .catch(() =>
-        setConfig({
-          enabled: true,
-          referenceEnabled: true,
-          marketplaceEnabled: false,
-          provider: "consulta-remedios",
-          mode: "disabled",
-          requiresCep: false,
-          affiliateTrackingReady: false,
-        })
-      );
-  }, []);
-
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
-      }
+  const runSearch = useCallback(async () => {
+    if (!hasAnyFilter(filters)) {
+      setResults([]);
+      setSearched(false);
+      return;
     }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
 
-  const loadDrugDetails = useCallback(async (hit: SearchHit, cepValue: string) => {
-    setDetailLoading(true);
+    setSearching(true);
+    setSearched(true);
+    setSelected(null);
+    setReference(null);
+    setReferenceMissing(false);
+    setSaveError(null);
+
+    try {
+      const params = new URLSearchParams();
+      if (filters.name.trim()) params.set("name", filters.name.trim());
+      if (filters.manufacturer.trim()) params.set("manufacturer", filters.manufacturer.trim());
+      if (filters.activeIngredient.trim()) {
+        params.set("activeIngredient", filters.activeIngredient.trim());
+      }
+      if (filters.presentation.trim()) params.set("presentation", filters.presentation.trim());
+
+      const res = await fetch(`/api/patient/pharmacy/search?${params}`);
+      const data = await res.json();
+      setResults(data.results || []);
+    } finally {
+      setSearching(false);
+    }
+  }, [filters]);
+
+  const loadPrice = useCallback(async (hit: SearchHit) => {
     setSelected(hit);
     setReference(null);
-    setOffers([]);
-    setPurchaseUrl(null);
     setReferenceMissing(false);
+    setSaveError(null);
+    setDetailLoading(true);
+
     try {
       const params = new URLSearchParams();
       if (hit.drugCatalogId) params.set("drugCatalogId", hit.drugCatalogId);
@@ -120,70 +117,51 @@ export default function PharmacyMarketplacePanel() {
         params.set("activeIngredient", hit.activeIngredient);
         params.set("presentation", hit.presentation);
       }
-      if (cepValue) params.set("cep", cepValue);
 
       const res = await fetch(`/api/patient/pharmacy/offers?${params}`);
       const data = await res.json();
       if (res.ok) {
         setReference(data.reference || null);
         setReferenceMissing(!data.reference);
-        setOffers(data.offers || []);
-        setPurchaseUrl(data.fallbackPurchaseUrl || null);
       }
     } finally {
       setDetailLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    if (!config?.enabled) return;
-    if (query.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const params = new URLSearchParams({ q: query.trim() });
-        if (cep) params.set("cep", cep);
-        const res = await fetch(`/api/patient/pharmacy/search?${params}`);
-        const data = await res.json();
-        setResults(data.results || []);
-        setShowDropdown(true);
-      } finally {
-        setSearching(false);
+  async function handleSave() {
+    if (!selected?.drugCatalogId) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch("/api/patient/medications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          flow: "PURCHASE",
+          name: selected.name,
+          dosage: selected.presentation,
+          drugCatalogId: selected.drugCatalogId,
+          referencePriceCents: reference?.priceCents,
+          notes: selected.manufacturer
+            ? `${t("pharmacy.manufacturer")}: ${selected.manufacturer}`
+            : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error?.message || t("pharmacy.saveError"));
+        return;
       }
-    }, 300);
-
-    return () => clearTimeout(debounceRef.current);
-  }, [query, cep, config?.enabled]);
-
-  function handleCepChange(value: string) {
-    const digits = value.replace(/\D/g, "").slice(0, 8);
-    const formatted =
-      digits.length > 5
-        ? `${digits.slice(0, 5)}-${digits.slice(5)}`
-        : digits;
-    setCep(formatted);
-    storeCep(formatted);
-  }
-
-  if (!config) {
-    return (
-      <div className="flex justify-center py-6">
-        <Loader2 size={20} className="animate-spin text-slate-400" />
-      </div>
-    );
-  }
-
-  if (!config.enabled) {
-    return (
-      <div className="mx-5 mt-4 mb-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-        {t("pharmacy.comingSoon")}
-      </div>
-    );
+      setSelected(null);
+      setReference(null);
+      setResults([]);
+      setSearched(false);
+      setFilters(EMPTY_FILTERS);
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -193,172 +171,170 @@ export default function PharmacyMarketplacePanel() {
         <p className="text-xs text-slate-500 mt-0.5">{t("pharmacy.subtitleReference")}</p>
       </div>
 
-      {config.referenceEnabled && (
-        <div className="flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-950 leading-relaxed">
-          <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-amber-900">{t("pharmacy.referenceWarningTitle")}</p>
-            <p className="mt-1">{t("pharmacy.referenceWarningBody")}</p>
-          </div>
+      <div className="flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-950 leading-relaxed">
+        <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold text-amber-900">{t("pharmacy.referenceWarningTitle")}</p>
+          <p className="mt-1">{t("pharmacy.referenceWarningBody")}</p>
         </div>
-      )}
-
-      {config.marketplaceEnabled && (
-        <label className="flex items-center gap-2">
-          <input
-            type="text"
-            inputMode="numeric"
-            value={cep}
-            onChange={(e) => handleCepChange(e.target.value)}
-            placeholder={t("pharmacy.cepPlaceholder")}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400"
-          />
-        </label>
-      )}
-
-      <div ref={searchRef} className="relative">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => results.length > 0 && setShowDropdown(true)}
-            placeholder={t("pharmacy.searchPlaceholder")}
-            className="w-full border border-slate-200 rounded-xl pl-9 pr-10 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-          {searching && (
-            <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-400" />
-          )}
-        </div>
-
-        {showDropdown && results.length > 0 && (
-          <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-64 overflow-y-auto">
-            {results.map((hit) => (
-              <button
-                key={hit.drugCatalogId || hit.name}
-                type="button"
-                onClick={() => {
-                  setQuery(hit.name);
-                  setShowDropdown(false);
-                  loadDrugDetails(hit, cep);
-                }}
-                className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-slate-100 last:border-0"
-              >
-                <p className="text-sm font-semibold text-slate-800">{hit.name}</p>
-                <p className="text-xs text-slate-500">
-                  {hit.activeIngredient}
-                  {hit.presentation ? ` ? ${hit.presentation}` : ""}
-                </p>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FilterField
+          label={t("pharmacy.filterName")}
+          value={filters.name}
+          onChange={(v) => setFilters({ ...filters, name: v })}
+          placeholder={t("pharmacy.filterNamePlaceholder")}
+        />
+        <FilterField
+          label={t("pharmacy.filterManufacturer")}
+          value={filters.manufacturer}
+          onChange={(v) => setFilters({ ...filters, manufacturer: v })}
+          placeholder={t("pharmacy.filterManufacturerPlaceholder")}
+        />
+        <FilterField
+          label={t("pharmacy.filterIngredient")}
+          value={filters.activeIngredient}
+          onChange={(v) => setFilters({ ...filters, activeIngredient: v })}
+          placeholder={t("pharmacy.filterIngredientPlaceholder")}
+        />
+        <FilterField
+          label={t("pharmacy.filterPresentation")}
+          value={filters.presentation}
+          onChange={(v) => setFilters({ ...filters, presentation: v })}
+          placeholder={t("pharmacy.filterPresentationPlaceholder")}
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={runSearch}
+        disabled={searching || !hasAnyFilter(filters)}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition"
+      >
+        {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+        {t("pharmacy.searchButton")}
+      </button>
+
+      <p className="text-[11px] text-slate-400">{t("pharmacy.searchHint")}</p>
+
+      {searched && !searching && results.length === 0 && (
+        <p className="text-sm text-slate-500 text-center py-4">{t("pharmacy.noResults")}</p>
+      )}
+
+      {results.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-slate-600">{t("pharmacy.clickToSeePrice")}</p>
+          {results.map((hit) => (
+            <button
+              key={hit.drugCatalogId || hit.name}
+              type="button"
+              onClick={() => loadPrice(hit)}
+              className={`w-full text-left rounded-xl border p-3 transition ${
+                selected?.drugCatalogId === hit.drugCatalogId
+                  ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
+                  : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50"
+              }`}
+            >
+              <p className="text-sm font-bold text-slate-800">{hit.name}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{hit.activeIngredient}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{hit.presentation}</p>
+              {hit.manufacturer && (
+                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                  <Tag size={11} />
+                  {hit.manufacturer}
+                </p>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
       {selected && (
-        <div className="rounded-xl border border-blue-200 bg-white p-4 space-y-3">
+        <div className="rounded-xl border-2 border-blue-300 bg-white p-4 space-y-4 shadow-sm">
           <div>
-            <p className="text-sm font-bold text-slate-800">{selected.name}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+              {t("pharmacy.selectedDrug")}
+            </p>
+            <p className="text-base font-bold text-slate-900 mt-1">{selected.name}</p>
             <p className="text-xs text-slate-500">{selected.activeIngredient}</p>
-            {selected.presentation && (
-              <p className="text-xs text-slate-400 mt-0.5">{selected.presentation}</p>
-            )}
+            <p className="text-xs text-slate-400">{selected.presentation}</p>
           </div>
 
           {detailLoading ? (
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <Loader2 size={14} className="animate-spin" />
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+              <Loader2 size={18} className="animate-spin text-blue-500" />
               {t("pharmacy.loadingReference")}
             </div>
           ) : reference ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {t("pharmacy.referencePriceLabel")}
-                  </p>
-                  <p className="text-2xl font-bold text-emerald-700 mt-0.5">
-                    {formatBrl(reference.priceCents)}
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    {t("pharmacy.referencePriceType")}
-                    {reference.cmedTableLabel ? ` ? ${reference.cmedTableLabel}` : ""}
-                  </p>
-                  {reference.matchedName !== selected.name && (
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      {t("pharmacy.referenceMatchedAs")} <strong>{reference.matchedName}</strong>
-                    </p>
-                  )}
-                </div>
-                <a
-                  href={reference.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline shrink-0"
-                >
-                  {t("pharmacy.viewOnSource")}
-                  <ExternalLink size={12} />
-                </a>
-              </div>
-              <div className="flex gap-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
-                <Info size={13} className="shrink-0 mt-0.5" />
+            <div className="text-center py-2 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t("pharmacy.referencePriceLabel")}
+              </p>
+              <p className="text-4xl font-extrabold text-emerald-600">
+                {formatBrl(reference.priceCents)}
+              </p>
+              <p className="text-xs text-slate-500">{t("pharmacy.referencePriceType")}</p>
+              <div className="flex gap-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-left">
+                <Info size={14} className="shrink-0 mt-0.5" />
                 <span>{t("pharmacy.referencePriceNote")}</span>
               </div>
-            </div>
-          ) : referenceMissing ? (
-            <p className="text-xs text-slate-500">{t("pharmacy.referenceNotFound")}</p>
-          ) : null}
-
-          {config.marketplaceEnabled && offers.length > 0 && (
-            <div className="space-y-2 pt-1 border-t border-slate-100">
-              <p className="text-xs font-semibold text-slate-600">{t("pharmacy.pharmacyOffers")}</p>
-              {offers.slice(0, 5).map((offer) => (
-                <div
-                  key={`${offer.pharmacyName}-${offer.priceCents}`}
-                  className="flex items-center justify-between gap-3 text-sm"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium text-slate-800 truncate">{offer.pharmacyName}</p>
-                    {offer.deliveryEta && (
-                      <p className="text-xs text-slate-500">{offer.deliveryEta}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-bold text-emerald-700">{formatBrl(offer.priceCents)}</span>
-                    <a
-                      href={offer.purchaseUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-100 hover:bg-blue-200 px-2.5 py-1.5 rounded-lg transition"
-                    >
-                      {t("pharmacy.buy")}
-                      <ExternalLink size={12} />
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {config.marketplaceEnabled && purchaseUrl && offers.length === 0 && !detailLoading && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1 border-t border-slate-100">
-              <p className="text-xs text-slate-600">{t("pharmacy.deeplinkHint")}</p>
               <a
-                href={purchaseUrl}
+                href={reference.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl transition"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
               >
-                {t("pharmacy.compareAndBuy")}
-                <ExternalLink size={14} />
+                {t("pharmacy.viewOnSource")}
+                <ExternalLink size={12} />
               </a>
             </div>
+          ) : referenceMissing ? (
+            <p className="text-sm text-slate-500 text-center py-4">{t("pharmacy.referenceNotFound")}</p>
+          ) : null}
+
+          {!detailLoading && reference && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-bold text-sm transition flex items-center justify-center gap-2"
+            >
+              {saving && <Loader2 size={16} className="animate-spin" />}
+              {saving ? t("docs.modal.saving") : t("pharmacy.saveToList")}
+            </button>
           )}
 
-          <p className="text-[11px] text-slate-400 leading-relaxed">{t("pharmacy.disclaimer")}</p>
+          {saveError && (
+            <p className="text-xs text-red-600 text-center">{saveError}</p>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function FilterField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-slate-600 mb-1 block">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+      />
+    </label>
   );
 }

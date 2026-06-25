@@ -10,8 +10,10 @@ import type {
   PharmacyDrugRef,
   PharmacyMarketplaceProvider,
   PharmacyOffersResponse,
+  PharmacySearchFilters,
   PharmacySearchResponse,
 } from "./types";
+import type { Prisma } from "@prisma/client";
 
 function getProvider(): PharmacyMarketplaceProvider {
   const id = getPharmacyProviderId();
@@ -21,19 +23,44 @@ function getProvider(): PharmacyMarketplaceProvider {
   return consultaRemediosProvider;
 }
 
-async function searchLocalCatalog(query: string) {
-  const q = query.trim().toLowerCase();
-  if (q.length < 2) return [];
+function normFilter(value?: string): string | undefined {
+  const v = value?.trim().toLowerCase();
+  return v && v.length >= 2 ? v : undefined;
+}
+
+async function searchLocalCatalog(filters: PharmacySearchFilters) {
+  const name = normFilter(filters.name);
+  const manufacturer = normFilter(filters.manufacturer);
+  const activeIngredient = normFilter(filters.activeIngredient);
+  const presentation = normFilter(filters.presentation);
+
+  if (!name && !manufacturer && !activeIngredient && !presentation) {
+    return [];
+  }
+
+  const and: Prisma.DrugCatalogWhereInput[] = [
+    { active: true, country: "BR" },
+  ];
+  if (name) {
+    and.push({
+      OR: [
+        { searchName: { contains: name } },
+        { searchIngredient: { contains: name } },
+      ],
+    });
+  }
+  if (manufacturer) {
+    and.push({ manufacturer: { contains: manufacturer, mode: "insensitive" } });
+  }
+  if (activeIngredient) {
+    and.push({ searchIngredient: { contains: activeIngredient } });
+  }
+  if (presentation) {
+    and.push({ presentation: { contains: presentation, mode: "insensitive" } });
+  }
 
   return db.drugCatalog.findMany({
-    where: {
-      active: true,
-      country: "BR",
-      OR: [
-        { searchName: { contains: q } },
-        { searchIngredient: { contains: q } },
-      ],
-    },
+    where: { AND: and },
     select: {
       id: true,
       name: true,
@@ -42,12 +69,12 @@ async function searchLocalCatalog(query: string) {
       manufacturer: true,
     },
     orderBy: { name: "asc" },
-    take: 20,
+    take: 25,
   });
 }
 
 export async function searchPharmacyCatalog(
-  query: string,
+  filters: PharmacySearchFilters,
   cep?: string
 ): Promise<PharmacySearchResponse> {
   const provider = getProvider();
@@ -55,10 +82,17 @@ export async function searchPharmacyCatalog(
   const referenceEnabled = isPharmacyReferenceEnabled();
 
   if (!referenceEnabled && mode === "disabled") {
-    return { provider: provider.id, mode, query, cep, results: [] };
+    return {
+      provider: provider.id,
+      mode,
+      query: filters.name || "",
+      filters,
+      cep,
+      results: [],
+    };
   }
 
-  const drugs = await searchLocalCatalog(query);
+  const drugs = await searchLocalCatalog(filters);
   const results = drugs.map((drug) => ({
     drugCatalogId: drug.id,
     name: drug.name,
@@ -70,7 +104,8 @@ export async function searchPharmacyCatalog(
   return {
     provider: provider.id,
     mode,
-    query,
+    query: filters.name || "",
+    filters,
     cep,
     results,
   };
