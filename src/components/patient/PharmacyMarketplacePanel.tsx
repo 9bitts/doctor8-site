@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ExternalLink, Loader2, MapPin, Search } from "lucide-react";
+import { AlertTriangle, ExternalLink, Info, Loader2, Search } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 
 type PharmacyMode = "disabled" | "deeplink" | "api";
 
 type PharmacyConfig = {
   enabled: boolean;
+  referenceEnabled: boolean;
+  marketplaceEnabled: boolean;
   provider: string;
   mode: PharmacyMode;
   requiresCep: boolean;
@@ -20,8 +22,16 @@ type SearchHit = {
   activeIngredient: string;
   presentation: string;
   manufacturer?: string | null;
-  lowestPriceCents?: number;
-  offerCount?: number;
+};
+
+type ReferencePrice = {
+  priceCents: number;
+  priceType: string;
+  source: string;
+  sourceUrl: string;
+  cmedTableLabel?: string;
+  matchedName: string;
+  isRegulatedReference: true;
 };
 
 type PharmacyOffer = {
@@ -58,9 +68,11 @@ export default function PharmacyMarketplacePanel() {
   const [results, setResults] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<SearchHit | null>(null);
+  const [reference, setReference] = useState<ReferencePrice | null>(null);
   const [offers, setOffers] = useState<PharmacyOffer[]>([]);
   const [purchaseUrl, setPurchaseUrl] = useState<string | null>(null);
-  const [offersLoading, setOffersLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [referenceMissing, setReferenceMissing] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
@@ -70,7 +82,17 @@ export default function PharmacyMarketplacePanel() {
     fetch("/api/patient/pharmacy/config")
       .then((r) => r.json())
       .then(setConfig)
-      .catch(() => setConfig({ enabled: false, provider: "consulta-remedios", mode: "disabled", requiresCep: true, affiliateTrackingReady: false }));
+      .catch(() =>
+        setConfig({
+          enabled: true,
+          referenceEnabled: true,
+          marketplaceEnabled: false,
+          provider: "consulta-remedios",
+          mode: "disabled",
+          requiresCep: false,
+          affiliateTrackingReady: false,
+        })
+      );
   }, []);
 
   useEffect(() => {
@@ -83,11 +105,13 @@ export default function PharmacyMarketplacePanel() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const loadOffers = useCallback(async (hit: SearchHit, cepValue: string) => {
-    setOffersLoading(true);
+  const loadDrugDetails = useCallback(async (hit: SearchHit, cepValue: string) => {
+    setDetailLoading(true);
     setSelected(hit);
+    setReference(null);
     setOffers([]);
     setPurchaseUrl(null);
+    setReferenceMissing(false);
     try {
       const params = new URLSearchParams();
       if (hit.drugCatalogId) params.set("drugCatalogId", hit.drugCatalogId);
@@ -101,11 +125,13 @@ export default function PharmacyMarketplacePanel() {
       const res = await fetch(`/api/patient/pharmacy/offers?${params}`);
       const data = await res.json();
       if (res.ok) {
+        setReference(data.reference || null);
+        setReferenceMissing(!data.reference);
         setOffers(data.offers || []);
         setPurchaseUrl(data.fallbackPurchaseUrl || null);
       }
     } finally {
-      setOffersLoading(false);
+      setDetailLoading(false);
     }
   }, []);
 
@@ -164,12 +190,21 @@ export default function PharmacyMarketplacePanel() {
     <div className="border-b border-slate-200 bg-gradient-to-b from-blue-50/80 to-white px-5 py-4 space-y-4">
       <div>
         <h3 className="text-sm font-bold text-slate-800">{t("pharmacy.title")}</h3>
-        <p className="text-xs text-slate-500 mt-0.5">{t("pharmacy.subtitle")}</p>
+        <p className="text-xs text-slate-500 mt-0.5">{t("pharmacy.subtitleReference")}</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <label className="flex items-center gap-2 flex-1">
-          <MapPin size={14} className="text-blue-600 shrink-0" />
+      {config.referenceEnabled && (
+        <div className="flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-950 leading-relaxed">
+          <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-amber-900">{t("pharmacy.referenceWarningTitle")}</p>
+            <p className="mt-1">{t("pharmacy.referenceWarningBody")}</p>
+          </div>
+        </div>
+      )}
+
+      {config.marketplaceEnabled && (
+        <label className="flex items-center gap-2">
           <input
             type="text"
             inputMode="numeric"
@@ -179,7 +214,7 @@ export default function PharmacyMarketplacePanel() {
             className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400"
           />
         </label>
-      </div>
+      )}
 
       <div ref={searchRef} className="relative">
         <div className="relative">
@@ -206,7 +241,7 @@ export default function PharmacyMarketplacePanel() {
                 onClick={() => {
                   setQuery(hit.name);
                   setShowDropdown(false);
-                  loadOffers(hit, cep);
+                  loadDrugDetails(hit, cep);
                 }}
                 className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-slate-100 last:border-0"
               >
@@ -226,15 +261,58 @@ export default function PharmacyMarketplacePanel() {
           <div>
             <p className="text-sm font-bold text-slate-800">{selected.name}</p>
             <p className="text-xs text-slate-500">{selected.activeIngredient}</p>
+            {selected.presentation && (
+              <p className="text-xs text-slate-400 mt-0.5">{selected.presentation}</p>
+            )}
           </div>
 
-          {offersLoading ? (
+          {detailLoading ? (
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <Loader2 size={14} className="animate-spin" />
-              {t("pharmacy.loadingOffers")}
+              {t("pharmacy.loadingReference")}
             </div>
-          ) : offers.length > 0 ? (
-            <div className="space-y-2">
+          ) : reference ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {t("pharmacy.referencePriceLabel")}
+                  </p>
+                  <p className="text-2xl font-bold text-emerald-700 mt-0.5">
+                    {formatBrl(reference.priceCents)}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    {t("pharmacy.referencePriceType")}
+                    {reference.cmedTableLabel ? ` ? ${reference.cmedTableLabel}` : ""}
+                  </p>
+                  {reference.matchedName !== selected.name && (
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      {t("pharmacy.referenceMatchedAs")} <strong>{reference.matchedName}</strong>
+                    </p>
+                  )}
+                </div>
+                <a
+                  href={reference.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline shrink-0"
+                >
+                  {t("pharmacy.viewOnSource")}
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+              <div className="flex gap-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
+                <Info size={13} className="shrink-0 mt-0.5" />
+                <span>{t("pharmacy.referencePriceNote")}</span>
+              </div>
+            </div>
+          ) : referenceMissing ? (
+            <p className="text-xs text-slate-500">{t("pharmacy.referenceNotFound")}</p>
+          ) : null}
+
+          {config.marketplaceEnabled && offers.length > 0 && (
+            <div className="space-y-2 pt-1 border-t border-slate-100">
+              <p className="text-xs font-semibold text-slate-600">{t("pharmacy.pharmacyOffers")}</p>
               {offers.slice(0, 5).map((offer) => (
                 <div
                   key={`${offer.pharmacyName}-${offer.priceCents}`}
@@ -247,9 +325,7 @@ export default function PharmacyMarketplacePanel() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-bold text-emerald-700">
-                      {formatBrl(offer.priceCents)}
-                    </span>
+                    <span className="font-bold text-emerald-700">{formatBrl(offer.priceCents)}</span>
                     <a
                       href={offer.purchaseUrl}
                       target="_blank"
@@ -263,8 +339,10 @@ export default function PharmacyMarketplacePanel() {
                 </div>
               ))}
             </div>
-          ) : purchaseUrl ? (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          )}
+
+          {config.marketplaceEnabled && purchaseUrl && offers.length === 0 && !detailLoading && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1 border-t border-slate-100">
               <p className="text-xs text-slate-600">{t("pharmacy.deeplinkHint")}</p>
               <a
                 href={purchaseUrl}
@@ -276,7 +354,7 @@ export default function PharmacyMarketplacePanel() {
                 <ExternalLink size={14} />
               </a>
             </div>
-          ) : null}
+          )}
 
           <p className="text-[11px] text-slate-400 leading-relaxed">{t("pharmacy.disclaimer")}</p>
         </div>

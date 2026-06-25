@@ -49,13 +49,23 @@ export function getPharmacyUtmParams(): Record<string, string> {
   };
 }
 
+export function isPharmacyReferenceEnabled(): boolean {
+  const raw = process.env.PHARMACY_REFERENCE_ENABLED;
+  if (raw === "false") return false;
+  return true;
+}
+
 export function getPharmacyPublicConfig(): PharmacyPublicConfig {
   const mode = getPharmacyIntegrationMode();
+  const referenceEnabled = isPharmacyReferenceEnabled();
+  const marketplaceEnabled = mode !== "disabled";
   return {
-    enabled: mode !== "disabled",
+    enabled: referenceEnabled || marketplaceEnabled,
+    referenceEnabled,
+    marketplaceEnabled,
     provider: getPharmacyProviderId(),
     mode,
-    requiresCep: true,
+    requiresCep: marketplaceEnabled,
     affiliateTrackingReady: hasAffiliateTracking(),
   };
 }

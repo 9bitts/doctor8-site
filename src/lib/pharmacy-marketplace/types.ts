@@ -12,6 +12,17 @@ export type PharmacyDrugRef = {
   presentation?: string;
 };
 
+/** Regulated CMED reference price (not a pharmacy shelf price). */
+export type PharmacyReferencePrice = {
+  priceCents: number;
+  priceType: "PF_CMED";
+  source: "medicamentos.api.br";
+  sourceUrl: string;
+  cmedTableLabel?: string;
+  matchedName: string;
+  isRegulatedReference: true;
+};
+
 export type PharmacySearchHit = {
   drugCatalogId?: string;
   name: string;
@@ -24,6 +35,7 @@ export type PharmacySearchHit = {
   lowestPriceCents?: number;
   /** Number of pharmacies with stock (when API provides it). */
   offerCount?: number;
+  referencePrice?: PharmacyReferencePrice;
 };
 
 export type PharmacyOffer = {
@@ -50,10 +62,13 @@ export type PharmacyOffersResponse = {
   cep?: string;
   offers: PharmacyOffer[];
   fallbackPurchaseUrl: string;
+  reference?: PharmacyReferencePrice | null;
 };
 
 export type PharmacyPublicConfig = {
   enabled: boolean;
+  referenceEnabled: boolean;
+  marketplaceEnabled: boolean;
   provider: PharmacyProviderId;
   mode: PharmacyIntegrationMode;
   requiresCep: boolean;
