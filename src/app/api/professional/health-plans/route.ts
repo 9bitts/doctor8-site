@@ -3,6 +3,12 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listHealthPlans } from "@/lib/health-plans";
 
+type PlanRuleInput = {
+  healthPlanId: string;
+  allowedWeekdays?: number[];
+  minLeadDays?: number;
+};
+
 export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -11,15 +17,27 @@ export async function GET() {
 
   const profile = await db.professionalProfile.findUnique({
     where: { userId: session.user.id },
-    include: { healthPlans: { select: { healthPlanId: true } } },
+    include: {
+      healthPlans: {
+        select: { healthPlanId: true, allowedWeekdays: true, minLeadDays: true },
+      },
+    },
   });
   if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const plans = await listHealthPlans();
-  const selected = new Set(profile.healthPlans.map((h) => h.healthPlanId));
+  const byId = new Map(profile.healthPlans.map((h) => [h.healthPlanId, h]));
 
   return NextResponse.json({
-    plans: plans.map((p) => ({ ...p, selected: selected.has(p.id) })),
+    plans: plans.map((p) => {
+      const row = byId.get(p.id);
+      return {
+        ...p,
+        selected: Boolean(row),
+        allowedWeekdays: row?.allowedWeekdays ?? [],
+        minLeadDays: row?.minLeadDays ?? 0,
+      };
+    }),
   });
 }
 
@@ -35,15 +53,29 @@ export async function PUT(req: NextRequest) {
   if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
-  const ids: string[] = Array.isArray(body.healthPlanIds) ? body.healthPlanIds : [];
+  const rules: PlanRuleInput[] = Array.isArray(body.plans)
+    ? body.plans
+    : Array.isArray(body.healthPlanIds)
+      ? body.healthPlanIds.map((id: string) => ({ healthPlanId: id }))
+      : [];
 
   await db.professionalHealthPlan.deleteMany({ where: { professionalId: profile.id } });
-  if (ids.length > 0) {
+  if (rules.length > 0) {
     await db.professionalHealthPlan.createMany({
-      data: ids.map((healthPlanId) => ({ professionalId: profile.id, healthPlanId })),
+      data: rules.map((r) => ({
+        professionalId: profile.id,
+        healthPlanId: r.healthPlanId,
+        allowedWeekdays: normalizeWeekdays(r.allowedWeekdays),
+        minLeadDays: Math.max(0, r.minLeadDays ?? 0),
+      })),
       skipDuplicates: true,
     });
   }
 
   return NextResponse.json({ ok: true });
+}
+
+function normalizeWeekdays(days: number[] | undefined): number[] {
+  if (!days?.length) return [];
+  return [...new Set(days.filter((d) => d >= 0 && d <= 6))].sort();
 }

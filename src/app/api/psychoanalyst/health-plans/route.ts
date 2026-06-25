@@ -4,6 +4,12 @@ import { db } from "@/lib/db";
 import { listHealthPlans } from "@/lib/health-plans";
 import { requirePsychoanalyst } from "@/lib/psychoanalyst-api";
 
+type PlanRuleInput = {
+  healthPlanId: string;
+  allowedWeekdays?: number[];
+  minLeadDays?: number;
+};
+
 export async function GET() {
   const ctx = await requirePsychoanalyst();
   if ("error" in ctx && ctx.error) return ctx.error;
@@ -11,15 +17,27 @@ export async function GET() {
 
   const profile = await db.psychoanalystProfile.findUnique({
     where: { id: psychoanalyst.id },
-    include: { healthPlans: { select: { healthPlanId: true } } },
+    include: {
+      healthPlans: {
+        select: { healthPlanId: true, allowedWeekdays: true, minLeadDays: true },
+      },
+    },
   });
   if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const plans = await listHealthPlans();
-  const selected = new Set(profile.healthPlans.map((h) => h.healthPlanId));
+  const byId = new Map(profile.healthPlans.map((h) => [h.healthPlanId, h]));
 
   return NextResponse.json({
-    plans: plans.map((p) => ({ ...p, selected: selected.has(p.id) })),
+    plans: plans.map((p) => {
+      const row = byId.get(p.id);
+      return {
+        ...p,
+        selected: Boolean(row),
+        allowedWeekdays: row?.allowedWeekdays ?? [],
+        minLeadDays: row?.minLeadDays ?? 0,
+      };
+    }),
   });
 }
 
@@ -29,20 +47,31 @@ export async function PUT(req: NextRequest) {
   const { psychoanalyst } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
 
   const body = await req.json();
-  const ids: string[] = Array.isArray(body.healthPlanIds) ? body.healthPlanIds : [];
+  const rules: PlanRuleInput[] = Array.isArray(body.plans)
+    ? body.plans
+    : Array.isArray(body.healthPlanIds)
+      ? body.healthPlanIds.map((id: string) => ({ healthPlanId: id }))
+      : [];
 
   await db.psychoanalystHealthPlan.deleteMany({
     where: { psychoanalystId: psychoanalyst.id },
   });
-  if (ids.length > 0) {
+  if (rules.length > 0) {
     await db.psychoanalystHealthPlan.createMany({
-      data: ids.map((healthPlanId) => ({
+      data: rules.map((r) => ({
         psychoanalystId: psychoanalyst.id,
-        healthPlanId,
+        healthPlanId: r.healthPlanId,
+        allowedWeekdays: normalizeWeekdays(r.allowedWeekdays),
+        minLeadDays: Math.max(0, r.minLeadDays ?? 0),
       })),
       skipDuplicates: true,
     });
   }
 
   return NextResponse.json({ ok: true });
+}
+
+function normalizeWeekdays(days: number[] | undefined): number[] {
+  if (!days?.length) return [];
+  return [...new Set(days.filter((d) => d >= 0 && d <= 6))].sort();
 }

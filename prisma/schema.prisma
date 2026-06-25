@@ -725,6 +725,9 @@ model ProfessionalHealthPlan {
   healthPlanId   String
   healthPlan     HealthPlan          @relation(fields: [healthPlanId], references: [id], onDelete: Cascade)
 
+  allowedWeekdays Int[] @default([]) // empty = all days the provider is open
+  minLeadDays     Int   @default(0)  // minimum booking advance (days)
+
   @@id([professionalId, healthPlanId])
   @@index([healthPlanId])
 }
@@ -734,6 +737,9 @@ model PsychoanalystHealthPlan {
   psychoanalyst   PsychoanalystProfile @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
   healthPlanId    String
   healthPlan      HealthPlan           @relation(fields: [healthPlanId], references: [id], onDelete: Cascade)
+
+  allowedWeekdays Int[] @default([])
+  minLeadDays     Int   @default(0)
 
   @@id([psychoanalystId, healthPlanId])
   @@index([healthPlanId])

@@ -36,6 +36,7 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
   const [savingGoogle, setSavingGoogle] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const [copiedGoogleBook, setCopiedGoogleBook] = useState(false);
   const [info, setInfo] = useState<ListingInfo | null>(null);
   const [googleUrl, setGoogleUrl] = useState("");
   const [error, setError] = useState("");
@@ -107,6 +108,13 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
     await navigator.clipboard.writeText(code);
     setCopiedEmbed(true);
     setTimeout(() => setCopiedEmbed(false), 2000);
+  }
+
+  async function copyGoogleBook() {
+    if (!info?.publicUrl) return;
+    await navigator.clipboard.writeText(info.publicUrl);
+    setCopiedGoogleBook(true);
+    setTimeout(() => setCopiedGoogleBook(false), 2000);
   }
 
   const embedSnippet = info?.embedUrl
@@ -302,6 +310,36 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
           </button>
         </div>
       </div>
+
+      {info.status === "live" && info.publicUrl && (
+        <div className="border-t border-slate-100 pt-4 space-y-2">
+          <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+            <CalendarCheck size={16} className="text-brand-500" />
+            {t("pub.googleBookTitle")}
+          </label>
+          <p className="text-xs text-slate-500">{t("pub.googleBookHint")}</p>
+          <ol className="text-xs text-slate-600 space-y-1 list-decimal ml-4">
+            <li>{t("pub.googleBookStep1")}</li>
+            <li>{t("pub.googleBookStep2")}</li>
+            <li>{t("pub.googleBookStep3")}</li>
+          </ol>
+          <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-2 mt-2">
+            <input
+              readOnly
+              value={info.publicUrl}
+              className="flex-1 bg-transparent text-sm text-slate-600 outline-none truncate"
+            />
+            <button
+              type="button"
+              onClick={copyGoogleBook}
+              className="shrink-0 p-2 rounded-lg hover:bg-white text-slate-500 hover:text-brand-500 transition"
+              title={t("pub.copy")}
+            >
+              {copiedGoogleBook ? <CheckCircle2 size={16} className="text-brand-500" /> : <Copy size={16} />}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

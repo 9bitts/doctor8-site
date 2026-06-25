@@ -434,6 +434,22 @@ export function buildPhysicianJsonLd(
     jsonLd.sameAs = [profile.googleBusinessUrl];
   }
 
+  jsonLd.potentialAction = {
+    "@type": "ReserveAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: url,
+      actionPlatform: [
+        "http://schema.org/DesktopWebPlatform",
+        "http://schema.org/MobileWebPlatform",
+      ],
+    },
+    result: {
+      "@type": "Reservation",
+      name: `Consulta com ${name}`,
+    },
+  };
+
   const price = profile.consultPrice / 100;
   if (price > 0) {
     jsonLd.makesOffer = {

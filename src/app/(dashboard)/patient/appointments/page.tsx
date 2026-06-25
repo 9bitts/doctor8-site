@@ -225,6 +225,53 @@ export default function AppointmentsPage() {
     setAppointments(d.appointments || []);
   }
 
+  async function loadSlots(
+    pro: Professional,
+    preselectSlot?: string,
+    planSlug?: string
+  ) {
+    setSlotsLoading(true);
+    try {
+      const providerType = pro.providerType || "health";
+      const planParam =
+        planSlug && planSlug !== "particular"
+          ? `&healthPlan=${encodeURIComponent(planSlug)}`
+          : "";
+      const slotsRes = await fetch(
+        `/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${providerType}${planParam}`
+      );
+      const d = await slotsRes.json();
+      const days = (d.days || []).filter((day: SlotDay) =>
+        day.slots.some((s) => s.available)
+      );
+      setSlots(days);
+      if (days.length > 0) {
+        const dayWithSlot = preselectSlot
+          ? days.find((day: SlotDay) =>
+              day.slots.some((s) => s.datetime === preselectSlot && s.available)
+            )
+          : null;
+        const day = dayWithSlot ?? days[0];
+        setSelectedDay(day);
+        if (
+          preselectSlot &&
+          day.slots.some(
+            (s: SlotDay["slots"][number]) => s.datetime === preselectSlot && s.available
+          )
+        ) {
+          setSelectedSlot(preselectSlot);
+        } else {
+          setSelectedSlot("");
+        }
+      } else {
+        setSelectedDay(null);
+        setSelectedSlot("");
+      }
+    } finally {
+      setSlotsLoading(false);
+    }
+  }
+
   async function selectProfessional(pro: Professional, preselectSlot?: string, preselectService?: string) {
     setSelectedPro(pro);
     setStep("slots");
@@ -238,14 +285,10 @@ export default function AppointmentsPage() {
     setSlotsLoading(true);
     try {
       const providerType = pro.providerType || "health";
-      const [slotsRes, plansRes, servicesRes] = await Promise.all([
-        fetch(`/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${providerType}`),
+      const [plansRes, servicesRes] = await Promise.all([
         fetch(`/api/professionals/${pro.id}/health-plans?providerType=${providerType}`),
         fetch(`/api/professionals/${pro.id}/services?providerType=${providerType}`),
       ]);
-      const d = await slotsRes.json();
-      const days = (d.days || []).filter((day: SlotDay) => day.slots.some((s) => s.available));
-      setSlots(days);
       if (plansRes.ok) {
         const plansData = await plansRes.json();
         setProviderPlans(plansData.plans || []);
@@ -259,19 +302,13 @@ export default function AppointmentsPage() {
       if (preselectService && services.some((s) => s.id === preselectService)) {
         setSelectedServiceId(preselectService);
       }
-      if (days.length > 0) {
-        const dayWithSlot = preselectSlot
-          ? days.find((day: SlotDay) =>
-              day.slots.some((s) => s.datetime === preselectSlot && s.available)
-            )
-          : null;
-        const day = dayWithSlot ?? days[0];
-        setSelectedDay(day);
-        if (preselectSlot && day.slots.some((s: SlotDay["slots"][number]) => s.datetime === preselectSlot && s.available)) {
-          setSelectedSlot(preselectSlot);
-        }
-      }
+      await loadSlots(pro, preselectSlot, "particular");
     } finally { setSlotsLoading(false); }
+  }
+
+  async function onHealthPlanChange(slug: string) {
+    setHealthPlanSlug(slug);
+    if (selectedPro) await loadSlots(selectedPro, undefined, slug);
   }
 
   async function handlePayment() {
@@ -556,6 +593,23 @@ export default function AppointmentsPage() {
             </div>
           </div>
           <div className="p-6 space-y-6">
+            {(providerPlans.length > 0) && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  {t("appt.healthPlanLabel")}
+                </label>
+                <select
+                  value={healthPlanSlug}
+                  onChange={(e) => onHealthPlanChange(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                >
+                  <option value="particular">{t("appt.healthPlanPrivate")}</option>
+                  {providerPlans.map((plan) => (
+                    <option key={plan.slug} value={plan.slug}>{plan.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {slotsLoading ? (
               <div className="flex justify-center py-10"><Loader2 size={24} className="animate-spin text-slate-400" /></div>
             ) : slots.length === 0 ? (

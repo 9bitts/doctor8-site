@@ -4,7 +4,16 @@ import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { Loader2, Shield, Check } from "lucide-react";
 
-type Plan = { id: string; name: string; slug: string; selected: boolean };
+type Plan = {
+  id: string;
+  name: string;
+  slug: string;
+  selected: boolean;
+  allowedWeekdays: number[];
+  minLeadDays: number;
+};
+
+const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
 export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
   const { t } = useI18n();
@@ -12,6 +21,7 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
   const [saving, setSaving] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [saved, setSaved] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(apiPath)
@@ -22,7 +32,31 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
 
   function toggle(id: string) {
     setPlans((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, selected: !p.selected } : p))
+      prev.map((p) =>
+        p.id === id
+          ? { ...p, selected: !p.selected, allowedWeekdays: p.selected ? [] : p.allowedWeekdays, minLeadDays: p.selected ? 0 : p.minLeadDays }
+          : p
+      )
+    );
+    setExpandedId((cur) => (cur === id ? null : id));
+  }
+
+  function toggleWeekday(planId: string, day: number) {
+    setPlans((prev) =>
+      prev.map((p) => {
+        if (p.id !== planId) return p;
+        const has = p.allowedWeekdays.includes(day);
+        const allowedWeekdays = has
+          ? p.allowedWeekdays.filter((d) => d !== day)
+          : [...p.allowedWeekdays, day].sort();
+        return { ...p, allowedWeekdays };
+      })
+    );
+  }
+
+  function setMinLead(planId: string, minLeadDays: number) {
+    setPlans((prev) =>
+      prev.map((p) => (p.id === planId ? { ...p, minLeadDays: Math.max(0, minLeadDays) } : p))
     );
   }
 
@@ -34,7 +68,13 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          healthPlanIds: plans.filter((p) => p.selected).map((p) => p.id),
+          plans: plans
+            .filter((p) => p.selected)
+            .map((p) => ({
+              healthPlanId: p.id,
+              allowedWeekdays: p.allowedWeekdays,
+              minLeadDays: p.minLeadDays,
+            })),
         }),
       });
       setSaved(true);
@@ -50,6 +90,8 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
       </div>
     );
   }
+
+  const selectedPlans = plans.filter((p) => p.selected);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
@@ -82,6 +124,68 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
           </button>
         ))}
       </div>
+
+      {selectedPlans.length > 0 && (
+        <div className="space-y-3 border-t border-slate-100 pt-4">
+          <p className="text-sm font-semibold text-slate-700">{t("healthPlanRules.title")}</p>
+          <p className="text-xs text-slate-500">{t("healthPlanRules.hint")}</p>
+
+          {selectedPlans.map((p) => (
+            <div key={p.id} className="bg-slate-50 rounded-xl p-4 space-y-3">
+              <button
+                type="button"
+                onClick={() => setExpandedId((cur) => (cur === p.id ? null : p.id))}
+                className="text-sm font-semibold text-slate-800 w-full text-left"
+              >
+                {p.name}
+              </button>
+
+              {(expandedId === p.id || selectedPlans.length === 1) && (
+                <>
+                  <div>
+                    <p className="text-xs font-medium text-slate-600 mb-2">
+                      {t("healthPlanRules.weekdaysLabel")}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {WEEKDAY_KEYS.map((key, day) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => toggleWeekday(p.id, day)}
+                          className={`text-xs px-2.5 py-1.5 rounded-lg border transition ${
+                            p.allowedWeekdays.includes(day)
+                              ? "bg-brand-500 border-brand-500 text-white"
+                              : "bg-white border-slate-200 text-slate-500 hover:border-brand-200"
+                          }`}
+                        >
+                          {t(`healthPlanRules.weekday.${key}`)}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1.5">
+                      {t("healthPlanRules.weekdaysAllHint")}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">
+                      {t("healthPlanRules.minLeadLabel")}
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={30}
+                      value={p.minLeadDays}
+                      onChange={(e) => setMinLead(p.id, Number(e.target.value) || 0)}
+                      className="w-24 text-sm border border-slate-200 rounded-lg px-2 py-1.5"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <button
         type="button"

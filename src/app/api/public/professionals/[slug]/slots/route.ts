@@ -14,11 +14,14 @@ export async function GET(
 
   const lang = normalizeLang(req.nextUrl.searchParams.get("lang"));
   const locale = localeOf(lang);
+  const healthPlan = req.nextUrl.searchParams.get("healthPlan") || undefined;
 
   const days = await getProviderAvailableDays(
     profile.providerId,
     profile.providerType,
-    locale
+    locale,
+    14,
+    healthPlan
   );
 
   return NextResponse.json({ days });

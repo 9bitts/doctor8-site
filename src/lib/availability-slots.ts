@@ -3,6 +3,10 @@
 import { db } from "@/lib/db";
 import { generateTimeSlots, localDateKey } from "@/lib/scheduling";
 import type { ProviderType } from "@/lib/providers";
+import {
+  applyHealthPlanSlotFilter,
+  getHealthPlanSchedulingRule,
+} from "@/lib/health-plan-rules";
 
 export type DaySlots = {
   date: string;
@@ -14,7 +18,8 @@ export async function getProviderAvailableDays(
   providerId: string,
   providerType: ProviderType,
   locale: string,
-  daysAhead = 14
+  daysAhead = 14,
+  healthPlanSlug?: string | null
 ): Promise<DaySlots[]> {
   const now = new Date();
   const twoWeeksLater = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
@@ -43,12 +48,18 @@ export async function getProviderAvailableDays(
       bookedAppointments.map((a) => a.scheduledAt.toISOString())
     );
 
-    return buildDaysFromBlocks(
-      psychoanalyst.availabilitySlots,
-      bookedTimes,
-      now,
-      daysAhead,
-      locale
+    return filterByHealthPlan(
+      buildDaysFromBlocks(
+        psychoanalyst.availabilitySlots,
+        bookedTimes,
+        now,
+        daysAhead,
+        locale
+      ),
+      providerId,
+      providerType,
+      healthPlanSlug,
+      now
     );
   }
 
@@ -75,13 +86,31 @@ export async function getProviderAvailableDays(
     bookedAppointments.map((a) => a.scheduledAt.toISOString())
   );
 
-  return buildDaysFromBlocks(
-    professional.availabilitySlots,
-    bookedTimes,
-    now,
-    daysAhead,
-    locale
+  return filterByHealthPlan(
+    buildDaysFromBlocks(
+      professional.availabilitySlots,
+      bookedTimes,
+      now,
+      daysAhead,
+      locale
+    ),
+    providerId,
+    providerType,
+    healthPlanSlug,
+    now
   );
+}
+
+async function filterByHealthPlan(
+  days: DaySlots[],
+  providerId: string,
+  providerType: ProviderType,
+  healthPlanSlug: string | null | undefined,
+  now: Date
+): Promise<DaySlots[]> {
+  if (!healthPlanSlug || healthPlanSlug === "particular") return days;
+  const rule = await getHealthPlanSchedulingRule(providerId, providerType, healthPlanSlug);
+  return applyHealthPlanSlotFilter(days, rule, now);
 }
 
 function buildDaysFromBlocks(
