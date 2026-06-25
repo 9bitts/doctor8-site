@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   AlertTriangle,
   ExternalLink,
@@ -8,6 +8,7 @@ import {
   Loader2,
   Search,
   Tag,
+  X,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 
@@ -129,6 +130,14 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
     }
   }, []);
 
+  function closeModal() {
+    setSelected(null);
+    setReference(null);
+    setReferenceMissing(false);
+    setSaveError(null);
+    setDetailLoading(false);
+  }
+
   async function handleSave() {
     if (!selected?.drugCatalogId) return;
     setSaving(true);
@@ -153,8 +162,7 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
         setSaveError(data.error?.message || t("pharmacy.saveError"));
         return;
       }
-      setSelected(null);
-      setReference(null);
+      closeModal();
       setResults([]);
       setSearched(false);
       setFilters(EMPTY_FILTERS);
@@ -230,11 +238,7 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
               key={hit.drugCatalogId || hit.name}
               type="button"
               onClick={() => loadPrice(hit)}
-              className={`w-full text-left rounded-xl border p-3 transition ${
-                selected?.drugCatalogId === hit.drugCatalogId
-                  ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
-                  : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/50"
-              }`}
+              className="w-full text-left rounded-xl border border-slate-200 bg-white p-3 transition hover:border-blue-300 hover:bg-blue-50/50"
             >
               <p className="text-sm font-bold text-slate-800">{hit.name}</p>
               <p className="text-xs text-slate-500 mt-0.5">{hit.activeIngredient}</p>
@@ -251,63 +255,97 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
       )}
 
       {selected && (
-        <div className="rounded-xl border-2 border-blue-300 bg-white p-4 space-y-4 shadow-sm">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-              {t("pharmacy.selectedDrug")}
-            </p>
-            <p className="text-base font-bold text-slate-900 mt-1">{selected.name}</p>
-            <p className="text-xs text-slate-500">{selected.activeIngredient}</p>
-            <p className="text-xs text-slate-400">{selected.presentation}</p>
-          </div>
-
-          {detailLoading ? (
-            <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
-              <Loader2 size={18} className="animate-spin text-blue-500" />
-              {t("pharmacy.loadingReference")}
-            </div>
-          ) : reference ? (
-            <div className="text-center py-2 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {t("pharmacy.referencePriceLabel")}
-              </p>
-              <p className="text-4xl font-extrabold text-emerald-600">
-                {formatBrl(reference.priceCents)}
-              </p>
-              <p className="text-xs text-slate-500">{t("pharmacy.referencePriceType")}</p>
-              <div className="flex gap-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-left">
-                <Info size={14} className="shrink-0 mt-0.5" />
-                <span>{t("pharmacy.referencePriceNote")}</span>
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50"
+          onClick={closeModal}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 p-5 border-b border-slate-200">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                  {t("pharmacy.selectedDrug")}
+                </p>
+                <p className="text-base font-bold text-slate-900 mt-1 leading-snug">{selected.name}</p>
+                <p className="text-xs text-slate-500 mt-1">{selected.activeIngredient}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{selected.presentation}</p>
+                {selected.manufacturer && (
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                    <Tag size={11} />
+                    {selected.manufacturer}
+                  </p>
+                )}
               </div>
-              <a
-                href={reference.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+              <button
+                type="button"
+                onClick={closeModal}
+                className="shrink-0 p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                aria-label={t("pharmacy.closeModal")}
               >
-                {t("pharmacy.viewOnSource")}
-                <ExternalLink size={12} />
-              </a>
+                <X size={20} />
+              </button>
             </div>
-          ) : referenceMissing ? (
-            <p className="text-sm text-slate-500 text-center py-4">{t("pharmacy.referenceNotFound")}</p>
-          ) : null}
 
-          {!detailLoading && reference && (
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-bold text-sm transition flex items-center justify-center gap-2"
-            >
-              {saving && <Loader2 size={16} className="animate-spin" />}
-              {saving ? t("docs.modal.saving") : t("pharmacy.saveToList")}
-            </button>
-          )}
+            <div className="p-5 space-y-4">
+              {detailLoading ? (
+                <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+                  <Loader2 size={22} className="animate-spin text-blue-500" />
+                  {t("pharmacy.loadingReference")}
+                </div>
+              ) : reference ? (
+                <div className="text-center space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {t("pharmacy.referencePriceLabel")}
+                  </p>
+                  <p className="text-4xl font-extrabold text-emerald-600">
+                    {formatBrl(reference.priceCents)}
+                  </p>
+                  <p className="text-xs text-slate-500">{t("pharmacy.referencePriceType")}</p>
+                  <div className="flex gap-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-left">
+                    <Info size={14} className="shrink-0 mt-0.5" />
+                    <span>{t("pharmacy.referencePriceNote")}</span>
+                  </div>
+                  <a
+                    href={reference.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  >
+                    {t("pharmacy.viewOnSource")}
+                    <ExternalLink size={12} />
+                  </a>
+                </div>
+              ) : referenceMissing ? (
+                <p className="text-sm text-slate-500 text-center py-6">{t("pharmacy.referenceNotFound")}</p>
+              ) : null}
 
-          {saveError && (
-            <p className="text-xs text-red-600 text-center">{saveError}</p>
-          )}
+              {!detailLoading && reference && (
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-bold text-sm transition flex items-center justify-center gap-2"
+                >
+                  {saving && <Loader2 size={16} className="animate-spin" />}
+                  {saving ? t("docs.modal.saving") : t("pharmacy.saveToList")}
+                </button>
+              )}
+
+              {saveError && (
+                <p className="text-xs text-red-600 text-center">{saveError}</p>
+              )}
+
+              <button
+                type="button"
+                onClick={closeModal}
+                className="w-full py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition"
+              >
+                {t("pharmacy.chooseAnother")}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
