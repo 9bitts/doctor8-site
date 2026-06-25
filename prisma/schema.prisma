@@ -302,6 +302,9 @@ model ProfessionalProfile {
   verifiedAt      DateTime?
   verifiedBy      String?
 
+  // Payouts (rateio) — conta Stripe Connect para receber o rateio mensal
+  stripeConnectAccountId String?
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -323,6 +326,10 @@ model ProfessionalProfile {
   practiceLocations PracticeLocation[]      @relation("ProfessionalLocations")
   services          ProviderService[]       @relation("ProfessionalServices")
   slotAlerts        SlotAvailabilityAlert[] @relation("ProfessionalSlotAlerts")
+
+  // Rateio (livro aberto / profit-sharing)
+  poolContributions       PoolContribution[]
+  consultationValidations ConsultationValidation[]
 
   @@index([userId])
   @@index([specialty])
@@ -1292,4 +1299,190 @@ model JitEvent {
   updatedAt   DateTime  @updatedAt
 
   sessions    JitSession[]
+}
+
+// ─────────────────────────────────────────
+// RATEIO / LIVRO ABERTO (profit-sharing)
+// Modelo de "capital aberto sem abrir capital":
+// - A comissão (15%) de cada consulta entra no LedgerEntry como COMMISSION_IN.
+// - Os custos de máquina (fixos + uso) entram como COST_FIXED / COST_USAGE.
+// - Pote do mês = max(0, comissões - custos), por moeda (a moeda que o Stripe processou).
+// - O pote é rateado entre profissionais qualificados: base (igual) + mérito (por score).
+// Tudo aditivo. Nenhuma tabela existente é alterada (apenas relações novas no
+// ProfessionalProfile). PHI nunca entra aqui — só valores e contagens.
+// ─────────────────────────────────────────
+
+enum LedgerEntryType {
+  COMMISSION_IN   // 15% retido de uma consulta paga (entra no pote)
+  COST_FIXED      // assinatura fixa de software (plano Railway, Daily, Resend...)
+  COST_USAGE      // custo variável de uso (tokens Anthropic, S3, taxa Stripe, minutos Daily...)
+  ADJUSTMENT      // correção manual auditada
+}
+
+enum LedgerSource {
+  STRIPE_API      // puxado da API do Stripe (nível 2 — fonte verificável)
+  AWS_API         // puxado do AWS Cost Explorer (nível 2)
+  ANTHROPIC       // console/API Anthropic
+  DAILY           // Daily.co
+  RAILWAY
+  RESEND
+  CLOUDFLARE
+  MANUAL_INVOICE  // lançado à mão com fatura anexada (nível 1)
+  SYSTEM          // calculado internamente (ex.: comissão a partir do próprio banco)
+}
+
+enum CostCategory {
+  AI_ANTHROPIC
+  STORAGE_S3
+  PAYMENT_STRIPE
+  VIDEO_DAILY
+  INFRA_RAILWAY
+  EMAIL_RESEND
+  CDN_CLOUDFLARE
+  OTHER
+}
+
+enum PoolPeriodStatus {
+  OPEN          // acumulando durante o mês
+  CALCULATING   // fechado, calculando contribuições
+  LOCKED        // congelado, hash selado, pronto para pagar
+  PAID          // rateios pagos
+}
+
+// O livro-razão imutável. Cada entrada e saída do balde da comissão é uma linha.
+model LedgerEntry {
+  id              String           @id @default(cuid())
+  type            LedgerEntryType
+  category        CostCategory?    // null quando type = COMMISSION_IN
+  amountCents     Int              // sempre positivo; o type indica a direção
+  currency        String           @default("BRL")
+  competenceMonth String           // "2026-06" — mês de competência (a qual pote pertence)
+
+  // Procedência / verificabilidade
+  source          LedgerSource
+  sourceRef       String?          // id externo (Stripe balance_txn, etc.) OU hash da resposta da API
+  invoiceUrl      String?          // chave S3 da fatura tarjada (nível 1)
+  fetchedAt       DateTime?        // quando foi puxado da fonte (nível 2)
+
+  // Referência mole à consulta que gerou a comissão (sem FK — ledger não cascateia)
+  appointmentId   String?
+  jitQueueId      String?
+
+  // Encadeamento por hash — torna o passado impossível de reescrever
+  prevHash        String?
+  hash            String           @unique
+
+  occurredAt      DateTime         // data do fato no mundo real
+  createdAt       DateTime         @default(now())
+
+  poolPeriodId    String?
+  poolPeriod      PoolPeriod?      @relation(fields: [poolPeriodId], references: [id])
+
+  @@index([competenceMonth, currency])
+  @@index([type])
+  @@index([category])
+  @@index([poolPeriodId])
+}
+
+// O pote de um mês, por moeda. Uma linha por (mês, moeda).
+model PoolPeriod {
+  id               String           @id @default(cuid())
+  month            String           // "2026-06"
+  currency         String           @default("BRL")
+
+  commissionCents  Int              @default(0)
+  costFixedCents   Int              @default(0)
+  costUsageCents   Int              @default(0)
+  poolCents        Int              @default(0)   // max(0, commission - (fixed + usage))
+
+  // Parâmetros vigentes (congelados no fechamento — nunca retroativos)
+  baseFraction     Float            @default(0.30) // 30% dividido igualmente
+  meritFraction    Float            @default(0.70) // 70% por score
+  minValidConsults Int              @default(10)    // mínimo para qualificar
+  minRating        Float            @default(3.5)   // nota mínima para entrar no pote
+
+  status           PoolPeriodStatus @default(OPEN)
+  lockedAt         DateTime?
+  ledgerHashAtLock String?          // hash do último lançamento no momento do fechamento
+  paidAt           DateTime?
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  entries          LedgerEntry[]
+  contributions    PoolContribution[]
+
+  @@unique([month, currency])
+  @@index([status])
+}
+
+// Quanto cada profissional leva no pote daquele mês.
+model PoolContribution {
+  id               String              @id @default(cuid())
+  poolPeriodId     String
+  poolPeriod       PoolPeriod          @relation(fields: [poolPeriodId], references: [id], onDelete: Cascade)
+  professionalId   String
+  professional     ProfessionalProfile @relation(fields: [professionalId], references: [id])
+
+  validConsults    Int                 @default(0)
+  ratingUsed       Float?
+  qualityMult      Float               @default(1.0) // multiplicador de qualidade (com piso/teto)
+  score            Float               @default(0)    // validConsults * qualityMult
+
+  qualified        Boolean             @default(false)
+  disqualReason    String?             // motivo, se não qualificou
+
+  baseCents        Int                 @default(0)
+  meritCents       Int                 @default(0)
+  totalCents       Int                 @default(0)
+
+  payoutStatus     String              @default("pending") // pending | paid | failed | held
+  stripeTransferId String?
+  paidAt           DateTime?
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@unique([poolPeriodId, professionalId])
+  @@index([professionalId])
+  @@index([payoutStatus])
+}
+
+// O coração do anti-burla: define se uma consulta conta para o score.
+// Referência mole a Appointment OU JitQueue (exatamente um).
+model ConsultationValidation {
+  id                  String              @id @default(cuid())
+
+  appointmentId       String?             @unique
+  jitQueueId          String?             @unique
+
+  professionalId      String
+  professional        ProfessionalProfile @relation(fields: [professionalId], references: [id])
+  competenceMonth     String              // "2026-06"
+  currency            String              @default("BRL")
+
+  // Carimbos objetivos (vindos de sistemas de registro, não auto-declarados)
+  paymentSettled      Boolean             @default(false) // Stripe pago e liquidado
+  outsideRefundWindow Boolean             @default(false) // fora da janela de estorno
+  patientVerified     Boolean             @default(false) // User distinto, e-mail verificado, meio de pagamento não compartilhado
+  callConnected       Boolean             @default(false) // chamada realmente conectada
+  durationSeconds     Int?                // duração real (Plantão agora; Appointment via webhook Daily depois)
+  hasClinicalRecord   Boolean             @default(false) // prontuário/receita criado
+
+  grossCents          Int                 @default(0)     // preço da consulta
+  commissionCents     Int                 @default(0)     // 15% congelado aqui
+
+  // Fraude
+  fraudFlags          String[]            @default([])
+  fraudScore          Float               @default(0)
+  underReview         Boolean             @default(false)
+
+  isValid             Boolean             @default(false) // veredito final para o score
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([professionalId, competenceMonth])
+  @@index([competenceMonth, currency])
+  @@index([isValid])
 }
