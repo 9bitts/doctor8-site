@@ -26,6 +26,10 @@ export type LandingContent = {
     copyright: string;
   };
   cookie: { text: string; accept: string; decline: string };
+  platform: {
+    eyebrow: string; title: string; sub: string; footerNote: string; loginLink: string;
+    items: Record<string, { labelKey: string; desc: string }>;
+  };
 };
 
 const pt: LandingContent = {
@@ -99,6 +103,26 @@ const pt: LandingContent = {
   cookie: {
     text: "Usamos cookies para melhorar sua experi\u00eancia. Ao continuar, voc\u00ea concorda com nossa",
     accept: "Aceitar", decline: "Recusar",
+  },
+  platform: {
+    eyebrow: "Sua \u00e1rea do paciente",
+    title: "Tudo o que voc\u00ea precisa para cuidar da sa\u00fade",
+    sub: "Ao criar sua conta gratuita, voc\u00ea acessa um painel completo \u2014 consultas, hist\u00f3rico, medicamentos, documentos e muito mais.",
+    footerNote: "J\u00e1 tem conta?",
+    loginLink: "Entrar na plataforma",
+    items: {
+      dashboard: { labelKey: "nav.dashboard", desc: "Vis\u00e3o geral da sua sa\u00fade, pr\u00f3ximas consultas e alertas importantes." },
+      history: { labelKey: "nav.medicalHistory", desc: "Hist\u00f3rico cl\u00ednico completo, sempre acess\u00edvel e seguro." },
+      medications: { labelKey: "nav.medications", desc: "Controle de rem\u00e9dios, lembretes e compartilhamento com m\u00e9dicos." },
+      buyingClub: { labelKey: "nav.buyingClub", desc: "Descontos exclusivos em produtos de sa\u00fade parceiros." },
+      prescriptions: { labelKey: "nav.myPrescriptions", desc: "Receitas digitais, renova\u00e7\u00f5es e prescri\u00e7\u00f5es em um s\u00f3 lugar." },
+      appointments: { labelKey: "nav.appointments", desc: "Agende, pague e entre na teleconsulta pelo app." },
+      documents: { labelKey: "nav.documents", desc: "Exames, laudos e arquivos m\u00e9dicos organizados." },
+      messages: { labelKey: "nav.messages", desc: "Converse com seus profissionais de forma segura." },
+      urgent: { labelKey: "nav.urgent", desc: "Atendimento imediato online quando precisar com urg\u00eancia." },
+      find: { labelKey: "nav.find", desc: "Encontre profissionais por mapa, especialidade e conv\u00eanio." },
+      account: { labelKey: "nav.account", desc: "Perfil, idioma, senha e prefer\u00eancias da conta." },
+    },
   },
 };
 
@@ -174,6 +198,26 @@ const en: LandingContent = {
     text: "We use cookies to improve your experience. By continuing, you agree to our",
     accept: "Accept", decline: "Decline",
   },
+  platform: {
+    eyebrow: "Your patient area",
+    title: "Everything you need to manage your health",
+    sub: "Create your free account and access a complete dashboard \u2014 appointments, records, medications, documents and more.",
+    footerNote: "Already have an account?",
+    loginLink: "Sign in to the platform",
+    items: {
+      dashboard: { labelKey: "nav.dashboard", desc: "Overview of your health, upcoming appointments and important alerts." },
+      history: { labelKey: "nav.medicalHistory", desc: "Complete clinical history, always accessible and secure." },
+      medications: { labelKey: "nav.medications", desc: "Medication tracking, reminders and sharing with doctors." },
+      buyingClub: { labelKey: "nav.buyingClub", desc: "Exclusive discounts on partner health products." },
+      prescriptions: { labelKey: "nav.myPrescriptions", desc: "Digital prescriptions and renewals in one place." },
+      appointments: { labelKey: "nav.appointments", desc: "Book, pay and join teleconsultations from the app." },
+      documents: { labelKey: "nav.documents", desc: "Exams, reports and medical files organized." },
+      messages: { labelKey: "nav.messages", desc: "Chat securely with your healthcare professionals." },
+      urgent: { labelKey: "nav.urgent", desc: "Immediate online care when you need urgent attention." },
+      find: { labelKey: "nav.find", desc: "Find professionals by map, specialty and insurance." },
+      account: { labelKey: "nav.account", desc: "Profile, language, password and account preferences." },
+    },
+  },
 };
 
 const es: LandingContent = {
@@ -208,6 +252,26 @@ const es: LandingContent = {
   },
   footer: { ...en.footer, desc: "Plataforma de salud digital para pacientes y profesionales. Conforme LGPD y HIPAA.", copyright: "\u00a9 2026 Doctor8. Todos los derechos reservados." },
   cookie: { text: "Usamos cookies para mejorar tu experiencia. Al continuar, aceptas nuestra", accept: "Aceptar", decline: "Rechazar" },
+  platform: {
+    eyebrow: "Tu \u00e1rea de paciente",
+    title: "Todo lo que necesitas para cuidar tu salud",
+    sub: "Al crear tu cuenta gratis, accedes a un panel completo: consultas, historial, medicamentos, documentos y m\u00e1s.",
+    footerNote: "\u00bfYa tienes cuenta?",
+    loginLink: "Iniciar sesi\u00f3n",
+    items: {
+      dashboard: { labelKey: "nav.dashboard", desc: "Resumen de tu salud, pr\u00f3ximas consultas y alertas." },
+      history: { labelKey: "nav.medicalHistory", desc: "Historial cl\u00ednico completo, seguro y accesible." },
+      medications: { labelKey: "nav.medications", desc: "Control de medicamentos, recordatorios y compartir con m\u00e9dicos." },
+      buyingClub: { labelKey: "nav.buyingClub", desc: "Descuentos exclusivos en productos de salud." },
+      prescriptions: { labelKey: "nav.myPrescriptions", desc: "Recetas digitales y renovaciones en un solo lugar." },
+      appointments: { labelKey: "nav.appointments", desc: "Agenda, paga y entra a la teleconsulta." },
+      documents: { labelKey: "nav.documents", desc: "Ex\u00e1menes, informes y archivos m\u00e9dicos organizados." },
+      messages: { labelKey: "nav.messages", desc: "Chatea de forma segura con tus profesionales." },
+      urgent: { labelKey: "nav.urgent", desc: "Atenci\u00f3n inmediata online cuando lo necesites." },
+      find: { labelKey: "nav.find", desc: "Encuentra profesionales por mapa y especialidad." },
+      account: { labelKey: "nav.account", desc: "Perfil, idioma y preferencias de la cuenta." },
+    },
+  },
 };
 
 export function getLandingContent(lang: Lang): LandingContent {
@@ -216,4 +280,3 @@ export function getLandingContent(lang: Lang): LandingContent {
   return en;
 }
 
-export const SPECIALTY_ICONS = ["\uD83E\uDE7A", "\uD83E\uDDE0", "\uD83E\uDD57", "\uD83E\uDEC0", "\uD83D\uDCAA", "\uD83C\uDF3F"];

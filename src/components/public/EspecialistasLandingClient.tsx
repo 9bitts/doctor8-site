@@ -87,7 +87,10 @@ export default function EspecialistasLandingClient() {
     }
   }
 
+  const platformLabel = lang === "pt" ? "Plataforma" : lang === "es" ? "Plataforma" : "Platform";
+
   const navLinks = [
+    { href: "#platform", label: platformLabel },
     { href: "#how", label: lc.nav.how },
     { href: "#specialties", label: lc.nav.specialties },
     { href: "#club", label: lc.nav.club },
@@ -95,24 +98,24 @@ export default function EspecialistasLandingClient() {
     { href: "#energy", label: lc.nav.energy },
   ];
 
-  return (
-    <div className={`${sora.className} min-h-screen`}>
-      <style jsx global>{`
-        .landing-heading { font-family: ${sora.style.fontFamily}, sans-serif; }
-        .landing-fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
-        .landing-fade-in.visible { opacity: 1; transform: translateY(0); }
-      `}</style>
+  const disclaimer =
+    lang === "en"
+      ? "Club Doctor is not a health plan or emergency service."
+      : lang === "es"
+        ? "Club Doctor no es un plan de salud ni servicio de emergencia."
+        : "O Club Doctor n\u00e3o \u00e9 plano de sa\u00fade nem servi\u00e7o de emerg\u00eancia.";
 
+  return (
+    <div className={`${sora.className} min-h-screen bg-d8-dark`}>
       <CookieBanner />
 
-      {/* Nav */}
-      <nav className="sticky top-0 z-[100] border-b border-white/8 bg-[#0c1a27]/97 backdrop-blur-md">
-        <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-6 px-6">
-          <Link href="/" className="text-[22px] font-extrabold text-white">
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-d8-dark/95 backdrop-blur-md">
+        <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-4 px-6">
+          <Link href="/" className="shrink-0 text-[22px] font-extrabold text-white">
             Doctor<span className="text-accent-500">8</span>
           </Link>
 
-          <ul className={`${mobileOpen ? "flex" : "hidden"} absolute left-0 right-0 top-[68px] flex-col gap-4 border-b border-white/10 bg-[#0c1a27] px-6 py-4 md:static md:flex md:flex-1 md:flex-row md:border-0 md:bg-transparent md:p-0`}>
+          <ul className={`${mobileOpen ? "flex" : "hidden"} absolute left-0 right-0 top-[68px] z-50 flex-col gap-3 border-b border-white/10 bg-d8-dark px-6 py-4 md:static md:flex md:flex-1 md:flex-row md:items-center md:border-0 md:bg-transparent md:p-0`}>
             {navLinks.map((l) => (
               <li key={l.href}>
                 <a href={l.href} onClick={() => setMobileOpen(false)} className="text-sm font-medium text-white/70 transition hover:text-white">
@@ -122,7 +125,7 @@ export default function EspecialistasLandingClient() {
             ))}
           </ul>
 
-          <div className="ml-auto flex items-center gap-2.5">
+          <div className="ml-auto flex items-center gap-2">
             <button
               type="button"
               onClick={() => setLang(nextLang(lang))}
@@ -130,10 +133,10 @@ export default function EspecialistasLandingClient() {
             >
               {langLabel(lang)}
             </button>
-            <Link href="/login" className="hidden rounded-[10px] border border-white/20 px-4 py-2 text-sm font-medium text-white/80 transition hover:border-white/50 hover:text-white sm:inline-block">
+            <Link href="/login" className="hidden rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/85 transition hover:border-white/40 hover:text-white sm:inline-block">
               {lc.nav.signIn}
             </Link>
-            <Link href="/register" className="rounded-[10px] bg-accent-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-accent-600">
+            <Link href="/register" className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-600">
               {lc.nav.signUp}
             </Link>
             <button type="button" onClick={() => setMobileOpen(!mobileOpen)} className="text-white md:hidden" aria-label="Menu">
@@ -143,17 +146,16 @@ export default function EspecialistasLandingClient() {
         </div>
       </nav>
 
-      {/* Hero + Search */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0c1a27] via-[#0d2d42] to-[#0f4d66] px-6 pb-16 pt-12">
-        <div className="pointer-events-none absolute -right-10 -top-20 h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(224,89,48,0.25)_0%,transparent_65%)]" />
-        <div className="pointer-events-none absolute -bottom-16 -left-10 h-[350px] w-[350px] rounded-full bg-[radial-gradient(circle,rgba(224,89,48,0.12)_0%,transparent_65%)]" />
+      <section className="relative overflow-hidden bg-d8-hero px-6 pb-14 pt-10">
+        <div className="pointer-events-none absolute -right-16 top-0 h-80 w-80 rounded-full bg-accent-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-brand-500/15 blur-3xl" />
 
         <div className="relative z-10 mx-auto max-w-3xl">
           <div className="mb-8 text-center text-white">
-            <h1 className="landing-heading text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
+            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
               {t("pubSearch.landingTitle")}
             </h1>
-            <p className="mt-3 text-lg text-white/65">{t("pubSearch.landingSubtitle")}</p>
+            <p className="mt-3 text-lg text-white/70">{t("pubSearch.landingSubtitle")}</p>
           </div>
 
           <div className="mb-4 flex justify-center gap-2">
@@ -184,7 +186,7 @@ export default function EspecialistasLandingClient() {
                 <select
                   value={specialty}
                   onChange={(e) => setSpecialty(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
                 >
                   {POPULAR_SPECIALTIES.map((s) => (
                     <option key={s.slug} value={s.slug}>{t(s.labelKey)}</option>
@@ -199,7 +201,7 @@ export default function EspecialistasLandingClient() {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder={t("pubSearch.cityPlaceholder")}
-                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
                   />
                 </div>
               </div>
@@ -220,7 +222,7 @@ export default function EspecialistasLandingClient() {
                   value={symptom}
                   onChange={(e) => setSymptom(e.target.value)}
                   placeholder={t("symptom.placeholder")}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
                 />
                 <p className="mt-1 text-[11px] text-slate-400">{t("symptom.hint")}</p>
               </div>
@@ -232,7 +234,7 @@ export default function EspecialistasLandingClient() {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder={t("pubSearch.cityPlaceholder")}
-                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
                   />
                 </div>
               </div>
@@ -248,9 +250,7 @@ export default function EspecialistasLandingClient() {
             </form>
           )}
 
-          <p className="mt-5 text-center text-xs text-white/35">
-            * {lang === "en" ? "Club Doctor is not a health plan or emergency service." : lang === "es" ? "Club Doctor no es un plan de salud ni servicio de emergencia." : "O Club Doctor não é plano de saúde nem serviço de emergência."}
-          </p>
+          <p className="mt-4 text-center text-xs text-white/40">* {disclaimer}</p>
         </div>
       </section>
 

@@ -27,10 +27,10 @@ export default function CookieBanner() {
     setVisible(false);
   }
 
-  const privacyLabel = lang === "en" ? "Privacy Policy" : lang === "es" ? "Pol?tica de Privacidad" : "Pol?tica de Privacidade";
+  const privacyLabel = lang === "en" ? "Privacy Policy" : lang === "es" ? "Pol\u00edtica de Privacidad" : "Pol\u00edtica de Privacidade";
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[9999] flex flex-wrap items-center gap-4 border-t-2 border-accent-500 bg-[#0c1a27] px-6 py-4 text-white">
+    <div className="fixed bottom-0 left-0 right-0 z-[9999] flex flex-wrap items-center gap-4 border-t-2 border-accent-500 bg-d8-dark px-6 py-4 text-white">
       <p className="min-w-[200px] flex-1 text-[13px] opacity-85">
         {c.cookie.text}{" "}
         <Link href="/privacy" className="text-accent-400 underline">{privacyLabel}</Link>
