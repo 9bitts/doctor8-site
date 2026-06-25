@@ -4,9 +4,9 @@
 import EspecialistasLandingClient from "@/components/public/EspecialistasLandingClient";
 
 export const metadata = {
-  title: "Encontre especialistas de saúde | Doctor8",
+  title: "Doctor8 — Consulte Especialistas Online | Club Doctor",
   description:
-    "Busque profissionais de saúde por especialidade e cidade. Agende consultas online ou presenciais.",
+    "Consulte médicos, psicólogos, nutricionistas e outros especialistas online. Club Doctor por R$34,90/mês. LGPD compliant. Brasil, EUA e Europa.",
 };
 
 export default function RootPage() {
