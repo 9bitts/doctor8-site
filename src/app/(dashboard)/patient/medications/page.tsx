@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { Pill, Plus, Trash2, ShoppingCart, Stethoscope, X, Loader2, Share2, Download, Pencil } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
+import PharmacyMarketplacePanel from "@/components/patient/PharmacyMarketplacePanel";
 
 type Flow = "CLINICAL" | "PURCHASE";
 
@@ -172,6 +173,8 @@ export default function MedicationsPage() {
             color="blue"
           />
         </div>
+
+        {activeTab === "PURCHASE" && <PharmacyMarketplacePanel />}
 
         {/* Tab actions */}
         {activeTab === "CLINICAL" && clinicalMeds.length > 0 && (
