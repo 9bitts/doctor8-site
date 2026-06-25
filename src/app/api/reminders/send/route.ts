@@ -9,6 +9,10 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { verifyQStashSignature } from "@/lib/qstash";
+import {
+  isWhatsAppConfigured,
+  sendAppointmentReminderWhatsApp,
+} from "@/lib/whatsapp";
 import { z } from "zod";
 
 const schema = z.object({
@@ -235,8 +239,24 @@ export async function POST(req: NextRequest) {
       const phone = rawPhone.replace(/\D/g, "");
       const message = buildWhatsAppMessage(patientName, doctorName, scheduledAt, appointment.meetingUrl);
       const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
-      // We store the WhatsApp URL in a notification so the team/system can trigger it
-      // In production, integrate with WhatsApp Business API (Twilio, Z-API, etc.)
+
+      let apiSent = false;
+      if (isWhatsAppConfigured()) {
+        const result = await sendAppointmentReminderWhatsApp({
+          toPhone: rawPhone,
+          patientName,
+          doctorName,
+          scheduledAt,
+          meetingUrl: appointment.meetingUrl,
+        });
+        if (result.ok) {
+          apiSent = true;
+          console.log(`[REMINDER] 3h WhatsApp API sent to ${phone}, id=${result.messageId}`);
+        } else if (!result.skipped) {
+          console.error(`[REMINDER] 3h WhatsApp API failed: ${result.error}`);
+        }
+      }
+
       await createNotification({
         userId: patientUser.id,
         title: "Lembrete de consulta",
@@ -244,14 +264,18 @@ export async function POST(req: NextRequest) {
         type: "appointment_reminder",
         data: {
           appointmentId,
-          whatsappUrl: waUrl,
+          whatsappUrl: apiSent ? undefined : waUrl,
           phone,
+          whatsappSent: apiSent,
           titleKey: "notif.apptReminder.title",
           bodyKey: "notif.apptReminder.body3h",
           bodyParams: { doctor: doctorName },
         },
       }).catch(() => {});
-      console.log(`[REMINDER] 3h WhatsApp notification created for ${phone}`);
+
+      if (!apiSent) {
+        console.log(`[REMINDER] 3h WhatsApp fallback notification for ${phone}`);
+      }
     }
   }
 

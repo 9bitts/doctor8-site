@@ -52,6 +52,57 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     Credentials({
+      id: "magic-link",
+      name: "magic-link",
+      credentials: {
+        token: { label: "Token", type: "text" },
+      },
+      async authorize(credentials) {
+        const token = credentials?.token;
+        if (!token || typeof token !== "string") return null;
+
+        const record = await db.verificationToken.findUnique({
+          where: { token },
+        });
+        if (!record?.identifier.startsWith("magic:")) return null;
+        if (record.expires < new Date()) {
+          await db.verificationToken.delete({ where: { token } }).catch(() => {});
+          return null;
+        }
+
+        const userId = record.identifier.slice("magic:".length);
+        const user = await db.user.findUnique({ where: { id: userId } });
+        if (!user || user.deletedAt || user.role !== "PATIENT") return null;
+
+        await db.verificationToken.delete({ where: { token } });
+
+        if (!user.emailVerified) {
+          await db.user.update({
+            where: { id: user.id },
+            data: { emailVerified: new Date() },
+          });
+        }
+
+        await db.user.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+            lastLoginAt: new Date(),
+          },
+        });
+
+        await audit.login(user.id);
+
+        return {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          region: user.region,
+        };
+      },
+    }),
+    Credentials({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },

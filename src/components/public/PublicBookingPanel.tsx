@@ -8,6 +8,7 @@ import { Calendar, ChevronRight, Loader2 } from "lucide-react";
 import type { PublicProfileData } from "@/lib/public-profile";
 import type { PublicAnalyticsSource } from "@/lib/public-analytics";
 import SlotAlertForm from "@/components/public/SlotAlertForm";
+import MagicLinkBookForm from "@/components/public/MagicLinkBookForm";
 import { trackPublicBookClick } from "@/components/public/PublicProfileTracker";
 
 type DaySlots = {
@@ -242,6 +243,8 @@ export default function PublicBookingPanel({
         {selectedSlot ? t("pub.bookSlot") : t("pub.bookCta")}
         <ChevronRight size={16} />
       </Link>
+
+      <MagicLinkBookForm callbackUrl={`/patient/appointments?${bookParams.toString()}`} />
 
       <p className="text-center text-xs text-slate-400">
         {t("pub.noAccount")}{" "}

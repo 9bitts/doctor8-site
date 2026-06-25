@@ -50,6 +50,48 @@ export const EMAIL_VERIFICATION: Record<EmailLang, {
   },
 };
 
+export const EMAIL_MAGIC_LINK: Record<EmailLang, {
+  subject: string;
+  heading: string;
+  hi: (name: string) => string;
+  body: string;
+  cta: string;
+  expires: string;
+  ignore: string;
+  orCopy: string;
+}> = {
+  en: {
+    subject: "Continue your Doctor8 booking",
+    heading: "Your secure login link",
+    hi: (n) => `Hi <strong>${n}</strong>,`,
+    body: "Click below to sign in and finish scheduling your appointment. No password needed.",
+    cta: "Continue booking",
+    expires: "This link expires in <strong>30 minutes</strong>.",
+    ignore: "If you didn't request this, you can safely ignore this email.",
+    orCopy: "Or copy this link:",
+  },
+  pt: {
+    subject: "Continue seu agendamento no Doctor8",
+    heading: "Seu link seguro de acesso",
+    hi: (n) => `Olá <strong>${n}</strong>,`,
+    body: "Clique abaixo para entrar e concluir o agendamento da sua consulta. Sem senha.",
+    cta: "Continuar agendamento",
+    expires: "Este link expira em <strong>30 minutos</strong>.",
+    ignore: "Se você não solicitou isso, pode ignorar este email com segurança.",
+    orCopy: "Ou copie este link:",
+  },
+  es: {
+    subject: "Continúa tu reserva en Doctor8",
+    heading: "Tu enlace seguro de acceso",
+    hi: (n) => `Hola <strong>${n}</strong>,`,
+    body: "Haz clic abajo para iniciar sesión y terminar de agendar tu consulta. Sin contraseña.",
+    cta: "Continuar reserva",
+    expires: "Este enlace expira en <strong>30 minutos</strong>.",
+    ignore: "Si no solicitaste esto, puedes ignorar este email.",
+    orCopy: "O copia este enlace:",
+  },
+};
+
 export const EMAIL_PASSWORD_RESET: Record<EmailLang, {
   subject: string;
   heading: string;

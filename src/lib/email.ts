@@ -20,6 +20,7 @@ import {
   EMAIL_COLLEAGUE_INVITE,
   EMAIL_SLOT_ALERT,
   EMAIL_REVIEW_REQUEST,
+  EMAIL_MAGIC_LINK,
 } from "./email-i18n";
 
 // ─── EMAIL VERIFICATION ──────────────────────────────────────────────────────
@@ -68,6 +69,57 @@ export async function sendEmailVerification({
     html: emailShell(c.heading, body, lang),
     text,
     tag: "email-verification",
+  });
+}
+
+// ─── MAGIC LINK (passwordless booking login) ─────────────────────────────────
+export async function sendMagicLinkLogin({
+  email,
+  name,
+  token,
+  callbackUrl,
+  language,
+}: {
+  email: string;
+  name: string;
+  token: string;
+  callbackUrl: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_MAGIC_LINK[lang];
+  const loginUrl = `${getAppUrl()}/auth/magic?token=${encodeURIComponent(token)}&callback=${encodeURIComponent(callbackUrl)}`;
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(name)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${loginUrl}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:13px;line-height:1.6;">
+      ${c.expires}<br>
+      ${c.ignore}
+    </p>
+    <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+      ${c.orCopy} <a href="${loginUrl}" style="color:#0a4d6e;">${loginUrl}</a>
+    </p>`;
+
+  const text = [
+    c.hi(name).replace(/<[^>]+>/g, ""),
+    c.body,
+    `${c.cta}: ${loginUrl}`,
+    c.expires.replace(/<[^>]+>/g, ""),
+    c.ignore,
+  ].join("\n\n");
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject,
+    html: emailShell(c.heading, body, lang),
+    text,
+    tag: "magic-link",
   });
 }
 
