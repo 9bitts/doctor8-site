@@ -27,6 +27,14 @@ interface ClubInfo {
   drug: DrugResult;
 }
 
+interface ActiveClub {
+  id: string;
+  status: string;
+  activeCount: number;
+  isMember: boolean;
+  drug: DrugResult;
+}
+
 interface BuyingClubClientProps {
   pagePath: string;
   accountPath: string;
@@ -46,8 +54,24 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
   const [joined, setJoined] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [activeClubs, setActiveClubs] = useState<ActiveClub[]>([]);
+  const [activeClubsLoading, setActiveClubsLoading] = useState(true);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+
+  const loadActiveClubs = useCallback(async () => {
+    setActiveClubsLoading(true);
+    try {
+      const res = await fetch("/api/buying-club/active");
+      const data = await res.json();
+      if (res.ok) setActiveClubs(data.clubs || []);
+    } catch { /* ignore */ }
+    setActiveClubsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadActiveClubs();
+  }, [loadActiveClubs]);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -158,6 +182,7 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
       if (res.ok) {
         setClub(data);
         setJoined(true);
+        loadActiveClubs();
       }
     } catch { /* ignore */ }
     setJoining(false);
@@ -371,6 +396,54 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
           ) : null}
         </div>
       )}
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-800">{t("buyClub.activeClubsTitle")}</h2>
+          <p className="text-xs text-slate-500 mt-1">{t("buyClub.activeClubsSubtitle")}</p>
+        </div>
+
+        {activeClubsLoading ? (
+          <div className="flex items-center gap-2 text-sm text-slate-400 py-6 justify-center">
+            <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
+          </div>
+        ) : activeClubs.length === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-6">{t("buyClub.noActiveClubs")}</p>
+        ) : (
+          <ul className="divide-y divide-slate-100 -mx-5">
+            {activeClubs.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => selectDrug(item.drug)}
+                  className="w-full flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition text-left"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                    <ShoppingBag size={18} className="text-emerald-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-800 text-sm">{item.drug.name}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {item.drug.activeIngredient} · {item.drug.presentation}
+                    </p>
+                    {item.isMember && (
+                      <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                        <CheckCircle2 size={12} /> {t("buyClub.youAreMember")}
+                      </p>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                      <Users size={14} />
+                      {t("buyClub.listMemberCount").replace("{{count}}", String(item.activeCount))}
+                    </p>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
