@@ -37,3 +37,19 @@ export const REGION_MISMATCH_MESSAGE =
   "Para pagar na moeda escolhida, altere a regiao da sua conta em Meu Perfil e salve. A moeda de cobranca deve ser a mesma da regiao do cadastro.";
 
 export const SETTINGS_PROFILE_PATH = "/professional/settings";
+export const PATIENT_ACCOUNT_PATH = "/patient/account";
+
+export const CLUB_BILLING_REGION_OPTIONS: {
+  region: BillingRegion;
+  currency: string;
+  labelPt: string;
+  priceHint: string;
+}[] = [
+  { region: "BR", currency: "BRL", labelPt: "Brasil (BRL)", priceHint: "R$ 34,90/mes" },
+  { region: "US", currency: "USD", labelPt: "EUA (USD)", priceHint: "US$ 9,90/mes" },
+  { region: "EU", currency: "EUR", labelPt: "Europa (EUR)", priceHint: "EUR 8,90/mes" },
+];
+
+export function patientRegionMismatchMessage(): string {
+  return "Para pagar na moeda escolhida, altere a regiao da sua conta em Conta e salve. A moeda deve ser a mesma da regiao do cadastro.";
+}

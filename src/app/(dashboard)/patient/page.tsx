@@ -13,9 +13,10 @@ import { getProfessionLabel } from "@/lib/professions";
 import {
   Calendar, FileText, Pill, AlertCircle, Radio, Stethoscope,
   Clock, ChevronRight, Activity, AlertTriangle, MessageSquare,
-  ClipboardList, Settings, Heart, Video, MapPin,
+  ClipboardList, Settings, Heart, Video, MapPin, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -83,6 +84,8 @@ export default async function PatientDashboard() {
     unreadMessages,
     onlineDoctors,
     activeQueue,
+    subscription,
+    userRow,
   ] = await Promise.all([
     db.prescription.count({
       where: { document: { patientId: patient.id } },
@@ -106,7 +109,18 @@ export default async function PatientDashboard() {
       },
       orderBy: { enteredAt: "desc" },
     }),
+    db.subscription.findUnique({
+      where: { userId },
+      select: { status: true },
+    }),
+    db.user.findUnique({
+      where: { id: userId },
+      select: { region: true },
+    }),
   ]);
+
+  const hasActiveClub =
+    !!subscription && ["active", "trialing"].includes(subscription.status);
 
   const upcomingCount = patient.appointments.length;
   const medicationCount = patient.medications.length;
@@ -207,6 +221,7 @@ export default async function PatientDashboard() {
     {
       title: t("pdash.quick.group.account"),
       items: [
+        { href: "/patient/club-doctor", labelKey: "nav.clubDoctor", icon: <Sparkles size={20} />, accent: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
         { href: "/patient/account", labelKey: "nav.account", icon: <Settings size={20} />, accent: "bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200" },
       ],
     },
@@ -214,6 +229,11 @@ export default async function PatientDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+
+      <ClubDoctorBanner
+        subscribed={hasActiveClub}
+        defaultRegion={userRow?.region || session.user.region}
+      />
 
       {/* Header */}
       <div>

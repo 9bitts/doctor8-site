@@ -16,7 +16,7 @@ import {
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
   Building2,
   BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain, BarChart3,
-  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone,
+  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles,
 } from "lucide-react";
 
 interface NavItem {
@@ -31,6 +31,7 @@ const PATIENT_NAV: NavItem[] = [
   { href: "/patient/history", labelKey: "nav.medicalHistory", icon: <FileText size={18} />, roles: ["PATIENT"] },
   { href: "/patient/medications", labelKey: "nav.medications", icon: <Pill size={18} />, roles: ["PATIENT"] },
   { href: "/patient/buying-club", labelKey: "nav.buyingClub", icon: <ShoppingBag size={18} />, roles: ["PATIENT"] },
+  { href: "/patient/club-doctor", labelKey: "nav.clubDoctor", icon: <Sparkles size={18} />, roles: ["PATIENT"] },
   { href: "/patient/prescriptions", labelKey: "nav.myPrescriptions", icon: <Stethoscope size={18} />, roles: ["PATIENT"] },
   { href: "/patient/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PATIENT"] },
   { href: "/patient/documents", labelKey: "nav.documents", icon: <ClipboardList size={18} />, roles: ["PATIENT"] },

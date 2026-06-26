@@ -11,7 +11,7 @@ import { signOut } from "next-auth/react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
-  Eye, EyeOff, LogOut, Shield, User,
+  Eye, EyeOff, LogOut, Shield, User, Globe,
 } from "lucide-react";
 
 const inputClass =
@@ -70,6 +70,10 @@ export default function AccountPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [accountRegion, setAccountRegion] = useState<"BR" | "US" | "EU">("US");
+  const [regionSaving, setRegionSaving] = useState(false);
+  const [regionSaved, setRegionSaved] = useState(false);
+  const [regionError, setRegionError] = useState("");
 
   const isPasswordValid = PASSWORD_RULES.every((r) => r.test(newPwd));
   const passwordsMatch = newPwd === confirmPwd;
@@ -80,6 +84,14 @@ export default function AccountPage() {
       .then((s) => {
         if (s?.user?.email) setCurrentEmail(s.user.email);
       });
+    fetch("/api/user/region")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.region === "BR" || d?.region === "US" || d?.region === "EU") {
+          setAccountRegion(d.region);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // P1-e: load current personal data
@@ -209,11 +221,74 @@ export default function AccountPage() {
     }
   }
 
+  async function saveAccountRegion() {
+    setRegionSaving(true);
+    setRegionError("");
+    setRegionSaved(false);
+    try {
+      const res = await fetch("/api/user/region", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ region: accountRegion }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Nao foi possivel salvar a regiao.");
+      setRegionSaved(true);
+      setTimeout(() => setRegionSaved(false), 4000);
+    } catch (e) {
+      setRegionError(e instanceof Error ? e.message : "Erro ao salvar regiao.");
+    } finally {
+      setRegionSaving(false);
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-10">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">{t("acct.title")}</h1>
         <p className="text-slate-500 mt-1 text-sm">{t("acct.subtitle")}</p>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Globe size={18} className="text-emerald-600" /> Regiao da conta
+        </h2>
+        <p className="text-sm text-slate-500">
+          Define a moeda do Club Doctor e de outros pagamentos. Para PIX e boleto, selecione Brasil.
+        </p>
+        {regionError && (
+          <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+            {regionError}
+          </p>
+        )}
+        {regionSaved && (
+          <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+            Regiao atualizada. Voce ja pode assinar o Club Doctor na moeda escolhida.
+          </p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Pais / regiao</label>
+            <select
+              value={accountRegion}
+              onChange={(e) => setAccountRegion(e.target.value as "BR" | "US" | "EU")}
+              className={inputClass}
+            >
+              <option value="BR">Brasil (BRL)</option>
+              <option value="US">Estados Unidos (USD)</option>
+              <option value="EU">Europa (EUR)</option>
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={saveAccountRegion}
+            disabled={regionSaving}
+            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0"
+          >
+            {regionSaving && <Loader2 size={14} className="animate-spin" />}
+            Salvar regiao
+          </button>
+        </div>
       </div>
 
       {/* Current account info */}
