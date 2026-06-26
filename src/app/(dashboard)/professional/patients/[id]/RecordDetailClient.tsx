@@ -14,7 +14,7 @@ import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film,
-  Activity, Stethoscope, Columns2,
+  Activity, Stethoscope, Columns2, Syringe,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import ReferralPanel from "@/components/professional/ReferralPanel";
@@ -22,6 +22,7 @@ import PatientChartTags, { type ChartTag } from "@/components/professional/Patie
 import MetricsFormFields, { emptyMetrics } from "@/components/professional/MetricsFormFields";
 import MetricsEvolutionPanel from "@/components/professional/MetricsEvolutionPanel";
 import DiagnosesPanel from "@/components/professional/DiagnosesPanel";
+import VaccinationPanel from "@/components/professional/VaccinationPanel";
 import ClinicalCalculators from "@/components/professional/ClinicalCalculators";
 import ImageCompareModal from "@/components/professional/ImageCompareModal";
 import ChartSharePanel from "@/components/professional/ChartSharePanel";
@@ -256,7 +257,7 @@ export default function RecordDetailClient({
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
-  const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses">("records");
+  const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses" | "vaccines">("records");
   const [recordFilter, setRecordFilter] = useState<RecordTimelineFilter>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
@@ -1090,6 +1091,7 @@ export default function RecordDetailClient({
           { id: "records" as const, label: t("chartTab.records"), icon: FileText },
           { id: "evolution" as const, label: t("chartTab.evolution"), icon: Activity },
           { id: "diagnoses" as const, label: t("chartTab.diagnoses"), icon: Stethoscope },
+          { id: "vaccines" as const, label: t("chartTab.vaccines"), icon: Syringe },
         ]).map((tab) => (
           <button
             key={tab.id}
@@ -1108,6 +1110,9 @@ export default function RecordDetailClient({
 
       {chartTab === "evolution" && <MetricsEvolutionPanel chartId={chart.id} />}
       {chartTab === "diagnoses" && <DiagnosesPanel chartId={chart.id} readOnly={!canEdit} />}
+      {chartTab === "vaccines" && (
+        <VaccinationPanel chartId={chart.id} dateOfBirth={chart.dateOfBirth} readOnly={!canEdit} />
+      )}
 
       {chartTab === "records" && (
       <>

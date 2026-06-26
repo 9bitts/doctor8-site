@@ -85,6 +85,12 @@ enum ClinicMemberRole {
   MEMBER
 }
 
+enum VaccineNetwork {
+  PUBLIC
+  PRIVATE
+  OTHER
+}
+
 enum ClinicalRecordKind {
   ANAMNESIS
   EVOLUTION
@@ -363,6 +369,7 @@ model ProfessionalProfile {
   clinicMemberships     ClinicMember[]
   chartSharesCreated    PatientRecordShare[] @relation("ChartSharesCreated")
   chartSharesReceived   PatientRecordShare[] @relation("ChartSharesReceived")
+  vaccinationsRecorded  PatientVaccination[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -1039,6 +1046,7 @@ model PatientRecord {
   tags             PatientRecordTag[]
   diagnoses        PatientDiagnosis[]
   metricSnapshots  ClinicalMetricSnapshot[]
+  vaccinations     PatientVaccination[]
   colleagueShares  PatientRecordShare[]
 
   createdAt       DateTime @default(now())
@@ -1195,6 +1203,35 @@ model ClinicalMetricSnapshot {
   createdAt       DateTime      @default(now())
 
   @@index([patientRecordId, recordedAt])
+}
+
+// ────────────────────────────────────────────
+// PHASE 8A — Vaccination card (PNI schedule)
+// ────────────────────────────────────────────
+
+model PatientVaccination {
+  id              String         @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord  @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+
+  vaccineCode     String
+  vaccineName     String
+  doseNumber      Int            @default(1)
+  administeredAt  DateTime
+  network         VaccineNetwork @default(PUBLIC)
+  batchNumber     String?
+  manufacturer    String?
+  applicationSite String?
+  notes           String?        @db.Text
+
+  recordedById    String?
+  recordedBy      ProfessionalProfile? @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([patientRecordId])
+  @@index([patientRecordId, vaccineCode])
 }
 
 // Analysand chart — separate from medical PatientRecord
