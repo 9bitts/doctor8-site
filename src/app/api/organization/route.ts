@@ -36,6 +36,7 @@ export async function GET() {
       logoUrl: org.logoUrl,
       currency: org.currency,
       memberRole: membership.role,
+      whatsappRemindersEnabled: org.whatsappRemindersEnabled,
       responsibleName: `${org.responsibleFirstName} ${org.responsibleLastName}`,
       address: {
         street: org.addressStreet,
@@ -61,6 +62,7 @@ const patchSchema = z.object({
   addressCity: z.string().max(100).optional(),
   addressState: z.string().max(2).optional(),
   addressZip: z.string().max(10).optional(),
+  whatsappRemindersEnabled: z.boolean().optional(),
 });
 
 export async function PATCH(req: NextRequest) {

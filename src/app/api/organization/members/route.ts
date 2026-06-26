@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireOrganization, canManageTeam } from "@/lib/organization-auth";
 import { randomBytes } from "crypto";
 import { z } from "zod";
+import { sendOrganizationStaffInvite } from "@/lib/email";
 
 export async function GET() {
   const ctx = await requireOrganization();
@@ -95,6 +96,11 @@ export async function POST(req: NextRequest) {
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+  const org = await db.organization.findUnique({
+    where: { id: ctx.organizationId },
+    select: { nomeFantasia: true },
+  });
+
   await db.organizationInvite.create({
     data: {
       organizationId: ctx.organizationId,
@@ -105,10 +111,21 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  try {
+    await sendOrganizationStaffInvite({
+      email,
+      organizationName: org?.nomeFantasia || "Cl?nica",
+      role: parsed.data.role,
+      token,
+      language: "pt",
+    });
+  } catch (emailErr) {
+    console.error("[ORG INVITE EMAIL]", emailErr);
+  }
+
   return NextResponse.json({
     success: true,
-    inviteToken: token,
-    message: "Convite registrado.",
+    message: "Convite enviado por e-mail.",
   }, { status: 201 });
 }
 

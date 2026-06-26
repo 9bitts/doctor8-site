@@ -45,6 +45,7 @@ export async function getOrganizationMembership(userId: string) {
           addressCity: true,
           addressState: true,
           addressZip: true,
+          whatsappRemindersEnabled: true,
           responsibleFirstName: true,
           responsibleLastName: true,
         },

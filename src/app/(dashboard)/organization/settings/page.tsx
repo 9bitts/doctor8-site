@@ -11,6 +11,7 @@ export default function OrganizationSettingsPage() {
     razaoSocial: string;
     cnpj: string;
     contactPhone: string;
+    whatsappRemindersEnabled: boolean;
     address: { city?: string; state?: string; street?: string };
     memberRole: string;
   } | null>(null);
@@ -25,6 +26,7 @@ export default function OrganizationSettingsPage() {
           razaoSocial: data.organization.razaoSocial,
           cnpj: data.organization.cnpj,
           contactPhone: data.organization.contactPhone || "",
+          whatsappRemindersEnabled: data.organization.whatsappRemindersEnabled ?? true,
           address: data.organization.address || {},
           memberRole: data.organization.memberRole,
         });
@@ -48,6 +50,7 @@ export default function OrganizationSettingsPage() {
           addressCity: org.address.city,
           addressState: org.address.state,
           addressStreet: org.address.street,
+          whatsappRemindersEnabled: org.whatsappRemindersEnabled,
         }),
       });
     } finally {
@@ -129,6 +132,17 @@ export default function OrganizationSettingsPage() {
             />
           </div>
         </div>
+        {canEdit && (
+          <label className="flex items-center gap-3 py-2">
+            <input
+              type="checkbox"
+              checked={org.whatsappRemindersEnabled}
+              onChange={(e) => setOrg({ ...org, whatsappRemindersEnabled: e.target.checked })}
+              className="rounded"
+            />
+            <span className="text-sm text-slate-700">Lembretes e confirmacoes via WhatsApp</span>
+          </label>
+        )}
         {canEdit && (
           <button
             type="submit"

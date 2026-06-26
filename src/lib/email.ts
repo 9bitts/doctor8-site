@@ -18,6 +18,8 @@ import {
   EMAIL_APPOINTMENT_REMINDER,
   EMAIL_PATIENT_INVITE,
   EMAIL_COLLEAGUE_INVITE,
+  EMAIL_ORG_STAFF_INVITE,
+  orgRoleLabel,
   EMAIL_SLOT_ALERT,
   EMAIL_REVIEW_REQUEST,
   EMAIL_MAGIC_LINK,
@@ -505,5 +507,50 @@ export async function sendReviewRequest({
       c.footnote,
     ].join("\n\n"),
     tag: "review-request",
+  });
+}
+
+export async function sendOrganizationStaffInvite({
+  email,
+  organizationName,
+  role,
+  token,
+  language,
+}: {
+  email: string;
+  organizationName: string;
+  role: string;
+  token: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_ORG_STAFF_INVITE[lang];
+  const roleLabel = orgRoleLabel(role, lang);
+  const acceptUrl = `${getAppUrl()}/register/organization/staff?token=${encodeURIComponent(token)}`;
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(organizationName, roleLabel)}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${acceptUrl}" style="background:#4f46e5;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:13px;line-height:1.6;">${c.expires}</p>
+    <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+      ${c.orCopy} <a href="${acceptUrl}" style="color:#4f46e5;">${acceptUrl}</a>
+    </p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject(organizationName),
+    html: emailShell(c.heading, body, lang),
+    text: [
+      c.hi,
+      c.body(organizationName, roleLabel).replace(/<[^>]+>/g, ""),
+      `${c.cta}: ${acceptUrl}`,
+      c.expires.replace(/<[^>]+>/g, ""),
+    ].join("\n\n"),
+    tag: "org-staff-invite",
   });
 }

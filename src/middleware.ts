@@ -11,6 +11,7 @@ const PUBLIC_ROUTES = [
   "/login",
   "/register",
   "/register/organization",
+  "/register/organization/staff",
   "/callback",
   "/forgot-password",
   "/reset-password",
@@ -56,6 +57,9 @@ export default auth((req) => {
 
   // Allow API auth routes
   if (pathname.startsWith("/api/auth")) return NextResponse.next();
+
+  // Public organization staff registration
+  if (pathname.startsWith("/api/auth/register-organization-staff")) return NextResponse.next();
 
   // Public read-only APIs (professional profiles, slots)
   if (pathname.startsWith("/api/public/")) return NextResponse.next();

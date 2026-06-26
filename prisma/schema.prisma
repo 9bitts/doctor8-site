@@ -107,6 +107,18 @@ enum OrganizationProfessionalStatus {
   INACTIVE
 }
 
+enum OrganizationLedgerType {
+  INCOME
+  EXPENSE
+}
+
+enum OrganizationLedgerStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
 enum VaccineNetwork {
   PUBLIC
   PRIVATE
@@ -1129,11 +1141,13 @@ model Organization {
 
   timezone             String   @default("America/Sao_Paulo")
   currency             String   @default("BRL")
+  whatsappRemindersEnabled Boolean @default(true)
 
   members              OrganizationMember[]
   professionals        OrganizationProfessional[]
   repasseRules         OrganizationRepasseRule[]
   invites              OrganizationInvite[]
+  ledgerEntries        OrganizationLedgerEntry[]
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -1205,6 +1219,31 @@ model OrganizationInvite {
 
   @@index([organizationId])
   @@index([email])
+}
+
+model OrganizationLedgerEntry {
+  id             String                   @id @default(cuid())
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  type           OrganizationLedgerType
+  status         OrganizationLedgerStatus @default(PENDING)
+  description    String
+  category       String?
+  amountCents    Int
+  currency       String                   @default("BRL")
+  dueDate        DateTime?
+  paidAt         DateTime?
+  professionalId String?
+  appointmentId  String?
+  createdById    String?
+
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, dueDate])
 }
 
 // ────────────────────────────────────────────

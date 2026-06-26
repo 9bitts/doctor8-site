@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Calendar } from "lucide-react";
+import { Loader2, Calendar, MessageCircle } from "lucide-react";
 
 type Appt = {
   id: string;
   scheduledAt: string;
-  durationMins: number;
-  type: string;
   status: string;
   patientName: string;
   professionalName: string;
@@ -17,6 +15,8 @@ type Appt = {
 export default function OrganizationAppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appt[]>([]);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [waResult, setWaResult] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function load() {
@@ -35,6 +35,30 @@ export default function OrganizationAppointmentsPage() {
     load();
   }, []);
 
+  async function sendWhatsApp(id: string) {
+    setSendingId(id);
+    try {
+      const res = await fetch(`/api/organization/appointments/${id}/whatsapp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "confirmation" }),
+      });
+      const data = await res.json();
+      if (data.waUrl && data.status === "SKIPPED") {
+        window.open(data.waUrl, "_blank");
+        setWaResult((prev) => ({ ...prev, [id]: "WhatsApp Web aberto" }));
+      } else if (data.status === "SENT") {
+        setWaResult((prev) => ({ ...prev, [id]: "Enviado!" }));
+      } else if (data.error === "NO_PHONE") {
+        setWaResult((prev) => ({ ...prev, [id]: "Sem telefone" }));
+      } else {
+        setWaResult((prev) => ({ ...prev, [id]: "Falha no envio" }));
+      }
+    } finally {
+      setSendingId(null);
+    }
+  }
+
   const statusColor: Record<string, string> = {
     CONFIRMED: "bg-emerald-100 text-emerald-700",
     PENDING: "bg-amber-100 text-amber-700",
@@ -46,7 +70,7 @@ export default function OrganizationAppointmentsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Agenda consolidada</h1>
-        <p className="text-slate-500 text-sm mt-1">Pr?ximos 14 dias ? todos os profissionais</p>
+        <p className="text-slate-500 text-sm mt-1">Proximos 14 dias - confirmacao via WhatsApp</p>
       </div>
 
       {loading ? (
@@ -56,7 +80,7 @@ export default function OrganizationAppointmentsPage() {
       ) : appointments.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
           <Calendar className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="text-slate-500">Nenhuma consulta no per?odo.</p>
+          <p className="text-slate-500">Nenhuma consulta no periodo.</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
@@ -66,25 +90,41 @@ export default function OrganizationAppointmentsPage() {
                 <p className="font-medium text-slate-900">{a.patientName}</p>
                 <p className="text-sm text-slate-500">
                   {a.professionalName}
-                  {a.specialty ? ` ? ${a.specialty}` : ""}
+                  {a.specialty ? ` - ${a.specialty}` : ""}
                 </p>
+                {waResult[a.id] && (
+                  <p className="text-xs text-indigo-600 mt-0.5">{waResult[a.id]}</p>
+                )}
               </div>
-              <div className="text-right shrink-0">
-                <p className="text-sm font-medium text-slate-800">
-                  {new Date(a.scheduledAt).toLocaleDateString("pt-BR", {
-                    weekday: "short",
-                    day: "2-digit",
-                    month: "short",
-                  })}
-                  {" ? "}
-                  {new Date(a.scheduledAt).toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[a.status] || "bg-slate-100 text-slate-600"}`}>
-                  {a.status}
-                </span>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-slate-800">
+                    {new Date(a.scheduledAt).toLocaleDateString("pt-BR", {
+                      weekday: "short", day: "2-digit", month: "short",
+                    })}
+                    {" - "}
+                    {new Date(a.scheduledAt).toLocaleTimeString("pt-BR", {
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </p>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[a.status] || "bg-slate-100 text-slate-600"}`}>
+                    {a.status}
+                  </span>
+                </div>
+                {["CONFIRMED", "PENDING"].includes(a.status) && (
+                  <button
+                    onClick={() => sendWhatsApp(a.id)}
+                    disabled={sendingId === a.id}
+                    title="Enviar confirmacao WhatsApp"
+                    className="p-2 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 disabled:opacity-50"
+                  >
+                    {sendingId === a.id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <MessageCircle size={16} />
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           ))}

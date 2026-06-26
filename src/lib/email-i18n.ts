@@ -443,3 +443,53 @@ export const EMAIL_COLLEAGUE_INVITE: Record<EmailLang, {
     accessAt: "Accede en:",
   },
 };
+
+export const EMAIL_ORG_STAFF_INVITE: Record<EmailLang, {
+  subject: (orgName: string) => string;
+  heading: string;
+  hi: string;
+  body: (orgName: string, role: string) => string;
+  cta: string;
+  expires: string;
+  orCopy: string;
+}> = {
+  en: {
+    subject: (o) => `You're invited to join ${o} on Doctor8`,
+    heading: "Organization team invite",
+    hi: "Hello,",
+    body: (o, r) => `You have been invited to join <strong>${o}</strong> as <strong>${r}</strong> on Doctor8.`,
+    cta: "Accept invitation",
+    expires: "This link expires in <strong>7 days</strong>.",
+    orCopy: "Or copy this link:",
+  },
+  pt: {
+    subject: (o) => `Convite para integrar ${o} no Doctor8`,
+    heading: "Convite para equipe da clínica",
+    hi: "Olá,",
+    body: (o, r) => `Você foi convidado(a) para integrar <strong>${o}</strong> como <strong>${r}</strong> no Doctor8.`,
+    cta: "Aceitar convite",
+    expires: "Este link expira em <strong>7 dias</strong>.",
+    orCopy: "Ou copie este link:",
+  },
+  es: {
+    subject: (o) => `Invitación para unirse a ${o} en Doctor8`,
+    heading: "Invitación al equipo de la clínica",
+    hi: "Hola,",
+    body: (o, r) => `Has sido invitado(a) a unirte a <strong>${o}</strong> como <strong>${r}</strong> en Doctor8.`,
+    cta: "Aceptar invitación",
+    expires: "Este enlace expira en <strong>7 días</strong>.",
+    orCopy: "O copia este enlace:",
+  },
+};
+
+const ORG_ROLE_LABELS: Record<string, Record<EmailLang, string>> = {
+  ADMIN: { en: "Administrator", pt: "Administrador", es: "Administrador" },
+  RECEPTIONIST: { en: "Reception", pt: "Recepção", es: "Recepción" },
+  FINANCE: { en: "Finance", pt: "Financeiro", es: "Finanzas" },
+  HR: { en: "HR", pt: "RH", es: "RRHH" },
+  ACCOUNTANT: { en: "Accounting", pt: "Contabilidade", es: "Contabilidad" },
+};
+
+export function orgRoleLabel(role: string, lang: EmailLang): string {
+  return ORG_ROLE_LABELS[role]?.[lang] || role;
+}

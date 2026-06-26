@@ -15,7 +15,7 @@ import {
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
   Building2,
-  BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain,
+  BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain, BarChart3,
 } from "lucide-react";
 
 interface NavItem {
@@ -70,6 +70,8 @@ const ORGANIZATION_NAV: NavItem[] = [
   { href: "/organization/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["ORGANIZATION"] },
   { href: "/organization/patients", labelKey: "nav.patients", icon: <Users size={18} />, roles: ["ORGANIZATION"] },
   { href: "/organization/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["ORGANIZATION"] },
+  { href: "/organization/ledger", labelKey: "org.nav.ledger", icon: <ClipboardList size={18} />, roles: ["ORGANIZATION"] },
+  { href: "/organization/reports", labelKey: "org.nav.reports", icon: <BarChart3 size={18} />, roles: ["ORGANIZATION"] },
   { href: "/organization/team", labelKey: "org.nav.team", icon: <Building2 size={18} />, roles: ["ORGANIZATION"] },
   { href: "/organization/settings", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["ORGANIZATION"] },
 ];
