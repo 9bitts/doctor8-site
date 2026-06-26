@@ -11,7 +11,7 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "node scripts/railway-start.mjs",
-    "migrate:recover": "prisma migrate resolve --rolled-back 20260626120000_organization_cnpj_phase1 && prisma migrate deploy",
+    "migrate:recover": "node scripts/migrate-recover.mjs",
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",

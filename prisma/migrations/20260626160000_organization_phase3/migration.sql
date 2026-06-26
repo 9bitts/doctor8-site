@@ -1,23 +1,13 @@
--- CreateEnum
-CREATE TYPE "TissGuideStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'APPROVED', 'GLOSA', 'PAID', 'CANCELLED');
+-- Organization phase 3 (idempotent)
 
--- CreateEnum
-CREATE TYPE "TissBatchStatus" AS ENUM ('OPEN', 'SENT', 'PROCESSED', 'CLOSED');
+DO $$ BEGIN CREATE TYPE "TissGuideStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'APPROVED', 'GLOSA', 'PAID', 'CANCELLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE "TissBatchStatus" AS ENUM ('OPEN', 'SENT', 'PROCESSED', 'CLOSED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE "EmploymentType" AS ENUM ('CLT', 'PJ', 'ASSOCIATE'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE "OrganizationInvoiceStatus" AS ENUM ('DRAFT', 'ISSUED', 'CANCELLED', 'ERROR'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE "PurchaseOrderStatus" AS ENUM ('DRAFT', 'SENT', 'RECEIVED', 'CANCELLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE "PayrollEntryStatus" AS ENUM ('PENDING', 'PAID'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateEnum
-CREATE TYPE "EmploymentType" AS ENUM ('CLT', 'PJ', 'ASSOCIATE');
-
--- CreateEnum
-CREATE TYPE "OrganizationInvoiceStatus" AS ENUM ('DRAFT', 'ISSUED', 'CANCELLED', 'ERROR');
-
--- CreateEnum
-CREATE TYPE "PurchaseOrderStatus" AS ENUM ('DRAFT', 'SENT', 'RECEIVED', 'CANCELLED');
-
--- CreateEnum
-CREATE TYPE "PayrollEntryStatus" AS ENUM ('PENDING', 'PAID');
-
--- CreateTable
-CREATE TABLE "OrganizationHealthPlan" (
+CREATE TABLE IF NOT EXISTS "OrganizationHealthPlan" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "healthPlanId" TEXT,
@@ -27,13 +17,27 @@ CREATE TABLE "OrganizationHealthPlan" (
     "tissVersion" TEXT NOT NULL DEFAULT '4.01.00',
     "active" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "OrganizationHealthPlan_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "TissGuide" (
+CREATE TABLE IF NOT EXISTS "TissBatch" (
+    "id" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "orgHealthPlanId" TEXT NOT NULL,
+    "batchNumber" TEXT NOT NULL,
+    "periodStart" TIMESTAMP(3) NOT NULL,
+    "periodEnd" TIMESTAMP(3) NOT NULL,
+    "status" "TissBatchStatus" NOT NULL DEFAULT 'OPEN',
+    "totalGuides" INTEGER NOT NULL DEFAULT 0,
+    "totalAmountCents" INTEGER NOT NULL DEFAULT 0,
+    "sentAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "TissBatch_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "TissGuide" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "orgHealthPlanId" TEXT NOT NULL,
@@ -52,31 +56,11 @@ CREATE TABLE "TissGuide" (
     "batchId" TEXT,
     "serviceDate" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "TissGuide_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "TissBatch" (
-    "id" TEXT NOT NULL,
-    "organizationId" TEXT NOT NULL,
-    "orgHealthPlanId" TEXT NOT NULL,
-    "batchNumber" TEXT NOT NULL,
-    "periodStart" TIMESTAMP(3) NOT NULL,
-    "periodEnd" TIMESTAMP(3) NOT NULL,
-    "status" "TissBatchStatus" NOT NULL DEFAULT 'OPEN',
-    "totalGuides" INTEGER NOT NULL DEFAULT 0,
-    "totalAmountCents" INTEGER NOT NULL DEFAULT 0,
-    "sentAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "TissBatch_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "OrganizationEmployee" (
+CREATE TABLE IF NOT EXISTS "OrganizationEmployee" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "professionalId" TEXT,
@@ -90,13 +74,11 @@ CREATE TABLE "OrganizationEmployee" (
     "endDate" TIMESTAMP(3),
     "active" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "OrganizationEmployee_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "OrganizationPayrollEntry" (
+CREATE TABLE IF NOT EXISTS "OrganizationPayrollEntry" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "employeeId" TEXT NOT NULL,
@@ -108,13 +90,11 @@ CREATE TABLE "OrganizationPayrollEntry" (
     "paidAt" TIMESTAMP(3),
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "OrganizationPayrollEntry_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "OrganizationInvoice" (
+CREATE TABLE IF NOT EXISTS "OrganizationInvoice" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "number" TEXT,
@@ -127,13 +107,11 @@ CREATE TABLE "OrganizationInvoice" (
     "externalProvider" TEXT,
     "externalId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "OrganizationInvoice_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "OrganizationSupplier" (
+CREATE TABLE IF NOT EXISTS "OrganizationSupplier" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -143,13 +121,11 @@ CREATE TABLE "OrganizationSupplier" (
     "category" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "OrganizationSupplier_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "OrganizationPurchaseOrder" (
+CREATE TABLE IF NOT EXISTS "OrganizationPurchaseOrder" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "supplierId" TEXT NOT NULL,
@@ -160,13 +136,11 @@ CREATE TABLE "OrganizationPurchaseOrder" (
     "orderedAt" TIMESTAMP(3),
     "receivedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "OrganizationPurchaseOrder_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "OrganizationSurveyResponse" (
+CREATE TABLE IF NOT EXISTS "OrganizationSurveyResponse" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "appointmentId" TEXT,
@@ -174,66 +148,43 @@ CREATE TABLE "OrganizationSurveyResponse" (
     "score" INTEGER NOT NULL,
     "comment" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "OrganizationSurveyResponse_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "OrganizationHealthPlan_organizationId_idx" ON "OrganizationHealthPlan"("organizationId");
+CREATE INDEX IF NOT EXISTS "OrganizationHealthPlan_organizationId_idx" ON "OrganizationHealthPlan"("organizationId");
+CREATE INDEX IF NOT EXISTS "TissGuide_organizationId_idx" ON "TissGuide"("organizationId");
+CREATE INDEX IF NOT EXISTS "TissGuide_orgHealthPlanId_idx" ON "TissGuide"("orgHealthPlanId");
+CREATE INDEX IF NOT EXISTS "TissGuide_batchId_idx" ON "TissGuide"("batchId");
+CREATE INDEX IF NOT EXISTS "TissGuide_status_idx" ON "TissGuide"("status");
+CREATE INDEX IF NOT EXISTS "TissBatch_organizationId_idx" ON "TissBatch"("organizationId");
+CREATE INDEX IF NOT EXISTS "TissBatch_orgHealthPlanId_idx" ON "TissBatch"("orgHealthPlanId");
+CREATE INDEX IF NOT EXISTS "OrganizationEmployee_organizationId_idx" ON "OrganizationEmployee"("organizationId");
+CREATE UNIQUE INDEX IF NOT EXISTS "OrganizationPayrollEntry_employeeId_referenceMonth_key" ON "OrganizationPayrollEntry"("employeeId", "referenceMonth");
+CREATE INDEX IF NOT EXISTS "OrganizationPayrollEntry_organizationId_idx" ON "OrganizationPayrollEntry"("organizationId");
+CREATE INDEX IF NOT EXISTS "OrganizationInvoice_organizationId_idx" ON "OrganizationInvoice"("organizationId");
+CREATE INDEX IF NOT EXISTS "OrganizationInvoice_organizationId_status_idx" ON "OrganizationInvoice"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "OrganizationSupplier_organizationId_idx" ON "OrganizationSupplier"("organizationId");
+CREATE INDEX IF NOT EXISTS "OrganizationPurchaseOrder_organizationId_idx" ON "OrganizationPurchaseOrder"("organizationId");
+CREATE INDEX IF NOT EXISTS "OrganizationPurchaseOrder_supplierId_idx" ON "OrganizationPurchaseOrder"("supplierId");
+CREATE INDEX IF NOT EXISTS "OrganizationSurveyResponse_organizationId_idx" ON "OrganizationSurveyResponse"("organizationId");
+CREATE INDEX IF NOT EXISTS "OrganizationSurveyResponse_organizationId_createdAt_idx" ON "OrganizationSurveyResponse"("organizationId", "createdAt");
 
--- CreateIndex
-CREATE INDEX "TissGuide_organizationId_idx" ON "TissGuide"("organizationId");
-CREATE INDEX "TissGuide_orgHealthPlanId_idx" ON "TissGuide"("orgHealthPlanId");
-CREATE INDEX "TissGuide_batchId_idx" ON "TissGuide"("batchId");
-CREATE INDEX "TissGuide_status_idx" ON "TissGuide"("status");
-
--- CreateIndex
-CREATE INDEX "TissBatch_organizationId_idx" ON "TissBatch"("organizationId");
-CREATE INDEX "TissBatch_orgHealthPlanId_idx" ON "TissBatch"("orgHealthPlanId");
-
--- CreateIndex
-CREATE INDEX "OrganizationEmployee_organizationId_idx" ON "OrganizationEmployee"("organizationId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "OrganizationPayrollEntry_employeeId_referenceMonth_key" ON "OrganizationPayrollEntry"("employeeId", "referenceMonth");
-CREATE INDEX "OrganizationPayrollEntry_organizationId_idx" ON "OrganizationPayrollEntry"("organizationId");
-
--- CreateIndex
-CREATE INDEX "OrganizationInvoice_organizationId_idx" ON "OrganizationInvoice"("organizationId");
-CREATE INDEX "OrganizationInvoice_organizationId_status_idx" ON "OrganizationInvoice"("organizationId", "status");
-
--- CreateIndex
-CREATE INDEX "OrganizationSupplier_organizationId_idx" ON "OrganizationSupplier"("organizationId");
-
--- CreateIndex
-CREATE INDEX "OrganizationPurchaseOrder_organizationId_idx" ON "OrganizationPurchaseOrder"("organizationId");
-CREATE INDEX "OrganizationPurchaseOrder_supplierId_idx" ON "OrganizationPurchaseOrder"("supplierId");
-
--- CreateIndex
-CREATE INDEX "OrganizationSurveyResponse_organizationId_idx" ON "OrganizationSurveyResponse"("organizationId");
-CREATE INDEX "OrganizationSurveyResponse_organizationId_createdAt_idx" ON "OrganizationSurveyResponse"("organizationId", "createdAt");
-
--- AddForeignKey
-ALTER TABLE "OrganizationHealthPlan" ADD CONSTRAINT "OrganizationHealthPlan_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "OrganizationHealthPlan" ADD CONSTRAINT "OrganizationHealthPlan_healthPlanId_fkey" FOREIGN KEY ("healthPlanId") REFERENCES "HealthPlan"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE "TissGuide" ADD CONSTRAINT "TissGuide_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "TissGuide" ADD CONSTRAINT "TissGuide_orgHealthPlanId_fkey" FOREIGN KEY ("orgHealthPlanId") REFERENCES "OrganizationHealthPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "TissGuide" ADD CONSTRAINT "TissGuide_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "TissBatch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE "TissBatch" ADD CONSTRAINT "TissBatch_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "TissBatch" ADD CONSTRAINT "TissBatch_orgHealthPlanId_fkey" FOREIGN KEY ("orgHealthPlanId") REFERENCES "OrganizationHealthPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "OrganizationEmployee" ADD CONSTRAINT "OrganizationEmployee_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "OrganizationPayrollEntry" ADD CONSTRAINT "OrganizationPayrollEntry_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "OrganizationPayrollEntry" ADD CONSTRAINT "OrganizationPayrollEntry_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "OrganizationEmployee"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "OrganizationInvoice" ADD CONSTRAINT "OrganizationInvoice_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "OrganizationSupplier" ADD CONSTRAINT "OrganizationSupplier_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "OrganizationPurchaseOrder" ADD CONSTRAINT "OrganizationPurchaseOrder_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "OrganizationPurchaseOrder" ADD CONSTRAINT "OrganizationPurchaseOrder_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "OrganizationSupplier"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "OrganizationSurveyResponse" ADD CONSTRAINT "OrganizationSurveyResponse_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN ALTER TABLE "OrganizationHealthPlan" ADD CONSTRAINT "OrganizationHealthPlan_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'HealthPlan') THEN
+    ALTER TABLE "OrganizationHealthPlan" ADD CONSTRAINT "OrganizationHealthPlan_healthPlanId_fkey" FOREIGN KEY ("healthPlanId") REFERENCES "HealthPlan"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "TissGuide" ADD CONSTRAINT "TissGuide_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "TissGuide" ADD CONSTRAINT "TissGuide_orgHealthPlanId_fkey" FOREIGN KEY ("orgHealthPlanId") REFERENCES "OrganizationHealthPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "TissGuide" ADD CONSTRAINT "TissGuide_batchId_fkey" FOREIGN KEY ("batchId") REFERENCES "TissBatch"("id") ON DELETE SET NULL ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "TissBatch" ADD CONSTRAINT "TissBatch_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "TissBatch" ADD CONSTRAINT "TissBatch_orgHealthPlanId_fkey" FOREIGN KEY ("orgHealthPlanId") REFERENCES "OrganizationHealthPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "OrganizationEmployee" ADD CONSTRAINT "OrganizationEmployee_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "OrganizationPayrollEntry" ADD CONSTRAINT "OrganizationPayrollEntry_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "OrganizationPayrollEntry" ADD CONSTRAINT "OrganizationPayrollEntry_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "OrganizationEmployee"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "OrganizationInvoice" ADD CONSTRAINT "OrganizationInvoice_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "OrganizationSupplier" ADD CONSTRAINT "OrganizationSupplier_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "OrganizationPurchaseOrder" ADD CONSTRAINT "OrganizationPurchaseOrder_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "OrganizationPurchaseOrder" ADD CONSTRAINT "OrganizationPurchaseOrder_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "OrganizationSupplier"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE "OrganizationSurveyResponse" ADD CONSTRAINT "OrganizationSurveyResponse_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
