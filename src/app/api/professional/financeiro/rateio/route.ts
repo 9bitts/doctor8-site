@@ -1,7 +1,7 @@
 // src/app/api/professional/financeiro/rateio/route.ts
-// Dados do LIVRO ABERTO + rateio para o profissional autenticado.
-// L? apenas das tabelas de rateio (PoolPeriod, PoolContribution, LedgerEntry).
-// Nenhum PHI: s? valores agregados, contagens e a fatia do pr?prio profissional.
+// Dados do livro aberto + rateio para o profissional autenticado.
+// Le apenas das tabelas de rateio (PoolPeriod, PoolContribution, LedgerEntry).
+// Nenhum PHI: so valores agregados, contagens e a fatia do proprio profissional.
 
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -20,7 +20,6 @@ export async function GET() {
   });
   if (!professional) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
 
-  // Per?odo fechado mais recente (preferindo a moeda do profissional, sen?o o mais novo)
   const latestPeriod =
     (await db.poolPeriod.findFirst({
       where: { status: "LOCKED", currency: professional.currency || "BRL" },
@@ -35,7 +34,6 @@ export async function GET() {
     return NextResponse.json({ latest: null, history: [] });
   }
 
-  // Detalhamento de custos do per?odo (para o livro aberto), agrupado por tipo/categoria/fonte
   const costGroups = await db.ledgerEntry.groupBy({
     by: ["type", "category", "source"],
     where: {
@@ -54,12 +52,10 @@ export async function GET() {
     .filter((c) => c.amountCents > 0)
     .sort((a, b) => b.amountCents - a.amountCents);
 
-  // Quantos profissionais participaram (contribui??es qualificadas)
   const professionalsCount = await db.poolContribution.count({
     where: { poolPeriodId: latestPeriod.id, qualified: true },
   });
 
-  // Minha contribui??o neste per?odo
   const mineRow = await db.poolContribution.findUnique({
     where: { poolPeriodId_professionalId: { poolPeriodId: latestPeriod.id, professionalId: professional.id } },
     select: {
@@ -68,7 +64,6 @@ export async function GET() {
     },
   });
 
-  // Hist?rico: todas as minhas contribui??es, com o pote de cada m?s
   const myContribs = await db.poolContribution.findMany({
     where: { professionalId: professional.id },
     select: {
