@@ -9,6 +9,7 @@ import {
   ChevronRight, ChevronLeft, FileText, Plus, Send, Stethoscope,
   Pill, X, CheckCircle2, ClipboardList,
 } from "lucide-react";
+import ConsultNotesAssistant from "@/components/professional/ConsultNotesAssistant";
 
 export interface VideoConsultData {
   url: string;
@@ -20,6 +21,7 @@ export interface VideoConsultData {
   patientUserId: string;
   scheduledAt: string;
   durationMins: number;
+  appointmentId?: string | null;
   kind?: "appointment" | "jit";
   queueId?: string;
 }
@@ -314,6 +316,13 @@ export default function VideoConsultRoom({
                   >
                     <Plus size={16} /> {t("addRecord")}
                   </a>
+
+                  <ConsultNotesAssistant
+                    lang={lang}
+                    patientRecordId={data.patientRecordId}
+                    appointmentId={data.appointmentId}
+                    patientName={data.otherParty}
+                  />
 
                   <div className="bg-slate-800 rounded-xl p-3 space-y-2">
                     <p className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">

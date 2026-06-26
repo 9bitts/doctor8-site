@@ -40,6 +40,7 @@ import {
   findPinnedAnamnesis,
   recordKindLabelKey,
 } from "@/lib/record-kind";
+import { consultDraftKey } from "@/lib/ai-consult-notes";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
@@ -337,6 +338,27 @@ export default function RecordDetailClient({
       setShowForm(true);
     }
   }, [searchParams, initialDocuments]);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(consultDraftKey(chart.id));
+      if (!raw) return;
+      const draft = JSON.parse(raw) as {
+        title?: string;
+        content?: string;
+        recordKind?: ClinicalRecordKind;
+      };
+      sessionStorage.removeItem(consultDraftKey(chart.id));
+      if (draft.title) setTitle(draft.title);
+      if (draft.content) setContent(draft.content);
+      if (draft.recordKind) setRecordKind(draft.recordKind);
+      else setRecordKind("EVOLUTION");
+      setShowForm(true);
+      setChartTab("records");
+    } catch {
+      /* ignore corrupt draft */
+    }
+  }, [chart.id]);
 
   function insertCalcText(text: string) {
     setContent((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
