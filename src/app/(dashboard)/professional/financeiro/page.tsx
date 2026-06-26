@@ -11,6 +11,7 @@ import {
   Loader2, AlertCircle, ChevronDown, ArrowUpRight,
   Stethoscope, Radio, MapPin, BarChart3, Info,
 } from "lucide-react";
+import { RateioSection } from "./RateioSection";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 type Period = "this_month" | "last_month" | "3_months" | "6_months" | "this_year" | "all";
@@ -200,7 +201,7 @@ export default function FinanceiroPage() {
             <TrendingUp size={24} className="text-brand-500" /> Financeiro
           </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Seus ganhos e repasses · comissão Doctor8: 15%
+            Seus ganhos, repasses e o rateio do livro aberto
           </p>
         </div>
 
@@ -266,7 +267,7 @@ export default function FinanceiroPage() {
                 </div>
               </div>
               <p className="text-xl font-bold text-slate-900">{fmt(data.totalCommissionCents, currency)}</p>
-              <p className="text-xs text-slate-400 mt-1">15% retido</p>
+              <p className="text-xs text-slate-400 mt-1">15% → custos + rateio</p>
             </div>
 
             {/* Consultas */}
@@ -374,9 +375,10 @@ export default function FinanceiroPage() {
           <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-start gap-3 text-xs text-slate-500">
             <Info size={14} className="shrink-0 mt-0.5 text-slate-400" />
             <p>
-              A comissão de <strong>15%</strong> é retida automaticamente pela Doctor8 em cada consulta paga.
-              Os valores líquidos mostrados aqui são os valores que você recebe após o desconto.
-              Os repasses são processados de acordo com os termos do seu contrato.
+              A comissão de <strong>15%</strong> não é lucro da Doctor8. Ela entra num caixa transparente
+              que paga os custos do sistema (IA, servidores, vídeo, taxas) e <strong>tudo o que sobra volta
+              para os profissionais</strong> no rateio mensal — veja o livro aberto abaixo. A Doctor8 se
+              mantém pela mensalidade, não pela comissão.
             </p>
           </div>
 
@@ -464,6 +466,8 @@ export default function FinanceiroPage() {
               </>
             )}
           </div>
+          {/* ── Livro Aberto / Rateio ── */}
+          <RateioSection currency={currency} />
         </>
       ) : null}
     </div>
