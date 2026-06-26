@@ -383,6 +383,7 @@ model ProfessionalProfile {
   chartSharesReceived   PatientRecordShare[] @relation("ChartSharesReceived")
   vaccinationsRecorded  PatientVaccination[]
   odontogramsRecorded   PatientOdontogram[]
+  audiogramsRecorded    PatientAudiogram[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -1061,6 +1062,7 @@ model PatientRecord {
   metricSnapshots  ClinicalMetricSnapshot[]
   vaccinations     PatientVaccination[]
   odontogram         PatientOdontogram?
+  audiograms         PatientAudiogram[]
   colleagueShares  PatientRecordShare[]
 
   createdAt       DateTime @default(now())
@@ -1269,6 +1271,29 @@ model PatientOdontogram {
   updatedAt       DateTime      @updatedAt
 
   @@index([patientRecordId])
+}
+
+// ────────────────────────────────────────────
+// PHASE 8D — Audiometry (audiogram per exam)
+// ────────────────────────────────────────────
+
+model PatientAudiogram {
+  id              String        @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+
+  testedAt        DateTime      @default(now())
+  // { right: { ac: { "500": 20 }, bc?: {} }, left: { ... } }
+  thresholds      Json
+  notes           String?       @db.Text
+
+  recordedById    String?
+  recordedBy      ProfessionalProfile? @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([patientRecordId, testedAt])
 }
 
 // Analysand chart — separate from medical PatientRecord
