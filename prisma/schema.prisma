@@ -119,6 +119,47 @@ enum OrganizationLedgerStatus {
   CANCELLED
 }
 
+enum TissGuideStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  GLOSA
+  PAID
+  CANCELLED
+}
+
+enum TissBatchStatus {
+  OPEN
+  SENT
+  PROCESSED
+  CLOSED
+}
+
+enum EmploymentType {
+  CLT
+  PJ
+  ASSOCIATE
+}
+
+enum OrganizationInvoiceStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+  ERROR
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  RECEIVED
+  CANCELLED
+}
+
+enum PayrollEntryStatus {
+  PENDING
+  PAID
+}
+
 enum VaccineNetwork {
   PUBLIC
   PRIVATE
@@ -827,6 +868,7 @@ model HealthPlan {
 
   professionals  ProfessionalHealthPlan[]
   psychoanalysts PsychoanalystHealthPlan[]
+  organizations  OrganizationHealthPlan[]
 
   @@index([sortOrder])
 }
@@ -1148,6 +1190,15 @@ model Organization {
   repasseRules         OrganizationRepasseRule[]
   invites              OrganizationInvite[]
   ledgerEntries        OrganizationLedgerEntry[]
+  healthPlans          OrganizationHealthPlan[]
+  tissGuides           TissGuide[]
+  tissBatches          TissBatch[]
+  employees            OrganizationEmployee[]
+  payrollEntries       OrganizationPayrollEntry[]
+  invoices             OrganizationInvoice[]
+  suppliers            OrganizationSupplier[]
+  purchaseOrders       OrganizationPurchaseOrder[]
+  surveyResponses      OrganizationSurveyResponse[]
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -1244,6 +1295,216 @@ model OrganizationLedgerEntry {
   @@index([organizationId])
   @@index([organizationId, status])
   @@index([organizationId, dueDate])
+}
+
+// ────────────────────────────────────────────
+// ORGANIZATION Phase 3 — TISS, RH, contabilidade, compras, NPS
+// ────────────────────────────────────────────
+
+model OrganizationHealthPlan {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  healthPlanId   String?
+  healthPlan     HealthPlan?  @relation(fields: [healthPlanId], references: [id], onDelete: SetNull)
+
+  operatorName   String
+  ansRegistry    String?
+  contractNumber String?
+  tissVersion    String       @default("4.01.00")
+  active         Boolean      @default(true)
+
+  guides         TissGuide[]
+  batches        TissBatch[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model TissGuide {
+  id              String          @id @default(cuid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orgHealthPlanId String
+  orgHealthPlan   OrganizationHealthPlan @relation(fields: [orgHealthPlanId], references: [id], onDelete: Cascade)
+
+  appointmentId   String?
+  professionalId  String
+  guideNumber     String?
+  procedureCode   String          @default("10101012")
+  procedureName   String          @default("Consulta em consultorio")
+  amountCents     Int
+
+  patientName     String
+  patientCpf      String?
+  cardNumber      String?
+
+  status          TissGuideStatus @default(DRAFT)
+  glosaReason     String?
+  glosaAmountCents Int?
+
+  batchId         String?
+  batch           TissBatch?      @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  serviceDate     DateTime
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([organizationId])
+  @@index([orgHealthPlanId])
+  @@index([batchId])
+  @@index([status])
+}
+
+model TissBatch {
+  id              String          @id @default(cuid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orgHealthPlanId String
+  orgHealthPlan   OrganizationHealthPlan @relation(fields: [orgHealthPlanId], references: [id], onDelete: Cascade)
+
+  batchNumber     String
+  periodStart     DateTime
+  periodEnd       DateTime
+  status          TissBatchStatus @default(OPEN)
+  totalGuides     Int             @default(0)
+  totalAmountCents Int            @default(0)
+
+  guides          TissGuide[]
+  sentAt          DateTime?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([organizationId])
+  @@index([orgHealthPlanId])
+}
+
+model OrganizationEmployee {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  professionalId String?
+  fullName       String
+  email          String?
+  cpf            String?
+  employmentType EmploymentType
+  jobTitle       String?
+  salaryCents    Int?
+  startDate      DateTime
+  endDate        DateTime?
+  active         Boolean        @default(true)
+
+  payrollLines   OrganizationPayrollEntry[]
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([organizationId])
+}
+
+model OrganizationPayrollEntry {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       OrganizationEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  referenceMonth String
+  grossCents     Int
+  deductionsCents Int               @default(0)
+  netCents       Int
+  status         PayrollEntryStatus @default(PENDING)
+  paidAt         DateTime?
+  notes          String?
+
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([employeeId, referenceMonth])
+  @@index([organizationId])
+}
+
+model OrganizationInvoice {
+  id               String                    @id @default(cuid())
+  organizationId   String
+  organization     Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  number           String?
+  recipientName    String
+  recipientDoc     String?
+  description      String
+  amountCents      Int
+  status           OrganizationInvoiceStatus @default(DRAFT)
+  issuedAt         DateTime?
+  externalProvider String?
+  externalId       String?
+
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
+
+model OrganizationSupplier {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name           String
+  cnpj           String?
+  email          String?
+  phone          String?
+  category       String?
+  active         Boolean      @default(true)
+
+  purchaseOrders OrganizationPurchaseOrder[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model OrganizationPurchaseOrder {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplierId     String
+  supplier       OrganizationSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  orderNumber    String
+  description    String
+  amountCents    Int
+  status         PurchaseOrderStatus @default(DRAFT)
+  orderedAt      DateTime?
+  receivedAt     DateTime?
+
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId])
+  @@index([supplierId])
+}
+
+model OrganizationSurveyResponse {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  appointmentId  String?
+  patientName    String?
+  score          Int
+  comment        String?
+
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([organizationId, createdAt])
 }
 
 // ────────────────────────────────────────────

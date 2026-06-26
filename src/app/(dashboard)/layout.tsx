@@ -16,6 +16,7 @@ import {
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
   Building2,
   BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain, BarChart3,
+  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone,
 } from "lucide-react";
 
 interface NavItem {
@@ -72,6 +73,12 @@ const ORGANIZATION_NAV: NavItem[] = [
   { href: "/organization/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["ORGANIZATION"] },
   { href: "/organization/ledger", labelKey: "org.nav.ledger", icon: <ClipboardList size={18} />, roles: ["ORGANIZATION"] },
   { href: "/organization/reports", labelKey: "org.nav.reports", icon: <BarChart3 size={18} />, roles: ["ORGANIZATION"] },
+  { href: "/organization/convenios", labelKey: "org.nav.convenios", icon: <Shield size={18} />, roles: ["ORGANIZATION"] },
+  { href: "/organization/hr", labelKey: "org.nav.hr", icon: <Briefcase size={18} />, roles: ["ORGANIZATION"] },
+  { href: "/organization/accounting", labelKey: "org.nav.accounting", icon: <FileSpreadsheet size={18} />, roles: ["ORGANIZATION"] },
+  { href: "/organization/invoices", labelKey: "org.nav.invoices", icon: <Receipt size={18} />, roles: ["ORGANIZATION"] },
+  { href: "/organization/purchases", labelKey: "org.nav.purchases", icon: <Package size={18} />, roles: ["ORGANIZATION"] },
+  { href: "/organization/marketing", labelKey: "org.nav.marketing", icon: <Megaphone size={18} />, roles: ["ORGANIZATION"] },
   { href: "/organization/team", labelKey: "org.nav.team", icon: <Building2 size={18} />, roles: ["ORGANIZATION"] },
   { href: "/organization/settings", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["ORGANIZATION"] },
 ];
