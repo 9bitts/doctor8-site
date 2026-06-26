@@ -11,6 +11,7 @@ import {
   Loader2, AlertCircle, ChevronDown, ArrowUpRight,
   Stethoscope, Radio, MapPin, BarChart3, Info,
 } from "lucide-react";
+import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
 import { RateioSection } from "./RateioSection";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -219,6 +220,8 @@ export default function FinanceiroPage() {
           <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         </div>
       </div>
+
+      <ConsultPricingSettings />
 
       {error && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">

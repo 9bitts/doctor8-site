@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { stripe, getOrCreateStripeCustomer, getCurrency } from "@/lib/stripe";
 import { getProfessionalPriceId } from "@/lib/stripe-payment-methods";
 import { buildSubscriptionCheckoutParams } from "@/lib/stripe-subscription-checkout";
-import { parseBillingRegion, paymentMethodsForRegion } from "@/lib/billing-regions";
+import { parseBillingRegion, paymentMethodsForRegion, regionsMismatch } from "@/lib/billing-regions";
 import { z } from "zod";
 
 const postSchema = z.object({
@@ -73,10 +73,25 @@ export async function POST(req: NextRequest) {
   const profile = await getProviderProfile(session.user.id);
   if (!user || !profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const region = parseBillingRegion(
-    bodyRegion,
-    parseBillingRegion(user.region || session.user.region, "US"),
-  );
+  const profileRegion = parseBillingRegion(user.region || session.user.region, "US");
+  const requestedRegion = bodyRegion
+    ? parseBillingRegion(bodyRegion, profileRegion)
+    : profileRegion;
+
+  if (regionsMismatch(profileRegion, requestedRegion)) {
+    return NextResponse.json(
+      {
+        error:
+          "A moeda escolhida nao corresponde a regiao da sua conta. Altere a regiao em Meu Perfil para pagar nessa moeda.",
+        code: "REGION_MISMATCH",
+        profileRegion,
+        settingsPath: "/professional/settings",
+      },
+      { status: 400 },
+    );
+  }
+
+  const region = profileRegion;
   const priceId = getProfessionalPriceId(region);
   if (!priceId) {
     console.error("[PRO-SUBSCRIPTION] Professional price not configured for region:", region);
@@ -90,23 +105,31 @@ export async function POST(req: NextRequest) {
   );
 
   const currency = getCurrency(region);
-  const checkoutSession = await stripe.checkout.sessions.create(
-    buildSubscriptionCheckoutParams({
-      customerId,
-      priceId,
-      currency,
-      userId: session.user.id,
-      planKind: "professional",
-      successPath: "/professional/account?subscribed=true",
-      cancelPath: "/professional/account",
-    }),
-  );
+  try {
+    const checkoutSession = await stripe.checkout.sessions.create(
+      buildSubscriptionCheckoutParams({
+        customerId,
+        priceId,
+        currency,
+        userId: session.user.id,
+        planKind: "professional",
+        successPath: "/professional/account?subscribed=true",
+        cancelPath: "/professional/account",
+      }),
+    );
 
-  return NextResponse.json({
-    checkoutUrl: checkoutSession.url,
-    region,
-    paymentMethods: paymentMethodsForRegion(region),
-  });
+    return NextResponse.json({
+      checkoutUrl: checkoutSession.url,
+      region,
+      paymentMethods: paymentMethodsForRegion(region),
+    });
+  } catch (e: any) {
+    console.error("[PRO-SUBSCRIPTION] Stripe checkout error:", e?.message || e);
+    return NextResponse.json(
+      { error: "Nao foi possivel abrir o checkout. Tente novamente em instantes.", code: "STRIPE_ERROR" },
+      { status: 502 },
+    );
+  }
 }
 
 export async function DELETE() {

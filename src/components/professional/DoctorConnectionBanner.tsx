@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, Loader2, X } from "lucide-react";
+import { Heart, Loader2, X, AlertCircle } from "lucide-react";
 import {
   BILLING_REGION_OPTIONS,
   parseBillingRegion,
+  regionsMismatch,
+  billingRegionLabel,
+  REGION_MISMATCH_MESSAGE,
+  SETTINGS_PROFILE_PATH,
   type BillingRegion,
 } from "@/lib/billing-regions";
 
@@ -17,29 +21,45 @@ type Props = {
 };
 
 export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Props) {
+  const profileRegion = parseBillingRegion(defaultRegion, "US");
+
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(DISMISS_KEY) === "1";
   });
-  const [region, setRegion] = useState<BillingRegion>(
-    parseBillingRegion(defaultRegion, "BR"),
-  );
+  const [region, setRegion] = useState<BillingRegion>(profileRegion);
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
 
   if (subscribed || dismissed) return null;
 
   const selected = BILLING_REGION_OPTIONS.find((o) => o.region === region)!;
+  const regionMismatch = regionsMismatch(profileRegion, region);
 
   async function goToCheckout() {
+    if (regionMismatch) {
+      setMsg(REGION_MISMATCH_MESSAGE);
+      return;
+    }
     setLoading(true);
+    setMsg("");
     try {
       const res = await fetch("/api/payments/professional-subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ region }),
       });
-      const data = await res.json();
+      let data: { checkoutUrl?: string; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        setMsg("Resposta invalida do servidor. Tente novamente.");
+        return;
+      }
       if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+      else setMsg(data.error || "Nao foi possivel iniciar o checkout.");
+    } catch {
+      setMsg("Erro de conexao. Verifique sua internet e tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -78,6 +98,13 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
             </p>
           </div>
 
+          {msg && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <span>{msg}</span>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
             <div className="min-w-[200px]">
               <label className="block text-xs font-medium text-slate-500 mb-1">
@@ -85,7 +112,10 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
               </label>
               <select
                 value={region}
-                onChange={(e) => setRegion(parseBillingRegion(e.target.value, region))}
+                onChange={(e) => {
+                  setRegion(parseBillingRegion(e.target.value, region));
+                  setMsg("");
+                }}
                 className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               >
                 {BILLING_REGION_OPTIONS.map((opt) => (
@@ -94,7 +124,19 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
                   </option>
                 ))}
               </select>
-              {region === "BR" && (
+              <p className="text-xs text-slate-500 mt-1">
+                Regiao da conta: {billingRegionLabel(profileRegion)}
+              </p>
+              {regionMismatch && (
+                <p className="text-xs text-amber-700 mt-1">
+                  Altere em{" "}
+                  <Link href={SETTINGS_PROFILE_PATH} className="underline font-medium">
+                    Meu Perfil
+                  </Link>{" "}
+                  para cobrar em {billingRegionLabel(region)}.
+                </p>
+              )}
+              {region === "BR" && !regionMismatch && (
                 <p className="text-xs text-slate-500 mt-1">Cartao, PIX ou boleto no checkout.</p>
               )}
             </div>
@@ -103,7 +145,7 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
               <button
                 type="button"
                 onClick={goToCheckout}
-                disabled={loading}
+                disabled={loading || regionMismatch}
                 className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
               >
                 {loading && <Loader2 size={14} className="animate-spin" />}

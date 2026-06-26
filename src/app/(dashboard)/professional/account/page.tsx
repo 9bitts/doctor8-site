@@ -8,10 +8,15 @@
 
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
+import Link from "next/link";
 import { useT } from "@/lib/i18n/I18nProvider";
 import {
   BILLING_REGION_OPTIONS,
   parseBillingRegion,
+  regionsMismatch,
+  billingRegionLabel,
+  REGION_MISMATCH_MESSAGE,
+  SETTINGS_PROFILE_PATH,
   type BillingRegion,
 } from "@/lib/billing-regions";
 import {
@@ -52,29 +57,38 @@ export default function ProfessionalAccountPage() {
   const [subLoading, setSubLoading] = useState(true);
   const [subWorking, setSubWorking] = useState(false);
   const [subMsg, setSubMsg] = useState("");
+  const [subMsgTone, setSubMsgTone] = useState<"success" | "error" | "warning">("success");
   const [billingRegion, setBillingRegion] = useState<BillingRegion>("BR");
+  const [profileRegion, setProfileRegion] = useState<BillingRegion>("US");
 
   const isPasswordValid = PASSWORD_RULES.every((r) => r.test(newPwd));
   const passwordsMatch  = newPwd === confirmPwd;
   const isSubActive = sub && ["active", "trialing"].includes(sub.status);
+  const regionMismatch = regionsMismatch(profileRegion, billingRegion);
 
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
-      .then((s) => {
-        if (s?.user?.email) setCurrentEmail(s.user.email);
-        if (s?.user?.region) {
-          setBillingRegion(parseBillingRegion(s.user.region, "BR"));
-        }
-      });
+      .then((s) => { if (s?.user?.email) setCurrentEmail(s.user.email); });
     fetch("/api/payments/professional-subscription")
       .then((r) => r.json())
       .then((d) => setSub(d.subscription || null))
       .catch(() => setSub(null))
       .finally(() => setSubLoading(false));
+    fetch("/api/user/region")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.region) {
+          const region = parseBillingRegion(d.region, "US");
+          setProfileRegion(region);
+          setBillingRegion(region);
+        }
+      })
+      .catch(() => {});
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("subscribed") === "true") {
+      setSubMsgTone("success");
       setSubMsg("Doctor Connection ativado com sucesso.");
       window.history.replaceState({}, "", "/professional/account");
     }
@@ -117,6 +131,11 @@ export default function ProfessionalAccountPage() {
   }
 
   async function startSubscription() {
+    if (regionMismatch) {
+      setSubMsgTone("warning");
+      setSubMsg(REGION_MISMATCH_MESSAGE);
+      return;
+    }
     setSubWorking(true);
     setSubMsg("");
     try {
@@ -125,11 +144,23 @@ export default function ProfessionalAccountPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ region: billingRegion }),
       });
-      const d = await res.json();
-      if (d.checkoutUrl) window.location.href = d.checkoutUrl;
-      else setSubMsg(d.error || "Nao foi possivel iniciar o checkout.");
+      let d: { checkoutUrl?: string; error?: string; code?: string } = {};
+      try {
+        d = await res.json();
+      } catch {
+        setSubMsgTone("error");
+        setSubMsg("Resposta invalida do servidor. Tente novamente.");
+        return;
+      }
+      if (d.checkoutUrl) {
+        window.location.href = d.checkoutUrl;
+        return;
+      }
+      setSubMsgTone(d.code === "REGION_MISMATCH" ? "warning" : "error");
+      setSubMsg(d.error || "Nao foi possivel iniciar o checkout.");
     } catch {
-      setSubMsg("Erro de conexao.");
+      setSubMsgTone("error");
+      setSubMsg("Erro de conexao. Verifique sua internet e tente novamente.");
     } finally {
       setSubWorking(false);
     }
@@ -183,10 +214,36 @@ export default function ProfessionalAccountPage() {
           Mensalidade para profissionais na Doctor8. Pague com cartao, PIX ou boleto (Brasil).
         </p>
         {subMsg && (
-          <div className="flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-xl p-3 text-sm text-brand-700">
-            <CheckCircle2 size={16} /> {subMsg}
+          <div
+            className={`flex items-start gap-2 rounded-xl p-3 text-sm ${
+              subMsgTone === "success"
+                ? "bg-brand-50 border border-brand-200 text-brand-700"
+                : subMsgTone === "warning"
+                  ? "bg-amber-50 border border-amber-200 text-amber-800"
+                  : "bg-red-50 border border-red-200 text-red-700"
+            }`}
+          >
+            {subMsgTone === "success" ? (
+              <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
+            ) : (
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            )}
+            <span>{subMsg}</span>
           </div>
         )}
+        <p className="text-xs text-slate-500">
+          Regiao da conta: <strong>{billingRegionLabel(profileRegion)}</strong>
+          {profileRegion !== billingRegion && (
+            <>
+              {" "}
+              — para cobrar em outra moeda, altere em{" "}
+              <Link href={SETTINGS_PROFILE_PATH} className="text-brand-600 underline font-medium">
+                Meu Perfil
+              </Link>
+              .
+            </>
+          )}
+        </p>
         {subLoading ? (
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
@@ -228,16 +285,31 @@ export default function ProfessionalAccountPage() {
                   </option>
                 ))}
               </select>
-              {billingRegion === "BR" && (
+              {billingRegion === "BR" && !regionMismatch && (
                 <p className="text-xs text-slate-500 mt-1.5">
                   No checkout: cartao, PIX ou boleto.
                 </p>
+              )}
+              {regionMismatch && (
+                <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-2">
+                  <p>{REGION_MISMATCH_MESSAGE}</p>
+                  <p>
+                    Sua conta esta em <strong>{billingRegionLabel(profileRegion)}</strong>, mas voce
+                    selecionou <strong>{billingRegionLabel(billingRegion)}</strong>.
+                  </p>
+                  <Link
+                    href={SETTINGS_PROFILE_PATH}
+                    className="inline-flex font-semibold text-amber-900 underline"
+                  >
+                    Abrir Meu Perfil e alterar regiao
+                  </Link>
+                </div>
               )}
             </div>
             <button
             type="button"
             onClick={startSubscription}
-            disabled={subWorking}
+            disabled={subWorking || regionMismatch}
             className="bg-brand-500 hover:bg-brand-400 disabled:opacity-40 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2"
           >
             {subWorking && <Loader2 size={15} className="animate-spin" />}

@@ -11,12 +11,16 @@ import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import {
-  Loader2, CheckCircle2, Video, Building2, DollarSign, User, Award, Camera, X, Plus,
-  LayoutTemplate,
+  Loader2, CheckCircle2, User, Award, Camera, X, Plus,
+  LayoutTemplate, Globe, Building2,
 } from "lucide-react";
 
-const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
 const inputClass = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40";
+const ACCOUNT_REGIONS = [
+  { value: "BR", label: "Brasil (BRL — PIX, boleto, cartao)" },
+  { value: "US", label: "Estados Unidos (USD)" },
+  { value: "EU", label: "Europa (EUR)" },
+] as const;
 
 export default function ProfessionalSettings() {
   const { lang, t } = useI18n();
@@ -36,23 +40,37 @@ export default function ProfessionalSettings() {
   const [licenseNumber, setLicenseNumber] = useState("");
   const [licenseState, setLicenseState] = useState("");
   const [bio, setBio] = useState("");
-  const [price, setPrice] = useState("");
-  const [currency, setCurrency] = useState("USD");
-  const [acceptsTeleconsult, setAcceptsTeleconsult] = useState(true);
-  const [acceptsInPerson, setAcceptsInPerson] = useState(false);
   const [clinicName, setClinicName] = useState("");
   const [clinicAddress, setClinicAddress] = useState("");
   const [clinicCity, setClinicCity] = useState("");
   const [clinicState, setClinicState] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
   const [clinicZip, setClinicZip] = useState("");
+  const [accountRegion, setAccountRegion] = useState<"BR" | "US" | "EU">("US");
+  const [regionSaving, setRegionSaving] = useState(false);
+  const [regionSaved, setRegionSaved] = useState(false);
+  const [regionError, setRegionError] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/professional/profile");
-        if (res.ok) {
-          const d = await res.json();
+        const [profileRes, sessionRes] = await Promise.all([
+          fetch("/api/professional/profile"),
+          fetch("/api/auth/session"),
+        ]);
+        if (sessionRes.ok) {
+          const session = await sessionRes.json();
+          const r = session?.user?.region;
+          if (r === "BR" || r === "US" || r === "EU") setAccountRegion(r);
+        }
+        const regionRes = await fetch("/api/user/region");
+        if (regionRes.ok) {
+          const regionData = await regionRes.json();
+          const r = regionData?.region;
+          if (r === "BR" || r === "US" || r === "EU") setAccountRegion(r);
+        }
+        if (profileRes.ok) {
+          const d = await profileRes.json();
           const p = d.profile;
           if (p) {
             setAvatarUrl(p.avatarUrl || "");
@@ -63,10 +81,6 @@ export default function ProfessionalSettings() {
             setLicenseNumber(p.licenseNumber || "");
             setLicenseState(p.licenseState || "");
             setBio(p.bio || "");
-            setPrice(p.consultPrice ? String(p.consultPrice / 100) : "");
-            setCurrency(p.currency || "USD");
-            setAcceptsTeleconsult(p.acceptsTeleconsult ?? true);
-            setAcceptsInPerson(p.acceptsInPerson ?? false);
             setClinicName(p.clinicName || "");
             setClinicAddress(p.clinicAddress || "");
             setClinicCity(p.clinicCity || "");
@@ -81,6 +95,28 @@ export default function ProfessionalSettings() {
     }
     load();
   }, []);
+
+  async function saveAccountRegion() {
+    setRegionSaving(true);
+    setRegionError("");
+    setRegionSaved(false);
+    try {
+      const res = await fetch("/api/user/region", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ region: accountRegion }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Nao foi possivel salvar a regiao.");
+      setRegionSaved(true);
+      setTimeout(() => setRegionSaved(false), 4000);
+      router.refresh();
+    } catch (e) {
+      setRegionError(e instanceof Error ? e.message : "Erro ao salvar regiao.");
+    } finally {
+      setRegionSaving(false);
+    }
+  }
 
   function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -119,7 +155,7 @@ export default function ProfessionalSettings() {
 
   async function handleSave() {
     setError("");
-    if (!firstName || !lastName || !licenseNumber || !price) {
+    if (!firstName || !lastName || !licenseNumber) {
       setError(t("set.errRequired"));
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -131,8 +167,7 @@ export default function ProfessionalSettings() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           avatarUrl, firstName, lastName, specialty: profession, subspecialties,
-          licenseNumber, licenseState, bio, consultPrice: Math.round(Number(price) * 100), currency,
-          acceptsTeleconsult, acceptsInPerson,
+          licenseNumber, licenseState, bio,
           clinicName, clinicAddress, clinicCity, clinicState, clinicCountry, clinicZip,
         }),
       });
@@ -170,6 +205,49 @@ export default function ProfessionalSettings() {
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-4"><p className="text-rose-700 text-sm">{error}</p></div>
       )}
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Globe size={18} className="text-brand-500" /> Regiao da conta
+        </h2>
+        <p className="text-sm text-slate-500">
+          Define a moeda da mensalidade Doctor Connection e de outros pagamentos na plataforma.
+          Para pagar em reais (PIX/boleto), selecione Brasil.
+        </p>
+        {regionError && (
+          <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+            {regionError}
+          </p>
+        )}
+        {regionSaved && (
+          <p className="text-sm text-brand-700 bg-brand-50 border border-brand-200 rounded-xl px-3 py-2">
+            Regiao atualizada. Voce ja pode assinar na moeda escolhida em Conta.
+          </p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">Pais / regiao</label>
+            <select
+              value={accountRegion}
+              onChange={(e) => setAccountRegion(e.target.value as "BR" | "US" | "EU")}
+              className={inputClass}
+            >
+              {ACCOUNT_REGIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={saveAccountRegion}
+            disabled={regionSaving}
+            className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0"
+          >
+            {regionSaving && <Loader2 size={14} className="animate-spin" />}
+            Salvar regiao
+          </button>
+        </div>
+      </div>
 
       <PublicListingSettings apiPath="/api/professional/public-profile" />
       <HealthPlansSettings apiPath="/api/professional/health-plans" />
@@ -295,33 +373,6 @@ export default function ProfessionalSettings() {
           <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.aboutMe")}</label>
           <textarea rows={4} className={inputClass + " resize-none"} value={bio} onChange={(e) => setBio(e.target.value)}
             placeholder={t("set.aboutMePlaceholder")} />
-        </div>
-      </div>
-
-      {/* Consultation */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2"><DollarSign size={18} className="text-brand-500" /> {t("set.consultation")}</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.pricePerConsult")}</label>
-            <input type="number" className={inputClass} value={price} onChange={(e) => setPrice(e.target.value)} placeholder={t("set.pricePlaceholder")} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.currency")}</label>
-            <select className={inputClass + " bg-white"} value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="flex flex-col gap-3 pt-2">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={acceptsTeleconsult} onChange={(e) => setAcceptsTeleconsult(e.target.checked)} className="w-4 h-4 accent-brand-500" />
-            <span className="text-sm text-slate-700 flex items-center gap-2"><Video size={15} /> {t("set.acceptTele")}</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={acceptsInPerson} onChange={(e) => setAcceptsInPerson(e.target.checked)} className="w-4 h-4 accent-brand-500" />
-            <span className="text-sm text-slate-700 flex items-center gap-2"><Building2 size={15} /> {t("set.acceptInPerson")}</span>
-          </label>
         </div>
       </div>
 

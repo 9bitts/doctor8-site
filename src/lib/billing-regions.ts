@@ -21,3 +21,19 @@ export function parseBillingRegion(value: unknown, fallback: BillingRegion = "US
 export function paymentMethodsForRegion(region: BillingRegion): string[] {
   return region === "BR" ? ["card", "pix", "boleto"] : ["card"];
 }
+
+export function billingRegionLabel(region: BillingRegion): string {
+  return BILLING_REGION_OPTIONS.find((o) => o.region === region)?.labelPt ?? region;
+}
+
+export function regionsMismatch(
+  profileRegion: BillingRegion,
+  billingRegion: BillingRegion,
+): boolean {
+  return profileRegion !== billingRegion;
+}
+
+export const REGION_MISMATCH_MESSAGE =
+  "Para pagar na moeda escolhida, altere a regiao da sua conta em Meu Perfil e salve. A moeda de cobranca deve ser a mesma da regiao do cadastro.";
+
+export const SETTINGS_PROFILE_PATH = "/professional/settings";

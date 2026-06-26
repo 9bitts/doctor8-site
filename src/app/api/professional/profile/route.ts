@@ -32,15 +32,32 @@ export async function POST(req: NextRequest) {
     avatarUrl, clinicName, clinicAddress, clinicCity, clinicState, clinicCountry, clinicZip,
   } = body;
 
-  if (!firstName || !lastName || !licenseNumber || !specialty || !consultPrice) {
+  const existing = await db.professionalProfile.findUnique({
+    where: { userId: session.user.id },
+  });
+
+  const resolvedConsultPrice =
+    consultPrice !== undefined && consultPrice !== null && consultPrice !== ""
+      ? Number(consultPrice)
+      : existing?.consultPrice;
+
+  if (!firstName || !lastName || !licenseNumber || !specialty) {
     return NextResponse.json(
-      { error: "Missing required fields: name, registration number, profession and price." },
-      { status: 400 }
+      { error: "Missing required fields: name, registration number and profession." },
+      { status: 400 },
     );
   }
 
-  // A profile is complete when essentials are filled; public listing requires admin approval (verified).
-  const isComplete = Boolean(firstName && lastName && licenseNumber && specialty && consultPrice > 0);
+  if (!existing && (!resolvedConsultPrice || resolvedConsultPrice <= 0)) {
+    return NextResponse.json(
+      { error: "Missing required fields: consultation price." },
+      { status: 400 },
+    );
+  }
+
+  const isComplete = Boolean(
+    firstName && lastName && licenseNumber && specialty && (resolvedConsultPrice ?? 0) > 0,
+  );
 
   // subspecialties is an array column
   const subsArray = Array.isArray(subspecialties)
@@ -57,10 +74,16 @@ export async function POST(req: NextRequest) {
     licenseNumber,
     licenseState: licenseState || null,
     bio: bio || null,
-    consultPrice: Number(consultPrice),
-    currency: currency || "USD",
-    acceptsTeleconsult: Boolean(acceptsTeleconsult),
-    acceptsInPerson: Boolean(acceptsInPerson),
+    consultPrice: resolvedConsultPrice ?? 0,
+    currency: currency ?? existing?.currency ?? "USD",
+    acceptsTeleconsult:
+      acceptsTeleconsult !== undefined
+        ? Boolean(acceptsTeleconsult)
+        : existing?.acceptsTeleconsult ?? true,
+    acceptsInPerson:
+      acceptsInPerson !== undefined
+        ? Boolean(acceptsInPerson)
+        : existing?.acceptsInPerson ?? false,
     avatarUrl: avatarUrl || null,
     clinicName: clinicName || null,
     clinicAddress: clinicAddress || null,
@@ -69,10 +92,6 @@ export async function POST(req: NextRequest) {
     clinicCountry: clinicCountry || null,
     clinicZip: clinicZip || null,
   };
-
-  const existing = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-  });
 
   let profile;
   if (existing) {
