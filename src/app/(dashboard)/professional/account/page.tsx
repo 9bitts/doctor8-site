@@ -10,6 +10,11 @@ import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import {
+  BILLING_REGION_OPTIONS,
+  parseBillingRegion,
+  type BillingRegion,
+} from "@/lib/billing-regions";
+import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
   Eye, EyeOff, LogOut, Shield, CreditCard,
 } from "lucide-react";
@@ -47,6 +52,7 @@ export default function ProfessionalAccountPage() {
   const [subLoading, setSubLoading] = useState(true);
   const [subWorking, setSubWorking] = useState(false);
   const [subMsg, setSubMsg] = useState("");
+  const [billingRegion, setBillingRegion] = useState<BillingRegion>("BR");
 
   const isPasswordValid = PASSWORD_RULES.every((r) => r.test(newPwd));
   const passwordsMatch  = newPwd === confirmPwd;
@@ -55,7 +61,12 @@ export default function ProfessionalAccountPage() {
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
-      .then((s) => { if (s?.user?.email) setCurrentEmail(s.user.email); });
+      .then((s) => {
+        if (s?.user?.email) setCurrentEmail(s.user.email);
+        if (s?.user?.region) {
+          setBillingRegion(parseBillingRegion(s.user.region, "BR"));
+        }
+      });
     fetch("/api/payments/professional-subscription")
       .then((r) => r.json())
       .then((d) => setSub(d.subscription || null))
@@ -109,7 +120,11 @@ export default function ProfessionalAccountPage() {
     setSubWorking(true);
     setSubMsg("");
     try {
-      const res = await fetch("/api/payments/professional-subscription", { method: "POST" });
+      const res = await fetch("/api/payments/professional-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ region: billingRegion }),
+      });
       const d = await res.json();
       if (d.checkoutUrl) window.location.href = d.checkoutUrl;
       else setSubMsg(d.error || "Nao foi possivel iniciar o checkout.");
@@ -197,7 +212,29 @@ export default function ProfessionalAccountPage() {
             )}
           </div>
         ) : (
-          <button
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                Moeda de cobranca
+              </label>
+              <select
+                value={billingRegion}
+                onChange={(e) => setBillingRegion(parseBillingRegion(e.target.value, billingRegion))}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+              >
+                {BILLING_REGION_OPTIONS.map((opt) => (
+                  <option key={opt.region} value={opt.region}>
+                    {opt.labelPt} — {opt.priceHint}
+                  </option>
+                ))}
+              </select>
+              {billingRegion === "BR" && (
+                <p className="text-xs text-slate-500 mt-1.5">
+                  No checkout: cartao, PIX ou boleto.
+                </p>
+              )}
+            </div>
+            <button
             type="button"
             onClick={startSubscription}
             disabled={subWorking}
@@ -206,6 +243,7 @@ export default function ProfessionalAccountPage() {
             {subWorking && <Loader2 size={15} className="animate-spin" />}
             Assinar Doctor Connection
           </button>
+          </div>
         )}
       </div>
 

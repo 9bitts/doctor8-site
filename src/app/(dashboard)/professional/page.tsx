@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
 import MarketPricingCard from "@/components/professional/MarketPricingCard";
+import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import { decrypt } from "@/lib/encryption";
 import { getProfessionLabel } from "@/lib/professions";
 
@@ -68,6 +69,8 @@ export default async function ProfessionalDashboard() {
     jitSession,
     sharedPending,
     unreadMessages,
+    subscription,
+    userRow,
   ] = await Promise.all([
     db.appointment.count({
       where: {
@@ -110,7 +113,18 @@ export default async function ProfessionalDashboard() {
         deletedAt: null,
       },
     }),
+    db.subscription.findUnique({
+      where: { userId },
+      select: { status: true },
+    }),
+    db.user.findUnique({
+      where: { id: userId },
+      select: { region: true },
+    }),
   ]);
+
+  const hasActiveSubscription =
+    !!subscription && ["active", "trialing"].includes(subscription.status);
 
   const monthEarningsTotal = monthEarnings._sum.priceAmount || 0;
   const upcomingCount = professional.appointments.length;
@@ -179,6 +193,11 @@ export default async function ProfessionalDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+
+      <DoctorConnectionBanner
+        subscribed={hasActiveSubscription}
+        defaultRegion={userRow?.region || session.user.region}
+      />
 
       {/* Header */}
       <div>

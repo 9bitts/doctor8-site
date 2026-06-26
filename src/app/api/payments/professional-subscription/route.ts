@@ -8,6 +8,12 @@ import { db } from "@/lib/db";
 import { stripe, getOrCreateStripeCustomer, getCurrency } from "@/lib/stripe";
 import { getProfessionalPriceId } from "@/lib/stripe-payment-methods";
 import { buildSubscriptionCheckoutParams } from "@/lib/stripe-subscription-checkout";
+import { parseBillingRegion, paymentMethodsForRegion } from "@/lib/billing-regions";
+import { z } from "zod";
+
+const postSchema = z.object({
+  region: z.enum(["BR", "US", "EU"]).optional(),
+});
 
 const PROVIDER_ROLES = new Set(["PROFESSIONAL", "PSYCHOANALYST"]);
 
@@ -44,11 +50,20 @@ export async function GET() {
   return NextResponse.json({ subscription: sub });
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!PROVIDER_ROLES.has(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let bodyRegion: string | undefined;
+  try {
+    const raw = await req.json();
+    const parsed = postSchema.safeParse(raw);
+    if (parsed.success) bodyRegion = parsed.data.region;
+  } catch {
+    // empty body ok
   }
 
   const user = await db.user.findUnique({
@@ -58,7 +73,10 @@ export async function POST() {
   const profile = await getProviderProfile(session.user.id);
   if (!user || !profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const region = user.region || session.user.region || "US";
+  const region = parseBillingRegion(
+    bodyRegion,
+    parseBillingRegion(user.region || session.user.region, "US"),
+  );
   const priceId = getProfessionalPriceId(region);
   if (!priceId) {
     console.error("[PRO-SUBSCRIPTION] Professional price not configured for region:", region);
@@ -86,7 +104,8 @@ export async function POST() {
 
   return NextResponse.json({
     checkoutUrl: checkoutSession.url,
-    paymentMethods: currency === "brl" ? ["card", "pix", "boleto"] : ["card"],
+    region,
+    paymentMethods: paymentMethodsForRegion(region),
   });
 }
 
