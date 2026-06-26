@@ -95,6 +95,8 @@ export async function GET(req: NextRequest) {
         id: pool.id,
         slug: pool.slug,
         labelEs: pool.labelEs,
+        labelPt: pool.labelPt,
+        labelEn: pool.labelEn,
         waiting,
         volunteersOnline,
         myStatus: myVol?.status ?? "OFFLINE",

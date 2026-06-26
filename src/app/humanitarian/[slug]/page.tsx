@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,7 +8,11 @@ import {
   Users, Clock, ChevronRight,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
-import { HUMANITARIAN_PRIORITY_OPTIONS } from "@/lib/humanitarian";
+import { translate, Lang } from "@/lib/i18n/translations";
+import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
+import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
+
+const PRIORITIES = ["ROUTINE", "URGENT", "CRISIS"] as const;
 
 interface PoolInfo {
   id: string;
@@ -35,11 +39,18 @@ interface QueueEntry {
   aheadCount: number;
   estimatedWaitMinutes: number;
   onlineVolunteers: number;
-  calledAt: string | null;
-  expiresAt: string | null;
-  meetingUrl: string | null;
   poolLabel: string;
   professionalName: string | null;
+}
+
+function t(lang: Lang, key: string, params?: Record<string, string | number>) {
+  let s = translate(lang, key);
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      s = s.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), String(v));
+    }
+  }
+  return s;
 }
 
 export default function HumanitarianCampaignPage() {
@@ -47,6 +58,7 @@ export default function HumanitarianCampaignPage() {
   const slug = VENEZUELA_CAMPAIGN_SLUG;
   const pollRef = useRef<NodeJS.Timeout>();
 
+  const [lang, setLang] = useState<Lang>("es");
   const [loading, setLoading] = useState(true);
   const [campaign, setCampaign] = useState<CampaignInfo | null>(null);
   const [pools, setPools] = useState<PoolInfo[]>([]);
@@ -55,8 +67,29 @@ export default function HumanitarianCampaignPage() {
   const [entering, setEntering] = useState(false);
   const [complaint, setComplaint] = useState("");
   const [selectedPool, setSelectedPool] = useState<string | null>(null);
-  const [priority, setPriority] = useState<"ROUTINE" | "URGENT" | "CRISIS">("ROUTINE");
+  const [priority, setPriority] = useState<(typeof PRIORITIES)[number]>("ROUTINE");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLang(getHumanitarianLang());
+  }, []);
+
+  const loadCampaign = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/humanitarian/campaigns/${slug}?lang=${lang}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || t(lang, "hum.page.unavailable"));
+        setLoading(false);
+        return;
+      }
+      setCampaign(data.campaign);
+      setPools(data.pools || []);
+    } catch {
+      setError(t(lang, "hum.page.connectionError"));
+    }
+    setLoading(false);
+  }, [lang, slug]);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -67,7 +100,7 @@ export default function HumanitarianCampaignPage() {
           return;
         }
         if (s.user.role !== "PATIENT") {
-          router.push("/professional");
+          router.push("/humanitarian/volunteer");
           return;
         }
         loadCampaign();
@@ -77,24 +110,11 @@ export default function HumanitarianCampaignPage() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [router, slug]);
+  }, [router, slug, loadCampaign]);
 
-  async function loadCampaign() {
-    try {
-      const res = await fetch(`/api/humanitarian/campaigns/${slug}`);
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "No disponible");
-        setLoading(false);
-        return;
-      }
-      setCampaign(data.campaign);
-      setPools(data.pools || []);
-    } catch {
-      setError("Error de conexi?n");
-    }
-    setLoading(false);
-  }
+  useEffect(() => {
+    if (!loading) loadCampaign();
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function startPolling(entryId: string) {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -104,7 +124,7 @@ export default function HumanitarianCampaignPage() {
 
   async function pollEntry(entryId: string) {
     try {
-      const res = await fetch(`/api/humanitarian/queue?entryId=${entryId}`);
+      const res = await fetch(`/api/humanitarian/queue?entryId=${entryId}&lang=${lang}`);
       const data = await res.json();
       if (res.ok && data.entry) {
         setEntry(data.entry);
@@ -131,7 +151,7 @@ export default function HumanitarianCampaignPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.message || data.error || "No se pudo entrar en la fila");
+        setError(data.message || data.error || t(lang, "hum.page.queueError"));
         setJoining(null);
         return;
       }
@@ -139,7 +159,7 @@ export default function HumanitarianCampaignPage() {
       setSelectedPool(null);
       startPolling(data.entry.id);
     } catch {
-      setError("Error de red");
+      setError(t(lang, "hum.page.networkError"));
     }
     setJoining(null);
   }
@@ -155,13 +175,13 @@ export default function HumanitarianCampaignPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "Error");
+        setError(data.error || t(lang, "hum.page.networkError"));
         setEntering(false);
         return;
       }
       window.location.href = `/video/humanitarian/${entry.id}`;
     } catch {
-      setError("Error de red");
+      setError(t(lang, "hum.page.networkError"));
     }
     setEntering(false);
   }
@@ -180,147 +200,90 @@ export default function HumanitarianCampaignPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <Loader2 size={28} className="animate-spin text-emerald-400" />
-      </div>
+      <HumanitarianShell lang={lang} onLangChange={setLang} dark>
+        <div className="flex items-center justify-center py-24">
+          <Loader2 size={28} className="animate-spin text-emerald-400" />
+        </div>
+      </HumanitarianShell>
     );
   }
 
   if (entry) {
-    if (entry.status === "NO_SHOW" || entry.status === "CANCELLED") {
-      return (
-        <Screen>
-          <AlertCircle size={32} className="text-rose-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Perdiste tu turno</h2>
-          <p className="text-slate-400 text-sm mb-6">Puedes volver a unirte a la fila si a?n necesitas atenci?n.</p>
-          <button
-            type="button"
-            onClick={() => { setEntry(null); loadCampaign(); }}
-            className="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold"
-          >
-            Volver a la fila
-          </button>
-        </Screen>
-      );
-    }
-
-    if (entry.status === "CALLED") {
-      return (
-        <Screen border="emerald">
-          <Phone size={32} className="text-emerald-400 mx-auto mb-4 animate-bounce" />
-          <h2 className="text-2xl font-bold text-emerald-300 mb-2">?Es tu turno!</h2>
-          {entry.professionalName && (
-            <p className="text-slate-300 mb-2">{entry.professionalName}</p>
-          )}
-          <p className="text-slate-400 text-sm mb-6">Tienes 3 minutos para entrar a la consulta.</p>
-          {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
-          <button
-            type="button"
-            onClick={enterConsultation}
-            disabled={entering}
-            className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {entering ? <Loader2 size={18} className="animate-spin" /> : <><Phone size={18} /> Entrar ahora</>}
-          </button>
-        </Screen>
-      );
-    }
-
-    if (entry.status === "IN_PROGRESS") {
-      return (
-        <Screen border="blue">
-          <Stethoscope size={32} className="text-blue-400 mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-white mb-4">Consulta en curso</h2>
-          <Link
-            href={`/video/humanitarian/${entry.id}`}
-            className="w-full py-3 rounded-xl bg-blue-500 text-white font-bold flex items-center justify-center gap-2"
-          >
-            <Phone size={16} /> Entrar a la sala
-          </Link>
-        </Screen>
-      );
-    }
-
     return (
-      <Screen>
-        <Radio size={32} className="text-emerald-400 mx-auto mb-4 animate-pulse" />
-        <h2 className="text-lg font-bold text-white mb-1">Est?s en la fila</h2>
-        <p className="text-slate-400 text-sm mb-6">{entry.poolLabel}</p>
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-white/5 rounded-xl p-4">
-            <p className="text-3xl font-bold text-emerald-400">{entry.aheadCount + 1}</p>
-            <p className="text-xs text-slate-500 mt-1">Tu posici?n</p>
-          </div>
-          <div className="bg-white/5 rounded-xl p-4">
-            <p className="text-3xl font-bold text-slate-200">~{entry.estimatedWaitMinutes}</p>
-            <p className="text-xs text-slate-500 mt-1">Minutos estimados</p>
-          </div>
-        </div>
-        <p className="text-xs text-slate-500 mb-4 flex items-center justify-center gap-1">
-          <Users size={14} /> {entry.onlineVolunteers} voluntario(s) en l?nea
-        </p>
-        <p className="text-xs text-slate-500 mb-6">Mant?n esta p?gina abierta. Te avisaremos cuando sea tu turno.</p>
-        <button
-          type="button"
-          onClick={leaveQueue}
-          className="text-sm text-slate-500 hover:text-slate-300 underline"
-        >
-          Salir de la fila
-        </button>
-      </Screen>
+      <HumanitarianShell lang={lang} onLangChange={setLang} dark>
+        <QueueScreen
+          lang={lang}
+          entry={entry}
+          error={error}
+          entering={entering}
+          onEnter={enterConsultation}
+          onLeave={leaveQueue}
+          onRejoin={() => { setEntry(null); loadCampaign(); }}
+        />
+      </HumanitarianShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="max-w-lg mx-auto px-4 py-8 pb-16">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/20 flex items-center justify-center">
+    <HumanitarianShell lang={lang} onLangChange={setLang} dark>
+      <div className="space-y-6">
+        <div className="flex items-start gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/20 flex items-center justify-center shrink-0">
             <Heart size={24} className="text-rose-400" />
           </div>
-          <div>
-            <p className="text-xs text-rose-300/80 uppercase tracking-wide font-medium">Atenci?n humanitaria ? Gratis</p>
-            <h1 className="text-xl font-bold leading-tight">{campaign?.name || "Venezuela"}</h1>
+          <div className="min-w-0">
+            <p className="text-xs text-rose-300/80 uppercase tracking-wide font-medium">
+              {t(lang, "hum.page.eyebrow")}
+            </p>
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight text-white">
+              {campaign?.name || t(lang, "hum.shell.subtitle")}
+            </h1>
           </div>
         </div>
 
-        <p className="text-slate-400 text-sm leading-relaxed mb-8">
-          {campaign?.description ||
-            "Atenci?n m?dica y de salud mental gratuita para personas afectadas por el terremoto. Un voluntario te atender? por teleconsulta."}
+        <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+          {campaign?.description || t(lang, "hum.page.descDefault")}
         </p>
 
         {error && (
-          <p className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3 mb-6">
+          <p className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
             {error}
           </p>
         )}
 
         {!campaign?.active && (
-          <p className="text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 mb-6 text-sm">
-            La campa?a no est? activa en este momento. Intenta m?s tarde.
+          <p className="text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm">
+            {t(lang, "hum.page.inactive")}
           </p>
         )}
 
-        <h2 className="text-sm font-semibold text-slate-300 mb-3">?Qu? tipo de atenci?n necesitas?</h2>
-        <div className="space-y-3 mb-8">
+        <h2 className="text-sm font-semibold text-slate-300">
+          {t(lang, "hum.page.whatNeed")}
+        </h2>
+
+        <div className="space-y-3">
           {pools.map((pool) => (
             <button
               key={pool.slug}
               type="button"
               disabled={!campaign?.active || pool.isFull || !!joining}
               onClick={() => setSelectedPool(pool.slug)}
-              className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-4 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-4 sm:p-5 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-white">{pool.label}</p>
-                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-3">
-                    <span className="flex items-center gap-1"><Clock size={12} /> {pool.waiting} en espera</span>
-                    <span className="flex items-center gap-1"><Users size={12} /> {pool.volunteersOnline + pool.volunteersBusy} voluntarios</span>
+                <div className="min-w-0">
+                  <p className="font-semibold text-white text-base">{pool.label}</p>
+                  <p className="text-xs text-slate-500 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock size={12} /> {t(lang, "hum.page.waiting", { count: pool.waiting })}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Users size={12} /> {t(lang, "hum.page.volunteers", { count: pool.volunteersOnline + pool.volunteersBusy })}
+                    </span>
                   </p>
                 </div>
                 {pool.isFull ? (
-                  <span className="text-xs text-rose-400 shrink-0">Fila llena</span>
+                  <span className="text-xs text-rose-400 shrink-0">{t(lang, "hum.page.queueFull")}</span>
                 ) : (
                   <ChevronRight size={18} className="text-slate-500 shrink-0" />
                 )}
@@ -330,21 +293,24 @@ export default function HumanitarianCampaignPage() {
         </div>
 
         {selectedPool && campaign?.active && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-4">
             <p className="text-sm text-slate-300">
-              Unirse a: <strong className="text-white">{pools.find((p) => p.slug === selectedPool)?.label}</strong>
+              {t(lang, "hum.page.joinTitle", {
+                pool: pools.find((p) => p.slug === selectedPool)?.label || "",
+              })}
             </p>
+
             <div>
-              <label className="block text-xs text-slate-500 mb-2">Nivel de urgencia</label>
+              <label className="block text-xs text-slate-500 mb-2">{t(lang, "hum.page.urgencyLevel")}</label>
               <div className="space-y-2">
-                {HUMANITARIAN_PRIORITY_OPTIONS.map((opt) => (
+                {PRIORITIES.map((p) => (
                   <label
-                    key={opt.value}
+                    key={p}
                     className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${
-                      priority === opt.value
-                        ? opt.value === "CRISIS"
+                      priority === p
+                        ? p === "CRISIS"
                           ? "border-rose-400 bg-rose-500/10"
-                          : opt.value === "URGENT"
+                          : p === "URGENT"
                             ? "border-amber-400 bg-amber-500/10"
                             : "border-emerald-400/50 bg-emerald-500/5"
                         : "border-white/10 bg-slate-900/50"
@@ -353,76 +319,154 @@ export default function HumanitarianCampaignPage() {
                     <input
                       type="radio"
                       name="priority"
-                      value={opt.value}
-                      checked={priority === opt.value}
-                      onChange={() => setPriority(opt.value)}
-                      className="mt-1"
+                      checked={priority === p}
+                      onChange={() => setPriority(p)}
+                      className="mt-1 shrink-0"
                     />
                     <div>
-                      <p className="text-sm font-medium text-white">{opt.labelEs}</p>
-                      <p className="text-xs text-slate-500">{opt.descEs}</p>
+                      <p className="text-sm font-medium text-white">
+                        {t(lang, `hum.priority.${p.toLowerCase()}.label`)}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {t(lang, `hum.priority.${p.toLowerCase()}.desc`)}
+                      </p>
                     </div>
                   </label>
                 ))}
               </div>
             </div>
+
             <div>
-              <label className="block text-xs text-slate-500 mb-1.5">Motivo de consulta (opcional)</label>
+              <label className="block text-xs text-slate-500 mb-1.5">{t(lang, "hum.page.complaintLabel")}</label>
               <textarea
                 value={complaint}
                 onChange={(e) => setComplaint(e.target.value)}
                 rows={3}
-                placeholder="Ej.: ansiedad, dolor, necesito hablar con alguien..."
+                placeholder={t(lang, "hum.page.complaintPlaceholder")}
                 className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
               />
             </div>
+
             <button
               type="button"
               onClick={() => joinPool(selectedPool)}
               disabled={!!joining}
-              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base"
             >
               {joining === selectedPool ? (
                 <Loader2 size={18} className="animate-spin" />
               ) : (
-                <>Entrar en la fila ? Gratis</>
+                t(lang, "hum.page.joinBtn")
               )}
             </button>
-            <button type="button" onClick={() => setSelectedPool(null)} className="w-full text-sm text-slate-500 hover:text-slate-300">
-              Cancelar
+            <button
+              type="button"
+              onClick={() => setSelectedPool(null)}
+              className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
+            >
+              {t(lang, "hum.page.cancel")}
             </button>
           </div>
         )}
 
-        <p className="text-center text-xs text-slate-500 mt-6 px-4 leading-relaxed">
-          Si tienes una emergencia que pone en riesgo tu vida, busca atencion presencial de urgencia inmediata.
-          Este servicio no reemplaza ambulancias ni hospitales.
+        <p className="text-center text-xs text-slate-500 leading-relaxed px-2">
+          {t(lang, "hum.page.disclaimer")}
         </p>
-        <p className="text-center text-xs text-slate-600 mt-4">
-          Doctor8 - Voluntarios de salud - Sin costo
-        </p>
+        <p className="text-center text-xs text-slate-600">{t(lang, "hum.page.footer")}</p>
       </div>
-    </div>
+    </HumanitarianShell>
   );
 }
 
-function Screen({
-  children,
-  border,
+function QueueScreen({
+  lang,
+  entry,
+  error,
+  entering,
+  onEnter,
+  onLeave,
+  onRejoin,
 }: {
-  children: React.ReactNode;
-  border?: "emerald" | "blue";
+  lang: Lang;
+  entry: QueueEntry;
+  error: string | null;
+  entering: boolean;
+  onEnter: () => void;
+  onLeave: () => void;
+  onRejoin: () => void;
 }) {
-  const borderClass =
-    border === "emerald" ? "border-2 border-emerald-500/50" :
-    border === "blue" ? "border-2 border-blue-500/50" :
-    "border border-white/10";
+  const card = "bg-slate-900 border rounded-2xl p-6 sm:p-8 text-center w-full";
+
+  if (entry.status === "NO_SHOW" || entry.status === "CANCELLED") {
+    return (
+      <div className={`${card} border-white/10`}>
+        <AlertCircle size={32} className="text-rose-400 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-white mb-2">{t(lang, "hum.page.missedTitle")}</h2>
+        <p className="text-slate-400 text-sm mb-6">{t(lang, "hum.page.missedDesc")}</p>
+        <button type="button" onClick={onRejoin} className="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">
+          {t(lang, "hum.page.rejoin")}
+        </button>
+      </div>
+    );
+  }
+
+  if (entry.status === "CALLED") {
+    return (
+      <div className={`${card} border-2 border-emerald-500/50`}>
+        <Phone size={32} className="text-emerald-400 mx-auto mb-4 animate-bounce" />
+        <h2 className="text-2xl font-bold text-emerald-300 mb-2">{t(lang, "hum.page.calledTitle")}</h2>
+        {entry.professionalName && <p className="text-slate-300 mb-2">{entry.professionalName}</p>}
+        <p className="text-slate-400 text-sm mb-6">{t(lang, "hum.page.calledDesc")}</p>
+        {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
+        <button
+          type="button"
+          onClick={onEnter}
+          disabled={entering}
+          className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {entering ? <Loader2 size={18} className="animate-spin" /> : <><Phone size={18} /> {t(lang, "hum.page.enterNow")}</>}
+        </button>
+      </div>
+    );
+  }
+
+  if (entry.status === "IN_PROGRESS") {
+    return (
+      <div className={`${card} border-2 border-blue-500/50`}>
+        <Stethoscope size={32} className="text-blue-400 mx-auto mb-4" />
+        <h2 className="text-lg font-bold text-white mb-4">{t(lang, "hum.page.inProgressTitle")}</h2>
+        <Link
+          href={`/video/humanitarian/${entry.id}`}
+          className="w-full py-3.5 rounded-xl bg-blue-500 text-white font-bold flex items-center justify-center gap-2"
+        >
+          <Phone size={16} /> {t(lang, "hum.page.enterRoom")}
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className={`bg-slate-900 rounded-2xl ${borderClass} p-8 max-w-sm w-full text-center`}>
-        {children}
+    <div className={`${card} border-white/10`}>
+      <Radio size={32} className="text-emerald-400 mx-auto mb-4 animate-pulse" />
+      <h2 className="text-lg font-bold text-white mb-1">{t(lang, "hum.page.waitingTitle")}</h2>
+      <p className="text-slate-400 text-sm mb-6">{entry.poolLabel}</p>
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="bg-white/5 rounded-xl p-4">
+          <p className="text-3xl font-bold text-emerald-400">{entry.aheadCount + 1}</p>
+          <p className="text-xs text-slate-500 mt-1">{t(lang, "hum.page.yourPosition")}</p>
+        </div>
+        <div className="bg-white/5 rounded-xl p-4">
+          <p className="text-3xl font-bold text-slate-200">~{entry.estimatedWaitMinutes}</p>
+          <p className="text-xs text-slate-500 mt-1">{t(lang, "hum.page.estMinutes")}</p>
+        </div>
       </div>
+      <p className="text-xs text-slate-500 mb-4 flex items-center justify-center gap-1">
+        <Users size={14} /> {t(lang, "hum.page.volOnline", { count: entry.onlineVolunteers })}
+      </p>
+      <p className="text-xs text-slate-500 mb-6">{t(lang, "hum.page.keepOpen")}</p>
+      <button type="button" onClick={onLeave} className="text-sm text-slate-500 hover:text-slate-300 underline">
+        {t(lang, "hum.page.leaveQueue")}
+      </button>
     </div>
   );
 }

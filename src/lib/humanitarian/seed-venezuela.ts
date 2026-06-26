@@ -10,17 +10,18 @@ export async function seedVenezuelaCampaign() {
     include: { pools: true },
   });
 
+  const campaignData = {
+    name: "Venezuela — Atención humanitaria post-terremoto",
+    description: "Atención médica y de salud mental gratuita para personas afectadas por el terremoto. Sin costo. Voluntarios de Doctor8.",
+    region: "VE" as const,
+    active: true,
+    endAt: null as Date | null,
+  };
+
   if (existing) {
     await db.humanitarianCampaign.update({
       where: { id: existing.id },
-      data: {
-        active: true,
-        name: "Venezuela ? Atenci?n humanitaria post-terremoto",
-        description:
-          "Atenci?n m?dica y de salud mental gratuita para personas afectadas por el terremoto. Sin costo. Voluntarios de Doctor8.",
-        region: "VE",
-        endAt: null,
-      },
+      data: campaignData,
     });
 
     for (const p of DEFAULT_VENEZUELA_POOLS) {
@@ -59,11 +60,7 @@ export async function seedVenezuelaCampaign() {
   return db.humanitarianCampaign.create({
     data: {
       slug: VENEZUELA_CAMPAIGN_SLUG,
-      name: "Venezuela ? Atenci?n humanitaria post-terremoto",
-      description:
-        "Atenci?n m?dica y de salud mental gratuita para personas afectadas por el terremoto. Sin costo. Voluntarios de Doctor8.",
-      region: "VE",
-      active: true,
+      ...campaignData,
       noShowTimeoutSeconds: 180,
       estimatedMinutesPerPatient: 15,
       pools: {

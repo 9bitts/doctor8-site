@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
-import { DEFAULT_VENEZUELA_POOLS } from "@/lib/humanitarian/constants";
+import { DEFAULT_VENEZUELA_POOLS, poolLabel } from "@/lib/humanitarian/constants";
 import {
   notifyHumanitarianMissedTurn,
   notifyHumanitarianYourTurn,
@@ -251,7 +251,7 @@ export async function releaseVolunteer(volunteerId: string): Promise<void> {
   });
 }
 
-export async function getEntryStatus(entryId: string, patientUserId: string) {
+export async function getEntryStatus(entryId: string, patientUserId: string, lang = "es") {
   const entry = await db.humanitarianQueueEntry.findUnique({
     where: { id: entryId },
     include: {
@@ -332,7 +332,7 @@ export async function getEntryStatus(entryId: string, patientUserId: string) {
     expiresAt: refreshed.expiresAt?.toISOString() ?? null,
     meetingUrl: refreshed.meetingUrl ?? null,
     poolSlug: refreshed.pool.slug,
-    poolLabel: refreshed.pool.labelEs,
+    poolLabel: poolLabel(refreshed.pool, lang),
     professionalName,
     campaignActive: refreshed.pool.campaign.active,
     campaignSlug: refreshed.pool.campaign.slug,
@@ -401,7 +401,7 @@ export async function resolveVolunteerProfile(userId: string, role: string): Pro
       providerType: "PSYCHOANALYST",
       psychoanalystId: pa.id,
       displayName: `${pa.firstName} ${pa.lastName}`,
-      specialty: "Psican?lise",
+      specialty: "Psicanálise",
     };
   }
 

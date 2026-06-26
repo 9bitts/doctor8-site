@@ -25,7 +25,8 @@ export async function GET(
   }
 
   const session = await auth();
-  const lang = "es";
+  const langParam = new URL(_req.url).searchParams.get("lang") || "es";
+  const lang = langParam.startsWith("pt") ? "pt" : langParam.startsWith("en") ? "en" : "es";
 
   const poolStats = await getCampaignStats(campaign.id);
 

@@ -21,11 +21,12 @@ export async function GET(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const entryId = new URL(req.url).searchParams.get("entryId");
+  const lang = new URL(req.url).searchParams.get("lang") || "es";
   if (!entryId) {
     return NextResponse.json({ error: "entryId required" }, { status: 400 });
   }
 
-  const status = await getEntryStatus(entryId, session.user.id);
+  const status = await getEntryStatus(entryId, session.user.id, lang);
   if (!status) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json({ entry: status });

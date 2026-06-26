@@ -180,8 +180,8 @@ export async function notifyHumanitarianJoined(opts: {
 }) {
   await createNotification({
     userId: opts.patientUserId,
-    title: "Est?s en la fila humanitaria",
-    body: `${opts.poolLabel} ? posici?n ${opts.position}. Te avisaremos cuando sea tu turno.`,
+    title: "Estás en la fila humanitaria",
+    body: `${opts.poolLabel} — posición ${opts.position}. Te avisaremos cuando sea tu turno.`,
     type: "system",
     data: {
       link: `/humanitarian/${opts.campaignSlug}`,
@@ -210,14 +210,14 @@ export async function notifyHumanitarianYourTurn(opts: {
   const firstName = profile ? safeDecrypt(profile.firstName) : "paciente";
   const pro = opts.professionalName || "un profesional voluntario";
   const waMessage =
-    `Hola ${firstName}, es tu turno en Doctor8 (atenci?n humanitaria). ` +
-    `${pro} est? listo para atenderte. Entra aqu?: ${entryUrl} ? Tienes 3 minutos.`;
+    `Hola ${firstName}, es tu turno en Doctor8 (atención humanitaria). ` +
+    `${pro} está listo para atenderte. Entra aquí: ${entryUrl} — Tienes 3 minutos.`;
   const whatsappUrl = phone ? buildClinicalDocumentWaMeUrl(phone, waMessage) : null;
 
   await createNotification({
     userId: opts.patientUserId,
-    title: "?Es tu turno!",
-    body: `${pro} est? listo. Tienes 3 minutos para entrar a la consulta gratuita.`,
+    title: "¡Es tu turno!",
+    body: `${pro} está listo. Tienes 3 minutos para entrar a la consulta gratuita.`,
     type: "message",
     data: {
       entryId: opts.entryId,
@@ -234,7 +234,7 @@ export async function notifyHumanitarianMissedTurn(patientUserId: string, campai
   await createNotification({
     userId: patientUserId,
     title: "Perdiste tu turno",
-    body: "No entraste a tiempo. Si a?n necesitas atenci?n, vuelve a unirte a la fila.",
+    body: "No entraste a tiempo. Si aún necesitas atención, vuelve a unirte a la fila.",
     type: "system",
     data: {
       link: `/humanitarian/${campaignSlug}`,
