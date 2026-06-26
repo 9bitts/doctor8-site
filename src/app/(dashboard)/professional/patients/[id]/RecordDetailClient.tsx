@@ -425,7 +425,7 @@ export default function RecordDetailClient({
     const up = await fetch("/api/uploads", { method: "POST", body: fd });
     const upData = await up.json();
     if (!up.ok) {
-      setError(upData.error || "File upload failed.");
+      setError(upData.error || t("rec.uploadFailed"));
       return null;
     }
     return upData.key as string;
@@ -442,7 +442,7 @@ export default function RecordDetailClient({
       if (imagePreview) URL.revokeObjectURL(imagePreview);
       setImagePreview(URL.createObjectURL(rotated));
     } catch {
-      setError("Could not rotate image.");
+      setError(t("rec.rotateFailed"));
     }
     setRotating(false);
   }
@@ -642,7 +642,7 @@ export default function RecordDetailClient({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Could not create record.");
+        setError(typeof data.error === "string" ? data.error : t("rec.createFailed"));
         setSaving(false);
         return;
       }
@@ -667,7 +667,7 @@ export default function RecordDetailClient({
       resetForm();
       setShowForm(false);
     } catch {
-      setError("Network error. Try again.");
+      setError(t("rec.networkError"));
     }
     setSaving(false);
   }
@@ -712,7 +712,7 @@ export default function RecordDetailClient({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Could not update record.");
+        setError(typeof data.error === "string" ? data.error : t("rec.updateFailed"));
         setSaving(false);
         return;
       }
@@ -721,7 +721,7 @@ export default function RecordDetailClient({
       resetForm();
       setShowForm(false);
     } catch {
-      setError("Network error. Try again.");
+      setError(t("rec.networkError"));
     }
     setSaving(false);
   }
@@ -760,7 +760,7 @@ export default function RecordDetailClient({
         href="/professional/patients"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
       >
-        <ArrowLeft size={16} /> Back to patients
+        <ArrowLeft size={16} /> {t("rec.backToPatients")}
       </Link>
 
       {!isOwner && ownerName && (
@@ -807,11 +807,11 @@ export default function RecordDetailClient({
             <p className="text-xs mt-2">
               {hasAccount ? (
                 <span className="text-brand-500 inline-flex items-center gap-1">
-                  <CheckCircle2 size={12} /> Has Doctor8 account
+                  <CheckCircle2 size={12} /> {t("rec.hasAccount")}
                 </span>
               ) : (
                 <span className="text-amber-600 inline-flex items-center gap-1">
-                  <AlertCircle size={12} /> No account yet
+                  <AlertCircle size={12} /> {t("rec.noAccount")}
                 </span>
               )}
             </p>
@@ -858,7 +858,7 @@ export default function RecordDetailClient({
                 onClick={openRegEditor}
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
               >
-                <Pencil size={13} /> {regEmpty ? "Adicionar dados" : "Editar dados"}
+                <Pencil size={13} /> {regEmpty ? t("rec.addRegData") : t("rec.editRegData")}
               </button>
             )}
           </div>
@@ -997,7 +997,7 @@ export default function RecordDetailClient({
         {/* ── Etapa 3c: email & invite management (only meaningful when no account) ── */}
         {isOwner && !hasAccount && (
           <div className="mt-4 pt-4 border-t border-slate-100">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Patient access</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">{t("rec.patientAccess")}</p>
 
             {editingEmail ? (
               <div className="space-y-2">
@@ -1016,26 +1016,26 @@ export default function RecordDetailClient({
                     className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-500 text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50"
                   >
                     {emailSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                    Save
+                    {t("lib.save")}
                   </button>
                   <button
                     onClick={() => { setEditingEmail(false); setEmailDraft(chartEmail || ""); setEmailMsg(null); }}
                     className="text-sm text-slate-500 hover:text-slate-700 px-3 py-2"
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-slate-700">
-                  {chartEmail ? chartEmail : <span className="text-slate-400">No email on file</span>}
+                  {chartEmail ? chartEmail : <span className="text-slate-400">{t("rec.noEmail")}</span>}
                 </span>
                 <button
                   onClick={() => { setEditingEmail(true); setEmailMsg(null); }}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
                 >
-                  <Pencil size={13} /> {chartEmail ? "Edit email" : "Add email"}
+                  <Pencil size={13} /> {chartEmail ? t("rec.editEmail") : t("rec.addEmail")}
                 </button>
 
                 {chartEmail && (
@@ -1082,7 +1082,7 @@ export default function RecordDetailClient({
 
         {chart.notes && (
           <div className="mt-4 pt-4 border-t border-slate-100">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Notes</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">{t("rec.notes")}</p>
             <p className="text-sm text-slate-600 whitespace-pre-wrap">{chart.notes}</p>
           </div>
         )}
@@ -1338,7 +1338,7 @@ export default function RecordDetailClient({
                         className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                       >
                         {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
-                        Share with patient
+                        {t("rec.shareWithPatient")}
                       </button>
                     )}
                     </>
@@ -1359,7 +1359,7 @@ export default function RecordDetailClient({
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
               <h2 className="font-bold text-slate-800">
-                {editingDoc ? rt("editRecord") : "New clinical record"}
+                {editingDoc ? rt("editRecord") : t("rec.modal.newRecord")}
               </h2>
               <button onClick={() => { setShowForm(false); resetForm(); }} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
@@ -1389,13 +1389,13 @@ export default function RecordDetailClient({
               )}
               {!editingDoc && (
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("docs.modal.category")}</label>
                 {categoriesLoading ? (
                   <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
-                    <Loader2 size={14} className="animate-spin" /> Loading categories...
+                    <Loader2 size={14} className="animate-spin" /> {t("docs.modal.loadingCategories")}
                   </div>
                 ) : groups.length === 0 ? (
-                  <p className="text-sm text-amber-600">No categories available.</p>
+                  <p className="text-sm text-amber-600">{t("docs.modal.noCategories")}</p>
                 ) : (
                   <select
                     value={categoryId}
@@ -1455,7 +1455,7 @@ export default function RecordDetailClient({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Description</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("lib.descLabel")}</label>
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
@@ -1469,7 +1469,7 @@ export default function RecordDetailClient({
               )}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Attachment <span className="text-slate-400">(PDF, image or video — max 50MB, multiple allowed)</span>
+                  {t("rec.modal.attachment")} <span className="text-slate-400">{t("rec.modal.attachmentHint")}</span>
                 </label>
                 {editingDoc && (editingDoc.attachmentCount ?? (editingDoc.hasFile ? 1 : 0)) > 0 && files.length === 0 && (
                   <p className="text-xs text-slate-500 mb-2">
@@ -1530,14 +1530,14 @@ export default function RecordDetailClient({
                   onClick={() => { setShowForm(false); resetForm(); }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   onClick={editingDoc ? handleUpdate : handleCreate}
                   disabled={saving || (!editingDoc && categoriesLoading)}
                   className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50"
                 >
-                  {saving ? "Saving..." : editingDoc ? rt("saveChanges") : "Save record"}
+                  {saving ? t("docs.modal.saving") : editingDoc ? rt("saveChanges") : t("rec.modal.save")}
                 </button>
               </div>
             </div>
