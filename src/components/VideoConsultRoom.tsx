@@ -22,7 +22,7 @@ export interface VideoConsultData {
   scheduledAt: string;
   durationMins: number;
   appointmentId?: string | null;
-  kind?: "appointment" | "jit";
+  kind?: "appointment" | "jit" | "humanitarian";
   queueId?: string;
 }
 

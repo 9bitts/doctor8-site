@@ -16,7 +16,7 @@ import {
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
   Building2,
   BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain, BarChart3,
-  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles,
+  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart,
 } from "lucide-react";
 
 interface NavItem {
@@ -37,6 +37,7 @@ const PATIENT_NAV: NavItem[] = [
   { href: "/patient/documents", labelKey: "nav.documents", icon: <ClipboardList size={18} />, roles: ["PATIENT"] },
   { href: "/patient/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PATIENT"] },
   { href: "/urgent", labelKey: "nav.urgent", icon: <Radio size={18} />, roles: ["PATIENT"] },
+  { href: "/humanitarian/venezuela-terremoto-2026", labelKey: "nav.humanitarian", icon: <Heart size={18} />, roles: ["PATIENT"] },
   { href: "/patient/find", labelKey: "nav.find", icon: <MapPin size={18} />, roles: ["PATIENT"] },
   { href: "/patient/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PATIENT"] },
 ];
@@ -53,6 +54,7 @@ const PROFESSIONAL_NAV: NavItem[] = [
   { href: "/professional/buying-club", labelKey: "nav.buyingClub", icon: <ShoppingBag size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/jit", labelKey: "nav.jit", icon: <Radio size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
@@ -65,6 +67,7 @@ const PSYCHOANALYST_NAV: NavItem[] = [
   { href: "/psychoanalyst/analysands", labelKey: "pa.nav.analysands", icon: <Users size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
 ];
 
@@ -91,6 +94,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/patients", labelKey: "nav.adminPatients", icon: <Users size={18} />, roles: ["ADMIN"] },
   { href: "/admin/payments", labelKey: "nav.adminPayments", icon: <CreditCard size={18} />, roles: ["ADMIN"] },
   { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", icon: <Radio size={18} />, roles: ["ADMIN"] },
+  { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", icon: <Heart size={18} />, roles: ["ADMIN"] },
   { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", icon: <ShoppingBag size={18} />, roles: ["ADMIN"] },
 ];
 

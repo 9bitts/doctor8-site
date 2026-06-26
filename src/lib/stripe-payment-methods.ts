@@ -46,6 +46,13 @@ export function getClubPriceId(region: string): string | null {
         process.env.STRIPE_PRICE_CLUB_DOCTOR ||
         null
       );
+    case "VE":
+      return (
+        process.env.STRIPE_PRICE_CLUB_DOCTOR_VE ||
+        process.env.STRIPE_PRICE_CLUB_DOCTOR_US ||
+        process.env.STRIPE_PRICE_CLUB_DOCTOR ||
+        null
+      );
     default:
       return (
         process.env.STRIPE_PRICE_CLUB_DOCTOR_US ||
@@ -69,6 +76,13 @@ export function getProfessionalPriceId(region: string): string | null {
         process.env.STRIPE_PRICE_PROFESSIONAL ||
         null
       );
+    case "VE":
+      return (
+        process.env.STRIPE_PRICE_PROFESSIONAL_VE ||
+        process.env.STRIPE_PRICE_PROFESSIONAL_US ||
+        process.env.STRIPE_PRICE_PROFESSIONAL ||
+        null
+      );
     default:
       return (
         process.env.STRIPE_PRICE_PROFESSIONAL_US ||
@@ -85,6 +99,7 @@ export function isClubPriceId(priceId: string | null | undefined): boolean {
     process.env.STRIPE_PRICE_CLUB_DOCTOR_US,
     process.env.STRIPE_PRICE_CLUB_DOCTOR_EU,
     process.env.STRIPE_PRICE_CLUB_DOCTOR_BRL,
+    process.env.STRIPE_PRICE_CLUB_DOCTOR_VE,
   ].filter(Boolean);
   return clubIds.includes(priceId);
 }

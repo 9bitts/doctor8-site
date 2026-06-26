@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 type Role = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST";
-type Region = "US" | "EU" | "BR";
+type Region = "US" | "EU" | "BR" | "VE";
 
 const LANG_KEY = "doctor8.lang";
 
@@ -329,6 +329,7 @@ export default function RegisterPage() {
                   <option value="US" className="bg-slate-800">{t("reg.regionUS")}</option>
                   <option value="EU" className="bg-slate-800">{t("reg.regionEU")}</option>
                   <option value="BR" className="bg-slate-800">{t("reg.regionBR")}</option>
+                  <option value="VE" className="bg-slate-800">{t("reg.regionVE")}</option>
                 </select>
               </div>
 

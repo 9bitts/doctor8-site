@@ -12,7 +12,7 @@ import { parseBillingRegion, paymentMethodsForRegion, regionsMismatch } from "@/
 import { z } from "zod";
 
 const postSchema = z.object({
-  region: z.enum(["BR", "US", "EU"]).optional(),
+  region: z.enum(["BR", "US", "EU", "VE"]).optional(),
 });
 
 const PROVIDER_ROLES = new Set(["PROFESSIONAL", "PSYCHOANALYST"]);

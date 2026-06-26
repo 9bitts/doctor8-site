@@ -34,7 +34,7 @@ export type LandingContent = {
 
 const pt: LandingContent = {
   nav: { how: "Como funciona", specialties: "Especialidades", club: "Club Doctor", cannabis: "Cannabis", energy: "Doctor Energy", signIn: "Entrar", signUp: "Cadastre-se" },
-  trust: ["Dados criptografados", "LGPD & HIPAA", "Brasil, EUA e Europa", "Pagamento seguro", "100% online"],
+  trust: ["Dados criptografados", "LGPD & HIPAA", "Brasil, EUA, Europa e Venezuela", "Pagamento seguro", "100% online"],
   how: {
     eyebrow: "Simples assim", title: "Consulta online em 3 passos",
     sub: "Sem filas, sem deslocamento. Consulte do conforto da sua casa.",
@@ -63,7 +63,7 @@ const pt: LandingContent = {
     benefits: [
       "Acesso \u00e0 rede completa de especialistas", "M\u00e9dicos, psic\u00f3logos, nutricionistas e mais",
       "Agendamento 100% online com confirma\u00e7\u00e3o imediata", "Pagamento seguro antes da teleconsulta",
-      "Atendimento no Brasil, EUA e Europa", "Suporte dedicado",
+      "Atendimento no Brasil, EUA, Europa e Venezuela", "Suporte dedicado",
     ],
     priceLabel: "Club Doctor", period: "por m\u00eas \u00b7 cancele quando quiser",
     includes: ["Acesso \u00e0 rede Doctor8", "Agendamento online 24/7", "Hist\u00f3rico m\u00e9dico digital", "Documentos e prescri\u00e7\u00f5es", "Suporte dedicado"],
@@ -93,7 +93,7 @@ const pt: LandingContent = {
     primary: "Criar conta gr\u00e1tis", secondary: "Club Doctor \u2014 R$34,90/m\u00eas",
   },
   footer: {
-    desc: "Plataforma de sa\u00fade digital para pacientes e profissionais. Conforme LGPD e HIPAA. Atua\u00e7\u00e3o no Brasil, EUA e Europa.",
+    desc: "Plataforma de sa\u00fade digital para pacientes e profissionais. Conforme LGPD e HIPAA. Atua\u00e7\u00e3o no Brasil, EUA, Europa e Venezuela.",
     services: "Servi\u00e7os", professionals: "Profissionais", legal: "Legal",
     serviceLinks: ["Especialidades", "Club Doctor", "Cannabis Medicinal", "Doctor Energy"],
     proLinks: ["Cadastre-se como profissional", "Entrar na plataforma"],
@@ -128,7 +128,7 @@ const pt: LandingContent = {
 
 const en: LandingContent = {
   nav: { how: "How it works", specialties: "Specialties", club: "Club Doctor", cannabis: "Cannabis", energy: "Doctor Energy", signIn: "Sign in", signUp: "Sign up" },
-  trust: ["Encrypted data", "LGPD & HIPAA", "Brazil, US & Europe", "Secure payment", "100% online"],
+  trust: ["Encrypted data", "LGPD & HIPAA", "Brazil, US, Europe & Venezuela", "Secure payment", "100% online"],
   how: {
     eyebrow: "Simple as that", title: "Online consultation in 3 steps",
     sub: "No queues, no commute. Consult from the comfort of your home.",
@@ -157,7 +157,7 @@ const en: LandingContent = {
     benefits: [
       "Access to the full specialist network", "Doctors, psychologists, nutritionists and more",
       "100% online booking with immediate confirmation", "Secure payment before the teleconsultation",
-      "Service in Brazil, US and Europe", "Dedicated support",
+      "Service in Brazil, US, Europe and Venezuela", "Dedicated support",
     ],
     priceLabel: "Club Doctor", period: "per month \u00b7 cancel anytime",
     includes: ["Access to Doctor8 network", "24/7 online booking", "Digital health record", "Documents & prescriptions", "Dedicated support"],
@@ -187,7 +187,7 @@ const en: LandingContent = {
     primary: "Create free account", secondary: "Club Doctor \u2014 R$34.90/month",
   },
   footer: {
-    desc: "Digital health platform for patients and professionals. LGPD and HIPAA compliant. Operating in Brazil, US and Europe.",
+    desc: "Digital health platform for patients and professionals. LGPD and HIPAA compliant. Operating in Brazil, US, Europe and Venezuela.",
     services: "Services", professionals: "Professionals", legal: "Legal",
     serviceLinks: ["Specialties", "Club Doctor", "Medical Cannabis", "Doctor Energy"],
     proLinks: ["Register as professional", "Sign into platform"],
@@ -223,7 +223,7 @@ const en: LandingContent = {
 const es: LandingContent = {
   ...en,
   nav: { how: "C\u00f3mo funciona", specialties: "Especialidades", club: "Club Doctor", cannabis: "Cannabis", energy: "Doctor Energy", signIn: "Iniciar sesi\u00f3n", signUp: "Registrarse" },
-  trust: ["Datos cifrados", "LGPD & HIPAA", "Brasil, EE.UU. y Europa", "Pago seguro", "100% online"],
+  trust: ["Datos cifrados", "LGPD & HIPAA", "Brasil, EE.UU., Europa y Venezuela", "Pago seguro", "100% online"],
   how: {
     eyebrow: "As\u00ed de simple", title: "Consulta online en 3 pasos",
     sub: "Sin filas, sin desplazamiento. Consulta desde la comodidad de tu casa.",
@@ -266,7 +266,7 @@ const es: LandingContent = {
     sub: "Reg\u00edstrate gratis y agenda tu primera consulta hoy.",
     primary: "Crear cuenta gratis", secondary: "Club Doctor \u2014 R$34,90/mes",
   },
-  footer: { ...en.footer, desc: "Plataforma de salud digital para pacientes y profesionales. Conforme LGPD y HIPAA.", copyright: "\u00a9 2026 Doctor8. Todos los derechos reservados." },
+  footer: { ...en.footer, desc: "Plataforma de salud digital para pacientes y profesionales. Conforme LGPD y HIPAA. Brasil, EE.UU., Europa y Venezuela.", copyright: "\u00a9 2026 Doctor8. Todos los derechos reservados." },
   cookie: { text: "Usamos cookies para mejorar tu experiencia. Al continuar, aceptas nuestra", accept: "Aceptar", decline: "Rechazar" },
   platform: {
     eyebrow: "Tu \u00e1rea de paciente",

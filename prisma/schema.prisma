@@ -38,6 +38,7 @@ enum UserRegion {
   US
   EU
   BR
+  VE
 }
 
 enum AppointmentStatus {
@@ -232,6 +233,21 @@ enum JitQueueStatus {
   CANCELLED    // não respondeu no prazo ou desistiu
   NO_SHOW      // foi chamado e não entrou (2 min esgotados)
 }
+
+enum HumanitarianQueueStatus {
+  WAITING
+  CALLED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+  NO_SHOW
+}
+
+enum HumanitarianVolunteerStatus {
+  ONLINE
+  BUSY
+  OFFLINE
+}
 // ─────────────────────────────────────────
 // CORE USER
 // ─────────────────────────────────────────
@@ -245,6 +261,8 @@ model User {
   region          UserRegion @default(US)
   language        String     @default("en")
   jitQueueEntries   JitQueue[]  @relation("JitQueuePatient")
+  humanitarianQueueEntries HumanitarianQueueEntry[] @relation("HumanitarianQueuePatient")
+  humanitarianVolunteers   HumanitarianVolunteer[]  @relation("HumanitarianVolunteer")
 
   // Soft delete — GDPR right to erasure
   // After 30 days we hard-delete PHI, keep anonymized stats
@@ -468,6 +486,7 @@ model ProfessionalProfile {
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
   consultationValidations ConsultationValidation[]
+  humanitarianVolunteers  HumanitarianVolunteer[]
 
   @@index([userId])
   @@index([specialty])
@@ -538,6 +557,7 @@ model PsychoanalystProfile {
   services            ProviderService[]         @relation("PsychoanalystServices")
   slotAlerts          SlotAvailabilityAlert[]   @relation("PsychoanalystSlotAlerts")
   resources           Resource[]
+  humanitarianVolunteers HumanitarianVolunteer[]
 
   @@index([userId])
 }
@@ -2052,6 +2072,115 @@ model JitEvent {
   updatedAt   DateTime  @updatedAt
 
   sessions    JitSession[]
+}
+
+// ─────────────────────────────────────────
+// HUMANITARIAN CARE — pooled queues (e.g. Venezuela earthquake relief)
+// Patients join a specialty pool; dispatcher assigns next free volunteer.
+// ─────────────────────────────────────────
+
+model HumanitarianCampaign {
+  id                       String    @id @default(cuid())
+  slug                     String    @unique
+  name                     String
+  description              String?
+  region                   UserRegion?
+  active                   Boolean   @default(true)
+  startAt                  DateTime  @default(now())
+  endAt                    DateTime?
+
+  noShowTimeoutSeconds     Int       @default(180)
+  estimatedMinutesPerPatient Int     @default(15)
+
+  pools                    HumanitarianPool[]
+  volunteers               HumanitarianVolunteer[]
+  entries                  HumanitarianQueueEntry[]
+
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@index([active])
+  @@index([slug])
+}
+
+model HumanitarianPool {
+  id           String               @id @default(cuid())
+  campaignId   String
+  campaign     HumanitarianCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  slug         String               // medico | psicologo | psicanalista | terapeuta_integrativo
+  labelEs      String
+  labelPt      String
+  labelEn      String
+  maxWaiting   Int                  @default(500)
+  sortOrder    Int                  @default(0)
+
+  entries      HumanitarianQueueEntry[]
+  volunteers   HumanitarianVolunteer[]
+
+  @@unique([campaignId, slug])
+  @@index([campaignId])
+}
+
+model HumanitarianVolunteer {
+  id              String                      @id @default(cuid())
+  campaignId      String
+  campaign        HumanitarianCampaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  poolId          String
+  pool            HumanitarianPool            @relation(fields: [poolId], references: [id], onDelete: Cascade)
+
+  userId          String
+  user            User                        @relation("HumanitarianVolunteer", fields: [userId], references: [id], onDelete: Cascade)
+  providerType    ProviderType
+  professionalId  String?
+  professional    ProfessionalProfile?        @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  psychoanalystId String?
+  psychoanalyst   PsychoanalystProfile?       @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+
+  status          HumanitarianVolunteerStatus @default(OFFLINE)
+  lastAssignedAt  DateTime?
+  currentEntryId  String?                     @unique
+
+  entries         HumanitarianQueueEntry[]
+
+  @@unique([campaignId, userId, poolId])
+  @@index([poolId, status])
+  @@index([userId])
+}
+
+model HumanitarianQueueEntry {
+  id              String                   @id @default(cuid())
+  campaignId      String
+  campaign        HumanitarianCampaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  poolId          String
+  pool            HumanitarianPool         @relation(fields: [poolId], references: [id], onDelete: Cascade)
+
+  patientUserId   String
+  patientUser     User                     @relation("HumanitarianQueuePatient", fields: [patientUserId], references: [id], onDelete: Cascade)
+
+  status          HumanitarianQueueStatus  @default(WAITING)
+  position        Int
+
+  volunteerId     String?
+  volunteer       HumanitarianVolunteer?   @relation(fields: [volunteerId], references: [id], onDelete: SetNull)
+
+  chiefComplaint  String?
+
+  enteredAt       DateTime                 @default(now())
+  calledAt        DateTime?
+  expiresAt       DateTime?
+  startedAt       DateTime?
+  endedAt         DateTime?
+
+  meetingUrl      String?
+  meetingRoomId   String?
+
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([poolId, status, position])
+  @@index([patientUserId, status])
+  @@index([campaignId])
 }
 
 // ─────────────────────────────────────────

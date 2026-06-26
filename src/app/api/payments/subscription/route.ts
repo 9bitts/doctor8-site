@@ -13,7 +13,7 @@ import { decrypt } from "@/lib/encryption";
 import { z } from "zod";
 
 const postSchema = z.object({
-  region: z.enum(["BR", "US", "EU"]).optional(),
+  region: z.enum(["BR", "US", "EU", "VE"]).optional(),
 });
 
 function safeDecrypt(value: string): string {

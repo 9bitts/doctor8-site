@@ -1,6 +1,8 @@
 // Billing region / currency options for checkout.
 
-export type BillingRegion = "BR" | "US" | "EU";
+export type BillingRegion = "BR" | "US" | "EU" | "VE";
+
+export const USER_REGIONS: BillingRegion[] = ["BR", "US", "EU", "VE"];
 
 export const BILLING_REGION_OPTIONS: {
   region: BillingRegion;
@@ -11,10 +13,21 @@ export const BILLING_REGION_OPTIONS: {
   { region: "BR", currency: "BRL", labelPt: "Brasil (BRL)", priceHint: "R$ 89,90/mes" },
   { region: "US", currency: "USD", labelPt: "EUA (USD)", priceHint: "US$ 24,90/mes" },
   { region: "EU", currency: "EUR", labelPt: "Europa (EUR)", priceHint: "EUR 22,90/mes" },
+  { region: "VE", currency: "USD", labelPt: "Venezuela (USD)", priceHint: "US$ 24,90/mes" },
+];
+
+export const ACCOUNT_REGION_OPTIONS: {
+  value: BillingRegion;
+  label: string;
+}[] = [
+  { value: "BR", label: "Brasil (BRL — PIX, boleto, cartao)" },
+  { value: "US", label: "Estados Unidos (USD)" },
+  { value: "EU", label: "Europa (EUR)" },
+  { value: "VE", label: "Venezuela (USD)" },
 ];
 
 export function parseBillingRegion(value: unknown, fallback: BillingRegion = "US"): BillingRegion {
-  if (value === "BR" || value === "US" || value === "EU") return value;
+  if (value === "BR" || value === "US" || value === "EU" || value === "VE") return value;
   return fallback;
 }
 
@@ -48,6 +61,7 @@ export const CLUB_BILLING_REGION_OPTIONS: {
   { region: "BR", currency: "BRL", labelPt: "Brasil (BRL)", priceHint: "R$ 34,90/mes" },
   { region: "US", currency: "USD", labelPt: "EUA (USD)", priceHint: "US$ 9,90/mes" },
   { region: "EU", currency: "EUR", labelPt: "Europa (EUR)", priceHint: "EUR 8,90/mes" },
+  { region: "VE", currency: "USD", labelPt: "Venezuela (USD)", priceHint: "US$ 9,90/mes" },
 ];
 
 export function patientRegionMismatchMessage(): string {

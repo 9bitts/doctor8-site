@@ -11,16 +11,16 @@ import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import {
+  ACCOUNT_REGION_OPTIONS,
+  parseBillingRegion,
+  type BillingRegion,
+} from "@/lib/billing-regions";
+import {
   Loader2, CheckCircle2, User, Award, Camera, X, Plus,
   LayoutTemplate, Globe, Building2,
 } from "lucide-react";
 
 const inputClass = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40";
-const ACCOUNT_REGIONS = [
-  { value: "BR", label: "Brasil (BRL — PIX, boleto, cartao)" },
-  { value: "US", label: "Estados Unidos (USD)" },
-  { value: "EU", label: "Europa (EUR)" },
-] as const;
 
 export default function ProfessionalSettings() {
   const { lang, t } = useI18n();
@@ -46,7 +46,7 @@ export default function ProfessionalSettings() {
   const [clinicState, setClinicState] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
   const [clinicZip, setClinicZip] = useState("");
-  const [accountRegion, setAccountRegion] = useState<"BR" | "US" | "EU">("US");
+  const [accountRegion, setAccountRegion] = useState<BillingRegion>("US");
   const [regionSaving, setRegionSaving] = useState(false);
   const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");
@@ -61,13 +61,13 @@ export default function ProfessionalSettings() {
         if (sessionRes.ok) {
           const session = await sessionRes.json();
           const r = session?.user?.region;
-          if (r === "BR" || r === "US" || r === "EU") setAccountRegion(r);
+          if (r) setAccountRegion(parseBillingRegion(r, accountRegion));
         }
         const regionRes = await fetch("/api/user/region");
         if (regionRes.ok) {
           const regionData = await regionRes.json();
           const r = regionData?.region;
-          if (r === "BR" || r === "US" || r === "EU") setAccountRegion(r);
+          if (r) setAccountRegion(parseBillingRegion(r, accountRegion));
         }
         if (profileRes.ok) {
           const d = await profileRes.json();
@@ -229,10 +229,10 @@ export default function ProfessionalSettings() {
             <label className="block text-xs font-medium text-slate-500 mb-1.5">Pais / regiao</label>
             <select
               value={accountRegion}
-              onChange={(e) => setAccountRegion(e.target.value as "BR" | "US" | "EU")}
+              onChange={(e) => setAccountRegion(parseBillingRegion(e.target.value, accountRegion))}
               className={inputClass}
             >
-              {ACCOUNT_REGIONS.map((opt) => (
+              {ACCOUNT_REGION_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>

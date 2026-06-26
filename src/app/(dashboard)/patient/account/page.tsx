@@ -10,6 +10,11 @@ import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import {
+  ACCOUNT_REGION_OPTIONS,
+  parseBillingRegion,
+  type BillingRegion,
+} from "@/lib/billing-regions";
+import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
   Eye, EyeOff, LogOut, Shield, User, Globe,
 } from "lucide-react";
@@ -70,7 +75,7 @@ export default function AccountPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const [accountRegion, setAccountRegion] = useState<"BR" | "US" | "EU">("US");
+  const [accountRegion, setAccountRegion] = useState<BillingRegion>("US");
   const [regionSaving, setRegionSaving] = useState(false);
   const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");
@@ -87,8 +92,8 @@ export default function AccountPage() {
     fetch("/api/user/region")
       .then((r) => r.json())
       .then((d) => {
-        if (d?.region === "BR" || d?.region === "US" || d?.region === "EU") {
-          setAccountRegion(d.region);
+        if (d?.region) {
+          setAccountRegion(parseBillingRegion(d.region, accountRegion));
         }
       })
       .catch(() => {});
@@ -271,12 +276,12 @@ export default function AccountPage() {
             <label className="block text-xs font-medium text-slate-500 mb-1.5">Pais / regiao</label>
             <select
               value={accountRegion}
-              onChange={(e) => setAccountRegion(e.target.value as "BR" | "US" | "EU")}
+              onChange={(e) => setAccountRegion(parseBillingRegion(e.target.value, accountRegion))}
               className={inputClass}
             >
-              <option value="BR">Brasil (BRL)</option>
-              <option value="US">Estados Unidos (USD)</option>
-              <option value="EU">Europa (EUR)</option>
+              {ACCOUNT_REGION_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
             </select>
           </div>
           <button

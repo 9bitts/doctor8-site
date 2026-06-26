@@ -30,7 +30,7 @@ const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: passwordSchema,
   role: z.enum(["PATIENT", "PROFESSIONAL", "PSYCHOANALYST"]),
-  region: z.enum(["US", "EU", "BR"]).default("US"),
+  region: z.enum(["US", "EU", "BR", "VE"]).default("US"),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
   // Optional language preference coming from the registration screen

@@ -1,5 +1,5 @@
 // src/lib/stripe.ts
-// Stripe client — used for payments in US, EU and BR
+// Stripe client — used for payments in US, EU, BR and VE
 // Handles: one-time consultation payments + Club Doctor subscription
 
 import Stripe from "stripe";

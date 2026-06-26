@@ -6,7 +6,7 @@ import EspecialistasLandingClient from "@/components/public/EspecialistasLanding
 export const metadata = {
   title: "Doctor8 — Consulte Especialistas Online | Club Doctor",
   description:
-    "Consulte médicos, psicólogos, nutricionistas e outros especialistas online. Club Doctor por R$34,90/mês. LGPD compliant. Brasil, EUA e Europa.",
+    "Consulte médicos, psicólogos, nutricionistas e outros especialistas online. Club Doctor por R$34,90/mês. LGPD compliant. Brasil, EUA, Europa e Venezuela.",
 };
 
 export default function RootPage() {
