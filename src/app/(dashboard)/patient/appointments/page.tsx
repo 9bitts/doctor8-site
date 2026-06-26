@@ -18,8 +18,10 @@ import ReviewPromptModal from "@/components/ReviewPromptModal";
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
   CreditCard, Loader2, CheckCircle2, AlertCircle, Star, MapPin, Lock,
-  X, RefreshCw, AlertTriangle, Info, HelpCircle,
+  X, RefreshCw, AlertTriangle, Info, HelpCircle, QrCode, FileText,
 } from "lucide-react";
+
+type PaymentMethodChoice = "card" | "pix" | "boleto" | "all";
 
 type Step = "browse" | "slots" | "payment" | "confirmed";
 
@@ -102,6 +104,8 @@ export default function AppointmentsPage() {
   const [loading, setLoading]             = useState(true);
   const [slotsLoading, setSlotsLoading]   = useState(false);
   const [payLoading, setPayLoading]       = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodChoice>("all");
+  const [checkoutPending, setCheckoutPending] = useState("");
   const [confirmedId, setConfirmedId]     = useState("");
   const [error, setError]                 = useState("");
   const [search, setSearch]               = useState("");
@@ -150,7 +154,37 @@ export default function AppointmentsPage() {
   const [visitReason, setVisitReason] = useState("");
 
   useEffect(() => { fetchProfessionals(); fetchAppointments(); fetchPastAppointments(); }, []);
-  useEffect(() => { if (step === "payment" && !stripeLoaded) loadStripe(); }, [step]);
+  useEffect(() => { if (step === "payment" && !stripeLoaded && paymentMethod === "card") loadStripe(); }, [step, paymentMethod]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (params.get("checkout") !== "success" || !sessionId) return;
+
+    (async () => {
+      setPayLoading(true);
+      setError("");
+      try {
+        const res = await fetch(`/api/payments/checkout-consultation/confirm?session_id=${sessionId}`);
+        const data = await res.json();
+        if (data.status === "confirmed" && data.appointmentId) {
+          setConfirmedId(data.appointmentId);
+          setStep("confirmed");
+          fetchAppointments();
+        } else if (data.status === "pending") {
+          setCheckoutPending(data.message || t("appt.paymentPending"));
+          setStep("payment");
+        } else {
+          setError(data.error || t("appt.errNotConfirmed"));
+        }
+      } catch {
+        setError(t("appt.errGeneric"));
+      } finally {
+        setPayLoading(false);
+        window.history.replaceState({}, "", "/patient/appointments");
+      }
+    })();
+  }, []);
   useEffect(() => { setShowTip(true); }, [step]);
 
   // Deep link: /patient/appointments?pro=ID&providerType=...&slot=...&from=public_profile
@@ -358,6 +392,54 @@ export default function AppointmentsPage() {
     if (selectedPro) await loadSlots(selectedPro, undefined, slug);
   }
 
+  async function handleCheckoutPayment(method: PaymentMethodChoice) {
+    if (!selectedPro || !selectedSlot || !acceptedPolicy) return;
+    setPayLoading(true); setError(""); setCheckoutPending("");
+    try {
+      const selectedService = providerServices.find((s) => s.id === selectedServiceId);
+      const selectedPlan =
+        healthPlanSlug === "particular"
+          ? { slug: "particular", name: t("appt.healthPlanPrivate") }
+          : providerPlans.find((p) => p.slug === healthPlanSlug) ?? {
+              slug: healthPlanSlug,
+              name: healthPlanSlug,
+            };
+
+      const res = await fetch("/api/payments/checkout-consultation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          providerType: selectedPro.providerType || "health",
+          professionalId: selectedPro.providerType === "health" ? selectedPro.id : undefined,
+          psychoanalystId: selectedPro.providerType === "psychoanalyst" ? selectedPro.id : undefined,
+          scheduledAt: selectedSlot,
+          type,
+          paymentMethod: method,
+          acceptedCancellationPolicy: acceptedPolicy,
+          bookingSource,
+          visitReason: visitReason.trim() || undefined,
+          healthPlanSlug: selectedPlan.slug,
+          healthPlanLabel: selectedPlan.name,
+          ...(selectedServiceId && selectedService
+            ? { serviceId: selectedServiceId, serviceName: selectedService.name }
+            : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error?.general?.[0] || data.error || t("appt.errInitPayment"));
+        return;
+      }
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      }
+    } catch {
+      setError(t("appt.errGeneric"));
+    } finally {
+      setPayLoading(false);
+    }
+  }
+
   async function handlePayment() {
     if (!selectedPro || !selectedSlot || !stripeRef.current || !cardElementRef.current || !acceptedPolicy) return;
     setPayLoading(true); setError("");
@@ -486,12 +568,14 @@ export default function AppointmentsPage() {
   const selectedService = providerServices.find((s) => s.id === selectedServiceId);
   const checkoutPriceCents = selectedService?.priceCents ?? selectedPro?.consultPrice ?? 0;
   const checkoutCurrency = selectedService?.currency || selectedPro?.currency || "USD";
+  const isBrlCheckout = checkoutCurrency.toUpperCase() === "BRL";
 
   const priceDisplay = selectedPro
     ? new Intl.NumberFormat(locale, { style: "currency", currency: checkoutCurrency }).format(checkoutPriceCents / 100)
     : "";
 
-  const canPay = stripeLoaded && cardComplete && acceptedPolicy;
+  const usesHostedCheckout = isBrlCheckout && paymentMethod !== "card";
+  const canPay = acceptedPolicy && (usesHostedCheckout || (stripeLoaded && cardComplete));
 
   // Tips per step
   const tipText = TIPS[step === "payment" ? "payment" : step]?.[l] ?? TIPS[step]?.["en"];
@@ -755,6 +839,12 @@ export default function AppointmentsPage() {
             </div>
           )}
 
+          {checkoutPending && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-sm">
+              <AlertTriangle size={16} className="shrink-0" /> {checkoutPending}
+            </div>
+          )}
+
           <div className="bg-slate-50 rounded-xl p-4 space-y-2">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">{t("appt.orderSummary")}</p>
             <div className="flex justify-between text-sm">
@@ -845,6 +935,36 @@ export default function AppointmentsPage() {
             </ul>
           </div>
 
+          {isBrlCheckout && (
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-slate-700">{t("appt.paymentMethodLabel")}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {([
+                  { id: "all" as const, label: t("appt.payAllMethods"), icon: CreditCard },
+                  { id: "card" as const, label: t("appt.payCard"), icon: CreditCard },
+                  { id: "pix" as const, label: t("appt.payPix"), icon: QrCode },
+                  { id: "boleto" as const, label: t("appt.payBoleto"), icon: FileText },
+                ]).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setPaymentMethod(opt.id)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-medium transition ${
+                      paymentMethod === opt.id
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    <opt.icon size={18} />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-slate-500">{t("appt.brlPaymentHint")}</p>
+            </div>
+          )}
+
+          {!usesHostedCheckout && (
           <div>
             <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
               <CreditCard size={16} /> {t("appt.cardDetails")}
@@ -856,6 +976,13 @@ export default function AppointmentsPage() {
               </div>
             )}
           </div>
+          )}
+
+          {usesHostedCheckout && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+              <p className="font-medium">{t("appt.checkoutRedirect")}</p>
+            </div>
+          )}
 
           {/* CDC policy checkbox — mandatory */}
           <label className="flex items-start gap-3 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -878,7 +1005,7 @@ export default function AppointmentsPage() {
           )}
 
           <button
-            onClick={handlePayment}
+            onClick={() => (usesHostedCheckout ? handleCheckoutPayment(paymentMethod) : handlePayment())}
             disabled={payLoading || !canPay}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-slate-800 to-emerald-600 text-white font-bold py-4 rounded-xl transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-base"
           >

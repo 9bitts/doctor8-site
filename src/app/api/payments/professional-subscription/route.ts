@@ -1,48 +1,74 @@
-// Club Doctor subscription management
-//   GET    — current subscription status
-//   POST   — start Stripe Checkout (card, PIX, boleto in BRL)
-//   DELETE — cancel at period end (keeps access until the period ends)
+// Professional platform subscription (monthly fee)
+//   GET    ? current subscription status
+//   POST   ? start Stripe Checkout (card, PIX, boleto in BRL)
+//   DELETE ? cancel at period end
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stripe, getOrCreateStripeCustomer, getCurrency } from "@/lib/stripe";
-import { getClubPriceId } from "@/lib/stripe-payment-methods";
+import { getProfessionalPriceId } from "@/lib/stripe-payment-methods";
 import { buildSubscriptionCheckoutParams } from "@/lib/stripe-subscription-checkout";
+
+const PROVIDER_ROLES = new Set(["PROFESSIONAL", "PSYCHOANALYST"]);
+
+async function getProviderProfile(userId: string) {
+  const professional = await db.professionalProfile.findUnique({
+    where: { userId },
+    select: { firstName: true, lastName: true },
+  });
+  if (professional) return professional;
+
+  const psychoanalyst = await db.psychoanalystProfile.findUnique({
+    where: { userId },
+    select: { firstName: true, lastName: true },
+  });
+  if (!psychoanalyst) return null;
+
+  const { safeDecrypt } = await import("@/lib/psychoanalyst-api");
+  return {
+    firstName: safeDecrypt(psychoanalyst.firstName),
+    lastName: safeDecrypt(psychoanalyst.lastName),
+  };
+}
 
 export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!PROVIDER_ROLES.has(session.user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const sub = await db.subscription.findUnique({
     where: { userId: session.user.id },
   });
   return NextResponse.json({ subscription: sub });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!PROVIDER_ROLES.has(session.user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: { email: true, region: true },
   });
-  const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
-    select: { firstName: true, lastName: true },
-  });
-  if (!user || !patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const profile = await getProviderProfile(session.user.id);
+  if (!user || !profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const region = user.region || session.user.region || "US";
-  const priceId = getClubPriceId(region);
+  const priceId = getProfessionalPriceId(region);
   if (!priceId) {
-    console.error("[SUBSCRIPTION] Club price is not configured for region:", region);
-    return NextResponse.json({ error: "Subscription is not configured yet." }, { status: 500 });
+    console.error("[PRO-SUBSCRIPTION] Professional price not configured for region:", region);
+    return NextResponse.json({ error: "Professional subscription is not configured yet." }, { status: 500 });
   }
 
   const customerId = await getOrCreateStripeCustomer(
     session.user.id,
     user.email,
-    `${patient.firstName} ${patient.lastName}`,
+    `${profile.firstName} ${profile.lastName}`,
   );
 
   const currency = getCurrency(region);
@@ -52,9 +78,9 @@ export async function POST(req: NextRequest) {
       priceId,
       currency,
       userId: session.user.id,
-      planKind: "club",
-      successPath: "/patient/subscription?subscribed=true",
-      cancelPath: "/patient/subscription",
+      planKind: "professional",
+      successPath: "/professional/account?subscribed=true",
+      cancelPath: "/professional/account",
     }),
   );
 
@@ -67,6 +93,9 @@ export async function POST(req: NextRequest) {
 export async function DELETE() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!PROVIDER_ROLES.has(session.user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const sub = await db.subscription.findUnique({
     where: { userId: session.user.id },

@@ -116,7 +116,7 @@ export default function SubscriptionPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Club Doctor</h1>
         <p className="text-slate-500 mt-1">
-          Mensalidade + cartao fidelidade. Acumule carimbos e ganhe meses gratis no Club.
+          Mensalidade + cartao fidelidade. Pague com cartao, PIX ou boleto (Brasil).
         </p>
       </div>
 

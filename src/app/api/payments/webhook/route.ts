@@ -1,12 +1,5 @@
 // src/app/api/payments/webhook/route.ts
 // Stripe webhook handler.
-// Handles:
-//   payment_intent.succeeded            -> confirm appointment (backup of client-side flow)
-//   payment_intent.payment_failed       -> log
-//   checkout.session.completed          -> activate Club Doctor subscription
-//   customer.subscription.created        -> upsert subscription record
-//   customer.subscription.updated        -> sync status / period / cancel flag
-//   customer.subscription.deleted        -> mark subscription cancelled
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
@@ -14,6 +7,11 @@ import {
   awardSubscriptionStamp,
   redeemStampsForInvoice,
 } from "@/lib/club-stamps";
+import {
+  fulfillConsultationPayment,
+  type ConsultationPaymentMeta,
+} from "@/lib/fulfill-consultation";
+import { isClubPriceId } from "@/lib/stripe-payment-methods";
 
 async function resolveClubUserId(stripeCustomerId: string, stripeSubscriptionId?: string | null) {
   const sub = await db.subscription.findFirst({
@@ -32,6 +30,39 @@ async function resolveClubUserId(stripeCustomerId: string, stripeSubscriptionId?
   }
 }
 
+async function isClubSubscription(stripeSubscriptionId: string): Promise<boolean> {
+  try {
+    const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    if (stripeSub.metadata?.planKind === "professional") return false;
+    if (stripeSub.metadata?.planKind === "club") return true;
+    const priceId = stripeSub.items.data[0]?.price?.id;
+    return isClubPriceId(priceId);
+  } catch {
+    return true;
+  }
+}
+
+async function fulfillConsultationCheckoutSession(sessionId: string) {
+  const checkout = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["payment_intent"],
+  });
+  if (checkout.metadata?.kind !== "consultation") return;
+
+  const paymentIntent =
+    typeof checkout.payment_intent === "string"
+      ? await stripe.paymentIntents.retrieve(checkout.payment_intent)
+      : checkout.payment_intent;
+
+  if (!paymentIntent || paymentIntent.status !== "succeeded") return;
+
+  await fulfillConsultationPayment({
+    stripePaymentId: paymentIntent.id,
+    amount: paymentIntent.amount,
+    currency: paymentIntent.currency,
+    metadata: checkout.metadata as ConsultationPaymentMeta,
+  });
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
@@ -42,46 +73,24 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(
       body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch (err: any) {
     console.error("[WEBHOOK] Invalid signature:", err.message);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // ─────────────────────────────────────────────
-  // CONSULTATION PAYMENT (one-time)
-  // ─────────────────────────────────────────────
   if (event.type === "payment_intent.succeeded") {
     const intent = event.data.object as any;
-    const { userId, professionalId, scheduledAt, type } = intent.metadata || {};
-
-    // Only consultation payments carry professionalId/scheduledAt.
-    // Subscription invoices also create payment_intents, so we skip those here.
-    if (userId && professionalId && scheduledAt) {
+    const meta = intent.metadata || {};
+    if (meta.kind === "consultation" || (meta.userId && meta.scheduledAt && (meta.professionalId || meta.psychoanalystId))) {
       try {
-        const existing = await db.appointment.findFirst({
-          where: { stripePaymentId: intent.id },
+        await fulfillConsultationPayment({
+          stripePaymentId: intent.id,
+          amount: intent.amount,
+          currency: intent.currency,
+          metadata: meta as ConsultationPaymentMeta,
         });
-        if (!existing) {
-          const patient = await db.patientProfile.findUnique({ where: { userId } });
-          if (patient) {
-            await db.appointment.create({
-              data: {
-                patientId: patient.id,
-                professionalId,
-                scheduledAt: new Date(scheduledAt),
-                type: type || "TELECONSULT",
-                status: "CONFIRMED",
-                priceAmount: intent.amount,
-                currency: intent.currency,
-                stripePaymentId: intent.id,
-                paidAt: new Date(),
-                durationMins: 30,
-              },
-            });
-          }
-        }
       } catch (e) {
         console.error("[WEBHOOK] Error creating appointment:", e);
       }
@@ -95,14 +104,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // ─────────────────────────────────────────────
-  // CLUB DOCTOR SUBSCRIPTION + STAMPS
-  // ─────────────────────────────────────────────
+  if (event.type === "checkout.session.async_payment_succeeded") {
+    const cs = event.data.object as any;
+    if (cs.mode === "payment" && cs.metadata?.kind === "consultation") {
+      try {
+        await fulfillConsultationCheckoutSession(cs.id);
+      } catch (e) {
+        console.error("[WEBHOOK] async_payment_succeeded consultation:", e);
+      }
+    }
+    return NextResponse.json({ received: true });
+  }
+
+  if (event.type === "checkout.session.async_payment_failed") {
+    const cs = event.data.object as any;
+    console.error("[WEBHOOK] async payment failed for checkout:", cs.id);
+    return NextResponse.json({ received: true });
+  }
 
   if (event.type === "invoice.created") {
     const invoice = event.data.object as any;
     if (invoice.subscription && invoice.amount_due > 0) {
       try {
+        const club = await isClubSubscription(invoice.subscription as string);
+        if (!club) return NextResponse.json({ received: true });
+
         const userId = await resolveClubUserId(
           invoice.customer as string,
           invoice.subscription as string,
@@ -127,6 +153,9 @@ export async function POST(req: NextRequest) {
     const invoice = event.data.object as any;
     if (invoice.subscription) {
       try {
+        const club = await isClubSubscription(invoice.subscription as string);
+        if (!club) return NextResponse.json({ received: true });
+
         const userId = await resolveClubUserId(
           invoice.customer as string,
           invoice.subscription as string,
@@ -141,13 +170,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // ─────────────────────────────────────────────
-  // CLUB DOCTOR SUBSCRIPTION (checkout)
-  // ─────────────────────────────────────────────
-
-  // Fired right after the patient finishes Stripe Checkout for the subscription.
   if (event.type === "checkout.session.completed") {
     const cs = event.data.object as any;
+    if (cs.mode === "payment" && cs.metadata?.kind === "consultation" && cs.payment_status === "paid") {
+      try {
+        await fulfillConsultationCheckoutSession(cs.id);
+      } catch (e) {
+        console.error("[WEBHOOK] checkout consultation:", e);
+      }
+    }
+
     if (cs.mode === "subscription") {
       const userId = cs.metadata?.userId;
       const customerId = cs.customer as string;
@@ -185,7 +217,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // Keep the local subscription record in sync with Stripe.
   if (
     event.type === "customer.subscription.created" ||
     event.type === "customer.subscription.updated" ||

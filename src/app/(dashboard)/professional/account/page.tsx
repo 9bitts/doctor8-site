@@ -11,7 +11,7 @@ import { signOut } from "next-auth/react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
-  Eye, EyeOff, LogOut, Shield,
+  Eye, EyeOff, LogOut, Shield, CreditCard,
 } from "lucide-react";
 
 const inputClass =
@@ -43,14 +43,30 @@ export default function ProfessionalAccountPage() {
   const [emailLoading,  setEmailLoading]  = useState(false);
   const [emailSuccess,  setEmailSuccess]  = useState(false);
   const [emailError,    setEmailError]    = useState("");
+  const [sub, setSub] = useState<{ status: string; currentPeriodEnd?: string | null; cancelAtPeriodEnd?: boolean } | null>(null);
+  const [subLoading, setSubLoading] = useState(true);
+  const [subWorking, setSubWorking] = useState(false);
+  const [subMsg, setSubMsg] = useState("");
 
   const isPasswordValid = PASSWORD_RULES.every((r) => r.test(newPwd));
   const passwordsMatch  = newPwd === confirmPwd;
+  const isSubActive = sub && ["active", "trialing"].includes(sub.status);
 
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((s) => { if (s?.user?.email) setCurrentEmail(s.user.email); });
+    fetch("/api/payments/professional-subscription")
+      .then((r) => r.json())
+      .then((d) => setSub(d.subscription || null))
+      .catch(() => setSub(null))
+      .finally(() => setSubLoading(false));
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("subscribed") === "true") {
+      setSubMsg("Doctor Connection ativado com sucesso.");
+      window.history.replaceState({}, "", "/professional/account");
+    }
   }, []);
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -89,6 +105,42 @@ export default function ProfessionalAccountPage() {
     finally { setEmailLoading(false); }
   }
 
+  async function startSubscription() {
+    setSubWorking(true);
+    setSubMsg("");
+    try {
+      const res = await fetch("/api/payments/professional-subscription", { method: "POST" });
+      const d = await res.json();
+      if (d.checkoutUrl) window.location.href = d.checkoutUrl;
+      else setSubMsg(d.error || "Nao foi possivel iniciar o checkout.");
+    } catch {
+      setSubMsg("Erro de conexao.");
+    } finally {
+      setSubWorking(false);
+    }
+  }
+
+  async function cancelSubscription() {
+    if (!confirm("Cancelar o Doctor Connection? Voce mantem o acesso ate o fim do periodo atual.")) return;
+    setSubWorking(true);
+    setSubMsg("");
+    try {
+      const res = await fetch("/api/payments/professional-subscription", { method: "DELETE" });
+      const d = await res.json();
+      if (res.ok) {
+        setSubMsg("Seu Doctor Connection sera cancelado ao fim do periodo atual.");
+        const refreshed = await fetch("/api/payments/professional-subscription").then((r) => r.json());
+        setSub(refreshed.subscription || null);
+      } else {
+        setSubMsg(d.error || "Nao foi possivel cancelar.");
+      }
+    } catch {
+      setSubMsg("Erro de conexao.");
+    } finally {
+      setSubWorking(false);
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-10">
       <div>
@@ -105,6 +157,56 @@ export default function ProfessionalAccountPage() {
           <p className="text-sm font-semibold text-slate-800">{currentEmail || t("common.loading")}</p>
           <p className="text-xs text-slate-400 mt-0.5">{t("acct.currentEmail")}</p>
         </div>
+      </div>
+
+      {/* Mensalidade profissional */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <CreditCard size={18} className="text-brand-500" /> Doctor Connection
+        </h2>
+        <p className="text-sm text-slate-500">
+          Mensalidade para profissionais na Doctor8. Pague com cartao, PIX ou boleto (Brasil).
+        </p>
+        {subMsg && (
+          <div className="flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-xl p-3 text-sm text-brand-700">
+            <CheckCircle2 size={16} /> {subMsg}
+          </div>
+        )}
+        {subLoading ? (
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
+          </div>
+        ) : isSubActive ? (
+          <div className="space-y-3">
+            <p className="text-sm text-emerald-700 font-medium">Assinatura ativa</p>
+            {sub?.currentPeriodEnd && (
+              <p className="text-xs text-slate-500">
+                Periodo atual ate {new Date(sub.currentPeriodEnd).toLocaleDateString("pt-BR")}
+                {sub.cancelAtPeriodEnd ? " (cancelamento agendado)" : ""}
+              </p>
+            )}
+            {!sub?.cancelAtPeriodEnd && (
+              <button
+                type="button"
+                onClick={cancelSubscription}
+                disabled={subWorking}
+                className="text-sm font-semibold text-red-600 hover:text-red-700"
+              >
+                {subWorking ? t("acct.saving") : "Cancelar Doctor Connection"}
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={startSubscription}
+            disabled={subWorking}
+            className="bg-brand-500 hover:bg-brand-400 disabled:opacity-40 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2"
+          >
+            {subWorking && <Loader2 size={15} className="animate-spin" />}
+            Assinar Doctor Connection
+          </button>
+        )}
       </div>
 
       {/* Alterar senha */}

@@ -3,7 +3,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { stripe, getOrCreateStripeCustomer } from "@/lib/stripe";
+import { stripe, getOrCreateStripeCustomer, getCurrency } from "@/lib/stripe";
+import { getConsultationPaymentMethodTypes } from "@/lib/stripe-payment-methods";
 import { getUnifiedProvider, type ProviderType } from "@/lib/providers";
 import { z } from "zod";
 
@@ -44,11 +45,11 @@ export async function POST(req: NextRequest) {
   });
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { email: true },
+    select: { email: true, region: true },
   });
   if (!patient || !user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const currency = "usd";
+  let currency = (provider.currency || getCurrency(user.region || "US")).toLowerCase();
 
   let amount = provider.consultPrice;
   if (parsed.data.serviceId) {
@@ -62,6 +63,15 @@ export async function POST(req: NextRequest) {
       },
     });
     if (svc?.priceCents != null) amount = svc.priceCents;
+    if (svc?.currency) currency = svc.currency.toLowerCase();
+  }
+
+  const { paymentMethod } = parsed.data;
+  if (currency === "brl" && paymentMethod !== "card") {
+    return NextResponse.json(
+      { error: "Use checkout for PIX or boleto.", useCheckout: true },
+      { status: 400 },
+    );
   }
 
   const customerId = await getOrCreateStripeCustomer(
@@ -77,7 +87,7 @@ export async function POST(req: NextRequest) {
     amount,
     currency,
     customer: customerId,
-    payment_method_types: ["card"],
+    payment_method_types: getConsultationPaymentMethodTypes(currency, "card"),
     metadata: {
       userId: session.user.id,
       providerType,
