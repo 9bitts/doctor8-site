@@ -1088,8 +1088,9 @@ export default function RecordDetailClient({
         )}
       </div>
 
-      {/* Chart tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+      {/* Chart tabs — scroll horizontal no celular */}
+      <div className="max-w-full overflow-x-auto -mx-1 px-1 pb-1">
+        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-max min-w-full sm:min-w-0">
         {([
           { id: "records" as const, label: t("chartTab.records"), icon: FileText },
           { id: "evolution" as const, label: t("chartTab.evolution"), icon: Activity },
@@ -1109,9 +1110,11 @@ export default function RecordDetailClient({
                 : "text-slate-600 hover:text-slate-800"
             }`}
           >
-            <tab.icon size={15} /> {tab.label}
+            <tab.icon size={15} />
+            <span className="whitespace-nowrap">{tab.label}</span>
           </button>
         ))}
+        </div>
       </div>
 
       {chartTab === "evolution" && <MetricsEvolutionPanel chartId={chart.id} />}

@@ -15,7 +15,7 @@ import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translatio
 import { persistAuthCallback } from "@/lib/auth-callback";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2,
-  User, Stethoscope, ArrowLeft, LogIn, Brain,
+  User, Stethoscope, ArrowLeft, LogIn, Brain, Building2,
 } from "lucide-react";
 
 type Role = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST";
@@ -243,6 +243,19 @@ export default function RegisterPage() {
                   <p className="text-slate-400 text-sm mt-0.5">{t("reg.imPsychoanalystDesc")}</p>
                 </div>
               </button>
+
+              <Link
+                href="/register/organization"
+                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-indigo-500 hover:bg-indigo-500/10 transition text-left group"
+              >
+                <div className="w-14 h-14 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover:bg-indigo-500/20 transition">
+                  <Building2 className="w-7 h-7 text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-base">{t("reg.imOrganization")}</p>
+                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imOrganizationDesc")}</p>
+                </div>
+              </Link>
             </div>
           </div>
         )}

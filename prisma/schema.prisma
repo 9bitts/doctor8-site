@@ -25,6 +25,7 @@ enum UserRole {
   PATIENT
   PROFESSIONAL
   PSYCHOANALYST
+  ORGANIZATION
   ADMIN
 }
 
@@ -83,6 +84,27 @@ enum ClinicMemberRole {
   OWNER
   ADMIN
   MEMBER
+}
+
+enum OrganizationMemberRole {
+  OWNER
+  ADMIN
+  RECEPTIONIST
+  FINANCE
+  HR
+  ACCOUNTANT
+}
+
+enum OrganizationMemberStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+enum OrganizationProfessionalStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
 }
 
 enum VaccineNetwork {
@@ -205,6 +227,7 @@ model User {
   patientFavorites  PatientFavorite[]  @relation("PatientFavorites")
   professionalReviews ProfessionalReview[] @relation("PatientReviews")
   buyingClubMembers BuyingClubMember[]
+  organizationMemberships OrganizationMember[]
 
   @@index([email])
   @@index([role])
@@ -379,6 +402,8 @@ model ProfessionalProfile {
   prescriptionTemplates PrescriptionTemplate[]
 
   clinicMemberships     ClinicMember[]
+  organizationLinks     OrganizationProfessional[]
+  organizationRepasseRules OrganizationRepasseRule[]
   chartSharesCreated    PatientRecordShare[] @relation("ChartSharesCreated")
   chartSharesReceived   PatientRecordShare[] @relation("ChartSharesReceived")
   vaccinationsRecorded  PatientVaccination[]
@@ -1072,6 +1097,114 @@ model PatientRecord {
   @@index([email])
   @@index([linkedUserId])
 
+}
+
+// ────────────────────────────────────────────
+// ORGANIZATION — CNPJ clinic / consultório management (Phase 1)
+// ────────────────────────────────────────────
+
+model Organization {
+  id                   String   @id @default(cuid())
+  cnpj                 String   @unique
+  razaoSocial          String
+  nomeFantasia         String
+  inscricaoMunicipal   String?
+  contactEmail         String?
+  contactPhone         String?
+  logoUrl              String?
+  slug                 String   @unique
+  inviteCode           String   @unique @default(cuid())
+
+  responsibleFirstName String
+  responsibleLastName  String
+
+  addressStreet        String?
+  addressNumber        String?
+  addressComplement    String?
+  addressNeighborhood  String?
+  addressCity          String?
+  addressState         String?
+  addressZip           String?
+  addressCountry       String   @default("BR")
+
+  timezone             String   @default("America/Sao_Paulo")
+  currency             String   @default("BRL")
+
+  members              OrganizationMember[]
+  professionals        OrganizationProfessional[]
+  repasseRules         OrganizationRepasseRule[]
+  invites              OrganizationInvite[]
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([slug])
+  @@index([cnpj])
+}
+
+model OrganizationMember {
+  id             String                   @id @default(cuid())
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           OrganizationMemberRole
+  status         OrganizationMemberStatus @default(ACTIVE)
+
+  invitedAt      DateTime?
+  joinedAt       DateTime                 @default(now())
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model OrganizationProfessional {
+  id             String                         @id @default(cuid())
+  organizationId String
+  organization   Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   ProfessionalProfile            @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  repassePercent Float                          @default(70)
+  status         OrganizationProfessionalStatus @default(ACTIVE)
+
+  joinedAt       DateTime                       @default(now())
+
+  @@unique([organizationId, professionalId])
+  @@index([professionalId])
+  @@index([organizationId])
+}
+
+model OrganizationRepasseRule {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  professionalId String?
+  professional   ProfessionalProfile?  @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  percent        Float
+  label          String?
+
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId])
+  @@index([professionalId])
+}
+
+model OrganizationInvite {
+  id             String                 @id @default(cuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           OrganizationMemberRole
+  token          String                 @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+
+  createdAt      DateTime               @default(now())
+
+  @@index([organizationId])
+  @@index([email])
 }
 
 // ────────────────────────────────────────────

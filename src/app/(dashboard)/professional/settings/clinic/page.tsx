@@ -22,12 +22,26 @@ export default function ClinicSettingsPage() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
+  const [orgJoinCode, setOrgJoinCode] = useState("");
+  const [orgJoining, setOrgJoining] = useState(false);
+  const [orgSuccess, setOrgSuccess] = useState("");
+  const [organizations, setOrganizations] = useState<{ id: string; nomeFantasia: string }[]>([]);
+
+  async function loadOrganizations() {
+    try {
+      const res = await fetch("/api/professional/organization");
+      const data = await res.json();
+      if (res.ok) setOrganizations(data.organizations || []);
+    } catch { /* ignore */ }
+  }
+
   async function load() {
     setLoading(true);
     try {
       const res = await fetch("/api/professional/clinic");
       const data = await res.json();
       if (res.ok) setClinic(data.clinic);
+      await loadOrganizations();
     } finally {
       setLoading(false);
     }
@@ -79,6 +93,34 @@ export default function ClinicSettingsPage() {
       await load();
     } finally {
       setJoining(false);
+    }
+  }
+
+  async function joinOrganization() {
+    if (!orgJoinCode.trim()) return;
+    setOrgJoining(true);
+    setError("");
+    setOrgSuccess("");
+    try {
+      const res = await fetch("/api/professional/organization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteCode: orgJoinCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(
+          data.error === "ORG_NOT_FOUND" ? t("org.notFound")
+            : data.error === "ALREADY_LINKED" ? t("org.alreadyLinked")
+              : t("org.joinError"),
+        );
+        return;
+      }
+      setOrgJoinCode("");
+      setOrgSuccess(t("org.joinSuccess"));
+      await loadOrganizations();
+    } finally {
+      setOrgJoining(false);
     }
   }
 
@@ -186,6 +228,35 @@ export default function ClinicSettingsPage() {
           </div>
         </div>
       )}
+
+      <div className="bg-white rounded-2xl border border-indigo-200 p-5 space-y-3">
+        <h2 className="font-semibold text-slate-800">{t("org.joinTitle")}</h2>
+        <p className="text-xs text-slate-500">{t("org.joinDesc")}</p>
+        {orgSuccess && (
+          <p className="text-sm text-emerald-600 bg-emerald-50 rounded-xl px-4 py-2">{orgSuccess}</p>
+        )}
+        {organizations.length > 0 && (
+          <div className="text-sm text-slate-600">
+            {organizations.map((o) => (
+              <p key={o.id} className="py-1">✓ {o.nomeFantasia}</p>
+            ))}
+          </div>
+        )}
+        <input
+          value={orgJoinCode}
+          onChange={(e) => setOrgJoinCode(e.target.value)}
+          placeholder={t("org.joinPlaceholder")}
+          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-mono"
+        />
+        <button
+          type="button"
+          onClick={joinOrganization}
+          disabled={orgJoining || !orgJoinCode.trim()}
+          className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 disabled:opacity-50"
+        >
+          {orgJoining ? <Loader2 size={14} className="animate-spin mx-auto" /> : t("org.joinButton")}
+        </button>
+      </div>
     </div>
   );
 }

@@ -126,6 +126,8 @@ function LoginForm() {
         router.push(callbackUrl);
       } else if (role === "PROFESSIONAL") {
         router.push("/professional");
+      } else if (role === "ORGANIZATION") {
+        router.push("/organization");
       } else if (role === "PSYCHOANALYST") {
         router.push("/psychoanalyst");
       } else {

@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = [
   "/",
   "/login",
   "/register",
+  "/register/organization",
   "/callback",
   "/forgot-password",
   "/reset-password",
@@ -37,6 +38,7 @@ function isPublicRoute(pathname: string): boolean {
 const PATIENT_ROUTES = ["/patient"];
 const PROFESSIONAL_ROUTES = ["/professional"];
 const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
+const ORGANIZATION_ROUTES = ["/organization"];
 const ADMIN_ROUTES = ["/admin"];
 
 export default auth((req) => {
@@ -57,6 +59,9 @@ export default auth((req) => {
 
   // Public read-only APIs (professional profiles, slots)
   if (pathname.startsWith("/api/public/")) return NextResponse.next();
+
+  // CNPJ lookup during registration
+  if (pathname.startsWith("/api/cnpj/")) return NextResponse.next();
 
   // Public buying-club invite preview
   if (pathname.startsWith("/api/buying-club/public")) return NextResponse.next();
@@ -104,6 +109,14 @@ export default auth((req) => {
   if (
     PATIENT_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "PATIENT" &&
+    role !== "ADMIN"
+  ) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+
+  if (
+    ORGANIZATION_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "ORGANIZATION" &&
     role !== "ADMIN"
   ) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
