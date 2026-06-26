@@ -15,9 +15,14 @@ export function buildSubscriptionCheckoutParams(params: {
   planKind: "club" | "professional";
   successPath: string;
   cancelPath: string;
+  paymentMethodTypes?: string[];
+  includeBrazilTaxId?: boolean;
 }) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org";
-  const methodTypes = getSubscriptionPaymentMethodTypes(params.currency);
+  const methodTypes =
+    params.paymentMethodTypes ?? getSubscriptionPaymentMethodTypes(params.currency);
+  const withTaxId =
+    params.includeBrazilTaxId ?? needsBrazilTaxId(params.currency);
 
   return {
     customer: params.customerId,
@@ -31,36 +36,44 @@ export function buildSubscriptionCheckoutParams(params: {
       metadata: { userId: params.userId, planKind: params.planKind },
     },
     billing_address_collection: "auto" as const,
-    ...(needsBrazilTaxId(params.currency)
+    ...(withTaxId
       ? {
           tax_id_collection: { enabled: true },
-          customer_update: { name: "auto" as const },
+          customer_update: { name: "auto" as const, address: "auto" as const },
         }
       : {}),
   };
 }
 
+function stripeErrorMessage(error: unknown): string {
+  const e = error as { raw?: { message?: string }; message?: string };
+  return e?.raw?.message || e?.message || "unknown";
+}
+
 export async function createSubscriptionCheckoutSession(
   params: Parameters<typeof buildSubscriptionCheckoutParams>[0],
 ): Promise<Stripe.Checkout.Session> {
-  const checkoutParams = buildSubscriptionCheckoutParams(params);
-  try {
-    return await stripe.checkout.sessions.create(checkoutParams);
-  } catch (firstError: unknown) {
-    const types = checkoutParams.payment_method_types as string[];
-    if (!types.includes("boleto")) throw firstError;
+  const attempts: Parameters<typeof buildSubscriptionCheckoutParams>[0][] = [
+    params,
+    { ...params, paymentMethodTypes: ["card"] },
+    { ...params, paymentMethodTypes: ["card"], includeBrazilTaxId: false },
+  ];
 
-    const reason =
-      (firstError as { raw?: { message?: string }; message?: string })?.raw?.message ||
-      (firstError as { message?: string })?.message ||
-      "unknown";
-    console.warn("[STRIPE] Subscription checkout with boleto failed, retrying card-only:", reason);
-
-    return stripe.checkout.sessions.create({
-      ...checkoutParams,
-      payment_method_types: ["card"],
-    });
+  let lastError: unknown;
+  for (let i = 0; i < attempts.length; i += 1) {
+    const checkoutParams = buildSubscriptionCheckoutParams(attempts[i]);
+    try {
+      return await stripe.checkout.sessions.create(checkoutParams);
+    } catch (error: unknown) {
+      lastError = error;
+      console.warn(
+        `[STRIPE] Subscription checkout attempt ${i + 1}/${attempts.length} failed:`,
+        stripeErrorMessage(error),
+      );
+    }
   }
+
+  throw lastError;
 }
 
 export function friendlyStripeCheckoutError(message: string): string {
@@ -69,13 +82,22 @@ export function friendlyStripeCheckoutError(message: string): string {
     return "Forma de pagamento nao disponivel na assinatura. Tente novamente ou use outra moeda.";
   }
   if (m.includes("no such price")) {
-    return "Preco da assinatura nao encontrado no Stripe. Contate o suporte.";
+    return "Preco da assinatura nao encontrado no Stripe. Verifique se o Price ID esta correto no servidor.";
   }
-  if (m.includes("stripe_secret_key") || m.includes("api key")) {
-    return "Pagamentos nao configurados no servidor. Contate o suporte.";
+  if (m.includes("stripe_secret_key") || m.includes("api key") || m.includes("invalid api key")) {
+    return "Chave do Stripe invalida no servidor. Verifique STRIPE_SECRET_KEY no Railway.";
+  }
+  if (m.includes("does not exist") || (m.includes("table") && m.includes("subscription"))) {
+    return "Banco de dados desatualizado. Rode prisma migrate deploy no Railway.";
   }
   if (m.includes("tax id collection") || m.includes("customer_update")) {
     return "Nao foi possivel abrir o checkout (CPF/CNPJ). Tente novamente.";
+  }
+  if (m.includes("currency") && m.includes("price")) {
+    return "Moeda do preco nao confere com a regiao escolhida. Contate o suporte.";
+  }
+  if (message && message.length < 200) {
+    return message;
   }
   return "Nao foi possivel abrir o checkout. Tente novamente em instantes.";
 }

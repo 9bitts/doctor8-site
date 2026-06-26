@@ -146,11 +146,12 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     const message = e?.raw?.message || e?.message || "Erro ao iniciar checkout.";
     console.error("[PRO-SUBSCRIPTION] POST error:", message, e);
+    const friendly = friendlyStripeCheckoutError(message);
     return NextResponse.json(
       {
-        error: friendlyStripeCheckoutError(message),
+        error: friendly,
         code: "CHECKOUT_FAILED",
-        detail: process.env.NODE_ENV === "development" ? message : undefined,
+        detail: message,
       },
       { status: 502 },
     );
