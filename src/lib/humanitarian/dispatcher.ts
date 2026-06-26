@@ -10,6 +10,7 @@ import {
 } from "@/lib/humanitarian/notify";
 import { WAITING_ENTRY_STATUSES } from "@/lib/humanitarian/types";
 import type { HumanitarianPriority, HumanitarianQueueEntry } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -121,7 +122,7 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
       });
 
       return tx.humanitarianQueueEntry.update({
-        where: { id: entry.id },
+        where: { id: entry.id, status: "WAITING" },
         data: {
           status: "CALLED",
           volunteerId: volunteer.id,
@@ -206,16 +207,22 @@ export async function completeHumanitarianEntry(
     throw new Error("Forbidden");
   }
 
-  await db.$transaction([
-    db.humanitarianQueueEntry.update({
-      where: { id: entryId },
+  await db.$transaction(async (tx) => {
+    const done = await tx.humanitarianQueueEntry.updateMany({
+      where: {
+        id: entryId,
+        status: { in: ["CALLED", "IN_PROGRESS"] },
+        volunteer: { userId: volunteerUserId },
+      },
       data: { status: "DONE", endedAt: now },
-    }),
-    db.humanitarianVolunteer.update({
+    });
+    if (done.count === 0) throw new Error("Forbidden");
+
+    await tx.humanitarianVolunteer.update({
       where: { id: entry.volunteerId! },
       data: { status: "ONLINE", currentEntryId: null },
-    }),
-  ]);
+    });
+  });
 
   if (entry.volunteer.professionalId) {
     await ensurePatientRecord(entry.volunteer.professionalId, entry.patientUserId).catch(
@@ -348,6 +355,56 @@ export async function countActiveInPool(poolId: string): Promise<number> {
   });
 }
 
+export class HumanitarianQueueFullError extends Error {
+  constructor() {
+    super("QUEUE_FULL");
+    this.name = "HumanitarianQueueFullError";
+  }
+}
+
+export async function joinHumanitarianQueue(params: {
+  campaignId: string;
+  poolId: string;
+  patientUserId: string;
+  priority: HumanitarianPriority;
+  chiefComplaint?: string | null;
+  maxWaiting: number;
+}): Promise<HumanitarianQueueEntry> {
+  return db.$transaction(
+    async (tx) => {
+      const activeCount = await tx.humanitarianQueueEntry.count({
+        where: {
+          poolId: params.poolId,
+          status: { in: [...WAITING_ENTRY_STATUSES] },
+        },
+      });
+      if (activeCount >= params.maxWaiting) {
+        throw new HumanitarianQueueFullError();
+      }
+
+      const last = await tx.humanitarianQueueEntry.findFirst({
+        where: { poolId: params.poolId },
+        orderBy: { position: "desc" },
+        select: { position: true },
+      });
+      const position = (last?.position ?? 0) + 1;
+
+      return tx.humanitarianQueueEntry.create({
+        data: {
+          campaignId: params.campaignId,
+          poolId: params.poolId,
+          patientUserId: params.patientUserId,
+          status: "WAITING",
+          priority: params.priority,
+          position,
+          chiefComplaint: params.chiefComplaint || null,
+        },
+      });
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
 export async function getCampaignStats(campaignId: string) {
   const pools = await db.humanitarianPool.findMany({
     where: { campaignId },
@@ -401,7 +458,7 @@ export async function resolveVolunteerProfile(userId: string, role: string): Pro
       providerType: "PSYCHOANALYST",
       psychoanalystId: pa.id,
       displayName: `${pa.firstName} ${pa.lastName}`,
-      specialty: "Psicanálise",
+      specialty: "Psican?lise",
     };
   }
 

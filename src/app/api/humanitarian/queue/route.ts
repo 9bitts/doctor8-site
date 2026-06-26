@@ -6,6 +6,8 @@ import {
   assignNextInPool,
   countActiveInPool,
   getEntryStatus,
+  HumanitarianQueueFullError,
+  joinHumanitarianQueue,
 } from "@/lib/humanitarian/dispatcher";
 import { notifyHumanitarianJoined } from "@/lib/humanitarian/notify";
 
@@ -80,23 +82,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const last = await db.humanitarianQueueEntry.findFirst({
-    where: { poolId: pool.id },
-    orderBy: { position: "desc" },
-  });
-  const position = (last?.position ?? 0) + 1;
-
-  const entry = await db.humanitarianQueueEntry.create({
-    data: {
+  let entry;
+  try {
+    entry = await joinHumanitarianQueue({
       campaignId: campaign.id,
       poolId: pool.id,
       patientUserId: session.user.id,
-      status: "WAITING",
       priority,
-      position,
-      chiefComplaint: chiefComplaint || null,
-    },
-  });
+      chiefComplaint,
+      maxWaiting: pool.maxWaiting,
+    });
+  } catch (e) {
+    if (e instanceof HumanitarianQueueFullError) {
+      return NextResponse.json(
+        { error: "QUEUE_FULL", message: "La fila est? llena. Intenta m?s tarde." },
+        { status: 429 },
+      );
+    }
+    throw e;
+  }
+
+  const position = entry.position;
 
   await notifyHumanitarianJoined({
     patientUserId: session.user.id,

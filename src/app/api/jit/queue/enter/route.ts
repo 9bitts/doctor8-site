@@ -30,13 +30,22 @@ export async function POST(req: NextRequest) {
   if (entry.status !== "CALLED")
     return NextResponse.json({ error: "Not your turn yet." }, { status: 400 });
 
-  const updated = await db.jitQueue.update({
-    where: { id: entry.id },
-    data:  { status: "IN_PROGRESS", startedAt: new Date() },
+  const updated = await db.jitQueue.updateMany({
+    where: { id: entry.id, status: "CALLED" },
+    data: { status: "IN_PROGRESS", startedAt: new Date() },
   });
+  if (updated.count === 0) {
+    return NextResponse.json({ error: "Not your turn yet." }, { status: 409 });
+  }
+
+  const refreshed = await db.jitQueue.findUnique({
+    where: { id: entry.id },
+    select: { meetingUrl: true, status: true },
+  });
+  if (!refreshed) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json({
-    meetingUrl: updated.meetingUrl,
-    status:     updated.status,
+    meetingUrl: refreshed.meetingUrl,
+    status: refreshed.status,
   });
 }

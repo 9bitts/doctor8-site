@@ -40,11 +40,16 @@ function buildWhatsAppMessage(
 }
 
 export async function POST(req: NextRequest) {
-  // Verify request came from QStash
-  const isValid = await verifyQStashSignature(req);
+  const rawBody = await req.text();
+  const isValid = await verifyQStashSignature(req, rawBody);
   if (!isValid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json().catch(() => ({}));
+  let body: unknown = {};
+  try {
+    body = rawBody ? JSON.parse(rawBody) : {};
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 

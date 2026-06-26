@@ -58,9 +58,6 @@ export default auth((req) => {
   // Allow API auth routes
   if (pathname.startsWith("/api/auth")) return NextResponse.next();
 
-  // Public organization staff registration
-  if (pathname.startsWith("/api/auth/register-organization-staff")) return NextResponse.next();
-
   // Public read-only APIs (professional profiles, slots)
   if (pathname.startsWith("/api/public/")) return NextResponse.next();
 
@@ -69,6 +66,13 @@ export default auth((req) => {
 
   // Public buying-club invite preview
   if (pathname.startsWith("/api/buying-club/public")) return NextResponse.next();
+
+  // Webhooks & scheduled jobs (verified inside route handlers)
+  if (pathname.startsWith("/api/payments/webhook")) return NextResponse.next();
+  if (pathname.startsWith("/api/reminders/send")) return NextResponse.next();
+
+  // Token-based shared records (no session)
+  if (pathname.startsWith("/api/shared/")) return NextResponse.next();
 
   // Redirect to login if not authenticated
   if (!session?.user) {

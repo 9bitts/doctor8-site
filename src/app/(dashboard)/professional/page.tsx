@@ -19,6 +19,7 @@ import MarketPricingCard from "@/components/professional/MarketPricingCard";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
+import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 import { decrypt } from "@/lib/encryption";
 import { getProfessionLabel } from "@/lib/professions";
 
@@ -74,6 +75,7 @@ export default async function ProfessionalDashboard() {
     subscription,
     userRow,
     humanitarianCampaign,
+    humanitarianVolunteer,
   ] = await Promise.all([
     db.appointment.count({
       where: {
@@ -125,6 +127,7 @@ export default async function ProfessionalDashboard() {
       select: { region: true },
     }),
     getActiveCampaignForRegion(null),
+    getVolunteerDashboardState(userId),
   ]);
 
   const hasActiveSubscription =
@@ -198,14 +201,15 @@ export default async function ProfessionalDashboard() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
 
-      <DoctorConnectionBanner
-        subscribed={hasActiveSubscription}
-        defaultRegion={userRow?.region || session.user.region}
-      />
-
       <HumanitarianVolunteerBanner
         lang={lang}
         campaignActive={!!humanitarianCampaign?.active}
+        volunteer={humanitarianVolunteer}
+      />
+
+      <DoctorConnectionBanner
+        subscribed={hasActiveSubscription}
+        defaultRegion={userRow?.region || session.user.region}
       />
 
       {/* Header */}

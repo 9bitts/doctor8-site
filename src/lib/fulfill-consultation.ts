@@ -6,6 +6,7 @@ import { buildAppointmentIntakePayload } from "@/lib/appointment-intake";
 import { onAppointmentBooked } from "@/lib/post-booking";
 import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import { Prisma } from "@prisma/client";
 
 export type ConsultationPaymentMeta = {
   userId: string;
@@ -26,6 +27,13 @@ export type ConsultationPaymentMeta = {
   durationMins?: string;
   patientName?: string;
 };
+
+export class AppointmentSlotTakenError extends Error {
+  constructor() {
+    super("Appointment slot is no longer available");
+    this.name = "AppointmentSlotTakenError";
+  }
+}
 
 export async function fulfillConsultationPayment(params: {
   stripePaymentId: string;
@@ -57,31 +65,8 @@ export async function fulfillConsultationPayment(params: {
     throw new Error("Missing consultation payment metadata");
   }
 
-  const existing = await db.appointment.findFirst({
-    where: { stripePaymentId },
-  });
-  if (existing) {
-    return { appointmentId: existing.id, created: false };
-  }
-
   const patient = await db.patientProfile.findUnique({ where: { userId } });
   if (!patient) throw new Error("Patient not found");
-
-  const slotWhere =
-    providerType === "psychoanalyst"
-      ? { psychoanalystId: providerId }
-      : { professionalId: providerId };
-
-  const slotTaken = await db.appointment.findFirst({
-    where: {
-      ...slotWhere,
-      scheduledAt: new Date(scheduledAt),
-      status: { in: ["CONFIRMED", "PENDING"] },
-    },
-  });
-  if (slotTaken) {
-    return { appointmentId: slotTaken.id, created: false };
-  }
 
   let providerName = metadata.doctorName || "";
   let providerSpecialty = metadata.providerSpecialty || "";
@@ -128,24 +113,56 @@ export async function fulfillConsultationPayment(params: {
         })
       : null;
 
-  const appointment = await db.appointment.create({
-    data: {
-      patientId: patient.id,
-      providerType: providerType === "psychoanalyst" ? "PSYCHOANALYST" : "HEALTH",
-      professionalId: providerType === "health" ? providerId : null,
-      psychoanalystId: providerType === "psychoanalyst" ? providerId : null,
-      scheduledAt: new Date(scheduledAt),
-      type: (type as "TELECONSULT" | "IN_PERSON") || "TELECONSULT",
-      status: "CONFIRMED",
-      priceAmount: amount,
-      currency,
-      stripePaymentId,
-      paidAt: new Date(),
-      durationMins,
-      bookingSource: (bookingSource as any) || "patient_panel",
-      ...(intakePayload ? { chiefComplaint: intakePayload } : {}),
+  const slotWhere =
+    providerType === "psychoanalyst"
+      ? { psychoanalystId: providerId }
+      : { professionalId: providerId };
+
+  const { appointment, created } = await db.$transaction(
+    async (tx) => {
+      const existingPayment = await tx.appointment.findFirst({
+        where: { stripePaymentId },
+      });
+      if (existingPayment) {
+        return { appointment: existingPayment, created: false };
+      }
+
+      const slotTaken = await tx.appointment.findFirst({
+        where: {
+          ...slotWhere,
+          scheduledAt: new Date(scheduledAt),
+          status: { in: ["CONFIRMED", "PENDING"] },
+        },
+      });
+      if (slotTaken) throw new AppointmentSlotTakenError();
+
+      const createdAppointment = await tx.appointment.create({
+        data: {
+          patientId: patient.id,
+          providerType: providerType === "psychoanalyst" ? "PSYCHOANALYST" : "HEALTH",
+          professionalId: providerType === "health" ? providerId : null,
+          psychoanalystId: providerType === "psychoanalyst" ? providerId : null,
+          scheduledAt: new Date(scheduledAt),
+          type: (type as "TELECONSULT" | "IN_PERSON") || "TELECONSULT",
+          status: "CONFIRMED",
+          priceAmount: amount,
+          currency,
+          stripePaymentId,
+          paidAt: new Date(),
+          durationMins,
+          bookingSource: (bookingSource as any) || "patient_panel",
+          ...(intakePayload ? { chiefComplaint: intakePayload } : {}),
+        },
+      });
+
+      return { appointment: createdAppointment, created: true };
     },
-  });
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+
+  if (!created) {
+    return { appointmentId: appointment.id, created: false };
+  }
 
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -193,7 +210,7 @@ export async function fulfillConsultationPayment(params: {
   });
 
   scheduleReviewRequest(appointment.id, new Date(scheduledAt), durationMins).catch((e) => {
-    console.error("[QSTASH REVIEW SCHEDULE ERROR]", e);
+    console.error("[QSTASH SCHEDULE ERROR]", e);
   });
 
   return { appointmentId: appointment.id, created: true };

@@ -2,6 +2,8 @@
 // QStash client for scheduling appointment reminders
 // Uses Upstash QStash to schedule delayed HTTP calls
 
+import { Receiver } from "@upstash/qstash";
+
 const QSTASH_URL = process.env.QSTASH_URL || "https://qstash-us-east-1.upstash.io";
 const QSTASH_TOKEN = process.env.QSTASH_TOKEN || "";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org";
@@ -91,16 +93,41 @@ export async function scheduleReviewRequest(
   });
 }
 
-// Verify QStash signature (security — ensures request came from QStash)
-export async function verifyQStashSignature(req: Request): Promise<boolean> {
+let qstashReceiver: Receiver | null = null;
+
+function getQStashReceiver(): Receiver | null {
   const currentKey = process.env.QSTASH_CURRENT_SIGNING_KEY || "";
   const nextKey = process.env.QSTASH_NEXT_SIGNING_KEY || "";
+  if (!currentKey) return null;
 
-  if (!currentKey) return true; // Skip verification in dev
+  if (!qstashReceiver) {
+    qstashReceiver = new Receiver({
+      currentSigningKey: currentKey,
+      nextSigningKey: nextKey,
+    });
+  }
+  return qstashReceiver;
+}
+
+// Verify QStash signature — ensures request came from QStash
+export async function verifyQStashSignature(
+  req: Request,
+  rawBody: string,
+): Promise<boolean> {
+  const receiver = getQStashReceiver();
+  if (!receiver) {
+    return process.env.NODE_ENV !== "production";
+  }
 
   const signature = req.headers.get("upstash-signature");
   if (!signature) return false;
 
-  // Simple verification — in production use @upstash/qstash verifier
-  return signature.length > 0;
+  try {
+    return await receiver.verify({
+      signature,
+      body: rawBody,
+    });
+  } catch {
+    return false;
+  }
 }

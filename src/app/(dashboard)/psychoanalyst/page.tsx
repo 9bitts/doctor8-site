@@ -8,7 +8,9 @@ import { decryptPsychoanalystNameFields, safeDecrypt } from "@/lib/psychoanalyst
 import { Calendar, Users, ChevronRight, Video, Settings, FileText } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
+import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
+import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 
 export default async function PsychoanalystDashboard() {
   const session = await auth();
@@ -34,7 +36,7 @@ export default async function PsychoanalystDashboard() {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  const [todayCount, analysandCount, upcoming, humanitarianCampaign] = await Promise.all([
+  const [todayCount, analysandCount, upcoming, humanitarianCampaign, humanitarianVolunteer, subscription, userRow] = await Promise.all([
     db.appointment.count({
       where: {
         psychoanalystId: profile.id,
@@ -54,7 +56,19 @@ export default async function PsychoanalystDashboard() {
       take: 5,
     }),
     getActiveCampaignForRegion(null),
+    getVolunteerDashboardState(userId),
+    db.subscription.findUnique({
+      where: { userId },
+      select: { status: true },
+    }),
+    db.user.findUnique({
+      where: { id: userId },
+      select: { region: true },
+    }),
   ]);
+
+  const hasActiveSubscription =
+    !!subscription && ["active", "trialing"].includes(subscription.status);
 
   const hour = new Date().getHours();
   void hour;
@@ -62,6 +76,18 @@ export default async function PsychoanalystDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+
+      <HumanitarianVolunteerBanner
+        lang={lang}
+        campaignActive={!!humanitarianCampaign?.active}
+        volunteer={humanitarianVolunteer}
+      />
+
+      <DoctorConnectionBanner
+        subscribed={hasActiveSubscription}
+        defaultRegion={userRow?.region || session.user.region}
+      />
+
       <div>
         <p className="text-slate-500 text-sm">{greet}</p>
         <h1 className="text-2xl font-bold text-slate-900">
@@ -69,11 +95,6 @@ export default async function PsychoanalystDashboard() {
         </h1>
         <p className="text-violet-600 text-sm font-medium mt-1">{t("pa.dash.subtitle")}</p>
       </div>
-
-      <HumanitarianVolunteerBanner
-        lang={lang}
-        campaignActive={!!humanitarianCampaign?.active}
-      />
 
       {!profile.verified && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">

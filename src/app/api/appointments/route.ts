@@ -5,10 +5,11 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { stripe } from "@/lib/stripe";
-import { scheduleAppointmentReminders, scheduleReviewRequest } from "@/lib/qstash";
-import { buildAppointmentIntakePayload } from "@/lib/appointment-intake";
-import { onAppointmentBooked } from "@/lib/post-booking";
-import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
+import {
+  AppointmentSlotTakenError,
+  fulfillConsultationPayment,
+} from "@/lib/fulfill-consultation";
+import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { z } from "zod";
 
@@ -152,9 +153,6 @@ export async function POST(req: NextRequest) {
   const patient = await db.patientProfile.findUnique({ where: { userId: session.user.id } });
   if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
 
-  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true } });
-  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
   let providerName = "";
   let providerSpecialty = "";
   let durationMins = 30;
@@ -200,109 +198,47 @@ export async function POST(req: NextRequest) {
   }
 
   const alreadyUsed = await db.appointment.findFirst({ where: { stripePaymentId: intent.id } });
-  if (alreadyUsed) return NextResponse.json({ success: true, appointmentId: alreadyUsed.id }, { status: 200 });
-
-  const slotWhere =
-    providerType === "psychoanalyst"
-      ? { psychoanalystId: providerId }
-      : { professionalId: providerId };
-
-  const existing = await db.appointment.findFirst({
-    where: {
-      ...slotWhere,
-      scheduledAt: new Date(scheduledAt),
-      status: { in: ["CONFIRMED", "PENDING"] },
-    },
-  });
-  if (existing) {
-    return NextResponse.json({ error: { general: ["This slot is no longer available."] } }, { status: 409 });
+  if (alreadyUsed) {
+    return NextResponse.json({ success: true, appointmentId: alreadyUsed.id }, { status: 200 });
   }
-
-  const planSlug = healthPlanSlug?.trim() || "particular";
-  const planLabel =
-    healthPlanLabel?.trim() ||
-    (planSlug === "particular" ? "Particular" : planSlug);
-
-  const intakePayload =
-    visitReason?.trim() || healthPlanSlug || serviceId || acceptedCancellationPolicy
-      ? buildAppointmentIntakePayload({
-          visitReason: visitReason?.trim(),
-          healthPlanSlug: planSlug,
-          healthPlanLabel: planLabel,
-          serviceId: serviceId?.trim() || undefined,
-          serviceName: serviceName?.trim() || undefined,
-          policyAccepted: acceptedCancellationPolicy,
-        })
-      : null;
-
-  const appointment = await db.appointment.create({
-    data: {
-      patientId: patient.id,
-      providerType: providerType === "psychoanalyst" ? "PSYCHOANALYST" : "HEALTH",
-      professionalId: providerType === "health" ? providerId : null,
-      psychoanalystId: providerType === "psychoanalyst" ? providerId : null,
-      scheduledAt: new Date(scheduledAt),
-      type: type as any,
-      status: "CONFIRMED",
-      priceAmount: intent.amount,
-      currency: intent.currency,
-      stripePaymentId: intent.id,
-      paidAt: new Date(),
-      durationMins,
-      bookingSource: parsed.data.bookingSource ?? "patient_panel",
-      ...(intakePayload ? { chiefComplaint: intakePayload } : {}),
-    },
-  });
-
-  if (providerType === "psychoanalyst") {
-    await ensureAnalysandForPatient({
-      psychoanalystId: providerId,
-      patientUserId: session.user.id,
-      patientProfile: { firstName: patient.firstName, lastName: patient.lastName },
-      patientEmail: user.email,
-    });
-  } else {
-    onAppointmentBooked({
-      appointmentId: appointment.id,
-      providerType: "health",
-      providerId,
-      patientUserId: session.user.id,
-      chiefComplaint: intakePayload,
-      scheduledAt: new Date(scheduledAt),
-    }).catch((e) => console.error("[POST-BOOKING]", e));
-  }
-
-  await audit.viewRecord(session.user.id, "Appointment", appointment.id);
 
   try {
-    const patientUser = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { email: true, language: true },
-    });
-    if (patientUser) {
-      const { sendAppointmentConfirmation } = await import("@/lib/email");
-      await sendAppointmentConfirmation({
-        patientEmail: patientUser.email,
-        patientName: `${patient.firstName} ${patient.lastName}`,
-        doctorName: providerName,
-        specialty: providerSpecialty,
-        scheduledAt: new Date(scheduledAt),
+    const result = await fulfillConsultationPayment({
+      stripePaymentId: intent.id,
+      amount: intent.amount,
+      currency: intent.currency,
+      metadata: {
+        userId: session.user.id,
+        providerType,
+        professionalId: providerType === "health" ? providerId : undefined,
+        psychoanalystId: providerType === "psychoanalyst" ? providerId : undefined,
+        scheduledAt,
         type,
-        appointmentId: appointment.id,
-        language: patientUser.language,
-      });
-    }
+        visitReason,
+        healthPlanSlug,
+        healthPlanLabel,
+        serviceId,
+        serviceName,
+        acceptedCancellationPolicy: acceptedCancellationPolicy ? "true" : undefined,
+        bookingSource: parsed.data.bookingSource ?? "patient_panel",
+        doctorName: providerName,
+        providerSpecialty,
+        durationMins: String(durationMins),
+      },
+    });
+
+    await audit.viewRecord(session.user.id, "Appointment", result.appointmentId);
+    return NextResponse.json(
+      { success: true, appointmentId: result.appointmentId },
+      { status: result.created ? 201 : 200 },
+    );
   } catch (e) {
-    console.error("[APPOINTMENT EMAIL ERROR]", e);
+    if (e instanceof AppointmentSlotTakenError) {
+      return NextResponse.json(
+        { error: { general: ["This slot is no longer available."] } },
+        { status: 409 },
+      );
+    }
+    throw e;
   }
-
-  scheduleAppointmentReminders(appointment.id, new Date(scheduledAt)).catch((e) => {
-    console.error("[QSTASH SCHEDULE ERROR]", e);
-  });
-
-  scheduleReviewRequest(appointment.id, new Date(scheduledAt), durationMins).catch((e) => {
-    console.error("[QSTASH REVIEW SCHEDULE ERROR]", e);
-  });
-
-  return NextResponse.json({ success: true, appointmentId: appointment.id }, { status: 201 });
 }

@@ -132,16 +132,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) {
-          const attempts = user.failedLoginAttempts + 1;
-          await db.user.update({
+          const updated = await db.user.update({
             where: { id: user.id },
-            data: {
-              failedLoginAttempts: attempts,
-              lockedUntil: attempts >= 5
-                ? new Date(Date.now() + 30 * 60 * 1000)
-                : null,
-            },
+            data: { failedLoginAttempts: { increment: 1 } },
+            select: { failedLoginAttempts: true },
           });
+          if (updated.failedLoginAttempts >= 5) {
+            await db.user.update({
+              where: { id: user.id },
+              data: { lockedUntil: new Date(Date.now() + 30 * 60 * 1000) },
+            });
+          }
           return null;
         }
 

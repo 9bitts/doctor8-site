@@ -169,6 +169,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, status: "OFFLINE" });
   }
 
+  const existingVol = await db.humanitarianVolunteer.findUnique({
+    where: {
+      campaignId_userId_poolId: {
+        campaignId: campaign.id,
+        userId: session.user.id,
+        poolId: pool.id,
+      },
+    },
+  });
+  if (existingVol?.status === "BUSY") {
+    return NextResponse.json(
+      { error: "Complete your current consultation before going online again." },
+      { status: 400 },
+    );
+  }
+
   const otherActive = await db.humanitarianVolunteer.findFirst({
     where: {
       userId: session.user.id,
@@ -203,7 +219,6 @@ export async function POST(req: NextRequest) {
     },
     update: {
       status: "ONLINE",
-      currentEntryId: null,
     },
   });
 

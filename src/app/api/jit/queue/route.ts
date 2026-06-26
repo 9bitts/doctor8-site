@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { createNotification } from "@/lib/notifications";
 import { decrypt } from "@/lib/encryption";
 
@@ -147,31 +148,48 @@ export async function POST(req: NextRequest) {
   });
   if (existing) return NextResponse.json({ entry: { id: existing.id, status: existing.status, position: existing.position } });
 
-  // Check queue size limit
-  const currentCount = await db.jitQueue.count({
-    where: { sessionId, status: { in: ["WAITING", "CALLED"] } },
-  });
-  if (currentCount >= jitSession.maxQueueSize)
-    return NextResponse.json({ error: "Queue is full. Please try again later." }, { status: 429 });
+  // Check queue size limit and assign position atomically
+  let entry;
+  try {
+    entry = await db.$transaction(
+      async (tx) => {
+        const currentCount = await tx.jitQueue.count({
+          where: { sessionId, status: { in: ["WAITING", "CALLED"] } },
+        });
+        if (currentCount >= jitSession.maxQueueSize) {
+          throw new Error("QUEUE_FULL");
+        }
 
-  // Get next position
-  const lastEntry = await db.jitQueue.findFirst({
-    where: { sessionId },
-    orderBy: { position: "desc" },
-  });
-  const position = (lastEntry?.position ?? 0) + 1;
+        const lastEntry = await tx.jitQueue.findFirst({
+          where: { sessionId },
+          orderBy: { position: "desc" },
+          select: { position: true },
+        });
+        const position = (lastEntry?.position ?? 0) + 1;
 
-  const entry = await db.jitQueue.create({
-    data: {
-      sessionId,
-      patientUserId: session.user.id,
-      status:        "WAITING",
-      position,
-      specialty,
-    },
-  });
+        return tx.jitQueue.create({
+          data: {
+            sessionId,
+            patientUserId: session.user.id,
+            status: "WAITING",
+            position,
+            specialty,
+          },
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  } catch (e) {
+    if (e instanceof Error && e.message === "QUEUE_FULL") {
+      return NextResponse.json({ error: "Queue is full. Please try again later." }, { status: 429 });
+    }
+    throw e;
+  }
 
-  return NextResponse.json({ entry: { id: entry.id, status: entry.status, position: entry.position } }, { status: 201 });
+  return NextResponse.json(
+    { entry: { id: entry.id, status: entry.status, position: entry.position } },
+    { status: 201 },
+  );
 }
 
 export async function PATCH(req: NextRequest) {
@@ -306,16 +324,24 @@ export async function PATCH(req: NextRequest) {
 
     const expiresAt = new Date(now.getTime() + jitSession.noShowTimeoutSeconds * 1000);
 
-    const called = await db.jitQueue.update({
-      where: { id: next.id },
-      data:  {
-        status:      "CALLED",
-        calledAt:    now,
+    const claimed = await db.jitQueue.updateMany({
+      where: { id: next.id, status: "WAITING" },
+      data: {
+        status: "CALLED",
+        calledAt: now,
         expiresAt,
-        meetingUrl:  meetingUrl || null,
+        meetingUrl: meetingUrl || null,
         meetingRoomId: meetingRoomId || null,
       },
     });
+    if (claimed.count === 0) {
+      return NextResponse.json({ called: null, message: "Patient was already called" });
+    }
+
+    const called = await db.jitQueue.findUnique({ where: { id: next.id } });
+    if (!called) {
+      return NextResponse.json({ called: null, message: "Queue is empty" });
+    }
 
     // Notify patient
     await createNotification({
