@@ -3,39 +3,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { decrypt } from "@/lib/encryption";
 import { getSignedReadUrl } from "@/lib/s3";
-import { parseRecordContent } from "@/lib/record-content";
-
-function safeDecrypt(v: string | null): string {
-  if (v == null) return "";
-  try { return decrypt(v); } catch { return v; }
-}
-
-function fileNameFromKey(key: string): string {
-  const base = key.split("/").pop() || key;
-  return base.replace(/^[a-f0-9-]{20,}-/i, "");
-}
-
-function fileKind(key: string): "image" | "pdf" | "video" | "other" {
-  const ext = (key.split(".").pop() || "").toLowerCase();
-  if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "heif"].includes(ext)) return "image";
-  if (ext === "pdf") return "pdf";
-  if (["mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return "video";
-  return "other";
-}
-
-function collectFileKeys(fileUrl: string | null, content: string | null): string[] {
-  const keys: string[] = [];
-  const primary = fileUrl ? safeDecrypt(fileUrl) : "";
-  if (primary) keys.push(primary);
-
-  const parsed = parseRecordContent(content ? safeDecrypt(content) : null);
-  for (const k of parsed.attachments || []) {
-    if (k && !keys.includes(k)) keys.push(k);
-  }
-  return keys;
-}
+import { collectFileKeys, fileKind, fileNameFromKey } from "@/lib/record-files";
 
 export async function GET(
   _req: NextRequest,

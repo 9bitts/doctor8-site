@@ -41,6 +41,7 @@ const createSchema = z.object({
   notes: z.string().max(5000).optional(),
   metrics: z.record(z.unknown()).optional(),
   addToDiagnoses: z.boolean().optional(),
+  recordKind: z.enum(["ANAMNESIS", "EVOLUTION", "REPORT", "OTHER"]).optional(),
 });
 
 function normalizeType(v: string | null | undefined): DocType {
@@ -122,6 +123,7 @@ export async function POST(req: NextRequest) {
         professionalId: professional.id,
         categoryId,
         type: derivedType,
+        recordKind: d.recordKind || "OTHER",
         title: encrypt(d.title),
         content: contentToStore ? encrypt(contentToStore) : null,
         fileUrl: primaryKey ? encrypt(primaryKey) : null,
@@ -143,6 +145,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       id: doc.id,
       type: doc.type,
+      recordKind: doc.recordKind,
       categoryId,
       categoryName,
       title: d.title,

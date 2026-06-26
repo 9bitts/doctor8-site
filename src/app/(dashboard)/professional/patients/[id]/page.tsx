@@ -66,6 +66,7 @@ export default async function PatientChartDetail({
   const documents = record.medicalDocuments.map((d) => ({
     id: d.id,
     type: d.type as string,
+    recordKind: d.recordKind,
     categoryName: d.category?.name ?? null,
     categoryGroup: d.category?.groupName ?? null,
     title: safeDecrypt(d.title),

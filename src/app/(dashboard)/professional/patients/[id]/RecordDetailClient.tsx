@@ -7,14 +7,14 @@
 // P1-b: edit the chart's registration data (birth, sex, cpf, address) used by the prescription.
 // P2: "Diagnóstico / Título" label (trilíngue) + botão WhatsApp no cabeçalho da ficha.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film,
-  Activity, Stethoscope,
+  Activity, Stethoscope, Columns2,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import ReferralPanel from "@/components/professional/ReferralPanel";
@@ -22,7 +22,24 @@ import PatientChartTags, { type ChartTag } from "@/components/professional/Patie
 import MetricsFormFields, { emptyMetrics } from "@/components/professional/MetricsFormFields";
 import MetricsEvolutionPanel from "@/components/professional/MetricsEvolutionPanel";
 import DiagnosesPanel from "@/components/professional/DiagnosesPanel";
+import ClinicalCalculators from "@/components/professional/ClinicalCalculators";
+import ImageCompareModal from "@/components/professional/ImageCompareModal";
+import {
+  RecordTimelineFilters,
+  PinnedAnamnesisCard,
+  RecordKindBadge,
+  RecordTimelineDot,
+} from "@/components/professional/PatientRecordTimeline";
 import { hasAnyMetric, type ClinicalMetricsInput } from "@/lib/clinical-metrics";
+import {
+  RECORD_KIND_OPTIONS,
+  type ClinicalRecordKind,
+  type RecordTimelineFilter,
+  matchesTimelineFilter,
+  suggestRecordKind,
+  findPinnedAnamnesis,
+  recordKindLabelKey,
+} from "@/lib/record-kind";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
@@ -81,6 +98,7 @@ interface Chart {
 interface Doc {
   id: string;
   type: string;
+  recordKind?: ClinicalRecordKind | string;
   categoryName: string | null;
   categoryGroup: string | null;
   title: string;
@@ -229,6 +247,7 @@ export default function RecordDetailClient({
   const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses">("records");
+  const [recordFilter, setRecordFilter] = useState<RecordTimelineFilter>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
   const [saving, setSaving] = useState(false);
@@ -281,6 +300,8 @@ export default function RecordDetailClient({
   const [files, setFiles] = useState<File[]>([]);
   const [metrics, setMetrics] = useState<ClinicalMetricsInput>(emptyMetrics());
   const [addToDiagnoses, setAddToDiagnoses] = useState(true);
+  const [recordKind, setRecordKind] = useState<ClinicalRecordKind>("EVOLUTION");
+  const [showImageCompare, setShowImageCompare] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -312,9 +333,14 @@ export default function RecordDetailClient({
 
   useEffect(() => {
     if (searchParams.get("newRecord") === "1") {
+      setRecordKind(suggestRecordKind(initialDocuments));
       setShowForm(true);
     }
-  }, [searchParams]);
+  }, [searchParams, initialDocuments]);
+
+  function insertCalcText(text: string) {
+    setContent((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
+  }
 
   function resetForm() {
     const first = groups[0]?.items[0];
@@ -325,9 +351,16 @@ export default function RecordDetailClient({
     setFiles([]);
     setMetrics(emptyMetrics());
     setAddToDiagnoses(true);
+    setRecordKind(suggestRecordKind(docs));
     setImagePreview(null);
     setError(null);
     setEditingDoc(null);
+  }
+
+  function openNewRecordForm() {
+    resetForm();
+    setRecordKind(suggestRecordKind(docs));
+    setShowForm(true);
   }
 
   function openEditForm(doc: Doc) {
@@ -346,6 +379,7 @@ export default function RecordDetailClient({
       setTitle(titleMatch[1].trim());
     }
     setContent(parsed.body || parsed.notes || (parsed.items ? "" : (doc.content || "")));
+    setRecordKind((doc.recordKind as ClinicalRecordKind) || "OTHER");
     setShowForm(true);
   }
 
@@ -565,6 +599,7 @@ export default function RecordDetailClient({
           cid: cidSelection.code,
           cidLabel: cidSelection.description,
           addToDiagnoses,
+          recordKind,
           ...(hasAnyMetric(metrics) ? { metrics } : {}),
           ...(fileKeys.length === 1 ? { fileKey: fileKeys[0] } : {}),
           ...(fileKeys.length > 0 ? { fileKeys } : {}),
@@ -581,6 +616,7 @@ export default function RecordDetailClient({
         {
           id: data.id,
           type: data.type,
+          recordKind: data.recordKind || recordKind,
           categoryName: data.categoryName ?? null,
           categoryGroup: null,
           title: data.title,
@@ -635,6 +671,7 @@ export default function RecordDetailClient({
           content,
           cid: cidSelection?.code || "",
           cidLabel: cidSelection?.description || "",
+          recordKind,
           ...(appendFileKeys.length ? { appendFileKeys } : {}),
         }),
       });
@@ -657,6 +694,30 @@ export default function RecordDetailClient({
   // Helper: is the registration data essentially empty?
   const regEmpty = !reg.dateOfBirth && !reg.addressLine1 && !reg.city && !reg.cpf && !reg.sex;
   const sexLabel = reg.sex === "F" ? "Feminino" : reg.sex === "M" ? "Masculino" : reg.sex === "O" ? "Outro" : "";
+
+  const pinnedAnamnesis = useMemo(() => findPinnedAnamnesis(docs), [docs]);
+  const filteredDocs = useMemo(
+    () => docs.filter((d) => matchesTimelineFilter(d, recordFilter)),
+    [docs, recordFilter],
+  );
+  const filterCounts = useMemo(() => ({
+    all: docs.length,
+    anamnesis: docs.filter((d) => matchesTimelineFilter(d, "anamnesis")).length,
+    evolution: docs.filter((d) => matchesTimelineFilter(d, "evolution")).length,
+    report: docs.filter((d) => matchesTimelineFilter(d, "report")).length,
+    exam: docs.filter((d) => matchesTimelineFilter(d, "exam")).length,
+    prescription: docs.filter((d) => matchesTimelineFilter(d, "prescription")).length,
+  }), [docs]);
+
+  function scrollToRecord(id: string) {
+    setRecordFilter("all");
+    setExpandedIds((prev) => new Set(prev).add(id));
+    setTimeout(() => {
+      document.getElementById(`record-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+  }
+
+  const localeFull = _langFull === "pt" ? "pt-BR" : _langFull === "es" ? "es-ES" : "en-US";
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -1001,25 +1062,54 @@ export default function RecordDetailClient({
       {chartTab === "records" && (
       <>
       {/* Records section */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-slate-900">Clinical records</h2>
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
-        >
-          <Plus size={18} /> Add record
-        </button>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h2 className="text-lg font-bold text-slate-900">{t("chartTab.records")}</h2>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowImageCompare(true)}
+            className="inline-flex items-center gap-2 border border-slate-200 hover:border-brand-200 text-slate-700 hover:text-brand-600 font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+          >
+            <Columns2 size={18} /> {t("compare.open")}
+          </button>
+          <button
+            onClick={openNewRecordForm}
+            className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+          >
+            <Plus size={18} /> {t("timeline.addRecord")}
+          </button>
+        </div>
       </div>
 
+      {pinnedAnamnesis && recordFilter === "all" && (
+        <PinnedAnamnesisCard
+          title={pinnedAnamnesis.title}
+          preview={pinnedAnamnesis.content ? formatRecordContentForDisplay(pinnedAnamnesis.content).slice(0, 200) : ""}
+          dateLabel={new Date(pinnedAnamnesis.createdAt).toLocaleDateString(localeFull, {
+            day: "2-digit", month: "long", year: "numeric",
+          })}
+          onView={() => scrollToRecord(pinnedAnamnesis.id)}
+        />
+      )}
+
+      <RecordTimelineFilters
+        value={recordFilter}
+        onChange={setRecordFilter}
+        counts={filterCounts}
+      />
+
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        {docs.length === 0 ? (
+        {filteredDocs.length === 0 ? (
           <div className="text-center py-14">
             <FileText className="mx-auto text-slate-300 mb-3" size={36} />
-            <p className="text-slate-400 text-sm">No records yet</p>
+            <p className="text-slate-400 text-sm">
+              {docs.length === 0 ? t("timeline.empty") : t("timeline.emptyFilter")}
+            </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {docs.map((d) => {
+          <div className="relative pl-8 pr-2 py-2">
+            <div className="absolute left-[15px] top-4 bottom-4 w-px bg-slate-200" aria-hidden />
+            {filteredDocs.map((d) => {
               const label = d.categoryName
                 ? getCategoryLabel(lang, { name: d.categoryName })
                 : legacyLabel(d.type);
@@ -1043,8 +1133,22 @@ export default function RecordDetailClient({
               }
 
               return (
-                <div key={d.id} className="px-5 py-4">
+                <div key={d.id} id={`record-${d.id}`} className={`relative px-3 py-4 border-b border-slate-50 last:border-0 ${
+                  pinnedAnamnesis?.id === d.id ? "bg-violet-50/40 rounded-xl" : ""
+                }`}>
+                  <RecordTimelineDot />
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    {d.type === "PRESCRIPTION" ? (
+                      <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+                        {t("timeline.filter.prescription")}
+                      </span>
+                    ) : d.type === "EXAM_REQUEST" || d.type === "EXAM_RESULT" ? (
+                      <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border bg-cyan-50 text-cyan-700 border-cyan-200">
+                        {t("timeline.filter.exam")}
+                      </span>
+                    ) : d.recordKind ? (
+                      <RecordKindBadge kind={d.recordKind as ClinicalRecordKind} />
+                    ) : null}
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
                       <Tag size={12} /> {label}
                     </span>
@@ -1185,6 +1289,27 @@ export default function RecordDetailClient({
             <div className="p-5 space-y-4">
               {!editingDoc && (
               <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("kind.label")}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {RECORD_KIND_OPTIONS.map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setRecordKind(k)}
+                      className={`p-2.5 rounded-xl border-2 text-left text-xs font-semibold transition ${
+                        recordKind === k
+                          ? "border-brand-500 bg-brand-50 text-brand-700"
+                          : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      {t(recordKindLabelKey(k))}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              )}
+              {!editingDoc && (
+              <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
                 {categoriesLoading ? (
                   <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
@@ -1207,6 +1332,20 @@ export default function RecordDetailClient({
                     ))}
                   </select>
                 )}
+              </div>
+              )}
+              {editingDoc && (
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("kind.label")}</label>
+                <select
+                  value={recordKind}
+                  onChange={(e) => setRecordKind(e.target.value as ClinicalRecordKind)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
+                >
+                  {RECORD_KIND_OPTIONS.map((k) => (
+                    <option key={k} value={k}>{t(recordKindLabelKey(k))}</option>
+                  ))}
+                </select>
               </div>
               )}
               <CidSearchInput
@@ -1245,6 +1384,7 @@ export default function RecordDetailClient({
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-none"
                 />
               </div>
+              <ClinicalCalculators onInsert={insertCalcText} />
               {!editingDoc && (
                 <MetricsFormFields value={metrics} onChange={setMetrics} />
               )}
@@ -1325,6 +1465,12 @@ export default function RecordDetailClient({
           </div>
         </div>
       )}
+
+      <ImageCompareModal
+        chartId={chart.id}
+        open={showImageCompare}
+        onClose={() => setShowImageCompare(false)}
+      />
     </div>
   );
 }

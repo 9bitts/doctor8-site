@@ -74,6 +74,13 @@ enum DiagnosisStatus {
   RESOLVED
 }
 
+enum ClinicalRecordKind {
+  ANAMNESIS
+  EVOLUTION
+  REPORT
+  OTHER
+}
+
 enum MedicationFlow {
   CLINICAL    // Goes to patient medical history — shared with doctor
   PURCHASE    // Goes to collective purchase list — NOT clinical
@@ -555,6 +562,7 @@ model MedicalDocument {
   appointment      Appointment?        @relation(fields: [appointmentId], references: [id])
 
   type             DocumentType
+  recordKind       ClinicalRecordKind @default(OTHER)
   categoryId       String?
   category         Category?    @relation(fields: [categoryId], references: [id])
   title            String       // @encrypted
@@ -587,6 +595,7 @@ model MedicalDocument {
   @@index([psychoanalystId])
   @@index([type])
   @@index([categoryId])
+  @@index([recordKind])
 }
 
 model SharedRecord {

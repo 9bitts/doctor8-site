@@ -16,6 +16,7 @@ const patchSchema = z.object({
   fileKey: z.string().optional().or(z.literal("")),
   appendFileKeys: z.array(z.string().min(1)).optional(),
   removeFile: z.boolean().optional(),
+  recordKind: z.enum(["ANAMNESIS", "EVOLUTION", "REPORT", "OTHER"]).optional(),
 });
 
 function collectFileKeys(fileUrl: string | null, contentRaw: string): string[] {
@@ -76,6 +77,7 @@ export async function PATCH(
     content?: string | null;
     categoryId?: string | null;
     fileUrl?: string | null;
+    recordKind?: "ANAMNESIS" | "EVOLUTION" | "REPORT" | "OTHER";
   } = {};
 
   if (d.categoryId) {
@@ -90,6 +92,7 @@ export async function PATCH(
   }
 
   if (d.title) updateData.title = encrypt(d.title);
+  if (d.recordKind) updateData.recordKind = d.recordKind;
 
   const existingRaw = document.content ? safeDecrypt(document.content) : "";
   let attachmentKeys = collectFileKeys(document.fileUrl, existingRaw);
@@ -159,6 +162,7 @@ export async function PATCH(
   return NextResponse.json({
     id: updated.id,
     type: updated.type,
+    recordKind: updated.recordKind,
     categoryName: updated.category?.name ?? null,
     categoryGroup: updated.category?.groupName ?? null,
     title: safeDecrypt(updated.title),
