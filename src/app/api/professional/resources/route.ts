@@ -67,9 +67,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const d = parsed.data;
-  if (!d.url && !d.fileKey) {
-    return NextResponse.json({ error: "Provide a URL or a file." }, { status: 400 });
-  }
 
   const resource = await db.resource.create({
     data: {

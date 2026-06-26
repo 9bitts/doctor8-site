@@ -8,7 +8,7 @@ import {
   BookOpen, Plus, X, Link2, Paperclip, Loader2, Trash2,
   Share2, CheckCircle2, AlertCircle, ExternalLink, Users,
   ChevronDown, ChevronUp, Search, Stethoscope, Phone, Mail,
-  UserPlus,
+  UserPlus, Pencil, Printer,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -43,6 +43,7 @@ export default function ResourcesPage() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading]     = useState(true);
   const [showForm, setShowForm]   = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -191,11 +192,39 @@ export default function ResourcesPage() {
     setResources((prev) => prev.filter((r) => r.id !== id));
   }
 
+  function openEditForm(r: Resource) {
+    setEditingId(r.id);
+    setFormTitle(r.title);
+    setFormDesc(r.content || "");
+    setFormType(r.url ? "link" : r.hasFile ? "file" : "link");
+    setFormUrl(r.url || "");
+    setFormFile(null);
+    setFormError(null);
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setFormTitle("");
+    setFormDesc("");
+    setFormUrl("");
+    setFormFile(null);
+    setFormType("link");
+    setFormError(null);
+  }
+
+  function handlePrint(id: string) {
+    window.open(`/api/professional/resources/${id}/pdf`, "_blank", "noopener,noreferrer");
+  }
+
   // Submit form
   async function handleSubmit() {
     if (!formTitle.trim()) { setFormError(t("lib.errTitle")); return; }
-    if (formType === "link" && !formUrl.trim()) { setFormError(t("lib.errUrl")); return; }
-    if (formType === "file" && !formFile) { setFormError(t("lib.errContent")); return; }
+    if (formUrl.trim() && !/^https?:\/\/.+/i.test(formUrl.trim())) {
+      setFormError(t("lib.errUrl"));
+      return;
+    }
     setSaving(true); setFormError(null);
 
     try {
@@ -210,21 +239,29 @@ export default function ResourcesPage() {
         fileKey = upData.key;
       }
 
-      const res = await fetch("/api/professional/resources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title:   formTitle.trim(),
-          content: formDesc.trim(),
-          url:     formType === "link" ? formUrl.trim() : "",
-          fileKey: formType === "file" ? fileKey : "",
-        }),
-      });
+      const payload = {
+        title:   formTitle.trim(),
+        content: formDesc.trim(),
+        url:     formType === "link" ? formUrl.trim() : "",
+        ...(fileKey ? { fileKey } : {}),
+      };
+
+      const res = await fetch(
+        editingId ? `/api/professional/resources/${editingId}` : "/api/professional/resources",
+        {
+          method: editingId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
       const data = await res.json();
       if (!res.ok) { setFormError(data.error || "Error"); setSaving(false); return; }
-      setResources((prev) => [data, ...prev]);
-      setShowForm(false);
-      setFormTitle(""); setFormDesc(""); setFormUrl(""); setFormFile(null); setFormType("link");
+      if (editingId) {
+        setResources((prev) => prev.map((r) => r.id === editingId ? data : r));
+      } else {
+        setResources((prev) => [data, ...prev]);
+      }
+      closeForm();
     } catch { setFormError("Network error."); }
     setSaving(false);
   }
@@ -245,7 +282,7 @@ export default function ResourcesPage() {
           <p className="text-slate-500 text-sm mt-1">{t("lib.subtitle")}</p>
         </div>
         <button
-          onClick={() => { setShowForm(true); setFormError(null); }}
+          onClick={() => { setEditingId(null); setFormTitle(""); setFormDesc(""); setFormUrl(""); setFormFile(null); setFormType("link"); setFormError(null); setShowForm(true); }}
           className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm shrink-0"
         >
           <Plus size={18} /> {t("lib.add")}
@@ -317,6 +354,18 @@ export default function ResourcesPage() {
                 {/* Actions */}
                 <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                   <AiSummarizeButton resourceId={r.id} />
+                  <button
+                    onClick={() => handlePrint(r.id)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border text-slate-600 border-slate-200 hover:border-brand-200 hover:text-brand-500 transition"
+                  >
+                    <Printer size={13} /> {t("lib.print")}
+                  </button>
+                  <button
+                    onClick={() => openEditForm(r)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border text-slate-600 border-slate-200 hover:border-brand-200 hover:text-brand-500 transition"
+                  >
+                    <Pencil size={13} /> {t("lib.edit")}
+                  </button>
                   <button
                     onClick={() => shareResId === r.id ? setShareResId(null) : openSharePanel(r.id)}
                     className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition
@@ -519,8 +568,8 @@ export default function ResourcesPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
-              <h2 className="font-bold text-slate-800">{t("lib.modalTitle")}</h2>
-              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="font-bold text-slate-800">{editingId ? t("lib.editModalTitle") : t("lib.modalTitle")}</h2>
+              <button onClick={closeForm} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
@@ -582,6 +631,9 @@ export default function ResourcesPage() {
                   <label className="block text-xs font-medium text-slate-600 mb-1">
                     {t("lib.fileLabel")} <span className="text-slate-400 font-normal">{t("lib.fileHint")}</span>
                   </label>
+                  {editingId && resources.find((x) => x.id === editingId)?.hasFile && !formFile && (
+                    <p className="text-xs text-slate-500 mb-2">{t("lib.keepExistingFile")}</p>
+                  )}
                   <input
                     type="file"
                     accept=".pdf,image/*"
@@ -600,7 +652,7 @@ export default function ResourcesPage() {
 
               <div className="flex gap-3 pt-1">
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={closeForm}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
                 >
                   {t("lib.cancel")}

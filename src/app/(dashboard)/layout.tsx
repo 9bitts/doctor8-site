@@ -64,6 +64,7 @@ const PSYCHOANALYST_NAV: NavItem[] = [
   { href: "/psychoanalyst/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/analysands", labelKey: "pa.nav.analysands", icon: <Users size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/psychoanalyst/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
 ];
 

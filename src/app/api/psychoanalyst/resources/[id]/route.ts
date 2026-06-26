@@ -1,11 +1,10 @@
-// src/app/api/professional/resources/[id]/route.ts
-// PATCH  — update a resource
-// DELETE — soft-delete a resource (sets active=false)
+// PATCH  ? update a resource
+// DELETE ? soft-delete a resource
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
+import { requirePsychoanalyst } from "@/lib/psychoanalyst-api";
+import { db } from "@/lib/db";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -16,28 +15,24 @@ const updateSchema = z.object({
 });
 
 async function getOwnedResource(userId: string, id: string) {
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId },
-  });
-  if (!professional) return null;
+  const psychoanalyst = await db.psychoanalystProfile.findUnique({ where: { userId } });
+  if (!psychoanalyst) return null;
 
   const resource = await db.resource.findUnique({ where: { id } });
-  if (!resource || resource.professionalId !== professional.id) return null;
+  if (!resource || resource.psychoanalystId !== psychoanalyst.id) return null;
 
-  return { professional, resource };
+  return { psychoanalyst, resource };
 }
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePsychoanalyst();
+  if ("error" in ctx && ctx.error) return ctx.error;
 
-  const ctx = await getOwnedResource(session.user.id, params.id);
-  if (!ctx) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const owned = await getOwnedResource(ctx.session.user.id, params.id);
+  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
@@ -53,7 +48,7 @@ export async function PATCH(
       url:     d.url || null,
       ...(d.fileKey ? { fileUrl: encrypt(d.fileKey) } : {}),
     },
-    include: { _count: { select: { shares: true } } },
+    include: { _count: { select: { analysandShares: true } } },
   });
 
   return NextResponse.json({
@@ -62,22 +57,20 @@ export async function PATCH(
     content:    d.content || null,
     url:        resource.url,
     hasFile:    !!resource.fileUrl,
-    shareCount: resource._count.shares,
+    shareCount: resource._count.analysandShares,
     createdAt:  resource.createdAt.toISOString(),
   });
 }
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePsychoanalyst();
+  if ("error" in ctx && ctx.error) return ctx.error;
 
-  const ctx = await getOwnedResource(session.user.id, params.id);
-  if (!ctx) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const owned = await getOwnedResource(ctx.session.user.id, params.id);
+  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await db.resource.update({
     where: { id: params.id },

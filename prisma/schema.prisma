@@ -537,6 +537,7 @@ model PsychoanalystProfile {
   practiceLocations   PracticeLocation[]        @relation("PsychoanalystLocations")
   services            ProviderService[]         @relation("PsychoanalystServices")
   slotAlerts          SlotAvailabilityAlert[]   @relation("PsychoanalystSlotAlerts")
+  resources           Resource[]
 
   @@index([userId])
 }
@@ -1751,6 +1752,7 @@ model AnalysandRecord {
   linkedUserId    String?
 
   medicalDocuments MedicalDocument[]
+  resourceShares   AnalysandResourceShare[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1904,17 +1906,23 @@ model BuyingClubMember {
 }
 
 model Resource {
-  id             String          @id @default(cuid())
-  professionalId String
-  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
-  title          String          // encrypted
-  content        String?         // encrypted — description/notes
-  url            String?         // YouTube link (plain — not PHI)
-  fileUrl        String?         // encrypted S3 key
-  active         Boolean         @default(true)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  shares         ResourceShare[]
+  id              String               @id @default(cuid())
+  professionalId  String?
+  professional    ProfessionalProfile? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  psychoanalystId String?
+  psychoanalyst   PsychoanalystProfile? @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+  title           String               // encrypted
+  content         String?              // encrypted — description/notes
+  url             String?              // YouTube link (plain — not PHI)
+  fileUrl         String?              // encrypted S3 key
+  active          Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  shares          ResourceShare[]
+  analysandShares AnalysandResourceShare[]
+
+  @@index([professionalId])
+  @@index([psychoanalystId])
 }
 
 model ResourceShare {
@@ -1926,6 +1934,17 @@ model ResourceShare {
   sharedAt        DateTime      @default(now())
 
   @@unique([resourceId, patientRecordId])
+}
+
+model AnalysandResourceShare {
+  id                String          @id @default(cuid())
+  resourceId        String
+  resource          Resource        @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  analysandRecordId String
+  analysandRecord   AnalysandRecord @relation(fields: [analysandRecordId], references: [id], onDelete: Cascade)
+  sharedAt          DateTime        @default(now())
+
+  @@unique([resourceId, analysandRecordId])
 }
 
 // ─────────────────────────────────────────
