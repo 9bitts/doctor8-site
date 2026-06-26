@@ -41,6 +41,7 @@ export async function createMetricSnapshot(
   metrics: {
     weightKg?: number | null;
     heightCm?: number | null;
+    headCircumferenceCm?: number | null;
     systolicBp?: number | null;
     diastolicBp?: number | null;
     heartRate?: number | null;
@@ -56,6 +57,7 @@ export async function createMetricSnapshot(
       documentId,
       weightKg: metrics.weightKg ?? null,
       heightCm: metrics.heightCm ?? null,
+      headCircumferenceCm: metrics.headCircumferenceCm ?? null,
       systolicBp: metrics.systolicBp ?? null,
       diastolicBp: metrics.diastolicBp ?? null,
       heartRate: metrics.heartRate ?? null,

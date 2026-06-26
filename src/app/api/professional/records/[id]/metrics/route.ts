@@ -27,6 +27,7 @@ export async function GET(
       documentId: s.documentId,
       weightKg: s.weightKg,
       heightCm: s.heightCm,
+      headCircumferenceCm: s.headCircumferenceCm,
       systolicBp: s.systolicBp,
       diastolicBp: s.diastolicBp,
       heartRate: s.heartRate,

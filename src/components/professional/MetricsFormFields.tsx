@@ -16,6 +16,7 @@ type FieldDef = {
 const FIELDS: FieldDef[] = [
   { key: "weightKg", labelKey: "metric.weight", step: "0.1", placeholder: "78.5" },
   { key: "heightCm", labelKey: "metric.height", step: "1", placeholder: "170" },
+  { key: "headCircumferenceCm", labelKey: "metric.headCirc", step: "0.1", placeholder: "45" },
   { key: "systolicBp", labelKey: "metric.systolic", step: "1", placeholder: "120" },
   { key: "diastolicBp", labelKey: "metric.diastolic", step: "1", placeholder: "80" },
   { key: "heartRate", labelKey: "metric.heartRate", step: "1", placeholder: "72" },

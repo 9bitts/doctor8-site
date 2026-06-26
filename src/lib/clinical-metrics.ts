@@ -3,6 +3,7 @@
 export type ClinicalMetricsInput = {
   weightKg?: number | null;
   heightCm?: number | null;
+  headCircumferenceCm?: number | null;
   systolicBp?: number | null;
   diastolicBp?: number | null;
   heartRate?: number | null;
@@ -20,6 +21,8 @@ export type ClinicalMetricsSnapshot = ClinicalMetricsInput & {
 
 export const METRIC_FIELDS = [
   { key: "weightKg" as const, labelKey: "metric.weight", unit: "kg", decimals: 1 },
+  { key: "heightCm" as const, labelKey: "metric.height", unit: "cm", decimals: 0 },
+  { key: "headCircumferenceCm" as const, labelKey: "metric.headCirc", unit: "cm", decimals: 1 },
   { key: "bmi" as const, labelKey: "metric.bmi", unit: "", decimals: 1 },
   { key: "systolicBp" as const, labelKey: "metric.systolic", unit: "mmHg", decimals: 0 },
   { key: "diastolicBp" as const, labelKey: "metric.diastolic", unit: "mmHg", decimals: 0 },
@@ -53,6 +56,7 @@ export function parseMetricsPayload(raw: unknown): ClinicalMetricsInput {
   return {
     weightKg: num("weightKg"),
     heightCm: num("heightCm"),
+    headCircumferenceCm: num("headCircumferenceCm"),
     systolicBp: num("systolicBp") != null ? Math.round(num("systolicBp")!) : null,
     diastolicBp: num("diastolicBp") != null ? Math.round(num("diastolicBp")!) : null,
     heartRate: num("heartRate") != null ? Math.round(num("heartRate")!) : null,
@@ -65,6 +69,8 @@ export function parseMetricsPayload(raw: unknown): ClinicalMetricsInput {
 export function formatMetricsSummary(m: ClinicalMetricsInput, bmi?: number | null): string {
   const parts: string[] = [];
   if (m.weightKg != null) parts.push(`${m.weightKg} kg`);
+  if (m.heightCm != null) parts.push(`${m.heightCm} cm`);
+  if (m.headCircumferenceCm != null) parts.push(`PC ${m.headCircumferenceCm} cm`);
   if (bmi != null) parts.push(`IMC ${bmi}`);
   if (m.systolicBp != null && m.diastolicBp != null) {
     parts.push(`PA ${m.systolicBp}/${m.diastolicBp}`);
