@@ -1,16 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Heart, Loader2, RefreshCw, Radio } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import {
+  Heart, Loader2, RefreshCw, Radio, Users, CheckCircle2, AlertTriangle, Power,
+} from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
-interface CampaignRow {
-  id: string;
+interface CampaignReport {
+  campaignId: string;
   slug: string;
   name: string;
   active: boolean;
-  waitingTotal: number;
-  volunteerCount: number;
+  totals: {
+    waiting: number;
+    inConsult: number;
+    completedToday: number;
+    noShowsToday: number;
+    volunteersOnline: number;
+    volunteersBusy: number;
+    avgWaitMinutesToday: number | null;
+  };
   pools: {
     slug: string;
     labelEs: string;
@@ -18,25 +27,32 @@ interface CampaignRow {
     waiting: number;
     volunteersOnline: number;
     volunteersBusy: number;
+    completedToday: number;
+    crisisWaiting: number;
   }[];
 }
 
 export default function AdminHumanitarianPage() {
-  const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
+  const [reports, setReports] = useState<CampaignReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
+  const [toggling, setToggling] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/humanitarian");
       const data = await res.json();
-      if (res.ok) setCampaigns(data.campaigns || []);
+      if (res.ok) setReports(data.campaigns || []);
     } catch { /* ignore */ }
     setLoading(false);
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 15000);
+    return () => clearInterval(interval);
+  }, [load]);
 
   async function seedVenezuela() {
     setSeeding(true);
@@ -51,12 +67,28 @@ export default function AdminHumanitarianPage() {
     setSeeding(false);
   }
 
+  async function toggleActive(slug: string, active: boolean) {
+    setToggling(true);
+    try {
+      await fetch("/api/admin/humanitarian", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, active }),
+      });
+      await load();
+    } catch { /* ignore */ }
+    setToggling(false);
+  }
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-10">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Heart size={22} className="text-rose-500" />
-          <h1 className="text-2xl font-bold text-slate-900">Atenci?n humanitaria</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Atenci?n humanitaria</h1>
+            <p className="text-sm text-slate-500">Monitor en tiempo real ? Venezuela</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <button
@@ -72,54 +104,98 @@ export default function AdminHumanitarianPage() {
             disabled={seeding}
             className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
           >
-            {seeding ? <Loader2 size={14} className="animate-spin" /> : null}
+            {seeding ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
             Ativar Venezuela
           </button>
         </div>
       </div>
 
-      <p className="text-sm text-slate-600">
-        Campanha Venezuela: filas centralizadas (m?dico 500, psic?logo 200, psicanalista 100, terapeuta 100).
-        Pacientes: <code className="text-xs bg-slate-100 px-1 rounded">/humanitarian/{VENEZUELA_CAMPAIGN_SLUG}</code>
-      </p>
+      <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-sm text-rose-900">
+        <p className="font-medium">Enlaces de campa?a</p>
+        <p className="mt-1 text-rose-800">
+          Pacientes: <code className="bg-white/80 px-1 rounded">/humanitarian/{VENEZUELA_CAMPAIGN_SLUG}</code>
+          {" ? "}
+          Voluntarios: <code className="bg-white/80 px-1 rounded">/humanitarian/volunteer</code>
+        </p>
+      </div>
 
-      {loading ? (
+      {loading && reports.length === 0 ? (
         <Loader2 size={24} className="animate-spin text-emerald-500" />
-      ) : campaigns.length === 0 ? (
+      ) : reports.length === 0 ? (
         <p className="text-slate-500 text-sm">Nenhuma campanha. Clique em &quot;Ativar Venezuela&quot;.</p>
       ) : (
-        campaigns.map((c) => (
-          <div key={c.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
+        reports.map((c) => (
+          <div key={c.campaignId} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-5">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h2 className="font-bold text-slate-900">{c.name}</h2>
+                <h2 className="font-bold text-slate-900 text-lg">{c.name}</h2>
                 <p className="text-xs text-slate-500">{c.slug}</p>
               </div>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${c.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                {c.active ? "Ativa" : "Inativa"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${c.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                  {c.active ? "Activa" : "Pausada"}
+                </span>
+                <button
+                  type="button"
+                  disabled={toggling}
+                  onClick={() => toggleActive(c.slug, !c.active)}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {c.active ? "Pausar" : "Activar"}
+                </button>
+              </div>
             </div>
-            <div className="flex gap-4 text-sm text-slate-600">
-              <span className="flex items-center gap-1"><Radio size={14} /> {c.waitingTotal} na fila</span>
-              <span>{c.volunteerCount} volunt?rios cadastrados</span>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "En fila", value: c.totals.waiting, icon: Radio, color: "text-amber-600" },
+                { label: "En consulta", value: c.totals.inConsult, icon: Users, color: "text-blue-600" },
+                { label: "Atendidos hoy", value: c.totals.completedToday, icon: CheckCircle2, color: "text-emerald-600" },
+                { label: "Voluntarios", value: `${c.totals.volunteersOnline}/${c.totals.volunteersBusy}`, icon: Heart, color: "text-rose-600" },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-slate-50 rounded-xl p-3">
+                  <p className="text-xs text-slate-500">{stat.label}</p>
+                  <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+                </div>
+              ))}
             </div>
+
+            <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+              <span>No-show hoy: {c.totals.noShowsToday}</span>
+              {c.totals.avgWaitMinutesToday != null && (
+                <span>Espera media hoy: ~{c.totals.avgWaitMinutesToday} min</span>
+              )}
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-slate-500 border-b">
                     <th className="pb-2 pr-4">Fila</th>
                     <th className="pb-2 pr-4">Esperando</th>
+                    <th className="pb-2 pr-4">Crisis</th>
                     <th className="pb-2 pr-4">Cap.</th>
-                    <th className="pb-2">Volunt?rios</th>
+                    <th className="pb-2 pr-4">Hoy</th>
+                    <th className="pb-2">Voluntarios</th>
                   </tr>
                 </thead>
                 <tbody>
                   {c.pools.map((p) => (
                     <tr key={p.slug} className="border-b border-slate-50">
-                      <td className="py-2 pr-4 font-medium">{p.labelEs}</td>
-                      <td className="py-2 pr-4">{p.waiting}</td>
-                      <td className="py-2 pr-4">{p.maxWaiting}</td>
-                      <td className="py-2">{p.volunteersOnline} livre ? {p.volunteersBusy} ocupado</td>
+                      <td className="py-2.5 pr-4 font-medium">{p.labelEs}</td>
+                      <td className="py-2.5 pr-4">{p.waiting}</td>
+                      <td className="py-2.5 pr-4">
+                        {p.crisisWaiting > 0 ? (
+                          <span className="text-rose-600 font-semibold flex items-center gap-1">
+                            <AlertTriangle size={12} /> {p.crisisWaiting}
+                          </span>
+                        ) : (
+                          "0"
+                        )}
+                      </td>
+                      <td className="py-2.5 pr-4">{p.maxWaiting}</td>
+                      <td className="py-2.5 pr-4">{p.completedToday}</td>
+                      <td className="py-2.5">{p.volunteersOnline} libres ? {p.volunteersBusy} ocupados</td>
                     </tr>
                   ))}
                 </tbody>

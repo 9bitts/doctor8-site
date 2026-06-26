@@ -17,6 +17,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
+import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
+import {
+  getActiveCampaignForRegion,
+  getPatientActiveHumanitarianEntry,
+} from "@/lib/humanitarian/notify";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -86,6 +91,8 @@ export default async function PatientDashboard() {
     activeQueue,
     subscription,
     userRow,
+    humanitarianCampaign,
+    humanitarianEntry,
   ] = await Promise.all([
     db.prescription.count({
       where: { document: { patientId: patient.id } },
@@ -117,6 +124,8 @@ export default async function PatientDashboard() {
       where: { id: userId },
       select: { region: true },
     }),
+    getActiveCampaignForRegion(session.user.region),
+    getPatientActiveHumanitarianEntry(userId),
   ]);
 
   const hasActiveClub =
@@ -196,6 +205,7 @@ export default async function PatientDashboard() {
     {
       title: t("pdash.quick.group.attend"),
       items: [
+        { href: "/humanitarian/venezuela-terremoto-2026", labelKey: "nav.humanitarian", icon: <Heart size={20} />, accent: "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200" },
         { href: "/urgent", labelKey: "nav.urgent", icon: <Radio size={20} />, accent: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
         { href: "/patient/find", labelKey: "nav.find", icon: <MapPin size={20} />, accent: "bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200" },
         { href: "/patient/appointments", labelKey: "nav.appointments", icon: <Calendar size={20} />, accent: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200" },
@@ -234,6 +244,17 @@ export default async function PatientDashboard() {
         subscribed={hasActiveClub}
         defaultRegion={userRow?.region || session.user.region}
       />
+
+      {(humanitarianCampaign || userRow?.region === "VE") && (
+        <HumanitarianBanner
+          lang={lang}
+          campaign={{
+            slug: humanitarianCampaign?.slug ?? "venezuela-terremoto-2026",
+            name: humanitarianCampaign?.name ?? translate(lang, "hum.banner.title"),
+          }}
+          entry={humanitarianEntry}
+        />
+      )}
 
       {/* Header */}
       <div>

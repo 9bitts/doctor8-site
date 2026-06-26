@@ -1,19 +1,31 @@
 import { db } from "@/lib/db";
-import { createNotification } from "@/lib/notifications";
+import { decrypt } from "@/lib/encryption";
+import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
 import { DEFAULT_VENEZUELA_POOLS } from "@/lib/humanitarian/constants";
-import type { HumanitarianQueueEntry } from "@prisma/client";
+import {
+  notifyHumanitarianMissedTurn,
+  notifyHumanitarianYourTurn,
+  notifyVolunteerAssigned,
+} from "@/lib/humanitarian/notify";
+import { WAITING_ENTRY_STATUSES } from "@/lib/humanitarian/types";
+import type { HumanitarianPriority, HumanitarianQueueEntry } from "@prisma/client";
 
-const ACTIVE_ENTRY_STATUSES = ["WAITING", "CALLED", "IN_PROGRESS"] as const;
+function safeDecrypt(v: string | null | undefined): string {
+  if (!v) return "";
+  try { return decrypt(v); } catch { return v; }
+}
+
+const PRIORITY_SORT: HumanitarianPriority[] = ["CRISIS", "URGENT", "ROUTINE"];
 
 export async function expireHumanitarianNoShows(poolId: string): Promise<number> {
-  const now = new Date();
   const pool = await db.humanitarianPool.findUnique({
     where: { id: poolId },
     include: { campaign: true },
   });
   if (!pool) return 0;
 
+  const now = new Date();
   const expired = await db.humanitarianQueueEntry.findMany({
     where: {
       poolId,
@@ -39,22 +51,10 @@ export async function expireHumanitarianNoShows(poolId: string): Promise<number>
         : []),
     ]);
 
-    await createNotification({
-      userId: e.patientUserId,
-      title: "Perdiste tu turno",
-      body: "No entraste a tiempo. Si a?n necesitas atenci?n, vuelve a unirte a la fila.",
-      type: "system",
-      data: {
-        titleKey: "hum.notif.missed.title",
-        bodyKey: "hum.notif.missed.body",
-      },
-    }).catch(() => {});
+    await notifyHumanitarianMissedTurn(e.patientUserId, pool.campaign.slug);
 
     if (e.volunteerId) {
-      const vol = await db.humanitarianVolunteer.findUnique({ where: { id: e.volunteerId } });
-      if (vol?.status === "ONLINE") {
-        await assignNextInPool(vol.poolId);
-      }
+      await assignNextInPool(poolId);
     }
   }
 
@@ -63,11 +63,16 @@ export async function expireHumanitarianNoShows(poolId: string): Promise<number>
 
 export async function assignNextInPool(poolId: string): Promise<HumanitarianQueueEntry | null> {
   await expireHumanitarianNoShows(poolId);
+  return tryAssignOnce(poolId);
+}
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const assigned = await tryAssignOnce(poolId);
-    if (assigned) return assigned;
-    break;
+async function findNextWaitingEntry(poolId: string) {
+  for (const priority of PRIORITY_SORT) {
+    const entry = await db.humanitarianQueueEntry.findFirst({
+      where: { poolId, status: "WAITING", priority },
+      orderBy: { position: "asc" },
+    });
+    if (entry) return entry;
   }
   return null;
 }
@@ -79,10 +84,7 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
   });
   if (!pool || !pool.campaign.active) return null;
 
-  const entry = await db.humanitarianQueueEntry.findFirst({
-    where: { poolId, status: "WAITING" },
-    orderBy: { position: "asc" },
-  });
+  const entry = await findNextWaitingEntry(poolId);
   if (!entry) return null;
 
   const volunteer = await db.humanitarianVolunteer.findFirst({
@@ -133,20 +135,52 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
 
     if (!updated) return null;
 
-    await createNotification({
-      userId: updated.patientUserId,
-      title: "?Es tu turno!",
-      body: "Un profesional est? listo para atenderte. Tienes 3 minutos para entrar.",
-      type: "message",
-      data: {
-        entryId: updated.id,
-        meetingUrl: updated.meetingUrl,
-        titleKey: "hum.notif.yourTurn.title",
-        bodyKey: "hum.notif.yourTurn.body",
+    const full = await db.humanitarianQueueEntry.findUnique({
+      where: { id: updated.id },
+      include: {
+        volunteer: {
+          include: {
+            professional: { select: { firstName: true, lastName: true } },
+            psychoanalyst: { select: { firstName: true, lastName: true } },
+          },
+        },
+        pool: { include: { campaign: { select: { slug: true } } } },
       },
-    }).catch(() => {});
+    });
+    if (!full) return updated;
 
-    return updated;
+    let professionalName: string | null = null;
+    if (full.volunteer?.professional) {
+      const p = full.volunteer.professional;
+      professionalName = `Dr. ${p.firstName} ${p.lastName}`;
+    } else if (full.volunteer?.psychoanalyst) {
+      const p = full.volunteer.psychoanalyst;
+      professionalName = `${p.firstName} ${p.lastName}`;
+    }
+
+    const patientProfile = await db.patientProfile.findUnique({
+      where: { userId: full.patientUserId },
+      select: { firstName: true, lastName: true },
+    });
+    const patientName = patientProfile
+      ? `${safeDecrypt(patientProfile.firstName)} ${safeDecrypt(patientProfile.lastName)}`.trim()
+      : "Paciente";
+
+    await notifyHumanitarianYourTurn({
+      patientUserId: full.patientUserId,
+      entryId: full.id,
+      campaignSlug: full.pool.campaign.slug,
+      professionalName,
+    });
+
+    await notifyVolunteerAssigned({
+      volunteerUserId: volunteer.userId,
+      entryId: full.id,
+      patientName,
+      chiefComplaint: full.chiefComplaint,
+    });
+
+    return full;
   } catch {
     return null;
   }
@@ -159,7 +193,14 @@ export async function completeHumanitarianEntry(
   const now = new Date();
   const entry = await db.humanitarianQueueEntry.findUnique({
     where: { id: entryId },
-    include: { volunteer: true, pool: true },
+    include: {
+      volunteer: {
+        include: {
+          professional: { select: { id: true } },
+        },
+      },
+      pool: true,
+    },
   });
   if (!entry?.volunteer || entry.volunteer.userId !== volunteerUserId) {
     throw new Error("Forbidden");
@@ -175,6 +216,12 @@ export async function completeHumanitarianEntry(
       data: { status: "ONLINE", currentEntryId: null },
     }),
   ]);
+
+  if (entry.volunteer.professionalId) {
+    await ensurePatientRecord(entry.volunteer.professionalId, entry.patientUserId).catch(
+      () => {},
+    );
+  }
 
   await assignNextInPool(entry.poolId);
 }
@@ -195,6 +242,7 @@ export async function releaseVolunteer(volunteerId: string): Promise<void> {
       },
       data: { status: "CANCELLED", endedAt: now },
     });
+    await assignNextInPool(vol.poolId);
   }
 
   await db.humanitarianVolunteer.update({
@@ -235,11 +283,18 @@ export async function getEntryStatus(entryId: string, patientUserId: string) {
   });
   if (!refreshed) return null;
 
+  const higherPriority = PRIORITY_SORT.filter(
+    (p) => PRIORITY_SORT.indexOf(p) < PRIORITY_SORT.indexOf(refreshed.priority),
+  );
+
   const aheadCount = await db.humanitarianQueueEntry.count({
     where: {
       poolId: refreshed.poolId,
       status: "WAITING",
-      position: { lt: refreshed.position },
+      OR: [
+        ...higherPriority.map((priority) => ({ priority })),
+        { priority: refreshed.priority, position: { lt: refreshed.position } },
+      ],
     },
   });
 
@@ -252,7 +307,7 @@ export async function getEntryStatus(entryId: string, patientUserId: string) {
     refreshed.status === "WAITING"
       ? Math.max(
           estMins,
-          Math.ceil(aheadCount / Math.max(onlineVolunteers, 1)) * estMins,
+          Math.ceil((aheadCount + 1) / Math.max(onlineVolunteers, 1)) * estMins,
         )
       : 0;
 
@@ -268,6 +323,7 @@ export async function getEntryStatus(entryId: string, patientUserId: string) {
   return {
     id: refreshed.id,
     status: refreshed.status,
+    priority: refreshed.priority,
     position: refreshed.position,
     aheadCount,
     estimatedWaitMinutes,
@@ -279,6 +335,7 @@ export async function getEntryStatus(entryId: string, patientUserId: string) {
     poolLabel: refreshed.pool.labelEs,
     professionalName,
     campaignActive: refreshed.pool.campaign.active,
+    campaignSlug: refreshed.pool.campaign.slug,
   };
 }
 
@@ -286,7 +343,7 @@ export async function countActiveInPool(poolId: string): Promise<number> {
   return db.humanitarianQueueEntry.count({
     where: {
       poolId,
-      status: { in: [...ACTIVE_ENTRY_STATUSES] },
+      status: { in: [...WAITING_ENTRY_STATUSES] },
     },
   });
 }

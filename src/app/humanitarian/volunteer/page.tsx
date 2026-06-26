@@ -157,8 +157,19 @@ export default function HumanitarianVolunteerPage() {
       </div>
 
       <p className="text-sm text-slate-600 leading-relaxed">
-        Entra en l?nea en la fila de tu especialidad. Los pacientes ser?n asignados autom?ticamente cuando est?s disponible.
+        Entra en linea en la fila de tu especialidad. Los pacientes seran asignados automaticamente cuando estes disponible.
       </p>
+
+      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-sm text-blue-900 space-y-2">
+        <p className="font-semibold">Guia para voluntarios</p>
+        <ul className="list-disc list-inside space-y-1 text-blue-800 text-xs sm:text-sm">
+          <li>Atencion 100% gratuita ? no cobres al paciente.</li>
+          <li>Al finalizar, haz clic en Finalizar y siguiente para recibir al proximo.</li>
+          <li>Los casos de crisis tienen prioridad en la fila.</li>
+          <li>Si no puedes continuar, sal de la fila para liberar tu lugar.</li>
+          <li>En emergencia vital presencial, orienta al paciente a buscar urgencias locales.</li>
+        </ul>
+      </div>
 
       {error && (
         <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 flex items-start gap-2">

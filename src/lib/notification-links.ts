@@ -63,7 +63,9 @@ export function resolveNotificationHref(
       if (typeof d.fromUserId === "string") {
         return `${messagesPath(role)}?with=${d.fromUserId}`;
       }
+      if (typeof d.entryId === "string") return `/video/humanitarian/${d.entryId}`;
       if (typeof d.queueId === "string") return `/video/jit/${d.queueId}`;
+      if (typeof d.link === "string" && d.link.startsWith("/")) return d.link;
       return messagesPath(role);
     }
 
@@ -119,6 +121,8 @@ export function resolveNotificationHref(
         return `${appointmentsPath(role)}?id=${d.appointmentId}`;
       }
       if (typeof d.queueId === "string") return `/video/jit/${d.queueId}`;
+      if (typeof d.entryId === "string") return `/video/humanitarian/${d.entryId}`;
+      if (typeof d.link === "string" && d.link.startsWith("/")) return d.link;
       if (typeof d.sessionId === "string") return "/urgent";
       return null;
     }

@@ -7,11 +7,13 @@ import {
   countActiveInPool,
   getEntryStatus,
 } from "@/lib/humanitarian/dispatcher";
+import { notifyHumanitarianJoined } from "@/lib/humanitarian/notify";
 
 const joinSchema = z.object({
   campaignSlug: z.string(),
   poolSlug: z.string(),
   chiefComplaint: z.string().max(2000).optional(),
+  priority: z.enum(["ROUTINE", "URGENT", "CRISIS"]).default("ROUTINE"),
 });
 
 export async function GET(req: NextRequest) {
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { campaignSlug, poolSlug, chiefComplaint } = parsed.data;
+  const { campaignSlug, poolSlug, chiefComplaint, priority } = parsed.data;
 
   const campaign = await db.humanitarianCampaign.findUnique({
     where: { slug: campaignSlug },
@@ -89,9 +91,17 @@ export async function POST(req: NextRequest) {
       poolId: pool.id,
       patientUserId: session.user.id,
       status: "WAITING",
+      priority,
       position,
       chiefComplaint: chiefComplaint || null,
     },
+  });
+
+  await notifyHumanitarianJoined({
+    patientUserId: session.user.id,
+    poolLabel: pool.labelEs,
+    position,
+    campaignSlug: campaign.slug,
   });
 
   await assignNextInPool(pool.id);

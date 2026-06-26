@@ -248,6 +248,12 @@ enum HumanitarianVolunteerStatus {
   BUSY
   OFFLINE
 }
+
+enum HumanitarianPriority {
+  ROUTINE
+  URGENT
+  CRISIS
+}
 // ─────────────────────────────────────────
 // CORE USER
 // ─────────────────────────────────────────
@@ -2159,6 +2165,7 @@ model HumanitarianQueueEntry {
   patientUser     User                     @relation("HumanitarianQueuePatient", fields: [patientUserId], references: [id], onDelete: Cascade)
 
   status          HumanitarianQueueStatus  @default(WAITING)
+  priority        HumanitarianPriority     @default(ROUTINE)
   position        Int
 
   volunteerId     String?
@@ -2179,6 +2186,7 @@ model HumanitarianQueueEntry {
   updatedAt       DateTime                 @updatedAt
 
   @@index([poolId, status, position])
+  @@index([poolId, status, priority, position])
   @@index([patientUserId, status])
   @@index([campaignId])
 }

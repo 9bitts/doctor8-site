@@ -8,6 +8,7 @@ import {
   Users, Clock, ChevronRight,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import { HUMANITARIAN_PRIORITY_OPTIONS } from "@/lib/humanitarian";
 
 interface PoolInfo {
   id: string;
@@ -54,6 +55,7 @@ export default function HumanitarianCampaignPage() {
   const [entering, setEntering] = useState(false);
   const [complaint, setComplaint] = useState("");
   const [selectedPool, setSelectedPool] = useState<string | null>(null);
+  const [priority, setPriority] = useState<"ROUTINE" | "URGENT" | "CRISIS">("ROUTINE");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -124,6 +126,7 @@ export default function HumanitarianCampaignPage() {
           campaignSlug: slug,
           poolSlug,
           chiefComplaint: complaint.trim() || undefined,
+          priority,
         }),
       });
       const data = await res.json();
@@ -332,6 +335,38 @@ export default function HumanitarianCampaignPage() {
               Unirse a: <strong className="text-white">{pools.find((p) => p.slug === selectedPool)?.label}</strong>
             </p>
             <div>
+              <label className="block text-xs text-slate-500 mb-2">Nivel de urgencia</label>
+              <div className="space-y-2">
+                {HUMANITARIAN_PRIORITY_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${
+                      priority === opt.value
+                        ? opt.value === "CRISIS"
+                          ? "border-rose-400 bg-rose-500/10"
+                          : opt.value === "URGENT"
+                            ? "border-amber-400 bg-amber-500/10"
+                            : "border-emerald-400/50 bg-emerald-500/5"
+                        : "border-white/10 bg-slate-900/50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="priority"
+                      value={opt.value}
+                      checked={priority === opt.value}
+                      onChange={() => setPriority(opt.value)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-white">{opt.labelEs}</p>
+                      <p className="text-xs text-slate-500">{opt.descEs}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
               <label className="block text-xs text-slate-500 mb-1.5">Motivo de consulta (opcional)</label>
               <textarea
                 value={complaint}
@@ -359,8 +394,12 @@ export default function HumanitarianCampaignPage() {
           </div>
         )}
 
-        <p className="text-center text-xs text-slate-600 mt-10">
-          Doctor8 ? Voluntarios de salud ? Sin costo
+        <p className="text-center text-xs text-slate-500 mt-6 px-4 leading-relaxed">
+          Si tienes una emergencia que pone en riesgo tu vida, busca atencion presencial de urgencia inmediata.
+          Este servicio no reemplaza ambulancias ni hospitales.
+        </p>
+        <p className="text-center text-xs text-slate-600 mt-4">
+          Doctor8 - Voluntarios de salud - Sin costo
         </p>
       </div>
     </div>
