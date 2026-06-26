@@ -91,6 +91,18 @@ enum VaccineNetwork {
   OTHER
 }
 
+enum OdontogramCondition {
+  HEALTHY
+  CARIES
+  RESTORATION
+  MISSING
+  CROWN
+  IMPLANT
+  ROOT_CANAL
+  FRACTURE
+  TO_EXTRACT
+}
+
 enum ClinicalRecordKind {
   ANAMNESIS
   EVOLUTION
@@ -370,6 +382,7 @@ model ProfessionalProfile {
   chartSharesCreated    PatientRecordShare[] @relation("ChartSharesCreated")
   chartSharesReceived   PatientRecordShare[] @relation("ChartSharesReceived")
   vaccinationsRecorded  PatientVaccination[]
+  odontogramsRecorded   PatientOdontogram[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -1047,6 +1060,7 @@ model PatientRecord {
   diagnoses        PatientDiagnosis[]
   metricSnapshots  ClinicalMetricSnapshot[]
   vaccinations     PatientVaccination[]
+  odontogram         PatientOdontogram?
   colleagueShares  PatientRecordShare[]
 
   createdAt       DateTime @default(now())
@@ -1233,6 +1247,28 @@ model PatientVaccination {
 
   @@index([patientRecordId])
   @@index([patientRecordId, vaccineCode])
+}
+
+// ────────────────────────────────────────────
+// PHASE 8C — Dental chart (odontogram, FDI notation)
+// ────────────────────────────────────────────
+
+model PatientOdontogram {
+  id              String        @id @default(cuid())
+  patientRecordId String        @unique
+  patientRecord   PatientRecord @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+
+  // JSON map: FDI tooth number -> { condition, surfaces?, notes? }
+  teeth           Json          @default("{}")
+  generalNotes    String?       @db.Text
+
+  recordedById    String?
+  recordedBy      ProfessionalProfile? @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([patientRecordId])
 }
 
 // Analysand chart — separate from medical PatientRecord
