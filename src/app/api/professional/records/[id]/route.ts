@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
+import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -42,8 +43,13 @@ export async function GET(
     return NextResponse.json({ error: "No profile" }, { status: 404 });
   }
 
+  const access = await resolveChartAccess(professional.id, params.id);
+  if (!access) {
+    return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  }
+
   const record = await db.patientRecord.findFirst({
-    where: { id: params.id, professionalId: professional.id },
+    where: { id: params.id },
     include: {
       medicalDocuments: {
         orderBy: { createdAt: "desc" },
@@ -86,8 +92,13 @@ export async function PATCH(
     return NextResponse.json({ error: "No profile" }, { status: 404 });
   }
 
+  const access = await resolveChartAccess(professional.id, params.id);
+  if (!canEditChart(access)) {
+    return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  }
+
   const record = await db.patientRecord.findFirst({
-    where: { id: params.id, professionalId: professional.id },
+    where: { id: params.id },
   });
   if (!record) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });

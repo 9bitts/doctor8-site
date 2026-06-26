@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
 import { serializeRecordContent, parseRecordContent, countRecordAttachments } from "@/lib/record-content";
+import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 
 const patchSchema = z.object({
   categoryId: z.string().optional(),
@@ -52,7 +53,7 @@ export async function PATCH(
   const document = await db.medicalDocument.findUnique({
     where: { id: params.id },
     include: {
-      patientRecord: { select: { professionalId: true } },
+      patientRecord: { select: { id: true, professionalId: true } },
       category: { select: { name: true, groupName: true } },
     },
   });
@@ -61,7 +62,10 @@ export async function PATCH(
   if (document.sourceDocumentId) {
     return NextResponse.json({ error: "Shared records cannot be edited" }, { status: 403 });
   }
-  if (document.professionalId !== professional.id) {
+  const recordId = document.patientRecord?.id;
+  if (!recordId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const access = await resolveChartAccess(professional.id, recordId);
+  if (!canEditChart(access)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

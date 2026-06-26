@@ -2,16 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireProfessional } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
+import { getRecordWithAccess } from "@/lib/chart-access";
 
 const patchSchema = z.object({
   status: z.enum(["ACTIVE", "RESOLVED"]),
 });
-
-async function getOwnedRecord(professionalId: string, recordId: string) {
-  return db.patientRecord.findFirst({
-    where: { id: recordId, professionalId },
-  });
-}
 
 export async function PATCH(
   req: NextRequest,
@@ -21,8 +16,9 @@ export async function PATCH(
   if ("error" in ctx) return ctx.error;
   const { professional } = ctx;
 
-  const record = await getOwnedRecord(professional.id, params.id);
-  if (!record) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const found = await getRecordWithAccess(professional.id, params.id, true);
+  if (!found) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const { record } = found;
 
   const existing = await db.patientDiagnosis.findFirst({
     where: { id: params.diagId, patientRecordId: record.id },
@@ -61,8 +57,9 @@ export async function DELETE(
   if ("error" in ctx) return ctx.error;
   const { professional } = ctx;
 
-  const record = await getOwnedRecord(professional.id, params.id);
-  if (!record) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const found = await getRecordWithAccess(professional.id, params.id, true);
+  if (!found) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const { record } = found;
 
   const existing = await db.patientDiagnosis.findFirst({
     where: { id: params.diagId, patientRecordId: record.id },

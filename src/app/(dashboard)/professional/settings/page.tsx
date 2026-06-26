@@ -176,6 +176,23 @@ export default function ProfessionalSettings() {
       <PracticeSettings apiPath="/api/professional/practice" />
 
       <a
+        href="/professional/settings/clinic"
+        className="block bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:border-brand-200 transition group"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <Building2 size={18} className="text-brand-500" /> {t("clinic.settingsCardTitle")}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">{t("clinic.settingsCardDesc")}</p>
+          </div>
+          <span className="text-brand-500 text-sm font-semibold group-hover:underline shrink-0">
+            {t("clinic.manage")} →
+          </span>
+        </div>
+      </a>
+
+      <a
         href="/professional/settings/templates"
         className="block bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:border-brand-200 transition group"
       >

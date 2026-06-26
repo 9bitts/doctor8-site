@@ -24,6 +24,7 @@ import MetricsEvolutionPanel from "@/components/professional/MetricsEvolutionPan
 import DiagnosesPanel from "@/components/professional/DiagnosesPanel";
 import ClinicalCalculators from "@/components/professional/ClinicalCalculators";
 import ImageCompareModal from "@/components/professional/ImageCompareModal";
+import ChartSharePanel from "@/components/professional/ChartSharePanel";
 import {
   RecordTimelineFilters,
   PinnedAnamnesisCard,
@@ -234,11 +235,19 @@ export default function RecordDetailClient({
   chart,
   initialDocuments,
   initialTags = [],
+  chartAccess = "owner",
+  readOnly = false,
+  ownerName,
 }: {
   chart: Chart;
   initialDocuments: Doc[];
   initialTags?: ChartTag[];
+  chartAccess?: "owner" | "edit" | "view";
+  readOnly?: boolean;
+  ownerName?: string;
 }) {
+  const isOwner = chartAccess === "owner";
+  const canEdit = !readOnly && chartAccess !== "view";
   const { lang, t } = useI18n();
   const searchParams = useSearchParams();
   // Detect current language via a known key, then serve inline rec.* texts
@@ -750,6 +759,19 @@ export default function RecordDetailClient({
         <ArrowLeft size={16} /> Back to patients
       </Link>
 
+      {!isOwner && ownerName && (
+        <div className={`rounded-xl border px-4 py-3 text-sm ${
+          readOnly
+            ? "bg-amber-50 border-amber-200 text-amber-800"
+            : "bg-sky-50 border-sky-200 text-sky-800"
+        }`}>
+          <AlertCircle size={16} className="inline mr-2 -mt-0.5" />
+          {readOnly
+            ? t("chart.access.view").replace("{{owner}}", ownerName)
+            : t("chart.access.edit").replace("{{owner}}", ownerName)}
+        </div>
+      )}
+
       {/* Chart header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
         <div className="flex items-start gap-4">
@@ -811,7 +833,13 @@ export default function RecordDetailClient({
           </div>
         </div>
 
-        <PatientChartTags chartId={chart.id} initialTags={initialTags} />
+        <PatientChartTags chartId={chart.id} initialTags={initialTags} readOnly={!canEdit} />
+
+        {isOwner && (
+          <div className="mt-3">
+            <ChartSharePanel chartId={chart.id} />
+          </div>
+        )}
 
         <div className="mt-4 pt-4 border-t border-slate-100">
           <ReferralPanel chartId={chart.id} />
@@ -821,7 +849,7 @@ export default function RecordDetailClient({
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Dados para a receita</p>
-            {!editingReg && (
+            {!editingReg && canEdit && isOwner && (
               <button
                 onClick={openRegEditor}
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
@@ -963,7 +991,7 @@ export default function RecordDetailClient({
         </div>
 
         {/* ── Etapa 3c: email & invite management (only meaningful when no account) ── */}
-        {!hasAccount && (
+        {isOwner && !hasAccount && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Patient access</p>
 
@@ -1079,7 +1107,7 @@ export default function RecordDetailClient({
       </div>
 
       {chartTab === "evolution" && <MetricsEvolutionPanel chartId={chart.id} />}
-      {chartTab === "diagnoses" && <DiagnosesPanel chartId={chart.id} />}
+      {chartTab === "diagnoses" && <DiagnosesPanel chartId={chart.id} readOnly={!canEdit} />}
 
       {chartTab === "records" && (
       <>
@@ -1094,12 +1122,14 @@ export default function RecordDetailClient({
           >
             <Columns2 size={18} /> {t("compare.open")}
           </button>
+          {canEdit && (
           <button
             onClick={openNewRecordForm}
             className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
           >
             <Plus size={18} /> {t("timeline.addRecord")}
           </button>
+          )}
         </div>
       </div>
 
@@ -1230,7 +1260,7 @@ export default function RecordDetailClient({
                     >
                       <Printer size={14} /> {rt("print")}
                     </button>
-                    {d.canEdit !== false && !d.sourceDocumentId && !isPsychologyStructuredContent(d.content) && (
+                    {canEdit && d.canEdit !== false && !d.sourceDocumentId && !isPsychologyStructuredContent(d.content) && (
                       <button
                         type="button"
                         onClick={() => openEditForm(d)}
@@ -1240,6 +1270,8 @@ export default function RecordDetailClient({
                       </button>
                     )}
                     <AiSummarizeButton documentId={d.id} />
+                    {isOwner && (
+                    <>
                     {status === "shared" ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">
                         <CheckCircle2 size={14} /> Shared with patient
@@ -1285,6 +1317,8 @@ export default function RecordDetailClient({
                         {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
                         Share with patient
                       </button>
+                    )}
+                    </>
                     )}
                   </div>
                 </div>

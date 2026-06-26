@@ -14,7 +14,7 @@ export type DiagnosisItem = {
   resolvedAt: string | null;
 };
 
-export default function DiagnosesPanel({ chartId }: { chartId: string }) {
+export default function DiagnosesPanel({ chartId, readOnly = false }: { chartId: string; readOnly?: boolean }) {
   const { t, lang } = useI18n();
   const [loading, setLoading] = useState(true);
   const [diagnoses, setDiagnoses] = useState<DiagnosisItem[]>([]);
@@ -110,6 +110,8 @@ export default function DiagnosesPanel({ chartId }: { chartId: string }) {
               </p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              {!readOnly && (
+              <>
               {d.status === "ACTIVE" ? (
                 <button
                   type="button"
@@ -137,6 +139,8 @@ export default function DiagnosesPanel({ chartId }: { chartId: string }) {
               >
                 <Trash2 size={16} />
               </button>
+              </>
+              )}
             </div>
           </li>
         ))}
@@ -146,6 +150,7 @@ export default function DiagnosesPanel({ chartId }: { chartId: string }) {
 
   return (
     <div className="space-y-4">
+      {!readOnly && (
       <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
         <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
           <Stethoscope size={16} className="text-brand-500" /> {t("diag.addTitle")}
@@ -162,6 +167,7 @@ export default function DiagnosesPanel({ chartId }: { chartId: string }) {
           {t("diag.add")}
         </button>
       </div>
+      )}
 
       {active.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">

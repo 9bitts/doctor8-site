@@ -74,6 +74,17 @@ enum DiagnosisStatus {
   RESOLVED
 }
 
+enum ChartSharePermission {
+  VIEW
+  EDIT
+}
+
+enum ClinicMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 enum ClinicalRecordKind {
   ANAMNESIS
   EVOLUTION
@@ -348,6 +359,10 @@ model ProfessionalProfile {
 
   documentTemplates     DocumentTemplate[]
   prescriptionTemplates PrescriptionTemplate[]
+
+  clinicMemberships     ClinicMember[]
+  chartSharesCreated    PatientRecordShare[] @relation("ChartSharesCreated")
+  chartSharesReceived   PatientRecordShare[] @relation("ChartSharesReceived")
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -1024,6 +1039,7 @@ model PatientRecord {
   tags             PatientRecordTag[]
   diagnoses        PatientDiagnosis[]
   metricSnapshots  ClinicalMetricSnapshot[]
+  colleagueShares  PatientRecordShare[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1032,6 +1048,59 @@ model PatientRecord {
   @@index([email])
   @@index([linkedUserId])
 
+}
+
+// ────────────────────────────────────────────
+// PHASE 7 — Clinic teams & chart sharing between professionals
+// ────────────────────────────────────────────
+
+model Clinic {
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique @default(cuid())
+
+  members    ClinicMember[]
+  chartShares PatientRecordShare[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ClinicMember {
+  id             String           @id @default(cuid())
+  clinicId       String
+  clinic         Clinic           @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  role           ClinicMemberRole @default(MEMBER)
+
+  joinedAt       DateTime         @default(now())
+
+  @@unique([clinicId, professionalId])
+  @@index([professionalId])
+}
+
+model PatientRecordShare {
+  id                     String               @id @default(cuid())
+  patientRecordId        String
+  patientRecord          PatientRecord        @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  sharedByProfessionalId String
+  sharedBy               ProfessionalProfile  @relation("ChartSharesCreated", fields: [sharedByProfessionalId], references: [id], onDelete: Cascade)
+
+  sharedWithProfessionalId String?
+  sharedWithProfessional     ProfessionalProfile? @relation("ChartSharesReceived", fields: [sharedWithProfessionalId], references: [id], onDelete: Cascade)
+  clinicId                 String?
+  clinic                   Clinic?              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  permission             ChartSharePermission @default(VIEW)
+  revokedAt              DateTime?
+
+  createdAt              DateTime             @default(now())
+
+  @@index([patientRecordId])
+  @@index([sharedWithProfessionalId])
+  @@index([clinicId])
+  @@index([sharedByProfessionalId])
 }
 
 // ────────────────────────────────────────────

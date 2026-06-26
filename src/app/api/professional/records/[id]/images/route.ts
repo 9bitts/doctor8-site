@@ -5,6 +5,7 @@ import { requireProfessional } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
 import { getSignedReadUrl } from "@/lib/s3";
 import { collectFileKeys, fileKind, fileNameFromKey } from "@/lib/record-files";
+import { getRecordWithAccess } from "@/lib/chart-access";
 
 export async function GET(
   _req: NextRequest,
@@ -14,11 +15,9 @@ export async function GET(
   if ("error" in ctx) return ctx.error;
   const { professional } = ctx;
 
-  const record = await db.patientRecord.findFirst({
-    where: { id: params.id, professionalId: professional.id },
-    select: { id: true },
-  });
-  if (!record) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const found = await getRecordWithAccess(professional.id, params.id);
+  if (!found) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const { record } = found;
 
   const documents = await db.medicalDocument.findMany({
     where: { patientRecordId: record.id },

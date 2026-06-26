@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessional } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
-
-async function getOwnedRecord(professionalId: string, recordId: string) {
-  return db.patientRecord.findFirst({
-    where: { id: recordId, professionalId },
-  });
-}
+import { getRecordWithAccess } from "@/lib/chart-access";
 
 export async function GET(
   _req: NextRequest,
@@ -16,8 +11,9 @@ export async function GET(
   if ("error" in ctx) return ctx.error;
   const { professional } = ctx;
 
-  const record = await getOwnedRecord(professional.id, params.id);
-  if (!record) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const found = await getRecordWithAccess(professional.id, params.id);
+  if (!found) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const { record } = found;
 
   const snapshots = await db.clinicalMetricSnapshot.findMany({
     where: { patientRecordId: record.id },

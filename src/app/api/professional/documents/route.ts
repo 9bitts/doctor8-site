@@ -14,6 +14,7 @@ import {
   computeBmi, hasAnyMetric, parseMetricsPayload,
 } from "@/lib/clinical-metrics";
 import { createMetricSnapshot, upsertActiveDiagnosis } from "@/lib/clinical-diagnosis";
+import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 
 const DOC_TYPES = [
   "PRESCRIPTION",
@@ -67,11 +68,13 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
 
-  // Verify the chart belongs to this professional
-  const record = await db.patientRecord.findUnique({ where: { id: d.patientRecordId } });
-  if (!record || record.professionalId !== professional.id) {
+  // Verify chart access (owner or colleague with EDIT)
+  const access = await resolveChartAccess(professional.id, d.patientRecordId);
+  if (!canEditChart(access)) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   }
+  const record = await db.patientRecord.findUnique({ where: { id: d.patientRecordId } });
+  if (!record) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
 
   // Resolve the category (if provided) and derive the legacy enum type.
   let categoryId: string | null = null;
@@ -120,7 +123,7 @@ export async function POST(req: NextRequest) {
     const doc = await db.medicalDocument.create({
       data: {
         patientRecordId: d.patientRecordId,
-        professionalId: professional.id,
+        professionalId: record.professionalId,
         categoryId,
         type: derivedType,
         recordKind: d.recordKind || "OTHER",

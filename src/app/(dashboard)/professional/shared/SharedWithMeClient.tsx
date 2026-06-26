@@ -11,7 +11,19 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryLabel } from "@/lib/category-i18n";
 import {
   FileText, Download, Loader2, Tag, User, FolderPlus, FolderOpen, FilePlus2, CheckCircle2,
+  Users, Eye, Pencil,
 } from "lucide-react";
+
+interface TeamChart {
+  shareId: string;
+  recordId: string;
+  permission: string;
+  patientName: string;
+  ownerName: string;
+  ownerSpecialty: string;
+  sharedVia: string;
+  sharedAt: string;
+}
 
 interface Item {
   shareId: string;
@@ -45,6 +57,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
   const { lang, t } = useI18n();
   const router = useRouter();
   const [items, setItems] = useState<Item[]>(initialItems);
+  const [teamCharts, setTeamCharts] = useState<TeamChart[]>([]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -54,9 +67,15 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
     let active = true;
     (async () => {
       try {
-        const res = await fetch("/api/professional/shared");
-        const data = await res.json();
-        if (active && Array.isArray(data.items)) setItems(data.items);
+        const [sharedRes, chartsRes] = await Promise.all([
+          fetch("/api/professional/shared"),
+          fetch("/api/professional/records/shared-charts"),
+        ]);
+        const sharedData = await sharedRes.json();
+        const chartsData = await chartsRes.json();
+        if (!active) return;
+        if (Array.isArray(sharedData.items)) setItems(sharedData.items);
+        if (Array.isArray(chartsData.charts)) setTeamCharts(chartsData.charts);
       } catch { /* keep initial */ }
     })();
     return () => { active = false; };
@@ -128,6 +147,42 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
         <h1 className="text-2xl font-bold text-slate-900">{t("shared.title")}</h1>
         <p className="text-slate-500 mt-1">{t("shared.subtitle")}</p>
       </div>
+
+      {teamCharts.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <Users size={18} className="text-brand-500" /> {t("shared.teamChartsTitle")}
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">{t("shared.teamChartsHint")}</p>
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {teamCharts.map((c) => (
+              <li key={c.shareId} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-800">{c.patientName}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {c.ownerName} · {c.ownerSpecialty}
+                    {c.sharedVia !== "direct" && ` · ${c.sharedVia}`}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    {new Date(c.sharedAt).toLocaleDateString()}
+                    {" · "}
+                    {c.permission === "EDIT" ? t("clinic.permEdit") : t("clinic.permView")}
+                  </p>
+                </div>
+                <Link
+                  href={`/professional/patients/${c.recordId}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-3 py-2 rounded-lg shrink-0"
+                >
+                  {c.permission === "EDIT" ? <Pencil size={14} /> : <Eye size={14} />}
+                  {t("shared.openChart")}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {items.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">

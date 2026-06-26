@@ -25,9 +25,11 @@ function kindStyle(kind: ChartTag["kind"]) {
 export default function PatientChartTags({
   chartId,
   initialTags = [],
+  readOnly = false,
 }: {
   chartId: string;
   initialTags?: ChartTag[];
+  readOnly?: boolean;
 }) {
   const { t } = useI18n();
   const [tags, setTags] = useState<ChartTag[]>(initialTags);
@@ -77,7 +79,7 @@ export default function PatientChartTags({
         <p className="text-xs font-medium text-slate-400 uppercase tracking-wide flex items-center gap-1">
           <Tag size={12} /> {t("tag.sectionTitle")}
         </p>
-        {!adding && (
+        {!adding && !readOnly && (
           <button
             type="button"
             onClick={() => setAdding(true)}
@@ -95,6 +97,7 @@ export default function PatientChartTags({
             className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${kindStyle(tag.kind)}`}
           >
             {tag.label}
+            {!readOnly && (
             <button
               type="button"
               onClick={() => removeTag(tag.id)}
@@ -103,6 +106,7 @@ export default function PatientChartTags({
             >
               <X size={12} />
             </button>
+            )}
           </span>
         ))}
         {tags.length === 0 && !adding && (

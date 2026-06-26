@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { decrypt } from "@/lib/encryption";
 import { countRecordAttachments } from "@/lib/record-content";
+import { resolveChartAccess, auditChartView } from "@/lib/chart-access";
 import { Suspense } from "react";
 import RecordDetailClient from "./RecordDetailClient";
 
@@ -33,6 +34,7 @@ export default async function PatientChartDetail({
   const record = await db.patientRecord.findUnique({
     where: { id: params.id },
     include: {
+      professional: { select: { firstName: true, lastName: true } },
       tags: { orderBy: { createdAt: "asc" } },
       medicalDocuments: {
         orderBy: { createdAt: "desc" },
@@ -41,7 +43,14 @@ export default async function PatientChartDetail({
     },
   });
 
-  if (!record || record.professionalId !== professional.id) notFound();
+  if (!record) notFound();
+
+  const access = await resolveChartAccess(professional.id, params.id);
+  if (!access) notFound();
+
+  await auditChartView(session.user.id, record.id, access);
+
+  const readOnly = access.level === "view";
 
   const chart = {
     id: record.id,
@@ -88,6 +97,13 @@ export default async function PatientChartDetail({
           kind: tag.kind,
           label: tag.label,
         }))}
+        chartAccess={access.level}
+        readOnly={readOnly}
+        ownerName={
+          access.level !== "owner"
+            ? `${record.professional.firstName} ${record.professional.lastName}`
+            : undefined
+        }
       />
     </Suspense>
   );

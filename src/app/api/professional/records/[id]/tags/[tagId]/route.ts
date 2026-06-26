@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessional } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
+import { getRecordWithAccess } from "@/lib/chart-access";
 
 export async function DELETE(
   _req: NextRequest,
@@ -10,10 +11,9 @@ export async function DELETE(
   if ("error" in ctx) return ctx.error;
   const { professional } = ctx;
 
-  const record = await db.patientRecord.findFirst({
-    where: { id: params.id, professionalId: professional.id },
-  });
-  if (!record) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const found = await getRecordWithAccess(professional.id, params.id, true);
+  if (!found) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  const { record } = found;
 
   const tag = await db.patientRecordTag.findFirst({
     where: { id: params.tagId, patientRecordId: record.id },
