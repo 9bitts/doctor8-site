@@ -69,6 +69,11 @@ enum PatientRecordTagKind {
   OTHER
 }
 
+enum DiagnosisStatus {
+  ACTIVE
+  RESOLVED
+}
+
 enum MedicationFlow {
   CLINICAL    // Goes to patient medical history — shared with doctor
   PURCHASE    // Goes to collective purchase list — NOT clinical
@@ -1004,6 +1009,8 @@ model PatientRecord {
   medicalDocuments MedicalDocument[]
   resourceShares   ResourceShare[]
   tags             PatientRecordTag[]
+  diagnoses        PatientDiagnosis[]
+  metricSnapshots  ClinicalMetricSnapshot[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1061,6 +1068,51 @@ model PatientRecordTag {
   createdAt       DateTime             @default(now())
 
   @@index([patientRecordId])
+}
+
+// ────────────────────────────────────────────
+// PHASE 2 — Clinical metrics & diagnoses
+// ────────────────────────────────────────────
+
+model PatientDiagnosis {
+  id               String          @id @default(cuid())
+  patientRecordId  String
+  patientRecord    PatientRecord   @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+
+  cidCode          String
+  cidLabel         String?
+  status           DiagnosisStatus @default(ACTIVE)
+  notedAt          DateTime        @default(now())
+  resolvedAt       DateTime?
+  sourceDocumentId String?
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([patientRecordId])
+  @@index([patientRecordId, status])
+}
+
+model ClinicalMetricSnapshot {
+  id              String        @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  documentId      String?
+
+  recordedAt      DateTime      @default(now())
+  weightKg        Float?
+  heightCm        Float?
+  systolicBp      Int?
+  diastolicBp     Int?
+  heartRate       Int?
+  glucoseMgDl     Float?
+  temperatureC    Float?
+  spo2Percent     Int?
+  bmi             Float?
+
+  createdAt       DateTime      @default(now())
+
+  @@index([patientRecordId, recordedAt])
 }
 
 // Analysand chart — separate from medical PatientRecord

@@ -1,5 +1,6 @@
-// Helpers for clinical record content (CID, exam items, plain text, psychology notes).
+// Helpers for clinical record content (CID, exam items, plain text, psychology notes, metrics).
 
+import { formatMetricsSummary, type ClinicalMetricsInput } from "@/lib/clinical-metrics";
 import { formatSessionNoteBody, type SessionFormat } from "@/lib/psychology-templates";
 import { getScale, type ScaleId } from "@/lib/psychology-scales";
 
@@ -9,6 +10,7 @@ export interface RecordContent {
   body?: string;
   items?: string[];
   notes?: string;
+  metrics?: ClinicalMetricsInput;
   /** Additional S3 keys beyond fileUrl (multi-attachment records). */
   attachments?: string[];
 }
@@ -64,11 +66,14 @@ export function parseRecordContent(raw: string | null): RecordContent {
           cidLabel: parsed.cidLabel || "",
         };
       }
-      if (parsed.cid || parsed.body || parsed.cidLabel || Array.isArray(parsed.attachments)) {
+      if (parsed.cid || parsed.body || parsed.cidLabel || Array.isArray(parsed.attachments) || parsed.metrics) {
         return {
           cid: parsed.cid || "",
           cidLabel: parsed.cidLabel || "",
           body: parsed.body || "",
+          metrics: parsed.metrics && typeof parsed.metrics === "object"
+            ? parsed.metrics as ClinicalMetricsInput
+            : undefined,
           attachments: Array.isArray(parsed.attachments)
             ? parsed.attachments.filter((k: unknown) => typeof k === "string" && k.trim())
             : undefined,
@@ -89,11 +94,12 @@ export function serializeRecordContent(data: RecordContent): string {
       ...(data.attachments?.length ? { attachments: data.attachments } : {}),
     });
   }
-  if (data.cid || data.cidLabel || data.attachments?.length) {
+  if (data.cid || data.cidLabel || data.attachments?.length || data.metrics) {
     return JSON.stringify({
       cid: data.cid || "",
       cidLabel: data.cidLabel || "",
       body: data.body || "",
+      ...(data.metrics && Object.keys(data.metrics).length ? { metrics: data.metrics } : {}),
       ...(data.attachments?.length ? { attachments: data.attachments } : {}),
     });
   }
@@ -117,6 +123,10 @@ export function formatRecordContentForDisplay(raw: string | null): string {
   if (parsed.cid) {
     const label = parsed.cidLabel ? ` — ${parsed.cidLabel}` : "";
     lines.push(`CID: ${parsed.cid}${label}`);
+  }
+  if (parsed.metrics) {
+    const summary = formatMetricsSummary(parsed.metrics);
+    if (summary) lines.push(summary);
   }
   if (parsed.items && parsed.items.length > 0) {
     lines.push(...parsed.items.map((item, i) => `${i + 1}. ${item}`));

@@ -14,10 +14,15 @@ import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film,
+  Activity, Stethoscope,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import ReferralPanel from "@/components/professional/ReferralPanel";
 import PatientChartTags, { type ChartTag } from "@/components/professional/PatientChartTags";
+import MetricsFormFields, { emptyMetrics } from "@/components/professional/MetricsFormFields";
+import MetricsEvolutionPanel from "@/components/professional/MetricsEvolutionPanel";
+import DiagnosesPanel from "@/components/professional/DiagnosesPanel";
+import { hasAnyMetric, type ClinicalMetricsInput } from "@/lib/clinical-metrics";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
@@ -223,6 +228,7 @@ export default function RecordDetailClient({
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
+  const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses">("records");
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
   const [saving, setSaving] = useState(false);
@@ -273,6 +279,8 @@ export default function RecordDetailClient({
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [metrics, setMetrics] = useState<ClinicalMetricsInput>(emptyMetrics());
+  const [addToDiagnoses, setAddToDiagnoses] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -315,6 +323,8 @@ export default function RecordDetailClient({
     setTitle("");
     setContent("");
     setFiles([]);
+    setMetrics(emptyMetrics());
+    setAddToDiagnoses(true);
     setImagePreview(null);
     setError(null);
     setEditingDoc(null);
@@ -554,6 +564,8 @@ export default function RecordDetailClient({
           content,
           cid: cidSelection.code,
           cidLabel: cidSelection.description,
+          addToDiagnoses,
+          ...(hasAnyMetric(metrics) ? { metrics } : {}),
           ...(fileKeys.length === 1 ? { fileKey: fileKeys[0] } : {}),
           ...(fileKeys.length > 0 ? { fileKeys } : {}),
         }),
@@ -961,6 +973,33 @@ export default function RecordDetailClient({
         )}
       </div>
 
+      {/* Chart tabs */}
+      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+        {([
+          { id: "records" as const, label: t("chartTab.records"), icon: FileText },
+          { id: "evolution" as const, label: t("chartTab.evolution"), icon: Activity },
+          { id: "diagnoses" as const, label: t("chartTab.diagnoses"), icon: Stethoscope },
+        ]).map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setChartTab(tab.id)}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition ${
+              chartTab === tab.id
+                ? "bg-white text-brand-700 shadow-sm"
+                : "text-slate-600 hover:text-slate-800"
+            }`}
+          >
+            <tab.icon size={15} /> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {chartTab === "evolution" && <MetricsEvolutionPanel chartId={chart.id} />}
+      {chartTab === "diagnoses" && <DiagnosesPanel chartId={chart.id} />}
+
+      {chartTab === "records" && (
+      <>
       {/* Records section */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-slate-900">Clinical records</h2>
@@ -1128,11 +1167,13 @@ export default function RecordDetailClient({
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Add / edit record modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
               <h2 className="font-bold text-slate-800">
                 {editingDoc ? rt("editRecord") : "New clinical record"}
@@ -1173,6 +1214,17 @@ export default function RecordDetailClient({
                 onChange={setCidSelection}
                 required={!editingDoc}
               />
+              {!editingDoc && cidSelection && (
+                <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={addToDiagnoses}
+                    onChange={(e) => setAddToDiagnoses(e.target.checked)}
+                    className="w-4 h-4 accent-brand-500"
+                  />
+                  {t("diag.addFromRecord")}
+                </label>
+              )}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
                   {cidSelection ? rt("titleLabel") : `${rt("titleLabel")} *`}
@@ -1193,6 +1245,9 @@ export default function RecordDetailClient({
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-none"
                 />
               </div>
+              {!editingDoc && (
+                <MetricsFormFields value={metrics} onChange={setMetrics} />
+              )}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
                   Attachment <span className="text-slate-400">(PDF, image or video — max 50MB, multiple allowed)</span>

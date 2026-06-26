@@ -10,6 +10,10 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { z } from "zod";
+import {
+  computeBmi, hasAnyMetric, parseMetricsPayload,
+} from "@/lib/clinical-metrics";
+import { createMetricSnapshot, upsertActiveDiagnosis } from "@/lib/clinical-diagnosis";
 
 const DOC_TYPES = [
   "PRESCRIPTION",
@@ -35,6 +39,8 @@ const createSchema = z.object({
   cid: z.string().max(50).optional(),
   cidLabel: z.string().max(500).optional(),
   notes: z.string().max(5000).optional(),
+  metrics: z.record(z.unknown()).optional(),
+  addToDiagnoses: z.boolean().optional(),
 });
 
 function normalizeType(v: string | null | undefined): DocType {
@@ -87,12 +93,16 @@ export async function POST(req: NextRequest) {
   let contentToStore = d.content || "";
   const allKeys = d.fileKeys?.length ? d.fileKeys : (d.fileKey ? [d.fileKey] : []);
   const primaryKey = allKeys[0] || d.fileKey || "";
+  const metricsParsed = parseMetricsPayload(d.metrics);
+  const bmi = computeBmi(metricsParsed.weightKg, metricsParsed.heightCm);
+  const hasMetrics = hasAnyMetric(metricsParsed);
 
-  if (d.cid || d.cidLabel || allKeys.length > 0) {
+  if (d.cid || d.cidLabel || allKeys.length > 0 || hasMetrics) {
     contentToStore = JSON.stringify({
       cid: d.cid || "",
       cidLabel: d.cidLabel || "",
       body: d.content || "",
+      ...(hasMetrics ? { metrics: { ...metricsParsed, ...(bmi != null ? { bmi } : {}) } } : {}),
       ...(allKeys.length > 0 ? { attachments: allKeys } : {}),
     });
   } else if (d.examItems && d.examItems.length > 0) {
@@ -117,6 +127,18 @@ export async function POST(req: NextRequest) {
         fileUrl: primaryKey ? encrypt(primaryKey) : null,
       },
     });
+
+    if (hasMetrics) {
+      await createMetricSnapshot(d.patientRecordId, doc.id, {
+        ...metricsParsed,
+        bmi,
+      });
+    }
+
+    const shouldAddDiagnosis = d.addToDiagnoses !== false;
+    if (shouldAddDiagnosis && d.cid) {
+      await upsertActiveDiagnosis(d.patientRecordId, d.cid, d.cidLabel, doc.id);
+    }
 
     return NextResponse.json({
       id: doc.id,
