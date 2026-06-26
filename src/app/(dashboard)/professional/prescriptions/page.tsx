@@ -9,7 +9,7 @@ import { localeOf } from "@/lib/i18n/translations";
 import {
   Plus, Trash2, FileText, Download, Loader2, CheckCircle2, Search,
   AlertCircle, ChevronRight, AlertTriangle, PenLine, Pill, ArrowLeft, Copy,
-  Clock, User, FlaskConical, ScrollText,
+  Clock, User, FlaskConical, ScrollText, LayoutTemplate, BookmarkPlus,
 } from "lucide-react";
 import { EmissionsSignModal, RX_STYLES, type SignTarget, type EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
 import { EmissionPostSaveFlow, type SavedEmission } from "@/components/professional/emissions/EmissionPostSaveFlow";
@@ -73,6 +73,14 @@ interface Prescription {
   signatureStatus?: string | null;
   document?: { patient?: { firstName: string; lastName: string } | null };
   medications: MedItem[];
+}
+
+interface RxTemplate {
+  id: string;
+  name: string;
+  medications: MedItem[];
+  instructions: string;
+  validDays: number;
 }
 
 function isExamDocType(type: string) {
@@ -244,6 +252,9 @@ export default function PrescriptionsPage() {
   const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
   const [signResult, setSignResult] = useState<string | null>(null);
 
+  const [rxTemplates, setRxTemplates] = useState<RxTemplate[]>([]);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
   useEffect(() => {
     fetchAll();
     loadSignConfig();
@@ -298,14 +309,17 @@ export default function PrescriptionsPage() {
   async function fetchAll() {
     setLoading(true);
     try {
-      const [rxRes, docRes] = await Promise.all([
+      const [rxRes, docRes, tplRes] = await Promise.all([
         fetch("/api/professional/prescriptions"),
         fetch("/api/professional/documents/issued"),
+        fetch("/api/professional/templates/prescriptions"),
       ]);
       const rxData = await rxRes.json();
       const docData = await docRes.json();
+      const tplData = await tplRes.json();
       setPrescriptions(rxData.prescriptions || []);
       setClinicalDocs(docData.documents || []);
+      if (tplRes.ok) setRxTemplates(tplData.templates || []);
     } finally { setLoading(false); }
   }
 
@@ -485,6 +499,47 @@ export default function PrescriptionsPage() {
   function removeMedication(index: number) { setMedications((prev) => prev.filter((_, i) => i !== index)); }
   function updateMedication(index: number, field: keyof MedItem, value: string) {
     setMedications((prev) => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
+  }
+
+  function applyRxTemplate(tpl: RxTemplate) {
+    setMedications((tpl.medications as MedItem[]).map((m) => ({ ...m })));
+    setInstructions(tpl.instructions || "");
+    setValidDays(tpl.validDays || 30);
+    setReuseSource(null);
+  }
+
+  async function saveAsRxTemplate() {
+    if (medications.length === 0 || medications.some((m) => !m.name.trim() || !m.dosage || !m.frequency)) {
+      setFormError(t("rx2.needMeds"));
+      return;
+    }
+    const name = window.prompt(t("tmpl.rxNamePrompt"));
+    if (!name?.trim()) return;
+    setSavingTemplate(true);
+    setFormError("");
+    try {
+      const cleanMeds = medications.map((m) => ({
+        name: m.name.trim(), dosage: m.dosage, frequency: m.frequency,
+        duration: m.duration, instructions: m.instructions,
+      }));
+      const res = await fetch("/api/professional/templates/prescriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          medications: cleanMeds,
+          instructions,
+          validDays,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t("tmpl.saveError"));
+      setRxTemplates((prev) => [data, ...prev]);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : t("tmpl.saveError"));
+    } finally {
+      setSavingTemplate(false);
+    }
   }
 
   async function handleSubmit() {
@@ -689,6 +744,26 @@ export default function PrescriptionsPage() {
               )}
             </div>
 
+            {rxTemplates.length > 0 && (
+              <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5">
+                <p className="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-1.5">
+                  <LayoutTemplate size={16} className="text-brand-500" /> {t("tmpl.savedRxTemplates")}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {rxTemplates.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => applyRxTemplate(tpl)}
+                      className="text-xs font-medium px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-brand-50 hover:border-brand-200 text-slate-700"
+                    >
+                      {tpl.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Add item card */}
             <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
               <div className="flex items-center justify-between gap-2">
@@ -831,10 +906,16 @@ export default function PrescriptionsPage() {
 
         {/* Sticky footer */}
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 p-4 z-20">
-            <div className="max-w-3xl mx-auto flex gap-3">
+            <div className="max-w-3xl mx-auto flex gap-2">
               <button type="button" onClick={closeCreate}
                 className="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition">
                 {t("rx2.cancel")}
+              </button>
+              <button type="button" onClick={saveAsRxTemplate} disabled={savingTemplate || medications.length === 0}
+                className="px-4 py-3.5 rounded-xl border border-brand-200 text-brand-600 font-semibold text-sm hover:bg-brand-50 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                title={t("tmpl.saveRxTemplate")}>
+                {savingTemplate ? <Loader2 size={16} className="animate-spin" /> : <BookmarkPlus size={16} />}
+                <span className="hidden sm:inline">{t("tmpl.saveRxTemplate")}</span>
               </button>
               <button type="button" onClick={handleSubmit} disabled={saving}
                 className="flex-[2] py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-brand-500/20">

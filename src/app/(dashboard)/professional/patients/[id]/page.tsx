@@ -33,6 +33,7 @@ export default async function PatientChartDetail({
   const record = await db.patientRecord.findUnique({
     where: { id: params.id },
     include: {
+      tags: { orderBy: { createdAt: "asc" } },
       medicalDocuments: {
         orderBy: { createdAt: "desc" },
         include: { category: { select: { name: true, groupName: true } } },
@@ -78,7 +79,15 @@ export default async function PatientChartDetail({
 
   return (
     <Suspense fallback={<div className="p-8 text-center text-slate-400">...</div>}>
-      <RecordDetailClient chart={chart} initialDocuments={documents} />
+      <RecordDetailClient
+        chart={chart}
+        initialDocuments={documents}
+        initialTags={record.tags.map((tag) => ({
+          id: tag.id,
+          kind: tag.kind,
+          label: tag.label,
+        }))}
+      />
     </Suspense>
   );
 }

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import ReferralPanel from "@/components/professional/ReferralPanel";
+import PatientChartTags, { type ChartTag } from "@/components/professional/PatientChartTags";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
@@ -208,9 +209,11 @@ function waPhone(raw: string): string {
 export default function RecordDetailClient({
   chart,
   initialDocuments,
+  initialTags = [],
 }: {
   chart: Chart;
   initialDocuments: Doc[];
+  initialTags?: ChartTag[];
 }) {
   const { lang, t } = useI18n();
   const searchParams = useSearchParams();
@@ -712,6 +715,8 @@ export default function RecordDetailClient({
             )}
           </div>
         </div>
+
+        <PatientChartTags chartId={chart.id} initialTags={initialTags} />
 
         <div className="mt-4 pt-4 border-t border-slate-100">
           <ReferralPanel chartId={chart.id} />

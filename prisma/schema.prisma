@@ -62,6 +62,13 @@ enum DocumentType {
   OTHER
 }
 
+enum PatientRecordTagKind {
+  ALLERGY
+  MEDICATION
+  PREGNANT
+  OTHER
+}
+
 enum MedicationFlow {
   CLINICAL    // Goes to patient medical history — shared with doctor
   PURCHASE    // Goes to collective purchase list — NOT clinical
@@ -326,6 +333,9 @@ model ProfessionalProfile {
   practiceLocations PracticeLocation[]      @relation("ProfessionalLocations")
   services          ProviderService[]       @relation("ProfessionalServices")
   slotAlerts        SlotAvailabilityAlert[] @relation("ProfessionalSlotAlerts")
+
+  documentTemplates     DocumentTemplate[]
+  prescriptionTemplates PrescriptionTemplate[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -993,6 +1003,7 @@ model PatientRecord {
   // Clinical records attached to this chart
   medicalDocuments MedicalDocument[]
   resourceShares   ResourceShare[]
+  tags             PatientRecordTag[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1001,6 +1012,55 @@ model PatientRecord {
   @@index([email])
   @@index([linkedUserId])
 
+}
+
+// ────────────────────────────────────────────
+// PHASE 1 — Templates & chart tags
+// ────────────────────────────────────────────
+
+model DocumentTemplate {
+  id             String       @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  name           String
+  documentType   DocumentType @default(CERTIFICATE)
+  title          String
+  body           String       @db.Text
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([professionalId])
+}
+
+model PrescriptionTemplate {
+  id             String   @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  name           String
+  medications    Json
+  instructions   String?  @db.Text
+  validDays      Int      @default(30)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([professionalId])
+}
+
+model PatientRecordTag {
+  id              String               @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord        @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+
+  kind            PatientRecordTagKind
+  label           String
+
+  createdAt       DateTime             @default(now())
+
+  @@index([patientRecordId])
 }
 
 // Analysand chart — separate from medical PatientRecord

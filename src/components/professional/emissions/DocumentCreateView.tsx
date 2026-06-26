@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
-  Search, User, ChevronRight, ArrowLeft, FileText, Loader2,
+  Search, User, ChevronRight, ArrowLeft, FileText, Loader2, LayoutTemplate,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 import type { Chart } from "./types";
 import type { SavedEmission } from "./EmissionPostSaveFlow";
 
@@ -13,6 +15,14 @@ const DOC_TYPES = [
   { value: "CLINICAL_NOTE", labelKey: "rx.docTypeReport" },
   { value: "OTHER", labelKey: "rx.docTypeOther" },
 ] as const;
+
+interface DocTemplate {
+  id: string;
+  name: string;
+  documentType: string;
+  title: string;
+  body: string;
+}
 
 interface DocumentCreateViewProps {
   t: (k: string) => string;
@@ -30,6 +40,9 @@ export function DocumentCreateView({
   t, charts, reuseHint, initialPatient, initialTitle, initialBody, initialType,
   onBack, onSaved,
 }: DocumentCreateViewProps) {
+  const { lang } = useI18n();
+  const locale = localeOf(lang);
+
   const [patientQuery, setPatientQuery] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(initialPatient);
   const [docType, setDocType] = useState(initialType || "CERTIFICATE");
@@ -38,9 +51,59 @@ export function DocumentCreateView({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const [templates, setTemplates] = useState<DocTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
+  const lastTemplateId = useRef<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/professional/templates/documents");
+        const data = await res.json();
+        if (active) setTemplates(data.templates || []);
+      } catch { /* ignore */ }
+      if (active) setTemplatesLoading(false);
+    })();
+    return () => { active = false; };
+  }, []);
+
   const filteredCharts = patientQuery.trim()
     ? charts.filter((c) => `${c.firstName} ${c.lastName}`.toLowerCase().includes(patientQuery.toLowerCase()))
     : charts.slice(0, 8);
+
+  async function applyTemplate(tpl: DocTemplate) {
+    lastTemplateId.current = tpl.id;
+    setApplyingTemplate(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({
+        previewId: tpl.id,
+        locale: locale,
+      });
+      if (selectedPatient?.id) params.set("patientRecordId", selectedPatient.id);
+
+      const res = await fetch(`/api/professional/templates/documents?${params}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t("tmpl.applyError"));
+
+      setDocType(tpl.documentType);
+      setTitle(data.preview?.title || tpl.title);
+      setBody(data.preview?.body || tpl.body);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("tmpl.applyError"));
+    } finally {
+      setApplyingTemplate(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!selectedPatient?.id || !lastTemplateId.current) return;
+    const tpl = templates.find((x) => x.id === lastTemplateId.current);
+    if (tpl) applyTemplate(tpl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPatient?.id]);
 
   async function handleSave() {
     setError("");
@@ -72,6 +135,10 @@ export function DocumentCreateView({
       }
     } finally { setSaving(false); }
   }
+
+  const filteredTemplates = templates.filter(
+    (tpl) => tpl.documentType === docType || templates.length <= 6,
+  );
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-24">
@@ -138,6 +205,31 @@ export function DocumentCreateView({
             </button>
           ))}
         </div>
+
+        {!templatesLoading && templates.length > 0 && (
+          <div className="pt-2 border-t border-slate-100">
+            <p className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1">
+              <LayoutTemplate size={14} /> {t("tmpl.useTemplate")}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {filteredTemplates.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  disabled={applyingTemplate}
+                  onClick={() => applyTemplate(tpl)}
+                  className="text-xs font-medium px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-brand-50 hover:border-brand-200 text-slate-700 disabled:opacity-50"
+                >
+                  {tpl.name}
+                </button>
+              ))}
+            </div>
+            {!selectedPatient && (
+              <p className="text-xs text-amber-600 mt-2">{t("tmpl.selectPatientForTags")}</p>
+            )}
+          </div>
+        )}
+
         <div>
           <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.documentTitleLabel")}</label>
           <input value={title} onChange={(e) => setTitle(e.target.value)} className="rx-inp" />
