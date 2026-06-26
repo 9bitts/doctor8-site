@@ -19,7 +19,7 @@ export function parseBillingRegion(value: unknown, fallback: BillingRegion = "US
 }
 
 export function paymentMethodsForRegion(region: BillingRegion): string[] {
-  return region === "BR" ? ["card", "pix", "boleto"] : ["card"];
+  return region === "BR" ? ["card", "boleto"] : ["card"];
 }
 
 export function billingRegionLabel(region: BillingRegion): string {

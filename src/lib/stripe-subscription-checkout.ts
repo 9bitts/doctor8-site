@@ -20,7 +20,7 @@ export function buildSubscriptionCheckoutParams(params: {
   return {
     customer: params.customerId,
     mode: "subscription" as const,
-    payment_method_types: methodTypes as ("card" | "boleto" | "pix")[],
+    payment_method_types: methodTypes as ("card" | "boleto")[],
     line_items: [{ price: params.priceId, quantity: 1 }],
     success_url: `${appUrl}${params.successPath}`,
     cancel_url: `${appUrl}${params.cancelPath}`,

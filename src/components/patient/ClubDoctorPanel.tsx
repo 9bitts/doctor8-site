@@ -15,6 +15,7 @@ import {
   PATIENT_ACCOUNT_PATH,
   type BillingRegion,
 } from "@/lib/billing-regions";
+import { readApiJson, apiErrorMessage } from "@/lib/api-client";
 
 interface SubInfo {
   status: string;
@@ -172,21 +173,13 @@ export default function ClubDoctorPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ region: billingRegion }),
       });
-      let d: { checkoutUrl?: string; error?: string; code?: string } = {};
-      try {
-        d = await res.json();
-      } catch {
-        setMsgTone("error");
-        setMsg("Resposta invalida do servidor. Tente novamente.");
-        setWorking(false);
+      const parsed = await readApiJson<{ checkoutUrl?: string; error?: string; code?: string }>(res);
+      if (parsed.data?.checkoutUrl) {
+        window.location.href = parsed.data.checkoutUrl;
         return;
       }
-      if (d.checkoutUrl) {
-        window.location.href = d.checkoutUrl;
-        return;
-      }
-      setMsgTone(d.code === "REGION_MISMATCH" ? "warning" : "error");
-      setMsg(d.error || "Nao foi possivel iniciar o checkout.");
+      setMsgTone(parsed.data?.code === "REGION_MISMATCH" ? "warning" : "error");
+      setMsg(apiErrorMessage(parsed, "Nao foi possivel iniciar o checkout."));
       setWorking(false);
     } catch {
       setMsgTone("error");
@@ -381,7 +374,7 @@ export default function ClubDoctorPanel() {
               ))}
             </select>
             {billingRegion === "BR" && !regionMismatch && (
-              <p className="text-xs text-slate-500 mt-1.5">Cartao, PIX ou boleto no checkout.</p>
+              <p className="text-xs text-slate-500 mt-1.5">Cartao ou boleto no checkout.</p>
             )}
             {regionMismatch && (
               <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-2">
