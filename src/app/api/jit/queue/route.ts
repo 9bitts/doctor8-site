@@ -256,10 +256,22 @@ export async function PATCH(req: NextRequest) {
     });
 
     // Mark current IN_PROGRESS as DONE
+    const finishing = await db.jitQueue.findMany({
+      where: { sessionId, status: "IN_PROGRESS" },
+      select: { id: true },
+    });
     await db.jitQueue.updateMany({
       where: { sessionId, status: "IN_PROGRESS" },
       data:  { status: "DONE", endedAt: now },
     });
+    for (const entry of finishing) {
+      try {
+        const { tryStampForCompletedJitQueue } = await import("@/lib/club-stamps");
+        await tryStampForCompletedJitQueue(entry.id);
+      } catch (e) {
+        console.error("[JIT] Club stamp failed:", e);
+      }
+    }
 
     // Get next WAITING entry
     const next = await db.jitQueue.findFirst({

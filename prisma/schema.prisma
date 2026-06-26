@@ -281,6 +281,8 @@ model User {
   professionalReviews ProfessionalReview[] @relation("PatientReviews")
   buyingClubMembers BuyingClubMember[]
   organizationMemberships OrganizationMember[]
+  clubStampEntries      ClubStampEntry[]
+  clubDiversityAwards   ClubDiversityAward[]
 
   @@index([email])
   @@index([role])
@@ -2215,4 +2217,60 @@ model ConsultationValidation {
   @@index([professionalId, competenceMonth])
   @@index([competenceMonth, currency])
   @@index([isValid])
+}
+
+// ─────────────────────────────────────────
+// CLUB DOCTOR — CARTAO FIDELIDADE (CARIMBOS)
+// 10 carimbos = proxima mensalidade Club gratis (so na assinatura, nunca consulta).
+// ─────────────────────────────────────────
+
+enum ProfessionalKind {
+  MEDICINE
+  PSYCHOLOGY
+  PSYCHOANALYSIS
+  DENTISTRY
+  PHYSIOTHERAPY
+  NUTRITION
+  NURSING
+  INTEGRATIVE
+  OTHER
+}
+
+enum ClubStampEventType {
+  CONSULTATION
+  SUBSCRIPTION
+  DIVERSITY_BONUS
+  REDEMPTION
+}
+
+model ClubStampEntry {
+  id               String             @id @default(cuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType        ClubStampEventType
+  delta            Int
+  balanceAfter     Int
+
+  appointmentId    String?            @unique
+  jitQueueId       String?            @unique
+  stripeInvoiceId  String?
+  stripeEventId    String?            @unique
+
+  professionalKind ProfessionalKind?
+  description      String?
+
+  createdAt        DateTime           @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, eventType])
+}
+
+model ClubDiversityAward {
+  id        String             @id @default(cuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  awardedAt DateTime           @default(now())
+  kinds     ProfessionalKind[]
+
+  @@index([userId, awardedAt])
 }

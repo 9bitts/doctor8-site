@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stripe, getOrCreateStripeCustomer } from "@/lib/stripe";
-import { hasActiveClub, applyClubDiscount } from "@/lib/subscription";
 import { getUnifiedProvider, type ProviderType } from "@/lib/providers";
 import { z } from "zod";
 
@@ -50,9 +49,8 @@ export async function POST(req: NextRequest) {
   if (!patient || !user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const currency = "usd";
-  const isMember = await hasActiveClub(session.user.id);
 
-  let baseAmount = provider.consultPrice;
+  let amount = provider.consultPrice;
   if (parsed.data.serviceId) {
     const svc = await db.providerService.findFirst({
       where: {
@@ -63,13 +61,8 @@ export async function POST(req: NextRequest) {
           : { professionalId: providerId }),
       },
     });
-    if (svc?.priceCents != null) baseAmount = svc.priceCents;
+    if (svc?.priceCents != null) amount = svc.priceCents;
   }
-
-  const { finalAmount, discountApplied, originalAmount } = applyClubDiscount(
-    baseAmount,
-    isMember
-  );
 
   const customerId = await getOrCreateStripeCustomer(
     session.user.id,
@@ -81,7 +74,7 @@ export async function POST(req: NextRequest) {
   const metaKey = providerType === "psychoanalyst" ? "psychoanalystId" : "professionalId";
 
   const intent = await stripe.paymentIntents.create({
-    amount: finalAmount,
+    amount,
     currency,
     customer: customerId,
     payment_method_types: ["card"],
@@ -93,18 +86,14 @@ export async function POST(req: NextRequest) {
       type,
       patientName: `${patient.firstName} ${patient.lastName}`,
       doctorName: providerName,
-      clubDiscount: discountApplied ? "true" : "false",
-      originalAmount: String(originalAmount),
     },
-    description: `Doctor8 — Consultation with ${providerName} · ${new Date(scheduledAt).toLocaleDateString()}`,
+    description: `Doctor8 - Consultation with ${providerName} - ${new Date(scheduledAt).toLocaleDateString()}`,
   });
 
   return NextResponse.json({
     clientSecret: intent.client_secret,
     intentId: intent.id,
-    amount: finalAmount,
-    originalAmount,
-    discountApplied,
+    amount,
     currency,
     professional: {
       name: providerName,

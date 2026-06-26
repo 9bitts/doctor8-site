@@ -10,6 +10,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
+import {
+  awardSubscriptionStamp,
+  redeemStampsForInvoice,
+} from "@/lib/club-stamps";
+
+async function resolveClubUserId(stripeCustomerId: string, stripeSubscriptionId?: string | null) {
+  const sub = await db.subscription.findFirst({
+    where: { stripeCustomerId },
+    select: { userId: true },
+  });
+  if (sub) return sub.userId;
+
+  if (!stripeSubscriptionId) return null;
+  try {
+    const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    const userId = stripeSub.metadata?.userId;
+    return userId || null;
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -75,7 +96,53 @@ export async function POST(req: NextRequest) {
   }
 
   // ─────────────────────────────────────────────
-  // CLUB DOCTOR SUBSCRIPTION
+  // CLUB DOCTOR SUBSCRIPTION + STAMPS
+  // ─────────────────────────────────────────────
+
+  if (event.type === "invoice.created") {
+    const invoice = event.data.object as any;
+    if (invoice.subscription && invoice.amount_due > 0) {
+      try {
+        const userId = await resolveClubUserId(
+          invoice.customer as string,
+          invoice.subscription as string,
+        );
+        if (userId) {
+          await redeemStampsForInvoice(
+            userId,
+            invoice.customer as string,
+            invoice.id,
+            invoice.amount_due,
+            invoice.currency || "usd",
+          );
+        }
+      } catch (e) {
+        console.error("[WEBHOOK] Stamp redemption on invoice.created:", e);
+      }
+    }
+    return NextResponse.json({ received: true });
+  }
+
+  if (event.type === "invoice.paid") {
+    const invoice = event.data.object as any;
+    if (invoice.subscription) {
+      try {
+        const userId = await resolveClubUserId(
+          invoice.customer as string,
+          invoice.subscription as string,
+        );
+        if (userId) {
+          await awardSubscriptionStamp(userId, invoice.id);
+        }
+      } catch (e) {
+        console.error("[WEBHOOK] Subscription stamp on invoice.paid:", e);
+      }
+    }
+    return NextResponse.json({ received: true });
+  }
+
+  // ─────────────────────────────────────────────
+  // CLUB DOCTOR SUBSCRIPTION (checkout)
   // ─────────────────────────────────────────────
 
   // Fired right after the patient finishes Stripe Checkout for the subscription.

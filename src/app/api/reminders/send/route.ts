@@ -118,6 +118,12 @@ export async function POST(req: NextRequest) {
         where: { id: appointmentId },
         data: { reviewRequestSent: true, status: "COMPLETED" },
       });
+      try {
+        const { tryStampForCompletedAppointment } = await import("@/lib/club-stamps");
+        await tryStampForCompletedAppointment(appointmentId);
+      } catch (e) {
+        console.error("[REMINDER] Club stamp failed:", e);
+      }
       return NextResponse.json({ skipped: true, reason: "Already reviewed" });
     }
 
@@ -160,6 +166,13 @@ export async function POST(req: NextRequest) {
         status: appointment.status === "CONFIRMED" ? "COMPLETED" : appointment.status,
       },
     });
+
+    try {
+      const { tryStampForCompletedAppointment } = await import("@/lib/club-stamps");
+      await tryStampForCompletedAppointment(appointmentId);
+    } catch (e) {
+      console.error("[REMINDER] Club stamp failed:", e);
+    }
 
     return NextResponse.json({ success: true, type, appointmentId });
   }
