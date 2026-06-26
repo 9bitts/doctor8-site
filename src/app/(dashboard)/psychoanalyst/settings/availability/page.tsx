@@ -1,11 +1,10 @@
 "use client";
-// src/app/(dashboard)/professional/settings/availability/page.tsx
-// Professional sets their weekly schedule here. i18n via useI18n().
+// src/app/(dashboard)/psychoanalyst/settings/availability/page.tsx
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, formatSlotCount } from "@/lib/i18n/translations";
-import { countSlotsInRange } from "@/lib/scheduling";
+import { countSlotsInRange, generateSlotsInRange } from "@/lib/scheduling";
 import { Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
 
 interface TimeBlock {
@@ -13,6 +12,7 @@ interface TimeBlock {
   startTime: string;
   endTime: string;
   slotDuration: number;
+  slotGap: number;
 }
 
 interface DaySchedule {
@@ -21,12 +21,32 @@ interface DaySchedule {
   blocks: TimeBlock[];
 }
 
+const GAP_OPTIONS = [0, 5, 10, 15, 20, 30];
+const DURATION_OPTIONS = [30, 45, 50, 60];
+
+const DURATION_LABEL_KEYS: Record<number, string> = {
+  30: "avail.min30",
+  45: "avail.min45",
+  50: "avail.min50",
+  60: "avail.hour1",
+};
+
+const GAP_LABEL_KEYS: Record<number, string> = {
+  0: "avail.noGap",
+  5: "avail.min5",
+  10: "avail.min10",
+  15: "avail.min15",
+  20: "avail.min20",
+  30: "avail.min30",
+};
+
 function newBlock(): TimeBlock {
   return {
     id: crypto.randomUUID(),
     startTime: "09:00",
     endTime: "12:00",
     slotDuration: 50,
+    slotGap: 0,
   };
 }
 
@@ -37,17 +57,29 @@ const defaultSchedules = (): DaySchedule[] =>
     blocks: [newBlock()],
   }));
 
+function formatTimeLabel(time: string, locale: string): string {
+  const [h, m] = time.split(":").map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function AvailabilityPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
 
-  const TIMES = Array.from({ length: 48 }, (_, i) => {
-    const h = Math.floor(i / 2);
-    const m = i % 2 === 0 ? "00" : "30";
-    const value = `${String(h).padStart(2, "0")}:${m}`;
-    const label = new Date(2000, 0, 1, h, Number(m)).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-    return { value, label };
-  });
+  const TIMES = useMemo(
+    () =>
+      Array.from({ length: 48 }, (_, i) => {
+        const h = Math.floor(i / 2);
+        const m = i % 2 === 0 ? "00" : "30";
+        const value = `${String(h).padStart(2, "0")}:${m}`;
+        const label = formatTimeLabel(value, locale);
+        return { value, label };
+      }),
+    [locale]
+  );
 
   const [schedules, setSchedules] = useState<DaySchedule[]>(defaultSchedules());
   const [loading, setLoading] = useState(true);
@@ -71,11 +103,19 @@ export default function AvailabilityPage() {
             return {
               ...def,
               enabled: true,
-              blocks: daySlots.map((s: { startTime: string; endTime: string; slotDuration?: number; slotDurationMins?: number }) => ({
+              blocks: daySlots.map((s: {
+                startTime: string;
+                endTime: string;
+                slotDuration?: number;
+                slotDurationMins?: number;
+                slotGap?: number;
+                slotGapMins?: number;
+              }) => ({
                 id: crypto.randomUUID(),
                 startTime: s.startTime,
                 endTime: s.endTime,
                 slotDuration: s.slotDuration ?? s.slotDurationMins ?? 50,
+                slotGap: s.slotGap ?? s.slotGapMins ?? 0,
               })),
             };
           }));
@@ -109,6 +149,14 @@ export default function AvailabilityPage() {
     });
   }
 
+  function getDaySlots(schedule: DaySchedule) {
+    return schedule.blocks
+      .flatMap((b) =>
+        generateSlotsInRange(b.startTime, b.endTime, b.slotDuration, b.slotGap)
+      )
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
@@ -120,6 +168,7 @@ export default function AvailabilityPage() {
             startTime: b.startTime,
             endTime: b.endTime,
             slotDuration: b.slotDuration,
+            slotGap: b.slotGap,
           }))
         );
 
@@ -135,12 +184,7 @@ export default function AvailabilityPage() {
 
   const totalWeeklySlots = schedules
     .filter((s) => s.enabled)
-    .reduce((acc, s) =>
-      acc + s.blocks.reduce(
-        (sum, b) => sum + countSlotsInRange(b.startTime, b.endTime, b.slotDuration),
-        0
-      ),
-    0);
+    .reduce((acc, s) => acc + getDaySlots(s).length, 0);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-slate-400" /></div>;
 
@@ -158,89 +202,137 @@ export default function AvailabilityPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
-        {schedules.map((schedule) => (
-          <div key={schedule.dayOfWeek} className={`p-5 transition-colors ${schedule.enabled ? "" : "opacity-50 bg-slate-50"}`}>
-            <div className="flex items-center gap-4 flex-wrap">
-              <button type="button" onClick={() => updateSchedule(schedule.dayOfWeek, (s) => ({ ...s, enabled: !s.enabled }))}
-                className={`w-11 h-6 rounded-full transition-colors shrink-0 ${schedule.enabled ? "bg-brand-500" : "bg-slate-200"}`}>
-                <div className={`w-4 h-4 bg-white rounded-full mx-1 shadow transition-transform ${schedule.enabled ? "translate-x-5" : ""}`} />
-              </button>
+        {schedules.map((schedule) => {
+          const daySlots = schedule.enabled ? getDaySlots(schedule) : [];
 
-              <p className="font-semibold text-slate-800 w-24 shrink-0">{t(`day.${schedule.dayOfWeek}`)}</p>
+          return (
+            <div key={schedule.dayOfWeek} className={`p-5 transition-colors ${schedule.enabled ? "" : "opacity-50 bg-slate-50"}`}>
+              <div className="flex items-center gap-4 flex-wrap">
+                <button type="button" onClick={() => updateSchedule(schedule.dayOfWeek, (s) => ({ ...s, enabled: !s.enabled }))}
+                  className={`w-11 h-6 rounded-full transition-colors shrink-0 ${schedule.enabled ? "bg-brand-500" : "bg-slate-200"}`}>
+                  <div className={`w-4 h-4 bg-white rounded-full mx-1 shadow transition-transform ${schedule.enabled ? "translate-x-5" : ""}`} />
+                </button>
 
-              {!schedule.enabled && (
-                <p className="text-slate-400 text-sm">{t("avail.unavailable")}</p>
+                <p className="font-semibold text-slate-800 w-24 shrink-0">{t(`day.${schedule.dayOfWeek}`)}</p>
+
+                {!schedule.enabled && (
+                  <p className="text-slate-400 text-sm">{t("avail.unavailable")}</p>
+                )}
+
+                {schedule.enabled && daySlots.length > 0 && (
+                  <p className="text-xs text-brand-500 font-medium ml-auto">
+                    {formatSlotCount(lang, daySlots.length)}
+                  </p>
+                )}
+              </div>
+
+              {schedule.enabled && (
+                <div className="mt-4 space-y-3 pl-15">
+                  {schedule.blocks.map((block, blockIdx) => {
+                    const count = countSlotsInRange(
+                      block.startTime,
+                      block.endTime,
+                      block.slotDuration,
+                      block.slotGap
+                    );
+                    return (
+                      <div key={block.id} className="flex items-center gap-2 flex-wrap bg-slate-50 rounded-xl p-3 border border-slate-100">
+                        {schedule.blocks.length > 1 && (
+                          <span className="text-xs font-semibold text-slate-400 w-6 shrink-0">
+                            {blockIdx + 1}.
+                          </span>
+                        )}
+
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-slate-400">{t("avail.from")}</label>
+                          <select value={block.startTime} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "startTime", e.target.value)}
+                            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
+                            {TIMES.map((tm) => <option key={tm.value} value={tm.value}>{tm.label}</option>)}
+                          </select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-slate-400">{t("avail.to")}</label>
+                          <select value={block.endTime} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "endTime", e.target.value)}
+                            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
+                            {TIMES.map((tm) => <option key={tm.value} value={tm.value}>{tm.label}</option>)}
+                          </select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-slate-400">{t("avail.consultDuration")}</label>
+                          <select value={block.slotDuration} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "slotDuration", Number(e.target.value))}
+                            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
+                            {DURATION_OPTIONS.map((mins) => (
+                              <option key={mins} value={mins}>
+                                {t(DURATION_LABEL_KEYS[mins])}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-slate-400">{t("avail.gapBetween")}</label>
+                          <select value={block.slotGap} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "slotGap", Number(e.target.value))}
+                            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
+                            {GAP_OPTIONS.map((mins) => (
+                              <option key={mins} value={mins}>
+                                {t(GAP_LABEL_KEYS[mins])}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <p className="text-xs text-slate-500 font-medium ml-auto shrink-0">
+                          {count > 0 ? formatSlotCount(lang, count) : t("avail.invalidRange")}
+                        </p>
+
+                        {schedule.blocks.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeBlock(schedule.dayOfWeek, block.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-500 transition shrink-0"
+                            title={t("avail.removeBlock")}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => addBlock(schedule.dayOfWeek)}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-brand-500 hover:text-brand-600 transition"
+                  >
+                    <Plus size={14} /> {t("avail.addBlock")}
+                  </button>
+
+                  {daySlots.length > 0 ? (
+                    <div className="mt-2 p-3 bg-brand-50/60 rounded-xl border border-brand-100">
+                      <p className="text-xs font-semibold text-brand-600 mb-2">
+                        {t("avail.preview")} · {formatSlotCount(lang, daySlots.length)}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {daySlots.map((slot, i) => (
+                          <span
+                            key={`${slot.startTime}-${i}`}
+                            className="text-xs bg-white border border-brand-200 text-brand-700 px-2 py-1 rounded-lg tabular-nums"
+                          >
+                            {formatTimeLabel(slot.startTime, locale)} – {formatTimeLabel(slot.endTime, locale)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">{t("avail.previewEmpty")}</p>
+                  )}
+                </div>
               )}
             </div>
-
-            {schedule.enabled && (
-              <div className="mt-4 space-y-3 pl-15">
-                {schedule.blocks.map((block, blockIdx) => {
-                  const count = countSlotsInRange(block.startTime, block.endTime, block.slotDuration);
-                  return (
-                    <div key={block.id} className="flex items-center gap-2 flex-wrap bg-slate-50 rounded-xl p-3 border border-slate-100">
-                      {schedule.blocks.length > 1 && (
-                        <span className="text-xs font-semibold text-slate-400 w-6 shrink-0">
-                          {blockIdx + 1}.
-                        </span>
-                      )}
-
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-slate-400">{t("avail.from")}</label>
-                        <select value={block.startTime} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "startTime", e.target.value)}
-                          className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
-                          {TIMES.map((tm) => <option key={tm.value} value={tm.value}>{tm.label}</option>)}
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-slate-400">{t("avail.to")}</label>
-                        <select value={block.endTime} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "endTime", e.target.value)}
-                          className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
-                          {TIMES.map((tm) => <option key={tm.value} value={tm.value}>{tm.label}</option>)}
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-slate-400">{t("avail.slot")}</label>
-                        <select value={block.slotDuration} onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "slotDuration", Number(e.target.value))}
-                          className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white">
-                          <option value={15}>{t("avail.min15")}</option>
-                          <option value={30}>{t("avail.min30")}</option>
-                          <option value={45}>{t("avail.min45")}</option>
-                          <option value={60}>{t("avail.hour1")}</option>
-                        </select>
-                      </div>
-
-                      <p className="text-xs text-brand-500 font-medium ml-auto shrink-0">
-                        {count > 0 ? formatSlotCount(lang, count) : t("avail.invalidRange")}
-                      </p>
-
-                      {schedule.blocks.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeBlock(schedule.dayOfWeek, block.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-500 transition shrink-0"
-                          title={t("avail.removeBlock")}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-
-                <button
-                  type="button"
-                  onClick={() => addBlock(schedule.dayOfWeek)}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-brand-500 hover:text-brand-600 transition"
-                >
-                  <Plus size={14} /> {t("avail.addBlock")}
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <button onClick={handleSave} disabled={saving}

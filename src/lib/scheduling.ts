@@ -12,22 +12,61 @@ export function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
+export function timeToMins(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+export function minsToTime(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+export interface GeneratedSlot {
+  startTime: string;
+  endTime: string;
+}
+
+/** Builds consultation slots within a time block, respecting duration and gap between slots. */
+export function generateSlotsInRange(
+  startTime: string,
+  endTime: string,
+  consultationMins: number,
+  gapMins = 0
+): GeneratedSlot[] {
+  const startMins = timeToMins(startTime);
+  const endMins = timeToMins(endTime);
+  if (consultationMins <= 0 || endMins <= startMins) return [];
+
+  const slots: GeneratedSlot[] = [];
+  let current = startMins;
+
+  while (current + consultationMins <= endMins) {
+    slots.push({
+      startTime: minsToTime(current),
+      endTime: minsToTime(current + consultationMins),
+    });
+    current += consultationMins + gapMins;
+  }
+
+  return slots;
+}
+
 export function countSlotsInRange(
   startTime: string,
   endTime: string,
-  slotDuration: number
+  slotDuration: number,
+  gapMins = 0
 ): number {
-  const [sh, sm] = startTime.split(":").map(Number);
-  const [eh, em] = endTime.split(":").map(Number);
-  const mins = eh * 60 + em - (sh * 60 + sm);
-  if (mins <= 0 || slotDuration <= 0) return 0;
-  return Math.floor(mins / slotDuration);
+  return generateSlotsInRange(startTime, endTime, slotDuration, gapMins).length;
 }
 
 interface AvailabilityBlock {
   startTime: string;
   endTime: string;
   slotDurationMins: number;
+  slotGapMins?: number;
 }
 
 export function generateTimeSlots(
@@ -39,36 +78,27 @@ export function generateTimeSlots(
   const slots: { time: string; datetime: string; available: boolean }[] = [];
 
   for (const block of blocks) {
-    const [startHour, startMin] = block.startTime.split(":").map(Number);
-    const [endHour, endMin] = block.endTime.split(":").map(Number);
-    const duration = block.slotDurationMins;
+    const gap = block.slotGapMins ?? 0;
+    const generated = generateSlotsInRange(
+      block.startTime,
+      block.endTime,
+      block.slotDurationMins,
+      gap
+    );
 
-    let currentHour = startHour;
-    let currentMin = startMin;
-
-    while (
-      currentHour < endHour ||
-      (currentHour === endHour && currentMin < endMin)
-    ) {
+    for (const slot of generated) {
+      const [currentHour, currentMin] = slot.startTime.split(":").map(Number);
       const slotDate = new Date(date);
       slotDate.setHours(currentHour, currentMin, 0, 0);
 
       const isPast = slotDate.getTime() < now.getTime() + 60 * 60 * 1000;
       const isBooked = bookedTimes.has(slotDate.toISOString());
 
-      const timeStr = `${String(currentHour).padStart(2, "0")}:${String(currentMin).padStart(2, "0")}`;
-
       slots.push({
-        time: timeStr,
+        time: slot.startTime,
         datetime: slotDate.toISOString(),
         available: !isPast && !isBooked,
       });
-
-      currentMin += duration;
-      if (currentMin >= 60) {
-        currentHour += Math.floor(currentMin / 60);
-        currentMin = currentMin % 60;
-      }
     }
   }
 

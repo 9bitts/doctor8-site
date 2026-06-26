@@ -22,6 +22,7 @@ export async function GET() {
       startTime: s.startTime,
       endTime: s.endTime,
       slotDuration: s.slotDurationMins,
+      slotGap: s.slotGapMins,
     })),
   });
 }
@@ -39,12 +40,13 @@ export async function PUT(req: NextRequest) {
   await db.$transaction([
     db.availabilitySlot.deleteMany({ where: { professionalId: professional.id } }),
     db.availabilitySlot.createMany({
-      data: slots.map((s: { dayOfWeek: number; startTime: string; endTime: string; slotDuration: number }) => ({
+      data: slots.map((s: { dayOfWeek: number; startTime: string; endTime: string; slotDuration: number; slotGap?: number }) => ({
         professionalId: professional.id,
         dayOfWeek: s.dayOfWeek,
         startTime: s.startTime,
         endTime: s.endTime,
         slotDurationMins: s.slotDuration,
+        slotGapMins: s.slotGap ?? 0,
         isActive: true,
       })),
     }),

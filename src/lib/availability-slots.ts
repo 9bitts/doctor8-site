@@ -119,6 +119,7 @@ function buildDaysFromBlocks(
     startTime: string;
     endTime: string;
     slotDurationMins: number;
+    slotGapMins?: number;
   }[],
   bookedTimes: Set<string>,
   now: Date,

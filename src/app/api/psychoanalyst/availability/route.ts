@@ -18,6 +18,7 @@ export async function GET() {
       startTime: s.startTime,
       endTime: s.endTime,
       slotDuration: s.slotDurationMins,
+      slotGap: s.slotGapMins,
     })),
   });
 }
@@ -32,12 +33,13 @@ export async function PUT(req: NextRequest) {
   await db.$transaction([
     db.psychoanalystAvailabilitySlot.deleteMany({ where: { psychoanalystId: psychoanalyst.id } }),
     db.psychoanalystAvailabilitySlot.createMany({
-      data: slots.map((s: { dayOfWeek: number; startTime: string; endTime: string; slotDuration: number }) => ({
+      data: slots.map((s: { dayOfWeek: number; startTime: string; endTime: string; slotDuration: number; slotGap?: number }) => ({
         psychoanalystId: psychoanalyst.id,
         dayOfWeek: s.dayOfWeek,
         startTime: s.startTime,
         endTime: s.endTime,
         slotDurationMins: s.slotDuration || psychoanalyst.sessionDurationMins || 50,
+        slotGapMins: s.slotGap ?? 0,
         isActive: true,
       })),
     }),
