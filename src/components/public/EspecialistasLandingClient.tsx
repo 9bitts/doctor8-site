@@ -12,6 +12,7 @@ import { cityToSeoSlug, buildPublicSearchConvenioPath } from "@/lib/public-slugs
 import { matchSymptomQuery } from "@/lib/symptom-search";
 import LandingMarketingSections from "@/components/public/LandingMarketingSections";
 import CookieBanner from "@/components/public/CookieBanner";
+import LandingOptionPicker from "@/components/public/LandingOptionPicker";
 import type { Lang } from "@/lib/i18n/translations";
 
 const LandingMapPanel = dynamic(() => import("@/components/public/LandingMapPanel"), {
@@ -120,6 +121,16 @@ export default function EspecialistasLandingClient() {
     }
   }
 
+  const specialtyOptions = POPULAR_SPECIALTIES.map((s) => ({
+    value: s.slug,
+    label: t(s.labelKey),
+  }));
+
+  const healthPlanOptions = healthPlans.map((p) => ({
+    value: p.slug,
+    label: p.name,
+  }));
+
   const platformLabel = lang === "pt" ? "Plataforma" : lang === "es" ? "Plataforma" : "Platform";
 
   const navLinks = [
@@ -179,7 +190,7 @@ export default function EspecialistasLandingClient() {
         </div>
       </nav>
 
-      <section className="relative overflow-hidden bg-d8-hero px-6 pb-14 pt-10">
+      <section className="relative overflow-x-hidden bg-d8-hero px-6 pb-14 pt-10">
         <div className="pointer-events-none absolute -right-16 top-0 h-80 w-80 rounded-full bg-accent-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-brand-500/15 blur-3xl" />
 
@@ -233,18 +244,15 @@ export default function EspecialistasLandingClient() {
           {mode === "map" ? (
             <LandingMapPanel defaultQuery={city} />
           ) : mode === "specialty" ? (
-            <form onSubmit={handleSpecialtySearch} className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-2xl sm:flex-row sm:p-6">
+            <form onSubmit={handleSpecialtySearch} className="relative z-20 flex flex-col gap-3 overflow-visible rounded-2xl bg-white p-4 shadow-2xl sm:flex-row sm:p-6">
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-medium text-slate-500">{t("pubSearch.specialty")}</label>
-                <select
+                <LandingOptionPicker
                   value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
-                >
-                  {POPULAR_SPECIALTIES.map((s) => (
-                    <option key={s.slug} value={s.slug}>{t(s.labelKey)}</option>
-                  ))}
-                </select>
+                  onChange={setSpecialty}
+                  options={specialtyOptions}
+                  label={t("pubSearch.specialty")}
+                />
               </div>
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-medium text-slate-500">{t("pubSearch.city")}</label>
@@ -254,7 +262,7 @@ export default function EspecialistasLandingClient() {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder={t("pubSearch.cityPlaceholder")}
-                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-base text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
                   />
                 </div>
               </div>
@@ -268,20 +276,17 @@ export default function EspecialistasLandingClient() {
               </div>
             </form>
           ) : mode === "convenio" ? (
-            <form onSubmit={handleConvenioSearch} className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-2xl sm:flex-row sm:flex-wrap sm:p-6">
-              <div className="flex-1 min-w-[140px]">
+            <form onSubmit={handleConvenioSearch} className="relative z-20 flex flex-col gap-3 overflow-visible rounded-2xl bg-white p-4 shadow-2xl sm:flex-row sm:flex-wrap sm:p-6">
+              <div className="min-w-[140px] flex-1">
                 <label className="mb-1 block text-xs font-medium text-slate-500">{t("pubSearch.specialty")}</label>
-                <select
+                <LandingOptionPicker
                   value={specialty}
-                  onChange={(e) => setSpecialty(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
-                >
-                  {POPULAR_SPECIALTIES.map((s) => (
-                    <option key={s.slug} value={s.slug}>{t(s.labelKey)}</option>
-                  ))}
-                </select>
+                  onChange={setSpecialty}
+                  options={specialtyOptions}
+                  label={t("pubSearch.specialty")}
+                />
               </div>
-              <div className="flex-1 min-w-[140px]">
+              <div className="min-w-[140px] flex-1">
                 <label className="mb-1 block text-xs font-medium text-slate-500">{t("pubSearch.city")}</label>
                 <div className="relative">
                   <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -289,25 +294,23 @@ export default function EspecialistasLandingClient() {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder={t("pubSearch.cityPlaceholder")}
-                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-base text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
                   />
                 </div>
               </div>
-              <div className="flex-1 min-w-[140px]">
+              <div className="min-w-[140px] flex-1">
                 <label className="mb-1 block text-xs font-medium text-slate-500">{t("pubSearch.healthPlan")}</label>
-                <select
+                <LandingOptionPicker
                   value={convenio}
-                  onChange={(e) => setConvenio(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
-                >
-                  {healthPlans.length === 0 ? (
-                    <option value="">{t("pubSearch.selectHealthPlan")}</option>
-                  ) : (
-                    healthPlans.map((p) => (
-                      <option key={p.slug} value={p.slug}>{p.name}</option>
-                    ))
-                  )}
-                </select>
+                  onChange={setConvenio}
+                  options={
+                    healthPlanOptions.length > 0
+                      ? healthPlanOptions
+                      : [{ value: "", label: t("pubSearch.selectHealthPlan") }]
+                  }
+                  label={t("pubSearch.healthPlan")}
+                  disabled={healthPlanOptions.length === 0}
+                />
               </div>
               <div className="sm:self-end">
                 <button

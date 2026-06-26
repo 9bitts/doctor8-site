@@ -4,14 +4,25 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stripe, getOrCreateStripeCustomer, getCurrency } from "@/lib/stripe";
 import { getClubPriceId } from "@/lib/stripe-payment-methods";
-import { buildSubscriptionCheckoutParams } from "@/lib/stripe-subscription-checkout";
+import {
+  createSubscriptionCheckoutSession,
+  friendlyStripeCheckoutError,
+} from "@/lib/stripe-subscription-checkout";
 import { parseBillingRegion, paymentMethodsForRegion, regionsMismatch } from "@/lib/billing-regions";
+import { decrypt } from "@/lib/encryption";
 import { z } from "zod";
 
 const postSchema = z.object({
   region: z.enum(["BR", "US", "EU"]).optional(),
 });
 
+function safeDecrypt(value: string): string {
+  try {
+    return decrypt(value);
+  } catch {
+    return value;
+  }
+}
 export async function GET() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -78,25 +89,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { error: "Pagamentos nao configurados no servidor.", code: "STRIPE_NOT_CONFIGURED" },
+        { status: 503 },
+      );
+    }
+
     const customerId = await getOrCreateStripeCustomer(
       session.user.id,
       user.email,
-      `${patient.firstName} ${patient.lastName}`.trim() || user.email,
+      `${safeDecrypt(patient.firstName)} ${safeDecrypt(patient.lastName)}`.trim() || user.email,
     );
 
     const currency = getCurrency(region);
-    const checkoutSession = await stripe.checkout.sessions.create(
-      buildSubscriptionCheckoutParams({
-        customerId,
-        priceId,
-        currency,
-        userId: session.user.id,
-        planKind: "club",
-        successPath: "/patient/club-doctor?subscribed=true",
-        cancelPath: "/patient/club-doctor",
-      }),
-    );
-
+    const checkoutSession = await createSubscriptionCheckoutSession({
+      customerId,
+      priceId,
+      currency,
+      userId: session.user.id,
+      planKind: "club",
+      successPath: "/patient/club-doctor?subscribed=true",
+      cancelPath: "/patient/club-doctor",
+    });
     if (!checkoutSession.url) {
       return NextResponse.json(
         { error: "Stripe nao retornou URL de checkout.", code: "STRIPE_NO_URL" },
@@ -114,16 +129,12 @@ export async function POST(req: NextRequest) {
     console.error("[SUBSCRIPTION] POST error:", message, e);
     return NextResponse.json(
       {
-        error:
-          message.includes("payment_method_types")
-            ? "Forma de pagamento nao disponivel na assinatura. Tente novamente ou use outra moeda."
-            : "Nao foi possivel abrir o checkout. Verifique as configuracoes do Stripe ou tente mais tarde.",
+        error: friendlyStripeCheckoutError(message),
         code: "CHECKOUT_FAILED",
         detail: process.env.NODE_ENV === "development" ? message : undefined,
       },
       { status: 502 },
-    );
-  }
+    );  }
 }
 
 export async function DELETE() {

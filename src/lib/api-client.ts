@@ -18,8 +18,13 @@ export function apiErrorMessage(
   parsed: { ok: boolean; status: number; data: Record<string, unknown> | null; raw: string },
   fallback = "Nao foi possivel completar a operacao.",
 ): string {
-  const err = parsed.data?.error;
-  if (typeof err === "string" && err.trim()) return err;
+  const data = parsed.data;
+  if (data) {
+    const err = data.error;
+    if (typeof err === "string" && err.trim()) return err;
+    if (typeof data.message === "string" && data.message.trim()) return data.message;
+    if (typeof data.detail === "string" && data.detail.trim()) return data.detail;
+  }
   if (!parsed.ok && parsed.status >= 500) {
     return "Servidor indisponivel no momento. Tente novamente em instantes.";
   }

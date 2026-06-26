@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Heart, Loader2, X, AlertCircle } from "lucide-react";
+import { readApiJson, apiErrorMessage } from "@/lib/api-client";
 import {
   BILLING_REGION_OPTIONS,
   parseBillingRegion,
@@ -49,15 +50,12 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ region }),
       });
-      let data: { checkoutUrl?: string; error?: string } = {};
-      try {
-        data = await res.json();
-      } catch {
-        setMsg("Resposta invalida do servidor. Tente novamente.");
+      const parsed = await readApiJson<{ checkoutUrl?: string; error?: string }>(res);
+      if (parsed.data?.checkoutUrl) {
+        window.location.href = parsed.data.checkoutUrl;
         return;
       }
-      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
-      else setMsg(data.error || "Nao foi possivel iniciar o checkout.");
+      setMsg(apiErrorMessage(parsed, "Nao foi possivel iniciar o checkout."));
     } catch {
       setMsg("Erro de conexao. Verifique sua internet e tente novamente.");
     } finally {
@@ -137,7 +135,7 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
                 </p>
               )}
               {region === "BR" && !regionMismatch && (
-                <p className="text-xs text-slate-500 mt-1">Cartao, PIX ou boleto no checkout.</p>
+                <p className="text-xs text-slate-500 mt-1">Cartao ou boleto no checkout.</p>
               )}
             </div>
 

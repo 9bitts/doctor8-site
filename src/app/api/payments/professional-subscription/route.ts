@@ -1,13 +1,13 @@
-// Professional platform subscription (monthly fee)
-//   GET    ? current subscription status
-//   POST   ? start Stripe Checkout (card, PIX, boleto in BRL)
-//   DELETE ? cancel at period end
+// Professional platform subscription (Doctor Connection)
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stripe, getOrCreateStripeCustomer, getCurrency } from "@/lib/stripe";
 import { getProfessionalPriceId } from "@/lib/stripe-payment-methods";
-import { buildSubscriptionCheckoutParams } from "@/lib/stripe-subscription-checkout";
+import {
+  createSubscriptionCheckoutSession,
+  friendlyStripeCheckoutError,
+} from "@/lib/stripe-subscription-checkout";
 import { parseBillingRegion, paymentMethodsForRegion, regionsMismatch } from "@/lib/billing-regions";
 import { z } from "zod";
 
@@ -51,72 +51,92 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!PROVIDER_ROLES.has(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  let bodyRegion: string | undefined;
   try {
-    const raw = await req.json();
-    const parsed = postSchema.safeParse(raw);
-    if (parsed.success) bodyRegion = parsed.data.region;
-  } catch {
-    // empty body ok
-  }
+    const session = await auth();
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!PROVIDER_ROLES.has(session.user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { email: true, region: true },
-  });
-  const profile = await getProviderProfile(session.user.id);
-  if (!user || !profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    let bodyRegion: string | undefined;
+    try {
+      const raw = await req.json();
+      const parsed = postSchema.safeParse(raw);
+      if (parsed.success) bodyRegion = parsed.data.region;
+    } catch {
+      // empty body ok
+    }
 
-  const profileRegion = parseBillingRegion(user.region || session.user.region, "US");
-  const requestedRegion = bodyRegion
-    ? parseBillingRegion(bodyRegion, profileRegion)
-    : profileRegion;
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { email: true, region: true },
+    });
+    const profile = await getProviderProfile(session.user.id);
+    if (!user || !profile) {
+      return NextResponse.json({ error: "Perfil profissional nao encontrado." }, { status: 404 });
+    }
 
-  if (regionsMismatch(profileRegion, requestedRegion)) {
-    return NextResponse.json(
-      {
-        error:
-          "A moeda escolhida nao corresponde a regiao da sua conta. Altere a regiao em Meu Perfil para pagar nessa moeda.",
-        code: "REGION_MISMATCH",
-        profileRegion,
-        settingsPath: "/professional/settings",
-      },
-      { status: 400 },
+    const profileRegion = parseBillingRegion(user.region || session.user.region, "US");
+    const requestedRegion = bodyRegion
+      ? parseBillingRegion(bodyRegion, profileRegion)
+      : profileRegion;
+
+    if (regionsMismatch(profileRegion, requestedRegion)) {
+      return NextResponse.json(
+        {
+          error:
+            "A moeda escolhida nao corresponde a regiao da sua conta. Altere a regiao em Meu Perfil para pagar nessa moeda.",
+          code: "REGION_MISMATCH",
+          profileRegion,
+          settingsPath: "/professional/settings",
+        },
+        { status: 400 },
+      );
+    }
+
+    const region = profileRegion;
+    const priceId = getProfessionalPriceId(region);
+    if (!priceId) {
+      console.error("[PRO-SUBSCRIPTION] Professional price not configured for region:", region);
+      return NextResponse.json(
+        {
+          error: "Preco do Doctor Connection nao configurado no servidor. Contate o suporte.",
+          code: "PRICE_NOT_CONFIGURED",
+        },
+        { status: 500 },
+      );
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { error: "Pagamentos nao configurados no servidor.", code: "STRIPE_NOT_CONFIGURED" },
+        { status: 503 },
+      );
+    }
+
+    const customerId = await getOrCreateStripeCustomer(
+      session.user.id,
+      user.email,
+      `${profile.firstName} ${profile.lastName}`.trim() || user.email,
     );
-  }
 
-  const region = profileRegion;
-  const priceId = getProfessionalPriceId(region);
-  if (!priceId) {
-    console.error("[PRO-SUBSCRIPTION] Professional price not configured for region:", region);
-    return NextResponse.json({ error: "Professional subscription is not configured yet." }, { status: 500 });
-  }
+    const currency = getCurrency(region);
+    const checkoutSession = await createSubscriptionCheckoutSession({
+      customerId,
+      priceId,
+      currency,
+      userId: session.user.id,
+      planKind: "professional",
+      successPath: "/professional/account?subscribed=true",
+      cancelPath: "/professional/account",
+    });
 
-  const customerId = await getOrCreateStripeCustomer(
-    session.user.id,
-    user.email,
-    `${profile.firstName} ${profile.lastName}`,
-  );
-
-  const currency = getCurrency(region);
-  try {
-    const checkoutSession = await stripe.checkout.sessions.create(
-      buildSubscriptionCheckoutParams({
-        customerId,
-        priceId,
-        currency,
-        userId: session.user.id,
-        planKind: "professional",
-        successPath: "/professional/account?subscribed=true",
-        cancelPath: "/professional/account",
-      }),
-    );
+    if (!checkoutSession.url) {
+      return NextResponse.json(
+        { error: "Stripe nao retornou URL de checkout.", code: "STRIPE_NO_URL" },
+        { status: 502 },
+      );
+    }
 
     return NextResponse.json({
       checkoutUrl: checkoutSession.url,
@@ -124,9 +144,14 @@ export async function POST(req: NextRequest) {
       paymentMethods: paymentMethodsForRegion(region),
     });
   } catch (e: any) {
-    console.error("[PRO-SUBSCRIPTION] Stripe checkout error:", e?.message || e);
+    const message = e?.raw?.message || e?.message || "Erro ao iniciar checkout.";
+    console.error("[PRO-SUBSCRIPTION] POST error:", message, e);
     return NextResponse.json(
-      { error: "Nao foi possivel abrir o checkout. Tente novamente em instantes.", code: "STRIPE_ERROR" },
+      {
+        error: friendlyStripeCheckoutError(message),
+        code: "CHECKOUT_FAILED",
+        detail: process.env.NODE_ENV === "development" ? message : undefined,
+      },
       { status: 502 },
     );
   }

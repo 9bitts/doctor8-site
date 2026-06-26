@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/I18nProvider";
+import { readApiJson, apiErrorMessage } from "@/lib/api-client";
 import {
   BILLING_REGION_OPTIONS,
   parseBillingRegion,
@@ -144,20 +145,13 @@ export default function ProfessionalAccountPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ region: billingRegion }),
       });
-      let d: { checkoutUrl?: string; error?: string; code?: string } = {};
-      try {
-        d = await res.json();
-      } catch {
-        setSubMsgTone("error");
-        setSubMsg("Resposta invalida do servidor. Tente novamente.");
+      const parsed = await readApiJson<{ checkoutUrl?: string; error?: string; code?: string }>(res);
+      if (parsed.data?.checkoutUrl) {
+        window.location.href = parsed.data.checkoutUrl;
         return;
       }
-      if (d.checkoutUrl) {
-        window.location.href = d.checkoutUrl;
-        return;
-      }
-      setSubMsgTone(d.code === "REGION_MISMATCH" ? "warning" : "error");
-      setSubMsg(d.error || "Nao foi possivel iniciar o checkout.");
+      setSubMsgTone(parsed.data?.code === "REGION_MISMATCH" ? "warning" : "error");
+      setSubMsg(apiErrorMessage(parsed, "Nao foi possivel iniciar o checkout."));
     } catch {
       setSubMsgTone("error");
       setSubMsg("Erro de conexao. Verifique sua internet e tente novamente.");
@@ -211,7 +205,7 @@ export default function ProfessionalAccountPage() {
           <CreditCard size={18} className="text-brand-500" /> Doctor Connection
         </h2>
         <p className="text-sm text-slate-500">
-          Mensalidade para profissionais na Doctor8. Pague com cartao, PIX ou boleto (Brasil).
+          Mensalidade para profissionais na Doctor8. Pague com cartao ou boleto (Brasil).
         </p>
         {subMsg && (
           <div
@@ -287,7 +281,7 @@ export default function ProfessionalAccountPage() {
               </select>
               {billingRegion === "BR" && !regionMismatch && (
                 <p className="text-xs text-slate-500 mt-1.5">
-                  No checkout: cartao, PIX ou boleto.
+                  No checkout: cartao ou boleto.
                 </p>
               )}
               {regionMismatch && (

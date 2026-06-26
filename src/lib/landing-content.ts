@@ -74,7 +74,7 @@ const pt: LandingContent = {
     sub: "A Doctor8 conta com profissionais qualificados e estudiosos da medicina canabinoide. Prescri\u00e7\u00e3o segura, legal e online.",
     points: ["Profissionais especializados e certificados", "Consulta online com prescri\u00e7\u00e3o legal", "Acompanhamento cont\u00ednuo do tratamento", "Documenta\u00e7\u00e3o completa para importa\u00e7\u00e3o"],
     cta: "Agendar consulta", conditionsHeader: "Condi\u00e7\u00f5es tratadas",
-    tags: ["Dor cr\u00f4nica", "Ansiedade", "Epilepsia", "Ins\u00f4nia", "Fibromialgia", "PTSD", "Espasticidade", "Doen\u00e7as autoimunes", "Parkinson", "N\u00e1useas (oncologia)", "Alzheimer", "+ outras"],
+    tags: ["Dor cr\u00f4nica", "Ansiedade", "Epilepsia", "Ins\u00f4nia", "Fibromialgia", "PTSD", "TEA", "TDAH", "Espasticidade", "Doen\u00e7as autoimunes", "Parkinson", "Oncologia (Suporte)", "Alzheimer", "+ outras"],
   },
   energy: {
     badge: "Doctor Energy", titleEm: "Club Doctor",
@@ -168,7 +168,7 @@ const en: LandingContent = {
     sub: "Doctor8 has qualified professionals specialized in cannabinoid medicine. Safe, legal, and online prescriptions.",
     points: ["Specialized and certified professionals", "Online consultation with legal prescription", "Continuous treatment follow-up", "Complete documentation for importation"],
     cta: "Book consultation", conditionsHeader: "Conditions treated",
-    tags: ["Chronic pain", "Anxiety", "Epilepsy", "Insomnia", "Fibromyalgia", "PTSD", "Spasticity", "Autoimmune diseases", "Parkinson", "Nausea (oncology)", "Alzheimer", "+ others"],
+    tags: ["Chronic pain", "Anxiety", "Epilepsy", "Insomnia", "Fibromyalgia", "PTSD", "ASD", "ADHD", "Spasticity", "Autoimmune diseases", "Parkinson", "Oncology (Support)", "Alzheimer", "+ others"],
   },
   energy: {
     badge: "Doctor Energy", titleEm: "Club Doctor",
@@ -244,6 +244,22 @@ const es: LandingContent = {
       { title: "Fisioterapia", desc: "Rehabilitaci\u00f3n, dolor muscular y rendimiento deportivo." },
       { title: "Cannabis Medicinal", desc: "Especialistas en medicina cannabinoide con prescripci\u00f3n legal." },
     ],
+  },
+  cannabis: {
+    ...en.cannabis,
+    badge: "Cannabis Medicinal",
+    titleEm: "Medicina cannabinoide",
+    titleRest: " con profesionales especializados",
+    sub: "Doctor8 cuenta con profesionales calificados en medicina cannabinoide. Prescripci\u00f3n segura, legal y online.",
+    points: [
+      "Profesionales especializados y certificados",
+      "Consulta online con prescripci\u00f3n legal",
+      "Seguimiento continuo del tratamiento",
+      "Documentaci\u00f3n completa para importaci\u00f3n",
+    ],
+    cta: "Agendar consulta",
+    conditionsHeader: "Condiciones tratadas",
+    tags: ["Dolor cr\u00f3nico", "Ansiedad", "Epilepsia", "Insomnio", "Fibromialgia", "PTSD", "TEA", "TDAH", "Espasticidad", "Enfermedades autoinmunes", "Parkinson", "Oncolog\u00eda (Soporte)", "Alzheimer", "+ otras"],
   },
   cta: {
     titleEm: "Cuida tu salud", titleRest: " desde donde est\u00e9s",
