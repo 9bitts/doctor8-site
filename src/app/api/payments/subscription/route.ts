@@ -134,7 +134,8 @@ export async function POST(req: NextRequest) {
         detail: process.env.NODE_ENV === "development" ? message : undefined,
       },
       { status: 502 },
-    );  }
+    );
+  }
 }
 
 export async function DELETE() {

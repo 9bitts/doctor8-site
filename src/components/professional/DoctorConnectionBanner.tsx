@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Heart, Loader2, X, AlertCircle } from "lucide-react";
 import { readApiJson, apiErrorMessage } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   BILLING_REGION_OPTIONS,
   parseBillingRegion,
@@ -21,7 +22,12 @@ type Props = {
   defaultRegion?: string;
 };
 
+function formatPriceHint(priceHint: string, perMonth: string): string {
+  return priceHint.replace("/mes", perMonth);
+}
+
 export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Props) {
+  const { t } = useI18n();
   const profileRegion = parseBillingRegion(defaultRegion, "US");
 
   const [dismissed, setDismissed] = useState(() => {
@@ -36,6 +42,10 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
 
   const selected = BILLING_REGION_OPTIONS.find((o) => o.region === region)!;
   const regionMismatch = regionsMismatch(profileRegion, region);
+  const apiLabels = {
+    server: t("billing.err.server"),
+    invalid: t("billing.err.invalid"),
+  };
 
   async function goToCheckout() {
     if (regionMismatch) {
@@ -55,9 +65,9 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
         window.location.href = parsed.data.checkoutUrl;
         return;
       }
-      setMsg(apiErrorMessage(parsed, "Nao foi possivel iniciar o checkout."));
+      setMsg(apiErrorMessage(parsed, t("billing.err.checkout"), apiLabels));
     } catch {
-      setMsg("Erro de conexao. Verifique sua internet e tente novamente.");
+      setMsg(t("billing.err.connection"));
     } finally {
       setLoading(false);
     }
@@ -74,7 +84,7 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
         type="button"
         onClick={dismiss}
         className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 p-1"
-        aria-label="Fechar"
+        aria-label={t("proConn.banner.close")}
       >
         <X size={16} />
       </button>
@@ -86,14 +96,8 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
 
         <div className="flex-1 space-y-3 min-w-0">
           <div>
-            <p className="text-sm font-semibold text-slate-800">
-              Gostaria de apoiar a Doctor8?
-            </p>
-            <p className="text-sm text-slate-600 mt-1 leading-relaxed">
-              O Doctor Connection nao libera funcoes extras ? e apenas uma forma opcional de
-              ajudar a plataforma a seguir evoluindo. Sem pressao: assine quando fizer sentido
-              para voce.
-            </p>
+            <p className="text-sm font-semibold text-slate-800">{t("proConn.banner.title")}</p>
+            <p className="text-sm text-slate-600 mt-1 leading-relaxed">{t("proConn.banner.desc")}</p>
           </div>
 
           {msg && (
@@ -106,7 +110,7 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
             <div className="min-w-[200px]">
               <label className="block text-xs font-medium text-slate-500 mb-1">
-                Moeda de cobranca
+                {t("billing.currency")}
               </label>
               <select
                 value={region}
@@ -118,24 +122,26 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
               >
                 {BILLING_REGION_OPTIONS.map((opt) => (
                   <option key={opt.region} value={opt.region}>
-                    {opt.labelPt} ? {opt.priceHint}
+                    {t("billing.currencyOption")
+                      .replace("{{label}}", opt.labelPt)
+                      .replace("{{price}}", formatPriceHint(opt.priceHint, t("billing.perMonth")))}
                   </option>
                 ))}
               </select>
               <p className="text-xs text-slate-500 mt-1">
-                Regiao da conta: {billingRegionLabel(profileRegion)}
+                {t("billing.accountRegion").replace("{{region}}", billingRegionLabel(profileRegion))}
               </p>
               {regionMismatch && (
                 <p className="text-xs text-amber-700 mt-1">
-                  Altere em{" "}
+                  {t("billing.chargeInBefore")}{" "}
                   <Link href={SETTINGS_PROFILE_PATH} className="underline font-medium">
-                    Meu Perfil
+                    {t("billing.changeInProfile")}
                   </Link>{" "}
-                  para cobrar em {billingRegionLabel(region)}.
+                  {t("billing.chargeInAfter").replace("{{region}}", billingRegionLabel(region))}
                 </p>
               )}
               {region === "BR" && !regionMismatch && (
-                <p className="text-xs text-slate-500 mt-1">Cartao ou boleto no checkout.</p>
+                <p className="text-xs text-slate-500 mt-1">{t("billing.checkoutBr")}</p>
               )}
             </div>
 
@@ -147,19 +153,21 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
                 className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
               >
                 {loading && <Loader2 size={14} className="animate-spin" />}
-                Apoiar com Doctor Connection
+                {t("proConn.banner.cta")}
               </button>
               <Link
                 href="/professional/account"
                 className="inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2.5"
               >
-                Ver detalhes
+                {t("club.banner.details")}
               </Link>
             </div>
           </div>
 
           <p className="text-xs text-slate-400">
-            Valor em {selected.currency}: {selected.priceHint.replace("/mes", "")} por mes.
+            {t("proConn.banner.priceIn")
+              .replace("{{price}}", formatPriceHint(selected.priceHint, t("billing.perMonth")))
+              .replace("{{currency}}", selected.currency)}
           </p>
         </div>
       </div>

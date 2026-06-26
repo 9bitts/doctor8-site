@@ -17,6 +17,7 @@ export async function readApiJson<T = Record<string, unknown>>(
 export function apiErrorMessage(
   parsed: { ok: boolean; status: number; data: Record<string, unknown> | null; raw: string },
   fallback = "Nao foi possivel completar a operacao.",
+  labels?: { server?: string; invalid?: string },
 ): string {
   const data = parsed.data;
   if (data) {
@@ -26,10 +27,13 @@ export function apiErrorMessage(
     if (typeof data.detail === "string" && data.detail.trim()) return data.detail;
   }
   if (!parsed.ok && parsed.status >= 500) {
-    return "Servidor indisponivel no momento. Tente novamente em instantes.";
+    return labels?.server ?? "Servidor indisponivel no momento. Tente novamente em instantes.";
   }
   if (!parsed.data) {
-    return `Resposta invalida do servidor (HTTP ${parsed.status}).`;
+    return (labels?.invalid ?? "Resposta invalida do servidor (HTTP {{status}}).").replace(
+      "{{status}}",
+      String(parsed.status),
+    );
   }
   return fallback;
 }

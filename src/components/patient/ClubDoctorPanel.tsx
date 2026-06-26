@@ -16,6 +16,7 @@ import {
   type BillingRegion,
 } from "@/lib/billing-regions";
 import { readApiJson, apiErrorMessage } from "@/lib/api-client";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface SubInfo {
   status: string;
@@ -93,6 +94,7 @@ const toneClasses = {
 };
 
 export default function ClubDoctorPanel() {
+  const { t } = useI18n();
   const [sub, setSub] = useState<SubInfo | null>(null);
   const [stamps, setStamps] = useState<StampInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,11 +181,16 @@ export default function ClubDoctorPanel() {
         return;
       }
       setMsgTone(parsed.data?.code === "REGION_MISMATCH" ? "warning" : "error");
-      setMsg(apiErrorMessage(parsed, "Nao foi possivel iniciar o checkout."));
+      setMsg(
+        apiErrorMessage(parsed, t("billing.err.checkout"), {
+          server: t("billing.err.server"),
+          invalid: t("billing.err.invalid"),
+        }),
+      );
       setWorking(false);
     } catch {
       setMsgTone("error");
-      setMsg("Erro de conexao. Verifique sua internet e tente novamente.");
+      setMsg(t("billing.err.connection"));
       setWorking(false);
     }
   }

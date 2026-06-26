@@ -32,7 +32,10 @@ export function buildSubscriptionCheckoutParams(params: {
     },
     billing_address_collection: "auto" as const,
     ...(needsBrazilTaxId(params.currency)
-      ? { tax_id_collection: { enabled: true } }
+      ? {
+          tax_id_collection: { enabled: true },
+          customer_update: { name: "auto" as const },
+        }
       : {}),
   };
 }
@@ -71,8 +74,8 @@ export function friendlyStripeCheckoutError(message: string): string {
   if (m.includes("stripe_secret_key") || m.includes("api key")) {
     return "Pagamentos nao configurados no servidor. Contate o suporte.";
   }
-  if (m.includes("currency") && m.includes("price")) {
-    return "Moeda do preco nao confere com a regiao escolhida. Contate o suporte.";
+  if (m.includes("tax id collection") || m.includes("customer_update")) {
+    return "Nao foi possivel abrir o checkout (CPF/CNPJ). Tente novamente.";
   }
   return "Nao foi possivel abrir o checkout. Tente novamente em instantes.";
 }

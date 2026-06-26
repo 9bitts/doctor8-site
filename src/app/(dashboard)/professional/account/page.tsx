@@ -151,7 +151,10 @@ export default function ProfessionalAccountPage() {
         return;
       }
       setSubMsgTone(parsed.data?.code === "REGION_MISMATCH" ? "warning" : "error");
-      setSubMsg(apiErrorMessage(parsed, "Nao foi possivel iniciar o checkout."));
+      setSubMsg(apiErrorMessage(parsed, t("billing.err.checkout"), {
+        server: t("billing.err.server"),
+        invalid: t("billing.err.invalid"),
+      }));
     } catch {
       setSubMsgTone("error");
       setSubMsg("Erro de conexao. Verifique sua internet e tente novamente.");
