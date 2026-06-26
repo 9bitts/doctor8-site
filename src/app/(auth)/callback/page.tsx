@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { consumeAuthCallback } from "@/lib/auth-callback";
+import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 
 export default function CallbackPage() {
   const router = useRouter();
@@ -21,7 +22,12 @@ export default function CallbackPage() {
       .then((session) => {
         const savedCallback = consumeAuthCallback();
         if (savedCallback) {
-          router.replace(savedCallback);
+          const role = session?.user?.role;
+          router.replace(
+            role === "PATIENT"
+              ? resolvePatientPostLoginUrl(savedCallback)
+              : savedCallback,
+          );
           return;
         }
         if (session?.user?.role === "PROFESSIONAL") {

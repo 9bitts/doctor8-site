@@ -40,7 +40,23 @@ export default function RegisterPage() {
   const [callbackUrl, setCallbackUrl] = useState("");
 
   useEffect(() => {
-    setCallbackUrl(new URLSearchParams(window.location.search).get("callbackUrl") || "");
+    const params = new URLSearchParams(window.location.search);
+    setCallbackUrl(params.get("callbackUrl") || "");
+    const r = params.get("region");
+    if (r === "VE" || r === "US" || r === "EU" || r === "BR") {
+      setRegion(r as Region);
+    }
+    const roleParam = params.get("role");
+    if (roleParam === "PATIENT" || roleParam === "PROFESSIONAL" || roleParam === "PSYCHOANALYST") {
+      setRole(roleParam);
+      setStep(2);
+    }
+    const langParam = params.get("lang");
+    if (langParam) {
+      const l = normalizeLang(langParam);
+      setLang(l);
+      try { window.localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
+    }
   }, []);
 
   const loginHref = callbackUrl

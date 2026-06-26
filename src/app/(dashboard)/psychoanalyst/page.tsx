@@ -7,6 +7,8 @@ import { getUserLang } from "@/lib/i18n/server-lang";
 import { decryptPsychoanalystNameFields, safeDecrypt } from "@/lib/psychoanalyst-api";
 import { Calendar, Users, ChevronRight, Video, Settings, FileText } from "lucide-react";
 import Link from "next/link";
+import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
+import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 
 export default async function PsychoanalystDashboard() {
   const session = await auth();
@@ -32,7 +34,7 @@ export default async function PsychoanalystDashboard() {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  const [todayCount, analysandCount, upcoming] = await Promise.all([
+  const [todayCount, analysandCount, upcoming, humanitarianCampaign] = await Promise.all([
     db.appointment.count({
       where: {
         psychoanalystId: profile.id,
@@ -51,6 +53,7 @@ export default async function PsychoanalystDashboard() {
       orderBy: { scheduledAt: "asc" },
       take: 5,
     }),
+    getActiveCampaignForRegion(null),
   ]);
 
   const hour = new Date().getHours();
@@ -66,6 +69,11 @@ export default async function PsychoanalystDashboard() {
         </h1>
         <p className="text-violet-600 text-sm font-medium mt-1">{t("pa.dash.subtitle")}</p>
       </div>
+
+      <HumanitarianVolunteerBanner
+        lang={lang}
+        campaignActive={!!humanitarianCampaign?.active}
+      />
 
       {!profile.verified && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">

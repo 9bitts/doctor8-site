@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Heart, ChevronRight, Radio, Phone, AlertTriangle } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
-import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import { VENEZUELA_CAMPAIGN_SLUG, poolLabel } from "@/lib/humanitarian/constants";
 
 type Props = {
   lang: Lang;
@@ -9,7 +9,7 @@ type Props = {
   entry: {
     id: string;
     status: string;
-    pool: { labelEs: string };
+    pool: { labelEs: string; labelPt: string; labelEn: string };
   } | null;
 };
 
@@ -18,6 +18,7 @@ export default function HumanitarianBanner({ lang, campaign, entry }: Props) {
 
   const t = (key: string) => translate(lang, key);
   const href = `/humanitarian/${campaign.slug || VENEZUELA_CAMPAIGN_SLUG}`;
+  const poolName = entry ? poolLabel(entry.pool, lang) : "";
 
   if (entry?.status === "CALLED") {
     return (
@@ -54,7 +55,7 @@ export default function HumanitarianBanner({ lang, campaign, entry }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-lg font-bold text-blue-900">{t("hum.banner.inProgressTitle")}</p>
-            <p className="text-sm mt-1 text-blue-700">{entry.pool.labelEs}</p>
+            <p className="text-sm mt-1 text-blue-700">{poolName}</p>
           </div>
           <ChevronRight size={20} className="text-blue-600 shrink-0" />
         </div>
@@ -74,7 +75,7 @@ export default function HumanitarianBanner({ lang, campaign, entry }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-lg font-bold text-rose-900">{t("hum.banner.waitingTitle")}</p>
-            <p className="text-sm mt-1 text-rose-700">{entry.pool.labelEs}</p>
+            <p className="text-sm mt-1 text-rose-700">{poolName}</p>
           </div>
           <ChevronRight size={20} className="text-rose-600 shrink-0" />
         </div>

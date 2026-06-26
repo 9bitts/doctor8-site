@@ -96,7 +96,7 @@ export default function HumanitarianCampaignPage() {
       .then((r) => r.json())
       .then((s) => {
         if (!s?.user) {
-          router.push(`/login?callbackUrl=/humanitarian/${slug}`);
+          router.push("/login?callbackUrl=/patient");
           return;
         }
         if (s.user.role !== "PATIENT") {
@@ -105,7 +105,7 @@ export default function HumanitarianCampaignPage() {
         }
         loadCampaign();
       })
-      .catch(() => router.push(`/login?callbackUrl=/humanitarian/${slug}`));
+      .catch(() => router.push("/login?callbackUrl=/patient"));
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);

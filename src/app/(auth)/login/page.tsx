@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { persistAuthCallback } from "@/lib/auth-callback";
+import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail,
 } from "lucide-react";
@@ -123,7 +124,11 @@ function LoginForm() {
       const role = session?.user?.role;
 
       if (callbackUrl) {
-        router.push(callbackUrl);
+        router.push(
+          role === "PATIENT"
+            ? resolvePatientPostLoginUrl(callbackUrl)
+            : callbackUrl,
+        );
       } else if (role === "PROFESSIONAL") {
         router.push("/professional");
       } else if (role === "ORGANIZATION") {

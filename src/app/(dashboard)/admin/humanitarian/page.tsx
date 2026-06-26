@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Heart, Loader2, RefreshCw, Radio, Users, CheckCircle2, AlertTriangle, Power,
+  Heart, Loader2, RefreshCw, Radio, Users, CheckCircle2, AlertTriangle, Power, Download,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
@@ -37,6 +37,7 @@ export default function AdminHumanitarianPage() {
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,6 +81,22 @@ export default function AdminHumanitarianPage() {
     setToggling(false);
   }
 
+  async function exportCsv(slug: string) {
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/admin/humanitarian/export?slug=${encodeURIComponent(slug)}`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `humanitarian-${slug}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+    setExporting(false);
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -90,7 +107,7 @@ export default function AdminHumanitarianPage() {
             <p className="text-sm text-slate-500">Monitor en tiempo real ? Venezuela</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             type="button"
             onClick={load}
@@ -110,9 +127,12 @@ export default function AdminHumanitarianPage() {
         </div>
       </div>
 
-      <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-sm text-rose-900">
+      <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-sm text-rose-900 space-y-2">
         <p className="font-medium">Enlaces de campa?a</p>
-        <p className="mt-1 text-rose-800">
+        <p className="text-rose-800">
+          Landing p?blica: <code className="bg-white/80 px-1 rounded">/sos-venezuela</code>
+        </p>
+        <p className="text-rose-800">
           Pacientes: <code className="bg-white/80 px-1 rounded">/humanitarian/{VENEZUELA_CAMPAIGN_SLUG}</code>
           {" ? "}
           Voluntarios: <code className="bg-white/80 px-1 rounded">/humanitarian/volunteer</code>
@@ -131,7 +151,16 @@ export default function AdminHumanitarianPage() {
                 <h2 className="font-bold text-slate-900 text-lg">{c.name}</h2>
                 <p className="text-xs text-slate-500">{c.slug}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={exporting}
+                  onClick={() => exportCsv(c.slug)}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                  CSV hoy
+                </button>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${c.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                   {c.active ? "Activa" : "Pausada"}
                 </span>

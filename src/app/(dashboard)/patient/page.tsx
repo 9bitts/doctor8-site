@@ -240,12 +240,7 @@ export default async function PatientDashboard() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
 
-      <ClubDoctorBanner
-        subscribed={hasActiveClub}
-        defaultRegion={userRow?.region || session.user.region}
-      />
-
-      {(humanitarianCampaign || userRow?.region === "VE") && (
+      {(humanitarianCampaign?.active || userRow?.region === "VE") && (
         <HumanitarianBanner
           lang={lang}
           campaign={{
@@ -255,6 +250,11 @@ export default async function PatientDashboard() {
           entry={humanitarianEntry}
         />
       )}
+
+      <ClubDoctorBanner
+        subscribed={hasActiveClub}
+        defaultRegion={userRow?.region || session.user.region}
+      />
 
       {/* Header */}
       <div>

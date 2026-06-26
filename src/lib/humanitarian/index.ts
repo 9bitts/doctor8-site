@@ -38,6 +38,7 @@ export {
 } from "@/lib/humanitarian/notify";
 
 export { seedVenezuelaCampaign } from "@/lib/humanitarian/seed-venezuela";
+export { buildHumanitarianCsv } from "@/lib/humanitarian/export-csv";
 export { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
 
 export const HUMANITARIAN_PRIORITY_OPTIONS = [
@@ -46,7 +47,7 @@ export const HUMANITARIAN_PRIORITY_OPTIONS = [
     labelEs: "Consulta general",
     labelPt: "Consulta geral",
     labelEn: "General consultation",
-    descEs: "Necesito orientación o seguimiento",
+    descEs: "Necesito orientaci?n o seguimiento",
   },
   {
     value: "URGENT" as const,
@@ -58,9 +59,9 @@ export const HUMANITARIAN_PRIORITY_OPTIONS = [
   {
     value: "CRISIS" as const,
     labelEs: "Crisis / emergencia emocional",
-    labelPt: "Crise / emergência emocional",
+    labelPt: "Crise / emerg?ncia emocional",
     labelEn: "Crisis / emotional emergency",
-    descEs: "Riesgo inmediato, pânico o trauma agudo",
+    descEs: "Riesgo inmediato, p?nico o trauma agudo",
   },
 ];
 
