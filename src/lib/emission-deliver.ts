@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { sendPrescriptionNotification } from "@/lib/email-prescription";
+import { sendEmissionWhatsApp } from "@/lib/emission-whatsapp";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://doctor8.app";
 
@@ -45,14 +46,21 @@ export interface DeliverResult {
     lastName: string;
     email: string | null;
     hasAccount: boolean;
+    hasPhone: boolean;
   };
   shareUrl: string;
+  whatsapp?: {
+    status: string;
+    error?: string;
+    waMeUrl?: string | null;
+  };
 }
 
 export async function deliverEmissionToPatient(
   professionalUserId: string,
   kind: EmissionDeliverKind,
   id: string,
+  opts?: { sendWhatsApp?: boolean; whatsappMessage?: string; forceWhatsapp?: boolean },
 ): Promise<DeliverResult | { error: string; status: number }> {
   const professional = await db.professionalProfile.findUnique({
     where: { userId: professionalUserId },
@@ -61,14 +69,34 @@ export async function deliverEmissionToPatient(
 
   const doctorName = `${professional.firstName} ${professional.lastName}`.trim();
 
+  async function maybeWhatsApp(
+    prescriptionId: string | undefined,
+    documentId: string | undefined,
+    record: { phone?: string | null } | null | undefined,
+    profile: { phone?: string | null } | null | undefined,
+    deliverKind: EmissionDeliverKind,
+  ) {
+    if (!opts?.sendWhatsApp) return undefined;
+    const hasPhone = !!(record?.phone || profile?.phone);
+    const wa = await sendEmissionWhatsApp({
+      kind: deliverKind,
+      prescriptionId,
+      documentId,
+      doctorName,
+      force: opts.forceWhatsapp,
+      customMessage: opts.whatsappMessage,
+    });
+    return { status: wa.status, error: wa.error, waMeUrl: wa.waMeUrl };
+  }
+
   if (kind === "prescription") {
     const prescription = await db.prescription.findUnique({
       where: { id },
       include: {
         document: {
           include: {
-            patientRecord: { select: { id: true, firstName: true, lastName: true, email: true, linkedUserId: true } },
-            patient: { select: { userId: true, firstName: true, lastName: true } },
+            patientRecord: { select: { id: true, firstName: true, lastName: true, email: true, linkedUserId: true, phone: true } },
+            patient: { select: { userId: true, firstName: true, lastName: true, phone: true } },
           },
         },
       },
@@ -91,6 +119,7 @@ export async function deliverEmissionToPatient(
           lastName,
           email: record?.email || null,
           hasAccount: !!linkedUserId,
+          hasPhone: !!(record?.phone || profile?.phone),
         },
         shareUrl: shareUrl(!!linkedUserId, kind),
       };
@@ -142,12 +171,27 @@ export async function deliverEmissionToPatient(
       data: { patientNotifiedAt: new Date() },
     });
 
+    const whatsapp = await maybeWhatsApp(
+      prescription.id,
+      undefined,
+      record,
+      profile,
+      kind,
+    );
+
     return {
       delivered: true,
       alreadyDelivered: false,
       patientRecordId: record?.id || null,
-      patient: { firstName, lastName, email: notifyEmail, hasAccount: !!notifyUserId },
+      patient: {
+        firstName,
+        lastName,
+        email: notifyEmail,
+        hasAccount: !!notifyUserId,
+        hasPhone: !!(record?.phone || profile?.phone),
+      },
       shareUrl: shareUrl(!!notifyUserId, kind),
+      whatsapp,
     };
   }
 
@@ -155,8 +199,8 @@ export async function deliverEmissionToPatient(
   const document = await db.medicalDocument.findUnique({
     where: { id },
     include: {
-      patientRecord: { select: { id: true, firstName: true, lastName: true, email: true, linkedUserId: true } },
-      patient: { select: { userId: true, firstName: true, lastName: true } },
+      patientRecord: { select: { id: true, firstName: true, lastName: true, email: true, linkedUserId: true, phone: true } },
+      patient: { select: { userId: true, firstName: true, lastName: true, phone: true } },
     },
   });
   if (!document || document.professionalId !== professional.id) {
@@ -178,7 +222,7 @@ export async function deliverEmissionToPatient(
       delivered: false,
       alreadyDelivered: true,
       patientRecordId: record?.id || null,
-      patient: { firstName, lastName, email: notifyEmail, hasAccount: !!linkedUserId },
+      patient: { firstName, lastName, email: notifyEmail, hasAccount: !!linkedUserId, hasPhone: !!(record?.phone || profile?.phone) },
       shareUrl: shareUrl(!!linkedUserId, docKind),
     };
   }
@@ -222,11 +266,26 @@ export async function deliverEmissionToPatient(
     data: { patientNotifiedAt: new Date() },
   });
 
+  const whatsapp = await maybeWhatsApp(
+    undefined,
+    document.id,
+    record,
+    profile,
+    docKind,
+  );
+
   return {
     delivered: true,
     alreadyDelivered: false,
     patientRecordId: record?.id || null,
-    patient: { firstName, lastName, email: notifyEmail, hasAccount: !!linkedUserId },
+    patient: {
+      firstName,
+      lastName,
+      email: notifyEmail,
+      hasAccount: !!linkedUserId,
+      hasPhone: !!(record?.phone || profile?.phone),
+    },
     shareUrl: shareUrl(!!linkedUserId, docKind),
+    whatsapp,
   };
 }

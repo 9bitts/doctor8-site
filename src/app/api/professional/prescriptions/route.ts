@@ -164,6 +164,7 @@ export async function GET(req: NextRequest) {
       instructions: p.instructions ? safeDecrypt(p.instructions) : "",
       patientRecordId: p.document?.patientRecordId ?? null,
       signatureStatus: (p as { signatureStatus?: string | null }).signatureStatus ?? null,
+      whatsappNotifyStatus: (p as { whatsappNotifyStatus?: string | null }).whatsappNotifyStatus ?? null,
       digitalSignature: p.digitalSignature,
       signed: (p as { signatureStatus?: string | null }).signatureStatus === "SIGNED",
       document: {

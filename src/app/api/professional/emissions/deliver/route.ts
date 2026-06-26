@@ -6,6 +6,9 @@ import { z } from "zod";
 const schema = z.object({
   kind: z.enum(["prescription", "exam", "document"]),
   id: z.string().min(1),
+  sendWhatsApp: z.boolean().optional(),
+  whatsappMessage: z.string().max(1000).optional(),
+  forceWhatsapp: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -20,11 +23,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { kind, id } = parsed.data;
+  const { kind, id, sendWhatsApp, whatsappMessage, forceWhatsapp } = parsed.data;
   const deliverKind: EmissionDeliverKind =
     kind === "exam" ? "exam" : kind === "document" ? "document" : "prescription";
 
-  const result = await deliverEmissionToPatient(session.user.id, deliverKind, id);
+  const result = await deliverEmissionToPatient(session.user.id, deliverKind, id, {
+    sendWhatsApp,
+    whatsappMessage,
+    forceWhatsapp,
+  });
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }

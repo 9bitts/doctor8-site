@@ -65,6 +65,7 @@ export async function GET() {
       cid: exam?.cid || "",
       patientRecordId: d.patientRecordId,
       signatureStatus: d.signatureStatus,
+      whatsappNotifyStatus: d.whatsappNotifyStatus,
       digitalSignature: d.digitalSignature,
       signed: d.signatureStatus === "SIGNED",
       createdAt: d.createdAt,

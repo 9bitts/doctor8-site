@@ -114,3 +114,84 @@ export async function sendAppointmentReminderWhatsApp(opts: {
 
   return { ok: true, messageId: data.messages?.[0]?.id };
 }
+
+export type WhatsAppDeliveryStatus = "SENT" | "FAILED" | "NO_PHONE" | "SKIPPED";
+
+/** Clinical document / prescription link via approved utility template. */
+export async function sendClinicalDocumentWhatsApp(opts: {
+  toPhone: string;
+  patientName: string;
+  doctorName: string;
+  accessUrl: string;
+  documentLabel?: string;
+}): Promise<{ ok: boolean; messageId?: string; error?: string; skipped?: boolean }> {
+  if (!isWhatsAppConfigured()) {
+    return { ok: false, skipped: true };
+  }
+
+  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const templateName =
+    process.env.WHATSAPP_DOCUMENT_TEMPLATE?.trim() || "doctor8_clinical_document";
+  const templateLang = process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "pt_BR";
+
+  const to = normalizeWhatsAppPhone(opts.toPhone);
+  if (!to) return { ok: false, error: "Invalid phone number" };
+
+  const firstName = opts.patientName.trim().split(/\s+/)[0] || opts.patientName;
+  const docLabel = (opts.documentLabel || "documento clínico").slice(0, 256);
+  const link = opts.accessUrl.slice(0, 256);
+
+  const res = await fetch(
+    `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: templateLang },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                { type: "text", text: firstName.slice(0, 256) },
+                { type: "text", text: opts.doctorName.slice(0, 256) },
+                { type: "text", text: docLabel },
+                { type: "text", text: link },
+              ],
+            },
+          ],
+        },
+      }),
+    },
+  );
+
+  const data = (await res.json().catch(() => ({}))) as {
+    messages?: { id: string }[];
+    error?: { message?: string };
+  };
+
+  if (!res.ok) {
+    console.error("[WHATSAPP] Document send failed:", JSON.stringify(data));
+    return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+  }
+
+  return { ok: true, messageId: data.messages?.[0]?.id };
+}
+
+export function buildClinicalDocumentWaMeUrl(
+  phone: string,
+  message: string,
+): string | null {
+  const to = normalizeWhatsAppPhone(phone);
+  if (!to) return null;
+  return `https://wa.me/${to}?text=${encodeURIComponent(message)}`;
+}

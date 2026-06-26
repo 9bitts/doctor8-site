@@ -5,6 +5,7 @@ import {
   CheckCircle2, PenLine, Loader2, FileText, Send, MessageCircle,
 } from "lucide-react";
 import { EmissionsSignModal, type EmissionKind, type SignTarget } from "./EmissionsSignModal";
+import WhatsappDeliverButton from "./WhatsappDeliverButton";
 import type { Chart } from "./types";
 
 export interface SavedEmission {
@@ -35,6 +36,9 @@ export function EmissionPostSaveFlow({
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
   const [inviteError, setInviteError] = useState("");
+  const [sendWhatsApp, setSendWhatsApp] = useState(true);
+  const [whatsappStatus, setWhatsappStatus] = useState("");
+  const [patientHasPhone, setPatientHasPhone] = useState(true);
 
   const patient = emission.patient;
   const savedTitleKey =
@@ -51,7 +55,11 @@ export function EmissionPostSaveFlow({
       const res = await fetch("/api/professional/emissions/deliver", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: deliverKind, id: emission.id }),
+        body: JSON.stringify({
+          kind: deliverKind,
+          id: emission.id,
+          sendWhatsApp,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -59,6 +67,8 @@ export function EmissionPostSaveFlow({
         return false;
       }
       setShareUrl(data.shareUrl || "");
+      setPatientHasPhone(!!data.patient?.hasPhone);
+      if (data.whatsapp?.status) setWhatsappStatus(data.whatsapp.status);
       setStep("success");
       return true;
     } catch {
@@ -149,6 +159,32 @@ export function EmissionPostSaveFlow({
           </div>
         )}
 
+        {!patientHasPhone && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+            {t("wa.noPhone")}
+          </div>
+        )}
+
+        {whatsappStatus === "SENT" && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800 flex items-start gap-2">
+            <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
+            {t("wa.statusSent")}
+          </div>
+        )}
+
+        {shareUrl && patientHasPhone && (
+          <WhatsappDeliverButton
+            kind={emission.kind}
+            id={emission.id}
+            patientName={`${patient.firstName} ${patient.lastName}`}
+            shareUrl={shareUrl}
+            t={t}
+            defaultMessage={t("rx.flow.whatsappMessage")}
+            initialStatus={whatsappStatus}
+            onStatusChange={setWhatsappStatus}
+          />
+        )}
+
         <button onClick={openWhatsApp}
           className="w-full py-3 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 text-green-800 font-semibold text-sm transition flex items-center justify-center gap-2">
           <MessageCircle size={18} /> {t("rx.flow.whatsappShare")}
@@ -179,6 +215,15 @@ export function EmissionPostSaveFlow({
         )}
 
         <div className="space-y-3">
+          <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={sendWhatsApp}
+              onChange={(e) => setSendWhatsApp(e.target.checked)}
+              className="w-4 h-4 accent-brand-500"
+            />
+            {t("wa.sendAfterDeliver")}
+          </label>
           <button onClick={handleSign} disabled={delivering}
             className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
             <PenLine size={18} /> {t("rx.flow.signNow")}

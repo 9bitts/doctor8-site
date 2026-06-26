@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { EmissionsSignModal, RX_STYLES, type SignTarget, type EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
 import { EmissionPostSaveFlow, type SavedEmission } from "@/components/professional/emissions/EmissionPostSaveFlow";
+import WhatsappDeliverButton from "@/components/professional/emissions/WhatsappDeliverButton";
 import { ExamCreateView } from "@/components/professional/emissions/ExamCreateView";
 import { DocumentCreateView } from "@/components/professional/emissions/DocumentCreateView";
 import type { Chart } from "@/components/professional/emissions/types";
@@ -50,6 +51,7 @@ interface ClinicalDocument {
   content?: string | null; examItems?: string[]; examNotes?: string; cid?: string;
   patientRecordId?: string | null;
   signatureStatus?: string | null; digitalSignature?: string | null; signed?: boolean;
+  whatsappNotifyStatus?: string | null;
   categoryName?: string | null;
   document?: { patient?: { firstName: string; lastName: string } | null };
 }
@@ -71,6 +73,7 @@ interface Prescription {
   instructions?: string; patientRecordId?: string | null;
   digitalSignature?: string | null;
   signatureStatus?: string | null;
+  whatsappNotifyStatus?: string | null;
   document?: { patient?: { firstName: string; lastName: string } | null };
   medications: MedItem[];
 }
@@ -89,6 +92,12 @@ function isExamDocType(type: string) {
 
 function emissionKindFromDoc(type: string): EmissionKind {
   return isExamDocType(type) ? "exam" : "document";
+}
+
+function emissionShareUrl(kind: EmissionKind): string {
+  const base = typeof window !== "undefined" ? window.location.origin : "https://doctor8.app";
+  if (kind === "prescription") return `${base}/patient/prescriptions`;
+  return `${base}/patient/documents`;
 }
 
 function PrescriptionCard({
@@ -143,6 +152,18 @@ function PrescriptionCard({
             className="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
             <Download size={13} /> {t("rx.downloadPDF")}
           </a>
+          {signed && (
+            <WhatsappDeliverButton
+              kind="prescription"
+              id={p.id}
+              patientName={patientName}
+              shareUrl={emissionShareUrl("prescription")}
+              t={t}
+              defaultMessage={t("rx.flow.whatsappMessage")}
+              initialStatus={p.whatsappNotifyStatus}
+              compact
+            />
+          )}
         </div>
       </div>
     </div>
@@ -205,6 +226,18 @@ function ClinicalDocCard({
             className="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
             <Download size={13} /> {t("rx.downloadPDF")}
           </a>
+          {signed && (
+            <WhatsappDeliverButton
+              kind={emissionKindFromDoc(d.type)}
+              id={d.id}
+              patientName={patientName}
+              shareUrl={emissionShareUrl(emissionKindFromDoc(d.type))}
+              t={t}
+              defaultMessage={t("rx.flow.whatsappMessage")}
+              initialStatus={d.whatsappNotifyStatus}
+              compact
+            />
+          )}
         </div>
       </div>
     </div>
@@ -272,7 +305,7 @@ export default function PrescriptionsPage() {
           const res = await fetch("/api/professional/emissions/deliver", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ kind: deliverKind, id }),
+            body: JSON.stringify({ kind: deliverKind, id, sendWhatsApp: true }),
           });
           const data = await res.json();
           if (res.ok) {

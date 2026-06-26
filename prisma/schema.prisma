@@ -583,6 +583,8 @@ model MedicalDocument {
   signedAt           DateTime?
   digitalSignature   String?
   patientNotifiedAt  DateTime?
+  whatsappNotifiedAt DateTime?
+  whatsappNotifyStatus String? // SENT | FAILED | NO_PHONE | SKIPPED
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -644,6 +646,8 @@ model Prescription {
   signedFileUrl      String?   // S3 key of the signed PDF
   signedAt           DateTime?
   patientNotifiedAt  DateTime?
+  whatsappNotifiedAt DateTime?
+  whatsappNotifyStatus String? // SENT | FAILED | NO_PHONE | SKIPPED
 
   createdAt        DateTime @default(now())
 
