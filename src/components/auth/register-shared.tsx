@@ -138,10 +138,24 @@ export function RegisterAccountForm({
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
 
   async function handleGoogleSignUp() {
-    document.cookie = `signup_role=${role}; path=/; max-age=600; SameSite=Lax`;
     setGoogleLoading(true);
-    persistAuthCallback(callbackUrl);
-    await signIn("google", { callbackUrl: "/callback" });
+    try {
+      const intentRes = await fetch("/api/auth/oauth-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      if (!intentRes.ok) {
+        setErrors({ form: ["Could not start Google sign-up. Please try again."] });
+        setGoogleLoading(false);
+        return;
+      }
+      persistAuthCallback(callbackUrl);
+      await signIn("google", { callbackUrl: "/callback" });
+    } catch {
+      setErrors({ form: ["Could not start Google sign-up. Please try again."] });
+      setGoogleLoading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {

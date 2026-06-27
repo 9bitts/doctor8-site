@@ -47,6 +47,7 @@ const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
 const INTEGRATIVE_THERAPIST_ROUTES = ["/integrative-therapist"];
 const ORGANIZATION_ROUTES = ["/organization"];
 const ANGEL_ROUTES = ["/humanitarian/angel"];
+const VOLUNTEER_ROUTES = ["/humanitarian/volunteer"];
 const ADMIN_ROUTES = ["/admin"];
 
 export default auth((req) => {
@@ -166,6 +167,16 @@ export default auth((req) => {
   if (
     ANGEL_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "ANGEL" &&
+    role !== "ADMIN"
+  ) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+
+  if (
+    VOLUNTEER_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "PROFESSIONAL" &&
+    role !== "PSYCHOANALYST" &&
+    role !== "INTEGRATIVE_THERAPIST" &&
     role !== "ADMIN"
   ) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));

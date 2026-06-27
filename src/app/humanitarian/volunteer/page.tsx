@@ -48,6 +48,12 @@ function t(lang: Lang, key: string, params?: Record<string, string | number>) {
   return s;
 }
 
+function volunteerErrorMessage(lang: Lang, code: unknown): string {
+  if (code === "NOT_VERIFIED") return t(lang, "hum.vol.notVerified");
+  if (typeof code === "string" && code.length > 0 && code !== "Forbidden") return code;
+  return t(lang, "hum.vol.connectionError");
+}
+
 function poolLabel(pool: PoolRow, lang: Lang) {
   if (lang === "pt") return pool.labelPt;
   if (lang === "en") return pool.labelEn;
@@ -80,7 +86,7 @@ export default function HumanitarianVolunteerPage() {
       );
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || t(lang, "hum.vol.connectionError"));
+        setError(volunteerErrorMessage(lang, data.error));
         setLoading(false);
         return;
       }
@@ -108,7 +114,7 @@ export default function HumanitarianVolunteerPage() {
           router.push(`/login?callbackUrl=/humanitarian/volunteer`);
           return;
         }
-        if (!["PROFESSIONAL", "PSYCHOANALYST"].includes(s.user.role)) {
+        if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(s.user.role)) {
           router.push(`/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`);
           return;
         }
@@ -134,7 +140,7 @@ export default function HumanitarianVolunteerPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : t(lang, "hum.vol.connectionError"));
+        setError(volunteerErrorMessage(lang, data.error));
         setToggling(null);
         return;
       }

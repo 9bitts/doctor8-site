@@ -14,8 +14,7 @@ export default function CallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Clean up the temporary signup role cookie
-    document.cookie = "signup_role=; path=/; max-age=0; SameSite=Lax";
+    fetch("/api/auth/oauth-intent", { method: "DELETE" }).catch(() => undefined);
 
     fetch("/api/auth/session")
       .then((r) => r.json())

@@ -6,6 +6,7 @@ import { createMeetingToken } from "@/lib/daily";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { ensureAnalysandForPatient } from "@/lib/providers";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
+import { isVolunteerOnEntry } from "@/lib/humanitarian/volunteer-eligibility";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -36,6 +37,7 @@ export async function GET(
         include: {
           professional: { select: { id: true, userId: true, firstName: true, lastName: true } },
           psychoanalyst: { select: { id: true, userId: true, firstName: true, lastName: true } },
+          integrativeTherapist: { select: { id: true, userId: true, firstName: true, lastName: true } },
         },
       },
       pool: { include: { campaign: true } },
@@ -45,13 +47,9 @@ export async function GET(
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isPatient = entry.patientUserId === session.user.id;
-  const vol = entry.volunteer;
-  const isProfessional =
-    vol &&
-    ((vol.professional && vol.professional.userId === session.user.id) ||
-      (vol.psychoanalyst && vol.psychoanalyst.userId === session.user.id));
+  const isVolunteer = isVolunteerOnEntry(entry.volunteer, session.user.id);
 
-  if (!isPatient && !isProfessional) {
+  if (!isPatient && !isVolunteer) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -91,15 +89,17 @@ export async function GET(
   let analysandRecordId: string | null = null;
   let providerPanel: "professional" | "psychoanalyst" = "professional";
 
+  const vol = entry.volunteer;
+
   if (vol?.professional) {
     proName = `Dr. ${vol.professional.firstName} ${vol.professional.lastName}`;
-    if (isProfessional) {
+    if (isVolunteer) {
       patientRecordId = await ensurePatientRecord(vol.professional.id, entry.patientUserId);
     }
   } else if (vol?.psychoanalyst) {
     proName = `${vol.psychoanalyst.firstName} ${vol.psychoanalyst.lastName}`;
     providerPanel = "psychoanalyst";
-    if (isProfessional) {
+    if (isVolunteer) {
       const patientUser = await db.user.findUnique({
         where: { id: entry.patientUserId },
         select: { email: true },
@@ -121,11 +121,13 @@ export async function GET(
         analysandRecordId = analysand.id;
       }
     }
+  } else if (vol?.integrativeTherapist) {
+    proName = `${vol.integrativeTherapist.firstName} ${vol.integrativeTherapist.lastName}`;
   }
 
   const userName = isPatient ? patientName : proName;
   const tokenExp = Math.floor(Date.now() / 1000) + 2 * 60 * 60;
-  const token = await createMeetingToken(roomName, userName, !!isProfessional, tokenExp);
+  const token = await createMeetingToken(roomName, userName, isVolunteer, tokenExp);
 
   return NextResponse.json({
     url: entry.meetingUrl,

@@ -11,6 +11,10 @@ import {
 } from "@/lib/humanitarian/dispatcher";
 import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
 import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
+import {
+  isVolunteerRole,
+  requireVerifiedVolunteer,
+} from "@/lib/humanitarian/volunteer-eligibility";
 import { decrypt } from "@/lib/encryption";
 import type { Lang } from "@/lib/i18n/translations";
 import type { HumanitarianIntake, HumanitarianQueueEntry } from "@prisma/client";
@@ -60,8 +64,16 @@ const statusSchema = z.object({
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(session.user.role)) {
+  if (!isVolunteerRole(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const verification = await requireVerifiedVolunteer(session.user.id, session.user.role);
+  if (!verification.ok) {
+    return NextResponse.json(
+      { error: verification.error, message: "Professional verification required before volunteering." },
+      { status: 403 },
+    );
   }
 
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug") || "venezuela-terremoto-2026";
@@ -153,7 +165,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(session.user.role)) {
+  if (!isVolunteerRole(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -164,6 +176,17 @@ export async function POST(req: NextRequest) {
   }
 
   const { status, campaignSlug, poolSlug } = parsed.data;
+
+  if (status === "ONLINE") {
+    const verification = await requireVerifiedVolunteer(session.user.id, session.user.role);
+    if (!verification.ok) {
+      return NextResponse.json(
+        { error: verification.error, message: "Professional verification required before volunteering." },
+        { status: 403 },
+      );
+    }
+  }
+
   const lang = volunteerLang(req);
 
   const campaign = await db.humanitarianCampaign.findUnique({

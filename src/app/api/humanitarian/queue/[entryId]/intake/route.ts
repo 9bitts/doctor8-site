@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
+import { isVolunteerOnEntry } from "@/lib/humanitarian/volunteer-eligibility";
 
 export async function GET(
   _req: NextRequest,
@@ -21,6 +22,7 @@ export async function GET(
         include: {
           professional: { select: { userId: true } },
           psychoanalyst: { select: { userId: true } },
+          integrativeTherapist: { select: { userId: true } },
         },
       },
     },
@@ -29,10 +31,7 @@ export async function GET(
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isPatient = entry.patientUserId === session.user.id;
-  const isVolunteer =
-    entry.volunteer &&
-    (entry.volunteer.professional?.userId === session.user.id ||
-      entry.volunteer.psychoanalyst?.userId === session.user.id);
+  const isVolunteer = isVolunteerOnEntry(entry.volunteer, session.user.id);
   const isAdmin = session.user.role === "ADMIN";
 
   if (!isPatient && !isVolunteer && !isAdmin) {

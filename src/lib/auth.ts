@@ -2,7 +2,7 @@
 // Authentication configuration using Auth.js (NextAuth v5)
 // HIPAA: session timeout, login auditing, failed attempt tracking
 // Supports: Credentials (email+password) + Google OAuth
-// Google new users get the role they chose on the registration screen (signup_role cookie)
+// Google new users get the role from a signed httpOnly cookie set via POST /api/auth/oauth-intent
 
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
@@ -23,16 +23,15 @@ const SESSION_MAX_AGE = parseInt(
   process.env.SESSION_MAX_AGE_SECONDS || "900"
 );
 
-// Reads the role the user picked on the registration screen, stored in a cookie
-// before the Google redirect. Dynamic import keeps next/headers out of edge bundles.
+// Reads the signed OAuth signup intent cookie set before the Google redirect.
 async function readSignupRole(): Promise<"PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST"> {
   try {
     const { cookies } = await import("next/headers");
-    const value = cookies().get("signup_role")?.value;
-    if (value === "PROFESSIONAL") return "PROFESSIONAL";
-    if (value === "PSYCHOANALYST") return "PSYCHOANALYST";
-    if (value === "INTEGRATIVE_THERAPIST") return "INTEGRATIVE_THERAPIST";
-    return "PATIENT";
+    const { parseSignupRoleToken, OAUTH_SIGNUP_ROLE_COOKIE } = await import(
+      "@/lib/oauth-signup-intent"
+    );
+    const token = cookies().get(OAUTH_SIGNUP_ROLE_COOKIE)?.value;
+    return parseSignupRoleToken(token) ?? "PATIENT";
   } catch {
     return "PATIENT";
   }
