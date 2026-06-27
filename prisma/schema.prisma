@@ -197,6 +197,7 @@ enum ConsentType {
   HIPAA_AUTHORIZATION   // US only
   GDPR_CONSENT          // EU only
   MARKETING
+  TELEMEDICINE_TCLE     // TCLE — atendimento a distancia
 }
 
 enum AuditAction {
@@ -2135,6 +2136,8 @@ model HumanitarianIntake {
   specialtyData       Json?
   basicNeedsData      Json?
   consentAt           DateTime?
+  telemedicineTcleAt  DateTime?
+  telemedicineTcleVersion String?
   additionalNotes     String?
 
   status              HumanitarianIntakeStatus @default(TRIAGE_ONLY)
@@ -2155,7 +2158,7 @@ model HumanitarianPool {
   campaignId   String
   campaign     HumanitarianCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
-  slug         String               // medico | psicologo | psicanalista | terapeuta_integrativo
+  slug         String               // medico | psicologo | psicanalista | terapeuta_integrativo | fisioterapeuta | nutricionista | cuidados_paliativos
   labelEs      String
   labelPt      String
   labelEn      String

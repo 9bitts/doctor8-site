@@ -7,6 +7,7 @@ import {
   saveHumanitarianTriage,
 } from "@/lib/humanitarian/intake";
 import { humanitarianTriageSchema } from "@/lib/humanitarian/triage";
+import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { z } from "zod";
 
 const postSchema = z.object({
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest) {
       triageFlags: saved.flags,
       anamneseComplete: saved.intake.status === "COMPLETE",
       anamneseStarted: saved.intake.status !== "TRIAGE_ONLY",
+      tcleAccepted: await hasTelemedicineTcle(session.user.id),
     },
   });
 }

@@ -14,6 +14,7 @@ import {
   type HumanitarianTriageData,
 } from "@/lib/humanitarian/triage";
 import type { HumanitarianIntakeStatus, HumanitarianPriority } from "@prisma/client";
+import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -50,6 +51,7 @@ export interface IntakeStatusDto {
   triageFlags: string[];
   anamneseComplete: boolean;
   anamneseStarted: boolean;
+  tcleAccepted: boolean;
   anamnese?: AnamneseDto;
   prefill?: IntakePrefillDto;
 }
@@ -120,11 +122,13 @@ export async function getPatientIntakeStatus(
       triageFlags: [],
       anamneseComplete: false,
       anamneseStarted: false,
+      tcleAccepted: false,
     };
   }
 
   const valid = isTriageValid(intake.triageCompletedAt);
   const anamneseComplete = intake.status === "COMPLETE";
+  const tcleAccepted = await hasTelemedicineTcle(patientUserId);
 
   return {
     id: intake.id,
@@ -139,6 +143,7 @@ export async function getPatientIntakeStatus(
     triageFlags: valid ? intake.triageFlags : [],
     anamneseComplete,
     anamneseStarted: intake.status !== "TRIAGE_ONLY",
+    tcleAccepted,
     ...(opts?.includeAnamnese
       ? {
           anamnese: mapAnamnese(intake as unknown as Record<string, unknown>),
@@ -170,6 +175,7 @@ export async function getPatientIntakeStatusBySlug(
       triageFlags: [],
       anamneseComplete: false,
       anamneseStarted: false,
+      tcleAccepted: false,
     };
   }
 
@@ -344,6 +350,25 @@ export async function saveAnamneseSection(params: {
         patientLabel: label,
         campaignName: campaign.name,
         intake,
+      }).catch(() => {});
+    }
+  } else if (existing.status === "TRIAGE_ONLY" && intake.status === "PARTIAL") {
+    const [campaign, label] = await Promise.all([
+      db.humanitarianCampaign.findUnique({
+        where: { id: params.campaignId },
+        select: { name: true },
+      }),
+      patientLabelForUser(params.patientUserId),
+    ]);
+    if (campaign) {
+      const { notifyCoordinationIntakePartial } = await import(
+        "@/lib/humanitarian/coordination-email"
+      );
+      notifyCoordinationIntakePartial({
+        patientLabel: label,
+        campaignName: campaign.name,
+        intake,
+        section: parsed.section,
       }).catch(() => {});
     }
   }

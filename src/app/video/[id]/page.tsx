@@ -18,6 +18,10 @@ export default function AppointmentVideoPage() {
       if (d.error === "TOO_EARLY") {
         return { error: d.message, opensAt: d.opensAt };
       }
+      if (d.error === "TCLE_REQUIRED") {
+        window.location.href = `/patient/tcle?returnUrl=${encodeURIComponent(`/video/${appointmentId}`)}`;
+        return { error: "Redirecting to consent form..." };
+      }
       return { error: d.message || d.error || "Could not open the video room." };
     }
     return { data: { ...d, kind: "appointment" } };

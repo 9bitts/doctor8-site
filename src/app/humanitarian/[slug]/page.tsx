@@ -110,6 +110,10 @@ export default function HumanitarianCampaignPage() {
           router.replace(`/humanitarian/${slug}/triage`);
           return;
         }
+        if (intakeRes.ok && intakeData.intake?.triageValid && !intakeData.intake?.tcleAccepted) {
+          router.replace(`/humanitarian/${slug}/tcle`);
+          return;
+        }
         if (intakeRes.ok && intakeData.intake) {
           setForceMedicalPool(!!intakeData.intake.forceMedicalPool);
           setComputedPriority(intakeData.intake.computedPriority ?? null);
@@ -165,6 +169,10 @@ export default function HumanitarianCampaignPage() {
       if (!res.ok) {
         if (data.error === "TRIAGE_REQUIRED") {
           router.replace(`/humanitarian/${slug}/triage`);
+          return;
+        }
+        if (data.error === "TCLE_REQUIRED") {
+          router.replace(`/humanitarian/${slug}/tcle`);
           return;
         }
         setError(data.message || data.error || t(lang, "hum.page.queueError"));

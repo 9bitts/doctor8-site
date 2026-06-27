@@ -72,6 +72,54 @@ function summaryHtml(
   );
 }
 
+export async function notifyCoordinationIntakePartial(params: {
+  patientLabel: string;
+  campaignName: string;
+  intake: HumanitarianIntake;
+  section: string;
+}): Promise<boolean> {
+  const recipients = coordinationRecipients();
+  if (!recipients.length || !process.env.RESEND_API_KEY) return false;
+
+  const summary = buildIntakeSummary(params.intake, "es");
+  const sectionLabel: Record<string, string> = {
+    identification: "Identificaci\u00f3n",
+    services: "Tipo de atenci\u00f3n",
+    specialty: "Especialidad",
+    basicNeeds: "Necesidades b\u00e1sicas",
+  };
+
+  try {
+    await Promise.all(
+      recipients.map((to) =>
+        sendTransactionalEmail({
+          to,
+          subject: `[SOS Venezuela] Ficha parcial \u2014 ${params.patientLabel} (${params.intake.computedPriority || "ROUTINE"})`,
+          html: emailShell(
+            "Ficha parcial iniciada",
+            `
+              <p style="color:#334155;font-size:15px;">
+                <strong>${params.patientLabel}</strong> comenz\u00f3 la anamnesis en
+                <strong>${params.campaignName}</strong> (secci\u00f3n: ${sectionLabel[params.section] || params.section}).
+              </p>
+              <p style="color:#334155;font-size:14px;"><strong>Prioridad:</strong> ${summary.priority || "\u2014"}</p>
+              <p style="color:#64748b;font-size:13px;">La ficha a\u00fan no est\u00e1 completa. El paciente puede continuar despu\u00e9s.</p>
+              <p style="margin-top:20px;">
+                <a href="${getAppUrl()}/admin/humanitarian" style="color:#00b87a;font-weight:bold;">Ver en Doctor8 Admin</a>
+              </p>
+            `,
+            "es",
+          ),
+          tag: "humanitarian-intake-partial",
+        }),
+      ),
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function notifyCoordinationIntakeComplete(params: {
   patientLabel: string;
   campaignName: string;

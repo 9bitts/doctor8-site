@@ -6,7 +6,10 @@ export type HumanitarianPoolSlug =
   | "medico"
   | "psicologo"
   | "psicanalista"
-  | "terapeuta_integrativo";
+  | "terapeuta_integrativo"
+  | "fisioterapeuta"
+  | "nutricionista"
+  | "cuidados_paliativos";
 
 export const VENEZUELA_CAMPAIGN_SLUG = "venezuela-terremoto-2026";
 
@@ -59,6 +62,36 @@ export const DEFAULT_VENEZUELA_POOLS: {
     sortOrder: 4,
     volunteerRoles: ["PROFESSIONAL"],
     specialtyHints: ["integrativ", "holistic", "terapia", "counsel", "terapeuta"],
+  },
+  {
+    slug: "fisioterapeuta",
+    labelEs: "Fisioterapeuta",
+    labelPt: "Fisioterapeuta",
+    labelEn: "Physiotherapist",
+    maxWaiting: 150,
+    sortOrder: 5,
+    volunteerRoles: ["PROFESSIONAL"],
+    specialtyHints: ["fisio", "physio", "rehab", "reabilit"],
+  },
+  {
+    slug: "nutricionista",
+    labelEs: "Nutricionista",
+    labelPt: "Nutricionista",
+    labelEn: "Nutritionist",
+    maxWaiting: 100,
+    sortOrder: 6,
+    volunteerRoles: ["PROFESSIONAL"],
+    specialtyHints: ["nutri", "nutrition", "diet"],
+  },
+  {
+    slug: "cuidados_paliativos",
+    labelEs: "Cuidados paliativos",
+    labelPt: "Cuidados paliativos",
+    labelEn: "Palliative care",
+    maxWaiting: 80,
+    sortOrder: 7,
+    volunteerRoles: ["PROFESSIONAL"],
+    specialtyHints: ["paliativ", "palliat", "hospice", "cuidados"],
   },
 ];
 

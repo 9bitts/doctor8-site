@@ -38,7 +38,11 @@ export default function HumanitarianTriagePage() {
         const res = await fetch(`/api/humanitarian/intake?campaignSlug=${slug}`);
         const data = await res.json();
         if (res.ok && data.intake?.triageValid && !retake) {
-          router.replace(`/humanitarian/${slug}`);
+          if (!data.intake?.tcleAccepted) {
+            router.replace(`/humanitarian/${slug}/tcle`);
+          } else {
+            router.replace(`/humanitarian/${slug}`);
+          }
           return;
         }
         setLoading(false);
@@ -61,7 +65,7 @@ export default function HumanitarianTriagePage() {
       <HumanitarianTriageForm
         lang={lang}
         campaignSlug={slug}
-        onComplete={() => router.push(`/humanitarian/${slug}`)}
+        onComplete={() => router.push(`/humanitarian/${slug}/tcle`)}
       />
     </HumanitarianShell>
   );

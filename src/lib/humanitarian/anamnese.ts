@@ -100,7 +100,6 @@ export const basicNeedsSchema = z.object({
 });
 
 export const consentSchema = z.object({
-  telemedicineConsent: z.literal(true),
   shareWithVolunteer: z.boolean(),
   additionalNotes: z.string().max(2000).optional(),
 });

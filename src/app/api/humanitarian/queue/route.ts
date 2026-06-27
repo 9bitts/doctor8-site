@@ -11,6 +11,7 @@ import {
 } from "@/lib/humanitarian/dispatcher";
 import { notifyHumanitarianJoined } from "@/lib/humanitarian/notify";
 import { requireValidIntake } from "@/lib/humanitarian/intake";
+import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 
 const joinSchema = z.object({
   campaignSlug: z.string(),
@@ -74,6 +75,16 @@ export async function POST(req: NextRequest) {
   }
 
   const priority = intake.computedPriority;
+
+  if (!(await hasTelemedicineTcle(session.user.id))) {
+    return NextResponse.json(
+      {
+        error: "TCLE_REQUIRED",
+        message: "Sign the telemedicine consent form before joining the queue.",
+      },
+      { status: 403 },
+    );
+  }
 
   const existing = await db.humanitarianQueueEntry.findFirst({
     where: {

@@ -61,7 +61,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
     needsShelterGuidance: false,
     separatedChildOrElderlyAlone: false,
   });
-  const [consent, setConsent] = useState({ telemedicineConsent: false, shareWithVolunteer: true });
+  const [consent, setConsent] = useState({ shareWithVolunteer: true });
   const [additionalNotes, setAdditionalNotes] = useState("");
 
   const load = useCallback(async () => {
@@ -126,13 +126,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
     else if (section === "specialty") data = specialty;
     else if (section === "basicNeeds") data = basicNeeds;
     else {
-      if (!consent.telemedicineConsent) {
-        setError(t(lang, "hum.anamnese.consentRequired"));
-        setSaving(false);
-        return;
-      }
       data = {
-        telemedicineConsent: true as const,
         shareWithVolunteer: consent.shareWithVolunteer,
         additionalNotes: additionalNotes.trim() || undefined,
       };
@@ -440,12 +434,9 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
 
       {step === "consent" && (
         <div className="space-y-4">
-          <label className="flex items-start gap-3 p-4 rounded-xl border border-white/10 cursor-pointer">
-            <input type="checkbox" checked={consent.telemedicineConsent}
-              onChange={(e) => setConsent((p) => ({ ...p, telemedicineConsent: e.target.checked }))}
-              className="mt-1" />
-            <span className="text-sm text-slate-300">{t(lang, "hum.anamnese.consentTele")}</span>
-          </label>
+          <p className="text-xs text-slate-500 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+            {t(lang, "hum.anamnese.tcleAlreadySigned")}
+          </p>
           <label className="flex items-start gap-3 p-4 rounded-xl border border-white/10 cursor-pointer">
             <input type="checkbox" checked={consent.shareWithVolunteer}
               onChange={(e) => setConsent((p) => ({ ...p, shareWithVolunteer: e.target.checked }))}

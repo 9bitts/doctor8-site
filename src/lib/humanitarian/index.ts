@@ -67,6 +67,7 @@ export { notifyHumanitarianAnamneseReminder } from "@/lib/humanitarian/notify";
 export { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
 export {
   notifyCoordinationIntakeComplete,
+  notifyCoordinationIntakePartial,
   notifyCoordinationUrgentTriage,
 } from "@/lib/humanitarian/coordination-email";
 export { buildHumanitarianIntakesCsv } from "@/lib/humanitarian/export-csv";

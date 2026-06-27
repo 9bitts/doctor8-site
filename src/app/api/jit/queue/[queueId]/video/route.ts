@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createMeetingToken } from "@/lib/daily";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
+import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -52,6 +53,16 @@ export async function GET(
 
   if (!isPatient && !isProfessional) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (isPatient && !(await hasTelemedicineTcle(session.user.id))) {
+    return NextResponse.json(
+      {
+        error: "TCLE_REQUIRED",
+        message: "Sign the telemedicine consent form before entering the consultation.",
+      },
+      { status: 403 },
+    );
   }
 
   if (!["CALLED", "IN_PROGRESS"].includes(entry.status)) {

@@ -14,6 +14,10 @@ export default function HumanitarianVideoPage() {
     const res = await fetch(`/api/humanitarian/queue/${entryId}/video`);
     const d = await res.json();
     if (!res.ok) {
+      if (d.error === "TCLE_REQUIRED") {
+        window.location.href = `/humanitarian/venezuela-terremoto-2026/tcle?return=${encodeURIComponent(`/video/humanitarian/${entryId}`)}`;
+        return { error: "Redirecting to consent form..." };
+      }
       return { error: d.message || d.error || "No se pudo abrir la sala." };
     }
     return { data: { ...d, kind: "humanitarian", queueId: entryId, entryId } };

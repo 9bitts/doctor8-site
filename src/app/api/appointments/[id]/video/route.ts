@@ -11,6 +11,7 @@ import { audit } from "@/lib/audit";
 import { getOrCreateRoom, createMeetingToken } from "@/lib/daily";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 
 export async function GET(
   req: NextRequest,
@@ -42,6 +43,16 @@ export async function GET(
 
   if (!isPatient && !isProfessional) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (isPatient && !(await hasTelemedicineTcle(session.user.id))) {
+    return NextResponse.json(
+      {
+        error: "TCLE_REQUIRED",
+        message: "Sign the telemedicine consent form before entering the consultation.",
+      },
+      { status: 403 },
+    );
   }
 
   if (appointment.status === "CANCELLED") {

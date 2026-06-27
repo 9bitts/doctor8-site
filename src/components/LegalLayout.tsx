@@ -102,6 +102,10 @@ export default function LegalLayout({
             {lang === "pt" ? "Termos de Uso" : lang === "en" ? "Terms of Use" : "Términos de Uso"}
           </Link>
           <span>·</span>
+          <Link href="/tcle-telemedicina" className="hover:text-slate-800">
+            {lang === "pt" ? "TCLE Telemedicina" : lang === "en" ? "Telemedicine ICF" : "TCLE Telemedicina"}
+          </Link>
+          <span>·</span>
           <Link href="/hipaa" className="hover:text-slate-800">HIPAA Notice</Link>
           <span>·</span>
           <Link href="/cookies" className="hover:text-slate-800">
