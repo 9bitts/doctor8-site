@@ -1,16 +1,13 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import VideoConsultRoom, { VideoConsultData } from "@/components/VideoConsultRoom";
+import VideoConsultRoom, { VideoConsultData, VideoConsultFetchResult } from "@/components/VideoConsultRoom";
 
 export default function HumanitarianVideoPage() {
   const params = useParams();
   const entryId = params.entryId as string;
 
-  async function fetchSession(): Promise<{
-    data?: VideoConsultData;
-    error?: string;
-  }> {
+  async function fetchSession(): Promise<VideoConsultFetchResult> {
     const res = await fetch(`/api/humanitarian/queue/${entryId}/video`);
     const d = await res.json();
     if (!res.ok) {

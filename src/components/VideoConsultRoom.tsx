@@ -119,15 +119,17 @@ function leaveDestination(data: VideoConsultData): string {
   }
 }
 
+export interface VideoConsultFetchResult {
+  data?: VideoConsultData;
+  error?: string;
+  opensAt?: string;
+  whatsappHandoff?: { professionalName: string; campaignSlug?: string };
+}
+
 export default function VideoConsultRoom({
   fetchSession,
 }: {
-  fetchSession: () => Promise<{
-    data?: VideoConsultData;
-    error?: string;
-    opensAt?: string;
-    whatsappHandoff?: { professionalName: string; campaignSlug?: string };
-  }>;
+  fetchSession: () => Promise<VideoConsultFetchResult>;
 }) {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("pt");
