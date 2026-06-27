@@ -15,6 +15,7 @@ import {
 } from "@/lib/humanitarian/triage";
 import type { HumanitarianIntakeStatus, HumanitarianPriority } from "@prisma/client";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
+import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -52,6 +53,7 @@ export interface IntakeStatusDto {
   anamneseComplete: boolean;
   anamneseStarted: boolean;
   tcleAccepted: boolean;
+  phoneReady: boolean;
   anamnese?: AnamneseDto;
   prefill?: IntakePrefillDto;
 }
@@ -123,12 +125,14 @@ export async function getPatientIntakeStatus(
       anamneseComplete: false,
       anamneseStarted: false,
       tcleAccepted: false,
+      phoneReady: false,
     };
   }
 
   const valid = isTriageValid(intake.triageCompletedAt);
   const anamneseComplete = intake.status === "COMPLETE";
   const tcleAccepted = await hasTelemedicineTcle(patientUserId);
+  const phoneReady = !!(await resolvePatientHumanitarianPhone(patientUserId));
 
   return {
     id: intake.id,
@@ -144,6 +148,7 @@ export async function getPatientIntakeStatus(
     anamneseComplete,
     anamneseStarted: intake.status !== "TRIAGE_ONLY",
     tcleAccepted,
+    phoneReady,
     ...(opts?.includeAnamnese
       ? {
           anamnese: mapAnamnese(intake as unknown as Record<string, unknown>),
@@ -176,6 +181,7 @@ export async function getPatientIntakeStatusBySlug(
       anamneseComplete: false,
       anamneseStarted: false,
       tcleAccepted: false,
+      phoneReady: false,
     };
   }
 
@@ -305,6 +311,26 @@ export async function saveAnamneseSection(params: {
   switch (parsed.section) {
     case "identification":
       updateData = { ...updateData, identificationData: parsed.data, status: "PARTIAL" };
+      if (
+        parsed.data.phoneDdi &&
+        parsed.data.phoneDdd &&
+        parsed.data.phoneNumber
+      ) {
+        try {
+          const { savePatientHumanitarianPhone } = await import("@/lib/humanitarian/phone");
+          await savePatientHumanitarianPhone(
+            params.patientUserId,
+            {
+              ddi: parsed.data.phoneDdi,
+              ddd: parsed.data.phoneDdd,
+              number: parsed.data.phoneNumber,
+            },
+            params.campaignId,
+          );
+        } catch {
+          /* invalid phone parts — intake still saved */
+        }
+      }
       break;
     case "services":
       updateData = {

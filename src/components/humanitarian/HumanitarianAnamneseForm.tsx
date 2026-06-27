@@ -15,6 +15,7 @@ import {
   type SpecialtyData,
 } from "@/lib/humanitarian/anamnese";
 import type { AnamneseDto, IntakePrefillDto } from "@/lib/humanitarian/intake";
+import { parsePhoneToParts } from "@/lib/humanitarian/phone";
 
 type Props = {
   lang: Lang;
@@ -86,11 +87,25 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
       const prefill: IntakePrefillDto | undefined = intake.prefill;
       const saved: AnamneseDto | undefined = intake.anamnese;
 
+      const prefillPhone = prefill?.phone || saved?.identification?.phone || "";
+      const phoneParts = saved?.identification?.phoneDdi
+        ? {
+            ddi: saved.identification.phoneDdi,
+            ddd: saved.identification.phoneDdd || "",
+            number: saved.identification.phoneNumber || "",
+          }
+        : prefillPhone
+          ? parsePhoneToParts(prefillPhone)
+          : { ddi: "58", ddd: "", number: "" };
+
       setIdentification({
         fullName: saved?.identification?.fullName || prefill?.fullName || "",
         ageOrDob: saved?.identification?.ageOrDob || prefill?.ageOrDob || "",
         sex: saved?.identification?.sex || prefill?.sex || "",
-        phone: saved?.identification?.phone || prefill?.phone || "",
+        phone: saved?.identification?.phone || prefillPhone,
+        phoneDdi: phoneParts.ddi,
+        phoneDdd: phoneParts.ddd,
+        phoneNumber: phoneParts.number,
         email: saved?.identification?.email || prefill?.email || "",
         state: saved?.identification?.state || prefill?.state || "",
         municipality: saved?.identification?.municipality || prefill?.municipality || "",
@@ -237,7 +252,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
           <Field label={t(lang, "hum.anamnese.fullName")}>
             <input className={inp} value={identification.fullName || ""} onChange={(e) => setIdentification((p) => ({ ...p, fullName: e.target.value }))} />
           </Field>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <Field label={t(lang, "hum.anamnese.ageOrDob")}>
               <input className={inp} value={identification.ageOrDob || ""} onChange={(e) => setIdentification((p) => ({ ...p, ageOrDob: e.target.value }))} />
             </Field>
@@ -245,14 +260,32 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
               <input className={inp} value={identification.sex || ""} onChange={(e) => setIdentification((p) => ({ ...p, sex: e.target.value }))} />
             </Field>
           </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Field label={t(lang, "hum.anamnese.phone")}>
-              <input className={inp} value={identification.phone || ""} onChange={(e) => setIdentification((p) => ({ ...p, phone: e.target.value }))} />
-            </Field>
-            <Field label={t(lang, "hum.anamnese.email")}>
-              <input className={inp} type="email" value={identification.email || ""} onChange={(e) => setIdentification((p) => ({ ...p, email: e.target.value }))} />
-            </Field>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1.5">{t(lang, "hum.anamnese.phone")} *</label>
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                className={inp}
+                value={identification.phoneDdi || "58"}
+                onChange={(e) => setIdentification((p) => ({ ...p, phoneDdi: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                placeholder={t(lang, "hum.phone.ddi")}
+              />
+              <input
+                className={inp}
+                value={identification.phoneDdd || ""}
+                onChange={(e) => setIdentification((p) => ({ ...p, phoneDdd: e.target.value.replace(/\D/g, "").slice(0, 3) }))}
+                placeholder={t(lang, "hum.phone.ddd")}
+              />
+              <input
+                className={inp}
+                value={identification.phoneNumber || ""}
+                onChange={(e) => setIdentification((p) => ({ ...p, phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 15) }))}
+                placeholder={t(lang, "hum.phone.number")}
+              />
+            </div>
           </div>
+          <Field label={t(lang, "hum.anamnese.email")}>
+            <input className={inp} type="email" value={identification.email || ""} onChange={(e) => setIdentification((p) => ({ ...p, email: e.target.value }))} />
+          </Field>
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label={t(lang, "hum.anamnese.state")}>
               <input className={inp} value={identification.state || ""} onChange={(e) => setIdentification((p) => ({ ...p, state: e.target.value }))} />

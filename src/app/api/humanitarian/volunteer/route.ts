@@ -10,6 +10,7 @@ import {
   resolveVolunteerProfile,
 } from "@/lib/humanitarian/dispatcher";
 import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
+import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
 import { decrypt } from "@/lib/encryption";
 import type { Lang } from "@/lib/i18n/translations";
 import type { HumanitarianIntake, HumanitarianQueueEntry } from "@prisma/client";
@@ -32,13 +33,15 @@ type EntryWithPatient = HumanitarianQueueEntry & {
   intake: HumanitarianIntake | null;
 };
 
-function buildCurrentEntry(entry: EntryWithPatient, lang: Lang) {
+async function buildCurrentEntry(entry: EntryWithPatient, lang: Lang) {
   const pp = entry.patientUser?.patientProfile;
+  const patientPhoneAvailable = !!(await resolvePatientHumanitarianPhone(entry.patientUserId));
   return {
     id: entry.id,
     status: entry.status,
     chiefComplaint: entry.chiefComplaint,
     meetingUrl: entry.meetingUrl,
+    patientPhoneAvailable,
     patientName: pp
       ? `${safeDecrypt(pp.firstName)} ${safeDecrypt(pp.lastName)}`.trim()
       : "Paciente",
@@ -101,7 +104,7 @@ export async function GET(req: NextRequest) {
       },
     });
     if (entry) {
-      currentEntry = buildCurrentEntry(entry, lang);
+      currentEntry = await buildCurrentEntry(entry, lang);
     }
   }
 
@@ -269,7 +272,7 @@ export async function POST(req: NextRequest) {
       },
     });
     if (entry) {
-      currentEntry = buildCurrentEntry(entry, lang);
+      currentEntry = await buildCurrentEntry(entry, lang);
     }
   }
 
@@ -323,7 +326,7 @@ export async function PATCH(req: NextRequest) {
       },
     });
     if (entry) {
-      currentEntry = buildCurrentEntry(entry, lang);
+      currentEntry = await buildCurrentEntry(entry, lang);
     }
   }
 

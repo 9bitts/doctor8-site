@@ -11,6 +11,7 @@ import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
+import HumanitarianPhoneGate from "@/components/humanitarian/HumanitarianPhoneGate";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 import { humanitarianFlowStep } from "@/lib/humanitarian/patient-flow";
 
@@ -72,6 +73,7 @@ export default function HumanitarianCampaignPage() {
   const [computedPriority, setComputedPriority] = useState<string | null>(null);
   const [anamneseComplete, setAnamneseComplete] = useState(true);
   const [tcleAccepted, setTcleAccepted] = useState(false);
+  const [phoneReady, setPhoneReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +130,7 @@ export default function HumanitarianCampaignPage() {
           setComputedPriority(intakeData.intake.computedPriority ?? null);
           setAnamneseComplete(!!intakeData.intake.anamneseComplete);
           setTcleAccepted(!!intakeData.intake.tcleAccepted);
+          setPhoneReady(!!intakeData.intake.phoneReady);
         }
 
         await loadCampaign();
@@ -197,6 +200,12 @@ export default function HumanitarianCampaignPage() {
         }
         if (data.error === "TCLE_REQUIRED") {
           router.replace(`/humanitarian/${slug}/tcle`);
+          return;
+        }
+        if (data.error === "PHONE_REQUIRED") {
+          setPhoneReady(false);
+          setError(t(lang, "hum.phone.required"));
+          setJoining(null);
           return;
         }
         if (data.error === "CANNOT_SWITCH_IN_CONSULT") {
@@ -360,6 +369,16 @@ export default function HumanitarianCampaignPage() {
           </p>
         )}
 
+        {!phoneReady && tcleAccepted && (
+          <HumanitarianPhoneGate
+            lang={lang}
+            campaignSlug={slug}
+            onReady={() => setPhoneReady(true)}
+          />
+        )}
+
+        {phoneReady && (
+        <>
         <div className="space-y-3">
           {pools.map((pool) => (
             <button
@@ -434,6 +453,9 @@ export default function HumanitarianCampaignPage() {
               {t(lang, "hum.page.cancel")}
             </button>
           </div>
+        )}
+
+        </>
         )}
 
         <p className="text-center text-xs text-slate-500 leading-relaxed px-2">

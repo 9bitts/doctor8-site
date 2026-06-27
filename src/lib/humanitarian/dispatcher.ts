@@ -10,6 +10,11 @@ import {
   notifyVolunteerAssigned,
 } from "@/lib/humanitarian/notify";
 import { WAITING_ENTRY_STATUSES } from "@/lib/humanitarian/types";
+import {
+  buildVolunteerWhatsAppMessage,
+  resolvePatientHumanitarianPhone,
+} from "@/lib/humanitarian/phone";
+import { buildClinicalDocumentWaMeUrl } from "@/lib/whatsapp";
 import type { HumanitarianPriority, HumanitarianQueueEntry } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
@@ -279,6 +284,92 @@ export async function completeHumanitarianEntry(
   }
 
   await assignNextInPool(entry.poolId);
+}
+
+export async function handoffHumanitarianEntryViaWhatsApp(
+  entryId: string,
+  volunteerUserId: string,
+  lang: "pt" | "en" | "es" = "es",
+): Promise<{ whatsappUrl: string; patientName: string }> {
+  const now = new Date();
+  const entry = await db.humanitarianQueueEntry.findUnique({
+    where: { id: entryId },
+    include: {
+      volunteer: {
+        include: {
+          professional: { select: { id: true, firstName: true, lastName: true } },
+          psychoanalyst: { select: { id: true, firstName: true, lastName: true } },
+        },
+      },
+      pool: { include: { campaign: { select: { slug: true } } } },
+      intake: {
+        select: { status: true, triageFlags: true, computedPriority: true },
+      },
+    },
+  });
+
+  if (!entry?.volunteer || entry.volunteer.userId !== volunteerUserId) {
+    throw new Error("Forbidden");
+  }
+  if (!["CALLED", "IN_PROGRESS"].includes(entry.status)) {
+    throw new Error("NOT_ACTIVE");
+  }
+
+  const phone = await resolvePatientHumanitarianPhone(entry.patientUserId);
+  if (!phone) throw new Error("NO_PHONE");
+
+  const patientProfile = await db.patientProfile.findUnique({
+    where: { userId: entry.patientUserId },
+    select: { firstName: true, lastName: true },
+  });
+  const patientName = patientProfile
+    ? `${safeDecrypt(patientProfile.firstName)} ${safeDecrypt(patientProfile.lastName)}`.trim()
+    : "Paciente";
+
+  let volunteerName = "Voluntário Doctor8";
+  if (entry.volunteer.professional) {
+    const p = entry.volunteer.professional;
+    volunteerName = `Dr. ${p.firstName} ${p.lastName}`;
+  } else if (entry.volunteer.psychoanalyst) {
+    const p = entry.volunteer.psychoanalyst;
+    volunteerName = `${p.firstName} ${p.lastName}`;
+  }
+
+  await db.$transaction(async (tx) => {
+    const done = await tx.humanitarianQueueEntry.updateMany({
+      where: {
+        id: entryId,
+        status: { in: ["CALLED", "IN_PROGRESS"] },
+        volunteer: { userId: volunteerUserId },
+      },
+      data: { status: "DONE", endedAt: now },
+    });
+    if (done.count === 0) throw new Error("Forbidden");
+
+    await tx.humanitarianVolunteer.update({
+      where: { id: entry.volunteerId! },
+      data: { status: "ONLINE", currentEntryId: null },
+    });
+  });
+
+  if (entry.volunteer.professionalId) {
+    await ensurePatientRecord(entry.volunteer.professionalId, entry.patientUserId).catch(() => {});
+  }
+
+  const message = buildVolunteerWhatsAppMessage(volunteerName, lang);
+  const whatsappUrl = buildClinicalDocumentWaMeUrl(phone, message);
+  if (!whatsappUrl) throw new Error("INVALID_PHONE");
+
+  const { notifyHumanitarianWhatsAppHandoff } = await import("@/lib/humanitarian/notify");
+  await notifyHumanitarianWhatsAppHandoff({
+    patientUserId: entry.patientUserId,
+    campaignSlug: entry.pool.campaign.slug,
+    volunteerName,
+  });
+
+  await assignNextInPool(entry.poolId);
+
+  return { whatsappUrl, patientName };
 }
 
 export async function cancelHumanitarianEntry(

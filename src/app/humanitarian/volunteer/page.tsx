@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Heart, Loader2, Power, PowerOff, Phone, Users, Radio,
-  CheckCircle2, AlertCircle,
+  CheckCircle2, AlertCircle, MessageCircle,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
@@ -29,6 +29,7 @@ interface CurrentEntry {
   status: string;
   chiefComplaint: string | null;
   patientName: string;
+  patientPhoneAvailable?: boolean;
   intakeSummary?: {
     priority: string | null;
     status: string;
@@ -65,6 +66,7 @@ export default function HumanitarianVolunteerPage() {
   const [activePoolSlug, setActivePoolSlug] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -150,6 +152,35 @@ export default function HumanitarianVolunteerPage() {
     setToggling(null);
   }
 
+  async function requestWhatsAppContact() {
+    if (!currentEntry) return;
+    setWhatsappLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/humanitarian/queue/${currentEntry.id}/whatsapp-contact?lang=${lang}`,
+        { method: "POST" },
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setError(
+          data.error === "NO_PHONE"
+            ? t(lang, "hum.vol.noPatientPhone")
+            : data.message || t(lang, "hum.page.networkError"),
+        );
+        return;
+      }
+      if (data.whatsappUrl) {
+        window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
+      }
+      setCurrentEntry(null);
+      await load();
+    } catch {
+      setError(t(lang, "hum.page.networkError"));
+    }
+    setWhatsappLoading(false);
+  }
+
   async function completeConsultation() {
     if (!currentEntry) return;
     setCompleting(true);
@@ -230,6 +261,24 @@ export default function HumanitarianVolunteerPage() {
               >
                 <Phone size={16} /> {t(lang, "hum.vol.enterConsult")}
               </Link>
+              <button
+                type="button"
+                onClick={requestWhatsAppContact}
+                disabled={whatsappLoading || !currentEntry.patientPhoneAvailable}
+                title={
+                  !currentEntry.patientPhoneAvailable
+                    ? t(lang, "hum.vol.noPatientPhone")
+                    : undefined
+                }
+                className="flex-1 py-3 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {whatsappLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <MessageCircle size={16} />
+                )}
+                {t(lang, "hum.vol.requestWhatsApp")}
+              </button>
               <button
                 type="button"
                 onClick={completeConsultation}

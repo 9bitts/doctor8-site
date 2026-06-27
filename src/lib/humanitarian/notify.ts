@@ -286,3 +286,22 @@ export async function notifyHumanitarianAnamneseReminder(opts: {
     },
   }).catch(() => {});
 }
+
+export async function notifyHumanitarianWhatsAppHandoff(opts: {
+  patientUserId: string;
+  campaignSlug: string;
+  volunteerName: string;
+}) {
+  await createNotification({
+    userId: opts.patientUserId,
+    title: "Voluntário entrará em contato",
+    body: `${opts.volunteerName} vai falar com você pelo WhatsApp para iniciar o atendimento.`,
+    type: "system",
+    data: {
+      link: `/humanitarian/${opts.campaignSlug}`,
+      titleKey: "hum.notif.whatsappHandoff.title",
+      bodyKey: "hum.notif.whatsappHandoff.body",
+      bodyParams: { volunteer: opts.volunteerName },
+    },
+  }).catch(() => {});
+}

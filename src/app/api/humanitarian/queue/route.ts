@@ -12,6 +12,7 @@ import {
 } from "@/lib/humanitarian/dispatcher";
 import { notifyHumanitarianJoined } from "@/lib/humanitarian/notify";
 import { requireValidIntake } from "@/lib/humanitarian/intake";
+import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { getPatientActiveHumanitarianEntry } from "@/lib/humanitarian/notify";
 
@@ -96,6 +97,16 @@ export async function POST(req: NextRequest) {
       {
         error: "TCLE_REQUIRED",
         message: "Sign the telemedicine consent form before joining the queue.",
+      },
+      { status: 403 },
+    );
+  }
+
+  if (!(await resolvePatientHumanitarianPhone(session.user.id))) {
+    return NextResponse.json(
+      {
+        error: "PHONE_REQUIRED",
+        message: "Register your WhatsApp phone number before joining the queue.",
       },
       { status: 403 },
     );
