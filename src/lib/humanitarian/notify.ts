@@ -249,11 +249,16 @@ export async function notifyVolunteerAssigned(opts: {
   entryId: string;
   patientName: string;
   chiefComplaint?: string | null;
+  triageFlags?: string[];
+  priority?: string | null;
 }) {
+  const flags = opts.triageFlags?.length
+    ? ` Prioridade: ${opts.priority || "ROUTINE"}. Flags: ${opts.triageFlags.join(", ")}.`
+    : "";
   await createNotification({
     userId: opts.volunteerUserId,
     title: "Paciente asignado",
-    body: `${opts.patientName} fue asignado a tu consulta humanitaria.`,
+    body: `${opts.patientName} fue asignado a tu consulta humanitaria.${flags}`,
     type: "system",
     data: {
       entryId: opts.entryId,
@@ -261,6 +266,23 @@ export async function notifyVolunteerAssigned(opts: {
       titleKey: "hum.notif.volunteerAssigned.title",
       bodyKey: "hum.notif.volunteerAssigned.body",
       bodyParams: { patient: opts.patientName },
+    },
+  }).catch(() => {});
+}
+
+export async function notifyHumanitarianAnamneseReminder(opts: {
+  patientUserId: string;
+  campaignSlug: string;
+}) {
+  await createNotification({
+    userId: opts.patientUserId,
+    title: "Complete su ficha médica",
+    body: "Ayude al voluntario completando la anamnesis cuando pueda.",
+    type: "system",
+    data: {
+      link: `/humanitarian/${opts.campaignSlug}/anamnese`,
+      titleKey: "hum.notif.anamnese.title",
+      bodyKey: "hum.notif.anamnese.body",
     },
   }).catch(() => {});
 }

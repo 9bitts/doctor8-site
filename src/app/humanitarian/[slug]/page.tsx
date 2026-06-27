@@ -67,6 +67,7 @@ export default function HumanitarianCampaignPage() {
   const [selectedPool, setSelectedPool] = useState<string | null>(null);
   const [forceMedicalPool, setForceMedicalPool] = useState(false);
   const [computedPriority, setComputedPriority] = useState<string | null>(null);
+  const [anamneseComplete, setAnamneseComplete] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -112,6 +113,7 @@ export default function HumanitarianCampaignPage() {
         if (intakeRes.ok && intakeData.intake) {
           setForceMedicalPool(!!intakeData.intake.forceMedicalPool);
           setComputedPriority(intakeData.intake.computedPriority ?? null);
+          setAnamneseComplete(!!intakeData.intake.anamneseComplete);
         }
 
         loadCampaign();
@@ -233,6 +235,8 @@ export default function HumanitarianCampaignPage() {
           onEnter={enterConsultation}
           onLeave={leaveQueue}
           onRejoin={() => { setEntry(null); loadCampaign(); }}
+          campaignSlug={slug}
+          showAnamneseReminder={!anamneseComplete}
         />
       </HumanitarianShell>
     );
@@ -395,6 +399,8 @@ function QueueScreen({
   onEnter,
   onLeave,
   onRejoin,
+  campaignSlug,
+  showAnamneseReminder,
 }: {
   lang: Lang;
   entry: QueueEntry;
@@ -403,6 +409,8 @@ function QueueScreen({
   onEnter: () => void;
   onLeave: () => void;
   onRejoin: () => void;
+  campaignSlug: string;
+  showAnamneseReminder?: boolean;
 }) {
   const card = "bg-slate-900 border rounded-2xl p-6 sm:p-8 text-center w-full";
 
@@ -473,6 +481,14 @@ function QueueScreen({
         <Users size={14} /> {t(lang, "hum.page.volOnline", { count: entry.onlineVolunteers })}
       </p>
       <p className="text-xs text-slate-500 mb-6">{t(lang, "hum.page.keepOpen")}</p>
+      {showAnamneseReminder && entry.status === "WAITING" && (
+        <Link
+          href={`/humanitarian/${campaignSlug}/anamnese`}
+          className="block mb-4 text-sm text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
+        >
+          {t(lang, "hum.anamnese.waitingHint")}
+        </Link>
+      )}
       <button type="button" onClick={onLeave} className="text-sm text-slate-500 hover:text-slate-300 underline">
         {t(lang, "hum.page.leaveQueue")}
       </button>

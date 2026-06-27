@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
+import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   getActiveCampaignForRegion,
@@ -245,15 +246,23 @@ export default async function PatientDashboard() {
     <div className="max-w-5xl mx-auto space-y-8">
 
       {(humanitarianCampaign?.active || userRow?.region === "VE") && (
-        <HumanitarianBanner
-          lang={lang}
-          campaign={{
-            slug: humanitarianCampaign?.slug ?? "venezuela-terremoto-2026",
-            name: humanitarianCampaign?.name ?? translate(lang, "hum.banner.title"),
-          }}
-          entry={humanitarianEntry}
-          triageValid={humanitarianIntake.triageValid}
-        />
+        <>
+          <HumanitarianBanner
+            lang={lang}
+            campaign={{
+              slug: humanitarianCampaign?.slug ?? "venezuela-terremoto-2026",
+              name: humanitarianCampaign?.name ?? translate(lang, "hum.banner.title"),
+            }}
+            entry={humanitarianEntry}
+            triageValid={humanitarianIntake.triageValid}
+          />
+          {humanitarianIntake.triageValid && !humanitarianIntake.anamneseComplete && (
+            <HumanitarianAnamneseReminder
+              lang={lang}
+              campaignSlug={humanitarianCampaign?.slug ?? VENEZUELA_CAMPAIGN_SLUG}
+            />
+          )}
+        </>
       )}
 
       <ClubDoctorBanner

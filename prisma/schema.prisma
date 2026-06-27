@@ -2130,6 +2130,13 @@ model HumanitarianIntake {
   triageFlags         String[]                 @default([])
   forceMedicalPool    Boolean                  @default(false)
 
+  identificationData  Json?
+  serviceTypes        String[]                 @default([])
+  specialtyData       Json?
+  basicNeedsData      Json?
+  consentAt           DateTime?
+  additionalNotes     String?
+
   status              HumanitarianIntakeStatus @default(TRIAGE_ONLY)
 
   entries             HumanitarianQueueEntry[]

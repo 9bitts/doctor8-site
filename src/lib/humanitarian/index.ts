@@ -41,6 +41,11 @@ export { seedVenezuelaCampaign } from "@/lib/humanitarian/seed-venezuela";
 export { buildHumanitarianCsv } from "@/lib/humanitarian/export-csv";
 export { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
 export {
+  ANAMNESE_SERVICE_TYPES,
+  MEDICO_SYMPTOMS,
+  PSICO_SYMPTOMS,
+} from "@/lib/humanitarian/anamnese";
+export {
   computeTriagePriority,
   humanitarianTriageSchema,
   isTriageValid,
@@ -53,8 +58,12 @@ export {
   getPatientIntakeStatusBySlug,
   requireValidIntake,
   saveHumanitarianTriage,
+  saveAnamneseSection,
+  listCampaignIntakes,
+  getIntakePrefill,
 } from "@/lib/humanitarian/intake";
-export type { IntakeStatusDto } from "@/lib/humanitarian/intake";
+export type { IntakeStatusDto, AdminIntakeRow, AnamneseDto } from "@/lib/humanitarian/intake";
+export { notifyHumanitarianAnamneseReminder } from "@/lib/humanitarian/notify";
 
 export const HUMANITARIAN_PRIORITY_OPTIONS = [
   {

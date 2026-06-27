@@ -146,6 +146,7 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
           },
         },
         pool: { include: { campaign: { select: { slug: true } } } },
+        intake: { select: { triageFlags: true, computedPriority: true } },
       },
     });
     if (!full) return updated;
@@ -179,6 +180,8 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
       entryId: full.id,
       patientName,
       chiefComplaint: full.chiefComplaint,
+      triageFlags: full.intake?.triageFlags,
+      priority: full.intake?.computedPriority ?? null,
     });
 
     return full;
@@ -200,7 +203,10 @@ export async function completeHumanitarianEntry(
           professional: { select: { id: true } },
         },
       },
-      pool: true,
+      pool: { include: { campaign: { select: { slug: true } } } },
+      intake: {
+        select: { status: true, triageFlags: true, computedPriority: true },
+      },
     },
   });
   if (!entry?.volunteer || entry.volunteer.userId !== volunteerUserId) {
@@ -228,6 +234,14 @@ export async function completeHumanitarianEntry(
     await ensurePatientRecord(entry.volunteer.professionalId, entry.patientUserId).catch(
       () => {},
     );
+  }
+
+  if (entry.intake?.status !== "COMPLETE") {
+    const { notifyHumanitarianAnamneseReminder } = await import("@/lib/humanitarian/notify");
+    await notifyHumanitarianAnamneseReminder({
+      patientUserId: entry.patientUserId,
+      campaignSlug: entry.pool.campaign.slug,
+    });
   }
 
   await assignNextInPool(entry.poolId);

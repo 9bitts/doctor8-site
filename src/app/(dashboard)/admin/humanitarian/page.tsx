@@ -5,6 +5,7 @@ import {
   Heart, Loader2, RefreshCw, Radio, Users, CheckCircle2, AlertTriangle, Power, Download,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import HumanitarianIntakesPanel from "@/components/humanitarian/HumanitarianIntakesPanel";
 
 interface CampaignReport {
   campaignId: string;
@@ -233,6 +234,8 @@ export default function AdminHumanitarianPage() {
           </div>
         ))
       )}
+
+      <HumanitarianIntakesPanel slug={VENEZUELA_CAMPAIGN_SLUG} />
     </div>
   );
 }
