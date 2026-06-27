@@ -133,7 +133,7 @@ export default function RegisterOrganizationPage() {
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
           <Link
-            href="/register"
+            href="/register/professional"
             className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition mb-5"
           >
             <ArrowLeft className="w-4 h-4" />

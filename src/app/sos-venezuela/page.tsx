@@ -38,9 +38,9 @@ export default function SosVenezuelaPage() {
   const campaignPath = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
   const patientRegister = `/register?region=VE&role=PATIENT&callbackUrl=${encodeURIComponent("/patient")}`;
   const patientLogin = `/login?callbackUrl=${encodeURIComponent("/patient")}`;
-  const volRegister = `/register?region=VE&role=PROFESSIONAL&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
+  const volRegister = `/register/professional?region=VE&role=PROFESSIONAL&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
   const volLogin = `/login?callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
-  const psychoVolRegister = `/register?region=VE&role=PSYCHOANALYST&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
+  const psychoVolRegister = `/register/professional?region=VE&role=PSYCHOANALYST&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
 
   const steps = [
     "hum.landing.step1",

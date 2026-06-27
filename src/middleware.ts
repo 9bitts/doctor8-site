@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = [
   "/",
   "/login",
   "/register",
+  "/register/professional",
   "/register/organization",
   "/register/organization/staff",
   "/callback",
@@ -51,6 +52,15 @@ export default auth((req) => {
     res.headers.delete("X-Frame-Options");
     res.headers.set("Content-Security-Policy", "frame-ancestors *");
     return res;
+  }
+
+  if (pathname === "/register") {
+    const role = req.nextUrl.searchParams.get("role");
+    if (role === "PROFESSIONAL" || role === "PSYCHOANALYST") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/register/professional";
+      return NextResponse.redirect(url);
+    }
   }
 
   if (isPublicRoute(pathname)) return NextResponse.next();

@@ -265,7 +265,7 @@ export default function LandingMarketingSections() {
             <div>
               <h4 className="mb-3 text-sm font-bold text-white">{c.footer.professionals}</h4>
               <ul className="flex flex-col gap-2 text-sm">
-                <li><Link href="/register" className="transition hover:text-white">{c.footer.proLinks[0]}</Link></li>
+                <li><Link href="/register/professional" className="transition hover:text-white">{c.footer.proLinks[0]}</Link></li>
                 <li><Link href="/login" className="transition hover:text-white">{c.footer.proLinks[1]}</Link></li>
               </ul>
             </div>
