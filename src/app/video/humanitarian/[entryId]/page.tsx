@@ -14,6 +14,14 @@ export default function HumanitarianVideoPage() {
     const res = await fetch(`/api/humanitarian/queue/${entryId}/video`);
     const d = await res.json();
     if (!res.ok) {
+      if (d.error === "WHATSAPP_HANDOFF") {
+        return {
+          whatsappHandoff: {
+            professionalName: d.professionalName || "",
+            campaignSlug: d.campaignSlug,
+          },
+        };
+      }
       if (d.error === "TCLE_REQUIRED") {
         window.location.href = `/humanitarian/venezuela-terremoto-2026/tcle?return=${encodeURIComponent(`/video/humanitarian/${entryId}`)}`;
         return { error: "Redirecting to consent form..." };

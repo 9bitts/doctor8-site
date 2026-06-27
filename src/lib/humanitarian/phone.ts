@@ -151,9 +151,9 @@ export function buildVolunteerWhatsAppMessage(
   lang: "pt" | "en" | "es",
 ): string {
   const templates = {
-    pt: `Ol?! Sou ${volunteerName}, volunt?rio(a) do atendimento humanit?rio Doctor8 (SOS Venezuela). Entro em contato para iniciar seu atendimento gratuito. Por favor, responda quando puder.`,
+    pt: `Ol\u00e1! Sou ${volunteerName}, volunt\u00e1rio(a) do atendimento humanit\u00e1rio Doctor8 (SOS Venezuela). Entro em contato para iniciar seu atendimento gratuito. Por favor, responda quando puder.`,
     en: `Hello! I am ${volunteerName}, a Doctor8 humanitarian volunteer (SOS Venezuela). I am reaching out to start your free consultation. Please reply when you can.`,
-    es: `?Hola! Soy ${volunteerName}, voluntario/a del programa humanitario Doctor8 (SOS Venezuela). Me comunico para iniciar su atenci?n gratuita. Por favor responda cuando pueda.`,
+    es: `\u00a1Hola! Soy ${volunteerName}, voluntario/a del programa humanitario Doctor8 (SOS Venezuela). Me comunico para iniciar su atenci\u00f3n gratuita. Por favor responda cuando pueda.`,
   };
   return templates[lang] ?? templates.es;
 }

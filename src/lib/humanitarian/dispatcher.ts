@@ -227,7 +227,7 @@ export async function completeHumanitarianEntry(
         status: { in: ["CALLED", "IN_PROGRESS"] },
         volunteer: { userId: volunteerUserId },
       },
-      data: { status: "DONE", endedAt: now },
+      data: { status: "DONE", endedAt: now, completionChannel: "VIDEO" },
     });
     if (done.count === 0) throw new Error("Forbidden");
 
@@ -342,7 +342,7 @@ export async function handoffHumanitarianEntryViaWhatsApp(
         status: { in: ["CALLED", "IN_PROGRESS"] },
         volunteer: { userId: volunteerUserId },
       },
-      data: { status: "DONE", endedAt: now },
+      data: { status: "DONE", endedAt: now, completionChannel: "WHATSAPP" },
     });
     if (done.count === 0) throw new Error("Forbidden");
 
@@ -511,6 +511,7 @@ export async function getEntryStatus(entryId: string, patientUserId: string, lan
     professionalName,
     campaignActive: refreshed.pool.campaign.active,
     campaignSlug: refreshed.pool.campaign.slug,
+    completionChannel: refreshed.completionChannel ?? null,
   };
 }
 

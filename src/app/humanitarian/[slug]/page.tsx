@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Heart, Loader2, Radio, Phone, AlertCircle, Stethoscope,
-  Users, Clock, ChevronRight,
+  Users, Clock, ChevronRight, MessageCircle,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
@@ -43,6 +43,8 @@ interface QueueEntry {
   poolLabel: string;
   poolSlug?: string;
   professionalName: string | null;
+  completionChannel?: string | null;
+  campaignSlug?: string;
 }
 
 function t(lang: Lang, key: string, params?: Record<string, string | number>) {
@@ -547,6 +549,28 @@ function QueueScreen({
           className="w-full mt-3 text-sm text-slate-500 hover:text-slate-300 py-2 disabled:opacity-50"
         >
           {leaving ? t(lang, "hum.page.leaving") : t(lang, "hum.page.leaveQueue")}
+        </button>
+      </div>
+    );
+  }
+
+  if (entry.status === "DONE" && entry.completionChannel === "WHATSAPP") {
+    return (
+      <div className={`${card} border-2 border-[#25D366]/40`}>
+        <MessageCircle size={32} className="text-[#25D366] mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-white mb-2">{t(lang, "hum.page.whatsappHandoffTitle")}</h2>
+        <p className="text-slate-300 text-sm mb-4 leading-relaxed">
+          {t(lang, "hum.page.whatsappHandoffDesc", {
+            professional: entry.professionalName || t(lang, "hum.vol.patientAssigned"),
+          })}
+        </p>
+        <p className="text-slate-500 text-xs mb-6">{t(lang, "hum.page.whatsappHandoffHint")}</p>
+        <button
+          type="button"
+          onClick={onRejoin}
+          className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm"
+        >
+          {t(lang, "hum.page.whatsappHandoffBack")}
         </button>
       </div>
     );

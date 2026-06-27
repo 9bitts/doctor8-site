@@ -247,6 +247,11 @@ enum HumanitarianQueueStatus {
   NO_SHOW
 }
 
+enum HumanitarianCompletionChannel {
+  VIDEO
+  WHATSAPP
+}
+
 enum HumanitarianVolunteerStatus {
   ONLINE
   BUSY
@@ -2394,6 +2399,8 @@ model HumanitarianQueueEntry {
 
   meetingUrl      String?
   meetingRoomId   String?
+
+  completionChannel HumanitarianCompletionChannel?
 
   angelFollowUps  HumanitarianAngelFollowUp[]
 

@@ -8,7 +8,7 @@ import {
   Loader2, Video, Clock, AlertCircle, ArrowLeft, ShieldCheck,
   ChevronRight, ChevronLeft, FileText, Plus, Send, Stethoscope,
   Pill, X, CheckCircle2, ClipboardList, PhoneOff, FlaskConical,
-  ScrollText, BarChart3, ExternalLink,
+  ScrollText, BarChart3, ExternalLink, MessageCircle,
 } from "lucide-react";
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
@@ -122,7 +122,12 @@ function leaveDestination(data: VideoConsultData): string {
 export default function VideoConsultRoom({
   fetchSession,
 }: {
-  fetchSession: () => Promise<{ data?: VideoConsultData; error?: string; opensAt?: string }>;
+  fetchSession: () => Promise<{
+    data?: VideoConsultData;
+    error?: string;
+    opensAt?: string;
+    whatsappHandoff?: { professionalName: string; campaignSlug?: string };
+  }>;
 }) {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("pt");
@@ -138,6 +143,10 @@ export default function VideoConsultRoom({
   const [noteSaved, setNoteSaved] = useState(false);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [leavingCall, setLeavingCall] = useState(false);
+  const [whatsappHandoff, setWhatsappHandoff] = useState<{
+    professionalName: string;
+    campaignSlug?: string;
+  } | null>(null);
   const [humanitarianIntake, setHumanitarianIntake] = useState<{
     summary: Parameters<typeof HumanitarianIntakeSummary>[0]["summary"];
     chiefComplaint: string | null;
@@ -152,6 +161,10 @@ export default function VideoConsultRoom({
     setOpensAt(null);
     try {
       const result = await fetchSession();
+      if (result.whatsappHandoff) {
+        setWhatsappHandoff(result.whatsappHandoff);
+        return;
+      }
       if (result.opensAt) {
         setOpensAt(result.opensAt);
         setError(result.error || "");
@@ -190,6 +203,31 @@ export default function VideoConsultRoom({
     return () => mq.removeEventListener("change", apply);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!data || data.kind !== "humanitarian" || data.role !== "patient" || !data.entryId) {
+      return;
+    }
+    const entryId = data.entryId;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/humanitarian/queue?entryId=${entryId}&lang=${lang}`);
+        const d = await res.json();
+        if (
+          res.ok &&
+          d.entry?.status === "DONE" &&
+          d.entry?.completionChannel === "WHATSAPP"
+        ) {
+          setWhatsappHandoff({
+            professionalName: d.entry.professionalName || "",
+            campaignSlug: d.entry.campaignSlug,
+          });
+          setData(null);
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+    return () => clearInterval(poll);
+  }, [data, lang]);
 
   async function loadRecords(recordId: string, providerPanel?: VideoConsultData["providerPanel"]) {
     setRecordsLoading(true);
@@ -280,6 +318,37 @@ export default function VideoConsultRoom({
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opensAt]);
+
+  if (whatsappHandoff) {
+    const slug = whatsappHandoff.campaignSlug || "venezuela-terremoto-2026";
+    const desc = translate(lang, "hum.page.whatsappHandoffDesc").replace(
+      "{{professional}}",
+      whatsappHandoff.professionalName || translate(lang, "hum.vol.patientAssigned"),
+    );
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="bg-slate-900 border border-emerald-500/30 rounded-3xl p-10 max-w-md w-full text-center">
+          <div className="w-20 h-20 rounded-full bg-[#25D366]/15 border border-[#25D366]/40 flex items-center justify-center mx-auto mb-6">
+            <MessageCircle size={36} className="text-[#25D366]" />
+          </div>
+          <h1 className="text-white text-xl font-bold mb-3">
+            {translate(lang, "hum.page.whatsappHandoffTitle")}
+          </h1>
+          <p className="text-slate-300 text-sm mb-4 leading-relaxed">{desc}</p>
+          <p className="text-slate-500 text-xs mb-8">
+            {translate(lang, "hum.page.whatsappHandoffHint")}
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push(`/humanitarian/${slug}`)}
+            className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl text-sm transition"
+          >
+            {translate(lang, "hum.page.whatsappHandoffBack")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

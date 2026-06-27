@@ -301,7 +301,7 @@ export async function notifyHumanitarianWhatsAppHandoff(opts: {
       link: `/humanitarian/${opts.campaignSlug}`,
       titleKey: "hum.notif.whatsappHandoff.title",
       bodyKey: "hum.notif.whatsappHandoff.body",
-      bodyParams: { volunteer: opts.volunteerName },
+      bodyParams: { professional: opts.volunteerName },
     },
   }).catch(() => {});
 }
