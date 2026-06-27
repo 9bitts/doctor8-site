@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createMeetingToken } from "@/lib/daily";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
+import { ensureAnalysandForPatient } from "@/lib/providers";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -87,6 +88,8 @@ export async function GET(
 
   let proName = "Profesional";
   let patientRecordId: string | null = null;
+  let analysandRecordId: string | null = null;
+  let providerPanel: "professional" | "psychoanalyst" = "professional";
 
   if (vol?.professional) {
     proName = `Dr. ${vol.professional.firstName} ${vol.professional.lastName}`;
@@ -95,6 +98,29 @@ export async function GET(
     }
   } else if (vol?.psychoanalyst) {
     proName = `${vol.psychoanalyst.firstName} ${vol.psychoanalyst.lastName}`;
+    providerPanel = "psychoanalyst";
+    if (isProfessional) {
+      const patientUser = await db.user.findUnique({
+        where: { id: entry.patientUserId },
+        select: { email: true },
+      });
+      const profile = await db.patientProfile.findUnique({
+        where: { userId: entry.patientUserId },
+        select: { firstName: true, lastName: true },
+      });
+      if (patientUser && profile) {
+        const analysand = await ensureAnalysandForPatient({
+          psychoanalystId: vol.psychoanalyst.id,
+          patientUserId: entry.patientUserId,
+          patientProfile: {
+            firstName: safeDecrypt(profile.firstName),
+            lastName: safeDecrypt(profile.lastName),
+          },
+          patientEmail: patientUser.email,
+        });
+        analysandRecordId = analysand.id;
+      }
+    }
   }
 
   const userName = isPatient ? patientName : proName;
@@ -107,6 +133,8 @@ export async function GET(
     userName,
     role: isPatient ? "patient" : "professional",
     patientRecordId,
+    analysandRecordId,
+    providerPanel,
     patientUserId: entry.patientUserId,
     otherParty: isPatient ? proName : patientName,
     scheduledAt: entry.calledAt?.toISOString() ?? new Date().toISOString(),

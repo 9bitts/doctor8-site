@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { encrypt } from "@/lib/encryption";
 import { requirePsychoanalyst, safeDecrypt } from "@/lib/psychoanalyst-api";
+import { savePsychoanalystSessionNote } from "@/lib/save-psychoanalyst-session-note";
 
 const noteSchema = z.object({
   analysandRecordId: z.string(),
@@ -71,23 +71,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Analysand not found" }, { status: 404 });
   }
 
-  const title = `Sess?o ? ${new Date().toLocaleDateString("pt-BR")}`;
-  const payload = { psychoanalyticNote: true, format: "FREE", body: d.content };
-
-  const doc = await db.medicalDocument.create({
-    data: {
-      analysandRecordId: d.analysandRecordId,
-      psychoanalystId: psychoanalyst.id,
-      appointmentId: d.appointmentId || null,
-      type: "CLINICAL_NOTE",
-      title: encrypt(title),
-      content: encrypt(JSON.stringify(payload)),
-    },
+  const doc = await savePsychoanalystSessionNote({
+    psychoanalystId: psychoanalyst.id,
+    analysandRecordId: d.analysandRecordId,
+    content: d.content,
+    appointmentId: d.appointmentId,
   });
 
   return NextResponse.json({
     id: doc.id,
-    title,
+    title: `Sess\u00e3o \u2014 ${new Date(doc.createdAt).toLocaleDateString("pt-BR")}`,
     body: d.content,
     createdAt: doc.createdAt.toISOString(),
   }, { status: 201 });

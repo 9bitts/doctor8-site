@@ -65,16 +65,29 @@ export type ConsultNotesAssistantHandle = {
 type Props = {
   lang: Lang;
   patientRecordId: string | null;
+  analysandRecordId?: string | null;
   appointmentId?: string | null;
   patientName?: string;
   onSaved?: () => void;
 };
 
 const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(function ConsultNotesAssistant(
-  { lang, patientRecordId, appointmentId, onSaved },
+  { lang, patientRecordId, analysandRecordId, appointmentId, onSaved },
   ref,
 ) {
   const t = (k: string) => T[k]?.[lang] ?? T[k]?.["en"] ?? k;
+  const isAnalysandChart = !!analysandRecordId;
+  const chartId = analysandRecordId || patientRecordId;
+  const aiNotesApi = isAnalysandChart
+    ? "/api/psychoanalyst/ai-consult-notes"
+    : "/api/professional/ai-consult-notes";
+
+  function chartFields(): Record<string, string> {
+    if (!chartId) return {};
+    return isAnalysandChart
+      ? { analysandRecordId: chartId }
+      : { patientRecordId: chartId };
+  }
 
   const [consent, setConsent] = useState(false);
   const [autoSaveOnLeave, setAutoSaveOnLeave] = useState(true);
@@ -97,7 +110,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
   const finalizeResolveRef = useRef<((v: "saved" | "failed") => void) | null>(null);
 
   useEffect(() => {
-    fetch("/api/professional/ai-consult-notes")
+    fetch(aiNotesApi)
       .then((r) => r.json())
       .then((d) => {
         setTranscribeOk(!!d.transcribeConfigured);
@@ -107,7 +120,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
         setTranscribeOk(false);
         setSummarizeOk(false);
       });
-  }, []);
+  }, [aiNotesApi]);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
@@ -149,9 +162,9 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
       let res: Response;
       if (input instanceof FormData) {
         if (saveToChart) input.set("saveToChart", "true");
-        res = await fetch("/api/professional/ai-consult-notes", { method: "POST", body: input });
+        res = await fetch(aiNotesApi, { method: "POST", body: input });
       } else {
-        res = await fetch("/api/professional/ai-consult-notes", {
+        res = await fetch(aiNotesApi, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...input, ...(saveToChart ? { saveToChart: true } : {}) }),
@@ -194,7 +207,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
       setError(t("needConsent"));
       return;
     }
-    if (!patientRecordId) {
+    if (!chartId) {
       setError(t("noChart"));
       return;
     }
@@ -224,7 +237,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
         form.append("consent", "true");
         form.append("audio", blob, "consult.webm");
         form.append("lang", lang);
-        if (patientRecordId) form.append("patientRecordId", patientRecordId);
+        Object.entries(chartFields()).forEach(([k, v]) => form.append(k, v));
         if (appointmentId) form.append("appointmentId", appointmentId);
         if (saveOnCompleteRef.current) form.append("saveToChart", "true");
         await processPayload(form, { saveToChart: saveOnCompleteRef.current, showModal: !saveOnCompleteRef.current });
@@ -251,7 +264,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
       setError(t("needConsent"));
       return;
     }
-    if (!patientRecordId) {
+    if (!chartId) {
       setError(t("noChart"));
       return;
     }
@@ -261,33 +274,43 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
       consent: true,
       transcript: text,
       lang,
-      patientRecordId,
+      ...chartFields(),
       appointmentId: appointmentId || undefined,
       saveToChart,
     }, { saveToChart, showModal: !saveToChart });
   }
 
   async function saveSummaryToChart() {
-    if (!patientRecordId || !summary.trim()) return;
+    if (!chartId || !summary.trim()) return;
     setProcessing(true);
     setError("");
     try {
       const title = lang === "pt"
-        ? "Evolução — teleconsulta"
+        ? "Evolu\u00e7\u00e3o \u2014 teleconsulta"
         : lang === "es"
-          ? "Evolución — teleconsulta"
-          : "Evolution — teleconsult";
-      const res = await fetch("/api/professional/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientRecordId,
-          title,
-          content: summary.trim(),
-          recordKind: "EVOLUTION",
-          type: "CLINICAL_NOTE",
-        }),
-      });
+          ? "Evoluci\u00f3n \u2014 teleconsulta"
+          : "Evolution \u2014 teleconsult";
+      const res = isAnalysandChart
+        ? await fetch("/api/psychoanalyst/session-notes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            analysandRecordId: chartId,
+            content: summary.trim(),
+            appointmentId: appointmentId || undefined,
+          }),
+        })
+        : await fetch("/api/professional/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientRecordId: chartId,
+            title,
+            content: summary.trim(),
+            recordKind: "EVOLUTION",
+            type: "CLINICAL_NOTE",
+          }),
+        });
       if (!res.ok) {
         setError(t("genericError"));
         return;
@@ -308,7 +331,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
       consent: true,
       transcript: transcript.trim(),
       lang,
-      patientRecordId: patientRecordId || undefined,
+      ...chartFields(),
       appointmentId: appointmentId || undefined,
     }, { showModal: true });
   }
@@ -316,24 +339,24 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
   useImperativeHandle(ref, () => ({
     isRecording: () => recording,
     isProcessing: () => processing,
-    shouldAutoSaveOnLeave: () => consent && autoSaveOnLeave && !!patientRecordId,
+    shouldAutoSaveOnLeave: () => consent && autoSaveOnLeave && !!chartId,
     finalizeOnLeave: () => new Promise((resolve) => {
       if (!recording) {
         resolve("skipped");
         return;
       }
-      if (!patientRecordId) {
+      if (!chartId) {
         resolve("failed");
         return;
       }
       finalizeResolveRef.current = (result) => resolve(result);
       stopRecording(true);
     }),
-  }), [recording, processing, consent, autoSaveOnLeave, patientRecordId]);
+  }), [recording, processing, consent, autoSaveOnLeave, chartId]);
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
-  const canRecord = consent && transcribeOk && summarizeOk && !!patientRecordId;
+  const canRecord = consent && transcribeOk && summarizeOk && !!chartId;
 
   return (
     <>
@@ -352,7 +375,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
           {t("consent")}
         </label>
 
-        {consent && patientRecordId && (
+        {consent && chartId && (
           <label className="flex items-start gap-2 text-[11px] text-slate-400 cursor-pointer leading-snug">
             <input
               type="checkbox"
@@ -410,7 +433,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
             <button
               type="button"
               onClick={() => summarizeManual(true)}
-              disabled={!consent || !manualText.trim() || !summarizeOk || !patientRecordId}
+              disabled={!consent || !manualText.trim() || !summarizeOk || !chartId}
               className="w-full text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg disabled:opacity-40 min-h-[44px]"
             >
               {t("summarizeText")}
@@ -466,7 +489,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
             </div>
 
             <div className="p-4 border-t border-slate-800 flex flex-col gap-2 shrink-0">
-              {patientRecordId && (
+              {chartId && (
                 <button
                   type="button"
                   onClick={saveSummaryToChart}

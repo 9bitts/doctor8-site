@@ -20,6 +20,8 @@ export interface VideoConsultData {
   role: "patient" | "professional";
   otherParty: string;
   patientRecordId: string | null;
+  analysandRecordId?: string | null;
+  providerPanel?: "professional" | "psychoanalyst";
   patientUserId: string;
   scheduledAt: string;
   durationMins: number;
@@ -69,6 +71,8 @@ const T: Record<string, Record<Lang, string>> = {
   noRecords:      { pt: "Nenhum registro ainda.", en: "No records yet.", es: "Sin registros aún." },
   prescribe:      { pt: "Prescrever", en: "Prescribe", es: "Prescribir" },
   openChart:      { pt: "Abrir ficha completa", en: "Open full chart", es: "Abrir ficha completa" },
+  openAnalysand:  { pt: "Abrir ficha do analisando", en: "Open analysand chart", es: "Abrir ficha del analizado" },
+  addSessionNote: { pt: "Nova anota\u00e7\u00e3o de sess\u00e3o", en: "New session note", es: "Nueva nota de sesi\u00f3n" },
   addRecord:      { pt: "Adicionar registro", en: "Add record", es: "Agregar registro" },
   noChart:        { pt: "Vinculando ficha do paciente...", en: "Linking patient chart...", es: "Vinculando ficha del paciente..." },
   noteTitle:      { pt: "Anotação da consulta", en: "Consultation note", es: "Nota de consulta" },
@@ -95,7 +99,9 @@ function leaveDestination(data: VideoConsultData): string {
   const isPro = data.role === "professional";
   switch (data.kind) {
     case "humanitarian":
-      return isPro ? "/humanitarian/volunteer" : "/patient";
+      return isPro
+        ? (data.providerPanel === "psychoanalyst" ? "/psychoanalyst" : "/humanitarian/volunteer")
+        : "/patient";
     case "jit":
       return isPro ? "/professional/jit" : "/urgent";
     case "appointment":
@@ -147,8 +153,9 @@ export default function VideoConsultRoom({
         return;
       }
       setData(result.data);
-      if (result.data.role === "professional" && result.data.patientRecordId) {
-        loadRecords(result.data.patientRecordId);
+      const chartId = result.data.analysandRecordId || result.data.patientRecordId;
+      if (result.data.role === "professional" && chartId) {
+        loadRecords(chartId, result.data.providerPanel);
       }
       if (
         result.data.role === "professional" &&
@@ -175,12 +182,26 @@ export default function VideoConsultRoom({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadRecords(recordId: string) {
+  async function loadRecords(recordId: string, providerPanel?: VideoConsultData["providerPanel"]) {
     setRecordsLoading(true);
     try {
-      const res = await fetch(`/api/professional/records/${recordId}`);
-      const d = await res.json();
-      setRecords((d.documents || []).slice(0, 5));
+      if (providerPanel === "psychoanalyst") {
+        const res = await fetch(`/api/psychoanalyst/session-notes?analysandId=${recordId}`);
+        const d = await res.json();
+        setRecords(
+          (d.notes || []).slice(0, 5).map((n: { id: string; title: string; body: string }) => ({
+            id: n.id,
+            title: n.title,
+            content: n.body,
+            createdAt: "",
+            categoryName: null,
+          })),
+        );
+      } else {
+        const res = await fetch(`/api/professional/records/${recordId}`);
+        const d = await res.json();
+        setRecords((d.documents || []).slice(0, 5));
+      }
     } catch { /* ignore */ }
     setRecordsLoading(false);
   }
@@ -199,22 +220,35 @@ export default function VideoConsultRoom({
   }
 
   async function saveNote() {
-    if (!noteText.trim() || !data?.patientRecordId) return;
+    const chartId = data?.analysandRecordId || data?.patientRecordId;
+    if (!noteText.trim() || !chartId || !data) return;
     setNoteSaving(true);
     try {
-      await fetch("/api/professional/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientRecordId: data.patientRecordId,
-          title: t("noteTitle"),
-          content: noteText.trim(),
-        }),
-      });
+      if (data.providerPanel === "psychoanalyst") {
+        await fetch("/api/psychoanalyst/session-notes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            analysandRecordId: chartId,
+            content: noteText.trim(),
+            appointmentId: data.appointmentId || undefined,
+          }),
+        });
+      } else {
+        await fetch("/api/professional/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientRecordId: chartId,
+            title: t("noteTitle"),
+            content: noteText.trim(),
+          }),
+        });
+      }
       setNoteSaved(true);
       setNoteText("");
       setTimeout(() => setNoteSaved(false), 2500);
-      loadRecords(data.patientRecordId);
+      loadRecords(chartId, data.providerPanel);
     } catch { /* ignore */ }
     setNoteSaving(false);
   }
@@ -289,6 +323,8 @@ export default function VideoConsultRoom({
 
   const isPro = data.role === "professional";
   const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
+  const chartId = data.analysandRecordId || data.patientRecordId;
+  const isPsychoanalyst = data.providerPanel === "psychoanalyst";
 
   const roomData = data;
 
@@ -403,31 +439,36 @@ export default function VideoConsultRoom({
                 </div>
               )}
 
-              {!data.patientRecordId && data.kind !== "humanitarian" && (
+              {!chartId && data.kind !== "humanitarian" && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-300">
                   {t("noChart")}
                 </div>
               )}
 
-              {data.patientRecordId && (
+              {chartId && (
                 <>
                   <a
-                    href={`/professional/patients/${data.patientRecordId}?newRecord=1`}
+                    href={
+                      isPsychoanalyst
+                        ? `/psychoanalyst/analysands/${chartId}`
+                        : `/professional/patients/${chartId}?newRecord=1`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl transition"
                   >
-                    <Plus size={16} /> {t("addRecord")}
+                    <Plus size={16} /> {isPsychoanalyst ? t("addSessionNote") : t("addRecord")}
                   </a>
 
                   <ConsultNotesAssistant
                     ref={notesAssistantRef}
                     lang={lang}
-                    patientRecordId={data.patientRecordId}
+                    patientRecordId={isPsychoanalyst ? null : chartId}
+                    analysandRecordId={isPsychoanalyst ? chartId : null}
                     appointmentId={data.appointmentId}
                     patientName={data.otherParty}
                     onSaved={() => {
-                      if (data.patientRecordId) loadRecords(data.patientRecordId);
+                      if (chartId) loadRecords(chartId, data.providerPanel);
                     }}
                   />
 
@@ -481,23 +522,29 @@ export default function VideoConsultRoom({
               )}
             </div>
 
-            {data.patientRecordId && (
+            {chartId && (
               <div className="p-4 border-t border-slate-800 space-y-2 shrink-0">
+                {!isPsychoanalyst && (
+                  <a
+                    href={`/professional/prescriptions?patientRecordId=${chartId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg transition w-full"
+                  >
+                    <Pill size={13} /> {t("prescribe")}
+                  </a>
+                )}
                 <a
-                  href={`/professional/prescriptions?patientRecordId=${data.patientRecordId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg transition w-full"
-                >
-                  <Pill size={13} /> {t("prescribe")}
-                </a>
-                <a
-                  href={`/professional/patients/${data.patientRecordId}`}
+                  href={
+                    isPsychoanalyst
+                      ? `/psychoanalyst/analysands/${chartId}`
+                      : `/professional/patients/${chartId}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 py-2 rounded-lg transition w-full"
                 >
-                  <FileText size={13} /> {t("openChart")}
+                  <FileText size={13} /> {isPsychoanalyst ? t("openAnalysand") : t("openChart")}
                 </a>
               </div>
             )}

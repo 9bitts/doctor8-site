@@ -10,6 +10,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { getOrCreateRoom, createMeetingToken } from "@/lib/daily";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
+import { ensureAnalysandForPatient } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 
@@ -103,11 +104,32 @@ export async function GET(
 
   // For professionals: ensure patient chart exists (auto-link registered patients)
   let patientRecordId: string | null = null;
+  let analysandRecordId: string | null = null;
+  let providerPanel: "professional" | "psychoanalyst" = "professional";
+
   if (isProfessional && appointment.professional) {
     patientRecordId = await ensurePatientRecord(
       appointment.professional.id,
       appointment.patient.userId,
     );
+  } else if (isProfessional && appointment.psychoanalyst) {
+    providerPanel = "psychoanalyst";
+    const patientUser = await db.user.findUnique({
+      where: { id: appointment.patient.userId },
+      select: { email: true },
+    });
+    if (patientUser) {
+      const analysand = await ensureAnalysandForPatient({
+        psychoanalystId: appointment.psychoanalyst.id,
+        patientUserId: appointment.patient.userId,
+        patientProfile: {
+          firstName: appointment.patient.firstName,
+          lastName: appointment.patient.lastName,
+        },
+        patientEmail: patientUser.email,
+      });
+      analysandRecordId = analysand.id;
+    }
   }
 
   return NextResponse.json({
@@ -116,6 +138,8 @@ export async function GET(
     userName,
     role:           isPatient ? "patient" : "professional",
     patientRecordId,
+    analysandRecordId,
+    providerPanel,
     otherParty:     isPatient
       ? providerLabel
       : `${appointment.patient.firstName} ${appointment.patient.lastName}`,
