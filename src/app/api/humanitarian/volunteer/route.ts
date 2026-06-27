@@ -57,7 +57,7 @@ const statusSchema = z.object({
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["PROFESSIONAL", "PSYCHOANALYST"].includes(session.user.role)) {
+  if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["PROFESSIONAL", "PSYCHOANALYST"].includes(session.user.role)) {
+  if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -239,6 +239,7 @@ export async function POST(req: NextRequest) {
       providerType: profile.providerType,
       professionalId: profile.professionalId ?? null,
       psychoanalystId: profile.psychoanalystId ?? null,
+      integrativeTherapistId: profile.integrativeTherapistId ?? null,
       status: "ONLINE",
     },
     update: {
@@ -282,7 +283,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["PROFESSIONAL", "PSYCHOANALYST"].includes(session.user.role)) {
+  if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

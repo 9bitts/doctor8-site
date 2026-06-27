@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
-import { ensureAnalysandForPatient } from "@/lib/providers";
+import { ensureAnalysandForPatient, ensureIntegrativeClientForPatient } from "@/lib/providers";
 import { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
 import { DEFAULT_VENEZUELA_POOLS, poolLabel } from "@/lib/humanitarian/constants";
 import {
@@ -244,6 +244,22 @@ export async function completeHumanitarianEntry(
     if (patientProfile) {
       await ensureAnalysandForPatient({
         psychoanalystId: entry.volunteer.psychoanalystId,
+        patientUserId: entry.patientUserId,
+        patientProfile: {
+          firstName: safeDecrypt(patientProfile.firstName),
+          lastName: safeDecrypt(patientProfile.lastName),
+        },
+        patientEmail: patientProfile.user.email,
+      }).catch(() => {});
+    }
+  } else if (entry.volunteer.integrativeTherapistId) {
+    const patientProfile = await db.patientProfile.findUnique({
+      where: { userId: entry.patientUserId },
+      select: { firstName: true, lastName: true, user: { select: { email: true } } },
+    });
+    if (patientProfile) {
+      await ensureIntegrativeClientForPatient({
+        integrativeTherapistId: entry.volunteer.integrativeTherapistId,
         patientUserId: entry.patientUserId,
         patientProfile: {
           firstName: safeDecrypt(patientProfile.firstName),
@@ -502,9 +518,10 @@ export async function getCampaignStats(campaignId: string) {
 
 export type VolunteerProfile = {
   userId: string;
-  providerType: "HEALTH" | "PSYCHOANALYST";
+  providerType: "HEALTH" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
   professionalId?: string;
   psychoanalystId?: string;
+  integrativeTherapistId?: string;
   displayName: string;
   specialty?: string;
 };
@@ -522,6 +539,22 @@ export async function resolveVolunteerProfile(userId: string, role: string): Pro
       psychoanalystId: pa.id,
       displayName: `${pa.firstName} ${pa.lastName}`,
       specialty: "Psican\u00e1lise",
+    };
+  }
+
+  if (role === "INTEGRATIVE_THERAPIST") {
+    const it = await db.integrativeTherapistProfile.findUnique({
+      where: { userId },
+      select: { id: true, firstName: true, lastName: true, picsPractices: true },
+    });
+    if (!it) return null;
+    const practiceLabel = it.picsPractices.length > 0 ? it.picsPractices.join(", ") : "PICS";
+    return {
+      userId,
+      providerType: "INTEGRATIVE_THERAPIST",
+      integrativeTherapistId: it.id,
+      displayName: `${it.firstName} ${it.lastName}`,
+      specialty: practiceLabel,
     };
   }
 
@@ -550,5 +583,5 @@ export function poolMatchesVolunteer(
 ): boolean {
   const def = DEFAULT_VENEZUELA_POOLS.find((p) => p.slug === poolSlug);
   if (!def) return true;
-  return def.volunteerRoles.includes(role as "PROFESSIONAL" | "PSYCHOANALYST");
+  return def.volunteerRoles.includes(role as "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST");
 }

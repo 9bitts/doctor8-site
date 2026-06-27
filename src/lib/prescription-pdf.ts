@@ -115,28 +115,34 @@ export async function buildPrescriptionPdf(
     }
   };
 
-  // ── Cabeçalho: logo Doctor8 ──
-  text(page, "Doctor", margin, y - 18, 26, fontBold, BLUE);
-  const dw = fontBold.widthOfTextAtSize("Doctor", 26);
-  text(page, "8", margin + dw, y - 18, 26, fontBold, GREEN);
-  text(page, tr.tagline, margin, y - 32, 8, font, GRAY);
+  // ── Cabeçalho: logo Doctor8 (centro) — canto esquerdo fica livre para QR ICP-Brasil ──
+  const logoSize = 26;
+  const logoDoctorW = fontBold.widthOfTextAtSize("Doctor", logoSize);
+  const logoEightW = fontBold.widthOfTextAtSize("8", logoSize);
+  const logoTotalW = logoDoctorW + logoEightW;
+  const logoX = (A4.w - logoTotalW) / 2;
+  text(page, "Doctor", logoX, y - 18, logoSize, fontBold, BLUE);
+  text(page, "8", logoX + logoDoctorW, y - 18, logoSize, fontBold, GREEN);
+  const taglineW = font.widthOfTextAtSize(sanitize(tr.tagline), 8);
+  text(page, tr.tagline, (A4.w - taglineW) / 2, y - 32, 8, font, GRAY);
 
-  // ── Cabeçalho: dados do médico (direita) ──
+  // ── Cabeçalho: dados do médico (direita, abaixo da logo) ──
+  const doctorTop = y - 52;
   const rightX = A4.w - margin;
   const drawRight = (s: string, yy: number, size: number, f: PDFFont, color = DARK) => {
     const w = f.widthOfTextAtSize(sanitize(s), size);
     text(page, s, rightX - w, yy, size, f, color);
   };
-  drawRight(`Dr(a). ${data.proFirstName} ${data.proLastName}`, y - 6, 13, fontBold, BLUE);
-  drawRight(data.proSpecialty, y - 20, 10, font, GRAY);
-  drawRight(data.proLicense, y - 32, 10, font, GRAY);
+  drawRight(`Dr(a). ${data.proFirstName} ${data.proLastName}`, doctorTop, 13, fontBold, BLUE);
+  drawRight(data.proSpecialty, doctorTop - 14, 10, font, GRAY);
+  drawRight(data.proLicense, doctorTop - 26, 10, font, GRAY);
   if (data.clinicAddressFull) {
-    drawRight(data.clinicAddressFull, y - 44, 8, font, GRAY);
-    drawRight(`${tr.date}: ${data.todayText}`, y - 58, 8, font, GRAY);
-    y -= 58;
+    drawRight(data.clinicAddressFull, doctorTop - 38, 8, font, GRAY);
+    drawRight(`${tr.date}: ${data.todayText}`, doctorTop - 50, 8, font, GRAY);
+    y = doctorTop - 50;
   } else {
-    drawRight(`${tr.date}: ${data.todayText}`, y - 44, 8, font, GRAY);
-    y -= 44;
+    drawRight(`${tr.date}: ${data.todayText}`, doctorTop - 38, 8, font, GRAY);
+    y = doctorTop - 38;
   }
 
   y -= 24;

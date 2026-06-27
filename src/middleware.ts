@@ -44,6 +44,7 @@ function isPublicRoute(pathname: string): boolean {
 const PATIENT_ROUTES = ["/patient"];
 const PROFESSIONAL_ROUTES = ["/professional"];
 const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
+const INTEGRATIVE_THERAPIST_ROUTES = ["/integrative-therapist"];
 const ORGANIZATION_ROUTES = ["/organization"];
 const ANGEL_ROUTES = ["/humanitarian/angel"];
 const ADMIN_ROUTES = ["/admin"];
@@ -61,7 +62,7 @@ export default auth((req) => {
 
   if (pathname === "/register") {
     const role = req.nextUrl.searchParams.get("role");
-    if (role === "PROFESSIONAL" || role === "PSYCHOANALYST") {
+    if (role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST") {
       const url = req.nextUrl.clone();
       url.pathname = "/register/professional/signup";
       return NextResponse.redirect(url);
@@ -70,7 +71,7 @@ export default auth((req) => {
 
   if (pathname === "/register/professional") {
     const role = req.nextUrl.searchParams.get("role");
-    if (role === "PROFESSIONAL" || role === "PSYCHOANALYST") {
+    if (role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST") {
       const url = req.nextUrl.clone();
       url.pathname = "/register/professional/signup";
       return NextResponse.redirect(url);
@@ -133,6 +134,14 @@ export default auth((req) => {
   if (
     PSYCHOANALYST_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "PSYCHOANALYST" &&
+    role !== "ADMIN"
+  ) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+
+  if (
+    INTEGRATIVE_THERAPIST_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "INTEGRATIVE_THERAPIST" &&
     role !== "ADMIN"
   ) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));

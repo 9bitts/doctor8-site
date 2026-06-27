@@ -29,7 +29,7 @@ const passwordSchema = z
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: passwordSchema,
-  role: z.enum(["PATIENT", "PROFESSIONAL", "PSYCHOANALYST"]),
+  role: z.enum(["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"]),
   region: z.enum(["US", "EU", "BR", "VE"]).default("US"),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
@@ -141,6 +141,16 @@ export async function POST(req: NextRequest) {
         });
       } else if (role === "PSYCHOANALYST") {
         await tx.psychoanalystProfile.create({
+          data: {
+            userId: newUser.id,
+            firstName,
+            lastName,
+            trainingInstitution: "",
+            consultPrice: 0,
+          },
+        });
+      } else if (role === "INTEGRATIVE_THERAPIST") {
+        await tx.integrativeTherapistProfile.create({
           data: {
             userId: newUser.id,
             firstName,

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import {
-  Stethoscope, LogIn, Brain, Building2, ArrowLeft,
+  Stethoscope, LogIn, Brain, Building2, ArrowLeft, Leaf,
 } from "lucide-react";
 import {
   detectInitialLang,
@@ -17,7 +17,7 @@ import {
   RegisterLogo,
 } from "@/components/auth/register-shared";
 
-type ProRole = "PROFESSIONAL" | "PSYCHOANALYST";
+type ProRole = "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 
 export default function RegisterProfessionalSignupPage() {
   const [callbackUrl, setCallbackUrl] = useState("");
@@ -36,7 +36,7 @@ export default function RegisterProfessionalSignupPage() {
     }
 
     const roleParam = params.get("role");
-    if (roleParam === "PROFESSIONAL" || roleParam === "PSYCHOANALYST") {
+    if (roleParam === "PROFESSIONAL" || roleParam === "PSYCHOANALYST" || roleParam === "INTEGRATIVE_THERAPIST") {
       setRole(roleParam);
       setStep(2);
     }
@@ -132,6 +132,19 @@ export default function RegisterProfessionalSignupPage() {
                 <div>
                   <p className="text-white font-semibold text-base">{t("reg.imPsychoanalyst")}</p>
                   <p className="text-slate-400 text-sm mt-0.5">{t("reg.imPsychoanalystDesc")}</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => chooseRole("INTEGRATIVE_THERAPIST")}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-teal-500 hover:bg-teal-500/10 transition text-left group"
+              >
+                <div className="w-14 h-14 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0 group-hover:bg-teal-500/20 transition">
+                  <Leaf className="w-7 h-7 text-teal-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-base">{t("reg.imIntegrative")}</p>
+                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imIntegrativeDesc")}</p>
                 </div>
               </button>
 

@@ -25,6 +25,7 @@ enum UserRole {
   PATIENT
   PROFESSIONAL
   PSYCHOANALYST
+  INTEGRATIVE_THERAPIST
   ORGANIZATION
   ANGEL
   ADMIN
@@ -33,6 +34,7 @@ enum UserRole {
 enum ProviderType {
   HEALTH
   PSYCHOANALYST
+  INTEGRATIVE_THERAPIST
 }
 
 enum UserRegion {
@@ -329,6 +331,7 @@ model User {
   patientProfile      PatientProfile?
   professionalProfile ProfessionalProfile?
   psychoanalystProfile PsychoanalystProfile?
+  integrativeTherapistProfile IntegrativeTherapistProfile?
   accounts          Account[]
   sessions          Session[]
   consents          Consent[]
@@ -621,6 +624,76 @@ model PsychoanalystAvailabilitySlot {
 }
 
 // ─────────────────────────────────────────
+// INTEGRATIVE THERAPIST PROFILE (PICS / MTCI)
+// ─────────────────────────────────────────
+
+model IntegrativeTherapistProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName       String
+  lastName        String
+  avatarUrl       String?
+  phone           String?  // @encrypted
+
+  // PICS — Política Nacional de Práticas Integrativas e Complementares (PNPIC)
+  picsPractices   String[] @default([])
+  trainingInstitution String
+  certifications  String?
+  yearsOfPractice Int      @default(0)
+  bio             String?
+
+  clinicName      String?
+  clinicAddress   String?
+  clinicCity      String?
+  clinicState     String?
+  clinicCountry   String?
+  clinicZip       String?
+  clinicLatitude  Float?
+  clinicLongitude Float?
+
+  acceptsTeleconsult  Boolean @default(true)
+  acceptsInPerson     Boolean @default(false)
+  consultPrice        Float
+  currency            String  @default("USD")
+  sessionDurationMins Int     @default(50)
+
+  availability    Json?
+
+  verified        Boolean  @default(false)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  appointments           Appointment[]
+  medicalDocuments       MedicalDocument[]
+  clientRecords          IntegrativeClientRecord[]
+  availabilitySlots      IntegrativeTherapistAvailabilitySlot[]
+  resources              Resource[]
+  humanitarianVolunteers HumanitarianVolunteer[]
+
+  @@index([userId])
+}
+
+model IntegrativeTherapistAvailabilitySlot {
+  id                    String                      @id @default(cuid())
+  integrativeTherapistId String
+  integrativeTherapist  IntegrativeTherapistProfile @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
+
+  dayOfWeek        Int
+  startTime        String
+  endTime          String
+  slotDurationMins Int    @default(50)
+  slotGapMins      Int    @default(0)
+  isActive         Boolean @default(true)
+
+  @@index([integrativeTherapistId])
+}
+
+// ─────────────────────────────────────────
 // MEDICATIONS (FIX: two separate flows)
 // ─────────────────────────────────────────
 
@@ -680,6 +753,8 @@ model Appointment {
   professional     ProfessionalProfile? @relation(fields: [professionalId], references: [id])
   psychoanalystId  String?
   psychoanalyst    PsychoanalystProfile? @relation(fields: [psychoanalystId], references: [id])
+  integrativeTherapistId String?
+  integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id])
 
   scheduledAt      DateTime
   durationMins     Int                 @default(30)
@@ -719,6 +794,7 @@ model Appointment {
   @@index([patientId])
   @@index([professionalId])
   @@index([psychoanalystId])
+  @@index([integrativeTherapistId])
   @@index([providerType])
   @@index([scheduledAt])
   @@index([status])
@@ -740,6 +816,10 @@ model MedicalDocument {
   psychoanalyst    PsychoanalystProfile? @relation(fields: [psychoanalystId], references: [id])
   analysandRecordId String?
   analysandRecord  AnalysandRecord?    @relation(fields: [analysandRecordId], references: [id])
+  integrativeTherapistId String?
+  integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id])
+  integrativeClientRecordId String?
+  integrativeClientRecord   IntegrativeClientRecord? @relation(fields: [integrativeClientRecordId], references: [id])
   appointmentId    String?
   appointment      Appointment?        @relation(fields: [appointmentId], references: [id])
 
@@ -776,7 +856,9 @@ model MedicalDocument {
   @@index([patientId])
   @@index([patientRecordId])
   @@index([analysandRecordId])
+  @@index([integrativeClientRecordId])
   @@index([psychoanalystId])
+  @@index([integrativeTherapistId])
   @@index([type])
   @@index([categoryId])
   @@index([recordKind])
@@ -1825,6 +1907,34 @@ model AnalysandRecord {
   @@index([linkedUserId])
 }
 
+model IntegrativeClientRecord {
+  id                    String                    @id @default(cuid())
+  integrativeTherapistId String
+  integrativeTherapist  IntegrativeTherapistProfile @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
+
+  firstName       String   // @encrypted
+  lastName        String   // @encrypted
+  email           String?
+  phone           String?  // @encrypted
+  dateOfBirth     String?  // @encrypted
+  mainPractice    String?
+  chiefComplaint  String?
+  treatmentGoals  String?  @db.Text
+  notes           String?  @db.Text
+  processStartDate DateTime?
+
+  linkedUserId    String?
+
+  medicalDocuments MedicalDocument[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([integrativeTherapistId])
+  @@index([email])
+  @@index([linkedUserId])
+}
+
 // ────────────────────────────────────────────
 // CATEGORY (dynamic document categories, grouped)
 // Managed centrally (admin). Documents point here via categoryId.
@@ -1974,6 +2084,8 @@ model Resource {
   professional    ProfessionalProfile? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
   psychoanalystId String?
   psychoanalyst   PsychoanalystProfile? @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+  integrativeTherapistId String?
+  integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
   title           String               // encrypted
   content         String?              // encrypted — description/notes
   url             String?              // YouTube link (plain — not PHI)
@@ -1986,6 +2098,7 @@ model Resource {
 
   @@index([professionalId])
   @@index([psychoanalystId])
+  @@index([integrativeTherapistId])
 }
 
 model ResourceShare {
@@ -2219,6 +2332,8 @@ model HumanitarianVolunteer {
   professional    ProfessionalProfile?        @relation(fields: [professionalId], references: [id], onDelete: Cascade)
   psychoanalystId String?
   psychoanalyst   PsychoanalystProfile?       @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+  integrativeTherapistId String?
+  integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
 
   status          HumanitarianVolunteerStatus @default(OFFLINE)
   lastAssignedAt  DateTime?

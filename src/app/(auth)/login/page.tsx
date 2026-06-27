@@ -135,6 +135,8 @@ function LoginForm() {
         router.push("/organization");
       } else if (role === "PSYCHOANALYST") {
         router.push("/psychoanalyst");
+      } else if (role === "INTEGRATIVE_THERAPIST") {
+        router.push("/integrative-therapist");
       } else if (role === "ANGEL") {
         router.push("/humanitarian/angel");
       } else {

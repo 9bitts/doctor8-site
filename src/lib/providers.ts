@@ -315,6 +315,32 @@ export async function getUnifiedProvider(
   };
 }
 
+export async function ensureIntegrativeClientForPatient(opts: {
+  integrativeTherapistId: string;
+  patientUserId: string;
+  patientProfile: { firstName: string; lastName: string };
+  patientEmail: string;
+}) {
+  const { integrativeTherapistId, patientUserId, patientProfile, patientEmail } = opts;
+  const { encrypt } = await import("@/lib/encryption");
+
+  const existing = await db.integrativeClientRecord.findFirst({
+    where: { integrativeTherapistId, linkedUserId: patientUserId },
+  });
+  if (existing) return existing;
+
+  return db.integrativeClientRecord.create({
+    data: {
+      integrativeTherapistId,
+      firstName: encrypt(patientProfile.firstName),
+      lastName: encrypt(patientProfile.lastName),
+      email: patientEmail.toLowerCase(),
+      linkedUserId: patientUserId,
+      processStartDate: new Date(),
+    },
+  });
+}
+
 export async function ensureAnalysandForPatient(opts: {
   psychoanalystId: string;
   patientUserId: string;

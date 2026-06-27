@@ -8,10 +8,10 @@ import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translatio
 import { persistAuthCallback } from "@/lib/auth-callback";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2,
-  User, Stethoscope, ArrowLeft, Brain,
+  User, Stethoscope, ArrowLeft, Brain, Leaf,
 } from "lucide-react";
 
-export type RegisterRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST";
+export type RegisterRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 export type Region = "US" | "EU" | "BR" | "VE";
 
 export const LANG_KEY = "doctor8.lang";
@@ -135,6 +135,7 @@ export function RegisterAccountForm({
 
   const isProfessional = role === "PROFESSIONAL";
   const isPsychoanalyst = role === "PSYCHOANALYST";
+  const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
 
   async function handleGoogleSignUp() {
     document.cookie = `signup_role=${role}; path=/; max-age=600; SameSite=Lax`;
@@ -200,16 +201,36 @@ export function RegisterAccountForm({
         </button>
       )}
 
-      <div className={`flex items-center gap-3 mb-6 p-3 rounded-xl border ${isPsychoanalyst ? "bg-violet-500/10 border-violet-500/20" : "bg-emerald-500/10 border-emerald-500/20"}`}>
+      <div className={`flex items-center gap-3 mb-6 p-3 rounded-xl border ${
+        isIntegrativeTherapist
+          ? "bg-teal-500/10 border-teal-500/20"
+          : isPsychoanalyst
+            ? "bg-violet-500/10 border-violet-500/20"
+            : "bg-emerald-500/10 border-emerald-500/20"
+      }`}>
         {isProfessional ? (
           <Stethoscope className="w-5 h-5 text-emerald-400 shrink-0" />
         ) : isPsychoanalyst ? (
           <Brain className="w-5 h-5 text-violet-400 shrink-0" />
+        ) : isIntegrativeTherapist ? (
+          <Leaf className="w-5 h-5 text-teal-400 shrink-0" />
         ) : (
           <User className="w-5 h-5 text-emerald-400 shrink-0" />
         )}
-        <p className={`text-sm font-medium ${isPsychoanalyst ? "text-violet-300" : "text-emerald-300"}`}>
-          {isProfessional ? t("reg.proAccount") : isPsychoanalyst ? t("reg.psychoanalystAccount") : t("reg.patientAccount")}
+        <p className={`text-sm font-medium ${
+          isIntegrativeTherapist
+            ? "text-teal-300"
+            : isPsychoanalyst
+              ? "text-violet-300"
+              : "text-emerald-300"
+        }`}>
+          {isProfessional
+            ? t("reg.proAccount")
+            : isPsychoanalyst
+              ? t("reg.psychoanalystAccount")
+              : isIntegrativeTherapist
+                ? t("reg.integrativeAccount")
+                : t("reg.patientAccount")}
         </p>
       </div>
 
@@ -235,7 +256,7 @@ export function RegisterAccountForm({
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
         )}
-        {isProfessional ? t("reg.googlePro") : isPsychoanalyst ? t("reg.googlePsychoanalyst") : t("reg.googlePatient")}
+        {isProfessional ? t("reg.googlePro") : isPsychoanalyst ? t("reg.googlePsychoanalyst") : isIntegrativeTherapist ? t("reg.googleIntegrative") : t("reg.googlePatient")}
       </button>
 
       <div className="flex items-center gap-4 mb-4">

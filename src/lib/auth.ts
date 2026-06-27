@@ -25,12 +25,13 @@ const SESSION_MAX_AGE = parseInt(
 
 // Reads the role the user picked on the registration screen, stored in a cookie
 // before the Google redirect. Dynamic import keeps next/headers out of edge bundles.
-async function readSignupRole(): Promise<"PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST"> {
+async function readSignupRole(): Promise<"PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST"> {
   try {
     const { cookies } = await import("next/headers");
     const value = cookies().get("signup_role")?.value;
     if (value === "PROFESSIONAL") return "PROFESSIONAL";
     if (value === "PSYCHOANALYST") return "PSYCHOANALYST";
+    if (value === "INTEGRATIVE_THERAPIST") return "INTEGRATIVE_THERAPIST";
     return "PATIENT";
   } catch {
     return "PATIENT";
@@ -207,6 +208,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               });
             } else if (signupRole === "PSYCHOANALYST") {
               await db.psychoanalystProfile.create({
+                data: {
+                  userId: dbUser.id,
+                  firstName,
+                  lastName,
+                  avatarUrl: user.image || null,
+                  trainingInstitution: "",
+                  consultPrice: 0,
+                },
+              });
+            } else if (signupRole === "INTEGRATIVE_THERAPIST") {
+              await db.integrativeTherapistProfile.create({
                 data: {
                   userId: dbUser.id,
                   firstName,

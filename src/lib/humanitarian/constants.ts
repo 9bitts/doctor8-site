@@ -23,7 +23,7 @@ export const DEFAULT_VENEZUELA_POOLS: {
   labelEn: string;
   maxWaiting: number;
   sortOrder: number;
-  volunteerRoles: ("PROFESSIONAL" | "PSYCHOANALYST")[];
+  volunteerRoles: ("PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST")[];
   specialtyHints?: string[];
 }[] = [
   {
@@ -63,7 +63,7 @@ export const DEFAULT_VENEZUELA_POOLS: {
     labelEn: "Integrative therapist",
     maxWaiting: 100,
     sortOrder: 4,
-    volunteerRoles: ["PROFESSIONAL"],
+    volunteerRoles: ["INTEGRATIVE_THERAPIST", "PROFESSIONAL"],
     specialtyHints: ["integrativ", "holistic", "terapia", "counsel", "terapeuta"],
   },
   {

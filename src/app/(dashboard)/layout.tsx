@@ -16,7 +16,7 @@ import {
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
   Building2,
   BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain, BarChart3,
-  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart,
+  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart, Leaf,
 } from "lucide-react";
 
 interface NavItem {
@@ -71,6 +71,15 @@ const PSYCHOANALYST_NAV: NavItem[] = [
   { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
 ];
 
+const INTEGRATIVE_THERAPIST_NAV: NavItem[] = [
+  { href: "/integrative-therapist", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
+  { href: "/integrative-therapist/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
+  { href: "/integrative-therapist/clients", labelKey: "it.nav.clients", icon: <Users size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
+  { href: "/integrative-therapist/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
+  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
+  { href: "/integrative-therapist/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
+];
+
 const ORGANIZATION_NAV: NavItem[] = [
   { href: "/organization", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["ORGANIZATION"] },
   { href: "/organization/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["ORGANIZATION"] },
@@ -123,28 +132,33 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     : role === "ORGANIZATION" ? ORGANIZATION_NAV
     : role === "PROFESSIONAL" ? PROFESSIONAL_NAV
     : role === "PSYCHOANALYST" ? PSYCHOANALYST_NAV
+    : role === "INTEGRATIVE_THERAPIST" ? INTEGRATIVE_THERAPIST_NAV
     : PATIENT_NAV;
   const roleLabel =
     role === "ORGANIZATION" ? t("role.organization")
     : role === "PROFESSIONAL" ? t("role.professional")
     : role === "PSYCHOANALYST" ? t("role.psychoanalyst")
+    : role === "INTEGRATIVE_THERAPIST" ? t("role.integrativeTherapist")
     : role === "ADMIN" ? t("role.admin")
     : t("role.patient");
   const isProfessional = role === "PROFESSIONAL";
   const isPsychoanalyst = role === "PSYCHOANALYST";
+  const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
   const isOrganization = role === "ORGANIZATION";
-  const logoAccent = isOrganization ? "text-indigo-400" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-400" : "text-emerald-400";
-  const logoAccentHeader = isOrganization ? "text-indigo-500" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-500" : "text-emerald-500";
+  const logoAccent = isOrganization ? "text-indigo-400" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
+  const logoAccentHeader = isOrganization ? "text-indigo-500" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-500" : isIntegrativeTherapist ? "text-teal-500" : "text-emerald-500";
   const navActive = isOrganization
     ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
     : isProfessional
     ? "bg-brand-500/10 text-brand-400 border border-brand-500/20"
     : isPsychoanalyst
       ? "bg-violet-500/10 text-violet-400 border border-violet-500/20"
-      : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-  const avatarBg = isOrganization ? "bg-indigo-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : "bg-emerald-500/20";
-  const avatarIcon = isOrganization ? "text-indigo-400" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : "text-emerald-400";
-  const headerAvatar = isOrganization ? "bg-indigo-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : "bg-emerald-500";
+      : isIntegrativeTherapist
+        ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
+        : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+  const avatarBg = isOrganization ? "bg-indigo-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
+  const avatarIcon = isOrganization ? "text-indigo-400" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
+  const headerAvatar = isOrganization ? "bg-indigo-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
 
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">

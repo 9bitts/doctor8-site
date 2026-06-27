@@ -34,6 +34,8 @@ export default function CallbackPage() {
           router.replace("/professional");
         } else if (session?.user?.role === "PSYCHOANALYST") {
           router.replace("/psychoanalyst");
+        } else if (session?.user?.role === "INTEGRATIVE_THERAPIST") {
+          router.replace("/integrative-therapist");
         } else if (session?.user?.role === "ANGEL") {
           router.replace("/humanitarian/angel");
         } else {
