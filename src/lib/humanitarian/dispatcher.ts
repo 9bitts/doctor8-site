@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
+import { ensureAnalysandForPatient } from "@/lib/providers";
 import { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
 import { DEFAULT_VENEZUELA_POOLS, poolLabel } from "@/lib/humanitarian/constants";
 import {
@@ -201,6 +202,7 @@ export async function completeHumanitarianEntry(
       volunteer: {
         include: {
           professional: { select: { id: true } },
+          psychoanalyst: { select: { id: true } },
         },
       },
       pool: { include: { campaign: { select: { slug: true } } } },
@@ -234,6 +236,22 @@ export async function completeHumanitarianEntry(
     await ensurePatientRecord(entry.volunteer.professionalId, entry.patientUserId).catch(
       () => {},
     );
+  } else if (entry.volunteer.psychoanalystId) {
+    const patientProfile = await db.patientProfile.findUnique({
+      where: { userId: entry.patientUserId },
+      select: { firstName: true, lastName: true, user: { select: { email: true } } },
+    });
+    if (patientProfile) {
+      await ensureAnalysandForPatient({
+        psychoanalystId: entry.volunteer.psychoanalystId,
+        patientUserId: entry.patientUserId,
+        patientProfile: {
+          firstName: safeDecrypt(patientProfile.firstName),
+          lastName: safeDecrypt(patientProfile.lastName),
+        },
+        patientEmail: patientProfile.user.email,
+      }).catch(() => {});
+    }
   }
 
   if (entry.intake?.status !== "COMPLETE") {
@@ -474,7 +492,7 @@ export async function resolveVolunteerProfile(userId: string, role: string): Pro
       providerType: "PSYCHOANALYST",
       psychoanalystId: pa.id,
       displayName: `${pa.firstName} ${pa.lastName}`,
-      specialty: "Psican?lise",
+      specialty: "Psican\u00e1lise",
     };
   }
 

@@ -40,6 +40,7 @@ export default function SosVenezuelaPage() {
   const patientLogin = `/login?callbackUrl=${encodeURIComponent("/patient")}`;
   const volRegister = `/register?region=VE&role=PROFESSIONAL&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
   const volLogin = `/login?callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
+  const psychoVolRegister = `/register?region=VE&role=PSYCHOANALYST&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
 
   const steps = [
     "hum.landing.step1",
@@ -107,6 +108,10 @@ export default function SosVenezuelaPage() {
           {" ? "}
           <Link href={volLogin} className="text-emerald-400 hover:text-emerald-300 font-medium">
             {t(lang, "hum.shell.volunteer")}
+          </Link>
+          {" ? "}
+          <Link href={psychoVolRegister} className="text-emerald-400 hover:text-emerald-300 font-medium">
+            {t(lang, "hum.landing.psychoVolunteer")}
           </Link>
         </p>
 

@@ -1,11 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Heart, ArrowLeft, Home, User, Stethoscope, ExternalLink } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
 import { HUMANITARIAN_LANDING_URL, VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianLangSwitcher from "@/components/humanitarian/HumanitarianLangSwitcher";
+
+type UserRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "ADMIN" | "ORGANIZATION";
+
+function homeHrefForRole(role: UserRole | null, isVolunteer: boolean): string {
+  if (!isVolunteer) return "/patient";
+  if (role === "PSYCHOANALYST") return "/psychoanalyst";
+  if (role === "PROFESSIONAL") return "/professional";
+  return "/patient";
+}
 
 type Props = {
   lang: Lang;
@@ -24,10 +34,18 @@ export default function HumanitarianShell({
 }: Props) {
   const pathname = usePathname();
   const t = (key: string) => translate(lang, key);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((s) => setUserRole((s?.user?.role as UserRole) ?? null))
+      .catch(() => {});
+  }, []);
 
   const isVolunteer = pathname.includes("/volunteer");
   const campaignHref = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
-  const accountHref = isVolunteer ? "/professional" : "/patient";
+  const accountHref = homeHrefForRole(userRole, isVolunteer);
 
   const navLink = (href: string, active: boolean, label: string, icon: React.ReactNode) => (
     <Link
