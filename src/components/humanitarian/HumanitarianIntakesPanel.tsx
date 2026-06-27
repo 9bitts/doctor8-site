@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Loader2, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, ChevronDown, ChevronUp, FileText, Filter } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import { buildIntakeSummary, hasVulnerabilityFlags } from "@/lib/humanitarian/intake-summary";
+import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
 
 interface IntakeRow {
   id: string;
@@ -22,6 +24,8 @@ interface IntakeRow {
   updatedAt: string;
 }
 
+type FilterKey = "all" | "crisis_urgent" | "incomplete" | "vulnerable";
+
 const STATUS_LABEL: Record<string, string> = {
   TRIAGE_ONLY: "S? triagem",
   PARTIAL: "Parcial",
@@ -34,10 +38,28 @@ const PRIORITY_COLOR: Record<string, string> = {
   ROUTINE: "text-slate-600 bg-slate-100",
 };
 
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: "all", label: "Todos" },
+  { key: "crisis_urgent", label: "CRISIS / URGENT" },
+  { key: "incomplete", label: "Ficha incompleta" },
+  { key: "vulnerable", label: "Vulnerabilidade" },
+];
+
+function matchesFilter(row: IntakeRow, filter: FilterKey): boolean {
+  if (filter === "all") return true;
+  if (filter === "crisis_urgent") {
+    return row.computedPriority === "CRISIS" || row.computedPriority === "URGENT";
+  }
+  if (filter === "incomplete") return row.status !== "COMPLETE";
+  if (filter === "vulnerable") return hasVulnerabilityFlags(row.triageFlags);
+  return true;
+}
+
 export default function HumanitarianIntakesPanel({ slug = VENEZUELA_CAMPAIGN_SLUG }: { slug?: string }) {
   const [intakes, setIntakes] = useState<IntakeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterKey>("all");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,23 +77,52 @@ export default function HumanitarianIntakesPanel({ slug = VENEZUELA_CAMPAIGN_SLU
     return () => clearInterval(interval);
   }, [load]);
 
+  const filtered = useMemo(
+    () => intakes.filter((row) => matchesFilter(row, filter)),
+    [intakes, filter],
+  );
+
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <FileText size={18} className="text-slate-500" />
         <h2 className="font-bold text-slate-900">Fichas de triagem e anamnese</h2>
-        <span className="text-xs text-slate-400 ml-auto">{intakes.length} registros</span>
+        <span className="text-xs text-slate-400 ml-auto">
+          {filtered.length}{filter !== "all" ? ` / ${intakes.length}` : ""} registros
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Filter size={14} className="text-slate-400 shrink-0" />
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setFilter(f.key)}
+            className={`text-xs px-2.5 py-1 rounded-full border transition ${
+              filter === f.key
+                ? "bg-emerald-50 border-emerald-200 text-emerald-800 font-medium"
+                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       {loading && intakes.length === 0 ? (
         <Loader2 size={20} className="animate-spin text-emerald-500" />
-      ) : intakes.length === 0 ? (
-        <p className="text-sm text-slate-500">Nenhuma ficha ainda.</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-slate-500">
+          {intakes.length === 0 ? "Nenhuma ficha ainda." : "Nenhum registro com este filtro."}
+        </p>
       ) : (
         <div className="space-y-2 max-h-[32rem] overflow-y-auto">
-          {intakes.map((row) => {
+          {filtered.map((row) => {
             const open = expanded === row.id;
             const pri = row.computedPriority || "ROUTINE";
+            const summary = buildIntakeSummary(row as Parameters<typeof buildIntakeSummary>[0], "pt");
+
             return (
               <div key={row.id} className="border border-slate-100 rounded-xl overflow-hidden">
                 <button
@@ -93,36 +144,16 @@ export default function HumanitarianIntakesPanel({ slug = VENEZUELA_CAMPAIGN_SLU
                 </button>
                 {open && (
                   <div className="px-4 pb-4 space-y-3 border-t border-slate-50 bg-slate-50/50">
-                    {row.triageFlags.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-slate-500 mb-1">Flags de triagem</p>
-                        <p className="text-xs text-slate-700">{row.triageFlags.join(" ? ")}</p>
-                      </div>
-                    )}
                     {row.forceMedicalPool && (
-                      <p className="text-xs text-amber-700 font-medium">Encaminhamento m?dico recomendado</p>
+                      <p className="text-xs text-amber-700 font-medium pt-3">
+                        Encaminhamento m?dico recomendado
+                      </p>
                     )}
-                    {row.triageData != null && (
-                      <DetailBlock title="Triagem r?pida" data={row.triageData} />
-                    )}
-                    {row.identificationData != null && (
-                      <DetailBlock title="Identifica??o" data={row.identificationData} />
-                    )}
-                    {row.specialtyData != null && (
-                      <DetailBlock title="Por especialidade" data={row.specialtyData} />
-                    )}
-                    {row.basicNeedsData != null && (
-                      <DetailBlock title="Necessidades b?sicas" data={row.basicNeedsData} />
-                    )}
-                    {row.additionalNotes && (
-                      <div>
-                        <p className="text-xs font-medium text-slate-500 mb-1">Observa??es</p>
-                        <p className="text-xs text-slate-700 whitespace-pre-wrap">{row.additionalNotes}</p>
-                      </div>
-                    )}
+                    <HumanitarianIntakeSummary summary={summary} lang="pt" compact />
                     <p className="text-[10px] text-slate-400">
-                      Atualizado: {new Date(row.updatedAt).toLocaleString()}
-                      {row.consentAt && ` ? Consentimento: ${new Date(row.consentAt).toLocaleString()}`}
+                      Atualizado: {new Date(row.updatedAt).toLocaleString("pt-BR")}
+                      {row.consentAt && ` ? Consentimento: ${new Date(row.consentAt).toLocaleString("pt-BR")}`}
+                      {row.triageCompletedAt && ` ? Triagem: ${new Date(row.triageCompletedAt).toLocaleString("pt-BR")}`}
                     </p>
                   </div>
                 )}
@@ -131,17 +162,6 @@ export default function HumanitarianIntakesPanel({ slug = VENEZUELA_CAMPAIGN_SLU
           })}
         </div>
       )}
-    </div>
-  );
-}
-
-function DetailBlock({ title, data }: { title: string; data: unknown }) {
-  return (
-    <div>
-      <p className="text-xs font-medium text-slate-500 mb-1">{title}</p>
-      <pre className="text-[11px] text-slate-700 bg-white border border-slate-100 rounded-lg p-2 overflow-x-auto whitespace-pre-wrap">
-        {JSON.stringify(data, null, 2)}
-      </pre>
     </div>
   );
 }

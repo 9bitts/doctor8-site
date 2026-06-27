@@ -11,10 +11,41 @@ import {
 } from "@/lib/humanitarian/dispatcher";
 import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
 import { decrypt } from "@/lib/encryption";
+import type { Lang } from "@/lib/i18n/translations";
+import type { HumanitarianIntake, HumanitarianQueueEntry } from "@prisma/client";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
   try { return decrypt(v); } catch { return v; }
+}
+
+function volunteerLang(req: NextRequest): Lang {
+  const raw = new URL(req.url).searchParams.get("lang");
+  if (raw === "pt" || raw === "en" || raw === "es") return raw;
+  return "es";
+}
+
+type EntryWithPatient = HumanitarianQueueEntry & {
+  patientUser?: {
+    patientProfile: { firstName: string | null; lastName: string | null } | null;
+  } | null;
+  intake: HumanitarianIntake | null;
+};
+
+function buildCurrentEntry(entry: EntryWithPatient, lang: Lang) {
+  const pp = entry.patientUser?.patientProfile;
+  return {
+    id: entry.id,
+    status: entry.status,
+    chiefComplaint: entry.chiefComplaint,
+    meetingUrl: entry.meetingUrl,
+    patientName: pp
+      ? `${safeDecrypt(pp.firstName)} ${safeDecrypt(pp.lastName)}`.trim()
+      : "Paciente",
+    calledAt: entry.calledAt?.toISOString() ?? null,
+    expiresAt: entry.expiresAt?.toISOString() ?? null,
+    intakeSummary: entry.intake ? buildIntakeSummary(entry.intake, lang) : null,
+  };
 }
 
 const statusSchema = z.object({
@@ -31,6 +62,7 @@ export async function GET(req: NextRequest) {
   }
 
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug") || "venezuela-terremoto-2026";
+  const lang = volunteerLang(req);
 
   const campaign = await db.humanitarianCampaign.findUnique({
     where: { slug: campaignSlug },
@@ -69,19 +101,7 @@ export async function GET(req: NextRequest) {
       },
     });
     if (entry) {
-      const pp = entry.patientUser?.patientProfile;
-      currentEntry = {
-        id: entry.id,
-        status: entry.status,
-        chiefComplaint: entry.chiefComplaint,
-        meetingUrl: entry.meetingUrl,
-        patientName: pp
-          ? `${safeDecrypt(pp.firstName)} ${safeDecrypt(pp.lastName)}`.trim()
-          : "Paciente",
-        calledAt: entry.calledAt?.toISOString() ?? null,
-        expiresAt: entry.expiresAt?.toISOString() ?? null,
-        intakeSummary: entry.intake ? buildIntakeSummary(entry.intake, "es") : null,
-      };
+      currentEntry = buildCurrentEntry(entry, lang);
     }
   }
 
@@ -141,6 +161,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { status, campaignSlug, poolSlug } = parsed.data;
+  const lang = volunteerLang(req);
 
   const campaign = await db.humanitarianCampaign.findUnique({
     where: { slug: campaignSlug },
@@ -247,19 +268,7 @@ export async function POST(req: NextRequest) {
       },
     });
     if (entry) {
-      const pp = entry.patientUser?.patientProfile;
-      currentEntry = {
-        id: entry.id,
-        status: entry.status,
-        chiefComplaint: entry.chiefComplaint,
-        meetingUrl: entry.meetingUrl,
-        patientName: pp
-          ? `${safeDecrypt(pp.firstName)} ${safeDecrypt(pp.lastName)}`.trim()
-          : "Paciente",
-        calledAt: entry.calledAt?.toISOString() ?? null,
-        expiresAt: entry.expiresAt?.toISOString() ?? null,
-        intakeSummary: entry.intake ? buildIntakeSummary(entry.intake, "es") : null,
-      };
+      currentEntry = buildCurrentEntry(entry, lang);
     }
   }
 
@@ -278,6 +287,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug") || "venezuela-terremoto-2026";
+  const lang = volunteerLang(req);
 
   const vol = await db.humanitarianVolunteer.findFirst({
     where: {
@@ -312,18 +322,7 @@ export async function PATCH(req: NextRequest) {
       },
     });
     if (entry) {
-      const pp = entry.patientUser?.patientProfile;
-      currentEntry = {
-        id: entry.id,
-        status: entry.status,
-        meetingUrl: entry.meetingUrl,
-        expiresAt: entry.expiresAt?.toISOString() ?? null,
-        chiefComplaint: entry.chiefComplaint,
-        patientName: pp
-          ? `${safeDecrypt(pp.firstName)} ${safeDecrypt(pp.lastName)}`.trim()
-          : "Paciente",
-        intakeSummary: entry.intake ? buildIntakeSummary(entry.intake, "es") : null,
-      };
+      currentEntry = buildCurrentEntry(entry, lang);
     }
   }
 

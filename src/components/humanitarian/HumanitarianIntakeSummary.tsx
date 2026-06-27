@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, FileText } from "lucide-react";
+import { translate, type Lang } from "@/lib/i18n/translations";
 import type { IntakeSummarySection } from "@/lib/humanitarian/intake-summary";
 
 type Summary = {
@@ -16,21 +17,33 @@ const PRIORITY_STYLE: Record<string, string> = {
   ROUTINE: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
+function t(lang: Lang, key: string): string {
+  return translate(lang, key);
+}
+
+function statusLabel(lang: Lang, summary: Summary): string {
+  if (summary.anamneseComplete) return t(lang, "hum.intake.statusComplete");
+  if (summary.status === "PARTIAL") return t(lang, "hum.intake.statusPartial");
+  return t(lang, "hum.intake.statusTriageOnly");
+}
+
 export default function HumanitarianIntakeSummary({
   summary,
   chiefComplaint,
   compact = false,
   dark = false,
+  lang = "es",
 }: {
   summary: Summary | null;
   chiefComplaint?: string | null;
   compact?: boolean;
   dark?: boolean;
+  lang?: Lang;
 }) {
   if (!summary && !chiefComplaint) {
     return (
       <p className={`text-xs ${dark ? "text-slate-500" : "text-slate-400"}`}>
-        Sin ficha de triaje/anamnesis a?n.
+        {t(lang, "hum.intake.noFile")}
       </p>
     );
   }
@@ -49,14 +62,16 @@ export default function HumanitarianIntakeSummary({
             {pri}
           </span>
           <span className={`text-xs ${dark ? "text-slate-500" : "text-slate-400"}`}>
-            {summary.anamneseComplete ? "Ficha completa" : summary.status === "PARTIAL" ? "Ficha parcial" : "S? triagem"}
+            {statusLabel(lang, summary)}
           </span>
         </div>
       )}
 
       {chiefComplaint && (
         <div className={`rounded-xl p-3 border ${card}`}>
-          <p className={`text-xs font-medium mb-1 ${dark ? "text-slate-400" : "text-slate-500"}`}>Queixa</p>
+          <p className={`text-xs font-medium mb-1 ${dark ? "text-slate-400" : "text-slate-500"}`}>
+            {t(lang, "hum.intake.chiefComplaint")}
+          </p>
           <p className={title}>{chiefComplaint}</p>
         </div>
       )}
@@ -73,7 +88,7 @@ export default function HumanitarianIntakeSummary({
                 {item.label ? (
                   <dt className={`${text} truncate`}>{item.label}</dt>
                 ) : (
-                  <dt className="sr-only">Nota</dt>
+                  <dt className="sr-only">{t(lang, "hum.intake.note")}</dt>
                 )}
                 <dd className={`${title} break-words`}>{item.value}</dd>
               </div>

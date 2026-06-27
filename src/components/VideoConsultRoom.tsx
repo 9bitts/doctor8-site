@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
+import { translate } from "@/lib/i18n/translations";
 
 export interface VideoConsultData {
   url: string;
@@ -391,12 +392,13 @@ export default function VideoConsultRoom({
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {data.kind === "humanitarian" && isPro && (
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
-                  <p className="text-xs font-semibold text-emerald-300 mb-2">SOS Venezuela — Ficha</p>
+                  <p className="text-xs font-semibold text-emerald-300 mb-2">{translate(lang, "hum.intake.sidebarTitle")}</p>
                   <HumanitarianIntakeSummary
                     summary={humanitarianIntake?.summary ?? null}
                     chiefComplaint={humanitarianIntake?.chiefComplaint}
                     compact
                     dark
+                    lang={lang}
                   />
                 </div>
               )}

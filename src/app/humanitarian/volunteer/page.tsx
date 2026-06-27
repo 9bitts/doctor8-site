@@ -74,7 +74,7 @@ export default function HumanitarianVolunteerPage() {
   const load = useCallback(async () => {
     try {
       const res = await fetch(
-        `/api/humanitarian/volunteer?campaignSlug=${VENEZUELA_CAMPAIGN_SLUG}`,
+        `/api/humanitarian/volunteer?campaignSlug=${VENEZUELA_CAMPAIGN_SLUG}&lang=${lang}`,
       );
       const data = await res.json();
       if (!res.ok) {
@@ -221,6 +221,7 @@ export default function HumanitarianVolunteerPage() {
               summary={currentEntry.intakeSummary ?? null}
               chiefComplaint={currentEntry.chiefComplaint}
               compact
+              lang={lang}
             />
             <div className="flex flex-col sm:flex-row gap-3">
               <Link

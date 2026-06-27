@@ -10,7 +10,8 @@ export async function GET(
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const lang = new URL(_req.url).searchParams.get("lang") || "es";
+  const langParam = new URL(_req.url).searchParams.get("lang");
+  const lang = langParam === "pt" || langParam === "en" || langParam === "es" ? langParam : "es";
 
   const entry = await db.humanitarianQueueEntry.findUnique({
     where: { id: params.entryId },
