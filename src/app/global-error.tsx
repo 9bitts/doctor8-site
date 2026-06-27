@@ -1,7 +1,6 @@
 "use client";
 
-// Recover from stale JS chunks after a deploy (common when users open email links
-// on a tab cached from an older build).
+// Recover from stale JS chunks after a deploy.
 import { useEffect } from "react";
 
 function isChunkLoadError(message: string): boolean {
@@ -39,12 +38,15 @@ export default function GlobalError({
 
   return (
     <html lang="pt-BR">
+      <head>
+        <meta charSet="utf-8" />
+      </head>
       <body className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-xl font-semibold">Algo deu errado</h1>
           <p className="text-slate-400 text-sm">
-            Houve um problema ao carregar a p?gina. Isso pode acontecer ap?s uma
-            atualiza??o do sistema.
+            Houve um problema ao carregar a p&aacute;gina. Isso pode acontecer ap&oacute;s uma
+            atualiza&ccedil;&atilde;o do sistema.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
@@ -52,7 +54,7 @@ export default function GlobalError({
               onClick={() => window.location.reload()}
               className="bg-emerald-500 hover:bg-emerald-400 text-white font-medium px-4 py-2 rounded-xl"
             >
-              Recarregar p?gina
+              Recarregar p&aacute;gina
             </button>
             <button
               type="button"

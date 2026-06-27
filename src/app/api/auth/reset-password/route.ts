@@ -23,7 +23,11 @@ export async function POST(req: NextRequest) {
   const record = await db.verificationToken.findUnique({ where: { token } });
 
   if (!record || !record.identifier.startsWith("reset:") || record.expires < new Date()) {
-    return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 400 });
+    const expired = record && record.expires < new Date();
+    return NextResponse.json(
+      { error: expired ? "expired" : "invalid" },
+      { status: 400 },
+    );
   }
 
   const userId = record.identifier.replace("reset:", "");

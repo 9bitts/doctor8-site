@@ -164,7 +164,9 @@ export default function SupportWidget() {
   }
 
   const hideOnPaths = [
-    "/login", "/register", "/verify-email", "/verify-account", "/verify-sms", "/club/join", "/callback", "/embed",
+    "/login", "/register", "/verify-email", "/verify-account", "/verify-sms",
+    "/forgot-password", "/reset-password",
+    "/club/join", "/callback", "/embed",
     "/video", "/room", // teleconsulta — não sobrepor o player Daily.co
   ];
   if (hideOnPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
