@@ -1,7 +1,7 @@
 // TCLE - Termo de Consentimento Livre e Esclarecido para Telemedicina / Teleconsulta
 // Versioned document - update TELEMEDICINE_TCLE_VERSION when content changes materially.
 
-export const TELEMEDICINE_TCLE_VERSION = "1.1";
+export const TELEMEDICINE_TCLE_VERSION = "1.2";
 
 export const TELEMEDICINE_TCLE_LAST_UPDATED = "27/06/2026";
 
@@ -20,13 +20,16 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
     content: {
       pt: `<p>Este Termo de Consentimento Livre e Esclarecido (TCLE) autoriza o <strong>atendimento em saúde a distância</strong> (telemedicina/teleconsulta) realizado por profissionais de saúde habilitados por meio da plataforma <strong>Doctor8</strong>, operada pela INFO8 DESENVOLVIMENTO DE SISTEMAS E SITE LTDA (CNPJ 20.251.527/0001-04).</p>
       <p class="mt-2">O atendimento utiliza tecnologias de comunicação segura — vídeo, áudio e/ou mensagens — para avaliação clínica, orientação, acompanhamento ou encaminhamento, conforme a natureza do caso e a legislação aplicável, incluindo a Resolução CFM nº 2.314/2022 e a Lei nº 13.989/2020.</p>
-      <p class="mt-2">Em campanhas humanitárias (como apoio a vítimas de desastres), o atendimento pode ser <strong>gratuito</strong> e organizado em filas de voluntários. Mesmo nesses casos, aplicam-se as mesmas regras de confidencialidade, registro em prontuário e proteção de dados descritas neste termo.</p>`,
+      <p class="mt-2">Em campanhas humanitárias (como apoio a vítimas de desastres), o atendimento pode ser <strong>gratuito</strong> e organizado em filas de voluntários. Mesmo nesses casos, aplicam-se as mesmas regras de confidencialidade, registro em prontuário e proteção de dados descritas neste termo.</p>
+      <p class="mt-2">Quando o atendimento for realizado por <strong>psicólogo(a)</strong> ou <strong>psicanalista</strong>, aplicam-se também as disposições específicas da <strong>seção 3</strong> deste termo, em conformidade com o Código de Ética Profissional do Psicólogo e a Resolução CFP nº 11/2018.</p>`,
       en: `<p>This Free and Informed Consent Form (ICF) authorizes <strong>remote healthcare services</strong> (telemedicine/teleconsultation) provided by licensed health professionals through the <strong>Doctor8</strong> platform, operated by INFO8 DESENVOLVIMENTO DE SISTEMAS E SITE LTDA.</p>
       <p class="mt-2">Care uses secure communication technologies — video, audio, and/or messaging — for clinical assessment, guidance, follow-up, or referral, as permitted by applicable law and professional regulations.</p>
-      <p class="mt-2">In humanitarian campaigns (such as disaster relief), care may be <strong>free of charge</strong> and delivered through volunteer queues. The same confidentiality, medical record, and data protection rules in this form still apply.</p>`,
+      <p class="mt-2">In humanitarian campaigns (such as disaster relief), care may be <strong>free of charge</strong> and delivered through volunteer queues. The same confidentiality, medical record, and data protection rules in this form still apply.</p>
+      <p class="mt-2">When care is provided by a <strong>psychologist</strong> or <strong>psychoanalyst</strong>, the specific provisions in <strong>section 3</strong> of this form also apply, in line with applicable professional ethics and telepsychology regulations.</p>`,
       es: `<p>Este Término de Consentimiento Libre e Informado (TCLI) autoriza la <strong>atención en salud a distancia</strong> (telemedicina/teleconsulta) brindada por profesionales de la salud habilitados a través de la plataforma <strong>Doctor8</strong>, operada por INFO8 DESENVOLVIMENTO DE SISTEMAS E SITE LTDA.</p>
       <p class="mt-2">La atención utiliza tecnologías de comunicación segura — video, audio y/o mensajes — para evaluación clínica, orientación, seguimiento o derivación, conforme a la normativa aplicable.</p>
-      <p class="mt-2">En campañas humanitarias (como apoyo a víctimas de desastres), la atención puede ser <strong>gratuita</strong> y organizada en filas de voluntarios. En todos los casos aplican las mismas reglas de confidencialidad, historial clínico y protección de datos de este término.</p>`,
+      <p class="mt-2">En campañas humanitarias (como apoyo a víctimas de desastres), la atención puede ser <strong>gratuita</strong> y organizada en filas de voluntarios. En todos los casos aplican las mismas reglas de confidencialidad, historial clínico y protección de datos de este término.</p>
+      <p class="mt-2">Cuando la atención sea brindada por <strong>psicólogo(a)</strong> o <strong>psicoanalista</strong>, aplican también las disposiciones específicas de la <strong>sección 3</strong> de este término, conforme al código de ética profesional y la normativa de telepsicología aplicable.</p>`,
     },
   },
   {
@@ -39,31 +42,100 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
       pt: `<ul class="list-disc pl-5 space-y-2">
         <li>Você será atendido(a) por um <strong>profissional de saúde habilitado</strong>, em ambiente virtual privado na plataforma Doctor8.</li>
         <li>Podem ser solicitadas informações sobre sintomas, histórico de saúde, medicamentos, situação de moradia e contexto da emergência, quando aplicável.</li>
-        <li>O profissional poderá registrar anotações clínicas no seu prontuário eletrônico na plataforma.</li>
-        <li>Após a consulta, <strong>voluntários de acompanhamento</strong> (chamados <strong>Anjos</strong>) podem entrar em contato para saber como você está e se precisa de ajuda — conforme a seção 5 deste termo.</li>
+        <li>O profissional poderá registrar anotações clínicas no seu prontuário eletrônico na plataforma (ou registro de sessão, no caso de psicólogo(a) e psicanalista).</li>
+        <li>Se o atendimento for <strong>psicológico</strong>, aplicam-se as regras da seção 3 deste termo.</li>
+        <li>Após a consulta, <strong>voluntários de acompanhamento</strong> (chamados <strong>Anjos</strong>) podem entrar em contato para saber como você está e se precisa de ajuda — conforme a seção 6 deste termo.</li>
         <li>Em risco iminente à vida, o profissional orientará busca de atendimento presencial de urgência ou emergência.</li>
       </ul>`,
       en: `<ul class="list-disc pl-5 space-y-2">
         <li>You will be seen by a <strong>licensed health professional</strong> in a private virtual environment on Doctor8.</li>
         <li>You may be asked about symptoms, health history, medications, housing situation, and emergency context, when relevant.</li>
-        <li>The professional may record clinical notes in your electronic chart on the platform.</li>
-        <li>After your visit, <strong>lay follow-up volunteers</strong> (called <strong>Angels</strong>) may contact you to check how you are doing and whether you need help — as described in section 5 of this form.</li>
+        <li>The professional may record clinical notes in your electronic chart on the platform (or session notes for psychologists and psychoanalysts).</li>
+        <li>For <strong>psychological</strong> care, section 3 of this form applies.</li>
+        <li>After your visit, <strong>lay follow-up volunteers</strong> (called <strong>Angels</strong>) may contact you to check how you are doing and whether you need help — as described in section 6 of this form.</li>
         <li>In life-threatening situations, the professional will direct you to in-person emergency care.</li>
       </ul>`,
       es: `<ul class="list-disc pl-5 space-y-2">
         <li>Será atendido(a) por un <strong>profesional de la salud habilitado</strong>, en un entorno virtual privado en Doctor8.</li>
         <li>Podrán solicitarse datos sobre síntomas, historial de salud, medicamentos, vivienda y contexto de la emergencia, cuando corresponda.</li>
-        <li>El profesional podrá registrar notas clínicas en su historia clínica electrónica en la plataforma.</li>
-        <li>Después de la consulta, <strong>voluntarios de acompañamiento</strong> (llamados <strong>Ángeles</strong>) pueden contactarle para saber cómo está y si necesita ayuda — según la sección 5 de este término.</li>
+        <li>El profesional podrá registrar notas clínicas en su historia clínica electrónica en la plataforma (o notas de sesión, en el caso de psicólogo(a) y psicoanalista).</li>
+        <li>Si la atención es <strong>psicológica</strong>, aplican las reglas de la sección 3 de este término.</li>
+        <li>Después de la consulta, <strong>voluntarios de acompañamiento</strong> (llamados <strong>Ángeles</strong>) pueden contactarle para saber cómo está y si necesita ayuda — según la sección 6 de este término.</li>
         <li>En riesgo inminente para la vida, el profesional orientará atención presencial de urgencia o emergencia.</li>
       </ul>`,
     },
   },
   {
     title: {
-      pt: "3. Benefícios, limitações e riscos",
-      en: "3. Benefits, limitations, and risks",
-      es: "3. Beneficios, limitaciones y riesgos",
+      pt: "3. Atendimento psicológico a distância (teleconsulta emergencial)",
+      en: "3. Remote psychological care (emergency teleconsultation)",
+      es: "3. Atención psicológica a distancia (teleconsulta de emergencia)",
+    },
+    content: {
+      pt: `<p><strong>1. Objetivo.</strong> Declaro que fui informado(a) de que a presente <strong>teleconsulta psicológica</strong> possui caráter <strong>emergencial</strong>, sendo destinada ao acolhimento, à avaliação inicial da demanda e a intervenções psicológicas compatíveis com o atendimento remoto.</p>
+      <p class="mt-3"><strong>2. Natureza do atendimento.</strong> Estou ciente de que:</p>
+      <ul class="list-disc pl-5 space-y-2 mt-2">
+        <li>A teleconsulta será realizada por meio de plataforma digital ou recurso de comunicação à distância (como a Doctor8).</li>
+        <li>O atendimento possui as mesmas exigências éticas de <strong>sigilo profissional</strong> aplicáveis ao atendimento presencial, conforme o Código de Ética Profissional do Psicólogo e a Resolução CFP nº 11/2018.</li>
+        <li>A eficácia do atendimento depende da qualidade da conexão de internet e das condições de privacidade do ambiente em que me encontro.</li>
+      </ul>
+      <p class="mt-3"><strong>3. Sigilo e confidencialidade.</strong> Comprometo-me a participar da consulta em <strong>ambiente reservado</strong>, preservando minha privacidade. Estou ciente de que o(a) psicólogo(a) adotará medidas para garantir o sigilo profissional, nos limites técnicos da modalidade remota.</p>
+      <p class="mt-3"><strong>4. Limitações do atendimento emergencial.</strong> Fui informado(a) de que:</p>
+      <ul class="list-disc pl-5 space-y-2 mt-2">
+        <li>O atendimento remoto pode <strong>não ser suficiente</strong> para situações de risco iminente à vida ou à integridade física.</li>
+        <li>Caso seja identificada situação de emergência psiquiátrica, risco de suicídio, violência ou outra condição grave, poderei ser orientado(a) a procurar <strong>imediatamente</strong> atendimento presencial ou serviços de emergência, podendo ser acionada minha rede de apoio quando necessário, em conformidade com os princípios éticos e legais.</li>
+      </ul>
+      <p class="mt-3"><strong>5. Consentimento para atendimento psicológico remoto.</strong> Declaro que:</p>
+      <ul class="list-disc pl-5 space-y-2 mt-2">
+        <li>Recebi informações suficientes sobre a teleconsulta psicológica emergencial.</li>
+        <li>Tive oportunidade de esclarecer minhas dúvidas.</li>
+        <li>Concordo <strong>voluntariamente</strong> com a realização do atendimento psicológico na modalidade remota.</li>
+      </ul>`,
+      en: `<p><strong>1. Purpose.</strong> I declare that I have been informed that this <strong>psychological teleconsultation</strong> is <strong>emergency</strong> in nature, intended for reception, initial assessment of the request, and psychological interventions compatible with remote care.</p>
+      <p class="mt-3"><strong>2. Nature of care.</strong> I understand that:</p>
+      <ul class="list-disc pl-5 space-y-2 mt-2">
+        <li>The teleconsultation will take place through a digital platform or remote communication resource (such as Doctor8).</li>
+        <li>Care is subject to the same ethical requirements of <strong>professional confidentiality</strong> as in-person care, under applicable psychology ethics and telepsychology regulations.</li>
+        <li>The effectiveness of care depends on internet connection quality and the privacy conditions of my environment.</li>
+      </ul>
+      <p class="mt-3"><strong>3. Confidentiality.</strong> I commit to participating in the consultation in a <strong>private setting</strong>, preserving my privacy. I understand that the psychologist will take measures to ensure professional confidentiality, within the technical limits of remote care.</p>
+      <p class="mt-3"><strong>4. Limitations of emergency care.</strong> I have been informed that:</p>
+      <ul class="list-disc pl-5 space-y-2 mt-2">
+        <li>Remote care may <strong>not be sufficient</strong> for situations of imminent risk to life or physical integrity.</li>
+        <li>If a psychiatric emergency, suicide risk, violence, or other serious condition is identified, I may be directed to seek <strong>immediate</strong> in-person care or emergency services, and my support network may be contacted when necessary, in accordance with ethical and legal principles.</li>
+      </ul>
+      <p class="mt-3"><strong>5. Consent for remote psychological care.</strong> I declare that:</p>
+      <ul class="list-disc pl-5 space-y-2 mt-2">
+        <li>I received sufficient information about emergency psychological teleconsultation.</li>
+        <li>I had the opportunity to clarify my questions.</li>
+        <li>I <strong>voluntarily</strong> agree to psychological care in the remote modality.</li>
+      </ul>`,
+      es: `<p><strong>1. Objetivo.</strong> Declaro que fui informado(a) de que la presente <strong>teleconsulta psicológica</strong> tiene carácter <strong>de emergencia</strong>, destinada al acogimiento, la evaluación inicial de la demanda e intervenciones psicológicas compatibles con la atención remota.</p>
+      <p class="mt-3"><strong>2. Naturaleza de la atención.</strong> Estoy consciente de que:</p>
+      <ul class="list-disc pl-5 space-y-2 mt-2">
+        <li>La teleconsulta se realizará mediante plataforma digital o recurso de comunicación a distancia (como Doctor8).</li>
+        <li>La atención tiene las mismas exigencias éticas de <strong>sigilo profesional</strong> aplicables a la atención presencial, conforme al código de ética profesional y la normativa de telepsicología aplicable.</li>
+        <li>La eficacia de la atención depende de la calidad de la conexión a internet y de las condiciones de privacidad del entorno en que me encuentre.</li>
+      </ul>
+      <p class="mt-3"><strong>3. Sigilo y confidencialidad.</strong> Me comprometo a participar de la consulta en un <strong>ambiente reservado</strong>, preservando mi privacidad. Estoy consciente de que el/la psicólogo(a) adoptará medidas para garantizar el sigilo profesional, dentro de los límites técnicos de la modalidad remota.</p>
+      <p class="mt-3"><strong>4. Limitaciones de la atención de emergencia.</strong> Fui informado(a) de que:</p>
+      <ul class="list-disc pl-5 space-y-2 mt-2">
+        <li>La atención remota puede <strong>no ser suficiente</strong> para situaciones de riesgo inminente para la vida o la integridad física.</li>
+        <li>Si se identifica emergencia psiquiátrica, riesgo de suicidio, violencia u otra condición grave, podré ser orientado(a) a buscar <strong>inmediatamente</strong> atención presencial o servicios de emergencia, pudiendo activarse mi red de apoyo cuando sea necesario, conforme a los principios éticos y legales.</li>
+      </ul>
+      <p class="mt-3"><strong>5. Consentimiento para atención psicológica remota.</strong> Declaro que:</p>
+      <ul class="list-disc pl-5 space-y-2 mt-2">
+        <li>Recibí información suficiente sobre la teleconsulta psicológica de emergencia.</li>
+        <li>Tuve oportunidad de aclarar mis dudas.</li>
+        <li>Acepto <strong>voluntariamente</strong> la realización de la atención psicológica en modalidad remota.</li>
+      </ul>`,
+    },
+  },
+  {
+    title: {
+      pt: "4. Benefícios, limitações e riscos",
+      en: "4. Benefits, limitations, and risks",
+      es: "4. Beneficios, limitaciones y riesgos",
     },
     content: {
       pt: `<p><strong>Benefícios:</strong> acesso mais ágil à orientação profissional, redução de deslocamento e continuidade do cuidado quando o atendimento remoto for adequado — inclusive em situações de catástrofe ou crise humanitária.</p>
@@ -82,29 +154,29 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
   },
   {
     title: {
-      pt: "4. Privacidade e proteção de dados (LGPD)",
-      en: "4. Privacy and data protection",
-      es: "4. Privacidad y protección de datos",
+      pt: "5. Privacidade e proteção de dados (LGPD)",
+      en: "5. Privacy and data protection",
+      es: "5. Privacidad y protección de datos",
     },
     content: {
       pt: `<p>Seus dados de saúde são tratados conforme a <a href="/privacy" class="text-emerald-700 underline">Política de Privacidade</a> e a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).</p>
       <ul class="list-disc pl-5 space-y-2 mt-2">
         <li><strong>Profissional de saúde:</strong> recebe as informações necessárias para realizar a teleconsulta e registrar o atendimento.</li>
-        <li><strong>Voluntários Anjos:</strong> em campanhas humanitárias, dados <strong>limitados</strong> (como nome, telefone, classificação de prioridade, resumo da triagem e da consulta) podem ser compartilhados com voluntários cadastrados e aprovados pela plataforma, exclusivamente para <strong>acompanhamento pós-consulta</strong> — ver seção 5.</li>
+        <li><strong>Voluntários Anjos:</strong> em campanhas humanitárias, dados <strong>limitados</strong> (como nome, telefone, classificação de prioridade, resumo da triagem e da consulta) podem ser compartilhados com voluntários cadastrados e aprovados pela plataforma, exclusivamente para <strong>acompanhamento pós-consulta</strong> — ver seção 6.</li>
         <li><strong>Segurança:</strong> dados sensíveis são protegidos com criptografia e controles de acesso; apenas pessoas autorizadas podem visualizá-los.</li>
         <li><strong>Seus direitos:</strong> você pode solicitar acesso, correção, informações sobre o tratamento e exercer demais direitos previstos na LGPD, conforme a Política de Privacidade.</li>
       </ul>`,
       en: `<p>Your health data is processed under our <a href="/privacy" class="text-emerald-700 underline">Privacy Policy</a> and applicable data protection laws.</p>
       <ul class="list-disc pl-5 space-y-2 mt-2">
         <li><strong>Health professional:</strong> receives the information needed to provide teleconsultation and document the visit.</li>
-        <li><strong>Angel volunteers:</strong> in humanitarian campaigns, <strong>limited</strong> data (such as name, phone, priority classification, and triage/consultation summary) may be shared with registered and platform-approved volunteers solely for <strong>post-consultation follow-up</strong> — see section 5.</li>
+        <li><strong>Angel volunteers:</strong> in humanitarian campaigns, <strong>limited</strong> data (such as name, phone, priority classification, and triage/consultation summary) may be shared with registered and platform-approved volunteers solely for <strong>post-consultation follow-up</strong> — see section 6.</li>
         <li><strong>Security:</strong> sensitive data is protected with encryption and access controls; only authorized persons may view it.</li>
         <li><strong>Your rights:</strong> you may request access, correction, information about processing, and other legal rights under our Privacy Policy.</li>
       </ul>`,
       es: `<p>Sus datos de salud se tratan conforme la <a href="/privacy" class="text-emerald-700 underline">Política de Privacidad</a> y las leyes aplicables de protección de datos.</p>
       <ul class="list-disc pl-5 space-y-2 mt-2">
         <li><strong>Profesional de salud:</strong> recibe la información necesaria para la teleconsulta y el registro del encuentro.</li>
-        <li><strong>Voluntarios Ángeles:</strong> en campañas humanitarias, datos <strong>limitados</strong> (como nombre, teléfono, prioridad, resumen de triaje y consulta) pueden compartirse con voluntarios registrados y aprobados por la plataforma, solo para <strong>acompañamiento post-consulta</strong> — ver sección 5.</li>
+        <li><strong>Voluntarios Ángeles:</strong> en campañas humanitarias, datos <strong>limitados</strong> (como nombre, teléfono, prioridad, resumen de triaje y consulta) pueden compartirse con voluntarios registrados y aprobados por la plataforma, solo para <strong>acompañamiento post-consulta</strong> — ver sección 6.</li>
         <li><strong>Seguridad:</strong> los datos sensibles se protegen con cifrado y controles de acceso.</li>
         <li><strong>Sus derechos:</strong> puede solicitar acceso, corrección e información sobre el tratamiento según la Política de Privacidad.</li>
       </ul>`,
@@ -112,9 +184,9 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
   },
   {
     title: {
-      pt: "5. Voluntários de acompanhamento (Anjos)",
-      en: "5. Lay follow-up volunteers (Angels)",
-      es: "5. Voluntarios de acompañamiento (Ángeles)",
+      pt: "6. Voluntários de acompanhamento (Anjos)",
+      en: "6. Lay follow-up volunteers (Angels)",
+      es: "6. Voluntarios de acompañamiento (Ángeles)",
     },
     content: {
       pt: `<p>Em atendimentos humanitários, a Doctor8 pode contar com <strong>voluntários leigos de acompanhamento</strong>, chamados <strong>Anjos</strong>. São pessoas de diversas áreas — não necessariamente profissionais de saúde — cadastradas, verificadas e aprovadas pela plataforma para ajudar <strong>após a consulta</strong>.</p>
@@ -145,9 +217,9 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
   },
   {
     title: {
-      pt: "6. Gravação e documentação",
-      en: "6. Recording and documentation",
-      es: "6. Grabación y documentación",
+      pt: "7. Gravação e documentação",
+      en: "7. Recording and documentation",
+      es: "7. Grabación y documentación",
     },
     content: {
       pt: `<p>A consulta por vídeo na Doctor8 <strong>não é gravada automaticamente</strong> pela plataforma, salvo consentimento específico e separado para gravação de áudio com finalidade de auxílio à documentação clínica, informado pelo profissional durante o atendimento.</p>
@@ -160,14 +232,15 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
   },
   {
     title: {
-      pt: "7. Consentimento livre, esclarecido e revogável",
-      en: "7. Free, informed, and revocable consent",
-      es: "7. Consentimiento libre, informado y revocable",
+      pt: "8. Consentimento livre, esclarecido e revogável",
+      en: "8. Free, informed, and revocable consent",
+      es: "8. Consentimiento libre, informado y revocable",
     },
     content: {
       pt: `<ul class="list-disc pl-5 space-y-2">
         <li>Declaro que li (ou tive oportunidade de ler) este termo, compreendi suas informações e pude fazer perguntas antes de aceitar.</li>
         <li>Autorizo o atendimento em saúde a distância nas condições descritas, inclusive o compartilhamento limitado de dados com voluntários Anjos para acompanhamento pós-consulta em campanhas humanitárias.</li>
+        <li>Quando o atendimento for psicológico, declaro também estar de acordo com a seção 3 deste termo.</li>
         <li>Entendo que posso recusar ou interromper o atendimento a qualquer momento, sem perder o direito a outros cuidados de saúde.</li>
         <li>Entendo que este consentimento pode ser revogado, observadas as obrigações legais de guarda dos registros já produzidos.</li>
       </ul>
@@ -175,6 +248,7 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
       en: `<ul class="list-disc pl-5 space-y-2">
         <li>I declare that I have read (or had the opportunity to read) this form, understood its information, and could ask questions before accepting.</li>
         <li>I authorize remote healthcare under the conditions described, including limited sharing of data with Angel volunteers for post-consultation follow-up in humanitarian campaigns.</li>
+        <li>For psychological care, I also agree to section 3 of this form.</li>
         <li>I understand I may refuse or stop the visit at any time without losing the right to other healthcare.</li>
         <li>I understand this consent may be revoked, subject to legal obligations regarding records already created.</li>
       </ul>
@@ -182,6 +256,7 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
       es: `<ul class="list-disc pl-5 space-y-2">
         <li>Declaro que leí (o tuve oportunidad de leer) este término, comprendí su información y pude hacer preguntas antes de aceptar.</li>
         <li>Autorizo la atención en salud a distancia en las condiciones descritas, incluido el intercambio limitado de datos con voluntarios Ángeles para acompañamiento post-consulta en campañas humanitarias.</li>
+        <li>Cuando la atención sea psicológica, declaro también estar de acuerdo con la sección 3 de este término.</li>
         <li>Entiendo que puedo rechazar o interrumpir la atención en cualquier momento sin perder el derecho a otros cuidados de salud.</li>
         <li>Entiendo que este consentimiento puede revocarse, observadas las obligaciones legales sobre registros ya producidos.</li>
       </ul>
