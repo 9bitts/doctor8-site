@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Search, User, ChevronRight, ArrowLeft, FileText, Loader2, LayoutTemplate,
 } from "lucide-react";
@@ -8,6 +8,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import type { Chart } from "./types";
 import type { SavedEmission } from "./EmissionPostSaveFlow";
+import { filterPatientCharts } from "@/lib/patient-chart-search";
 
 const DOC_TYPES = [
   { value: "CERTIFICATE", labelKey: "rx.docTypeCertificate" },
@@ -27,6 +28,7 @@ interface DocTemplate {
 interface DocumentCreateViewProps {
   t: (k: string) => string;
   charts: Chart[];
+  chartsLoading?: boolean;
   reuseHint?: boolean;
   initialPatient: Chart | null;
   lockPatient?: boolean;
@@ -38,13 +40,14 @@ interface DocumentCreateViewProps {
 }
 
 export function DocumentCreateView({
-  t, charts, reuseHint, initialPatient, lockPatient = false, initialTitle, initialBody, initialType,
+  t, charts, chartsLoading = false, reuseHint, initialPatient, lockPatient = false, initialTitle, initialBody, initialType,
   onBack, onSaved,
 }: DocumentCreateViewProps) {
   const { lang } = useI18n();
   const locale = localeOf(lang);
 
   const [patientQuery, setPatientQuery] = useState("");
+  const [patientPickerOpen, setPatientPickerOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(initialPatient);
   const [docType, setDocType] = useState(initialType || "CERTIFICATE");
   const [title, setTitle] = useState(initialTitle || t("rx.docDefaultTitle"));
@@ -70,9 +73,10 @@ export function DocumentCreateView({
     return () => { active = false; };
   }, []);
 
-  const filteredCharts = patientQuery.trim()
-    ? charts.filter((c) => `${c.firstName} ${c.lastName}`.toLowerCase().includes(patientQuery.toLowerCase()))
-    : charts.slice(0, 8);
+  const filteredCharts = useMemo(
+    () => filterPatientCharts(charts, patientQuery),
+    [charts, patientQuery],
+  );
 
   async function applyTemplate(tpl: DocTemplate) {
     lastTemplateId.current = tpl.id;
@@ -181,12 +185,20 @@ export function DocumentCreateView({
             <div className="relative">
               <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)}
+                onFocus={() => setPatientPickerOpen(true)}
+                onBlur={() => setTimeout(() => setPatientPickerOpen(false), 150)}
                 placeholder={t("rx2.searchPatient")} className="rx-inp rx-inp-pl-9" />
             </div>
-            {patientQuery.trim() && (
+            {patientPickerOpen && (
               <div className="border rounded-xl divide-y max-h-48 overflow-y-auto">
-                {filteredCharts.map((c) => (
-                  <button key={c.id} onClick={() => setSelectedPatient(c)}
+                {chartsLoading ? (
+                  <div className="p-4 flex items-center justify-center gap-2 text-sm text-slate-500">
+                    <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
+                  </div>
+                ) : filteredCharts.length === 0 ? (
+                  <p className="p-4 text-center text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
+                ) : filteredCharts.map((c) => (
+                  <button key={c.id} onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); }}
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left">
                     <span className="font-medium text-sm">{c.firstName} {c.lastName}</span>
                     <ChevronRight size={14} className="ml-auto text-slate-300" />

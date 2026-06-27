@@ -122,8 +122,7 @@ export async function sendTransactionalEmail({
     text: plainText,
     ...(replyTo ? { replyTo } : {}),
     headers: {
-      "Auto-Submitted": "auto-generated",
-      "X-Auto-Response-Suppress": "All",
+      "X-Auto-Response-Suppress": "OOF, AutoReply",
       "X-Entity-Ref-ID": tag ?? "transactional",
     },
     ...(tag ? { tags: [{ name: "category", value: tag }] } : {}),

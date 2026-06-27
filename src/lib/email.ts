@@ -272,20 +272,33 @@ export async function sendPasswordReset({
   const resetUrl = `${getAppUrl()}/reset-password?token=${token}`;
 
   const body = `
-    <h2 style="color:#1a2a3a;">${c.heading}</h2>
-    <p style="color:#6b7280;">${c.hi(name)} ${c.body}</p>
-    <div style="text-align:center;margin:32px 0;">
-      <a href="${resetUrl}" style="background:#0a4d6e;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;">
+    <p style="color:#4a6070;font-size:15px;line-height:1.6;">${c.hi(name)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body}</p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${resetUrl}" style="background:#00b87a;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
         ${c.cta}
       </a>
     </div>
-    <p style="color:#9ca3af;font-size:12px;">${c.ignore}</p>
-    <p style="color:#9ca3af;font-size:11px;">${c.linkLabel} ${resetUrl}</p>`;
+    <p style="color:#6b7280;font-size:13px;line-height:1.6;">${c.ignore}</p>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.6;word-break:break-all;">
+      ${c.linkLabel}<br>
+      <a href="${resetUrl}" style="color:#0a4d6e;">${resetUrl}</a>
+    </p>
+    <p style="color:#9ca3af;font-size:11px;line-height:1.5;margin-top:20px;">${c.spamHint}</p>`;
+
+  const text = [
+    c.hi(name),
+    c.body,
+    `${c.cta}: ${resetUrl}`,
+    c.ignore,
+    c.spamHint,
+  ].join("\n\n");
 
   await sendTransactionalEmail({
     to: email,
     subject: c.subject,
     html: emailShell(c.heading, body, lang),
+    text,
     tag: "password-reset",
   });
 }

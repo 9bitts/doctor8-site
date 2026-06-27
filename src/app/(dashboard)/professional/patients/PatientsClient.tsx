@@ -9,6 +9,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { Users, Plus, X, ChevronRight, CheckCircle2, AlertCircle, Search } from "lucide-react";
+import { filterPatientCharts } from "@/lib/patient-chart-search";
 
 interface Chart {
   id: string;
@@ -96,18 +97,10 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
     setSaving(false);
   }
 
-  const filteredCharts = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return charts;
-    return charts.filter((c) => {
-      const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
-      const email = (c.email || "").toLowerCase();
-      return fullName.includes(q)
-        || c.firstName.toLowerCase().includes(q)
-        || c.lastName.toLowerCase().includes(q)
-        || email.includes(q);
-    });
-  }, [charts, search]);
+  const filteredCharts = useMemo(
+    () => filterPatientCharts(charts, search, charts.length),
+    [charts, search],
+  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

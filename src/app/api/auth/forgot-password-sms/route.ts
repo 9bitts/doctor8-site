@@ -1,21 +1,18 @@
-// POST /api/auth/send-sms-code ? send 6-digit verification code via SMS
+// POST /api/auth/forgot-password-sms ? send SMS code to reset password
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { isAccountVerified } from "@/lib/account-verified";
 import { normalizeSmsPhone } from "@/lib/phone";
 import {
+  isSmsConfigured,
   sendOtpSms,
   startTwilioVerification,
-  isSmsConfigured,
   usesTwilioVerify,
 } from "@/lib/sms";
-import {
-  generateSmsCode,
-  smsOtpIdentifier,
-  SMS_OTP_TTL_MS,
-  SMS_RESEND_COOLDOWN_MS,
-} from "@/lib/sms-otp";
+import { generateSmsCode } from "@/lib/sms-otp";
+
+const COOLDOWN_MS = 60_000;
+const RESET_SMS_PREFIX = "reset-sms:";
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +21,6 @@ export async function POST(req: NextRequest) {
     }
 
     const { email, phone } = await req.json();
-
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "EMAIL_REQUIRED" }, { status: 400 });
     }
@@ -42,77 +38,75 @@ export async function POST(req: NextRequest) {
       where: { email: normalizedEmail },
       select: {
         id: true,
-        emailVerified: true,
-        phoneVerified: true,
-        language: true,
+        deletedAt: true,
         passwordHash: true,
+        phone: true,
+        language: true,
       },
     });
 
-    if (!user?.passwordHash) {
+    if (!user?.passwordHash || user.deletedAt) {
       return NextResponse.json({ success: true });
     }
 
-    if (isAccountVerified(user)) {
-      return NextResponse.json({ success: true, alreadyVerified: true });
+    if (user.phone && user.phone !== normalizedPhone) {
+      return NextResponse.json({ error: "INVALID_PHONE" }, { status: 400 });
     }
 
-    const identifier = smsOtpIdentifier(normalizedEmail);
+    const identifier = `${RESET_SMS_PREFIX}${normalizedEmail}`;
     const existing = await db.verificationToken.findFirst({
       where: { identifier },
       orderBy: { expires: "desc" },
     });
-
-    if (existing && existing.expires.getTime() > Date.now()) {
-      const createdApprox = existing.expires.getTime() - SMS_OTP_TTL_MS;
-      if (Date.now() - createdApprox < SMS_RESEND_COOLDOWN_MS) {
+    if (existing && existing.expires > new Date()) {
+      const age = existing.expires.getTime() - Date.now();
+      if (600_000 - age < COOLDOWN_MS) {
         return NextResponse.json({ error: "RATE_LIMITED" }, { status: 429 });
       }
     }
 
-    const expires = new Date(Date.now() + SMS_OTP_TTL_MS);
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
     await db.verificationToken.deleteMany({ where: { identifier } });
-
-    await db.user.update({
-      where: { id: user.id },
-      data: { phone: normalizedPhone },
-    });
 
     if (usesTwilioVerify()) {
       const sent = await startTwilioVerification(normalizedPhone);
       if (!sent.ok) {
         return NextResponse.json(
-          { error: sent.skipped ? "SMS_UNAVAILABLE" : (sent.error ?? "SEND_FAILED"), detail: sent.detail },
-          { status: sent.skipped ? 503 : 502 },
+          { error: sent.error ?? "SEND_FAILED", detail: sent.detail },
+          { status: 502 },
         );
       }
       await db.verificationToken.create({
         data: { identifier, token: normalizedPhone, expires },
       });
-      return NextResponse.json({ success: true });
+    } else {
+      const code = generateSmsCode();
+      const sent = await sendOtpSms({
+        toPhone: normalizedPhone,
+        code,
+        language: user.language,
+      });
+      if (!sent.ok) {
+        return NextResponse.json(
+          { error: sent.error ?? "SEND_FAILED", detail: sent.detail },
+          { status: 502 },
+        );
+      }
+      await db.verificationToken.create({
+        data: { identifier, token: code, expires },
+      });
     }
 
-    const code = generateSmsCode();
-    const sent = await sendOtpSms({
-      toPhone: normalizedPhone,
-      code,
-      language: user.language,
-    });
-
-    if (!sent.ok) {
-      return NextResponse.json(
-        { error: sent.skipped ? "SMS_UNAVAILABLE" : (sent.error ?? "SEND_FAILED"), detail: sent.detail },
-        { status: sent.skipped ? 503 : 502 },
-      );
+    if (!user.phone) {
+      await db.user.update({
+        where: { id: user.id },
+        data: { phone: normalizedPhone },
+      });
     }
-
-    await db.verificationToken.create({
-      data: { identifier, token: code, expires },
-    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[SEND SMS CODE]", error);
+    console.error("[FORGOT PASSWORD SMS]", error);
     return NextResponse.json({ error: "SEND_FAILED" }, { status: 500 });
   }
 }

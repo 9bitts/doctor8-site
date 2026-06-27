@@ -77,6 +77,14 @@ function VerifySmsContent() {
         setError("invalidPhone");
       } else if (data.error === "SMS_UNAVAILABLE") {
         setError("unavailable");
+      } else if (data.error === "TRIAL_UNVERIFIED") {
+        setError("trialUnverified");
+      } else if (data.error === "GEO_BLOCKED") {
+        setError("geoBlocked");
+      } else if (data.error === "FRAUD_BLOCKED") {
+        setError("fraudBlocked");
+      } else if (data.error === "SNS_SANDBOX") {
+        setError("snsSandbox");
       } else {
         setError("sendFailed");
       }

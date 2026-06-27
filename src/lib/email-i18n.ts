@@ -100,33 +100,37 @@ export const EMAIL_PASSWORD_RESET: Record<EmailLang, {
   cta: string;
   ignore: string;
   linkLabel: string;
+  spamHint: string;
 }> = {
   en: {
-    subject: "Reset your Doctor8 password",
-    heading: "Reset your password",
+    subject: "Doctor8 account — password reset request",
+    heading: "Password reset",
     hi: (n) => `Hi ${n},`,
-    body: "Click the button below to reset your password. This link expires in 1 hour.",
-    cta: "Reset Password",
-    ignore: "If you didn't request this, ignore this email. Your password won't change.",
-    linkLabel: "Link:",
+    body: "We received a request to reset the password for your Doctor8 account. Use the button below within 1 hour. If you did not request this, you can safely ignore this message.",
+    cta: "Reset password",
+    ignore: "Your password will not change unless you use the link above.",
+    linkLabel: "Or copy this link into your browser:",
+    spamHint: "If you do not see this message in your inbox, check your spam or junk folder and mark Doctor8 as a safe sender.",
   },
   pt: {
-    subject: "Redefinir sua senha do Doctor8",
+    subject: "Doctor8 — redefinir senha da sua conta",
     heading: "Redefinir senha",
     hi: (n) => `Olá ${n},`,
-    body: "Clique no botão abaixo para redefinir sua senha. Este link expira em 1 hora.",
+    body: "Recebemos um pedido para redefinir a senha da sua conta Doctor8. Use o botão abaixo em até 1 hora. Se você não fez este pedido, ignore este e-mail.",
     cta: "Redefinir senha",
-    ignore: "Se você não solicitou isso, ignore este email. Sua senha não será alterada.",
-    linkLabel: "Link:",
+    ignore: "Sua senha não será alterada se você não usar o link acima.",
+    linkLabel: "Ou copie e cole este link no navegador:",
+    spamHint: "Se não encontrar na caixa de entrada, verifique o spam e marque o Doctor8 como remetente seguro.",
   },
   es: {
-    subject: "Restablecer tu contraseña de Doctor8",
+    subject: "Doctor8 — restablecer contraseña de tu cuenta",
     heading: "Restablecer contraseña",
     hi: (n) => `Hola ${n},`,
-    body: "Haz clic en el botón para restablecer tu contraseña. Este enlace expira en 1 hora.",
+    body: "Recibimos una solicitud para restablecer la contraseña de tu cuenta Doctor8. Usa el botón en hasta 1 hora. Si no la solicitaste, ignora este correo.",
     cta: "Restablecer contraseña",
-    ignore: "Si no solicitaste esto, ignora este email. Tu contraseña no cambiará.",
-    linkLabel: "Enlace:",
+    ignore: "Tu contraseña no cambiará si no usas el enlace anterior.",
+    linkLabel: "O copia y pega este enlace en el navegador:",
+    spamHint: "Si no lo ves en la bandeja de entrada, revisa spam y marca Doctor8 como remitente seguro.",
   },
 };
 

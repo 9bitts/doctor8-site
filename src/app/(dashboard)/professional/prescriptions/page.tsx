@@ -3,7 +3,7 @@
 // src/app/(dashboard)/professional/prescriptions/page.tsx
 // Memed-style prescription UI: reuse, manual add, recent carousel.
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import {
@@ -20,6 +20,7 @@ import VideoConsultReturnBanner from "@/components/professional/VideoConsultRetu
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import type { Chart } from "@/components/professional/emissions/types";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
+import { filterPatientCharts } from "@/lib/patient-chart-search";
 
 function controlInfo(type: string | null | undefined): {
   tarja: "preta" | "vermelha"; label: string; receita: string;
@@ -271,7 +272,9 @@ export default function PrescriptionsPage() {
   const [postSaveShareUrl, setPostSaveShareUrl] = useState("");
 
   const [charts, setCharts] = useState<Chart[]>([]);
+  const [chartsLoading, setChartsLoading] = useState(false);
   const [patientQuery, setPatientQuery] = useState("");
+  const [patientPickerOpen, setPatientPickerOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(null);
 
   const [drugQuery, setDrugQuery] = useState("");
@@ -296,6 +299,7 @@ export default function PrescriptionsPage() {
   useEffect(() => {
     fetchAll();
     loadSignConfig();
+    void loadCharts();
     const params = new URLSearchParams(window.location.search);
     const { patientRecordId, returnUrl, view: viewParam } = readChartDeepLink();
 
@@ -392,11 +396,13 @@ export default function PrescriptionsPage() {
   }
 
   async function loadCharts() {
+    setChartsLoading(true);
     try {
       const res = await fetch("/api/professional/records");
       const d = await res.json();
-      setCharts(d.records || []);
+      if (res.ok) setCharts(d.records || []);
     } catch { /* ignore */ }
+    finally { setChartsLoading(false); }
   }
 
   function resetForm() {
@@ -514,11 +520,12 @@ export default function PrescriptionsPage() {
     }
   }
 
-  const filteredCharts = patientQuery.trim().length === 0
-    ? charts.slice(0, 8)
-    : charts.filter((c) =>
-        `${c.firstName} ${c.lastName}`.toLowerCase().includes(patientQuery.toLowerCase())
-      );
+  const filteredCharts = useMemo(
+    () => filterPatientCharts(charts, patientQuery),
+    [charts, patientQuery],
+  );
+
+  const showPatientPicker = patientPickerOpen && !selectedPatient;
 
   useEffect(() => {
     if (drugDebounce.current) clearTimeout(drugDebounce.current);
@@ -680,7 +687,7 @@ export default function PrescriptionsPage() {
       <>
         <VideoConsultReturnBanner returnUrl={consultReturnUrl} patientName={reusePatient ? `${reusePatient.firstName} ${reusePatient.lastName}` : undefined} lang={lang as "pt" | "en" | "es"} />
         <ExamCreateView
-          t={t} locale={locale} charts={charts}
+          t={t} locale={locale} charts={charts} chartsLoading={chartsLoading}
           reuseHint={!!reuseClinical}
           initialPatient={reusePatient}
           lockPatient={lockPatient}
@@ -701,7 +708,7 @@ export default function PrescriptionsPage() {
       <>
         <VideoConsultReturnBanner returnUrl={consultReturnUrl} patientName={reusePatient ? `${reusePatient.firstName} ${reusePatient.lastName}` : undefined} lang={lang as "pt" | "en" | "es"} />
         <DocumentCreateView
-          t={t} charts={charts}
+          t={t} charts={charts} chartsLoading={chartsLoading}
           reuseHint={!!reuseClinical}
           initialPatient={reusePatient}
           lockPatient={lockPatient}
@@ -774,16 +781,28 @@ export default function PrescriptionsPage() {
                 <>
                   <div className="relative">
                     <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input type="text" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)}
+                    <input type="text" value={patientQuery}
+                      onChange={(e) => setPatientQuery(e.target.value)}
+                      onFocus={() => setPatientPickerOpen(true)}
+                      onBlur={() => setTimeout(() => setPatientPickerOpen(false), 150)}
                       placeholder={t("rx2.searchPatient")}
                       className="rx-inp rx-inp-pl-9" />
                   </div>
-                  {patientQuery.trim().length > 0 && (
+                  {showPatientPicker && (
                     <div className="border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-48 overflow-y-auto">
-                      {filteredCharts.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-slate-500">{t("rx2.noPatientFound")}</div>
+                      {chartsLoading ? (
+                        <div className="p-4 flex items-center justify-center gap-2 text-sm text-slate-500">
+                          <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
+                        </div>
+                      ) : filteredCharts.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-slate-500 space-y-1">
+                          <p>{t("rx2.noPatientFound")}</p>
+                          {patientQuery.trim().length > 0 && (
+                            <p className="text-xs text-slate-400">{t("rx2.noPatientHint")}</p>
+                          )}
+                        </div>
                       ) : filteredCharts.map((c) => (
-                        <button key={c.id} onClick={() => setSelectedPatient(c)}
+                        <button key={c.id} onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); }}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 transition text-left">
                           <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
                             {c.firstName[0]}{c.lastName[0]}
