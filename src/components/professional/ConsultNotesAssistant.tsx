@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState,
+} from "react";
 import {
   Sparkles, Mic, Square, Loader2, AlertCircle, FileText, X, CheckCircle2,
 } from "lucide-react";
-import { consultDraftKey } from "@/lib/ai-consult-notes";
 
 type Lang = "pt" | "en" | "es";
 
@@ -15,68 +16,50 @@ const T: Record<string, Record<Lang, string>> = {
     es: "Asistente de notas",
   },
   consent: {
-    pt: "Confirmo que o paciente foi informado e consentiu com a grava??o de ?udio para aux?lio na documenta??o cl?nica.",
+    pt: "Confirmo que o paciente foi informado e consentiu com a gravação de áudio para auxílio na documentação clínica.",
     en: "I confirm the patient was informed and consented to audio recording for clinical documentation assistance.",
-    es: "Confirmo que el paciente fue informado y consinti? la grabaci?n de audio para ayuda en la documentaci?n cl?nica.",
+    es: "Confirmo que el paciente fue informado y consintió la grabación de audio para ayuda en la documentación clínica.",
   },
-  start: { pt: "Iniciar grava??o", en: "Start recording", es: "Iniciar grabaci?n" },
-  stop: { pt: "Parar e gerar resumo", en: "Stop and summarize", es: "Detener y resumir" },
-  recording: { pt: "Gravando?", en: "Recording?", es: "Grabando?" },
-  processing: { pt: "Processando ?udio e gerando resumo?", en: "Processing audio and generating summary?", es: "Procesando audio y generando resumen?" },
-  transcript: { pt: "Transcri??o", en: "Transcript", es: "Transcripci?n" },
-  summary: { pt: "Rascunho de evolu??o", en: "Evolution draft", es: "Borrador de evoluci?n" },
-  createEvolution: {
-    pt: "Criar evolu??o na ficha",
-    en: "Create chart evolution",
-    es: "Crear evoluci?n en la ficha",
+  start: { pt: "Iniciar gravação da consulta", en: "Start recording consultation", es: "Iniciar grabación de la consulta" },
+  stop: { pt: "Parar, resumir e salvar na ficha", en: "Stop, summarize & save to chart", es: "Detener, resumir y guardar en ficha" },
+  recording: { pt: "Gravando consulta", en: "Recording consultation", es: "Grabando consulta" },
+  recordingHint: {
+    pt: "Captura o microfone durante toda a consulta. Use alto-falante para incluir a voz do paciente.",
+    en: "Captures the microphone for the whole visit. Use speakers to include the patient's voice.",
+    es: "Captura el micrófono durante toda la consulta. Use altavoz para incluir la voz del paciente.",
   },
+  processing: { pt: "Transcrevendo e gerando evolução…", en: "Transcribing and generating note…", es: "Transcribiendo y generando evolución…" },
+  transcript: { pt: "Transcrição", en: "Transcript", es: "Transcripción" },
+  summary: { pt: "Rascunho de evolução", en: "Evolution draft", es: "Borrador de evolución" },
+  saveToChart: { pt: "Salvar na ficha", en: "Save to chart", es: "Guardar en la ficha" },
   regenerate: { pt: "Regenerar resumo", en: "Regenerate summary", es: "Regenerar resumen" },
   close: { pt: "Fechar", en: "Close", es: "Cerrar" },
-  needConsent: {
-    pt: "Marque o consentimento para iniciar.",
-    en: "Check consent to start.",
-    es: "Marque el consentimiento para iniciar.",
-  },
-  micError: {
-    pt: "N?o foi poss?vel acessar o microfone.",
-    en: "Could not access the microphone.",
-    es: "No se pudo acceder al micr?fono.",
-  },
-  aiNotConfigured: {
-    pt: "IA n?o configurada (ANTHROPIC_API_KEY).",
-    en: "AI not configured (ANTHROPIC_API_KEY).",
-    es: "IA no configurada (ANTHROPIC_API_KEY).",
-  },
+  needConsent: { pt: "Marque o consentimento para iniciar.", en: "Check consent to start.", es: "Marque el consentimiento para iniciar." },
+  micError: { pt: "Não foi possível acessar o microfone.", en: "Could not access the microphone.", es: "No se pudo acceder al micrófono." },
+  aiNotConfigured: { pt: "IA não configurada (ANTHROPIC_API_KEY).", en: "AI not configured (ANTHROPIC_API_KEY).", es: "IA no configurada (ANTHROPIC_API_KEY)." },
   transcribeNotConfigured: {
-    pt: "Transcri??o n?o configurada (OPENAI_API_KEY). Voc? pode colar a transcri??o manualmente abaixo.",
-    en: "Transcription not configured (OPENAI_API_KEY). You can paste the transcript manually below.",
-    es: "Transcripci?n no configurada (OPENAI_API_KEY). Puede pegar la transcripci?n manualmente abajo.",
+    pt: "Transcrição não configurada (OPENAI_API_KEY). Cole a transcrição manualmente abaixo.",
+    en: "Transcription not configured (OPENAI_API_KEY). Paste the transcript manually below.",
+    es: "Transcripción no configurada (OPENAI_API_KEY). Pegue la transcripción manualmente abajo.",
   },
-  genericError: {
-    pt: "N?o foi poss?vel gerar o resumo. Tente novamente.",
-    en: "Could not generate summary. Please try again.",
-    es: "No se pudo generar el resumen. Int?ntelo de nuevo.",
+  genericError: { pt: "Não foi possível gerar o resumo. Tente novamente.", en: "Could not generate summary. Please try again.", es: "No se pudo generar el resumen. Inténtelo de nuevo." },
+  pasteHint: { pt: "Ou cole a transcrição / anotações:", en: "Or paste transcript / notes:", es: "O pegue la transcripción / notas:" },
+  summarizeText: { pt: "Gerar resumo e salvar na ficha", en: "Generate summary & save to chart", es: "Generar resumen y guardar en ficha" },
+  reviewHint: { pt: "Revise antes de salvar na ficha", en: "Review before saving to chart", es: "Revise antes de guardar en la ficha" },
+  autoSaveOnLeave: {
+    pt: "Ao sair da chamada, gerar resumo e salvar na ficha automaticamente",
+    en: "When leaving the call, auto-generate summary and save to chart",
+    es: "Al salir de la llamada, generar resumen y guardar en ficha automáticamente",
   },
-  draftTitle: {
-    pt: "Evolu??o ? teleconsulta",
-    en: "Evolution ? teleconsult",
-    es: "Evoluci?n ? teleconsulta",
-  },
-  pasteHint: {
-    pt: "Ou cole a transcri??o / anota??es:",
-    en: "Or paste transcript / notes:",
-    es: "O pegue la transcripci?n / notas:",
-  },
-  summarizeText: {
-    pt: "Gerar resumo do texto",
-    en: "Generate summary from text",
-    es: "Generar resumen del texto",
-  },
-  reviewHint: {
-    pt: "Revise antes de salvar na ficha",
-    en: "Review before saving to chart",
-    es: "Revise antes de guardar en la ficha",
-  },
+  savedToChart: { pt: "Evolução salva na ficha do paciente!", en: "Evolution saved to patient chart!", es: "¡Evolución guardada en la ficha del paciente!" },
+  noChart: { pt: "Ficha do paciente não vinculada.", en: "Patient chart not linked.", es: "Ficha del paciente no vinculada." },
+};
+
+export type ConsultNotesAssistantHandle = {
+  isRecording: () => boolean;
+  isProcessing: () => boolean;
+  shouldAutoSaveOnLeave: () => boolean;
+  finalizeOnLeave: () => Promise<"saved" | "failed" | "skipped">;
 };
 
 type Props = {
@@ -84,35 +67,46 @@ type Props = {
   patientRecordId: string | null;
   appointmentId?: string | null;
   patientName?: string;
+  onSaved?: () => void;
 };
 
-export default function ConsultNotesAssistant({
-  lang,
-  patientRecordId,
-  appointmentId,
-}: Props) {
+const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(function ConsultNotesAssistant(
+  { lang, patientRecordId, appointmentId, onSaved },
+  ref,
+) {
   const t = (k: string) => T[k]?.[lang] ?? T[k]?.["en"] ?? k;
 
   const [consent, setConsent] = useState(false);
+  const [autoSaveOnLeave, setAutoSaveOnLeave] = useState(true);
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [summary, setSummary] = useState("");
   const [manualText, setManualText] = useState("");
   const [transcribeOk, setTranscribeOk] = useState(true);
+  const [summarizeOk, setSummarizeOk] = useState(true);
   const [elapsed, setElapsed] = useState(0);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const saveOnCompleteRef = useRef(false);
+  const finalizeResolveRef = useRef<((v: "saved" | "failed") => void) | null>(null);
 
   useEffect(() => {
     fetch("/api/professional/ai-consult-notes")
       .then((r) => r.json())
-      .then((d) => setTranscribeOk(!!d.transcribeConfigured))
-      .catch(() => setTranscribeOk(false));
+      .then((d) => {
+        setTranscribeOk(!!d.transcribeConfigured);
+        setSummarizeOk(!!d.summarizeConfigured);
+      })
+      .catch(() => {
+        setTranscribeOk(false);
+        setSummarizeOk(false);
+      });
   }, []);
 
   const stopTimer = useCallback(() => {
@@ -133,33 +127,65 @@ export default function ConsultNotesAssistant({
     mediaRecorderRef.current?.stream.getTracks().forEach((tr) => tr.stop());
   }, [stopTimer]);
 
-  async function processPayload(form: FormData | Record<string, unknown>) {
+  const resolveFinalize = useCallback((result: "saved" | "failed") => {
+    if (finalizeResolveRef.current) {
+      finalizeResolveRef.current(result);
+      finalizeResolveRef.current = null;
+    }
+  }, []);
+
+  async function processPayload(
+    input: FormData | Record<string, unknown>,
+    options?: { saveToChart?: boolean; showModal?: boolean },
+  ) {
+    const saveToChart = options?.saveToChart ?? false;
+    const showModal = options?.showModal ?? !saveToChart;
+
     setProcessing(true);
     setError("");
+    setSuccess("");
+
     try {
-      const isForm = form instanceof FormData;
-      const res = await fetch("/api/professional/ai-consult-notes", {
-        method: "POST",
-        ...(isForm ? { body: form } : {
+      let res: Response;
+      if (input instanceof FormData) {
+        if (saveToChart) input.set("saveToChart", "true");
+        res = await fetch("/api/professional/ai-consult-notes", { method: "POST", body: input });
+      } else {
+        res = await fetch("/api/professional/ai-consult-notes", {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        }),
-      });
+          body: JSON.stringify({ ...input, ...(saveToChart ? { saveToChart: true } : {}) }),
+        });
+      }
       const data = await res.json();
       if (!res.ok) {
         if (data.error === "AI_NOT_CONFIGURED") setError(t("aiNotConfigured"));
         else if (data.error === "TRANSCRIBE_NOT_CONFIGURED") setError(t("transcribeNotConfigured"));
         else if (data.error === "CONSENT_REQUIRED") setError(t("needConsent"));
         else setError(t("genericError"));
-        return;
+        resolveFinalize("failed");
+        return false;
       }
+
       setTranscript(data.transcript || "");
       setSummary(data.summary || "");
-      setShowResult(true);
+
+      if (data.saved) {
+        setSuccess(t("savedToChart"));
+        onSaved?.();
+        resolveFinalize("saved");
+      } else if (showModal) {
+        setShowResult(true);
+      }
+
+      return !!data.saved;
     } catch {
       setError(t("genericError"));
+      resolveFinalize("failed");
+      return false;
     } finally {
       setProcessing(false);
+      saveOnCompleteRef.current = false;
     }
   }
 
@@ -168,7 +194,12 @@ export default function ConsultNotesAssistant({
       setError(t("needConsent"));
       return;
     }
+    if (!patientRecordId) {
+      setError(t("noChart"));
+      return;
+    }
     setError("");
+    setSuccess("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -186,6 +217,7 @@ export default function ConsultNotesAssistant({
         const blob = new Blob(chunksRef.current, { type: mime });
         if (blob.size === 0) {
           setError(t("genericError"));
+          resolveFinalize("failed");
           return;
         }
         const form = new FormData();
@@ -194,7 +226,8 @@ export default function ConsultNotesAssistant({
         form.append("lang", lang);
         if (patientRecordId) form.append("patientRecordId", patientRecordId);
         if (appointmentId) form.append("appointmentId", appointmentId);
-        await processPayload(form);
+        if (saveOnCompleteRef.current) form.append("saveToChart", "true");
+        await processPayload(form, { saveToChart: saveOnCompleteRef.current, showModal: !saveOnCompleteRef.current });
       };
       mediaRecorderRef.current = recorder;
       recorder.start(1000);
@@ -202,18 +235,24 @@ export default function ConsultNotesAssistant({
       startTimer();
     } catch {
       setError(t("micError"));
+      resolveFinalize("failed");
     }
   }
 
-  function stopRecording() {
+  function stopRecording(saveToChart = false) {
+    saveOnCompleteRef.current = saveToChart;
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.stop();
     }
   }
 
-  async function summarizeManual() {
+  async function summarizeManual(saveToChart = true) {
     if (!consent) {
       setError(t("needConsent"));
+      return;
+    }
+    if (!patientRecordId) {
+      setError(t("noChart"));
       return;
     }
     const text = manualText.trim();
@@ -222,9 +261,45 @@ export default function ConsultNotesAssistant({
       consent: true,
       transcript: text,
       lang,
-      patientRecordId: patientRecordId || undefined,
+      patientRecordId,
       appointmentId: appointmentId || undefined,
-    });
+      saveToChart,
+    }, { saveToChart, showModal: !saveToChart });
+  }
+
+  async function saveSummaryToChart() {
+    if (!patientRecordId || !summary.trim()) return;
+    setProcessing(true);
+    setError("");
+    try {
+      const title = lang === "pt"
+        ? "Evolução — teleconsulta"
+        : lang === "es"
+          ? "Evolución — teleconsulta"
+          : "Evolution — teleconsult";
+      const res = await fetch("/api/professional/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientRecordId,
+          title,
+          content: summary.trim(),
+          recordKind: "EVOLUTION",
+          type: "CLINICAL_NOTE",
+        }),
+      });
+      if (!res.ok) {
+        setError(t("genericError"));
+        return;
+      }
+      setSuccess(t("savedToChart"));
+      onSaved?.();
+      setShowResult(false);
+    } catch {
+      setError(t("genericError"));
+    } finally {
+      setProcessing(false);
+    }
   }
 
   async function regenerateSummary() {
@@ -235,25 +310,30 @@ export default function ConsultNotesAssistant({
       lang,
       patientRecordId: patientRecordId || undefined,
       appointmentId: appointmentId || undefined,
-    });
+    }, { showModal: true });
   }
 
-  function createEvolution() {
-    if (!patientRecordId || !summary.trim()) return;
-    sessionStorage.setItem(
-      consultDraftKey(patientRecordId),
-      JSON.stringify({
-        title: t("draftTitle"),
-        content: summary.trim(),
-        recordKind: "EVOLUTION",
-      }),
-    );
-    window.open(`/professional/patients/${patientRecordId}`, "_blank");
-    setShowResult(false);
-  }
+  useImperativeHandle(ref, () => ({
+    isRecording: () => recording,
+    isProcessing: () => processing,
+    shouldAutoSaveOnLeave: () => consent && autoSaveOnLeave && !!patientRecordId,
+    finalizeOnLeave: () => new Promise((resolve) => {
+      if (!recording) {
+        resolve("skipped");
+        return;
+      }
+      if (!patientRecordId) {
+        resolve("failed");
+        return;
+      }
+      finalizeResolveRef.current = (result) => resolve(result);
+      stopRecording(true);
+    }),
+  }), [recording, processing, consent, autoSaveOnLeave, patientRecordId]);
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
+  const canRecord = consent && transcribeOk && summarizeOk && !!patientRecordId;
 
   return (
     <>
@@ -272,16 +352,30 @@ export default function ConsultNotesAssistant({
           {t("consent")}
         </label>
 
+        {consent && patientRecordId && (
+          <label className="flex items-start gap-2 text-[11px] text-slate-400 cursor-pointer leading-snug">
+            <input
+              type="checkbox"
+              checked={autoSaveOnLeave}
+              onChange={(e) => setAutoSaveOnLeave(e.target.checked)}
+              className="mt-0.5 accent-emerald-500 shrink-0"
+            />
+            {t("autoSaveOnLeave")}
+          </label>
+        )}
+
         {recording ? (
           <div className="space-y-2">
             <p className="text-xs text-rose-400 font-medium flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
               {t("recording")} {mm}:{ss}
             </p>
+            <p className="text-[10px] text-slate-500 leading-snug">{t("recordingHint")}</p>
             <button
               type="button"
-              onClick={stopRecording}
-              className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 py-2 rounded-lg transition"
+              onClick={() => stopRecording(true)}
+              disabled={processing}
+              className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 py-2.5 rounded-lg transition min-h-[44px]"
             >
               <Square size={12} /> {t("stop")}
             </button>
@@ -295,9 +389,9 @@ export default function ConsultNotesAssistant({
           <button
             type="button"
             onClick={startRecording}
-            disabled={!consent || !transcribeOk}
-            title={!transcribeOk ? t("transcribeNotConfigured") : undefined}
-            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 py-2 rounded-lg transition"
+            disabled={!canRecord}
+            title={!transcribeOk ? t("transcribeNotConfigured") : !summarizeOk ? t("aiNotConfigured") : undefined}
+            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 py-2.5 rounded-lg transition min-h-[44px]"
           >
             <Mic size={13} /> {t("start")}
           </button>
@@ -315,13 +409,19 @@ export default function ConsultNotesAssistant({
             />
             <button
               type="button"
-              onClick={summarizeManual}
-              disabled={!consent || !manualText.trim()}
-              className="w-full text-xs font-semibold text-violet-300 hover:text-white border border-violet-500/40 py-1.5 rounded-lg disabled:opacity-40"
+              onClick={() => summarizeManual(true)}
+              disabled={!consent || !manualText.trim() || !summarizeOk || !patientRecordId}
+              className="w-full text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg disabled:opacity-40 min-h-[44px]"
             >
               {t("summarizeText")}
             </button>
           </div>
+        )}
+
+        {success && (
+          <p className="text-[11px] text-emerald-400 flex items-start gap-1">
+            <CheckCircle2 size={12} className="shrink-0 mt-0.5" /> {success}
+          </p>
         )}
 
         {error && (
@@ -369,11 +469,12 @@ export default function ConsultNotesAssistant({
               {patientRecordId && (
                 <button
                   type="button"
-                  onClick={createEvolution}
-                  disabled={!summary.trim()}
-                  className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 py-2.5 rounded-lg"
+                  onClick={saveSummaryToChart}
+                  disabled={!summary.trim() || processing}
+                  className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 py-2.5 rounded-lg min-h-[44px]"
                 >
-                  <FileText size={13} /> {t("createEvolution")}
+                  {processing ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
+                  {t("saveToChart")}
                 </button>
               )}
               <div className="flex gap-2">
@@ -402,4 +503,6 @@ export default function ConsultNotesAssistant({
       )}
     </>
   );
-}
+});
+
+export default ConsultNotesAssistant;

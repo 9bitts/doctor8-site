@@ -11,6 +11,13 @@ import { AuditAction } from "@prisma/client";
 import { transcribeAudio, isTranscribeConfigured } from "@/lib/ai-transcribe";
 import { generateConsultEvolution } from "@/lib/ai-consult-notes";
 import { normalizeLang, Lang } from "@/lib/i18n/translations";
+import { saveChartEvolution } from "@/lib/save-chart-evolution";
+
+function evolutionTitle(lang: Lang): string {
+  if (lang === "pt") return "Evolução — teleconsulta";
+  if (lang === "es") return "Evolución — teleconsulta";
+  return "Evolution — teleconsult";
+}
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -23,6 +30,7 @@ const jsonSchema = z.object({
   lang: z.enum(["pt", "en", "es"]).optional(),
   patientRecordId: z.string().optional(),
   appointmentId: z.string().optional(),
+  saveToChart: z.boolean().optional(),
 });
 
 async function verifyPatientRecord(professionalId: string, recordId: string) {
@@ -68,6 +76,7 @@ export async function POST(req: NextRequest) {
     let patientRecordId: string | undefined;
     let appointmentId: string | undefined;
     let transcript: string | undefined;
+    let saveToChart = false;
     let audioBuffer: Buffer | null = null;
     let audioMime = "audio/webm";
 
@@ -94,6 +103,9 @@ export async function POST(req: NextRequest) {
         transcript = transcriptField.trim();
       }
 
+      const saveField = form.get("saveToChart");
+      if (saveField === "true") saveToChart = true;
+
       const audio = form.get("audio");
       if (audio instanceof File && audio.size > 0) {
         if (audio.size > 25 * 1024 * 1024) {
@@ -112,6 +124,7 @@ export async function POST(req: NextRequest) {
       patientRecordId = parsed.data.patientRecordId;
       appointmentId = parsed.data.appointmentId;
       transcript = parsed.data.transcript;
+      saveToChart = !!parsed.data.saveToChart;
     }
 
     if (patientRecordId) {
@@ -164,7 +177,21 @@ export async function POST(req: NextRequest) {
       patientName,
     });
 
-    return NextResponse.json({ transcript, summary });
+    let documentId: string | undefined;
+    if (saveToChart) {
+      if (!patientRecordId) {
+        return NextResponse.json({ error: "NO_PATIENT_RECORD" }, { status: 400 });
+      }
+      const doc = await saveChartEvolution({
+        professionalId: professional.id,
+        patientRecordId,
+        title: evolutionTitle(lang),
+        content: summary,
+      });
+      documentId = doc.id;
+    }
+
+    return NextResponse.json({ transcript, summary, saved: !!documentId, documentId });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg === "AI_NOT_CONFIGURED" || msg === "TRANSCRIBE_NOT_CONFIGURED") {

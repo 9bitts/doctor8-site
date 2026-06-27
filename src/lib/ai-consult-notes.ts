@@ -11,10 +11,10 @@ const LANG_LABEL: Record<Lang, string> = {
 const SECTION_HEADINGS: Record<Lang, string[]> = {
   pt: [
     "Queixa principal",
-    "Hist?ria da doen?a atual (HDA)",
+    "História da doença atual (HDA)",
     "Exame / achados",
-    "Plano terap?utico",
-    "Orienta??es ao paciente",
+    "Plano terapêutico",
+    "Orientações ao paciente",
   ],
   en: [
     "Chief complaint",
@@ -27,7 +27,7 @@ const SECTION_HEADINGS: Record<Lang, string[]> = {
     "Motivo de consulta",
     "Historia de la enfermedad actual (HEA)",
     "Examen / hallazgos",
-    "Plan terap?utico",
+    "Plan terapéutico",
     "Orientaciones al paciente",
   ],
 };
@@ -42,7 +42,7 @@ ${sections}
 
 Rules:
 - Write entirely in ${LANG_LABEL[lang]}.
-- Use only information reasonably supported by the transcript; if a section has no data, write "N?o informado" / "Not documented" / "No documentado" as appropriate.
+- Use only information reasonably supported by the transcript; if a section has no data, write "Não informado" / "Not documented" / "No documentado" as appropriate.
 - Use professional clinical language suitable for a medical record.
 - Do NOT invent diagnoses, prescriptions, or test results not mentioned.
 - Keep each section concise (1?4 sentences unless rich detail is present).

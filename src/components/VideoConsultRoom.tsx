@@ -2,14 +2,14 @@
 
 // Shared teleconsult UI — video + patient chart sidebar for professionals.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Loader2, Video, Clock, AlertCircle, ArrowLeft, ShieldCheck,
   ChevronRight, ChevronLeft, FileText, Plus, Send, Stethoscope,
-  Pill, X, CheckCircle2, ClipboardList,
+  Pill, X, CheckCircle2, ClipboardList, PhoneOff,
 } from "lucide-react";
-import ConsultNotesAssistant from "@/components/professional/ConsultNotesAssistant";
+import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
 
 export interface VideoConsultData {
   url: string;
@@ -24,6 +24,7 @@ export interface VideoConsultData {
   appointmentId?: string | null;
   kind?: "appointment" | "jit" | "humanitarian";
   queueId?: string;
+  entryId?: string;
 }
 
 interface ClinicalRecord {
@@ -69,7 +70,37 @@ const T: Record<string, Record<Lang, string>> = {
   addRecord:      { pt: "Adicionar registro", en: "Add record", es: "Agregar registro" },
   noChart:        { pt: "Vinculando ficha do paciente...", en: "Linking patient chart...", es: "Vinculando ficha del paciente..." },
   noteTitle:      { pt: "Anotação da consulta", en: "Consultation note", es: "Nota de consulta" },
+  leaveCall:      { pt: "Sair da consulta", en: "Leave call", es: "Salir de la consulta" },
+  leaveConfirm:   { pt: "Deseja sair da sala de vídeo?", en: "Leave the video room?", es: "¿Salir de la sala de video?" },
+  leaveSavingNotes: {
+    pt: "Gravação em andamento. Gerar resumo e salvar na ficha antes de sair?",
+    en: "Recording in progress. Generate summary and save to chart before leaving?",
+    es: "Grabación en curso. ¿Generar resumen y guardar en la ficha antes de salir?",
+  },
+  leaveProcessing: {
+    pt: "Gerando evolução e salvando na ficha…",
+    en: "Generating note and saving to chart…",
+    es: "Generando evolución y guardando en la ficha…",
+  },
+  leaveDiscardRecording: {
+    pt: "Gravação em andamento. Sair sem gerar o resumo?",
+    en: "Recording in progress. Leave without generating the summary?",
+    es: "Grabación en curso. ¿Salir sin generar el resumen?",
+  },
 };
+
+function leaveDestination(data: VideoConsultData): string {
+  const isPro = data.role === "professional";
+  switch (data.kind) {
+    case "humanitarian":
+      return isPro ? "/humanitarian/volunteer" : "/patient";
+    case "jit":
+      return isPro ? "/professional/jit" : "/urgent";
+    case "appointment":
+    default:
+      return isPro ? "/professional/appointments" : "/patient/appointments";
+  }
+}
 
 export default function VideoConsultRoom({
   fetchSession,
@@ -89,6 +120,8 @@ export default function VideoConsultRoom({
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
   const [recordsLoading, setRecordsLoading] = useState(false);
+  const [leavingCall, setLeavingCall] = useState(false);
+  const notesAssistantRef = useRef<ConsultNotesAssistantHandle>(null);
 
   const t = (k: string) => T[k]?.[lang] ?? T[k]?.["en"] ?? k;
 
@@ -231,11 +264,42 @@ export default function VideoConsultRoom({
   const isPro = data.role === "professional";
   const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
 
+  const roomData = data;
+
+  async function handleLeaveCall() {
+    const assistant = notesAssistantRef.current;
+    if (assistant?.isRecording()) {
+      if (assistant.shouldAutoSaveOnLeave()) {
+        if (!window.confirm(t("leaveSavingNotes"))) return;
+        setLeavingCall(true);
+        await assistant.finalizeOnLeave();
+        setLeavingCall(false);
+      } else if (!window.confirm(t("leaveDiscardRecording"))) {
+        return;
+      }
+    } else if (!window.confirm(t("leaveConfirm"))) {
+      return;
+    }
+    router.push(leaveDestination(roomData));
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between shrink-0 z-10">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+      <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between gap-2 shrink-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={handleLeaveCall}
+            disabled={leavingCall}
+            className="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 hover:bg-red-500/25 hover:text-red-200 transition disabled:opacity-50"
+            aria-label={t("leaveCall")}
+          >
+            {leavingCall
+              ? <Loader2 size={14} className="animate-spin shrink-0" />
+              : <PhoneOff size={14} className="shrink-0" />}
+            <span className="hidden sm:inline">{leavingCall ? t("leaveProcessing") : t("leaveCall")}</span>
+          </button>
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 hidden sm:flex">
             <Video size={16} className="text-emerald-400" />
           </div>
           <div className="min-w-0">
@@ -318,10 +382,14 @@ export default function VideoConsultRoom({
                   </a>
 
                   <ConsultNotesAssistant
+                    ref={notesAssistantRef}
                     lang={lang}
                     patientRecordId={data.patientRecordId}
                     appointmentId={data.appointmentId}
                     patientName={data.otherParty}
+                    onSaved={() => {
+                      if (data.patientRecordId) loadRecords(data.patientRecordId);
+                    }}
                   />
 
                   <div className="bg-slate-800 rounded-xl p-3 space-y-2">
