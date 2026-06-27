@@ -23,8 +23,53 @@ export function normEmailLang(v: string | null | undefined): EmailLang {
   return "en";
 }
 
+const PRODUCTION_APP_URL = "https://app.doctor8.org";
+
+function normalizeBaseUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/$/, "");
+  if (!trimmed) return "";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
+function isLocalhostUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host === "::1";
+  } catch {
+    return true;
+  }
+}
+
+/** Public base URL for links in emails, redirects, and webhooks. Never localhost in production. */
 export function getAppUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
+  const candidates = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.APP_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : undefined,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  ]
+    .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    .map(normalizeBaseUrl)
+    .filter(Boolean);
+
+  const isProd = process.env.NODE_ENV === "production";
+
+  for (const url of candidates) {
+    if (isProd && isLocalhostUrl(url)) continue;
+    return url;
+  }
+
+  if (isProd) {
+    return PRODUCTION_APP_URL;
+  }
+
+  return candidates[0] || "http://localhost:3000";
 }
 
 function getFrom(): string {

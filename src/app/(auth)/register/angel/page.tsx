@@ -109,7 +109,7 @@ export default function RegisterAngelPage() {
         return;
       }
       router.push(
-        `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent("/humanitarian/angel")}`,
+        `/verify-account?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent("/humanitarian/angel")}`,
       );
     } catch {
       setErrors({ general: [t("reg.genericError")] });

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import {
   assignNextInPool,
+  cancelHumanitarianEntry,
   countActiveInPool,
   getEntryStatus,
   HumanitarianQueueFullError,
@@ -12,11 +13,13 @@ import {
 import { notifyHumanitarianJoined } from "@/lib/humanitarian/notify";
 import { requireValidIntake } from "@/lib/humanitarian/intake";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
+import { getPatientActiveHumanitarianEntry } from "@/lib/humanitarian/notify";
 
 const joinSchema = z.object({
   campaignSlug: z.string(),
   poolSlug: z.string(),
   chiefComplaint: z.string().max(2000).optional(),
+  lang: z.enum(["pt", "en", "es"]).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -24,9 +27,20 @@ export async function GET(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const entryId = new URL(req.url).searchParams.get("entryId");
+  const campaignSlug = new URL(req.url).searchParams.get("campaignSlug");
   const lang = new URL(req.url).searchParams.get("lang") || "es";
+
+  if (campaignSlug) {
+    const active = await getPatientActiveHumanitarianEntry(session.user.id);
+    if (!active || active.pool.campaign.slug !== campaignSlug) {
+      return NextResponse.json({ entry: null });
+    }
+    const status = await getEntryStatus(active.id, session.user.id, lang);
+    return NextResponse.json({ entry: status });
+  }
+
   if (!entryId) {
-    return NextResponse.json({ error: "entryId required" }, { status: 400 });
+    return NextResponse.json({ error: "entryId or campaignSlug required" }, { status: 400 });
   }
 
   const status = await getEntryStatus(entryId, session.user.id, lang);
@@ -48,7 +62,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { campaignSlug, poolSlug, chiefComplaint } = parsed.data;
+  const { campaignSlug, poolSlug, chiefComplaint, lang: bodyLang } = parsed.data;
+  const lang = bodyLang || "es";
 
   const campaign = await db.humanitarianCampaign.findUnique({
     where: { slug: campaignSlug },
@@ -94,8 +109,25 @@ export async function POST(req: NextRequest) {
     },
   });
   if (existing) {
-    const status = await getEntryStatus(existing.id, session.user.id);
-    return NextResponse.json({ entry: status, alreadyInQueue: true });
+    if (existing.poolId === pool.id) {
+      const status = await getEntryStatus(existing.id, session.user.id, lang);
+      return NextResponse.json({ entry: status, alreadyInQueue: true });
+    }
+
+    if (existing.status === "IN_PROGRESS") {
+      return NextResponse.json(
+        {
+          error: "CANNOT_SWITCH_IN_CONSULT",
+          message: "Finish or leave the current consultation before choosing another service.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const cancelled = await cancelHumanitarianEntry(existing.id, session.user.id);
+    if (!cancelled) {
+      return NextResponse.json({ error: "Cannot switch queue" }, { status: 400 });
+    }
   }
 
   const activeCount = await countActiveInPool(pool.id);

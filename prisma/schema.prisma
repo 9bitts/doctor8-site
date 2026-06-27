@@ -292,6 +292,8 @@ model User {
   id              String     @id @default(cuid())
   email           String     @unique
   emailVerified   DateTime?
+  phone           String?    // E.164 digits only (e.g. 5511999999999)
+  phoneVerified   DateTime?
   passwordHash    String?    // null for OAuth users
   role            UserRole
   region          UserRegion @default(US)

@@ -3,16 +3,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getAppUrl } from "@/lib/email-core";
 
-function redirect(req: NextRequest, pathWithQuery: string) {
-  return NextResponse.redirect(new URL(pathWithQuery, req.url));
+function redirect(pathWithQuery: string) {
+  return NextResponse.redirect(new URL(pathWithQuery, getAppUrl()));
 }
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
 
   if (!token) {
-    return redirect(req, "/verify-email/confirmed?error=invalid");
+    return redirect("/verify-email/confirmed?error=invalid");
   }
 
   try {
@@ -21,13 +22,12 @@ export async function GET(req: NextRequest) {
     });
 
     if (!verificationToken) {
-      return redirect(req, "/verify-email/confirmed?error=invalid");
+      return redirect("/verify-email/confirmed?error=invalid");
     }
 
     if (verificationToken.expires < new Date()) {
       await db.verificationToken.delete({ where: { token } });
       return redirect(
-        req,
         `/verify-email?error=expired&email=${encodeURIComponent(verificationToken.identifier)}`,
       );
     }
@@ -39,9 +39,9 @@ export async function GET(req: NextRequest) {
 
     await db.verificationToken.delete({ where: { token } });
 
-    return redirect(req, "/verify-email/confirmed");
+    return redirect("/verify-email/confirmed");
   } catch (error) {
     console.error("[VERIFY EMAIL ERROR]", error);
-    return redirect(req, "/verify-email/confirmed?error=failed");
+    return redirect("/verify-email/confirmed?error=failed");
   }
 }

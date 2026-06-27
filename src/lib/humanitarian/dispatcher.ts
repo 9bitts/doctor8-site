@@ -265,6 +265,35 @@ export async function completeHumanitarianEntry(
   await assignNextInPool(entry.poolId);
 }
 
+export async function cancelHumanitarianEntry(
+  entryId: string,
+  patientUserId: string,
+): Promise<{ poolId: string } | null> {
+  const entry = await db.humanitarianQueueEntry.findUnique({
+    where: { id: entryId },
+    select: { id: true, patientUserId: true, status: true, poolId: true, volunteerId: true },
+  });
+  if (!entry || entry.patientUserId !== patientUserId) return null;
+  if (!["WAITING", "CALLED"].includes(entry.status)) return null;
+
+  const now = new Date();
+  await db.$transaction(async (tx) => {
+    await tx.humanitarianQueueEntry.update({
+      where: { id: entry.id },
+      data: { status: "CANCELLED", endedAt: now },
+    });
+    if (entry.volunteerId) {
+      await tx.humanitarianVolunteer.update({
+        where: { id: entry.volunteerId },
+        data: { status: "ONLINE", currentEntryId: null },
+      });
+    }
+  });
+
+  await assignNextInPool(entry.poolId);
+  return { poolId: entry.poolId };
+}
+
 export async function releaseVolunteer(volunteerId: string): Promise<void> {
   const vol = await db.humanitarianVolunteer.findUnique({
     where: { id: volunteerId },

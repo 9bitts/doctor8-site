@@ -9,6 +9,7 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
+import { isAccountVerified } from "@/lib/account-verified";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -120,8 +121,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user || !user.passwordHash) return null;
         if (user.deletedAt) return null;
 
-        // Block login if email not verified
-        if (!user.emailVerified) {
+        // Block login until email or SMS verification
+        if (!isAccountVerified(user)) {
           throw new Error("EmailNotVerified");
         }
 

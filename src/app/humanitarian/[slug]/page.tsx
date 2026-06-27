@@ -40,6 +40,7 @@ interface QueueEntry {
   estimatedWaitMinutes: number;
   onlineVolunteers: number;
   poolLabel: string;
+  poolSlug?: string;
   professionalName: string | null;
 }
 
@@ -71,6 +72,8 @@ export default function HumanitarianCampaignPage() {
   const [computedPriority, setComputedPriority] = useState<string | null>(null);
   const [anamneseComplete, setAnamneseComplete] = useState(true);
   const [tcleAccepted, setTcleAccepted] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [switching, setSwitching] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -107,6 +110,9 @@ export default function HumanitarianCampaignPage() {
           return;
         }
 
+        const currentLang = getHumanitarianLang();
+        setLang(currentLang);
+
         const intakeRes = await fetch(`/api/humanitarian/intake?campaignSlug=${slug}`);
         const intakeData = await intakeRes.json();
         if (intakeRes.ok && !intakeData.intake?.triageValid) {
@@ -124,7 +130,12 @@ export default function HumanitarianCampaignPage() {
           setTcleAccepted(!!intakeData.intake.tcleAccepted);
         }
 
-        loadCampaign();
+        await loadCampaign();
+        const queueRes = await fetch(`/api/humanitarian/queue?campaignSlug=${slug}&lang=${currentLang}`);
+        const queueData = await queueRes.json();
+        if (queueRes.ok && queueData.entry) {
+          setEntry(queueData.entry);
+        }
       })
       .catch(() => router.push("/login?callbackUrl=/patient"));
 
@@ -136,6 +147,14 @@ export default function HumanitarianCampaignPage() {
   useEffect(() => {
     if (!loading) loadCampaign();
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!entry?.id) return;
+    startPolling(entry.id);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [entry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function startPolling(entryId: string) {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -167,6 +186,7 @@ export default function HumanitarianCampaignPage() {
           campaignSlug: slug,
           poolSlug,
           chiefComplaint: complaint.trim() || undefined,
+          lang,
         }),
       });
       const data = await res.json();
@@ -177,6 +197,12 @@ export default function HumanitarianCampaignPage() {
         }
         if (data.error === "TCLE_REQUIRED") {
           router.replace(`/humanitarian/${slug}/tcle`);
+          return;
+        }
+        if (data.error === "CANNOT_SWITCH_IN_CONSULT") {
+          setError(t(lang, "hum.page.cannotSwitchInConsult"));
+          setJoining(null);
+          setSwitching(null);
           return;
         }
         setError(data.message || data.error || t(lang, "hum.page.queueError"));
@@ -190,6 +216,19 @@ export default function HumanitarianCampaignPage() {
       setError(t(lang, "hum.page.networkError"));
     }
     setJoining(null);
+    setSwitching(null);
+  }
+
+  async function switchPool(poolSlug: string, currentPoolLabel: string) {
+    const target = pools.find((p) => p.slug === poolSlug);
+    if (!target) return;
+    const msg = t(lang, "hum.page.changeServiceConfirm", {
+      pool: currentPoolLabel,
+      newPool: target.label,
+    });
+    if (!window.confirm(msg)) return;
+    setSwitching(poolSlug);
+    await joinPool(poolSlug);
   }
 
   async function enterConsultation() {
@@ -216,6 +255,8 @@ export default function HumanitarianCampaignPage() {
 
   async function leaveQueue() {
     if (!entry) return;
+    if (!window.confirm(t(lang, "hum.page.leaveQueueConfirm"))) return;
+    setLeaving(true);
     await fetch("/api/humanitarian/queue/cancel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -223,6 +264,7 @@ export default function HumanitarianCampaignPage() {
     }).catch(() => {});
     clearInterval(pollRef.current);
     setEntry(null);
+    setLeaving(false);
     loadCampaign();
   }
 
@@ -245,10 +287,14 @@ export default function HumanitarianCampaignPage() {
         <QueueScreen
           lang={lang}
           entry={entry}
+          pools={pools}
           error={error}
           entering={entering}
+          leaving={leaving}
+          switching={switching}
           onEnter={enterConsultation}
           onLeave={leaveQueue}
+          onSwitchPool={switchPool}
           onRejoin={() => { setEntry(null); loadCampaign(); }}
           campaignSlug={slug}
           showAnamneseReminder={!anamneseComplete}
@@ -417,25 +463,72 @@ export default function HumanitarianCampaignPage() {
 function QueueScreen({
   lang,
   entry,
+  pools,
   error,
   entering,
+  leaving,
+  switching,
   onEnter,
   onLeave,
+  onSwitchPool,
   onRejoin,
   campaignSlug,
   showAnamneseReminder,
 }: {
   lang: Lang;
   entry: QueueEntry;
+  pools: PoolInfo[];
   error: string | null;
   entering: boolean;
+  leaving: boolean;
+  switching: string | null;
   onEnter: () => void;
   onLeave: () => void;
+  onSwitchPool: (poolSlug: string, currentPoolLabel: string) => void;
   onRejoin: () => void;
   campaignSlug: string;
   showAnamneseReminder?: boolean;
 }) {
   const card = "bg-slate-900 border rounded-2xl p-6 sm:p-8 text-center w-full";
+  const currentPoolSlug = entry.poolSlug;
+  const otherPools = pools.filter(
+    (p) => p.slug !== currentPoolSlug && !p.isFull,
+  );
+
+  function ChangeServiceBlock({ className = "" }: { className?: string }) {
+    if (otherPools.length === 0) return null;
+    return (
+      <div className={`mt-6 pt-6 border-t border-white/10 text-left ${className}`}>
+        <p className="text-sm text-slate-400 mb-3 text-center">
+          {t(lang, "hum.page.changeServiceHint")}
+        </p>
+        <div className="space-y-2">
+          {otherPools.map((pool) => (
+            <button
+              key={pool.slug}
+              type="button"
+              disabled={!!switching || leaving}
+              onClick={() => onSwitchPool(pool.slug, entry.poolLabel)}
+              className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3 transition disabled:opacity-50"
+            >
+              <span className="text-sm font-medium text-white">{pool.label}</span>
+              <span className="block text-xs text-slate-500 mt-0.5">
+                {t(lang, "hum.page.waiting", { count: pool.waiting })}
+              </span>
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={onLeave}
+          disabled={leaving || !!switching}
+          className="w-full mt-3 text-sm text-slate-500 hover:text-slate-300 py-2 disabled:opacity-50"
+        >
+          {leaving ? t(lang, "hum.page.leaving") : t(lang, "hum.page.leaveQueue")}
+        </button>
+      </div>
+    );
+  }
 
   if (entry.status === "NO_SHOW" || entry.status === "CANCELLED") {
     return (
@@ -466,6 +559,7 @@ function QueueScreen({
         >
           {entering ? <Loader2 size={18} className="animate-spin" /> : <><Phone size={18} /> {t(lang, "hum.page.enterNow")}</>}
         </button>
+        <ChangeServiceBlock />
       </div>
     );
   }
@@ -512,9 +606,13 @@ function QueueScreen({
           {t(lang, "hum.anamnese.waitingHint")}
         </Link>
       )}
-      <button type="button" onClick={onLeave} className="text-sm text-slate-500 hover:text-slate-300 underline">
-        {t(lang, "hum.page.leaveQueue")}
-      </button>
+      {switching && (
+        <p className="text-sm text-emerald-400 mb-4 flex items-center justify-center gap-2">
+          <Loader2 size={14} className="animate-spin" />
+          {t(lang, "hum.page.switching")}
+        </p>
+      )}
+      <ChangeServiceBlock />
     </div>
   );
 }

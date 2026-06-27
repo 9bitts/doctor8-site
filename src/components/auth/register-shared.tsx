@@ -178,8 +178,8 @@ export function RegisterAccountForm({
 
       router.push(
         callbackUrl
-          ? `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`
-          : `/verify-email?email=${encodeURIComponent(email)}`
+          ? `/verify-account?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+          : `/verify-account?email=${encodeURIComponent(email)}`
       );
     } catch {
       setErrors({ general: [t("reg.genericError")] });

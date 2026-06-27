@@ -108,7 +108,7 @@ export default function RegisterOrganizationPage() {
         setErrors(data.error || { general: [t("reg.regFailed")] });
         return;
       }
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+      router.push(`/verify-account?email=${encodeURIComponent(email)}`);
     } catch {
       setErrors({ general: [t("reg.genericError")] });
     } finally {

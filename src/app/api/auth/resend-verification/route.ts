@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { randomBytes } from "crypto";
 import { sendEmailVerification } from "@/lib/email";
-
+import { isAccountVerified } from "@/lib/account-verified";
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       where: { email: email.toLowerCase() },
       select: {
         emailVerified: true,
+        phoneVerified: true,
         language: true,
         patientProfile: { select: { firstName: true } },
         professionalProfile: { select: { firstName: true } },
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    if (user.emailVerified) {
+    if (isAccountVerified(user)) {
       return NextResponse.json({ success: true, alreadyVerified: true });
     }
 

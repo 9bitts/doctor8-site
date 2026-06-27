@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { isAccountVerified } from "@/lib/account-verified";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,12 +16,11 @@ export async function POST(req: NextRequest) {
 
     const user = await db.user.findUnique({
       where: { email: email.toLowerCase() },
-      select: { emailVerified: true, passwordHash: true },
+      select: { emailVerified: true, phoneVerified: true, passwordHash: true },
     });
 
-    // Only flag if: user exists + has a password (not OAuth-only) + not verified
     const needsVerification =
-      !!user?.passwordHash && !user?.emailVerified;
+      !!user?.passwordHash && !isAccountVerified(user);
 
     return NextResponse.json({ needsVerification });
   } catch {

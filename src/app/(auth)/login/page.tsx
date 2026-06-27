@@ -207,7 +207,7 @@ function LoginForm() {
               </div>
               {unverifiedEmail && (
                 <Link
-                  href={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
+                  href={`/verify-account?email=${encodeURIComponent(unverifiedEmail)}`}
                   className="text-xs text-amber-300 hover:text-amber-200 underline"
                 >
                   {t("login.resend")} →

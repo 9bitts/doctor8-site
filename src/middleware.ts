@@ -19,6 +19,8 @@ const PUBLIC_ROUTES = [
   "/forgot-password",
   "/reset-password",
   "/verify-email",
+  "/verify-account",
+  "/verify-sms",
   "/auth/magic",
   "/privacy",
   "/terms",
