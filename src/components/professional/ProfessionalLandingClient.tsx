@@ -447,7 +447,7 @@ export default function ProfessionalLandingClient() {
                         <p className="text-[11px] font-bold text-d8-dark">{a.name}</p>
                         <p className="text-[10px] text-d8-muted">{a.time}</p>
                       </div>
-                      <span className="ml-auto rounded-lg bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">?</span>
+                      <span className="ml-auto rounded-lg bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">{"\u2713"}</span>
                     </div>
                   ))}
                   <div className="mt-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 p-3.5 text-white">
@@ -473,7 +473,7 @@ export default function ProfessionalLandingClient() {
               <ul className="flex flex-col gap-2.5">
                 {c.prescriptions.points.map((p) => (
                   <li key={p} className="flex items-start gap-2.5 text-[15px] text-d8-text">
-                    <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-accent-500 text-[11px] font-extrabold text-white">?</span>
+                    <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-accent-500 text-[11px] font-extrabold text-white">{"\u2713"}</span>
                     {p}
                   </li>
                 ))}
@@ -546,7 +546,7 @@ export default function ProfessionalLandingClient() {
               <ul className="flex flex-col gap-2.5">
                 {c.schedule.points.map((p) => (
                   <li key={p} className="flex items-start gap-2.5 text-[15px] text-d8-text">
-                    <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-accent-500 text-[11px] font-extrabold text-white">?</span>
+                    <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-accent-500 text-[11px] font-extrabold text-white">{"\u2713"}</span>
                     {p}
                   </li>
                 ))}
@@ -608,7 +608,7 @@ export default function ProfessionalLandingClient() {
                   {plan.features.map((f) => (
                     <li key={f.text} className={`flex items-center gap-2.5 text-sm ${f.included ? "text-white/80" : "text-white/35"}`}>
                       <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${f.included ? "bg-white/20 text-white" : "bg-white/10 text-white/40"}`}>
-                        {f.included ? "?" : "?"}
+                        {f.included ? "\u2713" : "\u00d7"}
                       </span>
                       {f.text}
                     </li>

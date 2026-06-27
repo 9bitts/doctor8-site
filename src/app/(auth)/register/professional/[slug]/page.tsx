@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props) {
   if (!isValidProfessionSlug(slug)) return {};
   const prof = getProLandingContent("pt").professionPages[slug];
   return {
-    title: `${prof.title} ? Doctor8 Profissionais`,
+    title: `${prof.title} — Doctor8 Profissionais`,
     description: prof.heroDesc,
   };
 }

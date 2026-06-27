@@ -72,7 +72,7 @@ export default function ProfessionalProfessionClient({ slug }: { slug: Humanitar
       <section className="bg-d8-off px-6 py-16">
         <div className="mx-auto max-w-[1180px]">
           <h2 className="mb-10 text-2xl font-extrabold tracking-tight text-d8-dark sm:text-3xl">
-            {lang === "pt" ? "Como usar a Doctor8" : lang === "es" ? "C?mo usar Doctor8" : "How to use Doctor8"}
+            {lang === "pt" ? "Como usar a Doctor8" : lang === "es" ? "C\u00f3mo usar Doctor8" : "How to use Doctor8"}
           </h2>
           <div className="grid gap-5 sm:grid-cols-2">
             {prof.useCases.map((uc, i) => (
@@ -97,7 +97,7 @@ export default function ProfessionalProfessionClient({ slug }: { slug: Humanitar
                 {lang === "pt" ? "Na plataforma" : lang === "es" ? "En la plataforma" : "On the platform"}
               </span>
               <h2 className="mb-6 text-2xl font-extrabold tracking-tight text-d8-dark sm:text-3xl">
-                {lang === "pt" ? "Ferramentas pensadas para voc?" : lang === "es" ? "Herramientas pensadas para ti" : "Tools built for you"}
+                {lang === "pt" ? "Ferramentas pensadas para voc\u00ea" : lang === "es" ? "Herramientas pensadas para ti" : "Tools built for you"}
               </h2>
               <ul className="flex flex-col gap-3">
                 {prof.platformFeatures.map((f) => (
@@ -121,7 +121,7 @@ export default function ProfessionalProfessionClient({ slug }: { slug: Humanitar
                 </div>
               </div>
               <div className="space-y-2">
-                {["Teleconsulta integrada", "Prontu?rio digital", "Agenda 24/7", "Documentos e prescri??es"].map((item, i) => (
+                {["Teleconsulta integrada", "Prontu\u00e1rio digital", "Agenda 24/7", "Documentos e prescri\u00e7\u00f5es"].map((item, i) => (
                   <div key={item} className="flex items-center justify-between rounded-xl border border-d8-border bg-white px-4 py-3">
                     <span className="text-sm text-d8-text">
                       {lang === "en"
@@ -130,7 +130,7 @@ export default function ProfessionalProfessionClient({ slug }: { slug: Humanitar
                           ? ["Teleconsulta integrada", "Historial digital", "Agenda 24/7", "Documentos y prescripciones"][i]
                           : item}
                     </span>
-                    <span className="rounded-lg bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600">?</span>
+                    <span className="rounded-lg bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600">{"\u2713"}</span>
                   </div>
                 ))}
               </div>
@@ -161,7 +161,7 @@ export default function ProfessionalProfessionClient({ slug }: { slug: Humanitar
       <section className="border-t border-d8-border bg-d8-off px-6 py-10">
         <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4">
           <Link href="/register/professional#voluntariado" className="text-sm font-semibold text-brand-500 hover:text-brand-600">
-            {lang === "pt" ? "? Ver todas as especialidades" : lang === "es" ? "? Ver todas las especialidades" : "? See all specialties"}
+            {lang === "pt" ? "\u2190 Ver todas as especialidades" : lang === "es" ? "\u2190 Ver todas las especialidades" : "\u2190 See all specialties"}
           </Link>
           <Link href={signup} className="inline-flex items-center gap-2 rounded-xl bg-accent-500 px-6 py-3 text-sm font-bold text-white hover:bg-accent-600">
             {prof.ctaPrimary} <ArrowRight size={14} />
