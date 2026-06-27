@@ -19,6 +19,7 @@ import { DocumentCreateView } from "@/components/professional/emissions/Document
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import type { Chart } from "@/components/professional/emissions/types";
+import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
 
 function controlInfo(type: string | null | undefined): {
   tarja: "preta" | "vermelha"; label: string; receita: string;
@@ -276,7 +277,7 @@ export default function PrescriptionsPage() {
   const [drugQuery, setDrugQuery] = useState("");
   const [drugResults, setDrugResults] = useState<Drug[]>([]);
   const [drugSearching, setDrugSearching] = useState(false);
-  const [drugCountry, setDrugCountry] = useState("");
+  const [drugCountry, setDrugCountry] = useState<DrugCountryCode>("BR");
   const drugDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [medications, setMedications] = useState<MedItem[]>([]);
@@ -400,7 +401,7 @@ export default function PrescriptionsPage() {
 
   function resetForm() {
     setSelectedPatient(null); setPatientQuery(""); setDrugQuery("");
-    setDrugResults([]); setDrugCountry(""); setMedications([]);
+    setDrugResults([]); setDrugCountry("BR"); setMedications([]);
     setInstructions(""); setValidDays(30); setFormError("");
     setReuseSource(null);
     setSavedEmission(null);
@@ -526,7 +527,7 @@ export default function PrescriptionsPage() {
     setDrugSearching(true);
     drugDebounce.current = setTimeout(async () => {
       try {
-        const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}${drugCountry ? `&country=${drugCountry}` : ""}`;
+        const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`;
         const res = await fetch(url);
         const d = await res.json();
         setDrugResults(d.drugs || []);
@@ -831,14 +832,34 @@ export default function PrescriptionsPage() {
 
             {/* Add item card */}
             <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
-              <div className="flex items-center justify-between gap-2">
+              <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-800">{t("rx2.addItem")}</label>
-                <select value={drugCountry} onChange={(e) => setDrugCountry(e.target.value)}
-                  className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
-                  <option value="">{t("rx2.countryAll")}</option>
-                  <option value="BR">🇧🇷 BR</option>
-                  <option value="US">🇺🇸 US</option>
-                </select>
+                <p className="text-xs text-slate-500">{t("rx2.countryPick")}</p>
+                <div className="flex flex-wrap gap-2">
+                  {DRUG_COUNTRIES.map((c) => {
+                    const selected = drugCountry === c.code;
+                    return (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => {
+                          setDrugCountry(c.code);
+                          setDrugQuery("");
+                          setDrugResults([]);
+                        }}
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                          selected
+                            ? "border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-brand-500/20"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-brand-200 hover:bg-brand-50/50"
+                        }`}
+                        aria-pressed={selected}
+                      >
+                        <span className="text-lg leading-none" aria-hidden>{c.flag}</span>
+                        {t(c.labelKey)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="relative">
