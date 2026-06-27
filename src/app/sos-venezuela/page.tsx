@@ -44,7 +44,7 @@ export default function SosVenezuelaPage() {
   const steps = ["hum.landing.step1", "hum.landing.step2", "hum.landing.step3", "hum.landing.step4"] as const;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col overflow-x-hidden">
       <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/90 backdrop-blur-md">
         <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">

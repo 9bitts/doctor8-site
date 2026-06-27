@@ -258,7 +258,7 @@ export default async function PatientDashboard() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 break-words">
           {t(greetingKey())}, {decrypted.firstName} 👋
         </h1>
         <p className="text-slate-500 mt-1">{t("pdash.subtitle")}</p>
@@ -412,34 +412,38 @@ export default async function PatientDashboard() {
                 return (
                 <div
                   key={apt.id}
-                  className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
+                  className="flex flex-col gap-3 sm:flex-row sm:items-center p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
-                    {pro.firstName.charAt(0)}{pro.lastName.charAt(0)}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
+                      {pro.firstName.charAt(0)}{pro.lastName.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 text-sm truncate">
+                        {prefix}{pro.firstName} {pro.lastName}
+                      </p>
+                      <p className="text-xs text-slate-500">{getProfessionLabel(lang, specialty)}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 text-sm">
-                      {prefix}{pro.firstName} {pro.lastName}
-                    </p>
-                    <p className="text-xs text-slate-500">{getProfessionLabel(lang, specialty)}</p>
+                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                    <div className="text-left sm:text-right">
+                      <p className="text-xs font-semibold text-slate-700">
+                        {new Date(apt.scheduledAt).toLocaleDateString(locale, { month: "short", day: "numeric" })}
+                      </p>
+                      <p className="text-xs text-slate-500 flex items-center gap-1 sm:justify-end">
+                        <Clock size={10} />
+                        {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                    {apt.type === "TELECONSULT" && (
+                      <a
+                        href={`/video/${apt.id}`}
+                        className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center justify-center gap-1 hover:bg-emerald-400 transition min-h-[44px] min-w-[44px]"
+                      >
+                        <Video size={12} /> <span className="sr-only sm:not-sr-only sm:inline">{t("pdash.join")}</span>
+                      </a>
+                    )}
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs font-semibold text-slate-700">
-                      {new Date(apt.scheduledAt).toLocaleDateString(locale, { month: "short", day: "numeric" })}
-                    </p>
-                    <p className="text-xs text-slate-500 flex items-center gap-1 justify-end">
-                      <Clock size={10} />
-                      {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                  {apt.type === "TELECONSULT" && (
-                    <a
-                      href={`/video/${apt.id}`}
-                      className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-emerald-400 transition"
-                    >
-                      <Video size={12} /> {t("pdash.join")}
-                    </a>
-                  )}
                 </div>
                 );
               })}

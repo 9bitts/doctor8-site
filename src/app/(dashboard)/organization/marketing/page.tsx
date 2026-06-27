@@ -48,7 +48,7 @@ export default function OrganizationMarketingPage() {
       <div className="flex items-center gap-3">
         <Megaphone className="text-indigo-600" size={24} />
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Marketing e NPS</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 break-words">Marketing e NPS</h1>
           <p className="text-slate-500 text-sm">Satisfacao dos pacientes da clinica</p>
         </div>
       </div>
@@ -57,7 +57,7 @@ export default function OrganizationMarketingPage() {
         <div className="flex justify-center py-16"><Loader2 className="animate-spin text-indigo-500" size={32} /></div>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="bg-white rounded-2xl border p-5 text-center">
               <p className={`text-3xl font-bold ${nps >= 50 ? "text-emerald-600" : nps >= 0 ? "text-amber-600" : "text-red-600"}`}>{nps}</p>
               <p className="text-sm text-slate-500 mt-1">NPS</p>
@@ -72,7 +72,7 @@ export default function OrganizationMarketingPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border p-5 flex justify-around text-center text-sm">
+          <div className="bg-white rounded-2xl border p-5 flex flex-wrap justify-around gap-4 text-center text-sm">
             <div><p className="font-bold text-emerald-600">{distribution.promoters}</p><p className="text-slate-500">Promotores</p></div>
             <div><p className="font-bold text-amber-600">{distribution.passives}</p><p className="text-slate-500">Neutros</p></div>
             <div><p className="font-bold text-red-600">{distribution.detractors}</p><p className="text-slate-500">Detratores</p></div>

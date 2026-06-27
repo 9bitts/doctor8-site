@@ -257,10 +257,10 @@ export default function ProfessionalSettings() {
         href="/professional/settings/clinic"
         className="block bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:border-brand-200 transition group"
       >
-        <div className="flex items-center justify-between gap-4">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-              <Building2 size={18} className="text-brand-500" /> {t("clinic.settingsCardTitle")}
+              <Building2 size={18} className="text-brand-500 shrink-0" /> {t("clinic.settingsCardTitle")}
             </h2>
             <p className="text-sm text-slate-500 mt-1">{t("clinic.settingsCardDesc")}</p>
           </div>
@@ -274,10 +274,10 @@ export default function ProfessionalSettings() {
         href="/professional/settings/templates"
         className="block bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:border-brand-200 transition group"
       >
-        <div className="flex items-center justify-between gap-4">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-              <LayoutTemplate size={18} className="text-brand-500" /> {t("tmpl.settingsCardTitle")}
+              <LayoutTemplate size={18} className="text-brand-500 shrink-0" /> {t("tmpl.settingsCardTitle")}
             </h2>
             <p className="text-sm text-slate-500 mt-1">{t("tmpl.settingsCardDesc")}</p>
           </div>
@@ -410,12 +410,12 @@ export default function ProfessionalSettings() {
       </div>
 
       {/* Save bar */}
-      <div className="flex items-center justify-between gap-4 sticky bottom-4 bg-white/80 backdrop-blur rounded-2xl border border-slate-100 shadow-lg p-3">
-        <p className="text-xs text-slate-400 pl-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sticky bottom-4 bg-white/80 backdrop-blur rounded-2xl border border-slate-100 shadow-lg p-3">
+        <p className="text-xs text-slate-400 sm:pl-2">
           {t("set.availabilityNote")} <a href="/professional/settings/availability" className="text-brand-500 underline">{t("set.availabilityLink")}</a>.
         </p>
         <button onClick={handleSave} disabled={saving}
-          className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shrink-0">
+          className="w-full sm:w-auto bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 shrink-0 min-h-[44px]">
           {saving && <Loader2 className="animate-spin" size={16} />}
           {saving ? t("set.saving") : t("set.saveProfile")}
         </button>

@@ -162,7 +162,7 @@ export default function PublicResultCard({
           {days.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-6">{t("pubSearch.noSlotsCard")}</p>
           ) : (
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 overflow-x-auto">
               {days.map((day) => (
                 <div key={day.date} className="min-w-0">
                   <p className="text-[10px] font-semibold text-slate-500 text-center mb-1.5 truncate">

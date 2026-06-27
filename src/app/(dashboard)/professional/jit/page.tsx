@@ -422,8 +422,8 @@ export default function JitPage() {
 
           {/* Call next */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <p className="font-semibold text-slate-800">
                   {waitingCount > 0 ? `${waitingCount} paciente${waitingCount > 1 ? "s" : ""} aguardando` : t("jit.queueEmpty")}
                 </p>
@@ -435,7 +435,7 @@ export default function JitPage() {
               </div>
               <button onClick={callNext}
                 disabled={calling || waitingCount === 0 || isPaused || !!calledEntry}
-                className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm">
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-500 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm min-h-[44px]">
                 {calling
                   ? <><Loader2 size={16} className="animate-spin" /> {t("jit.calling")}</>
                   : <><ChevronRight size={16} /> {t("jit.callNext")}</>}

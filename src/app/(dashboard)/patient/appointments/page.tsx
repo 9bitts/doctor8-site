@@ -586,7 +586,7 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t("appt.title")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 break-words">{t("appt.title")}</h1>
           <p className="text-slate-500 text-sm mt-1">{t("appt.subtitle")}</p>
         </div>
         {step !== "browse" && step !== "confirmed" && (
@@ -1152,7 +1152,7 @@ export default function AppointmentsPage() {
                   })}
                 </div>
                 {rescheduleDay && (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {rescheduleDay.slots.filter(s => s.available).map((slot) => (
                       <button key={slot.datetime} onClick={() => setRescheduleSlot(slot.datetime)}
                         className={`py-2 rounded-xl text-sm font-semibold border-2 transition ${rescheduleSlot === slot.datetime ? "bg-blue-500 border-blue-500 text-white" : "border-slate-200 hover:border-blue-400"}`}>

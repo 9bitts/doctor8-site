@@ -63,8 +63,8 @@ export default function OrganizationPatientsPage() {
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
           {patients.map((p) => (
-            <div key={p.id} className="flex items-center justify-between px-6 py-4">
-              <div>
+            <div key={p.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4">
+              <div className="min-w-0">
                 <p className="font-medium text-slate-900">
                   {p.firstName} {p.lastName}
                 </p>

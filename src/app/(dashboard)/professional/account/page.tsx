@@ -418,13 +418,13 @@ export default function ProfessionalAccountPage() {
       </div>
 
       {/* Sign out */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center justify-between">
-        <div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-800">{t("acct.signOut")}</p>
           <p className="text-xs text-slate-400 mt-0.5">{t("acct.signOutDesc")}</p>
         </div>
         <button onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition">
+          className="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-xl transition min-h-[44px] shrink-0">
           <LogOut size={15} /> {t("acct.signOut")}
         </button>
       </div>

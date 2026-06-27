@@ -67,9 +67,9 @@ export default function MarketPricingCard() {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-          <BarChart3 size={16} className="text-brand-500" />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 min-w-0">
+          <BarChart3 size={16} className="text-brand-500 shrink-0" />
           {t("market.title")}
         </h3>
         <Link
@@ -84,7 +84,7 @@ export default function MarketPricingCard() {
           .replace("{city}", insight.city || t("market.yourRegion"))
           .replace("{n}", String(insight.peerCount))}
       </p>
-      <div className="grid grid-cols-3 gap-2 text-center">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
         <div className="bg-slate-50 rounded-xl p-2">
           <p className="text-[10px] text-slate-500 uppercase">{t("market.yours")}</p>
           <p className="text-sm font-bold text-slate-800">

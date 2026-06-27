@@ -274,16 +274,16 @@ export default function ResourcesPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <BookOpen className="text-brand-500" size={24} /> {t("lib.title")}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2 break-words">
+            <BookOpen className="text-brand-500 shrink-0" size={24} /> {t("lib.title")}
           </h1>
           <p className="text-slate-500 text-sm mt-1">{t("lib.subtitle")}</p>
         </div>
         <button
           onClick={() => { setEditingId(null); setFormTitle(""); setFormDesc(""); setFormUrl(""); setFormFile(null); setFormType("link"); setFormError(null); setShowForm(true); }}
-          className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm shrink-0"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm shrink-0 min-h-[44px]"
         >
           <Plus size={18} /> {t("lib.add")}
         </button>

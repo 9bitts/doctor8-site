@@ -85,8 +85,8 @@ export default function OrganizationAppointmentsPage() {
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
           {appointments.map((a) => (
-            <div key={a.id} className="flex items-center justify-between px-6 py-4 gap-4">
-              <div>
+            <div key={a.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4">
+              <div className="min-w-0">
                 <p className="font-medium text-slate-900">{a.patientName}</p>
                 <p className="text-sm text-slate-500">
                   {a.professionalName}
@@ -96,7 +96,7 @@ export default function OrganizationAppointmentsPage() {
                   <p className="text-xs text-indigo-600 mt-0.5">{waResult[a.id]}</p>
                 )}
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 flex-wrap">
                 <div className="text-right">
                   <p className="text-sm font-medium text-slate-800">
                     {new Date(a.scheduledAt).toLocaleDateString("pt-BR", {

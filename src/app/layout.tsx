@@ -30,7 +30,7 @@ export default function RootLayout({
 
   return (
     <html lang={htmlLang}>
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${inter.className} antialiased overflow-x-hidden`}>
         <I18nProvider initialLang={lang}>
           {children}
           <SupportWidget />

@@ -175,8 +175,8 @@ export default async function OrganizationDashboard() {
         ) : (
           <div className="space-y-3">
             {upcoming.map((a) => (
-              <div key={a.id} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                <div>
+              <div key={a.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between py-2 border-b border-slate-100 last:border-0">
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-900">
                     {a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : "?"}
                   </p>

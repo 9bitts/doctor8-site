@@ -150,11 +150,11 @@ export default function EspecialistasLandingClient() {
         : "O Club Doctor n\u00e3o \u00e9 plano de sa\u00fade nem servi\u00e7o de emerg\u00eancia.";
 
   return (
-    <div className={`${sora.className} min-h-screen bg-d8-dark`}>
+    <div className={`${sora.className} min-h-screen bg-d8-dark overflow-x-hidden`}>
       <CookieBanner />
 
       <nav className="sticky top-0 z-50 border-b border-white/10 bg-d8-dark/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-4 px-6">
+        <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-2 sm:gap-4 px-4 sm:px-6 min-w-0">
           <Link href="/" className="shrink-0 text-[22px] font-extrabold text-white">
             Doctor<span className="text-accent-500">8</span>
           </Link>

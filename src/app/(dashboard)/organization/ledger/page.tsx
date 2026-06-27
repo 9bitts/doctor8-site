@@ -84,14 +84,14 @@ export default function OrganizationLedgerPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Contas a pagar e receber</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 break-words">Contas a pagar e receber</h1>
           <p className="text-slate-500 text-sm mt-1">Fluxo financeiro da cl?nica</p>
         </div>
         {canManage && (
           <button onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-indigo-500">
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-indigo-500 min-h-[44px]">
             <Plus size={16} /> Novo lan?amento
           </button>
         )}
@@ -155,8 +155,8 @@ export default function OrganizationLedgerPage() {
           {entries.length === 0 ? (
             <p className="text-slate-400 text-sm text-center py-12">Nenhum lan?amento ainda.</p>
           ) : entries.map((e) => (
-            <div key={e.id} className="flex items-center justify-between px-5 py-4 gap-4">
-              <div>
+            <div key={e.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-5 py-4">
+              <div className="min-w-0">
                 <p className="font-medium text-slate-900">{e.description}</p>
                 <p className="text-xs text-slate-500">
                   {e.type === "INCOME" ? "Receita" : "Despesa"}

@@ -108,7 +108,7 @@ export default function ClubDoctorBanner({ subscribed, defaultRegion }: Props) {
           )}
 
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
-            <div className="min-w-[200px]">
+            <div className="w-full sm:min-w-[200px] sm:flex-1">
               <label className="block text-xs font-medium text-slate-500 mb-1">
                 {t("billing.currency")}
               </label>

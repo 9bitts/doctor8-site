@@ -75,8 +75,8 @@ export default function OrganizationInvoicesPage() {
       ) : (
         <div className="bg-white rounded-2xl border divide-y">
           {invoices.map((i) => (
-            <div key={i.id} className="px-5 py-4 flex justify-between items-center">
-              <div>
+            <div key={i.id} className="px-5 py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <p className="font-medium text-sm">{i.recipientName}</p>
                 <p className="text-xs text-slate-500">{i.description}</p>
                 {i.number && <p className="text-xs text-indigo-600 mt-0.5">N. {i.number}</p>}
