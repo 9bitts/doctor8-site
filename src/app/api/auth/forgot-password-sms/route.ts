@@ -10,6 +10,7 @@ import {
   usesTwilioVerify,
 } from "@/lib/sms";
 import { generateSmsCode } from "@/lib/sms-otp";
+import { encryptUserPhone, userPhonesMatch } from "@/lib/user-phone";
 
 const COOLDOWN_MS = 60_000;
 const RESET_SMS_PREFIX = "reset-sms:";
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    if (user.phone && user.phone !== normalizedPhone) {
+    if (user.phone && !userPhonesMatch(user.phone, normalizedPhone)) {
       return NextResponse.json({ error: "INVALID_PHONE" }, { status: 400 });
     }
 
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
     if (!user.phone) {
       await db.user.update({
         where: { id: user.id },
-        data: { phone: normalizedPhone },
+        data: { phone: encryptUserPhone(normalizedPhone) },
       });
     }
 

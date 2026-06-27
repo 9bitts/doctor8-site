@@ -12,6 +12,7 @@ import { audit } from "@/lib/audit";
 import { isAccountVerified } from "@/lib/account-verified";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { encrypt } from "@/lib/encryption";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -231,8 +232,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               await db.patientProfile.create({
                 data: {
                   userId: dbUser.id,
-                  firstName,
-                  lastName,
+                  firstName: encrypt(firstName),
+                  lastName: encrypt(lastName),
                   avatarUrl: user.image || null,
                 },
               });

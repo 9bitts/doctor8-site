@@ -1,6 +1,12 @@
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import {
+  decryptHumanitarianIntakeFields,
+  decryptIdentificationData,
+  encryptHumanitarianIntakePatch,
+  encryptTriageData,
+} from "@/lib/humanitarian/intake-encryption";
+import {
   anamnesePatchSchema,
   type IdentificationData,
   type BasicNeedsData,
@@ -59,12 +65,13 @@ export interface IntakeStatusDto {
 }
 
 function mapAnamnese(intake: Record<string, unknown>): AnamneseDto {
+  const decrypted = decryptHumanitarianIntakeFields(intake);
   return {
-    identification: (intake.identificationData as IdentificationData) ?? null,
+    identification: (decrypted.identificationData as IdentificationData) ?? null,
     serviceTypes: (intake.serviceTypes as string[]) ?? [],
-    specialty: (intake.specialtyData as SpecialtyData) ?? null,
+    specialty: (decrypted.specialtyData as SpecialtyData) ?? null,
     basicNeeds: (intake.basicNeedsData as BasicNeedsData) ?? null,
-    additionalNotes: (intake.additionalNotes as string | null) ?? null,
+    additionalNotes: decrypted.additionalNotes ?? null,
     consentAt: intake.consentAt instanceof Date ? intake.consentAt.toISOString() : null,
   };
 }
@@ -195,6 +202,7 @@ export async function saveHumanitarianTriage(params: {
   triage: HumanitarianTriageData;
 }) {
   const parsed = humanitarianTriageSchema.parse(params.triage);
+  const encryptedTriage = encryptTriageData(parsed);
   const result = computeTriagePriority(parsed);
   const now = new Date();
 
@@ -221,7 +229,7 @@ export async function saveHumanitarianTriage(params: {
     create: {
       campaignId: params.campaignId,
       patientUserId: params.patientUserId,
-      triageData: parsed,
+      triageData: encryptedTriage,
       triageCompletedAt: now,
       computedPriority: result.priority,
       triageFlags: result.flags,
@@ -229,7 +237,7 @@ export async function saveHumanitarianTriage(params: {
       status: "TRIAGE_ONLY",
     },
     update: {
-      triageData: parsed,
+      triageData: encryptedTriage,
       triageCompletedAt: now,
       computedPriority: result.priority,
       triageFlags: result.flags,
@@ -363,7 +371,7 @@ export async function saveAnamneseSection(params: {
 
   const intake = await db.humanitarianIntake.update({
     where: { id: existing.id },
-    data: updateData,
+    data: encryptHumanitarianIntakePatch(updateData),
   });
 
   if (parsed.section === "consent" && intake.status === "COMPLETE") {
@@ -489,11 +497,13 @@ export async function listCampaignIntakes(campaignSlug: string): Promise<AdminIn
       consentAt: i.consentAt?.toISOString() ?? null,
       telemedicineTcleAt: i.telemedicineTcleAt?.toISOString() ?? null,
       serviceTypes: (i.serviceTypes as string[]) ?? [],
-      triageData: i.triageData,
-      identificationData: (i as { identificationData?: unknown }).identificationData ?? null,
-      specialtyData: (i as { specialtyData?: unknown }).specialtyData ?? null,
+      ...decryptHumanitarianIntakeFields({
+        triageData: i.triageData,
+        identificationData: (i as { identificationData?: unknown }).identificationData ?? null,
+        specialtyData: (i as { specialtyData?: unknown }).specialtyData ?? null,
+        additionalNotes: (i as { additionalNotes?: string | null }).additionalNotes ?? null,
+      }),
       basicNeedsData: (i as { basicNeedsData?: unknown }).basicNeedsData ?? null,
-      additionalNotes: (i as { additionalNotes?: string | null }).additionalNotes ?? null,
       updatedAt: i.updatedAt.toISOString(),
     };
   })

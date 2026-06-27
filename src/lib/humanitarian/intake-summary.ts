@@ -6,6 +6,7 @@ import type {
   IdentificationData,
   SpecialtyData,
 } from "@/lib/humanitarian/anamnese";
+import { decryptHumanitarianIntakeFields } from "@/lib/humanitarian/intake-encryption";
 
 export type IntakeSummarySection = {
   title: string;
@@ -415,9 +416,10 @@ export function buildIntakeSummary(
   const lang = normLang(langInput);
   const t = L[lang];
   const sections: IntakeSummarySection[] = [];
-  const triage = intake.triageData as HumanitarianTriageData | null;
-  const id = intake.identificationData as IdentificationData | null;
-  const specialty = intake.specialtyData as SpecialtyData | null;
+  const decrypted = decryptHumanitarianIntakeFields(intake);
+  const triage = decrypted.triageData as HumanitarianTriageData | null;
+  const id = decrypted.identificationData as IdentificationData | null;
+  const specialty = decrypted.specialtyData as SpecialtyData | null;
   const needs = intake.basicNeedsData as BasicNeedsData | null;
 
   if (triage) {
@@ -564,10 +566,10 @@ export function buildIntakeSummary(
     });
   }
 
-  if (intake.additionalNotes) {
+  if (decrypted.additionalNotes) {
     sections.push({
       title: t.notes,
-      items: [{ label: "", value: intake.additionalNotes }],
+      items: [{ label: "", value: decrypted.additionalNotes }],
     });
   }
 

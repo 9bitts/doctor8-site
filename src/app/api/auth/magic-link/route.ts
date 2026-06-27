@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { decrypt } from "@/lib/encryption";
+import { decrypt, encrypt } from "@/lib/encryption";
 import { sendMagicLinkLogin } from "@/lib/email";
 import { nanoid } from "nanoid";
 import { z } from "zod";
@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
       await tx.patientProfile.create({
         data: {
           userId: newUser.id,
-          firstName: parsed.data.firstName,
-          lastName: parsed.data.lastName,
+          firstName: encrypt(parsed.data.firstName),
+          lastName: encrypt(parsed.data.lastName),
         },
       });
 

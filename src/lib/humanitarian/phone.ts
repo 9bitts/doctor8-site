@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
+import { decryptIdentificationData, encryptIdentificationData } from "@/lib/humanitarian/intake-encryption";
+import { encryptUserPhone, userPhoneDigits } from "@/lib/user-phone";
 import type { IdentificationData } from "@/lib/humanitarian/anamnese";
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -73,7 +75,7 @@ export async function resolvePatientHumanitarianPhone(patientUserId: string): Pr
   ]);
 
   const fromIntake = phoneFromIdentification(
-    intake?.identificationData as IdentificationData | null,
+    decryptIdentificationData(intake?.identificationData as IdentificationData | null),
   );
   if (fromIntake) return fromIntake;
 
@@ -83,7 +85,7 @@ export async function resolvePatientHumanitarianPhone(patientUserId: string): Pr
   }
 
   if (user?.phone) {
-    const digits = user.phone.replace(/\D/g, "");
+    const digits = userPhoneDigits(user.phone);
     if (digits.length >= 12) return digits;
   }
 
@@ -104,7 +106,7 @@ export async function savePatientHumanitarianPhone(
   });
   if (!profile) throw new Error("NO_PROFILE");
 
-  const identificationPatch: IdentificationData = {
+  const phonePatch: IdentificationData = {
     phoneDdi: parts.ddi.replace(/\D/g, ""),
     phoneDdd: parts.ddd.replace(/\D/g, ""),
     phoneNumber: parts.number.replace(/\D/g, ""),
@@ -118,7 +120,7 @@ export async function savePatientHumanitarianPhone(
     });
     await tx.user.update({
       where: { id: patientUserId },
-      data: { phone: e164 },
+      data: { phone: encryptUserPhone(e164) },
     });
 
     if (campaignId) {
@@ -128,11 +130,13 @@ export async function savePatientHumanitarianPhone(
         },
       });
       if (intake) {
-        const prev = (intake.identificationData as IdentificationData | null) ?? {};
+        const prev = decryptIdentificationData(
+          intake.identificationData as IdentificationData | null,
+        ) ?? {};
         await tx.humanitarianIntake.update({
           where: { id: intake.id },
           data: {
-            identificationData: { ...prev, ...identificationPatch },
+            identificationData: encryptIdentificationData({ ...prev, ...phonePatch }),
           },
         });
       }

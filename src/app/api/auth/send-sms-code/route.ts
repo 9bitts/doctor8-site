@@ -5,11 +5,12 @@ import { db } from "@/lib/db";
 import { isAccountVerified } from "@/lib/account-verified";
 import { normalizeSmsPhone } from "@/lib/phone";
 import {
+  isSmsConfigured,
   sendOtpSms,
   startTwilioVerification,
-  isSmsConfigured,
   usesTwilioVerify,
 } from "@/lib/sms";
+import { encryptUserPhone } from "@/lib/user-phone";
 import {
   generateSmsCode,
   smsOtpIdentifier,
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     await db.user.update({
       where: { id: user.id },
-      data: { phone: normalizedPhone },
+      data: { phone: encryptUserPhone(normalizedPhone) },
     });
 
     if (usesTwilioVerify()) {

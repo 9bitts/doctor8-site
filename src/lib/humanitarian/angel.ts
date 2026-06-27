@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
+import { decryptIdentificationData } from "@/lib/humanitarian/intake-encryption";
 import type { Lang } from "@/lib/i18n/translations";
 import type { IdentificationData } from "@/lib/humanitarian/anamnese";
 import type { AngelApprovalStatus } from "@prisma/client";
@@ -85,7 +86,9 @@ export async function listAngelFollowUpPatients(campaignId: string, lang: Lang) 
 
   return Array.from(byPatient.values()).map((entry) => {
     const pp = entry.patientUser.patientProfile;
-    const idData = (entry.intake?.identificationData ?? {}) as IdentificationData;
+    const idData = decryptIdentificationData(
+      (entry.intake?.identificationData ?? null) as IdentificationData | null,
+    ) ?? ({} as IdentificationData);
     const phone = idData.phone || "";
     const lastFollowUp = entry.angelFollowUps[0] ?? null;
 
@@ -141,7 +144,9 @@ export async function getAngelPatientDetail(
     select: { patientProfile: { select: { firstName: true, lastName: true } } },
   });
 
-  const idData = (intake.identificationData ?? {}) as IdentificationData;
+  const idData = decryptIdentificationData(
+    (intake.identificationData ?? null) as IdentificationData | null,
+  ) ?? ({} as IdentificationData);
 
   return {
     patientUserId,

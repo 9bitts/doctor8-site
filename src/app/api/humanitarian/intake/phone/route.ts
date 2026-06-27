@@ -8,6 +8,8 @@ import {
   resolvePatientHumanitarianPhone,
   savePatientHumanitarianPhone,
 } from "@/lib/humanitarian/phone";
+import { decryptIdentificationData } from "@/lib/humanitarian/intake-encryption";
+import type { IdentificationData } from "@/lib/humanitarian/anamnese";
 
 const schema = z.object({
   campaignSlug: z.string(),
@@ -39,12 +41,9 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  const idData = intake?.identificationData as {
-    phoneDdi?: string;
-    phoneDdd?: string;
-    phoneNumber?: string;
-    phone?: string;
-  } | null;
+  const idData = decryptIdentificationData(
+    intake?.identificationData as IdentificationData | null,
+  );
 
   if (idData?.phoneDdi && idData?.phoneDdd && idData?.phoneNumber) {
     parts = {

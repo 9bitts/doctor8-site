@@ -11,6 +11,7 @@ import {
 } from "@/lib/sms";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { encryptUserPhone, userPhonesMatch } from "@/lib/user-phone";
 
 const RESET_SMS_PREFIX = "reset-sms:";
 
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       if (pending.token !== code) {
         return NextResponse.json({ error: "INVALID_CODE" }, { status: 400 });
       }
-      if (user.phone && user.phone !== normalizedPhone) {
+      if (user.phone && !userPhonesMatch(user.phone, normalizedPhone)) {
         return NextResponse.json({ error: "INVALID_CODE" }, { status: 400 });
       }
     }
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
         where: { id: user.id },
         data: {
           passwordHash,
-          phone: normalizedPhone,
+          phone: encryptUserPhone(normalizedPhone),
           failedLoginAttempts: 0,
           lockedUntil: null,
         },

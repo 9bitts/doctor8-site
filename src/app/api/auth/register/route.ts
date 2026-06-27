@@ -17,6 +17,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { UserRole, UserRegion, ConsentType } from "@prisma/client";
 import { sendEmailVerification } from "@/lib/email";
+import { encrypt } from "@/lib/encryption";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -125,8 +126,8 @@ export async function POST(req: NextRequest) {
         await tx.patientProfile.create({
           data: {
             userId: newUser.id,
-            firstName,
-            lastName,
+            firstName: encrypt(firstName),
+            lastName: encrypt(lastName),
           },
         });
 

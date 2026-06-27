@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { isAccountVerified } from "@/lib/account-verified";
 import { checkTwilioVerification, usesTwilioVerify } from "@/lib/sms";
 import { smsOtpIdentifier } from "@/lib/sms-otp";
+import { safeDecryptPhone } from "@/lib/user-phone";
 
 const MAX_ATTEMPTS = 5;
 
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     const attemptsId = attemptsIdentifier(normalizedEmail);
 
     if (usesTwilioVerify()) {
-      const phone = user.phone;
+      const phone = safeDecryptPhone(user.phone);
       if (!phone) {
         return NextResponse.json({ error: "INVALID_CODE" }, { status: 400 });
       }
