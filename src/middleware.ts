@@ -11,6 +11,7 @@ const PUBLIC_ROUTES = [
   "/login",
   "/register",
   "/register/professional",
+  "/sos-venezuela",
   "/register/organization",
   "/register/organization/staff",
   "/callback",
@@ -58,7 +59,16 @@ export default auth((req) => {
     const role = req.nextUrl.searchParams.get("role");
     if (role === "PROFESSIONAL" || role === "PSYCHOANALYST") {
       const url = req.nextUrl.clone();
-      url.pathname = "/register/professional";
+      url.pathname = "/register/professional/signup";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  if (pathname === "/register/professional") {
+    const role = req.nextUrl.searchParams.get("role");
+    if (role === "PROFESSIONAL" || role === "PSYCHOANALYST") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/register/professional/signup";
       return NextResponse.redirect(url);
     }
   }
