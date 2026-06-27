@@ -6,7 +6,7 @@
 // certificate (BirdID/VIDaaS, etc.) is chosen on Lacuna's hosted page during the
 // signing flow, triggered from the prescriptions screen.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/I18nProvider";
@@ -61,6 +61,7 @@ export default function ProfessionalAccountPage() {
   const [subMsgTone, setSubMsgTone] = useState<"success" | "error" | "warning">("success");
   const [billingRegion, setBillingRegion] = useState<BillingRegion>("BR");
   const [profileRegion, setProfileRegion] = useState<BillingRegion>("US");
+  const pendingCheckout = useRef(false);
 
   const isPasswordValid = PASSWORD_RULES.every((r) => r.test(newPwd));
   const passwordsMatch  = newPwd === confirmPwd;
@@ -92,8 +93,17 @@ export default function ProfessionalAccountPage() {
       setSubMsgTone("success");
       setSubMsg("Doctor Connection ativado com sucesso.");
       window.history.replaceState({}, "", "/professional/account");
+    } else if (params.get("subscribe") === "doctor-connection") {
+      pendingCheckout.current = true;
+      window.history.replaceState({}, "", "/professional/account");
     }
   }, []);
+
+  useEffect(() => {
+    if (!pendingCheckout.current || subLoading) return;
+    pendingCheckout.current = false;
+    void startSubscription();
+  }, [subLoading, billingRegion]);
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();

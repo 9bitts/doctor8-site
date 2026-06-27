@@ -13,6 +13,7 @@ import { LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { getProLandingContent, ProLandingContent } from "@/lib/professional-landing-content";
 import { DEFAULT_VENEZUELA_POOLS } from "@/lib/humanitarian/constants";
 import { detectInitialLang, LANG_KEY } from "@/components/auth/register-shared";
+import ProPlanCta from "@/components/professional/ProPlanCta";
 
 const FEAT_ICONS: Record<string, LucideIcon> = {
   calendar: Calendar,
@@ -51,7 +52,7 @@ function LangSwitcher({ lang, onChange }: { lang: Lang; onChange: (l: Lang) => v
           type="button"
           onClick={() => onChange(l.code)}
           className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
-            lang === l.code ? "bg-accent-500 text-white" : "text-white/60 hover:text-white"
+            lang === l.code ? "bg-brand-500 text-white" : "text-white/60 hover:text-white"
           }`}
         >
           {l.flag}
@@ -68,13 +69,13 @@ function CookieBanner({ c }: { c: ProLandingContent }) {
   }, []);
   if (!visible) return null;
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[999] flex flex-wrap items-center gap-4 border-t-2 border-accent-500 bg-d8-dark px-6 py-3.5">
+    <div className="fixed bottom-0 left-0 right-0 z-[999] flex flex-wrap items-center gap-4 border-t-2 border-brand-500 bg-d8-dark px-6 py-3.5">
       <p className="min-w-[200px] flex-1 text-[13px] text-white/75">{c.cookie.text}</p>
       <div className="flex shrink-0 gap-2">
         <button
           type="button"
           onClick={() => { localStorage.setItem(COOKIE_KEY, "ok"); setVisible(false); }}
-          className="rounded-lg bg-accent-500 px-5 py-2 text-[13px] font-semibold text-white hover:bg-accent-600"
+          className="rounded-lg bg-brand-500 px-5 py-2 text-[13px] font-semibold text-white hover:bg-brand-600"
         >
           {c.cookie.accept}
         </button>
@@ -93,11 +94,11 @@ function CookieBanner({ c }: { c: ProLandingContent }) {
 export function ProNav({ c, lang, onLangChange }: { c: ProLandingContent; lang: Lang; onLangChange: (l: Lang) => void }) {
   const [open, setOpen] = useState(false);
   const links = [
+    { href: "#voluntariado", label: c.nav.volunteer },
     { href: "#funcionalidades", label: c.nav.features },
     { href: "#como-funciona", label: c.nav.how },
     { href: "#prescricoes", label: c.nav.prescriptions },
     { href: "#agenda", label: c.nav.schedule },
-    { href: "#voluntariado", label: c.nav.volunteer },
     { href: "#planos", label: c.nav.plans },
   ];
 
@@ -105,7 +106,7 @@ export function ProNav({ c, lang, onLangChange }: { c: ProLandingContent; lang: 
     <nav className="sticky top-0 z-[200] border-b border-white/[0.07] bg-d8-dark/95 backdrop-blur-md">
       <div className="mx-auto flex h-[66px] max-w-[1180px] items-center gap-6 px-6">
         <Link href="/register/professional" className="shrink-0 text-[21px] font-extrabold tracking-tight text-white">
-          Doctor<span className="text-accent-500">8</span>
+          Doctor<span className="text-brand-400">8</span>
         </Link>
         <ul className={`${open ? "flex" : "hidden"} absolute left-0 right-0 top-[66px] flex-col gap-4 border-b border-white/10 bg-d8-dark p-6 md:static md:flex md:flex-1 md:flex-row md:border-0 md:bg-transparent md:p-0`}>
           {links.map((l) => (
@@ -121,7 +122,7 @@ export function ProNav({ c, lang, onLangChange }: { c: ProLandingContent; lang: 
           <Link href="/login" className="hidden rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/75 transition hover:border-white/45 hover:text-white sm:inline-block">
             {c.nav.signIn}
           </Link>
-          <Link href="/register/professional/signup" className="rounded-lg bg-accent-500 px-5 py-2 text-sm font-bold text-white transition hover:bg-accent-600">
+          <Link href="/register/professional/signup" className="rounded-lg bg-brand-500 px-5 py-2 text-sm font-bold text-white transition hover:bg-brand-600">
             {c.nav.signUp}
           </Link>
           <button type="button" onClick={() => setOpen(!open)} className="text-white md:hidden" aria-label="Menu">
@@ -140,7 +141,7 @@ export function ProFooter({ c }: { c: ProLandingContent }) {
       <div className="mx-auto max-w-[1180px]">
         <div className="mb-12 grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
-            <p className="mb-3 text-xl font-extrabold text-white">Doctor<span className="text-accent-500">8</span></p>
+            <p className="mb-3 text-xl font-extrabold text-white">Doctor<span className="text-brand-400">8</span></p>
             <p className="mb-5 text-[13px] leading-relaxed text-white/50">{c.footer.desc}</p>
             <div className="flex gap-2.5">
               <a href="https://instagram.com/doctor8oficial" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.07] text-white/70 transition hover:bg-white/15">
@@ -267,12 +268,14 @@ function VolunteerBanner({ c, lang }: { c: ProLandingContent; lang: Lang }) {
 export default function ProfessionalLandingClient() {
   const { lang, setLang, c } = useProLang();
   const signup = "/register/professional/signup";
-  const currency = lang === "pt" ? "R$" : "$";
+  const currency = lang === "pt" ? "R$" : lang === "es" ? "\u20ac" : "$";
 
   return (
     <div className="min-h-screen bg-white font-sans text-d8-text antialiased">
       <CookieBanner c={c} />
       <ProNav c={c} lang={lang} onLangChange={setLang} />
+
+      <VolunteerBanner c={c} lang={lang} />
 
       {/* Hero */}
       <section className="relative flex min-h-[88vh] items-center overflow-hidden bg-d8-dark px-6">
@@ -280,8 +283,8 @@ export default function ProfessionalLandingClient() {
         <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: "repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 60px),repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 60px)" }} />
         <div className="relative z-10 mx-auto grid w-full max-w-[1180px] items-center gap-16 py-20 lg:grid-cols-[1fr_420px]">
           <div>
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-accent-500/40 bg-accent-500/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest text-accent-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent-500" />
+            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-500/40 bg-brand-500/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
               {c.hero.pill}
             </span>
             <h1 className="mb-5 text-[clamp(2.5rem,5.5vw,3.875rem)] font-extrabold leading-[1.1] tracking-tight text-white">
@@ -290,7 +293,7 @@ export default function ProfessionalLandingClient() {
             </h1>
             <p className="mb-9 max-w-[540px] text-lg text-white/60">{c.hero.sub}</p>
             <div className="mb-10 flex flex-wrap gap-3">
-              <Link href={signup} className="inline-flex items-center gap-2 rounded-2xl bg-accent-500 px-8 py-4 text-[15px] font-bold text-white transition hover:-translate-y-px hover:bg-accent-600 hover:shadow-[0_8px_28px_rgba(224,89,48,0.4)]">
+              <Link href={signup} className="inline-flex items-center gap-2 rounded-2xl bg-brand-500 px-8 py-4 text-[15px] font-bold text-white transition hover:-translate-y-px hover:bg-brand-600 hover:shadow-[0_8px_28px_rgba(26,110,140,0.4)]">
                 {c.hero.ctaPrimary} <ArrowRight size={16} />
               </Link>
               <a href="#como-funciona" className="rounded-2xl border border-white/20 px-7 py-4 text-[15px] font-semibold text-white/85 transition hover:border-white/50 hover:text-white">
@@ -300,7 +303,7 @@ export default function ProfessionalLandingClient() {
             <div className="flex flex-wrap gap-6">
               {c.hero.proof.map((p) => (
                 <span key={p} className="flex items-center gap-2 text-[13px] font-medium text-white/55">
-                  <Check size={14} className="text-accent-500" /> {p}
+                  <Check size={14} className="text-brand-400" /> {p}
                 </span>
               ))}
             </div>
@@ -309,7 +312,7 @@ export default function ProfessionalLandingClient() {
           {/* Dashboard mockup */}
           <div className="relative hidden lg:block">
             <div className="absolute -left-8 -top-5 z-10 flex min-w-[190px] items-center gap-2.5 rounded-xl bg-white p-3.5 shadow-2xl">
-              <CreditCard size={22} className="text-accent-500" />
+              <CreditCard size={22} className="text-brand-400" />
               <div>
                 <p className="text-xs font-semibold text-d8-dark">{c.hero.notifTitle}</p>
                 <p className="text-[11px] text-d8-muted">{c.hero.notifSub}</p>
@@ -340,12 +343,12 @@ export default function ProfessionalLandingClient() {
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-white/30">{c.hero.nextAppts}</p>
                 {c.hero.appts.map((a) => (
                   <div key={a.name} className="mb-1.5 flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.04] p-2.5">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${a.color === "green" ? "bg-emerald-400" : a.color === "blue" ? "bg-blue-400" : "bg-accent-500"}`} />
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${a.color === "green" ? "bg-emerald-400" : a.color === "blue" ? "bg-blue-400" : "bg-brand-400"}`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-white/85">{a.name}</p>
                       <p className="text-[10px] text-white/40">{a.meta}</p>
                     </div>
-                    <span className={`rounded-xl px-2 py-0.5 text-[10px] font-bold ${a.color === "green" ? "bg-emerald-500/15 text-emerald-400" : a.color === "blue" ? "bg-blue-500/15 text-blue-300" : "bg-accent-500/20 text-accent-400"}`}>
+                    <span className={`rounded-xl px-2 py-0.5 text-[10px] font-bold ${a.color === "green" ? "bg-emerald-500/15 text-emerald-400" : a.color === "blue" ? "bg-blue-500/15 text-blue-300" : "bg-brand-500/20 text-brand-300"}`}>
                       {a.badge}
                     </span>
                   </div>
@@ -368,13 +371,11 @@ export default function ProfessionalLandingClient() {
         </div>
       </div>
 
-      <VolunteerBanner c={c} lang={lang} />
-
       {/* Features */}
       <section id="funcionalidades" className="bg-d8-off px-6 py-20">
         <div className="mx-auto max-w-[1180px]">
           <div className="mb-14">
-            <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-accent-500">{c.features.eyebrow}</span>
+            <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-brand-500">{c.features.eyebrow}</span>
             <h2 className="mb-3.5 whitespace-pre-line text-[clamp(1.875rem,3.5vw,2.75rem)] font-extrabold tracking-tight text-d8-dark">{c.features.title}</h2>
             <p className="max-w-[560px] text-[17px] text-d8-muted">{c.features.sub}</p>
           </div>
@@ -384,15 +385,15 @@ export default function ProfessionalLandingClient() {
               return (
                 <FadeIn key={feat.title} delay={i * 100}>
                   <div className="group relative overflow-hidden rounded-2xl border-[1.5px] border-d8-border bg-white p-7 transition hover:-translate-y-1 hover:border-brand-500 hover:shadow-lg">
-                    <div className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-gradient-to-r from-accent-500 to-brand-500 transition-transform group-hover:scale-x-100" />
-                    <div className="mb-4 flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-accent-50 text-accent-500">
+                    <div className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-gradient-to-r from-brand-500 to-accent-500 transition-transform group-hover:scale-x-100" />
+                    <div className="mb-4 flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-brand-50 text-brand-500">
                       <Icon size={24} />
                     </div>
                     <h3 className="mb-2.5 text-[17px] font-bold text-d8-dark">{feat.title}</h3>
                     <p className="text-sm leading-relaxed text-d8-muted">{feat.desc}</p>
                     <ul className="mt-3.5 flex flex-col gap-1.5 border-t border-d8-border pt-3.5">
                       {feat.details.map((d) => (
-                        <li key={d} className="relative pl-4 text-[13px] text-d8-text before:absolute before:left-0 before:top-2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-accent-500">{d}</li>
+                        <li key={d} className="relative pl-4 text-[13px] text-d8-text before:absolute before:left-0 before:top-2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-brand-500">{d}</li>
                       ))}
                     </ul>
                   </div>
@@ -408,13 +409,13 @@ export default function ProfessionalLandingClient() {
         <div className="mx-auto max-w-[1180px]">
           <div className="grid items-center gap-16 lg:grid-cols-2">
             <div>
-              <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-accent-500">{c.how.eyebrow}</span>
+              <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-brand-500">{c.how.eyebrow}</span>
               <h2 className="mb-3.5 text-[clamp(1.875rem,3.5vw,2.75rem)] font-extrabold tracking-tight text-d8-dark">{c.how.title}</h2>
               <p className="mb-8 max-w-[560px] text-[17px] text-d8-muted">{c.how.sub}</p>
               <div className="flex flex-col">
                 {c.how.steps.map((step, i) => (
                   <div key={step.title} className="flex gap-5 border-b border-d8-border py-5 last:border-0">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-base font-extrabold text-white ${i === 0 ? "border-accent-500 bg-accent-500" : "border-d8-border bg-d8-dark"}`}>
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-base font-extrabold text-white ${i === 0 ? "border-brand-500 bg-brand-500" : "border-d8-border bg-d8-dark"}`}>
                       {i + 1}
                     </div>
                     <div>
@@ -442,7 +443,7 @@ export default function ProfessionalLandingClient() {
                   <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-d8-muted">{c.how.phoneSection}</p>
                   {c.how.phoneAppts.map((a) => (
                     <div key={a.name} className="mb-1.5 flex items-center gap-2 rounded-lg border border-d8-border bg-d8-off p-2.5">
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-accent-500" />
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-brand-500" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[11px] font-bold text-d8-dark">{a.name}</p>
                         <p className="text-[10px] text-d8-muted">{a.time}</p>
@@ -467,13 +468,13 @@ export default function ProfessionalLandingClient() {
         <div className="mx-auto max-w-[1180px]">
           <div className="grid items-center gap-16 lg:grid-cols-2">
             <div>
-              <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-accent-500">{c.prescriptions.eyebrow}</span>
+              <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-brand-500">{c.prescriptions.eyebrow}</span>
               <h2 className="mb-3.5 text-[clamp(1.5rem,2.8vw,2.125rem)] font-extrabold tracking-tight text-d8-dark">{c.prescriptions.title}</h2>
               <p className="mb-5 text-base leading-relaxed text-d8-muted">{c.prescriptions.desc}</p>
               <ul className="flex flex-col gap-2.5">
                 {c.prescriptions.points.map((p) => (
                   <li key={p} className="flex items-start gap-2.5 text-[15px] text-d8-text">
-                    <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-accent-500 text-[11px] font-extrabold text-white">{"\u2713"}</span>
+                    <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand-500 text-[11px] font-extrabold text-white">{"\u2713"}</span>
                     {p}
                   </li>
                 ))}
@@ -498,7 +499,7 @@ export default function ProfessionalLandingClient() {
                     <p className="text-sm font-bold text-d8-dark">{drug.name}</p>
                     <p className="mt-0.5 text-xs text-d8-muted">{drug.dose}</p>
                   </div>
-                  {drug.tag && <span className="rounded-lg bg-accent-500/10 px-2 py-0.5 text-[10px] font-bold text-accent-500">{drug.tag}</span>}
+                  {drug.tag && <span className="rounded-lg bg-brand-500/10 px-2 py-0.5 text-[10px] font-bold text-brand-400">{drug.tag}</span>}
                 </div>
               ))}
               <div className="mt-4 flex items-center gap-2 border-t border-d8-border pt-3.5 text-[11px] text-d8-muted">
@@ -540,13 +541,13 @@ export default function ProfessionalLandingClient() {
               </div>
             </div>
             <div className="order-1 lg:order-2">
-              <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-accent-500">{c.schedule.eyebrow}</span>
+              <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-brand-500">{c.schedule.eyebrow}</span>
               <h2 className="mb-3.5 text-[clamp(1.5rem,2.8vw,2.125rem)] font-extrabold tracking-tight text-d8-dark">{c.schedule.title}</h2>
               <p className="mb-5 text-base leading-relaxed text-d8-muted">{c.schedule.desc}</p>
               <ul className="flex flex-col gap-2.5">
                 {c.schedule.points.map((p) => (
                   <li key={p} className="flex items-start gap-2.5 text-[15px] text-d8-text">
-                    <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-accent-500 text-[11px] font-extrabold text-white">{"\u2713"}</span>
+                    <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand-500 text-[11px] font-extrabold text-white">{"\u2713"}</span>
                     {p}
                   </li>
                 ))}
@@ -560,7 +561,7 @@ export default function ProfessionalLandingClient() {
       <section className="bg-d8-off px-6 py-20">
         <div className="mx-auto max-w-[1180px]">
           <div className="mb-12 text-center">
-            <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-accent-500">{c.professions.eyebrow}</span>
+            <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-brand-500">{c.professions.eyebrow}</span>
             <h2 className="mb-3.5 text-[clamp(1.875rem,3.5vw,2.75rem)] font-extrabold tracking-tight text-d8-dark">{c.professions.title}</h2>
             <p className="mx-auto max-w-[560px] text-[17px] text-d8-muted">{c.professions.sub}</p>
           </div>
@@ -575,7 +576,7 @@ export default function ProfessionalLandingClient() {
                   </div>
                   <h3 className="mb-1.5 font-bold text-d8-dark">{prof.title}</h3>
                   <p className="mb-3 text-sm leading-relaxed text-d8-muted line-clamp-2">{prof.subtitle}</p>
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-accent-500 group-hover:gap-2 transition-all">
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-500 group-hover:gap-2 transition-all">
                     {c.professions.cta} <ChevronRight size={14} />
                   </span>
                 </Link>
@@ -589,13 +590,13 @@ export default function ProfessionalLandingClient() {
       <section id="planos" className="bg-d8-dark px-6 py-20">
         <div className="mx-auto max-w-[1180px]">
           <div className="mb-12 text-center">
-            <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-accent-400">{c.pricing.eyebrow}</span>
+            <span className="mb-3 inline-block text-xs font-bold uppercase tracking-widest text-brand-400">{c.pricing.eyebrow}</span>
             <h2 className="mb-3.5 text-[clamp(1.875rem,3.5vw,2.75rem)] font-extrabold tracking-tight text-white">{c.pricing.title}</h2>
             <p className="mx-auto max-w-[560px] text-[17px] text-white/50">{c.pricing.sub}</p>
           </div>
           <div className="grid gap-5 lg:grid-cols-3">
             {c.pricing.plans.map((plan) => (
-              <div key={plan.name} className={`rounded-[20px] border-[1.5px] p-8 transition ${plan.featured ? "scale-[1.03] border-accent-500 bg-accent-500" : "border-white/10 bg-white/[0.04]"}`}>
+              <div key={plan.name} className={`rounded-[20px] border-[1.5px] p-8 transition ${plan.featured ? "scale-[1.03] border-brand-400 bg-brand-500" : "border-white/10 bg-white/[0.04]"}`}>
                 <span className="mb-5 inline-block rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white">{plan.badge}</span>
                 <p className="text-[22px] font-extrabold text-white">{plan.name}</p>
                 <p className="my-3 text-[44px] font-extrabold leading-none text-white">
@@ -614,12 +615,7 @@ export default function ProfessionalLandingClient() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href={plan.href ?? signup}
-                  className={`block w-full rounded-[10px] py-3.5 text-center text-[15px] font-bold transition ${plan.featured ? "bg-white text-accent-500 hover:bg-white/90" : "border-[1.5px] border-white/30 text-white hover:bg-white/10"}`}
-                >
-                  {plan.cta}
-                </Link>
+                <ProPlanCta plan={plan} signup={signup} featured={plan.featured} />
               </div>
             ))}
           </div>
@@ -643,13 +639,13 @@ export default function ProfessionalLandingClient() {
 
       {/* Final CTA */}
       <section className="relative overflow-hidden bg-d8-dark px-6 py-24 text-center">
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse,rgba(224,89,48,0.14),transparent_65%)]" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse,rgba(26,110,140,0.18),transparent_65%)]" />
         <h2 className="relative z-10 mb-4 text-[clamp(2.125rem,4.5vw,3.375rem)] font-extrabold text-white">
           {c.ctaFinal.title} <em className="not-italic text-accent-500">{c.ctaFinal.titleEm}</em><br />{c.ctaFinal.sub}
         </h2>
         <p className="relative z-10 mx-auto mb-10 max-w-[540px] text-lg text-white/55" />
         <div className="relative z-10 flex flex-wrap justify-center gap-3.5">
-          <Link href={signup} className="inline-flex items-center gap-2 rounded-2xl bg-accent-500 px-9 py-4 text-base font-bold text-white transition hover:bg-accent-600">
+          <Link href={signup} className="inline-flex items-center gap-2 rounded-2xl bg-brand-500 px-9 py-4 text-base font-bold text-white transition hover:bg-brand-600">
             {c.ctaFinal.primary} <ArrowRight size={16} />
           </Link>
           <a href="mailto:contato@doctor8.org" className="rounded-2xl border border-white/20 px-7 py-4 text-base font-semibold text-white/85 transition hover:border-white/50 hover:text-white">

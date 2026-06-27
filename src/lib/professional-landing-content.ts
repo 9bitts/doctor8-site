@@ -17,6 +17,7 @@ export type ProPlan = {
   cta: string;
   featured?: boolean;
   href?: string;
+  checkout?: boolean;
 };
 
 export type ProfessionContent = {
@@ -341,10 +342,11 @@ const pt: ProLandingContent = {
       },
       {
         badge: "🔥 Mais popular",
-        name: "Profissional",
-        price: "149",
+        name: "Doctor Connection",
+        price: "89,90",
         period: "Para quem quer crescer",
         featured: true,
+        checkout: true,
         features: [
           { text: "Consultas ilimitadas", included: true },
           { text: "Teleconsulta integrada", included: true },
@@ -363,7 +365,7 @@ const pt: ProLandingContent = {
         period: "Para clínicas e grupos",
         features: [
           { text: "Até 5 profissionais", included: true },
-          { text: "Tudo do plano Profissional", included: true },
+          { text: "Tudo do Doctor Connection", included: true },
           { text: "Painel administrativo", included: true },
           { text: "Relatérios consolidados", included: true },
           { text: "Onboarding dedicado", included: true },
@@ -684,8 +686,8 @@ const en: ProLandingContent = {
     note: "* Prices subject to change. Monthly billing, no lock-in.",
     plans: [
       { badge: "Starter", name: "Free", price: "0", period: "To start and test", features: [{ text: "Up to 20 visits/month", included: true }, { text: "Integrated telehealth", included: true }, { text: "Digital records", included: true }, { text: "Digital prescriptions", included: true }, { text: "Automatic payments", included: false }, { text: "Indexed public profile", included: false }, { text: "Priority support", included: false }], cta: "Start free" },
-      { badge: "🔥 Most popular", name: "Professional", price: "149", period: "For growing practices", featured: true, features: [{ text: "Unlimited visits", included: true }, { text: "Integrated telehealth", included: true }, { text: "Full digital records", included: true }, { text: "Digital prescriptions", included: true }, { text: "Automatic payments", included: true }, { text: "Indexed public profile", included: true }, { text: "Priority support", included: true }], cta: "Subscribe now" },
-      { badge: "Clinic", name: "Team", price: "399", period: "For clinics and groups", features: [{ text: "Up to 5 professionals", included: true }, { text: "Everything in Professional", included: true }, { text: "Admin dashboard", included: true }, { text: "Consolidated reports", included: true }, { text: "Dedicated onboarding", included: true }, { text: "DPA contract (LGPD)", included: true }, { text: "Priority support", included: true }], cta: "Talk to our team", href: "mailto:contato@doctor8.org" },
+      { badge: "🔥 Most popular", name: "Doctor Connection", price: "24.90", period: "For growing practices", featured: true, checkout: true, features: [{ text: "Unlimited visits", included: true }, { text: "Integrated telehealth", included: true }, { text: "Full digital records", included: true }, { text: "Digital prescriptions", included: true }, { text: "Automatic payments", included: true }, { text: "Indexed public profile", included: true }, { text: "Priority support", included: true }], cta: "Subscribe now" },
+      { badge: "Clinic", name: "Team", price: "399", period: "For clinics and groups", features: [{ text: "Up to 5 professionals", included: true }, { text: "Everything in Doctor Connection", included: true }, { text: "Admin dashboard", included: true }, { text: "Consolidated reports", included: true }, { text: "Dedicated onboarding", included: true }, { text: "DPA contract (LGPD)", included: true }, { text: "Priority support", included: true }], cta: "Talk to our team", href: "mailto:contato@doctor8.org" },
     ],
   },
   lgpd: {
@@ -830,8 +832,8 @@ const es: ProLandingContent = {
     note: "* Precios sujetos a cambio. Facturación mensual, sin permanencia.",
     plans: [
       { badge: "Starter", name: "Gratuito", price: "0", period: "Para empezar y probar", features: [{ text: "Hasta 20 consultas/mes", included: true }, { text: "Teleconsulta integrada", included: true }, { text: "Historial digital", included: true }, { text: "Prescripciones digitales", included: true }, { text: "Pagos automáticos", included: false }, { text: "Perfil público indexado", included: false }, { text: "Soporte prioritario", included: false }], cta: "Empezar gratis" },
-      { badge: "🔥 Más popular", name: "Profesional", price: "149", period: "Para quien quiere crecer", featured: true, features: [{ text: "Consultas ilimitadas", included: true }, { text: "Teleconsulta integrada", included: true }, { text: "Historial digital completo", included: true }, { text: "Prescripciones digitales", included: true }, { text: "Pagos automáticos", included: true }, { text: "Perfil público indexado", included: true }, { text: "Soporte prioritario", included: true }], cta: "Suscribirse ahora" },
-      { badge: "Clínica", name: "Equipo", price: "399", period: "Para clínicas y grupos", features: [{ text: "Hasta 5 profesionales", included: true }, { text: "Todo del plan Profesional", included: true }, { text: "Panel administrativo", included: true }, { text: "Informes consolidados", included: true }, { text: "Onboarding dedicado", included: true }, { text: "Contrato DPA (LGPD)", included: true }, { text: "Soporte prioritario", included: true }], cta: "Hablar con el equipo", href: "mailto:contato@doctor8.org" },
+      { badge: "🔥 Más popular", name: "Doctor Connection", price: "22,90", period: "Para quien quiere crecer", featured: true, checkout: true, features: [{ text: "Consultas ilimitadas", included: true }, { text: "Teleconsulta integrada", included: true }, { text: "Historial digital completo", included: true }, { text: "Prescripciones digitales", included: true }, { text: "Pagos automáticos", included: true }, { text: "Perfil público indexado", included: true }, { text: "Soporte prioritario", included: true }], cta: "Suscribirse ahora" },
+      { badge: "Clínica", name: "Equipo", price: "399", period: "Para clínicas y grupos", features: [{ text: "Hasta 5 profesionales", included: true }, { text: "Todo del Doctor Connection", included: true }, { text: "Panel administrativo", included: true }, { text: "Informes consolidados", included: true }, { text: "Onboarding dedicado", included: true }, { text: "Contrato DPA (LGPD)", included: true }, { text: "Soporte prioritario", included: true }], cta: "Hablar con el equipo", href: "mailto:contato@doctor8.org" },
     ],
   },
   lgpd: {

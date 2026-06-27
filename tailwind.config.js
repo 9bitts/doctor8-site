@@ -8,14 +8,14 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          50: "#e8f2f6",
-          100: "#c5dde8",
+          50: "#e8f2f5",
+          100: "#c5dde5",
           200: "#9fc4d4",
-          400: "#3d8aa8",
-          500: "#216a86",
-          600: "#1a5569",
-          700: "#154558",
-          900: "#0c2a35",
+          400: "#2a85a3",
+          500: "#1a6e8c",
+          600: "#155a73",
+          700: "#114a5e",
+          900: "#0a2d3a",
         },
         accent: {
           50: "#fef3ef",
@@ -35,7 +35,7 @@ module.exports = {
         },
       },
       backgroundImage: {
-        "d8-hero": "linear-gradient(135deg, #0c1a27 0%, #0d2d42 60%, #0f4d66 100%)",
+        "d8-hero": "linear-gradient(135deg, #0c1a27 0%, #0d2d42 60%, #1a6e8c 100%)",
         "d8-club": "linear-gradient(135deg, #0c1a27 0%, #142333 100%)",
         "d8-cannabis": "linear-gradient(135deg, #0f2718 0%, #1a3d20 100%)",
       },

@@ -915,7 +915,7 @@ export default function PrescriptionsPage() {
                         <div className="grid sm:grid-cols-2 gap-3">
                           <div>
                             <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.dosageLabel")} *</label>
-                            <input type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder="500mg" className="rx-inp-sm" />
+                            <input type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder={t("rx.medDosagePlaceholder")} className="rx-inp-sm" />
                           </div>
                           <div>
                             <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.frequencyLabel")} *</label>
