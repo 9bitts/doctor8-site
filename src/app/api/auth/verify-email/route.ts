@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
 
   if (!token) {
-    return redirect(req, "/login?error=InvalidVerificationLink");
+    return redirect(req, "/verify-email/confirmed?error=invalid");
   }
 
   try {
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!verificationToken) {
-      return redirect(req, "/login?error=InvalidVerificationLink");
+      return redirect(req, "/verify-email/confirmed?error=invalid");
     }
 
     if (verificationToken.expires < new Date()) {
@@ -39,9 +39,9 @@ export async function GET(req: NextRequest) {
 
     await db.verificationToken.delete({ where: { token } });
 
-    return redirect(req, "/login?verified=true");
+    return redirect(req, "/verify-email/confirmed");
   } catch (error) {
     console.error("[VERIFY EMAIL ERROR]", error);
-    return redirect(req, "/login?error=VerificationFailed");
+    return redirect(req, "/verify-email/confirmed?error=failed");
   }
 }
