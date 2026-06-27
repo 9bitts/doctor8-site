@@ -27,7 +27,7 @@ interface IntakeRow {
 type FilterKey = "all" | "crisis_urgent" | "incomplete" | "vulnerable";
 
 const STATUS_LABEL: Record<string, string> = {
-  TRIAGE_ONLY: "S? triagem",
+  TRIAGE_ONLY: "S\u00f3 triagem",
   PARTIAL: "Parcial",
   COMPLETE: "Completa",
 };
@@ -134,7 +134,7 @@ export default function HumanitarianIntakesPanel({ slug = VENEZUELA_CAMPAIGN_SLU
                     <p className="text-sm font-semibold text-slate-800 truncate">{row.patientLabel}</p>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {STATUS_LABEL[row.status] || row.status}
-                      {row.serviceTypes.length > 0 && ` ? ${row.serviceTypes.join(", ")}`}
+                      {row.serviceTypes.length > 0 && ` \u00b7 ${row.serviceTypes.join(", ")}`}
                     </p>
                   </div>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${PRIORITY_COLOR[pri] || PRIORITY_COLOR.ROUTINE}`}>
@@ -152,8 +152,8 @@ export default function HumanitarianIntakesPanel({ slug = VENEZUELA_CAMPAIGN_SLU
                     <HumanitarianIntakeSummary summary={summary} lang="pt" compact />
                     <p className="text-[10px] text-slate-400">
                       Atualizado: {new Date(row.updatedAt).toLocaleString("pt-BR")}
-                      {row.consentAt && ` ? Consentimento: ${new Date(row.consentAt).toLocaleString("pt-BR")}`}
-                      {row.triageCompletedAt && ` ? Triagem: ${new Date(row.triageCompletedAt).toLocaleString("pt-BR")}`}
+                      {row.consentAt && ` \u00b7 Consentimento: ${new Date(row.consentAt).toLocaleString("pt-BR")}`}
+                      {row.triageCompletedAt && ` \u00b7 Triagem: ${new Date(row.triageCompletedAt).toLocaleString("pt-BR")}`}
                     </p>
                   </div>
                 )}
