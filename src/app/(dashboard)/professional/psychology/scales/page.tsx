@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, type Lang } from "@/lib/i18n/translations";
 import { PSYCHOLOGY_SCALES, type ScaleId } from "@/lib/psychology-scales";
+import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
+import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import {
   ArrowLeft, BarChart3, Loader2, Save, User, Search, CheckCircle2,
 } from "lucide-react";
@@ -30,6 +32,8 @@ export default function PsychologyScalesPage() {
   const [responses, setResponses] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
+  const [lockPatient, setLockPatient] = useState(false);
 
   const scale = PSYCHOLOGY_SCALES.find((s) => s.id === selectedScale)!;
 
@@ -44,6 +48,18 @@ export default function PsychologyScalesPage() {
         const chartsData = await chartsRes.json();
         setApplications(scalesData.applications || []);
         setCharts(chartsData.records || []);
+
+        const { patientRecordId, returnUrl, view } = readChartDeepLink();
+        if (returnUrl) setConsultReturnUrl(returnUrl);
+        if (patientRecordId && returnUrl) {
+          setLockPatient(true);
+          const chart = (chartsData.records || []).find((c: Chart) => c.id === patientRecordId)
+            || await fetchChartById(patientRecordId);
+          if (chart) {
+            setSelectedPatient(chart);
+            if (view === "apply") setView("apply");
+          }
+        }
       } catch { /* ignore */ }
       setLoading(false);
     })();
@@ -121,6 +137,11 @@ export default function PsychologyScalesPage() {
   if (view === "apply") {
     return (
       <div className="max-w-3xl mx-auto space-y-5 pb-24">
+        <VideoConsultReturnBanner
+          returnUrl={consultReturnUrl}
+          patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined}
+          lang={lang as "pt" | "en" | "es"}
+        />
         <button onClick={() => setView("list")} className="flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 font-medium">
           <ArrowLeft size={16} /> {t("psy.scales.back")}
         </button>
@@ -158,8 +179,12 @@ export default function PsychologyScalesPage() {
                 {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
               </div>
               <p className="font-medium text-slate-800 flex-1">{selectedPatient.firstName} {selectedPatient.lastName}</p>
+              {!lockPatient && (
               <button onClick={() => setSelectedPatient(null)} className="text-xs text-slate-500">{t("common.cancel")}</button>
+              )}
             </div>
+          ) : lockPatient ? (
+            <p className="text-sm text-slate-500">{t("psy.scales.selectPatient")}</p>
           ) : (
             <>
               <div className="relative">

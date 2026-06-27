@@ -15,6 +15,7 @@ interface ExamCreateViewProps {
   charts: Chart[];
   reuseHint?: boolean;
   initialPatient: Chart | null;
+  lockPatient?: boolean;
   initialItems: string[];
   initialNotes: string;
   initialCid: string;
@@ -24,7 +25,7 @@ interface ExamCreateViewProps {
 }
 
 export function ExamCreateView({
-  t, charts, reuseHint, initialPatient, initialItems, initialNotes, initialCid, initialTitle,
+  t, charts, reuseHint, initialPatient, lockPatient = false, initialItems, initialNotes, initialCid, initialTitle,
   onBack, onSaved,
 }: ExamCreateViewProps) {
   const [patientQuery, setPatientQuery] = useState("");
@@ -111,7 +112,9 @@ export function ExamCreateView({
 
       <Card title={t("rx2.selectPatient")}>
         {selectedPatient ? (
-          <PatientChip patient={selectedPatient} t={t} onClear={() => setSelectedPatient(null)} />
+          <PatientChip patient={selectedPatient} t={t} onClear={lockPatient ? undefined : () => setSelectedPatient(null)} />
+        ) : lockPatient ? (
+          <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
         ) : (
           <>
             <div className="relative">
@@ -217,7 +220,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function PatientChip({ patient, t, onClear }: { patient: Chart; t: (k: string) => string; onClear: () => void }) {
+function PatientChip({ patient, t, onClear }: { patient: Chart; t: (k: string) => string; onClear?: () => void }) {
   return (
     <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl p-3">
       <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm">
@@ -227,7 +230,9 @@ function PatientChip({ patient, t, onClear }: { patient: Chart; t: (k: string) =
         <p className="font-semibold text-sm">{patient.firstName} {patient.lastName}</p>
         <p className="text-xs text-slate-500">{patient.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}</p>
       </div>
-      <button onClick={onClear} className="text-xs text-brand-500 font-semibold">{t("rx2.changePatient")}</button>
+      {onClear && (
+        <button onClick={onClear} className="text-xs text-brand-500 font-semibold">{t("rx2.changePatient")}</button>
+      )}
     </div>
   );
 }

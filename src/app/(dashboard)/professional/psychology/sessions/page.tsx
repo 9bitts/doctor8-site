@@ -10,6 +10,8 @@ import {
   ArrowLeft, ClipboardList, Loader2, Save, User, Search, Clock, CheckCircle2,
   Copy, Printer, Pencil, Share2, Mail, AlertCircle,
 } from "lucide-react";
+import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
+import { readChartDeepLink } from "@/lib/video-chart-nav";
 
 interface Chart { id: string; firstName: string; lastName: string; }
 interface SessionNote {
@@ -64,6 +66,8 @@ export default function PsychologySessionsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<Record<string, string>>({});
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
+  const [lockPatient, setLockPatient] = useState(false);
 
   const formatDef = SESSION_FORMATS.find((f) => f.id === format)!;
 
@@ -82,6 +86,19 @@ export default function PsychologySessionsPage() {
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const { patientRecordId, returnUrl, view: viewParam } = readChartDeepLink();
+    if (returnUrl) setConsultReturnUrl(returnUrl);
+    if (!patientRecordId || !returnUrl) return;
+    setLockPatient(true);
+    const chart = charts.find((c) => c.id === patientRecordId);
+    if (chart) {
+      setSelectedPatient(chart);
+      if (viewParam === "create") setView("create");
+    }
+  }, [loading, charts]);
 
   useEffect(() => {
     if (view === "edit" && editingNote) return;
@@ -341,6 +358,11 @@ export default function PsychologySessionsPage() {
     const { isEdit } = opts;
     return (
       <div className="max-w-3xl mx-auto space-y-5 pb-24">
+        <VideoConsultReturnBanner
+          returnUrl={consultReturnUrl}
+          patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined}
+          lang={lang as "pt" | "en" | "es"}
+        />
         <button
           onClick={() => { resetForm(); setView("list"); }}
           className="flex items-center gap-2 text-sm text-slate-500 hover:text-violet-600 font-medium"
@@ -367,12 +389,14 @@ export default function PsychologySessionsPage() {
               <div className="flex-1">
                 <p className="font-medium text-slate-800">{selectedPatient.firstName} {selectedPatient.lastName}</p>
               </div>
-              {!isEdit && (
+              {!isEdit && !lockPatient && (
                 <button onClick={() => setSelectedPatient(null)} className="text-xs text-slate-500 hover:text-red-500">
                   {t("common.cancel")}
                 </button>
               )}
             </div>
+          ) : lockPatient ? (
+            <p className="text-sm text-slate-500">{t("psy.sessions.selectPatient")}</p>
           ) : (
             <>
               <div className="relative">

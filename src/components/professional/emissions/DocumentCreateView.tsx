@@ -29,6 +29,7 @@ interface DocumentCreateViewProps {
   charts: Chart[];
   reuseHint?: boolean;
   initialPatient: Chart | null;
+  lockPatient?: boolean;
   initialTitle: string;
   initialBody: string;
   initialType: string;
@@ -37,7 +38,7 @@ interface DocumentCreateViewProps {
 }
 
 export function DocumentCreateView({
-  t, charts, reuseHint, initialPatient, initialTitle, initialBody, initialType,
+  t, charts, reuseHint, initialPatient, lockPatient = false, initialTitle, initialBody, initialType,
   onBack, onSaved,
 }: DocumentCreateViewProps) {
   const { lang } = useI18n();
@@ -167,10 +168,14 @@ export function DocumentCreateView({
             <div className="flex-1">
               <p className="font-semibold text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</p>
             </div>
+            {!lockPatient && (
             <button onClick={() => setSelectedPatient(null)} className="text-xs text-brand-500 font-semibold">
               {t("rx2.changePatient")}
             </button>
+            )}
           </div>
+        ) : lockPatient ? (
+          <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
         ) : (
           <>
             <div className="relative">

@@ -16,6 +16,8 @@ import { EmissionPostSaveFlow, type SavedEmission } from "@/components/professio
 import WhatsappDeliverButton from "@/components/professional/emissions/WhatsappDeliverButton";
 import { ExamCreateView } from "@/components/professional/emissions/ExamCreateView";
 import { DocumentCreateView } from "@/components/professional/emissions/DocumentCreateView";
+import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
+import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import type { Chart } from "@/components/professional/emissions/types";
 
 function controlInfo(type: string | null | undefined): {
@@ -287,11 +289,34 @@ export default function PrescriptionsPage() {
 
   const [rxTemplates, setRxTemplates] = useState<RxTemplate[]>([]);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [lockPatient, setLockPatient] = useState(false);
+  const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAll();
     loadSignConfig();
     const params = new URLSearchParams(window.location.search);
+    const { patientRecordId, returnUrl, view: viewParam } = readChartDeepLink();
+
+    if (returnUrl) setConsultReturnUrl(returnUrl);
+    if (patientRecordId && returnUrl) setLockPatient(true);
+
+    if (patientRecordId) {
+      (async () => {
+        await loadCharts();
+        const chart = await fetchChartById(patientRecordId);
+        if (!chart) return;
+        setSelectedPatient(chart as Chart);
+        setReusePatient(chart as Chart);
+        const v = viewParam as View | null;
+        if (v === "prescription" || v === "exam" || v === "document") {
+          setView(v);
+        } else {
+          setView("prescription");
+        }
+      })();
+    }
+
     const sign = params.get("sign");
     const flow = params.get("flow");
     const kind = params.get("kind") as EmissionKind | null;
@@ -652,10 +677,12 @@ export default function PrescriptionsPage() {
   if (view === "exam") {
     return (
       <>
+        <VideoConsultReturnBanner returnUrl={consultReturnUrl} patientName={reusePatient ? `${reusePatient.firstName} ${reusePatient.lastName}` : undefined} lang={lang as "pt" | "en" | "es"} />
         <ExamCreateView
           t={t} locale={locale} charts={charts}
           reuseHint={!!reuseClinical}
           initialPatient={reusePatient}
+          lockPatient={lockPatient}
           initialItems={reuseClinical?.examItems || []}
           initialNotes={reuseClinical?.examNotes || ""}
           initialCid={reuseClinical?.cid || ""}
@@ -671,10 +698,12 @@ export default function PrescriptionsPage() {
   if (view === "document") {
     return (
       <>
+        <VideoConsultReturnBanner returnUrl={consultReturnUrl} patientName={reusePatient ? `${reusePatient.firstName} ${reusePatient.lastName}` : undefined} lang={lang as "pt" | "en" | "es"} />
         <DocumentCreateView
           t={t} charts={charts}
           reuseHint={!!reuseClinical}
           initialPatient={reusePatient}
+          lockPatient={lockPatient}
           initialTitle={reuseClinical?.title || ""}
           initialBody={reuseClinical?.content || ""}
           initialType={reuseClinical?.type || "CERTIFICATE"}
@@ -690,6 +719,7 @@ export default function PrescriptionsPage() {
   if (view === "prescription") {
     return (
       <div className="max-w-3xl mx-auto space-y-5 pb-24">
+        <VideoConsultReturnBanner returnUrl={consultReturnUrl} patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined} lang={lang as "pt" | "en" | "es"} />
         <button onClick={closeCreate}
           className="flex items-center gap-2 text-sm text-slate-500 hover:text-brand-500 transition font-medium">
           <ArrowLeft size={16} /> {t("rx.backToList")}
@@ -732,10 +762,12 @@ export default function PrescriptionsPage() {
                       {selectedPatient.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
                     </p>
                   </div>
+                  {!lockPatient && (
                   <button onClick={() => { setSelectedPatient(null); setPatientQuery(""); }}
                     className="text-xs text-brand-500 hover:text-brand-700 font-semibold shrink-0">
                     {t("rx2.changePatient")}
                   </button>
+                  )}
                 </div>
               ) : (
                 <>

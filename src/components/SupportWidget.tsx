@@ -163,7 +163,10 @@ export default function SupportWidget() {
     sendMessage(input);
   }
 
-  const hideOnPaths = ["/login", "/register", "/verify-email", "/club/join", "/callback", "/embed"];
+  const hideOnPaths = [
+    "/login", "/register", "/verify-email", "/club/join", "/callback", "/embed",
+    "/video", "/room", // teleconsulta — não sobrepor o player Daily.co
+  ];
   if (hideOnPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return null;
   }

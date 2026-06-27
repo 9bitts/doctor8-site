@@ -17,6 +17,7 @@ import {
   Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
+import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import ReferralPanel from "@/components/professional/ReferralPanel";
 import PatientChartTags, { type ChartTag } from "@/components/professional/PatientChartTags";
 import MetricsFormFields, { emptyMetrics } from "@/components/professional/MetricsFormFields";
@@ -254,6 +255,7 @@ export default function RecordDetailClient({
   const canEdit = !readOnly && chartAccess !== "view";
   const { lang, t } = useI18n();
   const searchParams = useSearchParams();
+  const consultReturnUrl = searchParams.get("returnUrl");
   // Detect current language via a known key, then serve inline rec.* texts
   const _lang = t("common.cancel") === "Cancelar" ? "pt" : t("common.cancel") === "Cancelar" ? "es" : t("common.cancel") === "Cancel" ? "en" : "en";
   const _langFull = t("greeting.morning") === "Bom dia" ? "pt" : t("greeting.morning") === "Buenos días" ? "es" : "en";
@@ -756,6 +758,11 @@ export default function RecordDetailClient({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <VideoConsultReturnBanner
+        returnUrl={consultReturnUrl}
+        patientName={`${chart.firstName} ${chart.lastName}`}
+        lang={_langFull as "pt" | "en" | "es"}
+      />
       <Link
         href="/professional/patients"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"

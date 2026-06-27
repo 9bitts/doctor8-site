@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { CFP_DOCUMENT_TEMPLATES, type CfpDocumentTemplateId } from "@/lib/psychology-templates";
+import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
+import { readChartDeepLink } from "@/lib/video-chart-nav";
 import {
   ArrowLeft, FileText, Loader2, Save, User, Search, PenLine,
 } from "lucide-react";
@@ -23,6 +25,8 @@ export default function PsychologyDocumentsPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
+  const [lockPatient, setLockPatient] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -30,6 +34,14 @@ export default function PsychologyDocumentsPage() {
         const res = await fetch("/api/professional/records");
         const data = await res.json();
         setCharts(data.records || []);
+
+        const { patientRecordId, returnUrl } = readChartDeepLink();
+        if (returnUrl) setConsultReturnUrl(returnUrl);
+        if (patientRecordId && returnUrl) {
+          setLockPatient(true);
+          const chart = (data.records || []).find((c: Chart) => c.id === patientRecordId);
+          if (chart) setSelectedPatient(chart);
+        }
       } catch { /* ignore */ }
       setLoading(false);
     })();
@@ -95,6 +107,11 @@ export default function PsychologyDocumentsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <VideoConsultReturnBanner
+        returnUrl={consultReturnUrl}
+        patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined}
+        lang={lang as "pt" | "en" | "es"}
+      />
       <div>
         <Link href="/professional/psychology" className="flex items-center gap-2 text-sm text-slate-500 hover:text-sky-600 font-medium mb-2">
           <ArrowLeft size={16} /> {t("psy.backToHub")}
@@ -141,8 +158,12 @@ export default function PsychologyDocumentsPage() {
                   {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
                 </div>
                 <p className="font-medium text-slate-800 flex-1">{selectedPatient.firstName} {selectedPatient.lastName}</p>
+                {!lockPatient && (
                 <button onClick={() => setSelectedPatient(null)} className="text-xs text-slate-500">{t("common.cancel")}</button>
+                )}
               </div>
+            ) : lockPatient ? (
+              <p className="mt-1.5 text-sm text-slate-500">{t("psy.sessions.selectPatient")}</p>
             ) : !loading && (
               <>
                 <div className="relative mt-1.5">

@@ -7,11 +7,13 @@ import { useRouter } from "next/navigation";
 import {
   Loader2, Video, Clock, AlertCircle, ArrowLeft, ShieldCheck,
   ChevronRight, ChevronLeft, FileText, Plus, Send, Stethoscope,
-  Pill, X, CheckCircle2, ClipboardList, PhoneOff,
+  Pill, X, CheckCircle2, ClipboardList, PhoneOff, FlaskConical,
+  ScrollText, BarChart3, ExternalLink,
 } from "lucide-react";
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
 import { translate } from "@/lib/i18n/translations";
+import { buildVideoChartLinks, videoReturnPath } from "@/lib/video-chart-nav";
 
 export interface VideoConsultData {
   url: string;
@@ -72,8 +74,15 @@ const T: Record<string, Record<Lang, string>> = {
   prescribe:      { pt: "Prescrever", en: "Prescribe", es: "Prescribir" },
   openChart:      { pt: "Abrir ficha completa", en: "Open full chart", es: "Abrir ficha completa" },
   openAnalysand:  { pt: "Abrir ficha do analisando", en: "Open analysand chart", es: "Abrir ficha del analizado" },
-  addSessionNote: { pt: "Nova anota\u00e7\u00e3o de sess\u00e3o", en: "New session note", es: "Nueva nota de sesi\u00f3n" },
+  addSessionNote: { pt: "Nova anotação de sessão", en: "New session note", es: "Nueva nota de sesión" },
   addRecord:      { pt: "Adicionar registro", en: "Add record", es: "Agregar registro" },
+  requestExam:    { pt: "Solicitar exame", en: "Request exam", es: "Solicitar examen" },
+  issueDocument:  { pt: "Emitir documento", en: "Issue document", es: "Emitir documento" },
+  psychSession:   { pt: "Nota de sessão (psi)", en: "Session note (psych)", es: "Nota de sesión (psi)" },
+  psychScale:     { pt: "Aplicar escala", en: "Apply scale", es: "Aplicar escala" },
+  psychDocument:  { pt: "Documento (psi)", en: "Document (psych)", es: "Documento (psi)" },
+  chartActions:   { pt: "Ações na ficha deste paciente", en: "Actions for this patient", es: "Acciones en la ficha de este paciente" },
+  openRecord:     { pt: "Ver na ficha", en: "View in chart", es: "Ver en la ficha" },
   noChart:        { pt: "Vinculando ficha do paciente...", en: "Linking patient chart...", es: "Vinculando ficha del paciente..." },
   noteTitle:      { pt: "Anotação da consulta", en: "Consultation note", es: "Nota de consulta" },
   leaveCall:      { pt: "Sair da consulta", en: "Leave call", es: "Salir de la consulta" },
@@ -325,6 +334,8 @@ export default function VideoConsultRoom({
   const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
   const chartId = data.analysandRecordId || data.patientRecordId;
   const isPsychoanalyst = data.providerPanel === "psychoanalyst";
+  const returnUrl = videoReturnPath(data);
+  const chartLinks = chartId ? buildVideoChartLinks(chartId, returnUrl, isPsychoanalyst) : null;
 
   const roomData = data;
 
@@ -445,20 +456,81 @@ export default function VideoConsultRoom({
                 </div>
               )}
 
-              {chartId && (
+              {chartId && chartLinks && (
                 <>
-                  <a
-                    href={
-                      isPsychoanalyst
-                        ? `/psychoanalyst/analysands/${chartId}`
-                        : `/professional/patients/${chartId}?newRecord=1`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl transition"
-                  >
-                    <Plus size={16} /> {isPsychoanalyst ? t("addSessionNote") : t("addRecord")}
-                  </a>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 mb-2">{t("chartActions")}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <a
+                        href={chartLinks.addRecord}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl transition"
+                      >
+                        <Plus size={14} /> {isPsychoanalyst ? t("addSessionNote") : t("addRecord")}
+                      </a>
+                      {chartLinks.prescribe && (
+                        <a
+                          href={chartLinks.prescribe}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 py-2.5 rounded-xl transition"
+                        >
+                          <Pill size={14} /> {t("prescribe")}
+                        </a>
+                      )}
+                      {chartLinks.exam && (
+                        <a
+                          href={chartLinks.exam}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-200 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg transition"
+                        >
+                          <FlaskConical size={13} /> {t("requestExam")}
+                        </a>
+                      )}
+                      {chartLinks.document && (
+                        <a
+                          href={chartLinks.document}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-200 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg transition"
+                        >
+                          <ScrollText size={13} /> {t("issueDocument")}
+                        </a>
+                      )}
+                      {chartLinks.psychSession && (
+                        <a
+                          href={chartLinks.psychSession}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-violet-200 bg-violet-900/50 hover:bg-violet-900/70 py-2 rounded-lg transition"
+                        >
+                          <FileText size={13} /> {t("psychSession")}
+                        </a>
+                      )}
+                      {chartLinks.psychScale && (
+                        <a
+                          href={chartLinks.psychScale}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-violet-200 bg-violet-900/50 hover:bg-violet-900/70 py-2 rounded-lg transition"
+                        >
+                          <BarChart3 size={13} /> {t("psychScale")}
+                        </a>
+                      )}
+                      {chartLinks.psychDocument && (
+                        <a
+                          href={chartLinks.psychDocument}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-violet-200 bg-violet-900/50 hover:bg-violet-900/70 py-2 rounded-lg transition col-span-2"
+                        >
+                          <ScrollText size={13} /> {t("psychDocument")}
+                        </a>
+                      )}
+                    </div>
+                  </div>
 
                   <ConsultNotesAssistant
                     ref={notesAssistantRef}
@@ -510,10 +582,19 @@ export default function VideoConsultRoom({
                     ) : (
                       <div className="space-y-2">
                         {records.map((r) => (
-                          <div key={r.id} className="bg-slate-800/60 rounded-lg p-2.5 border border-slate-700/50">
-                            <p className="text-xs font-medium text-slate-300 truncate">{r.title}</p>
+                          <a
+                            key={r.id}
+                            href={chartLinks.fullChart}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block bg-slate-800/60 rounded-lg p-2.5 border border-slate-700/50 hover:border-emerald-500/40 hover:bg-slate-800 transition group"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-xs font-medium text-slate-300 truncate">{r.title}</p>
+                              <ExternalLink size={11} className="text-slate-600 group-hover:text-emerald-400 shrink-0 mt-0.5" />
+                            </div>
                             {r.content && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{r.content}</p>}
-                          </div>
+                          </a>
                         ))}
                       </div>
                     )}
@@ -522,27 +603,13 @@ export default function VideoConsultRoom({
               )}
             </div>
 
-            {chartId && (
-              <div className="p-4 border-t border-slate-800 space-y-2 shrink-0">
-                {!isPsychoanalyst && (
-                  <a
-                    href={`/professional/prescriptions?patientRecordId=${chartId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 py-2.5 rounded-lg transition w-full"
-                  >
-                    <Pill size={13} /> {t("prescribe")}
-                  </a>
-                )}
+            {chartId && chartLinks && (
+              <div className="p-4 border-t border-slate-800 shrink-0">
                 <a
-                  href={
-                    isPsychoanalyst
-                      ? `/psychoanalyst/analysands/${chartId}`
-                      : `/professional/patients/${chartId}`
-                  }
+                  href={chartLinks.fullChart}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 py-2 rounded-lg transition w-full"
+                  className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-slate-700 hover:bg-slate-600 py-2.5 rounded-lg transition w-full"
                 >
                   <FileText size={13} /> {isPsychoanalyst ? t("openAnalysand") : t("openChart")}
                 </a>
