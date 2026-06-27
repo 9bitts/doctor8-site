@@ -407,6 +407,7 @@ export interface AdminIntakeRow {
   forceMedicalPool: boolean;
   triageCompletedAt: string | null;
   consentAt: string | null;
+  telemedicineTcleAt: string | null;
   serviceTypes: string[];
   triageData: unknown;
   identificationData: unknown;
@@ -453,7 +454,8 @@ export async function listCampaignIntakes(campaignSlug: string): Promise<AdminIn
       triageFlags: i.triageFlags,
       forceMedicalPool: i.forceMedicalPool,
       triageCompletedAt: i.triageCompletedAt?.toISOString() ?? null,
-      consentAt: (i as { consentAt?: Date | null }).consentAt?.toISOString() ?? null,
+      consentAt: i.consentAt?.toISOString() ?? null,
+      telemedicineTcleAt: i.telemedicineTcleAt?.toISOString() ?? null,
       serviceTypes: (i.serviceTypes as string[]) ?? [],
       triageData: i.triageData,
       identificationData: (i as { identificationData?: unknown }).identificationData ?? null,

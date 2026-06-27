@@ -161,7 +161,15 @@ export default function UrgentPage() {
         body:    JSON.stringify({ sessionId, specialty, paymentIntentId }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Erro ao entrar na fila."); setJoining(null); return; }
+      if (!res.ok) {
+        if (data.error === "TCLE_REQUIRED") {
+          window.location.href = `/patient/tcle?returnUrl=${encodeURIComponent("/urgent")}`;
+          return;
+        }
+        setError(data.error || "Erro ao entrar na fila.");
+        setJoining(null);
+        return;
+      }
       startQueuePolling(data.entry.id);
     } catch { setError("Erro de rede."); }
     setJoining(null);

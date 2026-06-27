@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Heart, ChevronRight, Radio, Phone, AlertTriangle } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
 import { VENEZUELA_CAMPAIGN_SLUG, poolLabel } from "@/lib/humanitarian/constants";
+import { humanitarianCareHref } from "@/lib/humanitarian/patient-flow";
 
 type Props = {
   lang: Lang;
@@ -12,14 +13,15 @@ type Props = {
     pool: { labelEs: string; labelPt: string; labelEn: string };
   } | null;
   triageValid?: boolean;
+  tcleAccepted?: boolean;
 };
 
-export default function HumanitarianBanner({ lang, campaign, entry, triageValid = false }: Props) {
+export default function HumanitarianBanner({ lang, campaign, entry, triageValid = false, tcleAccepted = false }: Props) {
   if (!campaign) return null;
 
   const t = (key: string) => translate(lang, key);
   const slug = campaign.slug || VENEZUELA_CAMPAIGN_SLUG;
-  const careHref = triageValid ? `/humanitarian/${slug}` : `/humanitarian/${slug}/triage`;
+  const careHref = humanitarianCareHref(slug, { triageValid, tcleAccepted });
   const poolName = entry ? poolLabel(entry.pool, lang) : "";
 
   if (entry?.status === "CALLED") {

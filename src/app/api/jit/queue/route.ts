@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { createNotification } from "@/lib/notifications";
 import { decrypt } from "@/lib/encryption";
 
@@ -133,6 +134,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { sessionId, specialty } = parsed.data;
+
+  if (!(await hasTelemedicineTcle(session.user.id))) {
+    return NextResponse.json(
+      {
+        error: "TCLE_REQUIRED",
+        message: "Sign the telemedicine consent form before joining the queue.",
+      },
+      { status: 403 },
+    );
+  }
 
   const jitSession = await db.jitSession.findUnique({ where: { id: sessionId } });
   if (!jitSession || jitSession.status !== "ONLINE")

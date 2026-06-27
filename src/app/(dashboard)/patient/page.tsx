@@ -255,6 +255,7 @@ export default async function PatientDashboard() {
             }}
             entry={humanitarianEntry}
             triageValid={humanitarianIntake.triageValid}
+            tcleAccepted={humanitarianIntake.tcleAccepted}
           />
           {humanitarianIntake.triageValid && !humanitarianIntake.anamneseComplete && (
             <HumanitarianAnamneseReminder

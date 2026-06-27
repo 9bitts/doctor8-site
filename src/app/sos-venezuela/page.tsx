@@ -41,7 +41,13 @@ export default function SosVenezuelaPage() {
   const volRegister = `/register?region=VE&role=PROFESSIONAL&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
   const volLogin = `/login?callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
 
-  const steps = ["hum.landing.step1", "hum.landing.step2", "hum.landing.step3", "hum.landing.step4"] as const;
+  const steps = [
+    "hum.landing.step1",
+    "hum.landing.step2",
+    "hum.landing.step3",
+    "hum.landing.step4",
+    "hum.landing.step5",
+  ] as const;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col overflow-x-hidden">

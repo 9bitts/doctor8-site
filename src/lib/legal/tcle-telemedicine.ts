@@ -1,5 +1,5 @@
-// TCLE ? Termo de Consentimento Livre e Esclarecido para Telemedicina / Teleconsulta
-// Versioned document ? update TELEMEDICINE_TCLE_VERSION when content changes materially.
+// TCLE - Termo de Consentimento Livre e Esclarecido para Telemedicina / Teleconsulta
+// Versioned document - update TELEMEDICINE_TCLE_VERSION when content changes materially.
 
 export const TELEMEDICINE_TCLE_VERSION = "1.0";
 

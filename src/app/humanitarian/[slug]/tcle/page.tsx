@@ -8,6 +8,7 @@ import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, type Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import TelemedicineTcleConsent from "@/components/consent/TelemedicineTcleConsent";
+import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 
 function t(lang: Lang, key: string) {
@@ -105,6 +106,7 @@ export default function HumanitarianTclePage() {
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
       <div className="max-w-lg mx-auto space-y-6 py-4">
+        <HumanitarianFlowStepper lang={lang} current="tcle" dark />
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
             <FileText size={22} className="text-emerald-400" />

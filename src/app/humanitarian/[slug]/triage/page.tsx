@@ -7,6 +7,7 @@ import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import HumanitarianTriageForm from "@/components/humanitarian/HumanitarianTriageForm";
+import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 
 export default function HumanitarianTriagePage() {
@@ -62,11 +63,14 @@ export default function HumanitarianTriagePage() {
 
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
-      <HumanitarianTriageForm
+      <div className="max-w-lg mx-auto space-y-5 py-2">
+        <HumanitarianFlowStepper lang={lang} current="triage" dark />
+        <HumanitarianTriageForm
         lang={lang}
         campaignSlug={slug}
         onComplete={() => router.push(`/humanitarian/${slug}/tcle`)}
       />
+      </div>
     </HumanitarianShell>
   );
 }

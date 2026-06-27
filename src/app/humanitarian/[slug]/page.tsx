@@ -10,7 +10,9 @@ import {
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
+import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
+import { humanitarianFlowStep } from "@/lib/humanitarian/patient-flow";
 
 interface PoolInfo {
   id: string;
@@ -68,6 +70,7 @@ export default function HumanitarianCampaignPage() {
   const [forceMedicalPool, setForceMedicalPool] = useState(false);
   const [computedPriority, setComputedPriority] = useState<string | null>(null);
   const [anamneseComplete, setAnamneseComplete] = useState(true);
+  const [tcleAccepted, setTcleAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -118,6 +121,7 @@ export default function HumanitarianCampaignPage() {
           setForceMedicalPool(!!intakeData.intake.forceMedicalPool);
           setComputedPriority(intakeData.intake.computedPriority ?? null);
           setAnamneseComplete(!!intakeData.intake.anamneseComplete);
+          setTcleAccepted(!!intakeData.intake.tcleAccepted);
         }
 
         loadCampaign();
@@ -235,6 +239,9 @@ export default function HumanitarianCampaignPage() {
   if (entry) {
     return (
       <HumanitarianShell lang={lang} onLangChange={setLang} dark>
+        <div className="max-w-lg mx-auto space-y-4 mb-4">
+          <HumanitarianFlowStepper lang={lang} current="waiting" dark />
+        </div>
         <QueueScreen
           lang={lang}
           entry={entry}
@@ -253,6 +260,14 @@ export default function HumanitarianCampaignPage() {
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
       <div className="space-y-6">
+        <HumanitarianFlowStepper
+          lang={lang}
+          current={humanitarianFlowStep(
+            { triageValid: true, tcleAccepted, anamneseComplete },
+            false,
+          )}
+          dark
+        />
         <div className="flex items-start gap-3">
           <div className="w-12 h-12 rounded-2xl bg-rose-500/20 flex items-center justify-center shrink-0">
             <Heart size={24} className="text-rose-400" />
@@ -385,7 +400,7 @@ export default function HumanitarianCampaignPage() {
           >
             {t(lang, "hum.page.retakeTriage")}
           </Link>
-          {" ? "}
+          {" \u00b7 "}
           <Link
             href={`/humanitarian/${slug}/anamnese`}
             className="text-slate-400 hover:text-emerald-400 underline underline-offset-2"

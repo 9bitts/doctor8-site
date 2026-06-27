@@ -15,6 +15,7 @@ interface IntakeRow {
   forceMedicalPool: boolean;
   triageCompletedAt: string | null;
   consentAt: string | null;
+  telemedicineTcleAt: string | null;
   serviceTypes: string[];
   triageData: unknown;
   identificationData: unknown;
@@ -152,6 +153,7 @@ export default function HumanitarianIntakesPanel({ slug = VENEZUELA_CAMPAIGN_SLU
                     <HumanitarianIntakeSummary summary={summary} lang="pt" compact />
                     <p className="text-[10px] text-slate-400">
                       Atualizado: {new Date(row.updatedAt).toLocaleString("pt-BR")}
+                      {row.telemedicineTcleAt && ` \u00b7 TCLE: ${new Date(row.telemedicineTcleAt).toLocaleString("pt-BR")}`}
                       {row.consentAt && ` \u00b7 Consentimento: ${new Date(row.consentAt).toLocaleString("pt-BR")}`}
                       {row.triageCompletedAt && ` \u00b7 Triagem: ${new Date(row.triageCompletedAt).toLocaleString("pt-BR")}`}
                     </p>

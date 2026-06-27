@@ -132,6 +132,7 @@ export async function buildHumanitarianIntakesCsv(campaignSlug: string): Promise
     "service_types",
     "triage_completed_at",
     "consent_at",
+    "telemedicine_tcle_at",
     "updated_at",
   ];
 
@@ -150,6 +151,7 @@ export async function buildHumanitarianIntakesCsv(campaignSlug: string): Promise
       i.serviceTypes.join(";"),
       i.triageCompletedAt?.toISOString() ?? "",
       i.consentAt?.toISOString() ?? "",
+      i.telemedicineTcleAt?.toISOString() ?? "",
       i.updatedAt.toISOString(),
     ]
       .map(csvEscape)
