@@ -34,6 +34,7 @@ function computeMissingForRx(r: {
 }
 
 type Importable = {
+  id: string;
   patientProfileId: string;
   userId: string;
   firstName: string;
@@ -54,6 +55,7 @@ function toImportable(
   source: Importable["source"],
 ): Importable {
   return {
+    id: profile.id,
     patientProfileId: profile.id,
     userId: profile.userId,
     firstName: safeDecrypt(profile.firstName),
@@ -178,6 +180,7 @@ export async function GET(req: NextRequest) {
       });
     for (const match of filterPatientCharts(searchable, q, 12)) {
       importableMap.set(match.patientProfileId, {
+        id: match.patientProfileId,
         patientProfileId: match.patientProfileId,
         userId: match.userId,
         firstName: match.firstName,
