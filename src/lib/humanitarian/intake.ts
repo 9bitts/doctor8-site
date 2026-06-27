@@ -325,6 +325,12 @@ export async function saveAnamneseSection(params: {
         additionalNotes: parsed.data.additionalNotes || null,
         consentAt: now,
         status: "COMPLETE",
+        ...(parsed.data.shareWithAngelVolunteer
+          ? {
+              angelContactConsentAt: now,
+              angelContactConsentVersion: "1.0",
+            }
+          : {}),
       };
       break;
   }

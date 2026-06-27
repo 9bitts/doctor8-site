@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianIntakesPanel from "@/components/humanitarian/HumanitarianIntakesPanel";
+import HumanitarianAngelsAdminPanel from "@/components/humanitarian/HumanitarianAngelsAdminPanel";
 
 interface CampaignReport {
   campaignId: string;
@@ -247,6 +248,8 @@ export default function AdminHumanitarianPage() {
       )}
 
       <HumanitarianIntakesPanel slug={VENEZUELA_CAMPAIGN_SLUG} />
+
+      <HumanitarianAngelsAdminPanel />
     </div>
   );
 }

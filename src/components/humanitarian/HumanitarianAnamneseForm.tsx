@@ -61,7 +61,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
     needsShelterGuidance: false,
     separatedChildOrElderlyAlone: false,
   });
-  const [consent, setConsent] = useState({ shareWithVolunteer: true });
+  const [consent, setConsent] = useState({ shareWithVolunteer: true, shareWithAngelVolunteer: false });
   const [additionalNotes, setAdditionalNotes] = useState("");
 
   const load = useCallback(async () => {
@@ -128,6 +128,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
     else {
       data = {
         shareWithVolunteer: consent.shareWithVolunteer,
+        shareWithAngelVolunteer: consent.shareWithAngelVolunteer,
         additionalNotes: additionalNotes.trim() || undefined,
       };
     }
@@ -442,6 +443,12 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
               onChange={(e) => setConsent((p) => ({ ...p, shareWithVolunteer: e.target.checked }))}
               className="mt-1" />
             <span className="text-sm text-slate-300">{t(lang, "hum.anamnese.consentShare")}</span>
+          </label>
+          <label className="flex items-start gap-3 p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 cursor-pointer">
+            <input type="checkbox" checked={consent.shareWithAngelVolunteer}
+              onChange={(e) => setConsent((p) => ({ ...p, shareWithAngelVolunteer: e.target.checked }))}
+              className="mt-1" />
+            <span className="text-sm text-slate-300">{t(lang, "hum.anamnese.consentAngel")}</span>
           </label>
           <Field label={t(lang, "hum.anamnese.notes")}>
             <textarea className={inp} rows={3} value={additionalNotes}

@@ -101,6 +101,7 @@ export const basicNeedsSchema = z.object({
 
 export const consentSchema = z.object({
   shareWithVolunteer: z.boolean(),
+  shareWithAngelVolunteer: z.boolean().optional(),
   additionalNotes: z.string().max(2000).optional(),
 });
 

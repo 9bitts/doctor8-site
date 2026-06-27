@@ -2,6 +2,9 @@
 
 export const HUMANITARIAN_LANDING_URL = "https://acurabrasil.org/sos-venezuela.html";
 
+/** Public signup for lay accompaniment volunteers (Anjo / Ángel). */
+export const ANGEL_REGISTER_PATH = "/register/angel";
+
 export type HumanitarianPoolSlug =
   | "medico"
   | "psicologo"

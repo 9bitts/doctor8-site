@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = [
   "/",
   "/login",
   "/register",
+  "/register/angel",
   "/register/professional",
   "/sos-venezuela",
   "/register/organization",
@@ -42,6 +43,7 @@ const PATIENT_ROUTES = ["/patient"];
 const PROFESSIONAL_ROUTES = ["/professional"];
 const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
 const ORGANIZATION_ROUTES = ["/organization"];
+const ANGEL_ROUTES = ["/humanitarian/angel"];
 const ADMIN_ROUTES = ["/admin"];
 
 export default auth((req) => {
@@ -145,6 +147,14 @@ export default auth((req) => {
   if (
     ORGANIZATION_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "ORGANIZATION" &&
+    role !== "ADMIN"
+  ) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+
+  if (
+    ANGEL_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "ANGEL" &&
     role !== "ADMIN"
   ) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));

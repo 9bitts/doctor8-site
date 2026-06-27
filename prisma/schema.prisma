@@ -26,6 +26,7 @@ enum UserRole {
   PROFESSIONAL
   PSYCHOANALYST
   ORGANIZATION
+  ANGEL
   ADMIN
 }
 
@@ -261,6 +262,28 @@ enum HumanitarianIntakeStatus {
   PARTIAL
   COMPLETE
 }
+
+enum AngelApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AngelFollowUpChannel {
+  WHATSAPP
+  PHONE
+  SMS
+  OTHER
+}
+
+enum AngelFollowUpOutcome {
+  REACHED_OK
+  NEEDS_HELP
+  NO_ANSWER
+  WRONG_NUMBER
+  ESCALATED
+  OTHER
+}
 // ─────────────────────────────────────────
 // CORE USER
 // ─────────────────────────────────────────
@@ -277,6 +300,10 @@ model User {
   humanitarianQueueEntries HumanitarianQueueEntry[] @relation("HumanitarianQueuePatient")
   humanitarianVolunteers   HumanitarianVolunteer[]  @relation("HumanitarianVolunteer")
   humanitarianIntakes        HumanitarianIntake[]     @relation("HumanitarianIntakePatient")
+  angelProfile               AngelProfile?
+  humanitarianAngels         HumanitarianAngel[]      @relation("HumanitarianAngelUser")
+  angelFollowUpsAuthored     HumanitarianAngelFollowUp[] @relation("AngelFollowUpAuthor")
+  angelFollowUpsAsPatient    HumanitarianAngelFollowUp[] @relation("AngelFollowUpPatient")
 
   // Soft delete — GDPR right to erasure
   // After 30 days we hard-delete PHI, keep anonymized stats
@@ -2108,8 +2135,10 @@ model HumanitarianCampaign {
 
   pools                    HumanitarianPool[]
   volunteers               HumanitarianVolunteer[]
+  angels                   HumanitarianAngel[]
   entries                  HumanitarianQueueEntry[]
   intakes                  HumanitarianIntake[]
+  angelFollowUps           HumanitarianAngelFollowUp[]
 
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
@@ -2138,6 +2167,8 @@ model HumanitarianIntake {
   consentAt           DateTime?
   telemedicineTcleAt  DateTime?
   telemedicineTcleVersion String?
+  angelContactConsentAt DateTime?
+  angelContactConsentVersion String?
   additionalNotes     String?
 
   status              HumanitarianIntakeStatus @default(TRIAGE_ONLY)
@@ -2229,6 +2260,8 @@ model HumanitarianQueueEntry {
   meetingUrl      String?
   meetingRoomId   String?
 
+  angelFollowUps  HumanitarianAngelFollowUp[]
+
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 
@@ -2236,6 +2269,76 @@ model HumanitarianQueueEntry {
   @@index([poolId, status, priority, position])
   @@index([patientUserId, status])
   @@index([campaignId])
+}
+
+// ─────────────────────────────────────────
+// ANGEL — lay humanitarian follow-up volunteers (Acura / Doctor8)
+// ─────────────────────────────────────────
+
+model AngelProfile {
+  id              String              @id @default(cuid())
+  userId          String              @unique
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName       String
+  lastName        String
+  phone           String?             // @encrypted
+  languages       String[]            @default([])
+  motivation      String?
+  preferredCampaignSlug String?
+
+  approvalStatus  AngelApprovalStatus @default(PENDING)
+  approvedAt      DateTime?
+  approvedById    String?
+  rejectionReason String?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([approvalStatus])
+}
+
+model HumanitarianAngel {
+  id          String               @id @default(cuid())
+  campaignId  String
+  campaign    HumanitarianCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User                 @relation("HumanitarianAngelUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  active      Boolean              @default(true)
+
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@unique([campaignId, userId])
+  @@index([campaignId, active])
+  @@index([userId])
+}
+
+model HumanitarianAngelFollowUp {
+  id              String                 @id @default(cuid())
+  campaignId      String
+  campaign        HumanitarianCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  patientUserId   String
+  patientUser     User                   @relation("AngelFollowUpPatient", fields: [patientUserId], references: [id], onDelete: Cascade)
+  angelUserId     String
+  angelUser       User                   @relation("AngelFollowUpAuthor", fields: [angelUserId], references: [id], onDelete: Cascade)
+
+  queueEntryId    String?
+  queueEntry      HumanitarianQueueEntry? @relation(fields: [queueEntryId], references: [id], onDelete: SetNull)
+
+  channel         AngelFollowUpChannel
+  outcome         AngelFollowUpOutcome
+  notes           String?                // @encrypted
+  needsFlags      String[]               @default([])
+  escalated       Boolean                @default(false)
+
+  contactedAt     DateTime               @default(now())
+  createdAt       DateTime               @default(now())
+
+  @@index([campaignId, patientUserId])
+  @@index([angelUserId, contactedAt])
+  @@index([queueEntryId])
 }
 
 // ─────────────────────────────────────────

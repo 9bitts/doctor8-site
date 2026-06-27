@@ -8,9 +8,10 @@ import { translate, Lang } from "@/lib/i18n/translations";
 import { HUMANITARIAN_LANDING_URL, VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianLangSwitcher from "@/components/humanitarian/HumanitarianLangSwitcher";
 
-type UserRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "ADMIN" | "ORGANIZATION";
+type UserRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "ADMIN" | "ORGANIZATION" | "ANGEL";
 
-function homeHrefForRole(role: UserRole | null, isVolunteer: boolean): string {
+function homeHrefForRole(role: UserRole | null, isVolunteer: boolean, isAngel: boolean): string {
+  if (isAngel) return "/humanitarian/angel";
   if (!isVolunteer) return "/patient";
   if (role === "PSYCHOANALYST") return "/psychoanalyst";
   if (role === "PROFESSIONAL") return "/professional";
@@ -44,8 +45,9 @@ export default function HumanitarianShell({
   }, []);
 
   const isVolunteer = pathname.includes("/volunteer");
+  const isAngel = pathname.includes("/angel");
   const campaignHref = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
-  const accountHref = homeHrefForRole(userRole, isVolunteer);
+  const accountHref = homeHrefForRole(userRole, isVolunteer, isAngel);
 
   const navLink = (href: string, active: boolean, label: string, icon: React.ReactNode) => (
     <Link
@@ -100,8 +102,9 @@ export default function HumanitarianShell({
           </div>
 
           <nav className="flex items-center gap-1 pb-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-1 px-1">
-            {navLink(campaignHref, !isVolunteer, t("hum.shell.patient"), <User size={15} />)}
+            {navLink(campaignHref, !isVolunteer && !isAngel, t("hum.shell.patient"), <User size={15} />)}
             {navLink("/humanitarian/volunteer", isVolunteer, t("hum.shell.volunteer"), <Stethoscope size={15} />)}
+            {navLink("/humanitarian/angel", isAngel, t("angel.shell.nav"), <Heart size={15} />)}
             {navLink(accountHref, false, t("hum.shell.home"), <Home size={15} />)}
             <a
               href={HUMANITARIAN_LANDING_URL}
