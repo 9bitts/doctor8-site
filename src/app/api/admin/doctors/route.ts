@@ -1,13 +1,28 @@
 // src/app/api/admin/doctors/route.ts
-// ADMIN ONLY — list all professionals with key info and counts.
-import { NextResponse } from "next/server";
+// ADMIN ONLY — list professionals (ProfessionalProfile) with optional category filter.
+import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { buildPublicProfileUrl } from "@/lib/public-profile";
+import {
+  isUncategorizedProfessional,
+  specialtiesForCategory,
+  type AdminProfessionalCategory,
+} from "@/lib/admin-provider-categories";
 
-export async function GET() {
+const VALID_CATEGORIES = new Set<string>([
+  "medicos",
+  "psicologos",
+  "nutricionistas",
+  "fisioterapeutas",
+  "outros",
+]);
+
+export async function GET(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const category = new URL(req.url).searchParams.get("category");
 
   const pros = await db.professionalProfile.findMany({
     orderBy: { createdAt: "desc" },
@@ -25,8 +40,19 @@ export async function GET() {
     },
   });
 
-  const doctors = pros.map((p) => ({
+  let filtered = pros;
+  if (category && VALID_CATEGORIES.has(category)) {
+    if (category === "outros") {
+      filtered = pros.filter((p) => isUncategorizedProfessional(p.specialty));
+    } else {
+      const allowed = new Set(specialtiesForCategory(category as AdminProfessionalCategory));
+      filtered = pros.filter((p) => allowed.has(p.specialty));
+    }
+  }
+
+  const doctors = filtered.map((p) => ({
     id: p.id,
+    userId: p.userId,
     name: `${p.firstName} ${p.lastName}`.trim(),
     email: p.user?.email ?? null,
     region: p.user?.region ?? null,
@@ -46,5 +72,5 @@ export async function GET() {
         : null,
   }));
 
-  return NextResponse.json({ doctors });
+  return NextResponse.json({ doctors, total: doctors.length });
 }
