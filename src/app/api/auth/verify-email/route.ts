@@ -4,13 +4,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
+function redirect(req: NextRequest, pathWithQuery: string) {
+  return NextResponse.redirect(new URL(pathWithQuery, req.url));
+}
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
 
   if (!token) {
-    return NextResponse.redirect(`${APP_URL}/login?error=InvalidVerificationLink`);
+    return redirect(req, "/login?error=InvalidVerificationLink");
   }
 
   try {
@@ -19,29 +21,27 @@ export async function GET(req: NextRequest) {
     });
 
     if (!verificationToken) {
-      return NextResponse.redirect(`${APP_URL}/login?error=InvalidVerificationLink`);
+      return redirect(req, "/login?error=InvalidVerificationLink");
     }
 
     if (verificationToken.expires < new Date()) {
-      // Delete expired token so user can request a new one
       await db.verificationToken.delete({ where: { token } });
-      return NextResponse.redirect(
-        `${APP_URL}/verify-email?error=expired&email=${encodeURIComponent(verificationToken.identifier)}`
+      return redirect(
+        req,
+        `/verify-email?error=expired&email=${encodeURIComponent(verificationToken.identifier)}`,
       );
     }
 
-    // Mark user email as verified
     await db.user.update({
       where: { email: verificationToken.identifier },
       data: { emailVerified: new Date() },
     });
 
-    // Delete used token
     await db.verificationToken.delete({ where: { token } });
 
-    return NextResponse.redirect(`${APP_URL}/login?verified=true`);
+    return redirect(req, "/login?verified=true");
   } catch (error) {
     console.error("[VERIFY EMAIL ERROR]", error);
-    return NextResponse.redirect(`${APP_URL}/login?error=VerificationFailed`);
+    return redirect(req, "/login?error=VerificationFailed");
   }
 }

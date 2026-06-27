@@ -4,25 +4,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
+function redirect(req: NextRequest, pathWithQuery: string) {
+  return NextResponse.redirect(new URL(pathWithQuery, req.url));
+}
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
 
   if (!token) {
-    return NextResponse.redirect(`${APP_URL}/login?error=InvalidLink`);
+    return redirect(req, "/login?error=InvalidLink");
   }
 
   try {
     const verificationToken = await db.verificationToken.findUnique({ where: { token } });
 
     if (!verificationToken || !verificationToken.identifier.startsWith("email-change:")) {
-      return NextResponse.redirect(`${APP_URL}/login?error=InvalidLink`);
+      return redirect(req, "/login?error=InvalidLink");
     }
 
     if (verificationToken.expires < new Date()) {
       await db.verificationToken.delete({ where: { token } });
-      return NextResponse.redirect(`${APP_URL}/login?error=LinkExpired`);
+      return redirect(req, "/login?error=LinkExpired");
     }
 
     // identifier format: "email-change:{userId}:{newEmail}"
@@ -34,7 +36,7 @@ export async function GET(req: NextRequest) {
     const existing = await db.user.findUnique({ where: { email: newEmail } });
     if (existing && existing.id !== userId) {
       await db.verificationToken.delete({ where: { token } });
-      return NextResponse.redirect(`${APP_URL}/login?error=EmailTaken`);
+      return redirect(req, "/login?error=EmailTaken");
     }
 
     await db.user.update({
@@ -53,9 +55,9 @@ export async function GET(req: NextRequest) {
 
     await db.verificationToken.delete({ where: { token } });
 
-    return NextResponse.redirect(`${APP_URL}/login?emailChanged=true`);
+    return redirect(req, "/login?emailChanged=true");
   } catch (error) {
     console.error("[CONFIRM EMAIL CHANGE ERROR]", error);
-    return NextResponse.redirect(`${APP_URL}/login?error=ChangeFailed`);
+    return redirect(req, "/login?error=ChangeFailed");
   }
 }

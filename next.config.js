@@ -1,8 +1,6 @@
 // next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Forces a unique build ID each deploy so the CDN never serves stale chunks
-  generateBuildId: async () => Date.now().toString(),
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.amazonaws.com" },
