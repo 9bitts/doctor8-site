@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canUseBuyingClub } from "@/lib/buying-club-auth";
+import { isDrugCountryCode } from "@/lib/drug-countries";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -13,7 +14,11 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") || "").trim().toLowerCase();
-  const country = searchParams.get("country") || "BR";
+  const country = searchParams.get("country") || "";
+
+  if (!isDrugCountryCode(country)) {
+    return NextResponse.json({ error: "country required", drugs: [] }, { status: 400 });
+  }
 
   if (q.length < 2) return NextResponse.json({ drugs: [] });
 

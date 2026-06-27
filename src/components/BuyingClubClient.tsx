@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { buyingClubPageForRole } from "@/lib/buying-club-auth";
+import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
 import {
   Users, Search, Loader2, ShoppingBag, Share2, CheckCircle2,
   AlertCircle, MapPin, X,
@@ -45,6 +46,7 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState("");
+  const [drugCountry, setDrugCountry] = useState<DrugCountryCode>("BR");
   const [results, setResults] = useState<DrugResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<DrugResult | null>(null);
@@ -139,7 +141,7 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
       setSearching(true);
       try {
         const res = await fetch(
-          `/api/buying-club/drugs/search?q=${encodeURIComponent(query.trim())}`
+          `/api/buying-club/drugs/search?q=${encodeURIComponent(query.trim())}&country=${drugCountry}`
         );
         const data = await res.json();
         setResults(data.drugs || []);
@@ -150,7 +152,15 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
       setSearching(false);
     }, 300);
     return () => clearTimeout(debounceRef.current);
-  }, [query]);
+  }, [query, drugCountry]);
+
+  function handleCountryChange(code: DrugCountryCode) {
+    setDrugCountry(code);
+    setQuery("");
+    setResults([]);
+    setShowDropdown(false);
+    clearSelection();
+  }
 
   function selectDrug(drug: DrugResult) {
     setSelected(drug);
@@ -236,9 +246,33 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-        <label className="block text-sm font-medium text-slate-700">
-          {t("buyClub.searchLabel")}
-        </label>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-slate-700">
+            {t("buyClub.searchLabel")}
+          </label>
+          <p className="text-xs text-slate-500">{t("rx2.countryPick")}</p>
+          <div className="flex flex-wrap gap-2">
+            {DRUG_COUNTRIES.map((c) => {
+              const selected = drugCountry === c.code;
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => handleCountryChange(c.code)}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                    selected
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500/20"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/50"
+                  }`}
+                  aria-pressed={selected}
+                >
+                  <span className="text-lg leading-none" aria-hidden>{c.flag}</span>
+                  {t(c.labelKey)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {selected ? (
           <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
