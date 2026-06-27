@@ -13,7 +13,11 @@ export const EMAIL_LOCALE: Record<EmailLang, string> = {
 let resendInstance: Resend | null = null;
 function getResend(): Resend {
   if (!resendInstance) {
-    resendInstance = new Resend(process.env.RESEND_API_KEY || "re_placeholder");
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey && process.env.NODE_ENV === "production") {
+      throw new Error("RESEND_API_KEY is required in production");
+    }
+    resendInstance = new Resend(apiKey || "re_placeholder");
   }
   return resendInstance;
 }

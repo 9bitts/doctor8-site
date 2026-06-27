@@ -116,7 +116,8 @@ export async function verifyQStashSignature(
 ): Promise<boolean> {
   const receiver = getQStashReceiver();
   if (!receiver) {
-    return process.env.NODE_ENV !== "production";
+    console.error("[QSTASH] Missing QSTASH_CURRENT_SIGNING_KEY — rejecting unsigned request");
+    return false;
   }
 
   const signature = req.headers.get("upstash-signature");

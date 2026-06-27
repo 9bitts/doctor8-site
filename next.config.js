@@ -1,5 +1,7 @@
 // next.config.js
 /** @type {import('next').NextConfig} */
+const isProd = process.env.NODE_ENV === "production";
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -9,6 +11,10 @@ const nextConfig = {
   },
   // Security headers — HIPAA & GDPR requirement
   async headers() {
+    const scriptSrc = isProd
+      ? "script-src 'self' 'unsafe-inline' https://js.stripe.com"
+      : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com";
+
     return [
       {
         source: "/embed/:path*",
@@ -19,7 +25,7 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
@@ -48,7 +54,7 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",

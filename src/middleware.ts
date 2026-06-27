@@ -93,6 +93,9 @@ export default auth((req) => {
   // Public buying-club invite preview
   if (pathname.startsWith("/api/buying-club/public")) return NextResponse.next();
 
+  // Public support chat (rate-limited in route handler)
+  if (pathname.startsWith("/api/support")) return NextResponse.next();
+
   // Webhooks & scheduled jobs (verified inside route handlers)
   if (pathname.startsWith("/api/payments/webhook")) return NextResponse.next();
   if (pathname.startsWith("/api/reminders/send")) return NextResponse.next();
@@ -100,8 +103,12 @@ export default auth((req) => {
   // Token-based shared records (no session)
   if (pathname.startsWith("/api/shared/")) return NextResponse.next();
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (pages only — APIs return JSON)
   if (!session?.user) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const clubToken = req.nextUrl.searchParams.get("club");
     if (clubToken && pathname.includes("/buying-club")) {
       return NextResponse.redirect(new URL(`/club/join?club=${clubToken}`, req.url));
@@ -118,10 +125,18 @@ export default auth((req) => {
   }
 
   const { role } = session.user as { role: string };
+  const isApi = pathname.startsWith("/api/");
+
+  function denyWrongRole(): NextResponse {
+    if (isApi) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
 
   // Role-based protection
   if (ADMIN_ROUTES.some((r) => pathname.startsWith(r)) && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    return denyWrongRole();
   }
 
   if (
@@ -129,7 +144,7 @@ export default auth((req) => {
     role !== "PROFESSIONAL" &&
     role !== "ADMIN"
   ) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    return denyWrongRole();
   }
 
   if (
@@ -137,7 +152,7 @@ export default auth((req) => {
     role !== "PSYCHOANALYST" &&
     role !== "ADMIN"
   ) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    return denyWrongRole();
   }
 
   if (
@@ -145,7 +160,7 @@ export default auth((req) => {
     role !== "INTEGRATIVE_THERAPIST" &&
     role !== "ADMIN"
   ) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    return denyWrongRole();
   }
 
   if (
@@ -153,7 +168,7 @@ export default auth((req) => {
     role !== "PATIENT" &&
     role !== "ADMIN"
   ) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    return denyWrongRole();
   }
 
   if (
@@ -161,7 +176,7 @@ export default auth((req) => {
     role !== "ORGANIZATION" &&
     role !== "ADMIN"
   ) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    return denyWrongRole();
   }
 
   if (
@@ -169,7 +184,7 @@ export default auth((req) => {
     role !== "ANGEL" &&
     role !== "ADMIN"
   ) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    return denyWrongRole();
   }
 
   if (
@@ -179,7 +194,7 @@ export default auth((req) => {
     role !== "INTEGRATIVE_THERAPIST" &&
     role !== "ADMIN"
   ) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    return denyWrongRole();
   }
 
   return NextResponse.next();

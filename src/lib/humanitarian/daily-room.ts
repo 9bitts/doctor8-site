@@ -2,6 +2,8 @@ export async function createHumanitarianDailyRoom(): Promise<{ url: string; name
   const key = process.env.DAILY_API_KEY;
   if (!key) return { url: "", name: "" };
 
+  const exp = Math.floor(Date.now() / 1000) + 7200;
+
   try {
     const dailyRes = await fetch("https://api.daily.co/v1/rooms", {
       method: "POST",
@@ -10,10 +12,15 @@ export async function createHumanitarianDailyRoom(): Promise<{ url: string; name
         Authorization: `Bearer ${key}`,
       },
       body: JSON.stringify({
+        privacy: "private",
         properties: {
-          exp: Math.floor(Date.now() / 1000) + 7200,
+          exp,
+          max_participants: 2,
           enable_chat: true,
+          enable_screenshare: true,
+          enable_prejoin_ui: true,
           enable_knocking: false,
+          eject_at_room_exp: true,
         },
       }),
     });
