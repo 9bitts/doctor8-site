@@ -254,6 +254,12 @@ enum HumanitarianPriority {
   URGENT
   CRISIS
 }
+
+enum HumanitarianIntakeStatus {
+  TRIAGE_ONLY
+  PARTIAL
+  COMPLETE
+}
 // ─────────────────────────────────────────
 // CORE USER
 // ─────────────────────────────────────────
@@ -269,6 +275,7 @@ model User {
   jitQueueEntries   JitQueue[]  @relation("JitQueuePatient")
   humanitarianQueueEntries HumanitarianQueueEntry[] @relation("HumanitarianQueuePatient")
   humanitarianVolunteers   HumanitarianVolunteer[]  @relation("HumanitarianVolunteer")
+  humanitarianIntakes        HumanitarianIntake[]     @relation("HumanitarianIntakePatient")
 
   // Soft delete — GDPR right to erasure
   // After 30 days we hard-delete PHI, keep anonymized stats
@@ -2101,12 +2108,39 @@ model HumanitarianCampaign {
   pools                    HumanitarianPool[]
   volunteers               HumanitarianVolunteer[]
   entries                  HumanitarianQueueEntry[]
+  intakes                  HumanitarianIntake[]
 
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
 
   @@index([active])
   @@index([slug])
+}
+
+model HumanitarianIntake {
+  id                  String                   @id @default(cuid())
+  campaignId          String
+  campaign            HumanitarianCampaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  patientUserId       String
+  patientUser         User                     @relation("HumanitarianIntakePatient", fields: [patientUserId], references: [id], onDelete: Cascade)
+
+  triageData          Json?
+  triageCompletedAt   DateTime?
+  computedPriority    HumanitarianPriority?
+  triageFlags         String[]                 @default([])
+  forceMedicalPool    Boolean                  @default(false)
+
+  status              HumanitarianIntakeStatus @default(TRIAGE_ONLY)
+
+  entries             HumanitarianQueueEntry[]
+
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  @@unique([campaignId, patientUserId])
+  @@index([campaignId, status])
+  @@index([campaignId, computedPriority])
+  @@index([patientUserId])
 }
 
 model HumanitarianPool {
@@ -2172,6 +2206,9 @@ model HumanitarianQueueEntry {
   volunteer       HumanitarianVolunteer?   @relation(fields: [volunteerId], references: [id], onDelete: SetNull)
 
   chiefComplaint  String?
+
+  intakeId        String?
+  intake          HumanitarianIntake?      @relation(fields: [intakeId], references: [id], onDelete: SetNull)
 
   enteredAt       DateTime                 @default(now())
   calledAt        DateTime?

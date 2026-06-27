@@ -18,10 +18,12 @@ import {
 import Link from "next/link";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
+import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   getActiveCampaignForRegion,
   getPatientActiveHumanitarianEntry,
 } from "@/lib/humanitarian/notify";
+import { getPatientIntakeStatusBySlug } from "@/lib/humanitarian/intake";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -93,6 +95,7 @@ export default async function PatientDashboard() {
     userRow,
     humanitarianCampaign,
     humanitarianEntry,
+    humanitarianIntake,
   ] = await Promise.all([
     db.prescription.count({
       where: { document: { patientId: patient.id } },
@@ -126,6 +129,7 @@ export default async function PatientDashboard() {
     }),
     getActiveCampaignForRegion(session.user.region),
     getPatientActiveHumanitarianEntry(userId),
+    getPatientIntakeStatusBySlug(VENEZUELA_CAMPAIGN_SLUG, userId),
   ]);
 
   const hasActiveClub =
@@ -248,6 +252,7 @@ export default async function PatientDashboard() {
             name: humanitarianCampaign?.name ?? translate(lang, "hum.banner.title"),
           }}
           entry={humanitarianEntry}
+          triageValid={humanitarianIntake.triageValid}
         />
       )}
 

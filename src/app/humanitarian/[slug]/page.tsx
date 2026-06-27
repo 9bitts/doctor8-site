@@ -12,8 +12,6 @@ import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 
-const PRIORITIES = ["ROUTINE", "URGENT", "CRISIS"] as const;
-
 interface PoolInfo {
   id: string;
   slug: string;
@@ -67,7 +65,8 @@ export default function HumanitarianCampaignPage() {
   const [entering, setEntering] = useState(false);
   const [complaint, setComplaint] = useState("");
   const [selectedPool, setSelectedPool] = useState<string | null>(null);
-  const [priority, setPriority] = useState<(typeof PRIORITIES)[number]>("ROUTINE");
+  const [forceMedicalPool, setForceMedicalPool] = useState(false);
+  const [computedPriority, setComputedPriority] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -103,6 +102,18 @@ export default function HumanitarianCampaignPage() {
           router.push("/humanitarian/volunteer");
           return;
         }
+
+        const intakeRes = await fetch(`/api/humanitarian/intake?campaignSlug=${slug}`);
+        const intakeData = await intakeRes.json();
+        if (intakeRes.ok && !intakeData.intake?.triageValid) {
+          router.replace(`/humanitarian/${slug}/triage`);
+          return;
+        }
+        if (intakeRes.ok && intakeData.intake) {
+          setForceMedicalPool(!!intakeData.intake.forceMedicalPool);
+          setComputedPriority(intakeData.intake.computedPriority ?? null);
+        }
+
         loadCampaign();
       })
       .catch(() => router.push("/login?callbackUrl=/patient"));
@@ -146,11 +157,14 @@ export default function HumanitarianCampaignPage() {
           campaignSlug: slug,
           poolSlug,
           chiefComplaint: complaint.trim() || undefined,
-          priority,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.error === "TRIAGE_REQUIRED") {
+          router.replace(`/humanitarian/${slug}/triage`);
+          return;
+        }
         setError(data.message || data.error || t(lang, "hum.page.queueError"));
         setJoining(null);
         return;
@@ -261,6 +275,18 @@ export default function HumanitarianCampaignPage() {
           {t(lang, "hum.page.whatNeed")}
         </h2>
 
+        {forceMedicalPool && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-100">
+            {t(lang, "hum.page.medicalUrgentHint")}
+          </div>
+        )}
+
+        {computedPriority && computedPriority !== "ROUTINE" && (
+          <p className="text-xs text-slate-500">
+            {t(lang, `hum.triage.priorityHint.${computedPriority.toLowerCase()}`)}
+          </p>
+        )}
+
         <div className="space-y-3">
           {pools.map((pool) => (
             <button
@@ -268,7 +294,11 @@ export default function HumanitarianCampaignPage() {
               type="button"
               disabled={!campaign?.active || pool.isFull || !!joining}
               onClick={() => setSelectedPool(pool.slug)}
-              className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-4 sm:p-5 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className={`w-full text-left bg-white/5 hover:bg-white/10 border rounded-2xl p-4 sm:p-5 transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                forceMedicalPool && pool.slug === "medico"
+                  ? "border-amber-400/50 ring-1 ring-amber-400/30"
+                  : "border-white/10"
+              }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -299,42 +329,6 @@ export default function HumanitarianCampaignPage() {
                 pool: pools.find((p) => p.slug === selectedPool)?.label || "",
               })}
             </p>
-
-            <div>
-              <label className="block text-xs text-slate-500 mb-2">{t(lang, "hum.page.urgencyLevel")}</label>
-              <div className="space-y-2">
-                {PRIORITIES.map((p) => (
-                  <label
-                    key={p}
-                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${
-                      priority === p
-                        ? p === "CRISIS"
-                          ? "border-rose-400 bg-rose-500/10"
-                          : p === "URGENT"
-                            ? "border-amber-400 bg-amber-500/10"
-                            : "border-emerald-400/50 bg-emerald-500/5"
-                        : "border-white/10 bg-slate-900/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="priority"
-                      checked={priority === p}
-                      onChange={() => setPriority(p)}
-                      className="mt-1 shrink-0"
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-white">
-                        {t(lang, `hum.priority.${p.toLowerCase()}.label`)}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {t(lang, `hum.priority.${p.toLowerCase()}.desc`)}
-                      </p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
 
             <div>
               <label className="block text-xs text-slate-500 mb-1.5">{t(lang, "hum.page.complaintLabel")}</label>
@@ -371,6 +365,21 @@ export default function HumanitarianCampaignPage() {
 
         <p className="text-center text-xs text-slate-500 leading-relaxed px-2">
           {t(lang, "hum.page.disclaimer")}
+        </p>
+        <p className="text-center text-sm">
+          <Link
+            href={`/humanitarian/${slug}/triage?retake=1`}
+            className="text-slate-500 hover:text-slate-300 text-xs underline underline-offset-2"
+          >
+            {t(lang, "hum.page.retakeTriage")}
+          </Link>
+          {" ? "}
+          <Link
+            href={`/humanitarian/${slug}/anamnese`}
+            className="text-slate-400 hover:text-emerald-400 underline underline-offset-2"
+          >
+            {t(lang, "hum.page.anamneseLink")}
+          </Link>
         </p>
         <p className="text-center text-xs text-slate-600">{t(lang, "hum.page.footer")}</p>
       </div>

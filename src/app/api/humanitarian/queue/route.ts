@@ -10,12 +10,12 @@ import {
   joinHumanitarianQueue,
 } from "@/lib/humanitarian/dispatcher";
 import { notifyHumanitarianJoined } from "@/lib/humanitarian/notify";
+import { requireValidIntake } from "@/lib/humanitarian/intake";
 
 const joinSchema = z.object({
   campaignSlug: z.string(),
   poolSlug: z.string(),
   chiefComplaint: z.string().max(2000).optional(),
-  priority: z.enum(["ROUTINE", "URGENT", "CRISIS"]).default("ROUTINE"),
 });
 
 export async function GET(req: NextRequest) {
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { campaignSlug, poolSlug, chiefComplaint, priority } = parsed.data;
+  const { campaignSlug, poolSlug, chiefComplaint } = parsed.data;
 
   const campaign = await db.humanitarianCampaign.findUnique({
     where: { slug: campaignSlug },
@@ -61,6 +61,19 @@ export async function POST(req: NextRequest) {
   }
 
   const pool = campaign.pools[0];
+
+  const intake = await requireValidIntake(campaign.id, session.user.id);
+  if (!intake?.computedPriority) {
+    return NextResponse.json(
+      {
+        error: "TRIAGE_REQUIRED",
+        message: "Complete initial triage before joining the queue.",
+      },
+      { status: 403 },
+    );
+  }
+
+  const priority = intake.computedPriority;
 
   const existing = await db.humanitarianQueueEntry.findFirst({
     where: {
@@ -91,6 +104,7 @@ export async function POST(req: NextRequest) {
       priority,
       chiefComplaint,
       maxWaiting: pool.maxWaiting,
+      intakeId: intake.id,
     });
   } catch (e) {
     if (e instanceof HumanitarianQueueFullError) {

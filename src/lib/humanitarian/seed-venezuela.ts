@@ -11,7 +11,7 @@ export async function seedVenezuelaCampaign() {
   });
 
   const campaignData = {
-    name: "Venezuela — Atención humanitaria post-terremoto",
+    name: "SOS Venezuela",
     description: "Atención médica y de salud mental gratuita para personas afectadas por el terremoto. Sin costo. Voluntarios de Doctor8.",
     region: "VE" as const,
     active: true,

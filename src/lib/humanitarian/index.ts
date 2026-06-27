@@ -40,6 +40,21 @@ export {
 export { seedVenezuelaCampaign } from "@/lib/humanitarian/seed-venezuela";
 export { buildHumanitarianCsv } from "@/lib/humanitarian/export-csv";
 export { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
+export {
+  computeTriagePriority,
+  humanitarianTriageSchema,
+  isTriageValid,
+  triageExpiresAt,
+  TRIAGE_VALIDITY_MS,
+} from "@/lib/humanitarian/triage";
+export type { HumanitarianTriageData, TriageResult } from "@/lib/humanitarian/triage";
+export {
+  getPatientIntakeStatus,
+  getPatientIntakeStatusBySlug,
+  requireValidIntake,
+  saveHumanitarianTriage,
+} from "@/lib/humanitarian/intake";
+export type { IntakeStatusDto } from "@/lib/humanitarian/intake";
 
 export const HUMANITARIAN_PRIORITY_OPTIONS = [
   {

@@ -11,13 +11,15 @@ type Props = {
     status: string;
     pool: { labelEs: string; labelPt: string; labelEn: string };
   } | null;
+  triageValid?: boolean;
 };
 
-export default function HumanitarianBanner({ lang, campaign, entry }: Props) {
+export default function HumanitarianBanner({ lang, campaign, entry, triageValid = false }: Props) {
   if (!campaign) return null;
 
   const t = (key: string) => translate(lang, key);
-  const href = `/humanitarian/${campaign.slug || VENEZUELA_CAMPAIGN_SLUG}`;
+  const slug = campaign.slug || VENEZUELA_CAMPAIGN_SLUG;
+  const careHref = triageValid ? `/humanitarian/${slug}` : `/humanitarian/${slug}/triage`;
   const poolName = entry ? poolLabel(entry.pool, lang) : "";
 
   if (entry?.status === "CALLED") {
@@ -66,7 +68,7 @@ export default function HumanitarianBanner({ lang, campaign, entry }: Props) {
   if (entry?.status === "WAITING") {
     return (
       <Link
-        href={href}
+        href={careHref}
         className="block rounded-2xl border border-rose-200 bg-rose-50 shadow-sm overflow-hidden transition hover:shadow-md"
       >
         <div className="p-5 sm:p-6 flex items-center gap-4">
@@ -85,7 +87,7 @@ export default function HumanitarianBanner({ lang, campaign, entry }: Props) {
 
   return (
     <Link
-      href={href}
+      href={careHref}
       className="block rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50 shadow-sm overflow-hidden transition hover:shadow-md hover:border-rose-300"
     >
       <div className="p-5 sm:p-6 flex items-center gap-4">

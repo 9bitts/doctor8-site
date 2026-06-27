@@ -369,6 +369,7 @@ export async function joinHumanitarianQueue(params: {
   priority: HumanitarianPriority;
   chiefComplaint?: string | null;
   maxWaiting: number;
+  intakeId?: string | null;
 }): Promise<HumanitarianQueueEntry> {
   return db.$transaction(
     async (tx) => {
@@ -398,6 +399,7 @@ export async function joinHumanitarianQueue(params: {
           priority: params.priority,
           position,
           chiefComplaint: params.chiefComplaint || null,
+          intakeId: params.intakeId || null,
         },
       });
     },
