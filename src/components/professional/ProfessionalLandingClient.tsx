@@ -15,6 +15,8 @@ import { DEFAULT_VENEZUELA_POOLS } from "@/lib/humanitarian/constants";
 import { detectInitialLang, LANG_KEY } from "@/components/auth/register-shared";
 import ProPlanCta from "@/components/professional/ProPlanCta";
 
+const PRO_LOGIN_HREF = `/login?registerUrl=${encodeURIComponent("/register/professional/signup")}`;
+
 const FEAT_ICONS: Record<string, LucideIcon> = {
   calendar: Calendar,
   video: Video,
@@ -119,7 +121,7 @@ export function ProNav({ c, lang, onLangChange }: { c: ProLandingContent; lang: 
         </ul>
         <div className="ml-auto flex shrink-0 items-center gap-2.5">
           <div className="hidden sm:block"><LangSwitcher lang={lang} onChange={onLangChange} /></div>
-          <Link href="/login" className="hidden rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/75 transition hover:border-white/45 hover:text-white sm:inline-block">
+          <Link href={PRO_LOGIN_HREF} className="hidden rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/75 transition hover:border-white/45 hover:text-white sm:inline-block">
             {c.nav.signIn}
           </Link>
           <Link href="/register/professional/signup" className="rounded-lg bg-brand-500 px-5 py-2 text-sm font-bold text-white transition hover:bg-brand-600">

@@ -10,7 +10,7 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
-import { persistAuthCallback } from "@/lib/auth-callback";
+import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail,
@@ -55,6 +55,10 @@ function LoginForm() {
 
   const verified = searchParams.get("verified") === "true";
   const callbackUrl = searchParams.get("callbackUrl") || "";
+  const registerHref = resolveRegisterHref(
+    searchParams.get("registerUrl"),
+    callbackUrl || null,
+  );
 
   useEffect(() => {
     const err = searchParams.get("error");
@@ -341,7 +345,7 @@ function LoginForm() {
             <p className="text-slate-400 text-sm">
               {t("login.noAccount")}{" "}
               <Link
-                href={callbackUrl ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/register"}
+                href={registerHref}
                 className="text-emerald-400 hover:text-emerald-300 font-medium transition"
               >
                 {t("login.createAccount")}

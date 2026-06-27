@@ -427,7 +427,7 @@ function RegisterCheckbox({
           </svg>
         )}
       </div>
-      <span className="text-sm text-slate-300 leading-relaxed">{label}</span>
+      <span className="text-xs text-slate-300 leading-relaxed">{label}</span>
     </label>
   );
 }

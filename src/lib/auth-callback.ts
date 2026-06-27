@@ -17,3 +17,17 @@ export function consumeAuthCallback(): string | null {
     return null;
   }
 }
+
+/** Safe internal register path from ?registerUrl= (defaults to patient /register). */
+export function resolveRegisterHref(
+  registerUrl: string | null | undefined,
+  callbackUrl?: string | null,
+): string {
+  const base =
+    registerUrl?.startsWith("/register") && !registerUrl.startsWith("//")
+      ? registerUrl
+      : "/register";
+  if (!callbackUrl) return base;
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}callbackUrl=${encodeURIComponent(callbackUrl)}`;
+}

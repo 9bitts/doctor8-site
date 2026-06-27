@@ -63,9 +63,13 @@ export default function RegisterProfessionalSignupPage() {
     setStep(2);
   }
 
-  const loginHref = callbackUrl
-    ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
-    : "/login";
+  const loginHref = (() => {
+    const registerUrl = encodeURIComponent("/register/professional/signup");
+    if (callbackUrl) {
+      return `/login?registerUrl=${registerUrl}&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+    }
+    return `/login?registerUrl=${registerUrl}`;
+  })();
 
   const patientHref = callbackUrl
     ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
