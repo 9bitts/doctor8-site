@@ -82,16 +82,18 @@ export default function AdminHumanitarianPage() {
     setToggling(false);
   }
 
-  async function exportCsv(slug: string) {
+  async function exportCsv(slug: string, type: "queue" | "intakes" = "queue") {
     setExporting(true);
     try {
-      const res = await fetch(`/api/admin/humanitarian/export?slug=${encodeURIComponent(slug)}`);
+      const res = await fetch(
+        `/api/admin/humanitarian/export?slug=${encodeURIComponent(slug)}&type=${type}`,
+      );
       if (!res.ok) return;
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `humanitarian-${slug}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `humanitarian-${type}-${slug}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch { /* ignore */ }
@@ -156,11 +158,20 @@ export default function AdminHumanitarianPage() {
                 <button
                   type="button"
                   disabled={exporting}
-                  onClick={() => exportCsv(c.slug)}
+                  onClick={() => exportCsv(c.slug, "queue")}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-                  CSV hoy
+                  CSV fila hoy
+                </button>
+                <button
+                  type="button"
+                  disabled={exporting}
+                  onClick={() => exportCsv(c.slug, "intakes")}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                  CSV fichas
                 </button>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${c.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                   {c.active ? "Activa" : "Pausada"}

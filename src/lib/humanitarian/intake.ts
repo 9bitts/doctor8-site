@@ -226,6 +226,10 @@ export async function saveHumanitarianTriage(params: {
     },
   });
 
+  afterTriageSaved(params.campaignId, params.patientUserId, result.priority, result.flags).catch(
+    () => {},
+  );
+
   return {
     intake,
     priority: result.priority,
@@ -233,6 +237,36 @@ export async function saveHumanitarianTriage(params: {
     flags: result.flags,
     triageExpiresAt: triageExpiresAt(now),
   };
+}
+
+async function patientLabelForUser(patientUserId: string): Promise<string> {
+  const profile = await db.patientProfile.findUnique({
+    where: { userId: patientUserId },
+    select: { firstName: true, lastName: true },
+  });
+  if (!profile) return "Paciente";
+  return `${safeDecrypt(profile.firstName)} ${safeDecrypt(profile.lastName)}`.trim() || "Paciente";
+}
+
+async function afterTriageSaved(
+  campaignId: string,
+  patientUserId: string,
+  priority: HumanitarianPriority,
+  flags: string[],
+) {
+  if (priority !== "CRISIS" && priority !== "URGENT") return;
+  const [campaign, label] = await Promise.all([
+    db.humanitarianCampaign.findUnique({ where: { id: campaignId }, select: { name: true } }),
+    patientLabelForUser(patientUserId),
+  ]);
+  if (!campaign) return;
+  const { notifyCoordinationUrgentTriage } = await import("@/lib/humanitarian/coordination-email");
+  await notifyCoordinationUrgentTriage({
+    patientLabel: label,
+    campaignName: campaign.name,
+    priority,
+    flags,
+  });
 }
 
 export async function saveAnamneseSection(params: {
@@ -293,6 +327,26 @@ export async function saveAnamneseSection(params: {
     where: { id: existing.id },
     data: updateData,
   });
+
+  if (parsed.section === "consent" && intake.status === "COMPLETE") {
+    const [campaign, label] = await Promise.all([
+      db.humanitarianCampaign.findUnique({
+        where: { id: params.campaignId },
+        select: { name: true },
+      }),
+      patientLabelForUser(params.patientUserId),
+    ]);
+    if (campaign) {
+      const { notifyCoordinationIntakeComplete } = await import(
+        "@/lib/humanitarian/coordination-email"
+      );
+      notifyCoordinationIntakeComplete({
+        patientLabel: label,
+        campaignName: campaign.name,
+        intake,
+      }).catch(() => {});
+    }
+  }
 
   return {
     intake,

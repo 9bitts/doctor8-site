@@ -10,6 +10,7 @@ import {
   Pill, X, CheckCircle2, ClipboardList, PhoneOff,
 } from "lucide-react";
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
+import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
 
 export interface VideoConsultData {
   url: string;
@@ -121,6 +122,10 @@ export default function VideoConsultRoom({
   const [noteSaved, setNoteSaved] = useState(false);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [leavingCall, setLeavingCall] = useState(false);
+  const [humanitarianIntake, setHumanitarianIntake] = useState<{
+    summary: Parameters<typeof HumanitarianIntakeSummary>[0]["summary"];
+    chiefComplaint: string | null;
+  } | null>(null);
   const notesAssistantRef = useRef<ConsultNotesAssistantHandle>(null);
 
   const t = (k: string) => T[k]?.[lang] ?? T[k]?.["en"] ?? k;
@@ -143,6 +148,13 @@ export default function VideoConsultRoom({
       setData(result.data);
       if (result.data.role === "professional" && result.data.patientRecordId) {
         loadRecords(result.data.patientRecordId);
+      }
+      if (
+        result.data.role === "professional" &&
+        result.data.kind === "humanitarian" &&
+        result.data.entryId
+      ) {
+        loadHumanitarianIntake(result.data.entryId);
       }
     } catch {
       setError("Connection error. Please try again.");
@@ -170,6 +182,19 @@ export default function VideoConsultRoom({
       setRecords((d.documents || []).slice(0, 5));
     } catch { /* ignore */ }
     setRecordsLoading(false);
+  }
+
+  async function loadHumanitarianIntake(entryId: string) {
+    try {
+      const res = await fetch(`/api/humanitarian/queue/${entryId}/intake?lang=${lang}`);
+      const d = await res.json();
+      if (res.ok) {
+        setHumanitarianIntake({
+          summary: d.summary ?? null,
+          chiefComplaint: d.chiefComplaint ?? null,
+        });
+      }
+    } catch { /* ignore */ }
   }
 
   async function saveNote() {
@@ -364,7 +389,19 @@ export default function VideoConsultRoom({
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {!data.patientRecordId && (
+              {data.kind === "humanitarian" && isPro && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
+                  <p className="text-xs font-semibold text-emerald-300 mb-2">SOS Venezuela — Ficha</p>
+                  <HumanitarianIntakeSummary
+                    summary={humanitarianIntake?.summary ?? null}
+                    chiefComplaint={humanitarianIntake?.chiefComplaint}
+                    compact
+                    dark
+                  />
+                </div>
+              )}
+
+              {!data.patientRecordId && data.kind !== "humanitarian" && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-300">
                   {t("noChart")}
                 </div>

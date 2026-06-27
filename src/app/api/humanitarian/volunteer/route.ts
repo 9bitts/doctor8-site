@@ -9,6 +9,7 @@ import {
   releaseVolunteer,
   resolveVolunteerProfile,
 } from "@/lib/humanitarian/dispatcher";
+import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
 import { decrypt } from "@/lib/encryption";
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -64,6 +65,7 @@ export async function GET(req: NextRequest) {
             patientProfile: { select: { firstName: true, lastName: true } },
           },
         },
+        intake: true,
       },
     });
     if (entry) {
@@ -78,6 +80,7 @@ export async function GET(req: NextRequest) {
           : "Paciente",
         calledAt: entry.calledAt?.toISOString() ?? null,
         expiresAt: entry.expiresAt?.toISOString() ?? null,
+        intakeSummary: entry.intake ? buildIntakeSummary(entry.intake, "es") : null,
       };
     }
   }
@@ -240,6 +243,7 @@ export async function POST(req: NextRequest) {
         patientUser: {
           select: { patientProfile: { select: { firstName: true, lastName: true } } },
         },
+        intake: true,
       },
     });
     if (entry) {
@@ -254,6 +258,7 @@ export async function POST(req: NextRequest) {
           : "Paciente",
         calledAt: entry.calledAt?.toISOString() ?? null,
         expiresAt: entry.expiresAt?.toISOString() ?? null,
+        intakeSummary: entry.intake ? buildIntakeSummary(entry.intake, "es") : null,
       };
     }
   }
@@ -303,6 +308,7 @@ export async function PATCH(req: NextRequest) {
         patientUser: {
           select: { patientProfile: { select: { firstName: true, lastName: true } } },
         },
+        intake: true,
       },
     });
     if (entry) {
@@ -316,6 +322,7 @@ export async function PATCH(req: NextRequest) {
         patientName: pp
           ? `${safeDecrypt(pp.firstName)} ${safeDecrypt(pp.lastName)}`.trim()
           : "Paciente",
+        intakeSummary: entry.intake ? buildIntakeSummary(entry.intake, "es") : null,
       };
     }
   }

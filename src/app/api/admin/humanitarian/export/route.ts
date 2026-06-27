@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { buildHumanitarianCsv } from "@/lib/humanitarian/export-csv";
+import { buildHumanitarianCsv, buildHumanitarianIntakesCsv } from "@/lib/humanitarian/export-csv";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
 export async function GET(req: NextRequest) {
@@ -11,17 +11,29 @@ export async function GET(req: NextRequest) {
 
   const params = new URL(req.url).searchParams;
   const slug = params.get("slug") || VENEZUELA_CAMPAIGN_SLUG;
+  const type = params.get("type") || "queue";
   const dateParam = params.get("date");
   const day = dateParam ? new Date(dateParam) : new Date();
+  const dateStr = day.toISOString().slice(0, 10);
+
+  if (type === "intakes") {
+    const csv = await buildHumanitarianIntakesCsv(slug);
+    if (!csv) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="humanitarian-intakes-${slug}-${dateStr}.csv"`,
+      },
+    });
+  }
 
   const csv = await buildHumanitarianCsv(slug, day);
   if (!csv) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
 
-  const dateStr = day.toISOString().slice(0, 10);
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="humanitarian-${slug}-${dateStr}.csv"`,
+      "Content-Disposition": `attachment; filename="humanitarian-queue-${slug}-${dateStr}.csv"`,
     },
   });
 }

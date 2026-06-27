@@ -64,6 +64,12 @@ export {
 } from "@/lib/humanitarian/intake";
 export type { IntakeStatusDto, AdminIntakeRow, AnamneseDto } from "@/lib/humanitarian/intake";
 export { notifyHumanitarianAnamneseReminder } from "@/lib/humanitarian/notify";
+export { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
+export {
+  notifyCoordinationIntakeComplete,
+  notifyCoordinationUrgentTriage,
+} from "@/lib/humanitarian/coordination-email";
+export { buildHumanitarianIntakesCsv } from "@/lib/humanitarian/export-csv";
 
 export const HUMANITARIAN_PRIORITY_OPTIONS = [
   {

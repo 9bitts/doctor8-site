@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { decrypt } from "@/lib/encryption";
 
 function startOfDay(d = new Date()): Date {
   const x = new Date(d);
@@ -17,6 +18,11 @@ function csvEscape(v: string | number | null | undefined): string {
   const s = String(v);
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
+}
+
+function safeDecrypt(v: string | null | undefined): string {
+  if (!v) return "";
+  try { return decrypt(v); } catch { return v; }
 }
 
 function waitMinutes(enteredAt: Date, startedAt: Date | null): string {
@@ -46,6 +52,14 @@ export async function buildHumanitarianCsv(campaignSlug: string, day = new Date(
     },
     include: {
       pool: { select: { slug: true, labelEs: true } },
+      intake: {
+        select: {
+          computedPriority: true,
+          triageFlags: true,
+          status: true,
+          forceMedicalPool: true,
+        },
+      },
     },
     orderBy: { enteredAt: "asc" },
   });
@@ -55,6 +69,9 @@ export async function buildHumanitarianCsv(campaignSlug: string, day = new Date(
     "pool_slug",
     "pool_label",
     "priority",
+    "triage_flags",
+    "intake_status",
+    "force_medical_pool",
     "status",
     "entered_at",
     "called_at",
@@ -70,6 +87,9 @@ export async function buildHumanitarianCsv(campaignSlug: string, day = new Date(
       e.pool.slug,
       e.pool.labelEs,
       e.priority,
+      e.intake?.triageFlags?.join(";") ?? "",
+      e.intake?.status ?? "",
+      e.intake?.forceMedicalPool ? "yes" : "",
       e.status,
       e.enteredAt.toISOString(),
       e.calledAt?.toISOString() ?? "",
@@ -81,6 +101,60 @@ export async function buildHumanitarianCsv(campaignSlug: string, day = new Date(
       .map(csvEscape)
       .join(","),
   );
+
+  return [headers.join(","), ...rows].join("\n");
+}
+
+export async function buildHumanitarianIntakesCsv(campaignSlug: string): Promise<string | null> {
+  const campaign = await db.humanitarianCampaign.findUnique({
+    where: { slug: campaignSlug },
+    select: { id: true },
+  });
+  if (!campaign) return null;
+
+  const intakes = await db.humanitarianIntake.findMany({
+    where: { campaignId: campaign.id },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      patientUser: {
+        select: { patientProfile: { select: { firstName: true, lastName: true } } },
+      },
+    },
+  });
+
+  const headers = [
+    "intake_id",
+    "patient_label",
+    "priority",
+    "triage_flags",
+    "intake_status",
+    "force_medical_pool",
+    "service_types",
+    "triage_completed_at",
+    "consent_at",
+    "updated_at",
+  ];
+
+  const rows = intakes.map((i) => {
+    const p = i.patientUser.patientProfile;
+    const label = p
+      ? `${safeDecrypt(p.firstName)} ${safeDecrypt(p.lastName)}`.trim()
+      : "Paciente";
+    return [
+      i.id,
+      label,
+      i.computedPriority ?? "",
+      i.triageFlags.join(";"),
+      i.status,
+      i.forceMedicalPool ? "yes" : "",
+      i.serviceTypes.join(";"),
+      i.triageCompletedAt?.toISOString() ?? "",
+      i.consentAt?.toISOString() ?? "",
+      i.updatedAt.toISOString(),
+    ]
+      .map(csvEscape)
+      .join(",");
+  });
 
   return [headers.join(","), ...rows].join("\n");
 }

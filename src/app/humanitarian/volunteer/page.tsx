@@ -10,6 +10,7 @@ import {
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
+import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 
 interface PoolRow {
@@ -28,6 +29,12 @@ interface CurrentEntry {
   status: string;
   chiefComplaint: string | null;
   patientName: string;
+  intakeSummary?: {
+    priority: string | null;
+    status: string;
+    anamneseComplete: boolean;
+    sections: { title: string; items: { label: string; value: string }[] }[];
+  } | null;
 }
 
 function t(lang: Lang, key: string, params?: Record<string, string | number>) {
@@ -210,11 +217,11 @@ export default function HumanitarianVolunteerPage() {
               {t(lang, "hum.vol.patientAssigned")}
             </div>
             <p className="text-lg font-bold text-slate-900">{currentEntry.patientName}</p>
-            {currentEntry.chiefComplaint && (
-              <p className="text-sm text-slate-600 bg-white rounded-xl p-3 border border-slate-100">
-                {currentEntry.chiefComplaint}
-              </p>
-            )}
+            <HumanitarianIntakeSummary
+              summary={currentEntry.intakeSummary ?? null}
+              chiefComplaint={currentEntry.chiefComplaint}
+              compact
+            />
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href={`/video/humanitarian/${currentEntry.id}`}
