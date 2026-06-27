@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAccountVerified } from "@/lib/account-verified";
+import { checkTwilioVerification, usesTwilioVerify } from "@/lib/sms";
 import { smsOtpIdentifier } from "@/lib/sms-otp";
 
 const MAX_ATTEMPTS = 5;
@@ -32,6 +33,8 @@ export async function POST(req: NextRequest) {
       where: { email: normalizedEmail },
       select: {
         id: true,
+        email: true,
+        phone: true,
         emailVerified: true,
         phoneVerified: true,
         passwordHash: true,
@@ -47,6 +50,39 @@ export async function POST(req: NextRequest) {
     }
 
     const identifier = smsOtpIdentifier(normalizedEmail);
+    const attemptsId = attemptsIdentifier(normalizedEmail);
+
+    if (usesTwilioVerify()) {
+      const phone = user.phone;
+      if (!phone) {
+        return NextResponse.json({ error: "INVALID_CODE" }, { status: 400 });
+      }
+
+      const checked = await checkTwilioVerification(phone, normalizedCode);
+      if (!checked.ok) {
+        if (checked.error === "max_attempts") {
+          await db.verificationToken.deleteMany({
+            where: { identifier: { in: [identifier, attemptsId] } },
+          });
+          return NextResponse.json({ error: "TOO_MANY_ATTEMPTS" }, { status: 429 });
+        }
+        return NextResponse.json({ error: "INVALID_CODE" }, { status: 400 });
+      }
+
+      const now = new Date();
+      await db.$transaction([
+        db.user.update({
+          where: { id: user.id },
+          data: { phoneVerified: now, emailVerified: now },
+        }),
+        db.verificationToken.deleteMany({
+          where: { identifier: { in: [identifier, attemptsId] } },
+        }),
+      ]);
+
+      return NextResponse.json({ success: true });
+    }
+
     const record = await db.verificationToken.findFirst({
       where: { identifier },
       orderBy: { expires: "desc" },
@@ -61,7 +97,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "EXPIRED" }, { status: 400 });
     }
 
-    const attemptsId = attemptsIdentifier(normalizedEmail);
     const attemptsRow = await db.verificationToken.findFirst({
       where: { identifier: attemptsId },
     });
@@ -94,9 +129,7 @@ export async function POST(req: NextRequest) {
         data: { phoneVerified: now, emailVerified: now },
       }),
       db.verificationToken.deleteMany({
-        where: {
-          identifier: { in: [identifier, attemptsId] },
-        },
+        where: { identifier: { in: [identifier, attemptsId] } },
       }),
     ]);
 

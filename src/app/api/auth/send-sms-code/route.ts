@@ -4,7 +4,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAccountVerified } from "@/lib/account-verified";
 import { normalizeSmsPhone } from "@/lib/phone";
-import { sendVerificationSms, isSmsConfigured } from "@/lib/sms";
+import {
+  sendVerificationSms,
+  startTwilioVerification,
+  isSmsConfigured,
+  usesTwilioVerify,
+} from "@/lib/sms";
 import {
   generateSmsCode,
   smsOtpIdentifier,
@@ -47,7 +52,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Avoid leaking whether the email exists
     if (!user?.passwordHash) {
       return NextResponse.json({ success: true });
     }
@@ -63,24 +67,40 @@ export async function POST(req: NextRequest) {
     });
 
     if (existing && existing.expires.getTime() > Date.now()) {
-      const createdApprox =
-        existing.expires.getTime() - SMS_OTP_TTL_MS;
+      const createdApprox = existing.expires.getTime() - SMS_OTP_TTL_MS;
       if (Date.now() - createdApprox < SMS_RESEND_COOLDOWN_MS) {
         return NextResponse.json({ error: "RATE_LIMITED" }, { status: 429 });
       }
     }
 
-    const code = generateSmsCode();
     const expires = new Date(Date.now() + SMS_OTP_TTL_MS);
-
     await db.verificationToken.deleteMany({ where: { identifier } });
-    await db.verificationToken.create({
-      data: { identifier, token: code, expires },
-    });
 
     await db.user.update({
       where: { id: user.id },
       data: { phone: normalizedPhone },
+    });
+
+    if (usesTwilioVerify()) {
+      const sent = await startTwilioVerification(normalizedPhone);
+      if (!sent.ok) {
+        return NextResponse.json(
+          { error: sent.skipped ? "SMS_UNAVAILABLE" : "SEND_FAILED" },
+          { status: sent.skipped ? 503 : 502 },
+        );
+      }
+
+      // Marker so verify step knows SMS was sent (Twilio holds the code).
+      await db.verificationToken.create({
+        data: { identifier, token: normalizedPhone, expires },
+      });
+
+      return NextResponse.json({ success: true });
+    }
+
+    const code = generateSmsCode();
+    await db.verificationToken.create({
+      data: { identifier, token: code, expires },
     });
 
     const sent = await sendVerificationSms({
