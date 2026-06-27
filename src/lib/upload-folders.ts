@@ -1,0 +1,17 @@
+/** Allowed S3 upload folder prefixes ? prevents arbitrary key namespaces. */
+const FIXED_FOLDERS = new Set(["uploads", "resources", "patient-docs"]);
+
+const RECORDS_FOLDER = /^records\/[a-zA-Z0-9_-]+$/;
+const LICENSE_DOCS_FOLDER = /^license-docs\/[a-zA-Z0-9_-]+$/;
+
+export function normalizeUploadFolder(raw: string): string {
+  return raw.replace(/[^a-zA-Z0-9_/-]/g, "").replace(/^\/+|\/+$/g, "");
+}
+
+export function isAllowedUploadFolder(folder: string): boolean {
+  const normalized = normalizeUploadFolder(folder);
+  if (!normalized) return false;
+  if (FIXED_FOLDERS.has(normalized)) return true;
+  if (RECORDS_FOLDER.test(normalized)) return true;
+  return LICENSE_DOCS_FOLDER.test(normalized);
+}

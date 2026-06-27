@@ -10,6 +10,7 @@ import { PROFESSION_GROUPS, getProfessionLabel } from "@/lib/professions";
 import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
+import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import {
   ACCOUNT_REGION_OPTIONS,
   parseBillingRegion,
@@ -375,6 +376,8 @@ export default function ProfessionalSettings() {
             placeholder={t("set.aboutMePlaceholder")} />
         </div>
       </div>
+
+      <LicenseDocumentsUpload />
 
       {/* Clinic / Address */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">

@@ -2,7 +2,7 @@
 
 // src/app/(dashboard)/admin/doctors/DoctorsAdminClient.tsx
 import { useState, useEffect } from "react";
-import { Stethoscope, Loader2, CheckCircle2, XCircle, Search, Globe, ExternalLink } from "lucide-react";
+import { Stethoscope, Loader2, CheckCircle2, XCircle, Search, Globe, ExternalLink, FileText } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 
@@ -21,6 +21,7 @@ interface Doctor {
   createdAt: string;
   publicUrl: string | null;
   isPublic: boolean;
+  licenseDocCount: number;
 }
 
 export default function DoctorsAdminClient() {
@@ -28,6 +29,7 @@ export default function DoctorsAdminClient() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [docsBusyId, setDocsBusyId] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   async function load() {
@@ -51,6 +53,24 @@ export default function DoctorsAdminClient() {
       await load();
     } catch { /* ignore */ }
     setBusyId(null);
+  }
+
+  async function viewLicenseDocs(d: Doctor) {
+    setDocsBusyId(d.id);
+    try {
+      const res = await fetch(`/api/admin/doctors/${d.id}/license-documents`);
+      const data = await res.json();
+      if (!res.ok || !data.documents?.length) {
+        alert(data.documents?.length === 0 ? "Nenhum documento enviado." : "Erro ao carregar documentos.");
+        return;
+      }
+      for (const doc of data.documents) {
+        if (doc.viewUrl) window.open(doc.viewUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      alert("Erro ao carregar documentos.");
+    }
+    setDocsBusyId(null);
   }
 
   const filtered = doctors.filter((d) =>
@@ -111,6 +131,7 @@ export default function DoctorsAdminClient() {
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Licença {d.licenseNumber} ({d.licenseCountry}) · {d.appointments} consultas · {d.charts} fichas
+                  {d.licenseDocCount > 0 && ` · ${d.licenseDocCount} doc(s) registro`}
                 </p>
                 {d.publicUrl && (
                   <a href={d.publicUrl} target="_blank" rel="noopener noreferrer"
@@ -119,7 +140,18 @@ export default function DoctorsAdminClient() {
                   </a>
                 )}
               </div>
-              <button onClick={() => toggleVerified(d)} disabled={busyId === d.id}
+              <div className="flex flex-col gap-2 shrink-0">
+                {d.licenseDocCount > 0 && (
+                  <button
+                    onClick={() => viewLicenseDocs(d)}
+                    disabled={docsBusyId === d.id}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                  >
+                    {docsBusyId === d.id ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+                    Ver docs ({d.licenseDocCount})
+                  </button>
+                )}
+                <button onClick={() => toggleVerified(d)} disabled={busyId === d.id}
                 className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition disabled:opacity-50 ${
                   d.verified
                     ? "text-rose-600 border-rose-200 hover:bg-rose-50"
@@ -128,6 +160,7 @@ export default function DoctorsAdminClient() {
                 {busyId === d.id ? <Loader2 size={14} className="animate-spin" /> : d.verified ? <XCircle size={14} /> : <CheckCircle2 size={14} />}
                 {d.verified ? "Revogar" : "Aprovar listagem"}
               </button>
+              </div>
             </div>
           ))}
         </div>

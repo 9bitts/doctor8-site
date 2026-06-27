@@ -8,6 +8,7 @@ import {
   picCategoryLabel,
   type PicCategory,
 } from "@/lib/pics/practices";
+import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import { Loader2, CheckCircle2, Video, Building2, DollarSign, Leaf } from "lucide-react";
 
 const inputClass =
@@ -327,6 +328,8 @@ export default function IntegrativeTherapistSettingsPage() {
           </div>
         </div>
       </section>
+
+      <LicenseDocumentsUpload />
 
       <button
         type="button"

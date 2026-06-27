@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { sanitizeLegalHtml } from "@/lib/sanitize-html";
 
 interface Section {
   title: { pt: string; en: string; es: string };
@@ -86,7 +87,7 @@ export default function LegalLayout({
               <h2 className="text-lg font-bold text-slate-900 mb-4">{t(section.title)}</h2>
               <div
                 className="text-slate-600 text-sm leading-relaxed prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: t(section.content) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeLegalHtml(t(section.content)) }}
               />
             </div>
           ))}

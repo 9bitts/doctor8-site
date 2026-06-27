@@ -12,7 +12,14 @@ export async function GET() {
   const pros = await db.professionalProfile.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      user: { select: { email: true, region: true, createdAt: true } },
+      user: {
+        select: {
+          email: true,
+          region: true,
+          createdAt: true,
+          _count: { select: { providerLicenseDocuments: true } },
+        },
+      },
       virtualCard: true,
       _count: { select: { appointments: true, patientRecords: true } },
     },
@@ -32,6 +39,7 @@ export async function GET() {
     charts: p._count.patientRecords,
     createdAt: p.createdAt.toISOString(),
     isPublic: p.virtualCard?.isPublic ?? false,
+    licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
     publicUrl:
       p.verified && p.virtualCard?.isPublic && p.virtualCard.specialtySlug && p.virtualCard.citySlug
         ? buildPublicProfileUrl(p.virtualCard)

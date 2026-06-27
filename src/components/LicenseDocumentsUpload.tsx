@@ -1,0 +1,256 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import {
+  Award,
+  ExternalLink,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  Trash2,
+  Upload,
+} from "lucide-react";
+
+type LicenseDoc = {
+  id: string;
+  label: string | null;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  createdAt: string;
+  viewUrl?: string;
+};
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export default function LicenseDocumentsUpload() {
+  const { t } = useI18n();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [documents, setDocuments] = useState<LicenseDoc[]>([]);
+  const [maxDocuments, setMaxDocuments] = useState(20);
+  const [label, setLabel] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError("");
+    try {
+      const res = await fetch("/api/provider/license-documents");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load");
+      setDocuments(data.documents || []);
+      setMaxDocuments(data.maxDocuments || 20);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function uploadFiles(files: FileList | File[]) {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+
+    if (documents.length + list.length > maxDocuments) {
+      setError(t("licenseDocs.maxReached").replace("{max}", String(maxDocuments)));
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+
+    try {
+      for (const file of list) {
+        const form = new FormData();
+        form.append("file", file);
+        if (label.trim()) form.append("label", label.trim());
+
+        const res = await fetch("/api/provider/license-documents", {
+          method: "POST",
+          body: form,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upload failed");
+      }
+      setLabel("");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    setError("");
+    try {
+      const res = await fetch(`/api/provider/license-documents/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Delete failed");
+      }
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  const atLimit = documents.length >= maxDocuments;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+      <div>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Award size={18} className="text-brand-500 shrink-0" />
+          {t("licenseDocs.title")}
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">{t("licenseDocs.subtitle")}</p>
+        <p className="text-xs text-slate-400 mt-1">{t("licenseDocs.types")}</p>
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+          {error}
+        </p>
+      )}
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
+          <Loader2 size={16} className="animate-spin" />
+          {t("common.loading")}
+        </div>
+      ) : (
+        <>
+          {documents.length === 0 ? (
+            <p className="text-sm text-slate-500 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
+              {t("licenseDocs.empty")}
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {documents.map((doc) => (
+                <li
+                  key={doc.id}
+                  className="flex items-center gap-3 border border-slate-100 rounded-xl px-3 py-2.5 bg-slate-50/50"
+                >
+                  {doc.mimeType === "application/pdf" ? (
+                    <FileText size={18} className="text-rose-500 shrink-0" />
+                  ) : (
+                    <ImageIcon size={18} className="text-sky-500 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">
+                      {doc.label ? `${doc.label} ? ` : ""}
+                      {doc.fileName}
+                    </p>
+                    <p className="text-xs text-slate-400">{formatBytes(doc.fileSize)}</p>
+                  </div>
+                  {doc.viewUrl && (
+                    <a
+                      href={doc.viewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-brand-600 hover:underline inline-flex items-center gap-1 shrink-0"
+                    >
+                      <ExternalLink size={12} />
+                      {t("licenseDocs.view")}
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(doc.id)}
+                    disabled={deletingId === doc.id}
+                    className="text-slate-400 hover:text-rose-600 disabled:opacity-50 shrink-0 p-1"
+                    title={t("licenseDocs.delete")}
+                  >
+                    {deletingId === doc.id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="space-y-3 pt-1 border-t border-slate-100">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                {t("licenseDocs.labelOptional")}
+              </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {[t("licenseDocs.front"), t("licenseDocs.back")].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setLabel(preset)}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                      label === preset
+                        ? "bg-brand-50 border-brand-200 text-brand-700"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+              <input
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder={t("licenseDocs.labelPlaceholder")}
+                maxLength={80}
+              />
+            </div>
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp,image/heic"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) uploadFiles(e.target.files);
+              }}
+            />
+
+            <button
+              type="button"
+              disabled={uploading || atLimit}
+              onClick={() => fileRef.current?.click()}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition"
+            >
+              {uploading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Upload size={16} />
+              )}
+              {uploading ? t("licenseDocs.uploading") : t("licenseDocs.upload")}
+            </button>
+
+            {atLimit && (
+              <p className="text-xs text-amber-700">
+                {t("licenseDocs.maxReached").replace("{max}", String(maxDocuments))}
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

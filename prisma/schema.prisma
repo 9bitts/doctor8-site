@@ -347,10 +347,28 @@ model User {
   organizationMemberships OrganizationMember[]
   clubStampEntries      ClubStampEntry[]
   clubDiversityAwards   ClubDiversityAward[]
+  providerLicenseDocuments ProviderLicenseDocument[]
 
   @@index([email])
   @@index([role])
   @@index([region])
+}
+
+// Professional registration documents (CRM/CRP/etc.) for verification — all provider roles.
+model ProviderLicenseDocument {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  label     String?
+  fileKey   String
+  fileName  String
+  mimeType  String
+  fileSize  Int
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // NextAuth required models

@@ -9,6 +9,7 @@ import { picBySlug, picLabel } from "@/lib/pics/practices";
 import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
+import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 
@@ -85,12 +86,7 @@ export default async function IntegrativeTherapistDashboard() {
       </div>
 
       {!profile.verified && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
-          {t("it.dash.completeProfile")}{" "}
-          <Link href="/integrative-therapist/settings" className="font-semibold underline">
-            {t("nav.myProfile")}
-          </Link>
-        </div>
+        <ProviderVerificationBanner settingsHref="/integrative-therapist/settings" />
       )}
 
       <div className="grid sm:grid-cols-3 gap-4">

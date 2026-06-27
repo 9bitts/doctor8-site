@@ -283,7 +283,6 @@ export async function POST(req: NextRequest) {
         data: {
           appointmentId,
           whatsappUrl: apiSent ? undefined : waUrl,
-          phone,
           whatsappSent: apiSent,
           titleKey: "notif.apptReminder.title",
           bodyKey: "notif.apptReminder.body3h",

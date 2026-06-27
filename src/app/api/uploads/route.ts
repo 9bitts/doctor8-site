@@ -19,6 +19,7 @@ import {
   ALLOWED_MIME,
   MAX_UPLOAD_BYTES,
 } from "@/lib/s3";
+import { isAllowedUploadFolder, normalizeUploadFolder } from "@/lib/upload-folders";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -26,7 +27,12 @@ export async function POST(req: NextRequest) {
 
   const form = await req.formData();
   const file = form.get("file");
-  const folder = (form.get("folder") as string) || "uploads";
+  const folderRaw = (form.get("folder") as string) || "uploads";
+  const folder = normalizeUploadFolder(folderRaw) || "uploads";
+
+  if (!isAllowedUploadFolder(folder)) {
+    return NextResponse.json({ error: "Invalid upload folder" }, { status: 400 });
+  }
 
   if (!file || !(file instanceof File)) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
