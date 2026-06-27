@@ -3,7 +3,7 @@
 // src/app/(dashboard)/professional/prescriptions/page.tsx
 // Memed-style prescription UI: reuse, manual add, recent carousel.
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import {
@@ -20,7 +20,16 @@ import VideoConsultReturnBanner from "@/components/professional/VideoConsultRetu
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import type { Chart } from "@/components/professional/emissions/types";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
-import { filterPatientCharts } from "@/lib/patient-chart-search";
+
+type ImportablePatient = {
+  patientProfileId: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  hasAccount: true;
+  source: "appointment" | "shared" | "email" | "platform";
+};
 
 function controlInfo(type: string | null | undefined): {
   tarja: "preta" | "vermelha"; label: string; receita: string;
@@ -272,10 +281,13 @@ export default function PrescriptionsPage() {
   const [postSaveShareUrl, setPostSaveShareUrl] = useState("");
 
   const [charts, setCharts] = useState<Chart[]>([]);
+  const [importablePatients, setImportablePatients] = useState<ImportablePatient[]>([]);
   const [chartsLoading, setChartsLoading] = useState(false);
+  const [importingPatientId, setImportingPatientId] = useState<string | null>(null);
   const [patientQuery, setPatientQuery] = useState("");
   const [patientPickerOpen, setPatientPickerOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(null);
+  const patientSearchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [drugQuery, setDrugQuery] = useState("");
   const [drugResults, setDrugResults] = useState<Drug[]>([]);
@@ -395,18 +407,52 @@ export default function PrescriptionsPage() {
     } catch { /* ignore */ }
   }
 
-  async function loadCharts() {
+  async function searchPatients(q: string) {
     setChartsLoading(true);
     try {
-      const res = await fetch("/api/professional/records");
+      const res = await fetch(`/api/professional/records/search?q=${encodeURIComponent(q)}`);
       const d = await res.json();
-      if (res.ok) setCharts(d.records || []);
+      if (res.ok) {
+        setCharts(d.records || []);
+        setImportablePatients(d.importable || []);
+      }
     } catch { /* ignore */ }
     finally { setChartsLoading(false); }
   }
 
+  async function loadCharts() {
+    await searchPatients("");
+  }
+
+  async function importPatientChart(item: ImportablePatient) {
+    setImportingPatientId(item.patientProfileId);
+    try {
+      const res = await fetch("/api/professional/records/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientProfileId: item.patientProfileId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const chart: Chart = {
+          id: data.id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email ?? item.email,
+          hasAccount: true,
+          missingForRx: data.missingForRx,
+        };
+        setSelectedPatient(chart);
+        setPatientQuery("");
+        setPatientPickerOpen(false);
+        await searchPatients("");
+      }
+    } catch { /* ignore */ }
+    finally { setImportingPatientId(null); }
+  }
+
   function resetForm() {
-    setSelectedPatient(null); setPatientQuery(""); setDrugQuery("");
+    setSelectedPatient(null); setPatientQuery(""); setImportablePatients([]); setDrugQuery("");
     setDrugResults([]); setDrugCountry("BR"); setMedications([]);
     setInstructions(""); setValidDays(30); setFormError("");
     setReuseSource(null);
@@ -520,12 +566,18 @@ export default function PrescriptionsPage() {
     }
   }
 
-  const filteredCharts = useMemo(
-    () => filterPatientCharts(charts, patientQuery),
-    [charts, patientQuery],
-  );
-
   const showPatientPicker = patientPickerOpen && !selectedPatient;
+
+  useEffect(() => {
+    if (!patientPickerOpen && !patientQuery.trim()) return;
+    if (patientSearchDebounce.current) clearTimeout(patientSearchDebounce.current);
+    patientSearchDebounce.current = setTimeout(() => {
+      void searchPatients(patientQuery);
+    }, 250);
+    return () => {
+      if (patientSearchDebounce.current) clearTimeout(patientSearchDebounce.current);
+    };
+  }, [patientQuery, patientPickerOpen]);
 
   useEffect(() => {
     if (drugDebounce.current) clearTimeout(drugDebounce.current);
@@ -794,26 +846,58 @@ export default function PrescriptionsPage() {
                         <div className="p-4 flex items-center justify-center gap-2 text-sm text-slate-500">
                           <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
                         </div>
-                      ) : filteredCharts.length === 0 ? (
+                      ) : charts.length === 0 && importablePatients.length === 0 ? (
                         <div className="p-4 text-center text-sm text-slate-500 space-y-1">
                           <p>{t("rx2.noPatientFound")}</p>
                           {patientQuery.trim().length > 0 && (
-                            <p className="text-xs text-slate-400">{t("rx2.noPatientHint")}</p>
+                            <>
+                              <p className="text-xs text-slate-400">{t("rx2.noPatientHint")}</p>
+                              {!patientQuery.includes("@") && (
+                                <p className="text-xs text-slate-400">{t("rx2.searchByEmailHint")}</p>
+                              )}
+                            </>
                           )}
                         </div>
-                      ) : filteredCharts.map((c) => (
-                        <button key={c.id} onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 transition text-left">
-                          <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
-                            {c.firstName[0]}{c.lastName[0]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-slate-800 text-sm">{c.firstName} {c.lastName}</p>
-                            <p className="text-xs text-slate-400">{c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}</p>
-                          </div>
-                          <ChevronRight size={16} className="text-slate-300 shrink-0" />
-                        </button>
-                      ))}
+                      ) : (
+                        <>
+                          {charts.map((c) => (
+                            <button key={c.id} onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); }}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 transition text-left">
+                              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
+                                {c.firstName[0]}{c.lastName[0]}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-800 text-sm">{c.firstName} {c.lastName}</p>
+                                <p className="text-xs text-slate-400">{c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}</p>
+                              </div>
+                              <ChevronRight size={16} className="text-slate-300 shrink-0" />
+                            </button>
+                          ))}
+                          {importablePatients.map((item) => (
+                            <button
+                              key={item.patientProfileId}
+                              type="button"
+                              disabled={importingPatientId === item.patientProfileId}
+                              onClick={() => importPatientChart(item)}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 transition text-left disabled:opacity-50"
+                            >
+                              <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center font-bold text-emerald-700 text-xs shrink-0">
+                                {item.firstName[0]}{item.lastName[0]}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-800 text-sm">{item.firstName} {item.lastName}</p>
+                                <p className="text-xs text-emerald-600">{t("rx2.importPatientBadge")}</p>
+                                {item.email && <p className="text-xs text-slate-400 truncate">{item.email}</p>}
+                              </div>
+                              {importingPatientId === item.patientProfileId ? (
+                                <Loader2 size={16} className="animate-spin text-emerald-500 shrink-0" />
+                              ) : (
+                                <span className="text-xs font-semibold text-emerald-600 shrink-0">{t("rx2.importPatientChart")}</span>
+                              )}
+                            </button>
+                          ))}
+                        </>
+                      )}
                     </div>
                   )}
                 </>
