@@ -93,7 +93,7 @@ export default function HumanitarianCampaignPage() {
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
-      .then((s) => {
+      .then(async (s) => {
         if (!s?.user) {
           router.push("/login?callbackUrl=/patient");
           return;
