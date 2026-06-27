@@ -65,11 +65,16 @@ export interface IntakeStatusDto {
 }
 
 function mapAnamnese(intake: Record<string, unknown>): AnamneseDto {
-  const decrypted = decryptHumanitarianIntakeFields(intake);
+  const decrypted = decryptHumanitarianIntakeFields({
+    identificationData: intake.identificationData,
+    specialtyData: intake.specialtyData,
+    additionalNotes:
+      typeof intake.additionalNotes === "string" ? intake.additionalNotes : null,
+  });
   return {
-    identification: (decrypted.identificationData as IdentificationData) ?? null,
+    identification: decrypted.identificationData ?? null,
     serviceTypes: (intake.serviceTypes as string[]) ?? [],
-    specialty: (decrypted.specialtyData as SpecialtyData) ?? null,
+    specialty: decrypted.specialtyData ?? null,
     basicNeeds: (intake.basicNeedsData as BasicNeedsData) ?? null,
     additionalNotes: decrypted.additionalNotes ?? null,
     consentAt: intake.consentAt instanceof Date ? intake.consentAt.toISOString() : null,
@@ -485,6 +490,13 @@ export async function listCampaignIntakes(campaignSlug: string): Promise<AdminIn
       ? `${safeDecrypt(p.firstName)} ${safeDecrypt(p.lastName).charAt(0)}.`.trim()
       : "Paciente";
 
+    const phi = decryptHumanitarianIntakeFields({
+      triageData: i.triageData,
+      identificationData: (i as { identificationData?: unknown }).identificationData ?? null,
+      specialtyData: (i as { specialtyData?: unknown }).specialtyData ?? null,
+      additionalNotes: (i as { additionalNotes?: string | null }).additionalNotes ?? null,
+    });
+
     return {
       id: i.id,
       patientUserId: i.patientUserId,
@@ -497,13 +509,11 @@ export async function listCampaignIntakes(campaignSlug: string): Promise<AdminIn
       consentAt: i.consentAt?.toISOString() ?? null,
       telemedicineTcleAt: i.telemedicineTcleAt?.toISOString() ?? null,
       serviceTypes: (i.serviceTypes as string[]) ?? [],
-      ...decryptHumanitarianIntakeFields({
-        triageData: i.triageData,
-        identificationData: (i as { identificationData?: unknown }).identificationData ?? null,
-        specialtyData: (i as { specialtyData?: unknown }).specialtyData ?? null,
-        additionalNotes: (i as { additionalNotes?: string | null }).additionalNotes ?? null,
-      }),
+      triageData: phi.triageData ?? null,
+      identificationData: phi.identificationData ?? null,
+      specialtyData: phi.specialtyData ?? null,
       basicNeedsData: (i as { basicNeedsData?: unknown }).basicNeedsData ?? null,
+      additionalNotes: phi.additionalNotes ?? null,
       updatedAt: i.updatedAt.toISOString(),
     };
   })

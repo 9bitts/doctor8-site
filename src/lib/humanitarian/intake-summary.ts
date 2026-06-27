@@ -416,10 +416,16 @@ export function buildIntakeSummary(
   const lang = normLang(langInput);
   const t = L[lang];
   const sections: IntakeSummarySection[] = [];
-  const decrypted = decryptHumanitarianIntakeFields(intake);
-  const triage = decrypted.triageData as HumanitarianTriageData | null;
-  const id = decrypted.identificationData as IdentificationData | null;
-  const specialty = decrypted.specialtyData as SpecialtyData | null;
+  const decrypted = decryptHumanitarianIntakeFields({
+    triageData: intake.triageData,
+    identificationData: intake.identificationData,
+    specialtyData: intake.specialtyData,
+    additionalNotes:
+      typeof intake.additionalNotes === "string" ? intake.additionalNotes : null,
+  });
+  const triage = decrypted.triageData;
+  const id = decrypted.identificationData;
+  const specialty = decrypted.specialtyData;
   const needs = intake.basicNeedsData as BasicNeedsData | null;
 
   if (triage) {

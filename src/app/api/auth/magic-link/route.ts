@@ -7,6 +7,12 @@ import { sendMagicLinkLogin } from "@/lib/email";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { ConsentType } from "@prisma/client";
+import {
+  checkRateLimits,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 const MAGIC_LINK_TTL_MS = 30 * 60 * 1000;
 
@@ -38,10 +44,13 @@ export async function POST(req: NextRequest) {
   const callbackUrl = safeCallback(parsed.data.callbackUrl);
   const language = parsed.data.language || "pt";
 
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  const ip = clientIp(req);
+  const rate = await checkRateLimits([
+    { namespace: "magic-link:email", key: email, ...RATE_LIMITS.authEmail },
+    { namespace: "magic-link:ip", key: ip, ...RATE_LIMITS.authIp },
+  ]);
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
   const userAgent = req.headers.get("user-agent") || "unknown";
 
   let userId: string;

@@ -5,6 +5,12 @@ import { db } from "@/lib/db";
 import { sendPasswordReset } from "@/lib/email";
 import { nanoid } from "nanoid";
 import { decrypt } from "@/lib/encryption";
+import {
+  checkRateLimits,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 function resolveFirstName(user: {
   patientProfile: { firstName: string } | null;
@@ -34,8 +40,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
 
+    const normalizedEmail = email.toLowerCase();
+    const ip = clientIp(req);
+    const rate = await checkRateLimits([
+      { namespace: "forgot-password:email", key: normalizedEmail, ...RATE_LIMITS.authEmail },
+      { namespace: "forgot-password:ip", key: ip, ...RATE_LIMITS.authIp },
+    ]);
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
     const user = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
       select: {
         id: true,
         email: true,

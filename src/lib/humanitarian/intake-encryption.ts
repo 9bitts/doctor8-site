@@ -156,20 +156,26 @@ export type HumanitarianIntakePhiFields = {
   additionalNotes?: string | null;
 };
 
-export function decryptHumanitarianIntakeFields<T extends HumanitarianIntakePhiFields>(
-  intake: T,
-): T {
+export type DecryptedHumanitarianIntakePhi = {
+  triageData?: HumanitarianTriageData | null;
+  identificationData?: IdentificationData | null;
+  specialtyData?: SpecialtyData | null;
+  additionalNotes?: string | null;
+};
+
+export function decryptHumanitarianIntakeFields(
+  intake: HumanitarianIntakePhiFields,
+): DecryptedHumanitarianIntakePhi {
   return {
-    ...intake,
     triageData: intake.triageData
       ? decryptTriageData(intake.triageData as HumanitarianTriageData)
-      : intake.triageData,
+      : null,
     identificationData: intake.identificationData
       ? decryptIdentificationData(intake.identificationData as IdentificationData)
-      : intake.identificationData,
+      : null,
     specialtyData: intake.specialtyData
       ? decryptSpecialtyData(intake.specialtyData as SpecialtyData)
-      : intake.specialtyData,
+      : null,
     additionalNotes: decryptAdditionalNotes(intake.additionalNotes),
   };
 }

@@ -3,6 +3,12 @@
 // Answers questions about Doctor8 — available to all users (logged in or not)
 
 import { NextRequest, NextResponse } from "next/server";
+import {
+  checkRateLimit,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 const SYSTEM_PROMPT = `You are the Doctor8 support assistant. Doctor8 is a telemedicine platform that connects patients with healthcare professionals for online and in-person consultations.
 
@@ -46,6 +52,14 @@ RULES:
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = clientIp(req);
+    const rate = await checkRateLimit({
+      namespace: "support:ip",
+      key: ip,
+      ...RATE_LIMITS.supportIp,
+    });
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
     const { messages } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {

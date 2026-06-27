@@ -15,6 +15,7 @@ import { requireValidIntake } from "@/lib/humanitarian/intake";
 import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { getPatientActiveHumanitarianEntry } from "@/lib/humanitarian/notify";
+import { checkRateLimit, RATE_LIMITS, rateLimitResponse } from "@/lib/rate-limit";
 
 const joinSchema = z.object({
   campaignSlug: z.string(),
@@ -139,6 +140,22 @@ export async function POST(req: NextRequest) {
     if (!cancelled) {
       return NextResponse.json({ error: "Cannot switch queue" }, { status: 400 });
     }
+  }
+
+  const rate = await checkRateLimit({
+    namespace: "humanitarian:join",
+    key: session.user.id,
+    ...RATE_LIMITS.humanitarianJoin,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      {
+        error: "RATE_LIMITED",
+        message: "Too many queue join attempts. Please wait before trying again.",
+        retryAfterSec: rate.retryAfterSec,
+      },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+    );
   }
 
   const activeCount = await countActiveInPool(pool.id);
