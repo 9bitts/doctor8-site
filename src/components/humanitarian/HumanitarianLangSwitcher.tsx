@@ -59,7 +59,7 @@ export default function HumanitarianLangSwitcher({
         aria-label="Language"
       >
         <Globe size={16} />
-        <span className="hidden xs:inline sm:inline">{current.flag}</span>
+        <span>{current.flag}</span>
         <span className="uppercase text-xs font-semibold">{current.code}</span>
         <ChevronDown size={14} />
       </button>

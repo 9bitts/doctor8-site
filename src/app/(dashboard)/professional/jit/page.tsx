@@ -207,15 +207,15 @@ export default function JitPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Radio className={`${isOnline ? "text-brand-500 animate-pulse" : "text-slate-400"}`} size={24} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2 break-words">
+            <Radio className={`shrink-0 ${isOnline ? "text-brand-500 animate-pulse" : "text-slate-400"}`} size={24} />
             {t("jit.title")}
           </h1>
           <p className="text-slate-500 text-sm mt-1">{t("jit.subtitle")}</p>
         </div>
-        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${
+        <span className={`self-start inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full shrink-0 ${
           isOnline ? "bg-brand-100 text-brand-600" :
           isPaused ? "bg-amber-100 text-amber-700" :
                      "bg-slate-100 text-slate-500"
@@ -378,17 +378,17 @@ export default function JitPage() {
       {(isOnline || isPaused) && session && (
         <>
           {/* Stats row */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
-              <p className="text-2xl font-bold text-slate-900">{waitingCount}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 text-center">
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">{waitingCount}</p>
               <p className="text-xs text-slate-500 mt-0.5">{t("jit.waiting")}</p>
             </div>
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
-              <p className="text-2xl font-bold text-slate-900">{inProgressEntry ? 1 : 0}</p>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 text-center">
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">{inProgressEntry ? 1 : 0}</p>
               <p className="text-xs text-slate-500 mt-0.5">{t("jit.inProgress")}</p>
             </div>
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
-              <p className="text-sm font-semibold text-slate-700">{getProfessionLabel(lang, session.specialty)}</p>
+            <div className="col-span-2 sm:col-span-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 text-center min-w-0">
+              <p className="text-xs sm:text-sm font-semibold text-slate-700 line-clamp-2">{getProfessionLabel(lang, session.specialty)}</p>
               <p className="text-xs text-slate-500 mt-0.5">
                 {session.isFree ? t("jit.free") : formatCurrency(session.priceAmount, session.currency)}
               </p>
@@ -398,19 +398,19 @@ export default function JitPage() {
           {/* Current patient */}
           {(inProgressEntry || calledEntry) && (
             <div className={`rounded-2xl border-2 p-5 ${inProgressEntry ? "bg-brand-50 border-brand-200" : "bg-amber-50 border-amber-300"}`}>
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
                     {inProgressEntry ? t("jit.inProgress") : t("jit.called")}
                   </p>
-                  <p className="font-bold text-slate-900 text-lg">
+                  <p className="font-bold text-slate-900 text-lg truncate">
                     {(inProgressEntry || calledEntry)?.patientName}
                   </p>
                 </div>
                 {(inProgressEntry?.id || calledEntry?.id) && (
                   <Link
                     href={`/video/jit/${(inProgressEntry?.id || calledEntry?.id) ?? ""}`}
-                    className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm min-h-[44px]"
                   >
                     <Phone size={16} /> Entrar na sala
                   </Link>

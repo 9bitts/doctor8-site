@@ -90,7 +90,7 @@ export default async function PsychoanalystDashboard() {
 
       <div>
         <p className="text-slate-500 text-sm">{greet}</p>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 break-words">
           {displayProfile.firstName} {displayProfile.lastName}
         </h1>
         <p className="text-violet-600 text-sm font-medium mt-1">{t("pa.dash.subtitle")}</p>
@@ -151,9 +151,9 @@ export default async function PsychoanalystDashboard() {
         ) : (
           <div className="divide-y divide-slate-100">
             {upcoming.map((apt) => (
-              <div key={apt.id} className="px-5 py-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-medium text-slate-800 text-sm">
+              <div key={apt.id} className="px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-800 text-sm truncate">
                     {safeDecrypt(apt.patient.firstName)} {safeDecrypt(apt.patient.lastName)}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -163,7 +163,7 @@ export default async function PsychoanalystDashboard() {
                 {apt.type === "TELECONSULT" && (
                   <a
                     href={`/video/${apt.id}`}
-                    className="text-xs font-bold bg-violet-500 text-white px-3 py-2 rounded-xl hover:bg-violet-600"
+                    className="w-full sm:w-auto text-center text-xs font-bold bg-violet-500 text-white px-3 py-2.5 rounded-xl hover:bg-violet-600 min-h-[44px] inline-flex items-center justify-center shrink-0"
                   >
                     {t("proappt.join")}
                   </a>

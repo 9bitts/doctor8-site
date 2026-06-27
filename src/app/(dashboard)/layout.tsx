@@ -147,7 +147,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const headerAvatar = isOrganization ? "bg-indigo-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : "bg-emerald-500";
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
@@ -218,18 +218,18 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex items-center justify-between sticky top-0 z-20">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-slate-500 hover:text-slate-700">
+        <header className="bg-white border-b border-slate-200 px-4 lg:px-8 py-4 flex items-center gap-3 sticky top-0 z-20 min-w-0">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-slate-500 hover:text-slate-700 shrink-0">
             <Menu size={22} />
           </button>
 
-          <div className="lg:hidden">
+          <div className="lg:hidden flex-1 min-w-0 text-center">
             <span className="text-lg font-bold text-slate-900">
               Doctor<span className={logoAccentHeader}>8</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto shrink-0">
             <LanguageSwitcher variant="header" />
             <NotificationBell />
             <div className={`w-8 h-8 rounded-xl ${headerAvatar} flex items-center justify-center text-white text-sm font-bold`}>
@@ -238,7 +238,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-auto">
+        <main className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
           {children}
         </main>
       </div>

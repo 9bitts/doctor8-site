@@ -89,6 +89,7 @@ export default function HumanitarianVolunteerBanner({ lang, campaignActive, volu
           {t("hum.vol.banner.cta")}
           <ChevronRight size={16} />
         </div>
+        <p className="sm:hidden text-xs font-semibold text-rose-700 mt-1">{t("hum.vol.banner.cta")}</p>
       </div>
     </Link>
   );

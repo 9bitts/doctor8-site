@@ -81,7 +81,7 @@ export default function HumanitarianShell({
             <HumanitarianLangSwitcher lang={lang} onChange={onLangChange} dark={dark} />
           </div>
 
-          <nav className="flex items-center gap-1 pb-3 overflow-x-auto scrollbar-none -mx-1 px-1">
+          <nav className="flex items-center gap-1 pb-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-1 px-1">
             {navLink(campaignHref, !isVolunteer, t("hum.shell.patient"), <User size={15} />)}
             {navLink("/humanitarian/volunteer", isVolunteer, t("hum.shell.volunteer"), <Stethoscope size={15} />)}
             {navLink(accountHref, false, t("hum.shell.home"), <Home size={15} />)}
