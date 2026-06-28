@@ -46,7 +46,7 @@ async function providerDisplayName(userId: string, role: ProviderRole): Promise<
 }
 
 const ROLE_LABEL: Record<ProviderRole, string> = {
-  PROFESSIONAL: "Profissional de sa?de",
+  PROFESSIONAL: "Profissional de sa\u00fade",
   PSYCHOANALYST: "Psicanalista",
   INTEGRATIVE_THERAPIST: "Terapeuta integrativo",
 };
@@ -80,7 +80,7 @@ export async function notifyAdminLicenseDocumentUploaded(opts: {
         ${
           opts.label
             ? `<tr>
-          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Descri??o</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Descri\u00e7\u00e3o</td>
           <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;color:#0f172a;">${opts.label}</td>
         </tr>`
             : ""
@@ -96,11 +96,12 @@ export async function notifyAdminLicenseDocumentUploaded(opts: {
         </a>
       </p>
     `,
+    "pt",
   );
 
   await sendTransactionalEmail({
     to: recipients.join(","),
-    subject: `Doctor8 ? documento de registro: ${name}`,
+    subject: `Doctor8 \u2014 documento de registro: ${name}`,
     html,
     tag: "provider-license-doc",
   });

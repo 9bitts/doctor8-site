@@ -355,6 +355,28 @@ export default function RecordDetailClient({
   }, [searchParams, initialDocuments]);
 
   useEffect(() => {
+    const tab = searchParams.get("tab");
+    const validTabs = new Set([
+      "records", "evolution", "diagnoses", "vaccines", "growth", "dental", "audio",
+    ]);
+    if (tab && validTabs.has(tab)) {
+      setChartTab(tab as typeof chartTab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const recordId = searchParams.get("recordId");
+    if (!recordId) return;
+    setChartTab("records");
+    setRecordFilter("all");
+    setExpandedIds((prev) => new Set(prev).add(recordId));
+    const timer = setTimeout(() => {
+      document.getElementById(`record-${recordId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [searchParams]);
+
+  useEffect(() => {
     try {
       const raw = sessionStorage.getItem(consultDraftKey(chart.id));
       if (!raw) return;

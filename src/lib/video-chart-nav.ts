@@ -73,6 +73,23 @@ function withReturn(path: string, returnUrl: string, extra?: Record<string, stri
   return qs ? `${path}?${qs}` : path;
 }
 
+export type ChartTab =
+  | "records"
+  | "evolution"
+  | "diagnoses"
+  | "vaccines"
+  | "growth"
+  | "dental"
+  | "audio";
+
+export function chartRecordUrl(chartId: string, returnUrl: string, recordId: string): string {
+  return withReturn(`/professional/patients/${chartId}`, returnUrl, { recordId });
+}
+
+export function chartTabUrl(chartId: string, returnUrl: string, tab: ChartTab): string {
+  return withReturn(`/professional/patients/${chartId}`, returnUrl, { tab });
+}
+
 export function buildVideoChartLinks(
   chartId: string,
   returnUrl: string,
@@ -83,6 +100,9 @@ export function buildVideoChartLinks(
     return {
       fullChart: withReturn(base, returnUrl),
       addRecord: withReturn(base, returnUrl, { newRecord: "1" }),
+      recordUrl: (_recordId: string) => withReturn(base, returnUrl),
+      vaccines: null as string | null,
+      dental: null as string | null,
       prescribe: null as string | null,
       exam: null as string | null,
       document: null as string | null,
@@ -95,6 +115,9 @@ export function buildVideoChartLinks(
   return {
     fullChart: withReturn(`/professional/patients/${chartId}`, returnUrl),
     addRecord: withReturn(`/professional/patients/${chartId}`, returnUrl, { newRecord: "1" }),
+    recordUrl: (recordId: string) => chartRecordUrl(chartId, returnUrl, recordId),
+    vaccines: chartTabUrl(chartId, returnUrl, "vaccines"),
+    dental: chartTabUrl(chartId, returnUrl, "dental"),
     prescribe: chartActionUrl("/professional/prescriptions", chartId, { view: "prescription", returnUrl }),
     exam: chartActionUrl("/professional/prescriptions", chartId, { view: "exam", returnUrl }),
     document: chartActionUrl("/professional/prescriptions", chartId, { view: "document", returnUrl }),

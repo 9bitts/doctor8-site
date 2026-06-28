@@ -8,7 +8,7 @@ import {
   Loader2, Video, Clock, AlertCircle, ArrowLeft, ShieldCheck,
   ChevronRight, ChevronLeft, FileText, Plus, Send, Stethoscope,
   Pill, X, CheckCircle2, ClipboardList, PhoneOff, FlaskConical,
-  ScrollText, BarChart3, ExternalLink, MessageCircle,
+  ScrollText, BarChart3, ExternalLink, MessageCircle, Syringe,
 } from "lucide-react";
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
@@ -67,6 +67,8 @@ const T: Record<string, Record<Lang, string>> = {
   quickNote:      { pt: "Anotação rápida", en: "Quick note", es: "Nota rápida" },
   notePlaceholder:{ pt: "Digite a anotação clínica...", en: "Type clinical note...", es: "Escribe la nota clínica..." },
   saveNote:       { pt: "Salvar", en: "Save", es: "Guardar" },
+  dental:         { pt: "Odontograma", en: "Dental chart", es: "Odontograma" },
+  vaccines:       { pt: "Vacinas", en: "Vaccines", es: "Vacunas" },
   saving:         { pt: "Salvando...", en: "Saving...", es: "Guardando..." },
   saved:          { pt: "Salvo!", en: "Saved!", es: "¡Guardado!" },
   recentRecords:  { pt: "Registros recentes", en: "Recent records", es: "Registros recientes" },
@@ -600,6 +602,26 @@ export default function VideoConsultRoom({
                           <ScrollText size={13} /> {t("psychDocument")}
                         </a>
                       )}
+                      {chartLinks.vaccines && (
+                        <a
+                          href={chartLinks.vaccines}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-200 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg transition"
+                        >
+                          <Syringe size={13} /> {t("vaccines")}
+                        </a>
+                      )}
+                      {chartLinks.dental && (
+                        <a
+                          href={chartLinks.dental}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-200 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg transition"
+                        >
+                          <ClipboardList size={13} /> {t("dental")}
+                        </a>
+                      )}
                     </div>
                   </div>
 
@@ -655,7 +677,7 @@ export default function VideoConsultRoom({
                         {records.map((r) => (
                           <a
                             key={r.id}
-                            href={chartLinks.fullChart}
+                            href={chartLinks.recordUrl(r.id)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block bg-slate-800/60 rounded-lg p-2.5 border border-slate-700/50 hover:border-emerald-500/40 hover:bg-slate-800 transition group"

@@ -1,5 +1,7 @@
 // next.config.js
 /** @type {import('next').NextConfig} */
+const { withSentryConfig } = require("@sentry/nextjs");
+
 const isProd = process.env.NODE_ENV === "production";
 
 const nextConfig = {
@@ -58,7 +60,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.stripe.com https://*.daily.co wss://*.daily.co",
+              "connect-src 'self' https://api.stripe.com https://*.daily.co wss://*.daily.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.daily.co",
             ].join("; "),
           },
@@ -67,4 +69,13 @@ const nextConfig = {
     ];
   },
 };
-module.exports = nextConfig;
+
+const sentryWebpackPluginOptions = {
+  silent: true,
+  disableServerWebpackPlugin: !process.env.SENTRY_DSN,
+  disableClientWebpackPlugin: !process.env.SENTRY_DSN,
+};
+
+module.exports = process.env.SENTRY_DSN
+  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
+  : nextConfig;
