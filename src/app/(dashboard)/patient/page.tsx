@@ -16,6 +16,9 @@ import {
   ClipboardList, Settings, Heart, Video, MapPin, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import PatientChecklistWrapper from "./PatientChecklistWrapper";
+import PatientTourWrapper from "./PatientTourWrapper";
+import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
 import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
@@ -86,6 +89,7 @@ export default async function PatientDashboard() {
   const hasDob = !!patient.dateOfBirth;
   const hasAddress = !!(safeDecrypt(patient.addressLine1) || (patient.city || ""));
   const profileIncomplete = !hasName || !hasDob || !hasAddress;
+  const historyIncomplete = !isPatientHistoryFilled(patient.notes);
 
   const [
     prescriptionCount,
@@ -229,9 +233,8 @@ export default async function PatientDashboard() {
       title: t("pdash.quick.group.communicate"),
       items: [
         { href: "/patient/messages", labelKey: "nav.messages", icon: <MessageSquare size={20} />, accent: "bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200", badge: unreadMessages || undefined },
-        { href: "/patient/history/share", labelKey: "pdash.quick.share", icon: <FileText size={20} />, accent: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200" },
-        { href: "/api/patient/history/pdf", labelKey: "pdash.quick.export", icon: <FileText size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200" },
-        { href: "/api/patient/history/fhir", labelKey: "pdash.quick.exportFhir", icon: <FileText size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200" },
+        { href: "/patient/history?share=1", labelKey: "pdash.quick.share", icon: <FileText size={20} />, accent: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200" },
+        { href: "/patient/history", labelKey: "pdash.quick.export", icon: <FileText size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200" },
       ],
     },
     {
@@ -369,6 +372,25 @@ export default async function PatientDashboard() {
           </div>
         </Link>
       )}
+
+      {!profileIncomplete && historyIncomplete && (
+        <Link
+          href="/patient/history"
+          className="flex items-start gap-3 bg-rose-50 border border-rose-200 rounded-xl p-4 hover:bg-rose-100 transition"
+        >
+          <Heart size={20} className="text-rose-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-rose-900">{t("pdash.historyPrompt.title")}</p>
+            <p className="text-xs text-rose-700 mt-0.5">{t("pdash.historyPrompt.text")}</p>
+            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-rose-900">
+              {t("pdash.historyPrompt.action")} <ChevronRight size={13} />
+            </span>
+          </div>
+        </Link>
+      )}
+
+      <PatientChecklistWrapper />
+      <PatientTourWrapper lang={lang} />
 
       {/* Clickable stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

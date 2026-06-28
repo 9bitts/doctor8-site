@@ -4,24 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
+import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 
 function isHistoryFilled(notesEncrypted: string | null): boolean {
-  if (!notesEncrypted) return false;
-  try {
-    const data = JSON.parse(decrypt(notesEncrypted)) as Record<string, unknown>;
-    const textFields = [
-      "chiefComplaint", "allergies", "currentMedications", "pastSurgeries",
-      "familyHistory", "bloodType", "patientName",
-    ];
-    if (textFields.some((k) => {
-      const v = data[k];
-      return typeof v === "string" && v.trim().length > 0;
-    })) return true;
-    const arrays = ["chronicConditions", "disabilities", "reviewSystems", "vaccines"];
-    return arrays.some((k) => Array.isArray(data[k]) && (data[k] as unknown[]).length > 0);
-  } catch {
-    return false;
-  }
+  return isPatientHistoryFilled(notesEncrypted);
 }
 
 export async function GET(req: NextRequest) {

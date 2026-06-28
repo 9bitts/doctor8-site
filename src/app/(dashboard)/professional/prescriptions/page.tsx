@@ -1152,14 +1152,14 @@ export default function PrescriptionsPage() {
       {signResult === "success" && (
         <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 flex items-start gap-3">
           <CheckCircle2 size={18} className="text-brand-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-brand-700 font-medium">Documento assinado com sucesso! O PDF assinado já está disponível.</p>
+          <p className="text-sm text-brand-700 font-medium">{t("rx.signSuccess")}</p>
         </div>
       )}
       {signResult === "cancelled" && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">Assinatura cancelada.</div>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">{t("rx.signCancelled")}</div>
       )}
       {signResult === "error" && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800">Erro ao assinar. Tente novamente.</div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800">{t("rx.signError")}</div>
       )}
 
       {signConfig && !signConfig.configured && (

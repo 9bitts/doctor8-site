@@ -155,6 +155,16 @@ export default function HistoryPage() {
 
   useEffect(() => { fetchHistory(); }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("share") === "1") {
+      setShowShareModal(true);
+      params.delete("share");
+      const qs = params.toString();
+      window.history.replaceState({}, "", `/patient/history${qs ? `?${qs}` : ""}`);
+    }
+  }, []);
+
   async function fetchHistory() {
     try {
       const res = await fetch("/api/patient/history");

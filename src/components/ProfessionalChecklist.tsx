@@ -1,37 +1,25 @@
 "use client";
 
-// src/components/ProfessionalChecklist.tsx
-// Onboarding checklist card for the professional dashboard.
-// Shows progress on: profile, availability, first patient, first prescription,
-// online duty, and library. Disappears when all steps are complete.
-// State is fetched from the API on mount and cached in localStorage for speed.
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   CheckCircle2, Circle, ChevronRight, X, Sparkles,
-  User, Calendar, Users, Pill, Radio, BookOpen,
+  User, Calendar, Users, Pill, Radio, BookOpen, PenLine,
+  AlertCircle, RefreshCw,
 } from "lucide-react";
 
 type Lang = "pt" | "en" | "es";
 
-interface ChecklistItem {
-  id:       string;
-  icon:     React.ReactNode;
-  href:     string;
-  done:     boolean;
-}
-
 interface ChecklistState {
-  hasProfile:      boolean; // firstName, lastName, specialty, licenseNumber filled
-  hasAvailability: boolean; // at least 1 availability slot
-  hasPatient:      boolean; // at least 1 patient record
-  hasPrescription: boolean; // at least 1 prescription issued
-  hasJit:          boolean; // has gone online at least once
-  hasResource:     boolean; // at least 1 resource in library
+  hasProfile: boolean;
+  hasAvailability: boolean;
+  hasPatient: boolean;
+  hasPrescription: boolean;
+  hasJit: boolean;
+  hasResource: boolean;
+  hasDigitalSign: boolean;
 }
 
-// ── Inline texts ─────────────────────────────────────────────────────────────
 const T: Record<string, Record<Lang, string>> = {
   title:       { pt: "Primeiros passos",           en: "Getting started",            es: "Primeros pasos" },
   subtitle:    { pt: "Complete sua conta para começar a atender pacientes.",
@@ -41,10 +29,13 @@ const T: Record<string, Record<Lang, string>> = {
                  en: "All done! You're all set to see patients.",
                  es: "¡Todo listo! Estás listo para atender pacientes." },
   dismiss:     { pt: "Fechar",                     en: "Dismiss",                    es: "Cerrar" },
+  loadError:   { pt: "Não foi possível carregar o checklist.", en: "Could not load checklist.", es: "No se pudo cargar la lista." },
+  retry:       { pt: "Tentar novamente",           en: "Try again",                  es: "Reintentar" },
   profile:     { pt: "Complete seu perfil",        en: "Complete your profile",       es: "Completa tu perfil" },
   availability:{ pt: "Configure sua disponibilidade", en: "Set your availability",   es: "Configura tu disponibilidad" },
   patient:     { pt: "Crie sua primeira ficha",    en: "Create your first chart",     es: "Crea tu primera ficha" },
   prescription:{ pt: "Emita sua primeira receita", en: "Issue your first prescription", es: "Emite tu primera receta" },
+  digSign:     { pt: "Configure assinatura ICP-Brasil", en: "Set up ICP-Brasil signature", es: "Configura firma ICP-Brasil" },
   jit:         { pt: "Ative o Plantão Online",     en: "Activate Online Duty",        es: "Activa la Guardia Online" },
   resource:    { pt: "Adicione um recurso à Biblioteca", en: "Add a resource to the Library", es: "Agrega un recurso a la Biblioteca" },
   profileHint: { pt: "Foto, especialidade, CRM e bio",
@@ -59,6 +50,9 @@ const T: Record<string, Record<Lang, string>> = {
   rxHint:      { pt: "Prescreva com base de dados Anvisa",
                  en: "Prescribe using the Anvisa drug database",
                  es: "Prescribe usando la base de datos Anvisa" },
+  digSignHint: { pt: "CPF do certificado BirdID ou VIDaaS",
+                 en: "CPF linked to your BirdID or VIDaaS certificate",
+                 es: "CPF del certificado BirdID o VIDaaS" },
   jitHint:     { pt: "Atenda pacientes sem agendamento prévio",
                  en: "See patients without prior scheduling",
                  es: "Atiende pacientes sin cita previa" },
@@ -70,7 +64,7 @@ const T: Record<string, Record<Lang, string>> = {
 
 const STORAGE_KEY  = "doctor8.checklist.dismissed";
 const CACHE_KEY    = "doctor8.checklist.state";
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 function detectLang(): Lang {
   if (typeof window === "undefined") return "pt";
@@ -83,22 +77,26 @@ function detectLang(): Lang {
 }
 
 export default function ProfessionalChecklist() {
-  const [lang,      setLang]      = useState<Lang>("pt");
-  const [state,     setState]     = useState<ChecklistState | null>(null);
+  const [lang, setLang] = useState<Lang>("pt");
+  const [state, setState] = useState<ChecklistState | null>(null);
   const [dismissed, setDismissed] = useState(false);
-  const [loading,   setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const t = (k: string) => T[k]?.[lang] ?? T[k]?.["en"] ?? k;
 
   useEffect(() => {
     setLang(detectLang());
-    // Check if dismissed
-    if (localStorage.getItem(STORAGE_KEY)) { setDismissed(true); setLoading(false); return; }
+    if (localStorage.getItem(STORAGE_KEY)) {
+      setDismissed(true);
+      setLoading(false);
+      return;
+    }
     loadState();
   }, []);
 
   async function loadState() {
-    // Try cache first
+    setLoadError(false);
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
@@ -112,13 +110,17 @@ export default function ProfessionalChecklist() {
     } catch { /* ignore */ }
 
     try {
-      const res  = await fetch("/api/professional/onboarding-status");
+      const res = await fetch("/api/professional/onboarding-status");
       if (res.ok) {
         const data = await res.json();
         setState(data);
         localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+      } else {
+        setLoadError(true);
       }
-    } catch { /* ignore */ }
+    } catch {
+      setLoadError(true);
+    }
     setLoading(false);
   }
 
@@ -127,40 +129,59 @@ export default function ProfessionalChecklist() {
     setDismissed(true);
   }
 
-  if (dismissed || loading || !state) return null;
+  if (dismissed) return null;
 
-  const items: (ChecklistItem & { label: string; hint: string })[] = [
-    { id: "profile",      icon: <User size={16} />,      href: "/professional/account",       done: state.hasProfile,      label: t("profile"),      hint: t("profileHint") },
-    { id: "availability", icon: <Calendar size={16} />,  href: "/professional/settings",      done: state.hasAvailability, label: t("availability"), hint: t("availHint") },
-    { id: "patient",      icon: <Users size={16} />,     href: "/professional/patients",      done: state.hasPatient,      label: t("patient"),      hint: t("patientHint") },
-    { id: "prescription", icon: <Pill size={16} />,      href: "/professional/prescriptions", done: state.hasPrescription, label: t("prescription"), hint: t("rxHint") },
-    { id: "jit",          icon: <Radio size={16} />,     href: "/professional/jit",           done: state.hasJit,          label: t("jit"),          hint: t("jitHint") },
-    { id: "resource",     icon: <BookOpen size={16} />,  href: "/professional/resources",     done: state.hasResource,     label: t("resource"),     hint: t("resourceHint") },
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 animate-pulse">
+        <div className="h-4 bg-slate-100 rounded w-40 mb-2" />
+        <div className="h-3 bg-slate-100 rounded w-64" />
+      </div>
+    );
+  }
+
+  if (loadError || !state) {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm p-5 flex items-center gap-3">
+        <AlertCircle size={18} className="text-amber-600 shrink-0" />
+        <p className="text-sm font-semibold text-amber-900 flex-1">{t("loadError")}</p>
+        <button type="button" onClick={() => { setLoading(true); loadState(); }}
+          className="text-xs font-semibold text-amber-800 flex items-center gap-1 hover:underline shrink-0">
+          <RefreshCw size={13} /> {t("retry")}
+        </button>
+      </div>
+    );
+  }
+
+  const items = [
+    { id: "profile", icon: <User size={16} />, href: "/professional/account", done: state.hasProfile, label: t("profile"), hint: t("profileHint") },
+    { id: "availability", icon: <Calendar size={16} />, href: "/professional/settings/availability", done: state.hasAvailability, label: t("availability"), hint: t("availHint") },
+    { id: "digSign", icon: <PenLine size={16} />, href: "/professional/account#digital-sign", done: state.hasDigitalSign, label: t("digSign"), hint: t("digSignHint") },
+    { id: "patient", icon: <Users size={16} />, href: "/professional/patients", done: state.hasPatient, label: t("patient"), hint: t("patientHint") },
+    { id: "prescription", icon: <Pill size={16} />, href: "/professional/prescriptions", done: state.hasPrescription, label: t("prescription"), hint: t("rxHint") },
+    { id: "jit", icon: <Radio size={16} />, href: "/professional/jit", done: state.hasJit, label: t("jit"), hint: t("jitHint") },
+    { id: "resource", icon: <BookOpen size={16} />, href: "/professional/resources", done: state.hasResource, label: t("resource"), hint: t("resourceHint") },
   ];
 
-  const doneCount = items.filter(i => i.done).length;
-  const allDone   = doneCount === items.length;
-  const pct       = Math.round((doneCount / items.length) * 100);
+  const doneCount = items.filter((i) => i.done).length;
+  const allDone = doneCount === items.length;
+  const pct = Math.round((doneCount / items.length) * 100);
 
   return (
     <div className={`rounded-2xl border shadow-sm overflow-hidden ${allDone ? "border-brand-200 bg-brand-50" : "border-slate-200 bg-white"}`}>
-      {/* Header */}
       <div className="px-5 py-4 flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-0.5">
             <Sparkles size={16} className={allDone ? "text-brand-500" : "text-amber-500"} />
             <h2 className="font-bold text-slate-900 text-sm">{t("title")}</h2>
           </div>
-          <p className="text-xs text-slate-500">
-            {allDone ? t("done") : t("subtitle")}
-          </p>
+          <p className="text-xs text-slate-500">{allDone ? t("done") : t("subtitle")}</p>
         </div>
-        <button onClick={dismiss} className="text-slate-400 hover:text-slate-600 shrink-0 mt-0.5">
+        <button type="button" onClick={dismiss} className="text-slate-400 hover:text-slate-600 shrink-0 mt-0.5">
           <X size={16} />
         </button>
       </div>
 
-      {/* Progress bar */}
       {!allDone && (
         <div className="px-5 pb-3">
           <div className="flex items-center justify-between mb-1.5">
@@ -168,15 +189,11 @@ export default function ProfessionalChecklist() {
             <span className="text-xs font-semibold text-brand-500">{pct}%</span>
           </div>
           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-brand-500 rounded-full transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
+            <div className="h-full bg-brand-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
         </div>
       )}
 
-      {/* Items */}
       <div className={`divide-y ${allDone ? "divide-brand-100" : "divide-slate-100"}`}>
         {items.map((item) => (
           <Link
@@ -184,45 +201,30 @@ export default function ProfessionalChecklist() {
             href={item.done ? "#" : item.href}
             onClick={item.done ? (e) => e.preventDefault() : undefined}
             className={`flex items-center gap-3 px-5 py-3 transition group ${
-              item.done
-                ? "opacity-60 cursor-default"
-                : "hover:bg-slate-50 cursor-pointer"
+              item.done ? "opacity-60 cursor-default" : "hover:bg-slate-50 cursor-pointer"
             }`}
           >
-            {/* Status icon */}
-            <div className={`shrink-0 ${item.done ? "text-brand-500" : "text-slate-300"}`}>
-              {item.done
-                ? <CheckCircle2 size={20} className="text-brand-500" />
-                : <Circle size={20} />
-              }
+            <div className="shrink-0">
+              {item.done ? <CheckCircle2 size={20} className="text-brand-500" /> : <Circle size={20} className="text-slate-300" />}
             </div>
-
-            {/* Icon + text */}
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
               item.done ? "bg-brand-100 text-brand-500" : "bg-slate-100 text-slate-500 group-hover:bg-brand-50 group-hover:text-brand-500 transition"
             }`}>
               {item.icon}
             </div>
-
             <div className="flex-1 min-w-0">
-              <p className={`text-sm font-medium ${item.done ? "text-slate-500 line-through" : "text-slate-800"}`}>
-                {item.label}
-              </p>
+              <p className={`text-sm font-medium ${item.done ? "text-slate-500 line-through" : "text-slate-800"}`}>{item.label}</p>
               <p className="text-xs text-slate-400 truncate">{item.hint}</p>
             </div>
-
-            {!item.done && (
-              <ChevronRight size={16} className="text-slate-300 group-hover:text-brand-500 shrink-0 transition" />
-            )}
+            {!item.done && <ChevronRight size={16} className="text-slate-300 group-hover:text-brand-500 shrink-0 transition" />}
           </Link>
         ))}
       </div>
 
-      {/* All done celebration */}
       {allDone && (
         <div className="px-5 py-4 text-center">
           <p className="text-2xl mb-1">🎉</p>
-          <button onClick={dismiss} className="text-xs text-brand-500 hover:text-brand-600 font-medium">
+          <button type="button" onClick={dismiss} className="text-xs text-brand-500 hover:text-brand-600 font-medium">
             {t("dismiss")}
           </button>
         </div>

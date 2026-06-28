@@ -8,7 +8,7 @@
 //   3. Send directly to a Doctor8 professional (message + notification)
 
 import { useState, useEffect } from "react";
-import { useI18n } from "@/lib/i18n/I18nProvider";
+import { useI18n, useT } from "@/lib/i18n/I18nProvider";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import {
   X, Link2, FileDown, Send, Copy, CheckCircle2, Loader2,
@@ -31,6 +31,7 @@ interface ShareModalProps {
 
 export default function ShareModal({ type, onClose }: ShareModalProps) {
   const { lang } = useI18n();
+  const t = useT();
   const [tab, setTab] = useState<"link" | "professional">("link");
   const [expiry, setExpiry] = useState<24 | 72 | 168 | 0>(72);
   const [shareUrl, setShareUrl] = useState("");
@@ -45,7 +46,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
-  const label = type === "history" ? "medical history" : "medication list";
+  const label = type === "history" ? t("share.labelHistory") : t("share.labelMeds");
 
   useEffect(() => {
     // Load professionals for direct share
@@ -65,10 +66,10 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
         body: JSON.stringify({ type, expiresInHours: expiry }),
       });
       const data = await res.json();
-      if (!res.ok) { setError("Failed to generate link."); return; }
+      if (!res.ok) { setError(t("share.errLink")); return; }
       setShareUrl(data.shareUrl);
     } catch {
-      setError("Something went wrong.");
+      setError(t("share.errGeneric"));
     } finally {
       setGenerating(false);
     }
@@ -104,10 +105,10 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError("Failed to send."); return; }
+      if (!res.ok) { setError(t("share.errSend")); return; }
       setSent(true);
     } catch {
-      setError("Something went wrong.");
+      setError(t("share.errGeneric"));
     } finally {
       setSending(false);
     }
@@ -124,8 +125,8 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
           <div>
-            <h2 className="font-bold text-slate-900">Share {label}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Choose how to share</p>
+            <h2 className="font-bold text-slate-900">{t("share.title").replace("{{label}}", label)}</h2>
+            <p className="text-xs text-slate-500 mt-0.5">{t("share.chooseHow")}</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
             <X size={20} />

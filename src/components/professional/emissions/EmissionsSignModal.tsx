@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   PenLine, Smartphone, Lock, Loader2, AlertCircle, X, ExternalLink,
 } from "lucide-react";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export type EmissionKind = "prescription" | "exam" | "document";
 
@@ -24,6 +25,7 @@ export function EmissionsSignModal({
   deliverAfter?: boolean;
   onClose: () => void;
 }) {
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -45,13 +47,13 @@ export function EmissionsSignModal({
       });
       const data = await res.json();
       if (!res.ok || !data.redirectUrl) {
-        setError(data.error || "Erro ao iniciar assinatura.");
+        setError(typeof data.error === "string" ? data.error : t("digSign.modalErrStart"));
         setLoading(false);
         return;
       }
       window.location.href = data.redirectUrl;
     } catch {
-      setError("Erro de rede. Tente novamente.");
+      setError(t("digSign.modalErrNetwork"));
       setLoading(false);
     }
   }
@@ -62,16 +64,16 @@ export function EmissionsSignModal({
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-slate-900 flex items-center gap-2">
-              <PenLine size={18} className="text-brand-500" /> Assinatura Digital
+              <PenLine size={18} className="text-brand-500" /> {t("digSign.modalTitle")}
             </h2>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-            Configure o CPF da assinatura digital nas configurações da conta antes de assinar.
+            {t("digSign.modalNotConfigured")}
           </div>
           <a href="/professional/account#digital-sign" onClick={onClose}
             className="w-full flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 rounded-xl text-sm transition">
-            <ExternalLink size={14} /> Ir para configurações
+            <ExternalLink size={14} /> {t("digSign.modalGoSettings")}
           </a>
         </div>
       </div>
@@ -83,23 +85,23 @@ export function EmissionsSignModal({
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-slate-900 flex items-center gap-2">
-            <PenLine size={18} className="text-brand-500" /> Assinatura ICP-Brasil
+            <PenLine size={18} className="text-brand-500" /> {t("digSign.modalTitleSigned")}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
         </div>
         <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 space-y-2">
           <p className="text-sm font-semibold text-brand-700 flex items-center gap-2">
-            <Smartphone size={15} /> Como funciona
+            <Smartphone size={15} /> {t("digSign.howTitle")}
           </p>
           <ol className="text-xs text-brand-600 space-y-1 list-decimal list-inside">
-            <li>Você será levado à página segura de assinatura</li>
-            <li>Escolha seu certificado (BirdID, VIDaaS, etc.)</li>
-            <li>Autorize no app do celular</li>
-            <li>Volta automaticamente com o documento assinado</li>
+            <li>{t("digSign.modalStep1")}</li>
+            <li>{t("digSign.modalStep2")}</li>
+            <li>{t("digSign.modalStep3")}</li>
+            <li>{t("digSign.modalStep4")}</li>
           </ol>
         </div>
         <div className="bg-slate-50 rounded-xl p-3 text-sm">
-          <p className="text-xs text-slate-500">Documento</p>
+          <p className="text-xs text-slate-500">{t("digSign.modalDocLabel")}</p>
           <p className="font-medium text-slate-800 text-xs">{target.label}</p>
           <p className="text-xs text-slate-400 mt-1">CPF: {signConfig.cpfMasked}</p>
         </div>
@@ -109,13 +111,13 @@ export function EmissionsSignModal({
           </div>
         )}
         <div className="flex gap-3">
-          <button onClick={onClose}
+          <button type="button" onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 transition">
-            Cancelar
+            {t("digSign.modalCancel")}
           </button>
-          <button onClick={handleStartSign} disabled={loading}
+          <button type="button" onClick={handleStartSign} disabled={loading}
             className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white font-semibold text-sm transition flex items-center justify-center gap-2">
-            {loading ? <><Loader2 size={13} className="animate-spin" /> Abrindo...</> : <><Lock size={13} /> Assinar</>}
+            {loading ? <><Loader2 size={13} className="animate-spin" /> {t("digSign.modalOpening")}</> : <><Lock size={13} /> {t("digSign.modalSign")}</>}
           </button>
         </div>
       </div>

@@ -23,6 +23,7 @@ export async function GET() {
       licenseNumber: true,
       avatarUrl:     true,
       bio:           true,
+      digitalSignCpf: true,
     },
   });
 
@@ -51,7 +52,7 @@ export async function GET() {
     where: { professionalId: professional.id },
   });
 
-  // Has used JIT (at least 1 session ever created)
+  // Went online at least once (session row is created only when activating plantão)
   const jitCount = await db.jitSession.count({
     where: { professionalId: professional.id },
   });
@@ -68,5 +69,6 @@ export async function GET() {
     hasPrescription: rxCount > 0,
     hasJit:          jitCount > 0,
     hasResource:     resourceCount > 0,
+    hasDigitalSign:  !!professional.digitalSignCpf,
   });
 }

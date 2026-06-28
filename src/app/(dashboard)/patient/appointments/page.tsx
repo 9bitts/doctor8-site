@@ -110,6 +110,7 @@ export default function AppointmentsPage() {
   const [payLoading, setPayLoading]       = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodChoice>("all");
   const [checkoutPending, setCheckoutPending] = useState("");
+  const [tcleGranted, setTcleGranted] = useState<boolean | null>(null);
   const [confirmedId, setConfirmedId]     = useState("");
   const [error, setError]                 = useState("");
   const [search, setSearch]               = useState("");
@@ -190,7 +191,26 @@ export default function AppointmentsPage() {
       }
     })();
   }, []);
+  useEffect(() => {
+    fetch("/api/consent/telemedicine-tcle")
+      .then((r) => r.json())
+      .then((d) => setTcleGranted(!!d.granted))
+      .catch(() => setTcleGranted(false));
+  }, []);
   useEffect(() => { setShowTip(true); }, [step]);
+
+  function requireTcleForTeleconsult(): boolean {
+    if (type !== "TELECONSULT") return true;
+    if (tcleGranted === null) return true;
+    if (tcleGranted) return true;
+    window.location.href = `/patient/tcle?returnUrl=${encodeURIComponent("/patient/appointments")}`;
+    return false;
+  }
+
+  function goToPayment() {
+    if (!requireTcleForTeleconsult()) return;
+    setStep("payment");
+  }
 
   // Deep link: /patient/appointments?pro=ID&providerType=...&slot=...&from=public_profile
   useEffect(() => {
@@ -399,6 +419,7 @@ export default function AppointmentsPage() {
 
   async function handleCheckoutPayment(method: PaymentMethodChoice) {
     if (!selectedPro || !selectedSlot || !acceptedPolicy) return;
+    if (!requireTcleForTeleconsult()) return;
     setPayLoading(true); setError(""); setCheckoutPending("");
     try {
       const selectedService = providerServices.find((s) => s.id === selectedServiceId);
@@ -447,6 +468,7 @@ export default function AppointmentsPage() {
 
   async function handlePayment() {
     if (!selectedPro || !selectedSlot || !stripeRef.current || !cardElementRef.current || !acceptedPolicy) return;
+    if (!requireTcleForTeleconsult()) return;
     setPayLoading(true); setError("");
     try {
       const selectedService = providerServices.find((s) => s.id === selectedServiceId);
@@ -831,7 +853,7 @@ export default function AppointmentsPage() {
                   </div>
                 )}
                 {selectedSlot && (
-                  <button onClick={() => setStep("payment")} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-4 rounded-xl transition text-base">
+                  <button type="button" onClick={goToPayment} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-4 rounded-xl transition text-base">
                     {t("appt.continueToPayment")} <ChevronRight size={18} className="shrink-0" />
                   </button>
                 )}

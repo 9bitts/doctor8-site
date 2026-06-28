@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
+import ProfessionalTourWrapper from "./ProfessionalTourWrapper";
 import MarketPricingCard from "@/components/professional/MarketPricingCard";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
@@ -269,6 +270,7 @@ export default async function ProfessionalDashboard() {
       )}
 
       <ProfessionalChecklistWrapper />
+      <ProfessionalTourWrapper lang={lang} />
 
       {/* Clickable stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
