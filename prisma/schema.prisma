@@ -344,6 +344,7 @@ model User {
   sentMessages      Message[]       @relation("SentMessages")
   receivedMessages  Message[]       @relation("ReceivedMessages")
   notifications     Notification[]
+  pushSubscriptions PushSubscription[]
   subscription      Subscription?
   dataExportRequests DataExportRequest[]
   patientFavorites  PatientFavorite[]  @relation("PatientFavorites")
@@ -1167,6 +1168,22 @@ model Notification {
 
   @@index([userId])
   @@index([readAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // Patient favorites (map) + optional online alert

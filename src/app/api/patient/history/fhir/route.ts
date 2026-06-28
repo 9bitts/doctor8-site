@@ -4,6 +4,16 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { decrypt } from "@/lib/encryption";
 import { buildPatientFhirBundle } from "@/lib/fhir/patient-bundle";
+import { parseExamContent } from "@/lib/sign-helpers";
+
+function safeDecrypt(v: string | null | undefined): string {
+  if (!v) return "";
+  try {
+    return decrypt(v);
+  } catch {
+    return v;
+  }
+}
 
 export async function GET() {
   const session = await auth();
@@ -16,10 +26,35 @@ export async function GET() {
         where: { active: true, flow: "CLINICAL" },
         orderBy: { createdAt: "asc" },
       },
+      appointments: {
+        orderBy: { scheduledAt: "desc" },
+        take: 50,
+        include: {
+          professional: { select: { firstName: true, lastName: true } },
+        },
+      },
     },
   });
 
   if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const linkedRecords = await db.patientRecord.findMany({
+    where: { linkedUserId: session.user.id },
+    select: { id: true },
+  });
+  const recordIds = linkedRecords.map((r) => r.id);
+
+  const examDocs = await db.medicalDocument.findMany({
+    where: {
+      type: "EXAM_REQUEST",
+      OR: [
+        { patientId: patient.id },
+        ...(recordIds.length ? [{ patientRecordId: { in: recordIds } }] : []),
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
 
   await audit.exportData(session.user.id);
 
@@ -40,6 +75,24 @@ export async function GET() {
       frequency: m.frequency ? decrypt(m.frequency) : null,
       prescribedBy: m.prescribedBy,
     })),
+    encounters: patient.appointments.map((a) => ({
+      id: a.id,
+      scheduledAt: a.scheduledAt.toISOString(),
+      status: a.status,
+      type: a.type,
+      professionalName: a.professional
+        ? `${a.professional.firstName} ${a.professional.lastName}`.trim()
+        : null,
+    })),
+    examRequests: examDocs.map((d) => {
+      const parsed = parseExamContent(d.content ? safeDecrypt(d.content) : "");
+      return {
+        id: d.id,
+        title: safeDecrypt(d.title),
+        createdAt: d.createdAt.toISOString(),
+        items: parsed.items,
+      };
+    }),
   });
 
   const date = new Date().toISOString().split("T")[0];

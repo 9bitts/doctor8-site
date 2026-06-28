@@ -1,4 +1,4 @@
-const CACHE = "doctor8-hum-v2";
+const CACHE = "doctor8-hum-v3";
 const PRECACHE = ["/sos-venezuela", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -40,5 +40,39 @@ self.addEventListener("fetch", (event) => {
         return res;
       })
       .catch(() => caches.match(event.request).then((cached) => cached || Response.error())),
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let payload = { title: "Doctor8", body: "", data: { url: "/patient" } };
+  try {
+    if (event.data) payload = { ...payload, ...event.data.json() };
+  } catch {
+    /* ignore malformed payload */
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "Doctor8", {
+      body: payload.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: payload.data || { url: "/patient" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || "/patient";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ("focus" in client) {
+          client.navigate(target);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    }),
   );
 });

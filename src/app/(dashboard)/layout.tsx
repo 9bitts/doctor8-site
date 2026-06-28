@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import NotificationBell from "@/components/NotificationBell";
+import PushSubscribe from "@/components/PushSubscribe";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
@@ -16,7 +17,7 @@ import {
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
   Building2,
   BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain, BarChart3,
-  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart, Leaf, FlaskConical,
+  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart, Leaf, FlaskConical, Plug,
 } from "lucide-react";
 
 interface NavItem {
@@ -107,6 +108,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", icon: <Radio size={18} />, roles: ["ADMIN"] },
   { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", icon: <Heart size={18} />, roles: ["ADMIN"] },
   { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", icon: <ShoppingBag size={18} />, roles: ["ADMIN"] },
+  { href: "/admin/integrations", labelKey: "nav.adminIntegrations", icon: <Plug size={18} />, roles: ["ADMIN"] },
 ];
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
@@ -255,6 +257,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
+          <PushSubscribe />
           {children}
         </main>
       </div>

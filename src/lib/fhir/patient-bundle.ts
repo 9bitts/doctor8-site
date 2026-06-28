@@ -17,6 +17,19 @@ export type PatientFhirInput = {
     frequency?: string | null;
     prescribedBy?: string | null;
   }[];
+  encounters?: {
+    id: string;
+    scheduledAt: string;
+    status: string;
+    type: string;
+    professionalName?: string | null;
+  }[];
+  examRequests?: {
+    id: string;
+    title: string;
+    createdAt: string;
+    items: string[];
+  }[];
 };
 
 function fhirDate(value: string): string {
@@ -37,6 +50,19 @@ function genderFromSex(sex: string | null | undefined): string | undefined {
   if (s.startsWith("m") || s === "male") return "male";
   if (s.startsWith("f") || s === "female") return "female";
   return "unknown";
+}
+
+function encounterStatus(status: string): string {
+  const s = status.toLowerCase();
+  if (s === "completed") return "finished";
+  if (s === "cancelled" || s === "canceled") return "cancelled";
+  if (s === "in_progress" || s === "in progress") return "in-progress";
+  if (s === "no_show" || s === "no show") return "cancelled";
+  return "planned";
+}
+
+function encounterClass(type: string): string {
+  return type === "IN_PERSON" ? "AMB" : "VR";
 }
 
 export function buildPatientFhirBundle(input: PatientFhirInput): FhirResource {
@@ -119,6 +145,60 @@ export function buildPatientFhirBundle(input: PatientFhirInput): FhirResource {
         medicationCodeableConcept: { text: med.name },
         ...(med.dosage ? { dosage: [{ text: med.dosage }] } : {}),
         ...(med.frequency ? { note: [{ text: med.frequency }] } : {}),
+      },
+    });
+  }
+
+  for (const enc of input.encounters || []) {
+    entries.push({
+      fullUrl: `urn:uuid:enc-${enc.id}`,
+      resource: {
+        resourceType: "Encounter",
+        id: enc.id,
+        status: encounterStatus(enc.status),
+        class: {
+          system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          code: encounterClass(enc.type),
+        },
+        subject: { reference: patientRef },
+        period: { start: enc.scheduledAt },
+        ...(enc.professionalName
+          ? {
+              participant: [
+                {
+                  individual: {
+                    display: enc.professionalName,
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+    });
+  }
+
+  for (const exam of input.examRequests || []) {
+    entries.push({
+      fullUrl: `urn:uuid:sr-${exam.id}`,
+      resource: {
+        resourceType: "ServiceRequest",
+        id: exam.id,
+        status: "active",
+        intent: "order",
+        subject: { reference: patientRef },
+        authoredOn: exam.createdAt,
+        code: {
+          text: exam.title,
+          ...(exam.items.length
+            ? {
+                coding: exam.items.map((item, i) => ({
+                  system: "https://doctor8.app/exam-item",
+                  code: String(i + 1),
+                  display: item,
+                })),
+              }
+            : {}),
+        },
       },
     });
   }

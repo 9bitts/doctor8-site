@@ -4,6 +4,7 @@
 // new message, shared record, appointment reminder, payment, etc.
 
 import { db } from "@/lib/db";
+import { sendWebPushToUser } from "@/lib/web-push";
 
 type NotificationType =
   | "message"
@@ -32,6 +33,22 @@ export async function createNotification(params: {
         data: params.data ? (params.data as any) : undefined,
       },
     });
+
+    const url =
+      typeof params.data?.url === "string"
+        ? params.data.url
+        : params.type === "message"
+          ? "/patient/messages"
+          : params.type === "appointment_reminder" || params.type === "appointment_confirmed"
+            ? "/patient/appointments"
+            : "/patient";
+
+    sendWebPushToUser(params.userId, {
+      title: params.title,
+      body: params.body,
+      url,
+      data: params.data,
+    }).catch(() => {});
   } catch (e) {
     // Never let a notification failure break the main action.
     console.error("[NOTIFICATIONS] Failed to create notification:", e);

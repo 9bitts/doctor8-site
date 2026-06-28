@@ -24,10 +24,10 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.4.1",
-    "@daily-co/daily-js": "^0.85.0",
     "@aws-sdk/client-s3": "^3.626.0",
     "@aws-sdk/client-sns": "^3.1075.0",
     "@aws-sdk/s3-request-presigner": "^3.626.0",
+    "@daily-co/daily-js": "^0.85.0",
     "@prisma/client": "^5.17.0",
     "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.1",
@@ -58,6 +58,7 @@
     "stripe": "^16.2.0",
     "tailwind-merge": "^2.4.0",
     "tailwindcss": "^3.4.7",
+    "web-push": "^3.6.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -67,6 +68,7 @@
     "@types/node": "^20.14.15",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/web-push": "^3.6.4",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.5",
     "prisma": "^5.17.0",

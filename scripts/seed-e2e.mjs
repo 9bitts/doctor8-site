@@ -41,6 +41,13 @@ const DEFAULT_PROFESSIONAL = {
   lastName: "Volunteer",
 };
 
+const DEFAULT_ADMIN = {
+  email: process.env.E2E_ADMIN_EMAIL || "e2e-admin@doctor8.test",
+  password: process.env.E2E_ADMIN_PASSWORD || "TestPassword1!",
+  firstName: "E2E",
+  lastName: "Admin",
+};
+
 function encrypt(plaintext) {
   if (!plaintext) return plaintext;
   const key = Buffer.from(process.env.ENCRYPTION_KEY || "", "hex");
@@ -211,6 +218,168 @@ async function seedProfessional({ email, password, firstName, lastName }) {
   }
 
   console.log(`[seed-e2e] Professional ${normalized} ready (verified)`);
+}
+
+async function seedAdmin({ email, password, firstName, lastName }) {
+  const passwordHash = await bcrypt.hash(password, 12);
+  const normalized = email.toLowerCase();
+
+  await prisma.user.upsert({
+    where: { email: normalized },
+    create: {
+      email: normalized,
+      passwordHash,
+      role: UserRole.ADMIN,
+      region: UserRegion.BR,
+      language: "pt",
+      emailVerified: new Date(),
+    },
+    update: {
+      passwordHash,
+      role: UserRole.ADMIN,
+      emailVerified: new Date(),
+      deletedAt: null,
+      lockedUntil: null,
+      failedLoginAttempts: 0,
+    },
+  });
+
+  console.log(`[seed-e2e] Admin ${normalized} ready`);
+}
+
+async function seedClinicalFixtures() {
+  const patientUser = await prisma.user.findUnique({
+    where: { email: DEFAULT_PATIENT.email.toLowerCase() },
+    select: { id: true },
+  });
+  const patientProfile = await prisma.patientProfile.findUnique({
+    where: { userId: patientUser.id },
+    select: { id: true },
+  });
+  const proUser = await prisma.user.findUnique({
+    where: { email: DEFAULT_PROFESSIONAL.email.toLowerCase() },
+    select: { id: true },
+  });
+  const proProfile = await prisma.professionalProfile.findUnique({
+    where: { userId: proUser.id },
+    select: { id: true },
+  });
+  if (!patientUser || !patientProfile || !proProfile) {
+    throw new Error("E2E users missing — seed patient/professional first");
+  }
+
+  const record = await prisma.patientRecord.findFirst({
+    where: { linkedUserId: patientUser.id, professionalId: proProfile.id },
+    select: { id: true },
+  });
+
+  const chart = record
+    ? await prisma.patientRecord.update({
+        where: { id: record.id },
+        data: {
+          firstName: encrypt("E2E"),
+          lastName: encrypt("Patient"),
+          email: DEFAULT_PATIENT.email.toLowerCase(),
+        },
+      })
+    : await prisma.patientRecord.create({
+        data: {
+          professionalId: proProfile.id,
+          firstName: encrypt("E2E"),
+          lastName: encrypt("Patient"),
+          email: DEFAULT_PATIENT.email.toLowerCase(),
+          linkedUserId: patientUser.id,
+        },
+      });
+
+  const existingRx = await prisma.prescription.findFirst({
+    where: {
+      professionalId: proProfile.id,
+      document: { patientId: patientProfile.id },
+    },
+    select: { id: true },
+  });
+
+  if (!existingRx) {
+    const rxDoc = await prisma.medicalDocument.create({
+      data: {
+        patientId: patientProfile.id,
+        patientRecordId: chart.id,
+        professionalId: proProfile.id,
+        type: "PRESCRIPTION",
+        title: encrypt("E2E Prescription"),
+      },
+    });
+    await prisma.prescription.create({
+      data: {
+        documentId: rxDoc.id,
+        professionalId: proProfile.id,
+        medications: [
+          {
+            name: "Paracetamol",
+            dosage: "500mg",
+            frequency: "8/8h",
+            duration: "5 days",
+          },
+        ],
+        instructions: encrypt("Take after meals."),
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        signatureStatus: "SIGNED",
+        signedAt: new Date(),
+      },
+    });
+  }
+
+  const existingExam = await prisma.medicalDocument.findFirst({
+    where: {
+      patientId: patientProfile.id,
+      professionalId: proProfile.id,
+      type: "EXAM_REQUEST",
+    },
+    select: { id: true },
+  });
+
+  if (!existingExam) {
+    await prisma.medicalDocument.create({
+      data: {
+        patientId: patientProfile.id,
+        patientRecordId: chart.id,
+        professionalId: proProfile.id,
+        type: "EXAM_REQUEST",
+        title: encrypt("E2E Exam Request"),
+        content: encrypt(
+          JSON.stringify({
+            items: ["Complete blood count", "Chest X-ray"],
+            notes: "E2E fixture",
+            cid: "",
+          }),
+        ),
+        signatureStatus: "SIGNED",
+        signedAt: new Date(),
+      },
+    });
+  }
+
+  const existingAppt = await prisma.appointment.findFirst({
+    where: { patientId: patientProfile.id, professionalId: proProfile.id },
+    select: { id: true },
+  });
+
+  if (!existingAppt) {
+    await prisma.appointment.create({
+      data: {
+        patientId: patientProfile.id,
+        professionalId: proProfile.id,
+        scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        type: "TELECONSULT",
+        status: "CONFIRMED",
+        priceAmount: 15000,
+        currency: "USD",
+      },
+    });
+  }
+
+  console.log("[seed-e2e] Clinical fixtures ready (rx, exam, appointment)");
 }
 
 const TELEMEDICINE_TCLE_VERSION = "1.2";
@@ -404,6 +573,8 @@ async function main() {
   await seedCampaign();
   await seedPatient(DEFAULT_PATIENT);
   await seedProfessional(DEFAULT_PROFESSIONAL);
+  await seedAdmin(DEFAULT_ADMIN);
+  await seedClinicalFixtures();
   await seedHumanitarianVideoFixtures();
   await seedHumanitarianQueueFixtures();
 }

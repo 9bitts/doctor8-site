@@ -33,6 +33,17 @@ export function e2eProfessionalCredentials(): { email: string; password: string 
   return { email, password };
 }
 
+export function e2eAdminCredentials(): { email: string; password: string } | null {
+  const email =
+    process.env.E2E_ADMIN_EMAIL?.trim() ||
+    (process.env.CI ? "e2e-admin@doctor8.test" : undefined);
+  const password =
+    process.env.E2E_ADMIN_PASSWORD?.trim() ||
+    (process.env.CI ? "TestPassword1!" : undefined);
+  if (!email || !password) return null;
+  return { email, password };
+}
+
 export async function loginWithCredentials(
   page: Page,
   email: string,

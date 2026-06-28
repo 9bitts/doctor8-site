@@ -102,9 +102,11 @@ export default function EspecialistasLandingClient() {
 
     setSymptomLoading(true);
     try {
-      let specialtySlug = matchSymptomQuery(q)?.specialtySlug;
+      let specialtySlug = matchSymptomQuery(q, lang)?.specialtySlug;
       if (!specialtySlug) {
-        const res = await fetch(`/api/public/symptom-search?q=${encodeURIComponent(q)}`);
+        const res = await fetch(
+          `/api/public/symptom-search?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}`,
+        );
         const data = await res.json();
         specialtySlug = data.match?.specialtySlug;
       }

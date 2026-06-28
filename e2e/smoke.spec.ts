@@ -68,7 +68,7 @@ test.describe("public smoke", () => {
     const res = await request.get("/sw.js");
     expect(res.ok()).toBeTruthy();
     const body = await res.text();
-    expect(body).toContain("doctor8-hum-v2");
+    expect(body).toContain("doctor8-hum-v3");
   });
 
   test("PWA icons are served", async ({ request }) => {
@@ -83,6 +83,11 @@ test.describe("public smoke", () => {
 
   test("patient resources page responds", async ({ page }) => {
     const res = await page.goto("/patient/resources");
+    expect(res?.status()).toBeLessThan(500);
+  });
+
+  test("admin integrations page responds", async ({ page }) => {
+    const res = await page.goto("/admin/integrations");
     expect(res?.status()).toBeLessThan(500);
   });
 });
