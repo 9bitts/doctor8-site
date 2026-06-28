@@ -1,42 +1,64 @@
 "use client";
 
 // src/app/(dashboard)/patient/history/page.tsx
-// Complete medical history (anamnesis). i18n via useT() for the UI.
-// NOTE: long clinical option lists (symptoms, vaccines, substances) are kept in
-// English for now — they can be translated in a dedicated pass later.
+// Complete medical history (anamnesis). UI + clinical options are i18n-aware.
 
 import { useState, useEffect } from "react";
-import { useT } from "@/lib/i18n/I18nProvider";
-import { Save, Share2, Download, Loader2, CheckCircle2, Copy } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { histOptionLabel } from "@/lib/i18n/hist-option-labels";
+import type { HistOption } from "@/lib/medical-history-options";
+import {
+  HIST_YES_NO,
+  HIST_SEX,
+  HIST_MARITAL,
+  HIST_BLOOD_TYPES,
+  HIST_DISABILITIES,
+  HIST_CHRONIC,
+  HIST_SMOKING,
+  HIST_ALCOHOL,
+  HIST_EXERCISE,
+  HIST_SLEEP,
+  HIST_MENSTRUAL,
+  HIST_IMMUNOLOGY,
+  HIST_VACCINES,
+  HIST_SUBSTANCES,
+  HIST_INFECTIOUS,
+  HIST_REVIEW_SYSTEMS,
+} from "@/lib/medical-history-options";
+import { Save, Share2, Download, Loader2, CheckCircle2 } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 
-// Multi-select chip group
 function ChipGroup({
-  label, options, selected, onToggle,
+  label,
+  options,
+  selected,
+  onToggle,
+  optLabel,
 }: {
   label: string;
-  options: string[];
+  options: HistOption[];
   selected: string[];
   onToggle: (v: string) => void;
+  optLabel: (key: string) => string;
 }) {
   return (
     <div>
       <label className="block text-sm font-medium text-slate-600 mb-2">{label}</label>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => {
-          const active = selected.includes(o);
+          const active = selected.includes(o.value);
           return (
             <button
-              key={o}
+              key={o.value}
               type="button"
-              onClick={() => onToggle(o)}
+              onClick={() => onToggle(o.value)}
               className={`text-xs px-3 py-1.5 rounded-full border transition ${
                 active
                   ? "bg-emerald-500 border-emerald-500 text-white"
                   : "bg-white border-slate-200 text-slate-600 hover:border-emerald-300"
               }`}
             >
-              {o}
+              {optLabel(o.labelKey)}
             </button>
           );
         })}
@@ -45,7 +67,33 @@ function ChipGroup({
   );
 }
 
-// Defined OUTSIDE the page component so inputs keep focus while typing.
+function OptionSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  optLabel,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: HistOption[];
+  placeholder: string;
+  optLabel: (key: string) => string;
+  className: string;
+}) {
+  return (
+    <select className={className} value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">{placeholder}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {optLabel(o.labelKey)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
@@ -54,28 +102,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     </div>
   );
 }
-
-const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"];
-const SEX = ["Female", "Male", "Intersex", "Prefer not to say"];
-const MARITAL = ["Single", "Married", "Stable union", "Divorced", "Widowed", "Other"];
-const DISABILITIES = ["Physical", "Visual", "Hearing", "Intellectual", "None"];
-const CHRONIC = ["Hypertension", "Diabetes", "Asthma", "Obesity", "Thyroid disease", "Chronic hepatitis", "Coronary disease", "Chronic kidney disease", "Cancer", "Immunodeficiency", "Other"];
-const REVIEW_SYSTEMS: { group: string; items: string[] }[] = [
-  { group: "Skin, hair & nails", items: ["Itching", "Skin spots", "Weak/spotted nails", "Hair loss"] },
-  { group: "Digestive", items: ["Difficulty swallowing", "Heartburn", "Nausea", "Vomiting", "Excess gas", "Belching", "Constipation", "Diarrhea", "Blood in stool", "Abdominal pain", "Rectal bleeding"] },
-  { group: "Hematology", items: ["Easy bruising/bleeding", "Anemia", "Low platelets", "Past transfusion", "Swollen lymph nodes", "Thrombosis history"] },
-  { group: "Endocrine", items: ["Heat/cold intolerance", "Excessive thirst", "Excessive sweating", "Fatigue", "Weight loss without diet", "Loss of appetite", "Increased appetite", "Weight gain"] },
-  { group: "Neurology", items: ["Headache", "Dizziness/vertigo", "Numbness/tingling", "Seizures", "Herniated disc"] },
-  { group: "Eyes", items: ["Blurred vision", "Eye discharge", "Red/inflamed eyes", "Glaucoma", "Vision deficit", "Corrective lenses"] },
-  { group: "ENT / Respiratory", items: ["Hearing loss", "Tinnitus", "Nosebleeds", "Sore throat", "Voice change", "Chronic cough", "Past pneumonia"] },
-  { group: "Cardiology", items: ["Chest pain", "Palpitations", "Shortness of breath", "Heart murmur", "Ankle swelling"] },
-  { group: "Musculoskeletal", items: ["Joint pain/swelling", "Joint stiffness", "Frequent cramps", "Bone fractures"] },
-  { group: "Psychiatric", items: ["Depression", "Anxiety", "Memory loss", "Sleep disturbance", "Mood swings", "Irritability"] },
-  { group: "Genitourinary", items: ["Difficulty urinating", "Painful urination", "Blood in urine", "Recurrent UTIs", "Kidney stones"] },
-];
-const VACCINES = ["Hepatitis B", "Measles", "Rubella", "Mumps", "MMR", "COVID-19", "Tetanus", "Diphtheria", "Yellow fever", "HPV", "Pneumonia", "Influenza", "Herpes Zoster"];
-const SUBSTANCES = ["Tobacco", "Alcohol", "Marijuana", "Cocaine", "Crack", "Amphetamines", "Tattoos", "Chemical exposure", "Heavy metals", "Other"];
-const INFECTIOUS = ["Tuberculosis", "HIV/AIDS", "Hepatitis", "Schistosomiasis", "COVID-19"];
 
 interface HistoryData {
   isMinor: string; guardianName: string;
@@ -113,9 +139,11 @@ const EMPTY: HistoryData = {
 
 const inputClass = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
 const textareaClass = inputClass + " resize-none";
+const selectClass = inputClass + " bg-white";
 
 export default function HistoryPage() {
-  const t = useT();
+  const { t, lang } = useI18n();
+  const optLabel = (key: string) => histOptionLabel(lang, key);
   const [data, setData] = useState<HistoryData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -171,15 +199,6 @@ export default function HistoryPage() {
     } finally { setSaving(false); }
   }
 
-  async function handleShare() {
-    setShareLoading(true);
-    try {
-      const res = await fetch("/api/patient/history/share", { method: "POST" });
-      const d = await res.json();
-      if (d.url) setShareUrl(d.url);
-    } finally { setShareLoading(false); }
-  }
-
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-emerald-500" size={28} /></div>;
   }
@@ -207,10 +226,10 @@ export default function HistoryPage() {
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.isMinor")}</label>
             <div className="flex gap-2">
-              {["No", "Yes"].map((v) => (
-                <button key={v} type="button" onClick={() => set("isMinor", v)}
-                  className={`text-sm px-4 py-2 rounded-xl border transition ${data.isMinor === v ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 text-slate-600"}`}>
-                  {v}
+              {HIST_YES_NO.map((o) => (
+                <button key={o.value} type="button" onClick={() => set("isMinor", o.value)}
+                  className={`text-sm px-4 py-2 rounded-xl border transition ${data.isMinor === o.value ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 text-slate-600"}`}>
+                  {optLabel(o.labelKey)}
                 </button>
               ))}
             </div>
@@ -234,17 +253,13 @@ export default function HistoryPage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.sexAtBirth")}</label>
-              <select className={inputClass + " bg-white"} value={data.sexAtBirth} onChange={(e) => set("sexAtBirth", e.target.value)}>
-                <option value="">{t("hist.select")}</option>
-                {SEX.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <OptionSelect value={data.sexAtBirth} onChange={(v) => set("sexAtBirth", v)} options={HIST_SEX}
+                placeholder={t("hist.select")} optLabel={optLabel} className={selectClass} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.maritalStatus")}</label>
-              <select className={inputClass + " bg-white"} value={data.maritalStatus} onChange={(e) => set("maritalStatus", e.target.value)}>
-                <option value="">{t("hist.select")}</option>
-                {MARITAL.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <OptionSelect value={data.maritalStatus} onChange={(v) => set("maritalStatus", v)} options={HIST_MARITAL}
+                placeholder={t("hist.select")} optLabel={optLabel} className={selectClass} />
             </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
@@ -268,14 +283,12 @@ export default function HistoryPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.bloodType")}</label>
-              <select className={inputClass + " bg-white"} value={data.bloodType} onChange={(e) => set("bloodType", e.target.value)}>
-                <option value="">{t("hist.select")}</option>
-                {BLOOD_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
+              <OptionSelect value={data.bloodType} onChange={(v) => set("bloodType", v)} options={HIST_BLOOD_TYPES}
+                placeholder={t("hist.select")} optLabel={optLabel} className={selectClass} />
             </div>
           </div>
-          <ChipGroup label={t("hist.disabilities")} options={DISABILITIES}
-            selected={data.disabilities} onToggle={(v) => toggleArray("disabilities", v)} />
+          <ChipGroup label={t("hist.disabilities")} options={HIST_DISABILITIES}
+            selected={data.disabilities} onToggle={(v) => toggleArray("disabilities", v)} optLabel={optLabel} />
         </Section>
 
         <Section title={t("hist.sec.reason")}>
@@ -306,8 +319,8 @@ export default function HistoryPage() {
         </Section>
 
         <Section title={t("hist.sec.background")}>
-          <ChipGroup label={t("hist.chronic")} options={CHRONIC}
-            selected={data.chronicConditions} onToggle={(v) => toggleArray("chronicConditions", v)} />
+          <ChipGroup label={t("hist.chronic")} options={HIST_CHRONIC}
+            selected={data.chronicConditions} onToggle={(v) => toggleArray("chronicConditions", v)} optLabel={optLabel} />
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.pastSurgeries")}</label>
             <textarea rows={2} className={textareaClass} value={data.pastSurgeries} onChange={(e) => set("pastSurgeries", e.target.value)} />
@@ -342,40 +355,32 @@ export default function HistoryPage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.smoking")}</label>
-              <select className={inputClass + " bg-white"} value={data.smokingStatus} onChange={(e) => set("smokingStatus", e.target.value)}>
-                <option value="">{t("hist.select")}</option>
-                <option>Never</option><option>Former smoker</option><option>Current smoker</option>
-              </select>
+              <OptionSelect value={data.smokingStatus} onChange={(v) => set("smokingStatus", v)} options={HIST_SMOKING}
+                placeholder={t("hist.select")} optLabel={optLabel} className={selectClass} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.alcohol")}</label>
-              <select className={inputClass + " bg-white"} value={data.alcoholUse} onChange={(e) => set("alcoholUse", e.target.value)}>
-                <option value="">{t("hist.select")}</option>
-                <option>Never</option><option>Occasionally</option><option>Weekly</option><option>Daily</option>
-              </select>
+              <OptionSelect value={data.alcoholUse} onChange={(v) => set("alcoholUse", v)} options={HIST_ALCOHOL}
+                placeholder={t("hist.select")} optLabel={optLabel} className={selectClass} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.exercise")}</label>
-              <select className={inputClass + " bg-white"} value={data.exerciseFrequency} onChange={(e) => set("exerciseFrequency", e.target.value)}>
-                <option value="">{t("hist.select")}</option>
-                <option>None</option><option>1–2x per week</option><option>3–4x per week</option><option>5+ per week</option>
-              </select>
+              <OptionSelect value={data.exerciseFrequency} onChange={(v) => set("exerciseFrequency", v)} options={HIST_EXERCISE}
+                placeholder={t("hist.select")} optLabel={optLabel} className={selectClass} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.sleep")}</label>
-              <select className={inputClass + " bg-white"} value={data.sleepQuality} onChange={(e) => set("sleepQuality", e.target.value)}>
-                <option value="">{t("hist.select")}</option>
-                <option>Good</option><option>Fair</option><option>Poor</option>
-              </select>
+              <OptionSelect value={data.sleepQuality} onChange={(v) => set("sleepQuality", v)} options={HIST_SLEEP}
+                placeholder={t("hist.select")} optLabel={optLabel} className={selectClass} />
             </div>
           </div>
         </Section>
 
         <Section title={t("hist.sec.review")}>
           <p className="text-xs text-slate-400 -mt-2">{t("hist.reviewHint")}</p>
-          {REVIEW_SYSTEMS.map((sys) => (
-            <ChipGroup key={sys.group} label={sys.group} options={sys.items}
-              selected={data.reviewSystems} onToggle={(v) => toggleArray("reviewSystems", v)} />
+          {HIST_REVIEW_SYSTEMS.map((sys) => (
+            <ChipGroup key={sys.groupKey} label={optLabel(sys.groupKey)} options={sys.items}
+              selected={data.reviewSystems} onToggle={(v) => toggleArray("reviewSystems", v)} optLabel={optLabel} />
           ))}
         </Section>
 
@@ -384,15 +389,15 @@ export default function HistoryPage() {
             <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.menstrualDuration")}</label>
             <input type="number" className={inputClass} value={data.menstrualDuration} onChange={(e) => set("menstrualDuration", e.target.value)} />
           </div>
-          <ChipGroup label={t("hist.menstrualCycle")} options={["Altered flow", "Vaginal discharge", "Hot flashes", "Absence of flow", "Menopause", "Contraceptive use", "IUD use", "Pregnancies", "Abortions"]}
-            selected={data.menstrualCycle} onToggle={(v) => toggleArray("menstrualCycle", v)} />
+          <ChipGroup label={t("hist.menstrualCycle")} options={HIST_MENSTRUAL}
+            selected={data.menstrualCycle} onToggle={(v) => toggleArray("menstrualCycle", v)} optLabel={optLabel} />
         </Section>
 
         <Section title={t("hist.sec.immuno")}>
-          <ChipGroup label={t("hist.immuneSystem")} options={["Recurrent infections", "Frequent antibiotic use", "Immunodeficiency"]}
-            selected={data.immunology} onToggle={(v) => toggleArray("immunology", v)} />
-          <ChipGroup label={t("hist.whichVaccines")} options={VACCINES}
-            selected={data.vaccines} onToggle={(v) => toggleArray("vaccines", v)} />
+          <ChipGroup label={t("hist.immuneSystem")} options={HIST_IMMUNOLOGY}
+            selected={data.immunology} onToggle={(v) => toggleArray("immunology", v)} optLabel={optLabel} />
+          <ChipGroup label={t("hist.whichVaccines")} options={HIST_VACCINES}
+            selected={data.vaccines} onToggle={(v) => toggleArray("vaccines", v)} optLabel={optLabel} />
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.vaccineReactions")}</label>
             <input className={inputClass} value={data.vaccineReactions} onChange={(e) => set("vaccineReactions", e.target.value)} />
@@ -400,13 +405,13 @@ export default function HistoryPage() {
         </Section>
 
         <Section title={t("hist.sec.substances")}>
-          <ChipGroup label={t("hist.substancesQ")} options={SUBSTANCES}
-            selected={data.substances} onToggle={(v) => toggleArray("substances", v)} />
+          <ChipGroup label={t("hist.substancesQ")} options={HIST_SUBSTANCES}
+            selected={data.substances} onToggle={(v) => toggleArray("substances", v)} optLabel={optLabel} />
         </Section>
 
         <Section title={t("hist.sec.infectious")}>
-          <ChipGroup label={t("hist.infectiousQ")} options={INFECTIOUS}
-            selected={data.infectious} onToggle={(v) => toggleArray("infectious", v)} />
+          <ChipGroup label={t("hist.infectiousQ")} options={HIST_INFECTIOUS}
+            selected={data.infectious} onToggle={(v) => toggleArray("infectious", v)} optLabel={optLabel} />
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("hist.otherInfectious")}</label>
             <input className={inputClass} value={data.otherInfectious} onChange={(e) => set("otherInfectious", e.target.value)} />
@@ -418,7 +423,6 @@ export default function HistoryPage() {
             placeholder={t("hist.notesPlaceholder")} />
         </Section>
 
-        {/* Actions */}
         <div className="flex flex-wrap items-center gap-3 sticky bottom-4 bg-white/80 backdrop-blur rounded-2xl border border-slate-100 shadow-lg p-3">
           <button type="submit" disabled={saving}
             className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2">
