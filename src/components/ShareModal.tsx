@@ -82,11 +82,12 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
   }
 
   function shareVia(platform: "whatsapp" | "email") {
-    const text = `Here is my ${label}: ${shareUrl}`;
+    const text = t("share.externalMsg").replace("{{label}}", label).replace("{{url}}", shareUrl);
     if (platform === "whatsapp") {
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     } else {
-      window.open(`mailto:?subject=My Doctor8 ${label}&body=${encodeURIComponent(text)}`, "_blank");
+      const subject = t("share.emailSubject").replace("{{label}}", label);
+      window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`, "_blank");
     }
   }
 
@@ -142,7 +143,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
             }`}
           >
             <Link2 size={14} className="inline mr-1.5" />
-            Link / PDF
+            {t("share.tabLinkPdf")}
           </button>
           <button
             onClick={() => setTab("professional")}
@@ -151,7 +152,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
             }`}
           >
             <Send size={14} className="inline mr-1.5" />
-            Send to Doctor
+            {t("share.tabSendDoctor")}
           </button>
         </div>
 
@@ -164,7 +165,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-2">
                   <Clock size={13} className="inline mr-1" />
-                  Link expires in
+                  {t("share.expiresIn")}
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {([24, 72, 168, 0] as const).map((h) => (
@@ -177,7 +178,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                           : "border-slate-200 text-slate-600 hover:border-slate-300"
                       }`}
                     >
-                      {h === 0 ? "Never" : h === 24 ? "24h" : h === 72 ? "3 days" : "7 days"}
+                      {h === 0 ? t("share.expiresNever") : h === 24 ? t("share.expires24h") : h === 72 ? t("share.expires3d") : t("share.expires7d")}
                     </button>
                   ))}
                 </div>
@@ -192,7 +193,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                   className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition"
                 >
                   {generating ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
-                  {generating ? "Generating..." : "Generate link"}
+                  {generating ? t("share.generating") : t("share.generateLink")}
                 </button>
               ) : (
                 <div className="space-y-3">
@@ -208,7 +209,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                       className="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-semibold shrink-0 hover:bg-slate-700 transition"
                     >
                       {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
-                      {copied ? "Copied!" : "Copy"}
+                      {copied ? t("share.copied") : t("share.copy")}
                     </button>
                   </div>
 
@@ -231,7 +232,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                         <polyline points="22,6 12,13 2,6"/>
                       </svg>
-                      Email
+                      {t("share.email")}
                     </button>
                   </div>
 
@@ -241,14 +242,14 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                     className="w-full flex items-center justify-center gap-2 border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-semibold py-2.5 rounded-xl text-sm transition"
                   >
                     <FileDown size={16} />
-                    Open & Print / Save as PDF
+                    {t("share.openPrintPdf")}
                   </button>
 
                   <button
                     onClick={() => { setShareUrl(""); setCopied(false); }}
                     className="w-full text-xs text-slate-400 hover:text-slate-600 transition"
                   >
-                    Generate a new link
+                    {t("share.newLink")}
                   </button>
                 </div>
               )}
@@ -263,12 +264,14 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                   <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle2 size={32} className="text-emerald-500" />
                   </div>
-                  <p className="font-semibold text-slate-800">Sent successfully!</p>
+                  <p className="font-semibold text-slate-800">{t("share.sentSuccess")}</p>
                   <p className="text-sm text-slate-500">
-                    Dr. {selectedPro?.firstName} {selectedPro?.lastName} received your {label} in their messages and was notified.
+                    {t("share.sentBody")
+                      .replace("{{name}}", `${selectedPro?.firstName} ${selectedPro?.lastName}`)
+                      .replace("{{label}}", label)}
                   </p>
                   <button onClick={onClose} className="text-sm text-emerald-600 font-medium hover:underline">
-                    Close
+                    {t("share.close")}
                   </button>
                 </div>
               ) : (
@@ -280,7 +283,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search by name or specialty..."
+                      placeholder={t("share.searchPlaceholder")}
                       className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                     />
                   </div>
@@ -288,7 +291,7 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                   {/* Professional list */}
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {filteredPros.length === 0 ? (
-                      <p className="text-sm text-slate-400 text-center py-4">No professionals found.</p>
+                      <p className="text-sm text-slate-400 text-center py-4">{t("share.noPros")}</p>
                     ) : (
                       filteredPros.map((pro) => (
                         <button
@@ -319,7 +322,9 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
 
                   {selectedPro && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-700">
-                      Dr. {selectedPro.firstName} {selectedPro.lastName} will receive your {label} in their messages and get a notification.
+                      {t("share.willReceive")
+                        .replace("{{name}}", `${selectedPro.firstName} ${selectedPro.lastName}`)
+                        .replace("{{label}}", label)}
                     </div>
                   )}
 
@@ -329,7 +334,9 @@ export default function ShareModal({ type, onClose }: ShareModalProps) {
                     className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition"
                   >
                     {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                    {sending ? "Sending..." : `Send to Dr. ${selectedPro?.lastName || "..."}`}
+                    {sending
+                      ? t("share.sending")
+                      : t("share.sendTo").replace("{{name}}", selectedPro?.lastName || "...")}
                   </button>
                 </>
               )}

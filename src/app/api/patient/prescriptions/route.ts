@@ -1,7 +1,5 @@
 // src/app/api/patient/prescriptions/route.ts
 // Lists the prescriptions that belong to the logged-in patient.
-// A prescription belongs to the patient when its MedicalDocument is linked to
-// the patient's PatientProfile (document.patientId).
 
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -12,6 +10,8 @@ function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
   try { return decrypt(v); } catch { return v; }
 }
+
+const EXPIRING_DAYS = 7;
 
 export async function GET() {
   const session = await auth();
@@ -25,11 +25,8 @@ export async function GET() {
   });
   if (!profile) return NextResponse.json({ prescriptions: [] });
 
-  // Find prescriptions whose document is attached to this patient.
   const prescriptions = await db.prescription.findMany({
-    where: {
-      document: { patientId: profile.id },
-    },
+    where: { document: { patientId: profile.id } },
     include: {
       professional: { select: { firstName: true, lastName: true, specialty: true } },
     },
@@ -37,17 +34,32 @@ export async function GET() {
     take: 100,
   });
 
-  const decoded = prescriptions.map((p) => ({
-    id: p.id,
-    createdAt: p.createdAt,
-    validUntil: p.validUntil,
-    medications: p.medications,
-    instructions: p.instructions ? safeDecrypt(p.instructions) : "",
-    doctor: {
-      name: `${p.professional.firstName} ${p.professional.lastName}`.trim(),
-      specialty: p.professional.specialty || "",
-    },
-  }));
+  const now = new Date();
+  const soon = new Date(now.getTime() + EXPIRING_DAYS * 24 * 60 * 60 * 1000);
+
+  const decoded = prescriptions.map((p) => {
+    const validUntil = p.validUntil ? new Date(p.validUntil) : null;
+    const isExpired = validUntil ? validUntil < now : false;
+    const isExpiringSoon = validUntil ? !isExpired && validUntil <= soon : false;
+
+    return {
+      id: p.id,
+      createdAt: p.createdAt,
+      validUntil: p.validUntil,
+      medications: p.medications,
+      instructions: p.instructions ? safeDecrypt(p.instructions) : "",
+      signatureStatus: p.signatureStatus,
+      signedAt: p.signedAt,
+      hasSignedPdf: p.signatureStatus === "SIGNED" && !!p.signedFileUrl,
+      isExpired,
+      isExpiringSoon,
+      whatsappNotifyStatus: p.whatsappNotifyStatus,
+      doctor: {
+        name: `${p.professional.firstName} ${p.professional.lastName}`.trim(),
+        specialty: p.professional.specialty || "",
+      },
+    };
+  });
 
   return NextResponse.json({ prescriptions: decoded });
 }

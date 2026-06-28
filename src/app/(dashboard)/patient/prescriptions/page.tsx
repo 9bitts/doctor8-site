@@ -1,14 +1,16 @@
 "use client";
 
 // src/app/(dashboard)/patient/prescriptions/page.tsx
-// Patient's own prescriptions ("Minhas receitas"). Read-only list with PDF download.
-// i18n via useI18n().
+// Patient's own prescriptions — read-only list with PDF download and status badges.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
-import { FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw,
+  ShieldCheck, Clock, XCircle, MessageCircle,
+} from "lucide-react";
 
 interface MedItem {
   name: string;
@@ -24,6 +26,12 @@ interface RxItem {
   validUntil?: string;
   medications: MedItem[];
   instructions: string;
+  signatureStatus: string | null;
+  signedAt: string | null;
+  hasSignedPdf: boolean;
+  isExpired: boolean;
+  isExpiringSoon: boolean;
+  whatsappNotifyStatus: string | null;
   doctor: { name: string; specialty: string };
 }
 
@@ -51,6 +59,49 @@ export default function PatientPrescriptionsPage() {
 
   function fmt(date: string) {
     return new Date(date).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  function statusBadges(p: RxItem) {
+    const badges: { key: string; cls: string; icon: ReactNode }[] = [];
+
+    if (p.isExpired) {
+      badges.push({ key: "expired", cls: "bg-rose-50 text-rose-700", icon: <XCircle size={11} /> });
+    } else if (p.isExpiringSoon) {
+      badges.push({ key: "expiring", cls: "bg-amber-50 text-amber-700", icon: <Clock size={11} /> });
+    }
+
+    if (p.signatureStatus === "SIGNED" || p.hasSignedPdf) {
+      badges.push({ key: "signed", cls: "bg-emerald-50 text-emerald-700", icon: <ShieldCheck size={11} /> });
+    } else if (p.signatureStatus === "PENDING") {
+      badges.push({ key: "pending", cls: "bg-slate-100 text-slate-600", icon: <Clock size={11} /> });
+    } else if (p.signatureStatus === "ERROR") {
+      badges.push({ key: "signErr", cls: "bg-rose-50 text-rose-600", icon: <AlertCircle size={11} /> });
+    } else if (p.signatureStatus === "CANCELLED") {
+      badges.push({ key: "signCancel", cls: "bg-slate-100 text-slate-500", icon: <XCircle size={11} /> });
+    }
+
+    if (p.whatsappNotifyStatus === "SENT") {
+      badges.push({ key: "waSent", cls: "bg-green-50 text-green-700", icon: <MessageCircle size={11} /> });
+    } else if (p.whatsappNotifyStatus === "FAILED") {
+      badges.push({ key: "waFail", cls: "bg-rose-50 text-rose-600", icon: <MessageCircle size={11} /> });
+    }
+
+    const labels: Record<string, string> = {
+      expired: "myrx.expired",
+      expiring: "myrx.expiringSoon",
+      signed: "myrx.signed",
+      pending: "myrx.pendingSign",
+      signErr: "myrx.signError",
+      signCancel: "myrx.signCancelled",
+      waSent: "myrx.whatsappSent",
+      waFail: "myrx.whatsappFailed",
+    };
+
+    return badges.map((b) => (
+      <span key={b.key} className={`text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${b.cls}`}>
+        {b.icon} {t(labels[b.key])}
+      </span>
+    ));
   }
 
   return (
@@ -81,18 +132,24 @@ export default function PatientPrescriptionsPage() {
           {prescriptions.map((p) => {
             const meds = p.medications as MedItem[];
             return (
-              <div key={p.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+              <div key={p.id} className={`bg-white rounded-2xl border shadow-sm p-5 ${p.isExpired ? "border-rose-200 opacity-90" : "border-slate-200"}`}>
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-800">
                       Dr. {p.doctor.name}
-                      {p.doctor.specialty && <span className="text-slate-400 font-normal text-sm"> · {getProfessionLabel(lang, p.doctor.specialty)}</span>}
+                      {p.doctor.specialty && (
+                        <span className="text-slate-400 font-normal text-sm"> · {getProfessionLabel(lang, p.doctor.specialty)}</span>
+                      )}
                     </p>
-                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
                       <Calendar size={12} />
                       {t("myrx.issued")} {fmt(p.createdAt)}
                       {p.validUntil && ` · ${t("myrx.validUntil")} ${fmt(p.validUntil)}`}
+                      {p.signedAt && (
+                        <span> · {t("myrx.signedAt").replace("{{date}}", fmt(p.signedAt))}</span>
+                      )}
                     </p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">{statusBadges(p)}</div>
                     <div className="flex flex-wrap gap-2 mt-3">
                       {meds.map((m, i) => (
                         <span key={i} className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full inline-flex items-center gap-1">

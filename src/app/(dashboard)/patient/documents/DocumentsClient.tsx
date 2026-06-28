@@ -55,6 +55,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
@@ -184,6 +185,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
 
   async function handleShareWithDoctor(docId: string, professionalId: string, doctorName: string) {
     setSharingTo(professionalId);
+    setActionError(false);
     try {
       const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor`, {
         method: "POST",
@@ -198,14 +200,19 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
           return exists ? it : { ...it, sharedWithDoctors: [...it.sharedWithDoctors, { professionalId, name: doctorName }] };
         }));
         setShareDocId(null);
+      } else {
+        setActionError(true);
       }
-    } catch { /* ignore */ }
+    } catch {
+      setActionError(true);
+    }
     setSharingTo(null);
   }
 
   async function handleUnshare(docId: string, professionalId: string) {
     const key = docId + ":" + professionalId;
     setUnsharingKey(key);
+    setActionError(false);
     try {
       const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor?professionalId=${professionalId}`, {
         method: "DELETE",
@@ -216,20 +223,29 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
             ? { ...it, sharedWithDoctors: it.sharedWithDoctors.filter((dd) => dd.professionalId !== professionalId) }
             : it
         ));
+      } else {
+        setActionError(true);
       }
-    } catch { /* ignore */ }
+    } catch {
+      setActionError(true);
+    }
     setUnsharingKey(null);
   }
 
   async function handleDownload(id: string) {
     setDownloadingId(id);
+    setActionError(false);
     try {
       const res = await fetch(`/api/patient/documents?documentId=${id}`);
       const data = await res.json();
       if (res.ok && data.url) {
         window.open(data.url, "_blank", "noopener,noreferrer");
+      } else {
+        setActionError(true);
       }
-    } catch { /* ignore */ }
+    } catch {
+      setActionError(true);
+    }
     setDownloadingId(null);
   }
 
@@ -258,6 +274,16 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
           <Plus size={18} /> {t("docs.add")}
         </button>
       </div>
+
+      {actionError && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl">
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{t("common.actionError")}</span>
+          <button type="button" onClick={() => setActionError(false)} className="ml-auto text-amber-600 hover:text-amber-800">
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {items.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
