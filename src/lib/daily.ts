@@ -79,6 +79,10 @@ export async function createMeetingToken(
   isOwner: boolean,
   expUnix: number
 ): Promise<string> {
+  if (process.env.E2E_MOCK_DAILY === "1") {
+    return "e2e-mock-token";
+  }
+
   const res = await fetch(`${DAILY_API}/meeting-tokens`, {
     method: "POST",
     headers: headers(),

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, X } from "lucide-react";
+import { X } from "lucide-react";
 import { translate, type Lang } from "@/lib/i18n/translations";
 
 type BeforeInstallPromptEvent = Event & {
@@ -49,8 +49,9 @@ export default function PwaInstallPrompt({ lang }: { lang: Lang }) {
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto rounded-2xl border border-emerald-500/30 bg-slate-900/95 backdrop-blur-md shadow-xl p-4">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
-          <Download size={18} className="text-emerald-400" />
+        <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/icon-192.png" alt="" className="w-8 h-8 object-contain" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-white">{translate(lang, "hum.pwa.installTitle")}</p>

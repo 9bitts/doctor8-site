@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Doctor8 ? Atendimento humanit?rio",
+    name: "Doctor8 \u2014 Atendimento humanit\u00e1rio",
     short_name: "Doctor8 SOS",
-    description: "Triagem, fila e telemedicina humanit?ria",
+    description: "Triagem, fila e telemedicina humanit\u00e1ria",
     start_url: "/sos-venezuela",
     scope: "/",
     display: "standalone",
@@ -13,15 +13,21 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "es",
     icons: [
       {
-        src: "/icons/icon-192.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/icons/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
         purpose: "any",
       },
       {
-        src: "/icons/icon-512.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/icons/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-512-maskable.png",
+        sizes: "512x512",
+        type: "image/png",
         purpose: "maskable",
       },
     ],

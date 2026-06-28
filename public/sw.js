@@ -1,5 +1,5 @@
-const CACHE = "doctor8-hum-v1";
-const PRECACHE = ["/sos-venezuela", "/icons/icon-192.svg", "/icons/icon-512.svg"];
+const CACHE = "doctor8-hum-v2";
+const PRECACHE = ["/sos-venezuela", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

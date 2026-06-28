@@ -7,7 +7,7 @@
  */
 import { createCipheriv, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { PrismaClient, UserRole, UserRegion, ConsentType } from "@prisma/client";
+import { PrismaClient, UserRole, UserRegion, ConsentType, ProviderType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -202,10 +202,133 @@ async function seedProfessional({ email, password, firstName, lastName }) {
   console.log(`[seed-e2e] Professional ${normalized} ready (verified)`);
 }
 
+const TELEMEDICINE_TCLE_VERSION = "1.2";
+const E2E_MEETING_ROOM = "e2e-hum-room";
+const E2E_MEETING_URL = "https://doctor8.daily.co/e2e-hum-room";
+
+async function seedHumanitarianVideoFixtures() {
+  const campaign = await prisma.humanitarianCampaign.findUnique({
+    where: { slug: VENEZUELA_SLUG },
+    select: { id: true },
+  });
+  if (!campaign) throw new Error("Campaign missing ? run seedCampaign first");
+
+  const pool = await prisma.humanitarianPool.findFirst({
+    where: { campaignId: campaign.id, slug: "medico" },
+    select: { id: true },
+  });
+  if (!pool) throw new Error("Pool missing");
+
+  const patient = await prisma.user.findUnique({
+    where: { email: DEFAULT_PATIENT.email.toLowerCase() },
+    select: { id: true },
+  });
+  const proUser = await prisma.user.findUnique({
+    where: { email: DEFAULT_PROFESSIONAL.email.toLowerCase() },
+    select: { id: true },
+  });
+  const proProfile = await prisma.professionalProfile.findUnique({
+    where: { userId: proUser.id },
+    select: { id: true },
+  });
+  if (!patient || !proUser || !proProfile) {
+    throw new Error("E2E users missing ? seed patient/professional first");
+  }
+
+  await prisma.consent.upsert({
+    where: {
+      userId_type_version: {
+        userId: patient.id,
+        type: ConsentType.TELEMEDICINE_TCLE,
+        version: TELEMEDICINE_TCLE_VERSION,
+      },
+    },
+    create: {
+      userId: patient.id,
+      type: ConsentType.TELEMEDICINE_TCLE,
+      version: TELEMEDICINE_TCLE_VERSION,
+      granted: true,
+      grantedAt: new Date(),
+      ipAddress: "127.0.0.1",
+      userAgent: "seed-e2e",
+    },
+    update: { granted: true, revokedAt: null, grantedAt: new Date() },
+  });
+
+  const intake = await prisma.humanitarianIntake.upsert({
+    where: {
+      campaignId_patientUserId: { campaignId: campaign.id, patientUserId: patient.id },
+    },
+    create: {
+      campaignId: campaign.id,
+      patientUserId: patient.id,
+      status: "COMPLETE",
+      triageCompletedAt: new Date(),
+      telemedicineTcleAt: new Date(),
+      telemedicineTcleVersion: TELEMEDICINE_TCLE_VERSION,
+      consentAt: new Date(),
+    },
+    update: {
+      status: "COMPLETE",
+      triageCompletedAt: new Date(),
+      telemedicineTcleAt: new Date(),
+      telemedicineTcleVersion: TELEMEDICINE_TCLE_VERSION,
+    },
+  });
+
+  const volunteer = await prisma.humanitarianVolunteer.upsert({
+    where: {
+      campaignId_userId_poolId: {
+        campaignId: campaign.id,
+        userId: proUser.id,
+        poolId: pool.id,
+      },
+    },
+    create: {
+      campaignId: campaign.id,
+      poolId: pool.id,
+      userId: proUser.id,
+      providerType: ProviderType.HEALTH,
+      professionalId: proProfile.id,
+      status: "BUSY",
+    },
+    update: {
+      providerType: ProviderType.HEALTH,
+      professionalId: proProfile.id,
+      status: "BUSY",
+    },
+  });
+
+  await prisma.humanitarianQueueEntry.deleteMany({
+    where: { patientUserId: patient.id, campaignId: campaign.id },
+  });
+
+  await prisma.humanitarianQueueEntry.create({
+    data: {
+      campaignId: campaign.id,
+      poolId: pool.id,
+      patientUserId: patient.id,
+      intakeId: intake.id,
+      volunteerId: volunteer.id,
+      status: "CALLED",
+      priority: "ROUTINE",
+      position: 1,
+      chiefComplaint: "E2E humanitarian video fixture",
+      calledAt: new Date(),
+      expiresAt: new Date(Date.now() + 180_000),
+      meetingUrl: E2E_MEETING_URL,
+      meetingRoomId: E2E_MEETING_ROOM,
+    },
+  });
+
+  console.log("[seed-e2e] Humanitarian CALLED queue entry ready for video E2E");
+}
+
 async function main() {
   await seedCampaign();
   await seedPatient(DEFAULT_PATIENT);
   await seedProfessional(DEFAULT_PROFESSIONAL);
+  await seedHumanitarianVideoFixtures();
 }
 
 main()

@@ -18,17 +18,19 @@ test.describe("public smoke", () => {
     expect(res.ok()).toBeTruthy();
     const json = await res.json();
     expect(json.name).toContain("Doctor8");
+    expect(json.name).not.toContain("?");
+    expect(json.icons?.some((i: { src: string }) => i.src.includes("icon-192.png"))).toBeTruthy();
   });
 
   test("service worker is served", async ({ request }) => {
     const res = await request.get("/sw.js");
     expect(res.ok()).toBeTruthy();
     const body = await res.text();
-    expect(body).toContain("doctor8-hum-v1");
+    expect(body).toContain("doctor8-hum-v2");
   });
 
   test("PWA icons are served", async ({ request }) => {
-    const res = await request.get("/icons/icon-192.svg");
+    const res = await request.get("/icons/icon-192.png");
     expect(res.ok()).toBeTruthy();
   });
 });
