@@ -3,6 +3,7 @@
 // Uses Upstash QStash to schedule delayed HTTP calls
 
 import { Receiver } from "@upstash/qstash";
+import { db } from "@/lib/db";
 
 const QSTASH_URL = process.env.QSTASH_URL || "https://qstash-us-east-1.upstash.io";
 const QSTASH_TOKEN = process.env.QSTASH_TOKEN || "";
@@ -12,6 +13,7 @@ interface ScheduleReminderParams {
   appointmentId: string;
   type: "24h_email" | "3h_whatsapp" | "3h_email" | "bell" | "review_request";
   delaySeconds: number;
+  remindersEpoch: number;
 }
 
 // Schedule a single reminder via QStash
@@ -19,6 +21,7 @@ export async function scheduleReminder({
   appointmentId,
   type,
   delaySeconds,
+  remindersEpoch,
 }: ScheduleReminderParams): Promise<void> {
   if (!QSTASH_TOKEN) {
     console.warn("[QSTASH] No token set — skipping reminder schedule");
@@ -35,7 +38,7 @@ export async function scheduleReminder({
       "Upstash-Delay": `${delaySeconds}s`,
       "Upstash-Retries": "3",
     },
-    body: JSON.stringify({ appointmentId, type }),
+    body: JSON.stringify({ appointmentId, type, remindersEpoch }),
   });
 
   if (!res.ok) {
@@ -50,8 +53,14 @@ export async function scheduleReminder({
 // Called right after appointment is confirmed
 export async function scheduleAppointmentReminders(
   appointmentId: string,
-  scheduledAt: Date
+  scheduledAt: Date,
 ): Promise<void> {
+  const appt = await db.appointment.findUnique({
+    where: { id: appointmentId },
+    select: { remindersEpoch: true },
+  });
+  const remindersEpoch = appt?.remindersEpoch ?? 0;
+
   const now = Date.now();
   const apptTime = scheduledAt.getTime();
 
@@ -64,13 +73,13 @@ export async function scheduleAppointmentReminders(
   const promises: Promise<void>[] = [];
 
   if (delay24h > 60) {
-    promises.push(scheduleReminder({ appointmentId, type: "24h_email", delaySeconds: delay24h }));
-    promises.push(scheduleReminder({ appointmentId, type: "bell", delaySeconds: delay24h }));
+    promises.push(scheduleReminder({ appointmentId, type: "24h_email", delaySeconds: delay24h, remindersEpoch }));
+    promises.push(scheduleReminder({ appointmentId, type: "bell", delaySeconds: delay24h, remindersEpoch }));
   }
 
   if (delay3h > 60) {
-    promises.push(scheduleReminder({ appointmentId, type: "3h_email", delaySeconds: delay3h }));
-    promises.push(scheduleReminder({ appointmentId, type: "3h_whatsapp", delaySeconds: delay3h }));
+    promises.push(scheduleReminder({ appointmentId, type: "3h_email", delaySeconds: delay3h, remindersEpoch }));
+    promises.push(scheduleReminder({ appointmentId, type: "3h_whatsapp", delaySeconds: delay3h, remindersEpoch }));
   }
 
   await Promise.allSettled(promises);
@@ -90,6 +99,10 @@ export async function scheduleReviewRequest(
     appointmentId,
     type: "review_request",
     delaySeconds,
+    remindersEpoch: (await db.appointment.findUnique({
+      where: { id: appointmentId },
+      select: { remindersEpoch: true },
+    }))?.remindersEpoch ?? 0,
   });
 }
 

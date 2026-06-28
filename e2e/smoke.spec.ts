@@ -68,7 +68,7 @@ test.describe("public smoke", () => {
     const res = await request.get("/sw.js");
     expect(res.ok()).toBeTruthy();
     const body = await res.text();
-    expect(body).toContain("doctor8-hum-v4");
+    expect(body).toContain("doctor8-hum-v5");
   });
 
   test("PWA icons are served", async ({ request }) => {
@@ -99,6 +99,20 @@ test.describe("public smoke", () => {
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.resourceType).toBe("CapabilityStatement");
+  });
+
+  test("SMART token rejects missing code", async ({ request }) => {
+    const res = await request.post("/api/fhir/smart/token", {
+      form: { grant_type: "authorization_code" },
+    });
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("invalid_request");
+  });
+
+  test("FHIR Patient requires Bearer token", async ({ request }) => {
+    const res = await request.get("/fhir/Patient/test-id");
+    expect(res.status()).toBe(401);
   });
 
   test("admin integrations page responds", async ({ page }) => {

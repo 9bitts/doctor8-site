@@ -70,7 +70,12 @@ export async function POST(
 
   await db.appointment.update({
     where: { id: params.id },
-    data:  { scheduledAt: new Date(newScheduledAt) },
+    data: {
+      scheduledAt: new Date(newScheduledAt),
+      remindersEpoch: { increment: 1 },
+      reminder24hSent: false,
+      reminder1hSent: false,
+    },
   });
 
   await audit.updateRecord(session.user.id, "Appointment", params.id);

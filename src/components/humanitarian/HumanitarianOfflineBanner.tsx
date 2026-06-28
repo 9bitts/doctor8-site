@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WifiOff, CloudOff } from "lucide-react";
+import { WifiOff } from "lucide-react";
 import { translate, type Lang } from "@/lib/i18n/translations";
 
-export default function HumanitarianOfflineBanner({
-  lang,
-  draftRestored = false,
-}: {
-  lang: Lang;
+type Props = {
+  lang?: Lang;
+  dark?: boolean;
   draftRestored?: boolean;
-}) {
+};
+
+export default function HumanitarianOfflineBanner({ lang = "es", dark = false, draftRestored = false }: Props) {
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
@@ -27,19 +27,20 @@ export default function HumanitarianOfflineBanner({
   if (!offline && !draftRestored) return null;
 
   return (
-    <div className="space-y-2">
-      {draftRestored && (
-        <div className="flex items-start gap-2 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100">
-          <CloudOff size={16} className="shrink-0 mt-0.5" />
-          <span>{translate(lang, "hum.offline.draftRestored")}</span>
-        </div>
-      )}
-      {offline && (
-        <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          <WifiOff size={16} className="shrink-0 mt-0.5" />
-          <span>{translate(lang, "hum.offline.noConnection")}</span>
-        </div>
-      )}
+    <div
+      className={
+        dark
+          ? "bg-amber-500/15 border border-amber-400/30 text-amber-100 text-sm px-4 py-2.5 rounded-xl flex items-center gap-2"
+          : "bg-amber-50 border border-amber-200 text-amber-900 text-sm px-4 py-2.5 rounded-xl flex items-center gap-2"
+      }
+      role="status"
+    >
+      <WifiOff size={16} className="shrink-0" />
+      <span>
+        {offline
+          ? translate(lang, "hum.offline.banner")
+          : translate(lang, "hum.offline.draftRestored")}
+      </span>
     </div>
   );
 }

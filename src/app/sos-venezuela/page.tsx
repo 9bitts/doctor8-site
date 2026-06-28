@@ -16,6 +16,7 @@ import HumanitarianLangSwitcher, {
   getHumanitarianLang,
 } from "@/components/humanitarian/HumanitarianLangSwitcher";
 import PwaInstallPrompt from "@/components/humanitarian/PwaInstallPrompt";
+import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 
 function t(lang: Lang, key: string) {
   return translate(lang, key);
@@ -27,6 +28,10 @@ function poolName(slug: string, lang: Lang) {
   if (lang === "pt") return p.labelPt;
   if (lang === "en") return p.labelEn;
   return p.labelEs;
+}
+
+function poolCacheKey(slug: string) {
+  return `doctor8:hum:pools:${slug}`;
 }
 
 export default function SosVenezuelaPage() {
@@ -46,10 +51,31 @@ export default function SosVenezuelaPage() {
     setStatsLoading(true);
     setStatsError(false);
     const langParam = lang === "pt" ? "pt" : lang === "en" ? "en" : "es";
+
+    try {
+      const cached = localStorage.getItem(poolCacheKey(VENEZUELA_CAMPAIGN_SLUG));
+      if (cached && active) {
+        const parsed = JSON.parse(cached) as { pools?: typeof livePools; at?: number };
+        if (parsed.pools?.length) setLivePools(parsed.pools);
+      }
+    } catch {
+      /* ignore */
+    }
+
     fetch(`/api/humanitarian/campaigns/${VENEZUELA_CAMPAIGN_SLUG}?lang=${langParam}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d) => {
-        if (active && Array.isArray(d.pools)) setLivePools(d.pools);
+        if (active && Array.isArray(d.pools)) {
+          setLivePools(d.pools);
+          try {
+            localStorage.setItem(
+              poolCacheKey(VENEZUELA_CAMPAIGN_SLUG),
+              JSON.stringify({ pools: d.pools, at: Date.now() }),
+            );
+          } catch {
+            /* ignore */
+          }
+        }
       })
       .catch(() => {
         if (active) setStatsError(true);
@@ -95,6 +121,7 @@ export default function SosVenezuelaPage() {
       </header>
 
       <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8 pb-16">
+        <HumanitarianOfflineBanner lang={lang} dark />
         <section className="space-y-4">
           <h1 className="text-2xl sm:text-3xl font-bold leading-tight">
             {t(lang, "hum.landing.heroTitle")}

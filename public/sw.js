@@ -1,7 +1,11 @@
-const CACHE = "doctor8-hum-v4";
+const CACHE = "doctor8-hum-v5";
+const API_CACHE = "doctor8-hum-api-v5";
 const PRECACHE = [
   "/sos-venezuela",
   "/humanitarian/venezuela-terremoto-2026",
+  "/humanitarian/venezuela-terremoto-2026/triage",
+  "/humanitarian/venezuela-terremoto-2026/tcle",
+  "/humanitarian/venezuela-terremoto-2026/anamnese",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
 ];
@@ -16,25 +20,51 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE && k !== API_CACHE).map((k) => caches.delete(k))),
+      )
       .then(() => self.clients.claim()),
   );
 });
+
+function isHumanitarianShell(pathname) {
+  return (
+    pathname === "/sos-venezuela" ||
+    pathname.startsWith("/humanitarian/") ||
+    pathname.startsWith("/icons/") ||
+    pathname.endsWith(".webmanifest")
+  );
+}
+
+function isCampaignApi(pathname) {
+  return pathname.startsWith("/api/humanitarian/campaigns/");
+}
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+
+  if (isCampaignApi(url.pathname)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(API_CACHE).then((cache) => cache.put(event.request, clone));
+          }
+          return res;
+        })
+        .catch(() =>
+          caches.match(event.request).then((cached) => cached || Response.error()),
+        ),
+    );
+    return;
+  }
+
   if (url.pathname.startsWith("/api/")) return;
-
-  const isShell =
-    url.pathname === "/sos-venezuela" ||
-    url.pathname.startsWith("/humanitarian/") ||
-    url.pathname.startsWith("/icons/") ||
-    url.pathname.endsWith(".webmanifest");
-
-  if (!isShell) return;
+  if (!isHumanitarianShell(url.pathname)) return;
 
   event.respondWith(
     fetch(event.request)

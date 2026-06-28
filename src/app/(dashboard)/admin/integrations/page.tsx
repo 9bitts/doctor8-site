@@ -16,8 +16,18 @@ interface Row {
 interface QstashStats {
   upcomingAppointments7d: number;
   reminders24hSent: number;
-  reminders1hSent: number;
+  reminders3hSent: number;
   rateioUnderReview: number;
+  qstashJobs24h: number;
+  qstashFailed24h: number;
+  whatsappDeliveries24h: number;
+  recentQstashJobs?: {
+    jobType: string;
+    status: string;
+    detail: string | null;
+    createdAt: string;
+    appointmentId: string | null;
+  }[];
 }
 
 export default function AdminIntegrationsPage() {
@@ -119,8 +129,11 @@ export default function AdminIntegrationsPage() {
             {[
               { label: t("admin.int.upcoming7d"), value: qstash.upcomingAppointments7d },
               { label: t("admin.int.reminders24h"), value: qstash.reminders24hSent },
-              { label: t("admin.int.reminders1h"), value: qstash.reminders1hSent },
+              { label: t("admin.int.reminders3h"), value: qstash.reminders3hSent },
               { label: t("admin.int.rateioReview"), value: qstash.rateioUnderReview },
+              { label: t("admin.int.qstashJobs24h"), value: qstash.qstashJobs24h },
+              { label: t("admin.int.qstashFailed24h"), value: qstash.qstashFailed24h },
+              { label: t("admin.int.whatsappDeliveries24h"), value: qstash.whatsappDeliveries24h },
             ].map((s) => (
               <div key={s.label} className="bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
                 <p className="text-xs text-slate-500">{s.label}</p>
@@ -128,6 +141,19 @@ export default function AdminIntegrationsPage() {
               </div>
             ))}
           </div>
+          {qstash.recentQstashJobs && qstash.recentQstashJobs.length > 0 && (
+            <div className="mt-4 border-t border-slate-100 pt-3">
+              <p className="text-xs font-semibold text-slate-600 mb-2">{t("admin.int.recentJobs")}</p>
+              <ul className="space-y-1.5 text-xs text-slate-500">
+                {qstash.recentQstashJobs.map((job, i) => (
+                  <li key={`${job.createdAt}-${i}`} className="flex justify-between gap-2">
+                    <span>{job.jobType} ? {job.status}</span>
+                    <span className="shrink-0">{new Date(job.createdAt).toLocaleString()}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { getIntegrationStatuses } from "@/lib/integration-status";
+import { probeWhatsAppGraph, getWhatsAppReadiness } from "@/lib/whatsapp";
 import { db } from "@/lib/db";
 
 export async function GET() {
@@ -9,8 +10,21 @@ export async function GET() {
 
   const now = new Date();
   const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const since24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-  const [upcomingAppointments7d, reminders24hSent, reminders1hSent, rateioUnderReview] = await Promise.all([
+  const wa = getWhatsAppReadiness();
+
+  const [
+    upcomingAppointments7d,
+    reminders24hSent,
+    reminders3hSent,
+    rateioUnderReview,
+    qstashJobs24h,
+    qstashFailed24h,
+    whatsappDeliveries24h,
+    recentQstashJobs,
+    whatsappProbe,
+  ] = await Promise.all([
     db.appointment.count({
       where: {
         status: { in: ["CONFIRMED", "PENDING"] },
@@ -32,16 +46,42 @@ export async function GET() {
       },
     }),
     db.consultationValidation.count({ where: { underReview: true } }),
+    db.qStashJobLog.count({ where: { createdAt: { gte: since24h } } }),
+    db.qStashJobLog.count({ where: { createdAt: { gte: since24h }, status: "failed" } }),
+    db.whatsAppDeliveryLog.count({ where: { createdAt: { gte: since24h } } }),
+    db.qStashJobLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: { jobType: true, status: true, detail: true, createdAt: true, appointmentId: true },
+    }),
+    wa.configured ? probeWhatsAppGraph() : Promise.resolve(null),
   ]);
+
+  const integrations = getIntegrationStatuses().map((row) => {
+    if (row.id === "whatsapp" && whatsappProbe) {
+      return {
+        ...row,
+        health: whatsappProbe.ok ? row.health : "partial",
+        detail: whatsappProbe.ok
+          ? `${wa.note} Live: ${whatsappProbe.detail}`
+          : `${wa.note} Graph probe: ${whatsappProbe.detail}`,
+      };
+    }
+    return row;
+  });
 
   return NextResponse.json({
     checkedAt: new Date().toISOString(),
-    integrations: getIntegrationStatuses(),
+    integrations,
     qstashStats: {
       upcomingAppointments7d,
       reminders24hSent,
-      reminders1hSent,
+      reminders3hSent,
       rateioUnderReview,
+      qstashJobs24h,
+      qstashFailed24h,
+      whatsappDeliveries24h,
+      recentQstashJobs,
     },
   });
 }

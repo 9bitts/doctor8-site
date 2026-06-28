@@ -79,9 +79,9 @@ export function getIntegrationStatuses(): IntegrationRow[] {
       configured: qstashOk,
       detail: qstashOk
         ? qstashVerify
-          ? "Scheduled reminders via QStash."
+          ? "Scheduled reminders via QStash. Cron backup: POST /api/cron/reminders with x-cron-secret."
           : "QStash token set; signing keys missing for webhooks."
-        : "Reminder scheduling falls back to inline/cron without QSTASH_TOKEN.",
+        : "Set QSTASH_TOKEN for scheduled reminders; use /api/cron/reminders as backup.",
     },
     {
       id: "sentry",

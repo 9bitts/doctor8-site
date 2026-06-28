@@ -1,6 +1,7 @@
 // Meta WhatsApp Cloud API — appointment reminder templates (utility category).
 
 import type { Lang } from "@/lib/i18n/translations";
+import { logWhatsAppDelivery } from "@/lib/integration-logs";
 import {
   clinicalDocumentLabel,
   formatWhatsAppDateTime,
@@ -20,8 +21,8 @@ export type WhatsAppReadiness = {
   configured: boolean;
   reminderTemplate: string;
   documentTemplate: string;
-  /** True when env vars are set; templates must still be approved in Meta Business Manager. */
   readyToSend: boolean;
+  webhookConfigured: boolean;
   fallbackMode: "wa_me_links";
   note: string;
 };
@@ -39,11 +40,39 @@ export function getWhatsAppReadiness(): WhatsAppReadiness {
     reminderTemplate,
     documentTemplate,
     readyToSend: configured,
+    webhookConfigured: Boolean(process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim()),
     fallbackMode: "wa_me_links",
     note: configured
-      ? "Credentials set. Messages send only if Meta approved the utility templates with matching names and languages."
+      ? process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim()
+        ? "Credentials + webhook verify token set. Templates must be approved in Meta Business Manager."
+        : "Credentials set. Add WHATSAPP_WEBHOOK_VERIFY_TOKEN and subscribe webhook for delivery status."
       : "Meta API not configured — app uses wa.me link fallbacks until WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID are set.",
   };
+}
+
+/** Optional live probe — validates token against Graph API (admin only). */
+export async function probeWhatsAppGraph(): Promise<{ ok: boolean; detail: string }> {
+  if (!isWhatsAppConfigured()) {
+    return { ok: false, detail: "Not configured" };
+  }
+  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}?fields=display_phone_number,verified_name`,
+      { headers: { Authorization: `Bearer ${token}` }, next: { revalidate: 300 } },
+    );
+    const data = (await res.json()) as { display_phone_number?: string; verified_name?: string; error?: { message?: string } };
+    if (!res.ok) {
+      return { ok: false, detail: data.error?.message || `HTTP ${res.status}` };
+    }
+    return {
+      ok: true,
+      detail: `${data.verified_name || "WhatsApp"} · ${data.display_phone_number || phoneNumberId}`,
+    };
+  } catch (e) {
+    return { ok: false, detail: e instanceof Error ? e.message : "Probe failed" };
+  }
 }
 
 /** E.164 digits only, no +. Prepends default country code when missing. */
@@ -140,10 +169,23 @@ export async function sendAppointmentReminderWhatsApp(opts: {
 
   if (!res.ok) {
     console.error("[WHATSAPP] Send failed:", JSON.stringify(data));
+    await logWhatsAppDelivery({
+      template: templateName,
+      phone: to,
+      status: "failed",
+      detail: data?.error?.message || `HTTP ${res.status}`,
+    });
     return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
   }
 
-  return { ok: true, messageId: data.messages?.[0]?.id };
+  const messageId = data.messages?.[0]?.id;
+  await logWhatsAppDelivery({
+    messageId,
+    template: templateName,
+    phone: to,
+    status: "sent",
+  });
+  return { ok: true, messageId };
 }
 
 export type WhatsAppDeliveryStatus = "SENT" | "FAILED" | "NO_PHONE" | "SKIPPED";
@@ -214,10 +256,23 @@ export async function sendClinicalDocumentWhatsApp(opts: {
 
   if (!res.ok) {
     console.error("[WHATSAPP] Document send failed:", JSON.stringify(data));
+    await logWhatsAppDelivery({
+      template: templateName,
+      phone: to,
+      status: "failed",
+      detail: data?.error?.message || `HTTP ${res.status}`,
+    });
     return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
   }
 
-  return { ok: true, messageId: data.messages?.[0]?.id };
+  const messageId = data.messages?.[0]?.id;
+  await logWhatsAppDelivery({
+    messageId,
+    template: templateName,
+    phone: to,
+    status: "sent",
+  });
+  return { ok: true, messageId };
 }
 
 export function buildClinicalDocumentWaMeUrl(

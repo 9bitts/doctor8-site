@@ -103,6 +103,8 @@ export default auth((req) => {
 
   // Webhooks & scheduled jobs (verified inside route handlers)
   if (pathname.startsWith("/api/payments/webhook")) return NextResponse.next();
+  if (pathname.startsWith("/api/webhooks/")) return NextResponse.next();
+  if (pathname.startsWith("/api/cron/")) return NextResponse.next();
   if (pathname.startsWith("/api/reminders/send")) return NextResponse.next();
 
   // Token-based shared records (no session)

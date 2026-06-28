@@ -53,8 +53,8 @@ export function getFhirCapabilityStatement() {
             {
               url: "http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris",
               extension: [
-                { url: "authorize", valueUri: `${base}/api/auth/authorize` },
-                { url: "token", valueUri: `${base}/api/auth/token` },
+                { url: "authorize", valueUri: `${base}/api/fhir/smart/authorize` },
+                { url: "token", valueUri: `${base}/api/fhir/smart/token` },
               ],
             },
           ],

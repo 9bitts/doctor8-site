@@ -10,6 +10,7 @@ import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { verifyQStashSignature } from "@/lib/qstash";
+import { logQStashJob } from "@/lib/integration-logs";
 import {
   isWhatsAppConfigured,
   sendAppointmentReminderWhatsApp,
@@ -23,6 +24,7 @@ import { z } from "zod";
 const schema = z.object({
   appointmentId: z.string(),
   type: z.enum(["24h_email", "3h_email", "3h_whatsapp", "bell", "review_request"]),
+  remindersEpoch: z.number().int().nonnegative().optional(),
 });
 
 function safeDecrypt(v: string | null): string {
@@ -44,7 +46,7 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
-  const { appointmentId, type } = parsed.data;
+  const { appointmentId, type, remindersEpoch } = parsed.data;
 
   // Load appointment with all needed relations
   const appointment = await db.appointment.findUnique({
@@ -74,7 +76,21 @@ export async function POST(req: NextRequest) {
   });
 
   if (!appointment) {
+    await logQStashJob({ appointmentId, jobType: type, status: "skipped", detail: "not found" });
     return NextResponse.json({ skipped: true, reason: "Appointment not found" });
+  }
+
+  if (
+    remindersEpoch !== undefined &&
+    remindersEpoch !== appointment.remindersEpoch
+  ) {
+    await logQStashJob({
+      appointmentId,
+      jobType: type,
+      status: "skipped",
+      detail: `stale epoch ${remindersEpoch} vs ${appointment.remindersEpoch}`,
+    });
+    return NextResponse.json({ skipped: true, reason: "Stale reminder batch" });
   }
 
   if (type === "review_request") {
@@ -182,7 +198,15 @@ export async function POST(req: NextRequest) {
       console.error("[REMINDER] Club stamp failed:", e);
     }
 
+    await logQStashJob({ appointmentId, jobType: type, status: "sent" });
     return NextResponse.json({ success: true, type, appointmentId });
+  }
+
+  async function markSent(flags: { reminder24hSent?: boolean; reminder1hSent?: boolean }) {
+    await db.appointment.update({
+      where: { id: appointmentId },
+      data: flags,
+    }).catch(() => {});
   }
 
   // Skip pre-appointment reminders if cancelled or completed
@@ -221,8 +245,11 @@ export async function POST(req: NextRequest) {
         language: patientUser.language,
       });
       console.log(`[REMINDER] 24h email sent to ${patientUser.email}`);
+      await markSent({ reminder24hSent: true });
     } catch (e) {
       console.error("[REMINDER] 24h email failed:", e);
+      await logQStashJob({ appointmentId, jobType: type, status: "failed", detail: String(e) });
+      return NextResponse.json({ error: "Email failed" }, { status: 500 });
     }
   }
 
@@ -315,6 +342,7 @@ export async function POST(req: NextRequest) {
       if (!apiSent) {
         console.log(`[REMINDER] 3h WhatsApp fallback notification for ${phone}`);
       }
+      await markSent({ reminder1hSent: true });
     }
   }
 
@@ -342,5 +370,6 @@ export async function POST(req: NextRequest) {
     console.log(`[REMINDER] Bell notification sent to user ${patientUser.id}`);
   }
 
+  await logQStashJob({ appointmentId, jobType: type, status: "sent" });
   return NextResponse.json({ success: true, type, appointmentId });
 }
