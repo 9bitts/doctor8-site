@@ -166,8 +166,9 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                         <CheckCircle2 size={12} /> {t("pat.hasAccount")}
                       </span>
                     ) : (
-                      <span className="text-amber-600 inline-flex items-center gap-1">
-                        <AlertCircle size={12} /> {t("pat.noAccount")}
+                      <span className="text-amber-600 flex items-start gap-1.5">
+                        <AlertCircle size={12} className="shrink-0 mt-0.5" />
+                        <span className="leading-snug">{t("pat.noAccount")}</span>
                       </span>
                     )}
                   </p>

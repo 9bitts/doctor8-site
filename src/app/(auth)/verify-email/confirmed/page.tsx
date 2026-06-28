@@ -1,4 +1,4 @@
-// Server-rendered confirmation after email verification ? no client JS required.
+// Server-rendered confirmation after email verification — no client JS required.
 
 import Link from "next/link";
 import { cookies, headers } from "next/headers";

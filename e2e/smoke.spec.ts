@@ -19,6 +19,14 @@ test.describe("public smoke", () => {
     expect(title).not.toMatch(/\?/);
   });
 
+  test("verify-email page loads without crash", async ({ page }) => {
+    const res = await page.goto("/verify-email?email=test%40doctor8.test");
+    expect(res?.status()).toBeLessThan(500);
+    await expect(page.locator("body")).toContainText("Verifique seu e-mail");
+    await expect(page.locator("body")).not.toContainText("Algo deu errado");
+    await expect(page.locator("body")).not.toContainText("verifica??o");
+  });
+
   test("terms page has no encoding glitches in title", async ({ page }) => {
     await page.goto("/terms");
     const title = await page.title();
@@ -29,8 +37,8 @@ test.describe("public smoke", () => {
   test("privacy page body has no corrupted encoding", async ({ page }) => {
     await page.goto("/privacy");
     const body = await page.locator("body").innerText();
-    expect(body).not.toMatch(/publicit\?ria|Endere\?o|N\?o\.|: ? o |: ? a |como est?o/);
-    await expect(page.locator("body")).toContainText("Pol?tica de Privacidade");
+    expect(body).not.toMatch(/publicit\?ria|Endere\?o|N\?o\.|: \u00e0 o |: \u00e0 a |como est\?o|verifica\?\?o/);
+    await expect(page.locator("body")).toContainText("Pol\u00edtica de Privacidade");
   });
 
   test("privacy page title has no encoding glitches", async ({ page }) => {
@@ -42,9 +50,9 @@ test.describe("public smoke", () => {
   test("terms page body has no corrupted encoding", async ({ page }) => {
     await page.goto("/terms");
     const body = await page.locator("body").innerText();
-    expect(body).not.toMatch(/USU\?RIO|Pol\?tica|servi\?os|: ? o |: ? a |como est?o/);
+    expect(body).not.toMatch(/USU\?RIO|Pol\?tica|servi\?os|: \u00e0 o |: \u00e0 a |como est\?o|verifica\?\?o/);
     await expect(page.locator("body")).toContainText("Termos de Uso");
-    await expect(page.locator("body")).toContainText("Acordo do Usu?rio");
+    await expect(page.locator("body")).toContainText("Acordo do Usu\u00e1rio");
   });
 
   test("PWA manifest is served", async ({ request }) => {

@@ -36,6 +36,7 @@ interface ProfessionalRow {
   licenseNumber: string;
   licenseCountry: string;
   verified: boolean;
+  emailVerified: boolean;
   appointments: number;
   charts: number;
   publicUrl: string | null;
@@ -51,6 +52,7 @@ interface ProviderRow {
   region: string | null;
   subtitle: string;
   verified: boolean;
+  emailVerified: boolean;
   appointments: number;
   charts: number;
   publicUrl: string | null;
@@ -93,6 +95,7 @@ export default function ProvidersAdminClient() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [docsBusyId, setDocsBusyId] = useState<string | null>(null);
   const [actingAngel, setActingAngel] = useState<string | null>(null);
+  const [verifyingEmailUserId, setVerifyingEmailUserId] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const [professionals, setProfessionals] = useState<ProfessionalRow[]>([]);
@@ -192,6 +195,22 @@ export default function ProvidersAdminClient() {
       alert("Erro ao carregar documentos.");
     }
     setDocsBusyId(null);
+  }
+
+  async function verifyUserEmail(userId: string) {
+    if (!confirm("Marcar o e-mail deste usuário como verificado? Ele poderá fazer login.")) return;
+    setVerifyingEmailUserId(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/verify-email`, { method: "POST" });
+      if (!res.ok) {
+        alert("Não foi possível verificar o e-mail.");
+        return;
+      }
+      await load();
+    } catch {
+      alert("Erro ao verificar e-mail.");
+    }
+    setVerifyingEmailUserId(null);
   }
 
   async function actAngel(userId: string, action: "approve" | "reject") {
@@ -340,6 +359,22 @@ export default function ProvidersAdminClient() {
                     <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">{a.motivation}</p>
                   )}
                 </div>
+                <div className="flex flex-col gap-2 shrink-0">
+                  {!a.emailVerified && (
+                    <button
+                      type="button"
+                      onClick={() => verifyUserEmail(a.userId)}
+                      disabled={verifyingEmailUserId === a.userId}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 transition disabled:opacity-50"
+                    >
+                      {verifyingEmailUserId === a.userId ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Mail size={14} />
+                      )}
+                      Verificar e-mail
+                    </button>
+                  )}
                 {a.approvalStatus === "PENDING" && (
                   <div className="flex gap-2 shrink-0">
                     <button
@@ -365,6 +400,7 @@ export default function ProvidersAdminClient() {
                     </button>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           ))}
@@ -374,9 +410,11 @@ export default function ProvidersAdminClient() {
           rows={filteredProviders}
           busyId={busyId}
           docsBusyId={docsBusyId}
+          verifyingEmailUserId={verifyingEmailUserId}
           kind={activeTab === "psicanalistas" ? "psychoanalyst" : "integrative"}
           onToggle={toggleProviderVerified}
           onViewDocs={viewLicenseDocs}
+          onVerifyEmail={verifyUserEmail}
         />
       ) : (
         <ProfessionalList
@@ -384,8 +422,10 @@ export default function ProvidersAdminClient() {
           lang={lang}
           busyId={busyId}
           docsBusyId={docsBusyId}
+          verifyingEmailUserId={verifyingEmailUserId}
           onToggle={toggleProfessionalVerified}
           onViewDocs={viewLicenseDocs}
+          onVerifyEmail={verifyUserEmail}
         />
       )}
     </div>
@@ -407,24 +447,46 @@ function StatusBadge({ verified }: { verified: boolean }) {
 function ActionButtons({
   userId,
   verified,
+  emailVerified,
   rowId,
   licenseDocCount,
   busyId,
   docsBusyId,
+  verifyingEmailUserId,
   onToggle,
   onViewDocs,
+  onVerifyEmail,
 }: {
   userId: string;
   verified: boolean;
+  emailVerified?: boolean;
   rowId: string;
   licenseDocCount: number;
   busyId: string | null;
   docsBusyId: string | null;
+  verifyingEmailUserId?: string | null;
   onToggle: () => void;
   onViewDocs: (userId: string) => void;
+  onVerifyEmail?: (userId: string) => void;
 }) {
+  const emailOk = emailVerified !== false;
   return (
     <div className="flex flex-col gap-2 shrink-0">
+      {onVerifyEmail && !emailOk && (
+        <button
+          type="button"
+          onClick={() => onVerifyEmail(userId)}
+          disabled={verifyingEmailUserId === userId}
+          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 transition disabled:opacity-50"
+        >
+          {verifyingEmailUserId === userId ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Mail size={14} />
+          )}
+          Verificar e-mail
+        </button>
+      )}
       {licenseDocCount > 0 && (
         <button
           type="button"
@@ -468,15 +530,19 @@ function ProfessionalList({
   lang,
   busyId,
   docsBusyId,
+  verifyingEmailUserId,
   onToggle,
   onViewDocs,
+  onVerifyEmail,
 }: {
   rows: ProfessionalRow[];
   lang: string;
   busyId: string | null;
   docsBusyId: string | null;
+  verifyingEmailUserId: string | null;
   onToggle: (row: ProfessionalRow) => void;
   onViewDocs: (userId: string) => void;
+  onVerifyEmail: (userId: string) => void;
 }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
@@ -495,9 +561,12 @@ function ProfessionalList({
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {getProfessionLabel(lang as "pt" | "en" | "es", d.specialty)} \u00b7 {d.email || "sem e-mail"} \u00b7{" "}
-              {d.region || "\u2014"}
+            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 flex-wrap">
+              {getProfessionLabel(lang as "pt" | "en" | "es", d.specialty)} · {d.email || "sem e-mail"} ·{" "}
+              {d.region || "—"}
+              {!d.emailVerified && (
+                <span className="text-amber-600 font-medium">(e-mail n\u00e3o verificado)</span>
+              )}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
               Licen\u00e7a {d.licenseNumber} ({d.licenseCountry}) \u00b7 {d.appointments} consultas \u00b7 {d.charts}{" "}
@@ -518,12 +587,15 @@ function ProfessionalList({
           <ActionButtons
             userId={d.userId}
             verified={d.verified}
+            emailVerified={d.emailVerified}
             rowId={d.id}
             licenseDocCount={d.licenseDocCount}
             busyId={busyId}
             docsBusyId={docsBusyId}
+            verifyingEmailUserId={verifyingEmailUserId}
             onToggle={() => onToggle(d)}
             onViewDocs={onViewDocs}
+            onVerifyEmail={onVerifyEmail}
           />
         </div>
       ))}
@@ -535,16 +607,20 @@ function ProviderList({
   rows,
   busyId,
   docsBusyId,
+  verifyingEmailUserId,
   kind,
   onToggle,
   onViewDocs,
+  onVerifyEmail,
 }: {
   rows: ProviderRow[];
   busyId: string | null;
   docsBusyId: string | null;
+  verifyingEmailUserId: string | null;
   kind: "psychoanalyst" | "integrative";
   onToggle: (row: ProviderRow, kind: "psychoanalyst" | "integrative") => void;
   onViewDocs: (userId: string) => void;
+  onVerifyEmail: (userId: string) => void;
 }) {
   const Icon = kind === "psychoanalyst" ? Brain : Leaf;
   const bg = kind === "psychoanalyst" ? "bg-violet-100 text-violet-600" : "bg-teal-100 text-teal-600";
@@ -566,8 +642,11 @@ function ProviderList({
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {p.subtitle} \u00b7 {p.email || "sem e-mail"} \u00b7 {p.region || "\u2014"}
+            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 flex-wrap">
+              {p.subtitle} · {p.email || "sem e-mail"} · {p.region || "—"}
+              {!p.emailVerified && (
+                <span className="text-amber-600 font-medium">(e-mail n\u00e3o verificado)</span>
+              )}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
               {p.appointments} consultas \u00b7 {p.charts} fichas
@@ -587,12 +666,15 @@ function ProviderList({
           <ActionButtons
             userId={p.userId}
             verified={p.verified}
+            emailVerified={p.emailVerified}
             rowId={p.id}
             licenseDocCount={p.licenseDocCount}
             busyId={busyId}
             docsBusyId={docsBusyId}
+            verifyingEmailUserId={verifyingEmailUserId}
             onToggle={() => onToggle(p, kind)}
             onViewDocs={onViewDocs}
+            onVerifyEmail={onVerifyEmail}
           />
         </div>
       ))}

@@ -1,4 +1,4 @@
-// Choose verification method after registration ? server-rendered.
+// Choose verification method after registration — server-rendered.
 
 import Link from "next/link";
 import { cookies, headers } from "next/headers";

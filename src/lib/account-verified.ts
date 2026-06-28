@@ -1,4 +1,4 @@
-// Account activation ? email link and/or SMS code.
+// Account activation — email link and/or SMS code.
 
 import type { User } from "@prisma/client";
 

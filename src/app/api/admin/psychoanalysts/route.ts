@@ -14,6 +14,7 @@ export async function GET(_req: NextRequest) {
         select: {
           email: true,
           region: true,
+          emailVerified: true,
           _count: { select: { providerLicenseDocuments: true } },
         },
       },
@@ -30,6 +31,7 @@ export async function GET(_req: NextRequest) {
     region: p.user?.region ?? null,
     subtitle: p.trainingInstitution,
     verified: p.verified,
+    emailVerified: !!p.user?.emailVerified,
     verifiedAt: p.verifiedAt ? p.verifiedAt.toISOString() : null,
     appointments: p._count.appointments,
     charts: p._count.analysandRecords,
