@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { psychologistHubHref } from "@/lib/psychologist-portal";
 import { CFP_DOCUMENT_TEMPLATES, type CfpDocumentTemplateId } from "@/lib/psychology-templates";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import { readChartDeepLink } from "@/lib/video-chart-nav";
@@ -14,6 +16,8 @@ interface Chart { id: string; firstName: string; lastName: string; }
 
 export default function PsychologyDocumentsPage() {
   const { t, lang } = useI18n();
+  const pathname = usePathname();
+  const hubHref = psychologistHubHref(pathname);
 
   const [charts, setCharts] = useState<Chart[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +117,7 @@ export default function PsychologyDocumentsPage() {
         lang={lang as "pt" | "en" | "es"}
       />
       <div>
-        <Link href="/professional/psychology" className="flex items-center gap-2 text-sm text-slate-500 hover:text-sky-600 font-medium mb-2">
+        <Link href={hubHref} className="flex items-center gap-2 text-sm text-slate-500 hover:text-sky-600 font-medium mb-2">
           <ArrowLeft size={16} /> {t("psy.backToHub")}
         </Link>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">

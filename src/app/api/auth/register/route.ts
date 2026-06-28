@@ -46,6 +46,7 @@ const registerSchema = z.object({
   }),
   acceptedHipaa: z.boolean().optional(),
   acceptedGdpr: z.boolean().optional(),
+  professionalKind: z.enum(["psychologist"]).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
       acceptedPrivacy,
       acceptedHipaa,
       acceptedGdpr,
+      professionalKind,
     } = data.data;
 
     if (region === "US" && !acceptedHipaa) {
@@ -167,7 +169,7 @@ export async function POST(req: NextRequest) {
             firstName,
             lastName,
             licenseNumber: "",
-            specialty: "",
+            specialty: professionalKind === "psychologist" ? "Psychologist" : "",
             consultPrice: 0,
           },
         });

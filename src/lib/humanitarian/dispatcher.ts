@@ -424,10 +424,17 @@ export async function handoffHumanitarianEntryViaGoogleMeet(
     volunteerName = `${p.firstName} ${p.lastName}`;
   }
 
+  const [volunteerUser, patientUser] = await Promise.all([
+    db.user.findUnique({ where: { id: volunteerUserId }, select: { email: true } }),
+    db.user.findUnique({ where: { id: entry.patientUserId }, select: { email: true } }),
+  ]);
+
   const meetUrl = await createHumanitarianMeetLink({
     entryId,
     patientName,
     volunteerName,
+    hostEmail: volunteerUser?.email ?? null,
+    attendeeEmails: [volunteerUser?.email, patientUser?.email].filter(Boolean) as string[],
   });
 
   await db.$transaction(async (tx) => {

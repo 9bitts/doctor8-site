@@ -17,7 +17,7 @@ import {
   RegisterLogo,
 } from "@/components/auth/register-shared";
 
-type ProRole = "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
+type ProRole = "PROFESSIONAL" | "PSYCHOLOGIST" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 
 export default function RegisterProfessionalSignupPage() {
   const [callbackUrl, setCallbackUrl] = useState("");
@@ -33,6 +33,12 @@ export default function RegisterProfessionalSignupPage() {
     const r = params.get("region");
     if (r === "VE" || r === "US" || r === "EU" || r === "BR") {
       setInitialRegion(r as Region);
+    }
+
+    const portalParam = params.get("portal");
+    if (portalParam === "psychologist") {
+      setRole("PSYCHOLOGIST");
+      setStep(2);
     }
 
     const roleParam = params.get("role");
@@ -65,6 +71,12 @@ export default function RegisterProfessionalSignupPage() {
 
   const loginHref = (() => {
     const registerUrl = encodeURIComponent("/register/professional/signup");
+    if (role === "PSYCHOLOGIST" && step === 2) {
+      const base = callbackUrl
+        ? `/login/psicologo?registerUrl=${encodeURIComponent("/register/professional/signup?portal=psychologist")}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+        : `/login/psicologo?registerUrl=${encodeURIComponent("/register/professional/signup?portal=psychologist")}`;
+      return base;
+    }
     if (callbackUrl) {
       return `/login?registerUrl=${registerUrl}&callbackUrl=${encodeURIComponent(callbackUrl)}`;
     }
@@ -109,7 +121,7 @@ export default function RegisterProfessionalSignupPage() {
             </Link>
 
             <p className="text-center text-slate-300 text-sm mb-6">
-              {t("reg.howUsePro")}
+              {t("reg.proSignupPrompt")}
             </p>
 
             <div className="space-y-4">
@@ -123,6 +135,19 @@ export default function RegisterProfessionalSignupPage() {
                 <div>
                   <p className="text-white font-semibold text-base">{t("reg.imPro")}</p>
                   <p className="text-slate-400 text-sm mt-0.5">{t("reg.imProDesc")}</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => chooseRole("PSYCHOLOGIST")}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-violet-500 hover:bg-violet-500/10 transition text-left group"
+              >
+                <div className="w-14 h-14 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0 group-hover:bg-violet-500/20 transition">
+                  <Brain className="w-7 h-7 text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-base">{t("reg.imPsychologist")}</p>
+                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imPsychologistDesc")}</p>
                 </div>
               </button>
 
@@ -171,7 +196,8 @@ export default function RegisterProfessionalSignupPage() {
         {step === 2 && (
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
             <RegisterAccountForm
-              role={role as RegisterRole}
+              role={role === "PSYCHOLOGIST" ? "PROFESSIONAL" : role as RegisterRole}
+              professionalKind={role === "PSYCHOLOGIST" ? "psychologist" : undefined}
               lang={lang}
               callbackUrl={callbackUrl}
               initialRegion={initialRegion}

@@ -4,11 +4,18 @@ export function isGoogleMeetEnabled(): boolean {
   return process.env.GOOGLE_MEET_ENABLED === "1" || process.env.GOOGLE_MEET_ENABLED === "true";
 }
 
-type MeetLinkParams = {
+export type MeetLinkParams = {
   entryId: string;
   patientName: string;
   volunteerName: string;
+  /** Emails of people joining the call — added as calendar guests so Meet lets them in. */
+  attendeeEmails?: string[];
+  /** When set and on the Workspace domain, the event is created on this user's calendar (they become host). */
+  hostEmail?: string | null;
 };
+
+const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
+const MEET_SPACE_SCOPE = "https://www.googleapis.com/auth/meetings.space.created";
 
 function parseServiceAccountJson(): Record<string, string> | null {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
@@ -29,10 +36,109 @@ function calendarUserEmail(): string | null {
   );
 }
 
+function workspaceDomain(): string {
+  return process.env.GOOGLE_WORKSPACE_DOMAIN?.trim() || "doctor8.com.br";
+}
+
+function isWorkspaceEmail(email: string): boolean {
+  const domain = workspaceDomain().toLowerCase();
+  return email.trim().toLowerCase().endsWith(`@${domain}`);
+}
+
 function fallbackMeetLink(): string {
   const fixed = process.env.GOOGLE_MEET_DEFAULT_URL?.trim();
   if (fixed) return fixed;
   return "https://meet.google.com/new";
+}
+
+function uniqueEmails(...lists: (string | string[] | null | undefined)[]): string[] {
+  const flat: (string | null | undefined)[] = [];
+  for (const item of lists) {
+    if (Array.isArray(item)) flat.push(...item);
+    else flat.push(item);
+  }
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const email of flat) {
+    const e = email?.trim().toLowerCase();
+    if (!e || !e.includes("@") || seen.has(e)) continue;
+    seen.add(e);
+    out.push(e);
+  }
+  return out;
+}
+
+function resolveCalendarSubject(params: MeetLinkParams): string | null {
+  const concierge = calendarUserEmail();
+  const host = params.hostEmail?.trim();
+  if (host && isWorkspaceEmail(host)) return host;
+  return concierge;
+}
+
+function buildJwt(subject: string, scopes: string[]) {
+  const sa = parseServiceAccountJson();
+  if (!sa?.client_email || !sa?.private_key) return null;
+  return new google.auth.JWT({
+    email: sa.client_email,
+    key: sa.private_key,
+    scopes,
+    subject,
+  });
+}
+
+async function getAccessToken(auth: NonNullable<ReturnType<typeof buildJwt>>): Promise<string | null> {
+  const res = await auth.getAccessToken();
+  const token = typeof res === "string" ? res : res?.token;
+  return token ?? null;
+}
+
+type MeetSpaceResponse = {
+  meetingUri?: string;
+  meetingCode?: string;
+};
+
+/** Meet REST API — accessType OPEN lets anyone with the link join without host approval. */
+async function createMeetViaMeetApi(
+  accessType: "OPEN" | "TRUSTED",
+): Promise<string | null> {
+  const subject = calendarUserEmail();
+  if (!subject) return null;
+
+  const auth = buildJwt(subject, [MEET_SPACE_SCOPE]);
+  if (!auth) return null;
+
+  const token = await getAccessToken(auth);
+  if (!token) return null;
+
+  const res = await fetch("https://meet.googleapis.com/v2/spaces", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      config: {
+        accessType,
+        entryPointAccess: "ALL",
+        moderation: "OFF",
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.warn(
+      `[google-meet] Meet API spaces.create (${accessType}) failed:`,
+      res.status,
+      body.slice(0, 300),
+    );
+    return null;
+  }
+
+  const space = (await res.json()) as MeetSpaceResponse;
+  if (space.meetingUri) return space.meetingUri;
+  if (space.meetingCode) return `https://meet.google.com/${space.meetingCode}`;
+  return null;
 }
 
 function extractMeetUrl(event: {
@@ -47,33 +153,42 @@ function extractMeetUrl(event: {
 }
 
 async function createMeetViaCalendarApi(params: MeetLinkParams): Promise<string | null> {
-  const sa = parseServiceAccountJson();
-  const subject = calendarUserEmail();
-  if (!sa?.client_email || !sa?.private_key || !subject) {
-    return null;
-  }
+  const subject = resolveCalendarSubject(params);
+  if (!subject) return null;
 
-  const auth = new google.auth.JWT({
-    email: sa.client_email,
-    key: sa.private_key,
-    scopes: ["https://www.googleapis.com/auth/calendar"],
-    subject,
-  });
+  const auth = buildJwt(subject, [CALENDAR_SCOPE]);
+  if (!auth) return null;
 
   const calendar = google.calendar({ version: "v3", auth });
   const start = new Date();
   const end = new Date(start.getTime() + 60 * 60 * 1000);
   const requestId = `hum-${params.entryId}-${Date.now()}`;
 
+  const concierge = calendarUserEmail();
+  const attendees = uniqueEmails(
+    params.attendeeEmails,
+    params.hostEmail,
+    concierge,
+  ).map((email) => ({ email, responseStatus: "accepted" as const }));
+
   const { data } = await calendar.events.insert({
     calendarId: "primary",
     conferenceDataVersion: 1,
     sendUpdates: "none",
     requestBody: {
-      summary: `Doctor8 humanit?rio ? ${params.patientName}`,
-      description: `Consulta humanit?ria\nPaciente: ${params.patientName}\nVolunt?rio: ${params.volunteerName}\nEntrada: ${params.entryId}`,
+      summary: `Doctor8 humanitário — ${params.patientName}`,
+      description: [
+        "Consulta humanitária Doctor8",
+        `Paciente: ${params.patientName}`,
+        `Voluntário: ${params.volunteerName}`,
+        `Entrada: ${params.entryId}`,
+      ].join("\n"),
       start: { dateTime: start.toISOString(), timeZone: "America/Sao_Paulo" },
       end: { dateTime: end.toISOString(), timeZone: "America/Sao_Paulo" },
+      anyoneCanAddSelf: true,
+      guestsCanInviteOthers: true,
+      guestsCanSeeOtherGuests: true,
+      ...(attendees.length > 0 ? { attendees } : {}),
       conferenceData: {
         createRequest: {
           requestId,
@@ -86,20 +201,37 @@ async function createMeetViaCalendarApi(params: MeetLinkParams): Promise<string 
   return extractMeetUrl(data);
 }
 
-/** Creates a unique Meet room via Calendar API (concierge calendar) or falls back. */
+/**
+ * Creates a unique Meet room. Prefers Meet API (OPEN access) so patient and
+ * professional join without waiting for an organizer. Falls back to Calendar API
+ * with attendees on the volunteer's calendar when they are on the Workspace domain.
+ *
+ * Domain delegation must include scopes:
+ * - https://www.googleapis.com/auth/calendar
+ * - https://www.googleapis.com/auth/meetings.space.created
+ */
 export async function createHumanitarianMeetLink(params: MeetLinkParams): Promise<string> {
-  try {
-    const url = await createMeetViaCalendarApi(params);
-    if (url) return url;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[google-meet] Calendar API failed:", msg);
-    throw new Error("MEET_CREATE_FAILED");
-  }
+  const configured = parseServiceAccountJson() && calendarUserEmail();
 
-  if (parseServiceAccountJson() && calendarUserEmail()) {
-    console.error("[google-meet] Calendar API returned no Meet URL");
-    throw new Error("MEET_CREATE_FAILED");
+  if (configured) {
+    try {
+      const openUrl = await createMeetViaMeetApi("OPEN");
+      if (openUrl) return openUrl;
+
+      const trustedUrl = await createMeetViaMeetApi("TRUSTED");
+      if (trustedUrl) return trustedUrl;
+
+      const calendarUrl = await createMeetViaCalendarApi(params);
+      if (calendarUrl) return calendarUrl;
+
+      console.error("[google-meet] All Meet creation methods returned no URL");
+      throw new Error("MEET_CREATE_FAILED");
+    } catch (err) {
+      if (err instanceof Error && err.message === "MEET_CREATE_FAILED") throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[google-meet] Meet creation failed:", msg);
+      throw new Error("MEET_CREATE_FAILED");
+    }
   }
 
   console.warn("[google-meet] Using fallback link (service account or calendar user not configured)");

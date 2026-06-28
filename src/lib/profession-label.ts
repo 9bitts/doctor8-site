@@ -1,7 +1,7 @@
 // Derives human-readable profession type and council prefix from specialty string.
 
 const PSYCHOLOGY = new Set([
-  "Psychologist", "Psychoanalyst", "Neuropsychologist", "Psychotherapist", "Behavioral Therapist",
+  "Psychologist", "Psychology", "Psychoanalyst", "Neuropsychologist", "Psychotherapist", "Behavioral Therapist",
 ]);
 
 const NUTRITION = new Set(["Nutritionist", "Dietitian"]);

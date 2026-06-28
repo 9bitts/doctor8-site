@@ -65,6 +65,25 @@ const PROFESSIONAL_NAV: NavItem[] = [
   { href: "/professional/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PROFESSIONAL"] },
 ];
 
+const PSYCHOLOGIST_NAV: NavItem[] = [
+  { href: "/psychologist", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/patients", labelKey: "nav.patients", icon: <Users size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/sessions", labelKey: "psy.mod.sessions.title", icon: <ClipboardList size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/scales", labelKey: "psy.mod.scales.title", icon: <BarChart3 size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/documents", labelKey: "psy.mod.documents.title", icon: <FileText size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/compliance", labelKey: "psy.mod.compliance.title", icon: <Shield size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/shared", labelKey: "nav.sharedWithMe", icon: <Inbox size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/categories", labelKey: "nav.categories", icon: <Layers size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PROFESSIONAL"] },
+];
+
 const PSYCHOANALYST_NAV: NavItem[] = [
   { href: "/psychoanalyst", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PSYCHOANALYST"] },
@@ -135,28 +154,35 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     loadSession();
   }, []);
 
+  const isPsychologistPortal = pathname.startsWith("/psychologist");
+
   const navItems =
     role === "ADMIN" ? ADMIN_NAV
     : role === "ORGANIZATION" ? ORGANIZATION_NAV
+    : isPsychologistPortal ? PSYCHOLOGIST_NAV
     : role === "PROFESSIONAL" ? PROFESSIONAL_NAV
     : role === "PSYCHOANALYST" ? PSYCHOANALYST_NAV
     : role === "INTEGRATIVE_THERAPIST" ? INTEGRATIVE_THERAPIST_NAV
     : PATIENT_NAV;
   const roleLabel =
     role === "ORGANIZATION" ? t("role.organization")
+    : isPsychologistPortal ? t("role.psychologist")
     : role === "PROFESSIONAL" ? t("role.professional")
     : role === "PSYCHOANALYST" ? t("role.psychoanalyst")
     : role === "INTEGRATIVE_THERAPIST" ? t("role.integrativeTherapist")
     : role === "ADMIN" ? t("role.admin")
     : t("role.patient");
-  const isProfessional = role === "PROFESSIONAL";
+  const isProfessional = role === "PROFESSIONAL" && !isPsychologistPortal;
+  const isPsychologist = isPsychologistPortal;
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
   const isOrganization = role === "ORGANIZATION";
-  const logoAccent = isOrganization ? "text-indigo-400" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
-  const logoAccentHeader = isOrganization ? "text-indigo-500" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-500" : isIntegrativeTherapist ? "text-teal-500" : "text-emerald-500";
+  const logoAccent = isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
+  const logoAccentHeader = isOrganization ? "text-indigo-500" : isPsychologist ? "text-violet-500" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-500" : isIntegrativeTherapist ? "text-teal-500" : "text-emerald-500";
   const navActive = isOrganization
     ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+    : isPsychologist
+      ? "bg-violet-500/10 text-violet-400 border border-violet-500/20"
     : isProfessional
     ? "bg-brand-500/10 text-brand-400 border border-brand-500/20"
     : isPsychoanalyst
@@ -164,9 +190,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       : isIntegrativeTherapist
         ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
         : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-  const avatarBg = isOrganization ? "bg-indigo-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
-  const avatarIcon = isOrganization ? "text-indigo-400" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
-  const headerAvatar = isOrganization ? "bg-indigo-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
+  const avatarBg = isOrganization ? "bg-indigo-500/20" : isPsychologist ? "bg-violet-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
+  const avatarIcon = isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
+  const headerAvatar = isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
+  const signOutHref = isPsychologistPortal ? "/login/psicologo" : "/login";
 
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
@@ -232,7 +259,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         <div className="px-3 py-4 border-t border-slate-700/50 space-y-1">
           <LanguageSwitcher variant="sidebar" />
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => signOut({ callbackUrl: signOutHref })}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all w-full"
           >
             <LogOut size={18} />

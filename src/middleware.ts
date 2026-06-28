@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 const PUBLIC_ROUTES = [
   "/",
   "/login",
+  "/login/psicologo",
   "/register",
   "/register/angel",
   "/register/professional",
@@ -45,6 +46,7 @@ function isPublicRoute(pathname: string): boolean {
 // Role-based route prefixes
 const PATIENT_ROUTES = ["/patient"];
 const PROFESSIONAL_ROUTES = ["/professional"];
+const PSYCHOLOGIST_ROUTES = ["/psychologist"];
 const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
 const INTEGRATIVE_THERAPIST_ROUTES = ["/integrative-therapist"];
 const ORGANIZATION_ROUTES = ["/organization"];
@@ -148,6 +150,14 @@ export default auth((req) => {
 
   if (
     PROFESSIONAL_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "PROFESSIONAL" &&
+    role !== "ADMIN"
+  ) {
+    return denyWrongRole();
+  }
+
+  if (
+    PSYCHOLOGIST_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "PROFESSIONAL" &&
     role !== "ADMIN"
   ) {

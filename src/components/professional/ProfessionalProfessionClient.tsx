@@ -31,7 +31,9 @@ export default function ProfessionalProfessionClient({ slug }: { slug: Humanitar
   const Icon = ICONS[prof.icon] ?? Stethoscope;
   const isPsycho = slug === "psicanalista";
   const signupRole = isPsycho ? "PSYCHOANALYST" : "PROFESSIONAL";
-  const signup = `/register/professional/signup?role=${signupRole}`;
+  const signup = slug === "psicologo"
+    ? "/register/professional/signup?portal=psychologist"
+    : `/register/professional/signup?role=${signupRole}`;
   const volSignup = `/register/professional/signup?region=VE&role=${signupRole}&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
 
   return (

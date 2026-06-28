@@ -1,8 +1,8 @@
 "use client";
 // src/app/onboarding/page.tsx — first-time profile setup (i18n)
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle2, User, Stethoscope, ChevronRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
@@ -11,7 +11,17 @@ const inputClass = "w-full border border-white/15 rounded-xl px-4 py-2.5 text-sm
 type Step = 1 | 2 | 3;
 
 export default function OnboardingPage() {
+  return (
+    <Suspense>
+      <OnboardingInner />
+    </Suspense>
+  );
+}
+
+function OnboardingInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const psychologistPortal = searchParams.get("portal") === "psychologist";
   const { t } = useI18n();
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState<"PATIENT" | "PROFESSIONAL">("PATIENT");
@@ -27,6 +37,14 @@ export default function OnboardingPage() {
   const [price, setPrice] = useState("");
   const [teleconsult, setTeleconsult] = useState(true);
 
+  useEffect(() => {
+    if (psychologistPortal) {
+      setRole("PROFESSIONAL");
+      setSpecialty("Psychologist");
+      setStep(2);
+    }
+  }, [psychologistPortal]);
+
   async function handleFinish() {
     setSaving(true);
     try {
@@ -35,7 +53,13 @@ export default function OnboardingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role, phone, dob, bloodType, allergies, license, specialty, bio, price: Number(price) * 100, teleconsult }),
       });
-      router.push(role === "PATIENT" ? "/patient" : "/professional");
+      router.push(
+        role === "PATIENT"
+          ? "/patient"
+          : psychologistPortal
+            ? "/psychologist"
+            : "/professional",
+      );
     } finally { setSaving(false); }
   }
 

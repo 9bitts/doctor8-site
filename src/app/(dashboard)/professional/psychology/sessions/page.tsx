@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { psychologistHubHref } from "@/lib/psychologist-portal";
 import { localeOf, type Lang } from "@/lib/i18n/translations";
 import { SESSION_FORMATS, type SessionFormat } from "@/lib/psychology-templates";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
@@ -46,6 +48,8 @@ const ACTION_TEXTS: Record<string, Record<string, string>> = {
 
 export default function PsychologySessionsPage() {
   const { t, lang } = useI18n();
+  const pathname = usePathname();
+  const hubHref = psychologistHubHref(pathname);
   const locale = localeOf(lang as Lang);
   const at = (key: string) => ACTION_TEXTS[key]?.[lang] ?? ACTION_TEXTS[key]?.en ?? key;
 
@@ -489,7 +493,7 @@ export default function PsychologySessionsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <Link href="/professional/psychology" className="flex items-center gap-2 text-sm text-slate-500 hover:text-violet-600 font-medium mb-2">
+          <Link href={hubHref} className="flex items-center gap-2 text-sm text-slate-500 hover:text-violet-600 font-medium mb-2">
             <ArrowLeft size={16} /> {t("psy.backToHub")}
           </Link>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">

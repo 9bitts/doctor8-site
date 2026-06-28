@@ -92,12 +92,14 @@ export function RegisterAlternateLink({
 
 export function RegisterAccountForm({
   role,
+  professionalKind,
   lang,
   callbackUrl,
   initialRegion = "US",
   onBack,
 }: {
   role: RegisterRole;
+  professionalKind?: "psychologist";
   lang: Lang;
   callbackUrl: string;
   initialRegion?: Region;
@@ -134,6 +136,7 @@ export function RegisterAccountForm({
     (region !== "EU" || acceptedGdpr);
 
   const isProfessional = role === "PROFESSIONAL";
+  const isPsychologistSignup = isProfessional && professionalKind === "psychologist";
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
 
@@ -177,6 +180,7 @@ export function RegisterAccountForm({
           firstName,
           lastName,
           language: lang,
+          professionalKind: isPsychologistSignup ? "psychologist" : undefined,
           acceptedTerms,
           acceptedPrivacy,
           acceptedHipaa: region === "US" ? acceptedHipaa : undefined,
@@ -220,9 +224,13 @@ export function RegisterAccountForm({
           ? "bg-teal-500/10 border-teal-500/20"
           : isPsychoanalyst
             ? "bg-violet-500/10 border-violet-500/20"
+            : isPsychologistSignup
+              ? "bg-violet-500/10 border-violet-500/20"
             : "bg-emerald-500/10 border-emerald-500/20"
       }`}>
-        {isProfessional ? (
+        {isPsychologistSignup ? (
+          <Brain className="w-5 h-5 text-violet-400 shrink-0" />
+        ) : isProfessional ? (
           <Stethoscope className="w-5 h-5 text-emerald-400 shrink-0" />
         ) : isPsychoanalyst ? (
           <Brain className="w-5 h-5 text-violet-400 shrink-0" />
@@ -234,11 +242,13 @@ export function RegisterAccountForm({
         <p className={`text-sm font-medium ${
           isIntegrativeTherapist
             ? "text-teal-300"
-            : isPsychoanalyst
+            : isPsychoanalyst || isPsychologistSignup
               ? "text-violet-300"
               : "text-emerald-300"
         }`}>
-          {isProfessional
+          {isPsychologistSignup
+            ? t("reg.psychologistAccount")
+            : isProfessional
             ? t("reg.proAccount")
             : isPsychoanalyst
               ? t("reg.psychoanalystAccount")
@@ -270,7 +280,7 @@ export function RegisterAccountForm({
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
         )}
-        {isProfessional ? t("reg.googlePro") : isPsychoanalyst ? t("reg.googlePsychoanalyst") : isIntegrativeTherapist ? t("reg.googleIntegrative") : t("reg.googlePatient")}
+        {isProfessional ? t("reg.googlePro") : isPsychologistSignup ? t("reg.googlePsychologist") : isPsychoanalyst ? t("reg.googlePsychoanalyst") : isIntegrativeTherapist ? t("reg.googleIntegrative") : t("reg.googlePatient")}
       </button>
 
       <div className="flex items-center gap-4 mb-4">
@@ -365,9 +375,9 @@ export function RegisterAccountForm({
           )}
         </div>
 
-        {isProfessional && (
+        {(isProfessional || isPsychologistSignup) && (
           <p className="text-xs text-slate-400 bg-white/5 border border-white/10 rounded-xl p-3">
-            {t("reg.proNote")}
+            {isPsychologistSignup ? t("reg.psychologistNote") : t("reg.proNote")}
           </p>
         )}
         {isPsychoanalyst && (

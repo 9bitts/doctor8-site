@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { psychologistHubHref } from "@/lib/psychologist-portal";
 import { ArrowLeft, Shield, ExternalLink } from "lucide-react";
 
 const SECTIONS = [
@@ -11,11 +13,13 @@ const SECTIONS = [
 
 export default function PsychologyCompliancePage() {
   const { t } = useI18n();
+  const pathname = usePathname();
+  const hubHref = psychologistHubHref(pathname);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <Link href="/professional/psychology" className="flex items-center gap-2 text-sm text-slate-500 hover:text-emerald-600 font-medium mb-2">
+        <Link href={hubHref} className="flex items-center gap-2 text-sm text-slate-500 hover:text-emerald-600 font-medium mb-2">
           <ArrowLeft size={16} /> {t("psy.backToHub")}
         </Link>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
