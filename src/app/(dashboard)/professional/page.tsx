@@ -11,13 +11,14 @@ import { getUserLang } from "@/lib/i18n/server-lang";
 import {
   Calendar, Users, DollarSign, Clock, ChevronRight, Video, Radio,
   Inbox, MessageSquare, Stethoscope, BookOpen, UserCog, Settings,
-  Layers, TrendingUp, Activity, AlertTriangle,
+  Layers, TrendingUp, Activity,
 } from "lucide-react";
 import Link from "next/link";
 import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
 import MarketPricingCard from "@/components/professional/MarketPricingCard";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
+import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 import { decrypt } from "@/lib/encryption";
@@ -257,21 +258,8 @@ export default async function ProfessionalDashboard() {
         </div>
       </Link>
 
-      {/* Profile verification banner */}
       {!professional.verified && (
-        <Link
-          href="/professional/settings"
-          className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition"
-        >
-          <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-900">{t("prodash.verify.title")}</p>
-            <p className="text-xs text-amber-700 mt-0.5">{t("prodash.verify.text")}</p>
-            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-900">
-              {t("prodash.verify.action")} <ChevronRight size={13} />
-            </span>
-          </div>
-        </Link>
+        <ProviderVerificationBanner settingsHref="/professional/settings" />
       )}
 
       <ProfessionalChecklistWrapper />

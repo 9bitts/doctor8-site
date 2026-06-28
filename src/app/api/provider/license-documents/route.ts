@@ -8,7 +8,9 @@ import {
   licenseDocsFolder,
   MAX_LICENSE_DOC_BYTES,
   MAX_LICENSE_DOCUMENTS,
+  type ProviderRole,
 } from "@/lib/provider-license-docs";
+import { notifyAdminLicenseDocumentUploaded } from "@/lib/provider-license-notify";
 
 function mapDoc(doc: {
   id: string;
@@ -108,6 +110,14 @@ export async function POST(req: NextRequest) {
   });
 
   const viewUrl = await getSignedReadUrl(doc.fileKey);
+
+  notifyAdminLicenseDocumentUploaded({
+    userId: session.user.id,
+    role: session.user.role as ProviderRole,
+    fileName: doc.fileName,
+    label: doc.label,
+    totalDocs: count + 1,
+  }).catch((err) => console.error("[license-doc] admin notify failed:", err));
 
   return NextResponse.json(
     { document: { ...mapDoc(doc), viewUrl } },

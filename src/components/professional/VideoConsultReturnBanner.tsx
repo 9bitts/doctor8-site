@@ -6,7 +6,7 @@ import { Video } from "lucide-react";
 type Lang = "pt" | "en" | "es";
 
 const LABELS: Record<Lang, { consult: string; with: string; back: string }> = {
-  pt: { consult: "Consulta em andamento", with: "com", back: "Voltar ? videochamada" },
+  pt: { consult: "Consulta em andamento", with: "com", back: "Voltar à videochamada" },
   en: { consult: "Consultation in progress", with: "with", back: "Back to video call" },
   es: { consult: "Consulta en curso", with: "con", back: "Volver a la videollamada" },
 };
