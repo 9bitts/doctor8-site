@@ -17,7 +17,7 @@ export default function HumanitarianTriagePage() {
   const retake = searchParams.get("retake") === "1";
   const slug = VENEZUELA_CAMPAIGN_SLUG;
 
-  const [lang, setLang] = useState<Lang>("es");
+  const [lang, setLang] = useState<Lang>("pt");
   const [loading, setLoading] = useState(true);
 
   useHumanitarianOutboxFlush(() => router.refresh());

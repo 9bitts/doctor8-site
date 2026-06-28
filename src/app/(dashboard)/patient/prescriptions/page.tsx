@@ -159,7 +159,7 @@ export default function PatientPrescriptionsPage() {
                     </div>
                   </div>
                   <a
-                    href={`/api/professional/prescriptions/${p.id}/pdf`}
+                    href={`/api/patient/prescriptions/${p.id}/pdf`}
                     target="_blank"
                     className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shrink-0"
                   >

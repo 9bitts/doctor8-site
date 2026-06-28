@@ -22,7 +22,7 @@ export default function HumanitarianTclePage() {
   const slug = VENEZUELA_CAMPAIGN_SLUG;
   const returnTo = searchParams.get("return") || `/humanitarian/${slug}`;
 
-  const [lang, setLang] = useState<Lang>("es");
+  const [lang, setLang] = useState<Lang>("pt");
   const [loading, setLoading] = useState(true);
   const [accepted, setAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);

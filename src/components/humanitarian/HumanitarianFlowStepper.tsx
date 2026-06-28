@@ -7,11 +7,12 @@ import type { HumanitarianFlowStep } from "@/lib/humanitarian/patient-flow";
 const STEPS: { key: HumanitarianFlowStep; labelKey: string }[] = [
   { key: "triage", labelKey: "hum.flow.triage" },
   { key: "tcle", labelKey: "hum.flow.tcle" },
+  { key: "phone", labelKey: "hum.flow.phone" },
   { key: "anamnese", labelKey: "hum.flow.anamnese" },
   { key: "care", labelKey: "hum.flow.care" },
 ];
 
-const ORDER: HumanitarianFlowStep[] = ["triage", "tcle", "anamnese", "care", "waiting", "consult"];
+const ORDER: HumanitarianFlowStep[] = ["triage", "tcle", "phone", "anamnese", "care", "waiting", "consult"];
 
 function stepIndex(step: HumanitarianFlowStep): number {
   if (step === "waiting" || step === "consult") return ORDER.indexOf("care");

@@ -7,6 +7,7 @@ import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import HumanitarianAnamneseForm from "@/components/humanitarian/HumanitarianAnamneseForm";
+import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 import { useHumanitarianOutboxFlush } from "@/hooks/useHumanitarianOutboxFlush";
 
@@ -14,7 +15,7 @@ export default function HumanitarianAnamnesePage() {
   const router = useRouter();
   const slug = VENEZUELA_CAMPAIGN_SLUG;
 
-  const [lang, setLang] = useState<Lang>("es");
+  const [lang, setLang] = useState<Lang>("pt");
   const [loading, setLoading] = useState(true);
 
   useHumanitarianOutboxFlush(() => router.refresh());
@@ -64,7 +65,10 @@ export default function HumanitarianAnamnesePage() {
 
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
-      <HumanitarianAnamneseForm lang={lang} campaignSlug={slug} />
+      <div className="space-y-6">
+        <HumanitarianFlowStepper lang={lang} current="anamnese" dark />
+        <HumanitarianAnamneseForm lang={lang} campaignSlug={slug} />
+      </div>
     </HumanitarianShell>
   );
 }

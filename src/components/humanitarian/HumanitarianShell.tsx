@@ -70,7 +70,7 @@ export default function HumanitarianShell({
   );
 
   return (
-    <div className={`min-h-screen flex flex-col overflow-x-hidden ${dark ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
+    <div className={`min-h-screen flex flex-col overflow-x-hidden humanitarian-shell ${dark ? "humanitarian-dark bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
       <header
         className={`sticky top-0 z-30 border-b backdrop-blur-md ${
           dark ? "bg-slate-950/90 border-white/10" : "bg-white/95 border-slate-200"

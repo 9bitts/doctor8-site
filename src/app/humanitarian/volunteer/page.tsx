@@ -69,7 +69,7 @@ export default function HumanitarianVolunteerPage() {
   const router = useRouter();
   const pollRef = { current: null as NodeJS.Timeout | null };
 
-  const [lang, setLang] = useState<Lang>("es");
+  const [lang, setLang] = useState<Lang>("pt");
   const [loading, setLoading] = useState(true);
   const [campaign, setCampaign] = useState<{ name: string; active: boolean } | null>(null);
   const [pools, setPools] = useState<PoolRow[]>([]);

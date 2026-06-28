@@ -1,8 +1,15 @@
-export type HumanitarianFlowStep = "triage" | "tcle" | "anamnese" | "care" | "waiting" | "consult";
+export type HumanitarianFlowStep =
+  | "triage"
+  | "tcle"
+  | "phone"
+  | "anamnese"
+  | "care"
+  | "waiting"
+  | "consult";
 
 export function humanitarianCareHref(
   slug: string,
-  intake: { triageValid?: boolean; tcleAccepted?: boolean },
+  intake: { triageValid?: boolean; tcleAccepted?: boolean; phoneReady?: boolean },
 ): string {
   if (!intake.triageValid) return `/humanitarian/${slug}/triage`;
   if (!intake.tcleAccepted) return `/humanitarian/${slug}/tcle`;
@@ -13,12 +20,14 @@ export function humanitarianFlowStep(
   intake: {
     triageValid?: boolean;
     tcleAccepted?: boolean;
+    phoneReady?: boolean;
     anamneseComplete?: boolean;
   },
   inQueue?: boolean,
 ): HumanitarianFlowStep {
   if (!intake.triageValid) return "triage";
   if (!intake.tcleAccepted) return "tcle";
+  if (!intake.phoneReady) return "phone";
   if (!intake.anamneseComplete && !inQueue) return "anamnese";
   if (inQueue) return "waiting";
   return "care";

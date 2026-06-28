@@ -68,7 +68,7 @@ export default function HumanitarianCampaignPage() {
   const slug = VENEZUELA_CAMPAIGN_SLUG;
   const pollRef = useRef<NodeJS.Timeout>();
 
-  const [lang, setLang] = useState<Lang>("es");
+  const [lang, setLang] = useState<Lang>("pt");
   const [loading, setLoading] = useState(true);
   const [campaign, setCampaign] = useState<CampaignInfo | null>(null);
   const [pools, setPools] = useState<PoolInfo[]>([]);
@@ -340,7 +340,7 @@ export default function HumanitarianCampaignPage() {
         <HumanitarianFlowStepper
           lang={lang}
           current={humanitarianFlowStep(
-            { triageValid: true, tcleAccepted, anamneseComplete },
+            { triageValid: true, tcleAccepted, phoneReady, anamneseComplete },
             false,
           )}
           dark
