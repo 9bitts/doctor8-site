@@ -69,7 +69,7 @@ export function EmissionsSignModal({
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
             Configure o CPF da assinatura digital nas configurações da conta antes de assinar.
           </div>
-          <a href="/professional/account" onClick={onClose}
+          <a href="/professional/account#digital-sign" onClick={onClose}
             className="w-full flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 rounded-xl text-sm transition">
             <ExternalLink size={14} /> Ir para configurações
           </a>

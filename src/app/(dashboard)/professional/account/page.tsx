@@ -1,15 +1,13 @@
 "use client";
 
 // src/app/(dashboard)/professional/account/page.tsx
-// Account settings for professionals.
-// NOTE: Digital signature no longer requires per-doctor configuration here — the
-// certificate (BirdID/VIDaaS, etc.) is chosen on Lacuna's hosted page during the
-// signing flow, triggered from the prescriptions screen.
+// Account settings for professionals (credentials, billing, digital signature).
 
 import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/I18nProvider";
+import DigitalSignSettings from "@/components/professional/DigitalSignSettings";
 import { readApiJson, apiErrorMessage } from "@/lib/api-client";
 import {
   BILLING_REGION_OPTIONS,
@@ -211,6 +209,8 @@ export default function ProfessionalAccountPage() {
           <p className="text-xs text-slate-400 mt-0.5">{t("acct.currentEmail")}</p>
         </div>
       </div>
+
+      <DigitalSignSettings />
 
       {/* Mensalidade profissional */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">

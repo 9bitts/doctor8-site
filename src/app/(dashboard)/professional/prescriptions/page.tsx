@@ -1166,12 +1166,12 @@ export default function PrescriptionsPage() {
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex items-start gap-3">
           <PenLine size={18} className="text-brand-500 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-brand-700">Assinatura digital não configurada</p>
-            <p className="text-xs text-brand-500 mt-1">Configure o CPF para assinar documentos com validade ICP-Brasil.</p>
+            <p className="text-sm font-semibold text-brand-700">{t("digSign.bannerTitle")}</p>
+            <p className="text-xs text-brand-500 mt-1">{t("digSign.bannerDesc")}</p>
           </div>
-          <a href="/professional/account"
+          <a href="/professional/account#digital-sign"
             className="text-xs font-semibold text-brand-600 border border-brand-200 px-3 py-1.5 rounded-lg hover:bg-brand-100 transition shrink-0">
-            Configurar
+            {t("digSign.configure")}
           </a>
         </div>
       )}
