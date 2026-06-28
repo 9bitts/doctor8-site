@@ -17,6 +17,7 @@ import {
 import { getProviderServices, getPracticeLocations } from "@/lib/practice";
 import type { ProviderType } from "@/lib/providers";
 import type { DaySlots } from "@/lib/availability-slots";
+import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 
 export type PublicSearchResult = {
   providerType: ProviderType;
@@ -67,6 +68,7 @@ export type PublicSearchOpts = {
   priceMax?: number | null;
   minRating?: number | null;
   availableOnly?: boolean;
+  acuraVolunteersOnly?: boolean;
   sort?: PublicSearchSort;
   locale?: string;
 };
@@ -111,11 +113,15 @@ function matchesPsychoanalystSpecialty(especialidade: string): boolean {
 
 function filterAndSortResults(
   results: PublicSearchResult[],
-  opts: Pick<PublicSearchOpts, "priceMax" | "minRating" | "availableOnly" | "sort">
+  opts: Pick<PublicSearchOpts, "priceMax" | "minRating" | "availableOnly" | "acuraVolunteersOnly" | "sort">
 ): PublicSearchResult[] {
-  const { priceMax, minRating, availableOnly, sort = "name" } = opts;
+  const { priceMax, minRating, availableOnly, acuraVolunteersOnly, sort = "name" } = opts;
 
   let list = results;
+
+  if (acuraVolunteersOnly) {
+    list = list.filter((r) => r.acuraVolunteer);
+  }
 
   if (priceMax != null && priceMax > 0) {
     const maxCents = Math.round(priceMax * 100);
@@ -132,6 +138,11 @@ function filterAndSortResults(
 
   const sorted = [...list];
   sorted.sort((a, b) => {
+    const volunteerDiff =
+      (isAcuraVolunteerProvider(true, b.acuraVolunteer) ? 1 : 0) -
+      (isAcuraVolunteerProvider(true, a.acuraVolunteer) ? 1 : 0);
+    if (volunteerDiff !== 0) return volunteerDiff;
+
     switch (sort) {
       case "rating": {
         const ra = a.ratingAvg ?? 0;
@@ -173,6 +184,7 @@ export async function searchPublicListings(
     priceMax,
     minRating,
     availableOnly,
+    acuraVolunteersOnly,
     sort,
     locale = "pt-BR",
   } = opts;
@@ -376,7 +388,7 @@ export async function searchPublicListings(
     }
   }
 
-  return filterAndSortResults(results, { priceMax, minRating, availableOnly, sort });
+  return filterAndSortResults(results, { priceMax, minRating, availableOnly, acuraVolunteersOnly, sort });
 }
 
 export async function countPublicListings(

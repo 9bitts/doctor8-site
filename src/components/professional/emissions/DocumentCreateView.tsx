@@ -10,6 +10,7 @@ import type { Chart } from "./types";
 import type { SavedEmission } from "./EmissionPostSaveFlow";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
 import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
+import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 
 const DOC_TYPES = [
   { value: "CERTIFICATE", labelKey: "rx.docTypeCertificate" },
@@ -163,7 +164,7 @@ export function DocumentCreateView({
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
+      <div className={`bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4 ${patientPickerOpen ? "relative z-50" : ""}`}>
         <label className="text-sm font-semibold text-slate-800">{t("rx2.selectPatient")}</label>
         {selectedPatient ? (
           <div className="space-y-3">
@@ -197,7 +198,7 @@ export function DocumentCreateView({
                 placeholder={t("rx2.searchPatient")} className="rx-inp rx-inp-pl-9" />
             </div>
             {patientPickerOpen && (
-              <div className="border rounded-xl divide-y max-h-48 overflow-y-auto">
+              <div className="border rounded-xl divide-y max-h-48 overflow-y-auto bg-white shadow-sm">
                 {chartsLoading ? (
                   <div className="p-4 flex items-center justify-center gap-2 text-sm text-slate-500">
                     <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
@@ -205,8 +206,13 @@ export function DocumentCreateView({
                 ) : filteredCharts.length === 0 ? (
                   <p className="p-4 text-center text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
                 ) : filteredCharts.map((c) => (
-                  <button key={c.id} onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left">
+                  <button
+                    key={c.id}
+                    type="button"
+                    onMouseDown={keepFocusOnPointerDown}
+                    onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); setPatientQuery(""); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left"
+                  >
                     <span className="font-medium text-sm">{c.firstName} {c.lastName}</span>
                     <span className="text-xs text-slate-400 ml-auto mr-1">
                       {c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}

@@ -16,7 +16,7 @@ import { parseLocalDate } from "@/lib/scheduling";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import ReviewPromptModal from "@/components/ReviewPromptModal";
 import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
-import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
+import { isAcuraVolunteerProvider, compareVolunteerFirst } from "@/lib/acura-volunteer";
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
   CreditCard, Loader2, CheckCircle2, AlertCircle, Star, MapPin, Lock,
@@ -569,7 +569,7 @@ export default function AppointmentsPage() {
     const matchSpec   = matchesSpecialtyFilter(specialty, p);
     const matchVolunteer = !volunteersOnly || isAcuraVolunteerProvider(!!p.verified, !!p.acuraVolunteer);
     return matchSearch && matchSpec && matchVolunteer;
-  });
+  }).sort(compareVolunteerFirst);
 
   const selectedService = providerServices.find((s) => s.id === selectedServiceId);
   const checkoutPriceCents = selectedService?.priceCents ?? selectedPro?.consultPrice ?? 0;
@@ -1217,7 +1217,11 @@ function DoctorCard({ pro, onSelect, locale, lang, t }: { pro: Professional; onS
     ? `${pro.firstName} ${pro.lastName}`
     : `Dr. ${pro.firstName} ${pro.lastName}`;
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-emerald-300 transition cursor-pointer" onClick={onSelect}>
+    <div className={`bg-white rounded-2xl border shadow-sm p-5 hover:shadow-md transition cursor-pointer ${
+      showAcuraBadge
+        ? "border-sky-200 ring-1 ring-sky-100 hover:border-sky-300"
+        : "border-slate-200 hover:border-emerald-300"
+    }`} onClick={onSelect}>
       <div className="flex items-start gap-4">
         <ProAvatar pro={pro} />
         <div className="flex-1 min-w-0">

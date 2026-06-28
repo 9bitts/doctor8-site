@@ -10,6 +10,7 @@ import ExamSearchInput, { formatExamItem, parseExamItemLine } from "@/components
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
 import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
+import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 
 interface ExamCreateViewProps {
   t: (k: string) => string;
@@ -44,6 +45,8 @@ export function ExamCreateView({
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [examSearchOpen, setExamSearchOpen] = useState(false);
+  const [cidSearchOpen, setCidSearchOpen] = useState(false);
 
   const filteredCharts = useMemo(
     () => filterPatientCharts(charts, patientQuery),
@@ -115,7 +118,7 @@ export function ExamCreateView({
         </div>
       )}
 
-      <Card title={t("rx2.selectPatient")}>
+      <Card title={t("rx2.selectPatient")} elevated={patientPickerOpen}>
         {selectedPatient ? (
           <div className="space-y-3">
             <PatientChip patient={selectedPatient} t={t} onClear={lockPatient ? undefined : () => setSelectedPatient(null)} />
@@ -133,7 +136,7 @@ export function ExamCreateView({
                 placeholder={t("rx2.searchPatient")} className="rx-inp rx-inp-pl-9" />
             </div>
             {patientPickerOpen && (
-              <div className="mt-2 border rounded-xl divide-y max-h-48 overflow-y-auto">
+              <div className="mt-2 border rounded-xl divide-y max-h-48 overflow-y-auto bg-white shadow-sm">
                 {chartsLoading ? (
                   <div className="p-4 flex items-center justify-center gap-2 text-sm text-slate-500">
                     <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
@@ -141,8 +144,13 @@ export function ExamCreateView({
                 ) : filteredCharts.length === 0 ? (
                   <p className="p-4 text-center text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
                 ) : filteredCharts.map((c) => (
-                  <button key={c.id} onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left">
+                  <button
+                    key={c.id}
+                    type="button"
+                    onMouseDown={keepFocusOnPointerDown}
+                    onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); setPatientQuery(""); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left"
+                  >
                     <span className="font-medium text-sm">{c.firstName} {c.lastName}</span>
                     <span className="text-xs text-slate-400 ml-auto mr-1">
                       {c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
@@ -156,7 +164,7 @@ export function ExamCreateView({
         )}
       </Card>
 
-      <Card title={t("rx2.addItem")}>
+      <Card title={t("rx2.addItem")} elevated={examSearchOpen}>
         <input value={title} onChange={(e) => setTitle(e.target.value)}
           placeholder={t("rx.examDefaultTitle")} className="rx-inp mb-3" />
         <ExamSearchInput
@@ -165,10 +173,11 @@ export function ExamCreateView({
           manualHint={t("rx.manualExamHint")}
           noResults={t("rx.examNoResults")}
           onAdd={addExam}
+          onOpenChange={setExamSearchOpen}
         />
       </Card>
 
-      <Card title={t("rx.examItems")}>
+      <Card title={t("rx.examItems")} elevated={cidSearchOpen}>
         {items.length === 0 ? (
           <p className="text-sm text-slate-400 text-center py-6">{t("rx.noExamItems")}</p>
         ) : (
@@ -203,7 +212,7 @@ export function ExamCreateView({
         )}
         <div className="grid sm:grid-cols-2 gap-3 mt-4">
           <div className="sm:col-span-2">
-            <CidSearchInput value={cid} onChange={setCid} />
+            <CidSearchInput value={cid} onChange={setCid} onOpenChange={setCidSearchOpen} />
           </div>
           <div className="sm:col-span-2">
             <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.examNotes")}</label>
@@ -214,7 +223,7 @@ export function ExamCreateView({
 
       {error && <p className="text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">{error}</p>}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 z-20">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 z-30">
         <div className="max-w-3xl mx-auto flex gap-3">
           <button onClick={onBack} className="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm">
             {t("rx2.cancel")}
@@ -230,9 +239,9 @@ export function ExamCreateView({
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children, elevated }: { title: string; children: React.ReactNode; elevated?: boolean }) {
   return (
-    <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-3">
+    <div className={`bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-3 ${elevated ? "relative z-50" : ""}`}>
       <label className="text-sm font-semibold text-slate-800">{title}</label>
       {children}
     </div>

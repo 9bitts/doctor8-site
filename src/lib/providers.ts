@@ -5,6 +5,7 @@ import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
 
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import { compareVolunteerFirst } from "@/lib/acura-volunteer";
 
 export { PSYCHOANALYSIS_SPECIALTY };
 
@@ -198,7 +199,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
   }));
 
   return [...healthMapped, ...analystMapped]
-    .sort((a, b) => a.firstName.localeCompare(b.firstName))
+    .sort(compareVolunteerFirst)
     .slice(0, take);
 }
 

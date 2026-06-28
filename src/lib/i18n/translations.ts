@@ -372,6 +372,7 @@ const en = {
   "acura.vol.optIn.terms": "Review volunteer terms",
   "acura.vol.optIn.verifiedRequired": "Your profile must be verified by Doctor8 before the badge can be displayed.",
   "acura.vol.optIn.error": "Could not save your preference. Please try again.",
+  "acura.vol.badgeTooltip": "This professional is part of the AcuraBrasil volunteer network and offers care aligned with the humanitarian mission.",
   "nav.find": "Find professionals",
   "nav.account": "Account",
   // Navigation — professional
@@ -2697,6 +2698,7 @@ const pt: LocaleDict = {
   "acura.vol.optIn.terms": "Confira os termos do voluntariado",
   "acura.vol.optIn.verifiedRequired": "Seu perfil precisa ser verificado pelo Doctor8 antes de exibir o selo.",
   "acura.vol.optIn.error": "Não foi possível salvar. Tente novamente.",
+  "acura.vol.badgeTooltip": "Este profissional faz parte da rede de voluntários AcuraBrasil e oferece atendimento alinhado à missão humanitária.",
   "nav.find": "Encontrar profissionais",
   "nav.account": "Conta",
   "nav.myProfile": "Meu Perfil",
@@ -4985,6 +4987,7 @@ const es: LocaleDict = {
   "acura.vol.optIn.terms": "Consulte los terminos del voluntariado",
   "acura.vol.optIn.verifiedRequired": "Su perfil debe estar verificado por Doctor8 antes de mostrar el distintivo.",
   "acura.vol.optIn.error": "No se pudo guardar. Intente de nuevo.",
+  "acura.vol.badgeTooltip": "Este profesional forma parte de la red de voluntarios AcuraBrasil y ofrece atencion alineada con la mision humanitaria.",
   "nav.find": "Buscar profesionales",
   "nav.account": "Cuenta",
   "nav.myProfile": "Mi perfil",

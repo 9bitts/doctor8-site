@@ -21,6 +21,7 @@ import VideoConsultReturnBanner from "@/components/professional/VideoConsultRetu
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import type { Chart } from "@/components/professional/emissions/types";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
+import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 
 type ImportablePatient = {
   patientProfileId: string;
@@ -803,7 +804,7 @@ export default function PrescriptionsPage() {
 
         <>
             {/* Patient card */}
-            <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
+            <div className={`bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4 ${showPatientPicker ? "relative z-50" : ""}`}>
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <label className="text-sm font-semibold text-slate-800">{t("rx2.selectPatient")}</label>
                 <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -865,8 +866,13 @@ export default function PrescriptionsPage() {
                       ) : (
                         <>
                           {charts.map((c) => (
-                            <button key={c.id} onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); }}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 transition text-left">
+                            <button
+                              key={c.id}
+                              type="button"
+                              onMouseDown={keepFocusOnPointerDown}
+                              onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); setPatientQuery(""); }}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 transition text-left"
+                            >
                               <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
                                 {c.firstName[0]}{c.lastName[0]}
                               </div>
@@ -882,6 +888,7 @@ export default function PrescriptionsPage() {
                               key={item.patientProfileId}
                               type="button"
                               disabled={importingPatientId === item.patientProfileId}
+                              onMouseDown={keepFocusOnPointerDown}
                               onClick={() => importPatientChart(item)}
                               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 transition text-left disabled:opacity-50"
                             >
@@ -938,7 +945,7 @@ export default function PrescriptionsPage() {
             )}
 
             {/* Add item card */}
-            <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
+            <div className={`bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4 ${drugQuery.trim().length >= 2 && drugResults.length > 0 ? "relative z-50" : ""}`}>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-800">{t("rx2.addItem")}</label>
                 <p className="text-xs text-slate-500">{t("rx2.countryPick")}</p>
@@ -988,8 +995,13 @@ export default function PrescriptionsPage() {
                   {drugResults.map((drug) => {
                     const ci = controlInfo(drug.prescriptionType);
                     return (
-                      <button key={drug.id} onClick={() => addDrug(drug)}
-                        className="w-full flex items-start gap-3 px-4 py-3 hover:bg-brand-50 transition text-left">
+                      <button
+                        key={drug.id}
+                        type="button"
+                        onMouseDown={keepFocusOnPointerDown}
+                        onClick={() => addDrug(drug)}
+                        className="w-full flex items-start gap-3 px-4 py-3 hover:bg-brand-50 transition text-left"
+                      >
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-slate-800 text-sm flex items-center gap-2 flex-wrap">
                             {drug.name}
@@ -1098,7 +1110,7 @@ export default function PrescriptionsPage() {
         </>
 
         {/* Sticky footer */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 p-4 z-20">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 p-4 z-30">
             <div className="max-w-3xl mx-auto flex gap-2">
               <button type="button" onClick={closeCreate}
                 className="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition">

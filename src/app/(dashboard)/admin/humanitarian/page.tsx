@@ -7,6 +7,7 @@ import {
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianIntakesPanel from "@/components/humanitarian/HumanitarianIntakesPanel";
 import HumanitarianAngelsAdminPanel from "@/components/humanitarian/HumanitarianAngelsAdminPanel";
+import AcuraVolunteersAdminPanel from "@/components/admin/AcuraVolunteersAdminPanel";
 
 interface CampaignReport {
   campaignId: string;
@@ -248,6 +249,8 @@ export default function AdminHumanitarianPage() {
       )}
 
       <HumanitarianIntakesPanel slug={VENEZUELA_CAMPAIGN_SLUG} />
+
+      <AcuraVolunteersAdminPanel />
 
       <HumanitarianAngelsAdminPanel />
     </div>

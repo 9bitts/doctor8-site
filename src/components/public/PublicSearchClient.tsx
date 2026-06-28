@@ -37,6 +37,7 @@ type SearchFilters = {
   priceMax: string;
   minRating: string;
   availableOnly: boolean;
+  acuraVolunteersOnly: boolean;
   sort: PublicSearchSort;
 };
 
@@ -52,6 +53,7 @@ function parseFilters(params: URLSearchParams): SearchFilters {
     priceMax: params.get("priceMax") || "",
     minRating: params.get("minRating") || "",
     availableOnly: params.get("availableOnly") === "1",
+    acuraVolunteersOnly: params.get("acuraVolunteers") === "1",
     sort: validSorts.includes(sort) ? sort : "name",
   };
 }
@@ -64,6 +66,7 @@ function filtersToParams(f: SearchFilters): URLSearchParams {
   if (f.priceMax) params.set("priceMax", f.priceMax);
   if (f.minRating) params.set("minRating", f.minRating);
   if (f.availableOnly) params.set("availableOnly", "1");
+  if (f.acuraVolunteersOnly) params.set("acuraVolunteers", "1");
   if (f.sort && f.sort !== "name") params.set("sort", f.sort);
   return params;
 }
@@ -258,6 +261,15 @@ export default function PublicSearchClient({
             }`}
           >
             <Clock size={13} /> {t("pubSearch.filterAvailable")}
+          </button>
+          <button
+            type="button"
+            onClick={() => patchFilters({ acuraVolunteersOnly: !filters.acuraVolunteersOnly })}
+            className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition ${
+              filters.acuraVolunteersOnly ? "bg-sky-50 border-sky-300 text-sky-800" : "border-slate-200 text-slate-600"
+            }`}
+          >
+            {t("acura.vol.filter")}
           </button>
         </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { FlaskConical, Loader2, Plus } from "lucide-react";
+import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 
 export interface ExamSelection {
   id?: string;
@@ -16,6 +17,7 @@ interface ExamSearchInputProps {
   manualHint: string;
   noResults: string;
   onAdd: (exam: ExamSelection | { name: string }) => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function formatExamItem(exam: { code?: string; name: string }): string {
@@ -34,6 +36,7 @@ export default function ExamSearchInput({
   manualHint,
   noResults,
   onAdd,
+  onOpenChange,
 }: ExamSearchInputProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ExamSelection[]>([]);
@@ -41,6 +44,10 @@ export default function ExamSearchInput({
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -93,7 +100,7 @@ export default function ExamSearchInput({
   }
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className={`relative ${open ? "z-[100]" : ""}`}>
       <div className="relative">
         <FlaskConical size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" />
         <input
@@ -118,7 +125,7 @@ export default function ExamSearchInput({
       </div>
 
       {open && query.length >= 2 && (
-        <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
+        <div className="absolute z-[100] left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
           {results.length === 0 && !loading ? (
             <p className="text-xs text-slate-400 px-3 py-3">{noResults}</p>
           ) : (
@@ -126,6 +133,7 @@ export default function ExamSearchInput({
               <button
                 key={r.id || r.code}
                 type="button"
+                onMouseDown={keepFocusOnPointerDown}
                 onClick={() => selectExam(r)}
                 className="w-full text-left px-3 py-2.5 hover:bg-brand-50 border-b border-slate-50 last:border-0"
               >

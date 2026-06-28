@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, Loader2, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 
 export interface CidSelection {
   code: string;
@@ -13,6 +14,7 @@ interface CidSearchInputProps {
   value: CidSelection | null;
   onChange: (v: CidSelection | null) => void;
   required?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const LABELS: Record<string, Record<string, string>> = {
@@ -23,7 +25,7 @@ const LABELS: Record<string, Record<string, string>> = {
   noResults: { pt: "Nenhum CID encontrado.", en: "No ICD codes found.", es: "No se encontraron códigos CIE." },
 };
 
-export default function CidSearchInput({ value, onChange, required }: CidSearchInputProps) {
+export default function CidSearchInput({ value, onChange, required, onOpenChange }: CidSearchInputProps) {
   const { t } = useI18n();
   const lang = t("common.cancel") === "Cancelar" ? "pt" : t("common.cancel") === "Cancel" ? "en" : "es";
   const lt = (key: string) => LABELS[key]?.[lang] ?? LABELS[key]?.en ?? key;
@@ -34,6 +36,10 @@ export default function CidSearchInput({ value, onChange, required }: CidSearchI
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -88,7 +94,7 @@ export default function CidSearchInput({ value, onChange, required }: CidSearchI
   }
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className={`relative ${open ? "z-[100]" : ""}`}>
       <label className="block text-xs font-medium text-slate-600 mb-1">
         {lt("label")}{required ? " *" : ""}
       </label>
@@ -106,7 +112,7 @@ export default function CidSearchInput({ value, onChange, required }: CidSearchI
       <p className="text-[11px] text-slate-400 mt-1">{lt("hint")}</p>
 
       {open && query.length >= 2 && (
-        <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+        <div className="absolute z-[100] left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
           {results.length === 0 && !loading ? (
             <p className="text-xs text-slate-400 px-3 py-3">{lt("noResults")}</p>
           ) : (
@@ -114,6 +120,7 @@ export default function CidSearchInput({ value, onChange, required }: CidSearchI
               <button
                 key={r.code}
                 type="button"
+                onMouseDown={keepFocusOnPointerDown}
                 onClick={() => {
                   onChange(r);
                   setQuery("");

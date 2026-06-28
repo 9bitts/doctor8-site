@@ -8,3 +8,16 @@ export type ProviderRole = "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERA
 export function isAcuraVolunteerProvider(verified: boolean, acuraVolunteer: boolean): boolean {
   return verified && acuraVolunteer;
 }
+
+/** Sort volunteers first, then alphabetically by name. */
+export function compareVolunteerFirst<
+  T extends { verified?: boolean; acuraVolunteer?: boolean; firstName: string; lastName?: string | null },
+>(a: T, b: T): number {
+  const rank = (p: T) =>
+    isAcuraVolunteerProvider(!!p.verified, !!p.acuraVolunteer) ? 0 : 1;
+  const diff = rank(a) - rank(b);
+  if (diff !== 0) return diff;
+  const nameA = `${a.firstName} ${a.lastName ?? ""}`.trim();
+  const nameB = `${b.firstName} ${b.lastName ?? ""}`.trim();
+  return nameA.localeCompare(nameB);
+}

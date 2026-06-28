@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
   const minRatingRaw = searchParams.get("minRating");
   const minRating = minRatingRaw ? Number(minRatingRaw) : null;
   const availableOnly = searchParams.get("availableOnly") === "1";
+  const acuraVolunteersOnly = searchParams.get("acuraVolunteers") === "1";
 
   const sortParam = searchParams.get("sort") as PublicSearchSort | null;
   const sort = sortParam && SORT_VALUES.includes(sortParam) ? sortParam : "name";
@@ -49,6 +50,7 @@ export async function GET(req: NextRequest) {
     priceMax: priceMax != null && !Number.isNaN(priceMax) ? priceMax : null,
     minRating: minRating != null && !Number.isNaN(minRating) ? minRating : null,
     availableOnly: availableOnly || undefined,
+    acuraVolunteersOnly: acuraVolunteersOnly || undefined,
     sort,
     locale,
   });

@@ -59,7 +59,9 @@ export default function PublicResultCard({
   const showAcuraBadge = isAcuraVolunteerProvider(true, pro.acuraVolunteer);
 
   return (
-    <article className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition">
+    <article className={`bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition ${
+      showAcuraBadge ? "border-sky-200 ring-1 ring-sky-50" : "border-slate-100"
+    }`}>
       <div className="grid lg:grid-cols-[1fr_1.1fr] gap-0">
         {/* Profile */}
         <div className="p-5 border-b lg:border-b-0 lg:border-r border-slate-100">
