@@ -13,9 +13,17 @@ interface Row {
   detail: string;
 }
 
+interface QstashStats {
+  upcomingAppointments7d: number;
+  reminders24hSent: number;
+  reminders1hSent: number;
+  rateioUnderReview: number;
+}
+
 export default function AdminIntegrationsPage() {
   const { t } = useI18n();
   const [rows, setRows] = useState<Row[]>([]);
+  const [qstash, setQstash] = useState<QstashStats | null>(null);
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -28,6 +36,7 @@ export default function AdminIntegrationsPage() {
       if (!res.ok) { setError(true); return; }
       const data = await res.json();
       setRows(data.integrations || []);
+      setQstash(data.qstashStats || null);
       setCheckedAt(data.checkedAt || null);
     } catch {
       setError(true);
@@ -100,6 +109,25 @@ export default function AdminIntegrationsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {qstash && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <p className="font-semibold text-slate-800 text-sm mb-3">{t("admin.int.qstashStats")}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            {[
+              { label: t("admin.int.upcoming7d"), value: qstash.upcomingAppointments7d },
+              { label: t("admin.int.reminders24h"), value: qstash.reminders24hSent },
+              { label: t("admin.int.reminders1h"), value: qstash.reminders1hSent },
+              { label: t("admin.int.rateioReview"), value: qstash.rateioUnderReview },
+            ].map((s) => (
+              <div key={s.label} className="bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
+                <p className="text-xs text-slate-500">{s.label}</p>
+                <p className="text-lg font-bold text-slate-800">{s.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

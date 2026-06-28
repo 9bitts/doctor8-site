@@ -17,7 +17,7 @@ import {
   Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
   Building2,
   BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain, BarChart3,
-  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart, Leaf, FlaskConical, Plug,
+  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart, Leaf, FlaskConical, Plug, ScrollText, PieChart,
 } from "lucide-react";
 
 interface NavItem {
@@ -109,6 +109,8 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", icon: <Heart size={18} />, roles: ["ADMIN"] },
   { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", icon: <ShoppingBag size={18} />, roles: ["ADMIN"] },
   { href: "/admin/integrations", labelKey: "nav.adminIntegrations", icon: <Plug size={18} />, roles: ["ADMIN"] },
+  { href: "/admin/audit", labelKey: "nav.adminAudit", icon: <ScrollText size={18} />, roles: ["ADMIN"] },
+  { href: "/admin/rateio", labelKey: "nav.adminRateio", icon: <PieChart size={18} />, roles: ["ADMIN"] },
 ];
 
 function DashboardInner({ children }: { children: React.ReactNode }) {

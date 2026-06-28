@@ -1,5 +1,10 @@
-const CACHE = "doctor8-hum-v3";
-const PRECACHE = ["/sos-venezuela", "/icons/icon-192.png", "/icons/icon-512.png"];
+const CACHE = "doctor8-hum-v4";
+const PRECACHE = [
+  "/sos-venezuela",
+  "/humanitarian/venezuela-terremoto-2026",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -25,6 +30,7 @@ self.addEventListener("fetch", (event) => {
 
   const isShell =
     url.pathname === "/sos-venezuela" ||
+    url.pathname.startsWith("/humanitarian/") ||
     url.pathname.startsWith("/icons/") ||
     url.pathname.endsWith(".webmanifest");
 
