@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
   try {
     await sendOrganizationStaffInvite({
       email,
-      organizationName: org?.nomeFantasia || "Cl?nica",
+      organizationName: org?.nomeFantasia || "Clínica",
       role: parsed.data.role,
       token,
       language: "pt",

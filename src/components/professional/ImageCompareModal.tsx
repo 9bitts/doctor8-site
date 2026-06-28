@@ -75,7 +75,7 @@ export default function ImageCompareModal({ chartId, open, onClose }: Props) {
   }
 
   function imageLabel(img: PatientChartImage) {
-    return `${img.docTitle} ? ${formatDocDate(img.docDate)}`;
+    return `${img.docTitle} — ${formatDocDate(img.docDate)}`;
   }
 
   return (

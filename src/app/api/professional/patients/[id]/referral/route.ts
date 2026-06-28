@@ -68,7 +68,7 @@ export async function POST(
   const content = [
     `Encaminhamento de ${referrerName} para ${targetName} (${target.specialty}).`,
     patientName ? `Paciente: ${patientName}` : null,
-    note ? `\nObserva??es:\n${note}` : null,
+    note ? `\nObservações:\n${note}` : null,
     `\nLink de agendamento:\n${bookingUrl}`,
   ]
     .filter(Boolean)
@@ -79,7 +79,7 @@ export async function POST(
       patientRecordId: chart.id,
       professionalId: professional.id,
       type: "REFERRAL",
-      title: encrypt(`Encaminhamento ? ${target.specialty}`),
+      title: encrypt(`Encaminhamento — ${target.specialty}`),
       content: encrypt(content),
     },
   });

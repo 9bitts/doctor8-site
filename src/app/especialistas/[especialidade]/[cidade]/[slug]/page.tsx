@@ -26,7 +26,7 @@ export async function generateMetadata({
   params: { especialidade: string; cidade: string; slug: string };
 }) {
   const profile = await getLivePublicProfileBySlug(params.slug);
-  if (!profile) return { title: "N?o encontrado ? Doctor8" };
+  if (!profile) return { title: "Não encontrado — Doctor8" };
 
   const lang = normalizeLang(cookies().get("doctor8.lang")?.value);
   const specialtyLabel = getProfessionLabel(lang, profile.specialty);
@@ -34,7 +34,7 @@ export async function generateMetadata({
   const city = profile.clinicCity || params.cidade.replace(/-/g, " ");
 
   return {
-    title: `${name} ? ${specialtyLabel} em ${city} | Doctor8`,
+    title: `${name} — ${specialtyLabel} em ${city} | Doctor8`,
     description:
       profile.bio?.slice(0, 160) ||
       `Agende consulta com ${name}, ${specialtyLabel} em ${city}.`,
@@ -42,7 +42,7 @@ export async function generateMetadata({
       canonical: buildPublicProfileUrl(profile),
     },
     openGraph: {
-      title: `${name} ? ${specialtyLabel}`,
+      title: `${name} — ${specialtyLabel}`,
       description: profile.bio?.slice(0, 160) || `Agende sua consulta no Doctor8`,
       url: buildPublicProfileUrl(profile),
       type: "profile",

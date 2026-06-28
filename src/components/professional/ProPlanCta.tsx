@@ -45,10 +45,10 @@ export default function ProPlanCta({ plan, signup, featured }: Props) {
         return;
       }
 
-      const msg = apiErrorMessage(parsed, "N?o foi poss?vel iniciar o checkout.");
+      const msg = apiErrorMessage(parsed, "Não foi possível iniciar o checkout.");
       setError(msg);
     } catch {
-      setError("Erro de conex?o. Tente novamente.");
+      setError("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }

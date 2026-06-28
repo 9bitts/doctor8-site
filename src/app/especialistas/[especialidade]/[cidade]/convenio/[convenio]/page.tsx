@@ -26,8 +26,8 @@ export async function generateMetadata({
   const planName = plan?.name || params.convenio.replace(/-/g, " ");
 
   return {
-    title: `${specialty} em ${city} ? ${planName} | Doctor8`,
-    description: `Encontre ${specialty} em ${city} que atendem ${planName}. Compare hor?rios e agende online.`,
+    title: `${specialty} em ${city} — ${planName} | Doctor8`,
+    description: `Encontre ${specialty} em ${city} que atendem ${planName}. Compare horários e agende online.`,
     alternates: {
       canonical: buildPublicSearchConvenioUrl(
         params.especialidade,

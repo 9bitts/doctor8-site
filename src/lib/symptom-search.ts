@@ -1,4 +1,4 @@
-// Light symptom ? specialty mapping (no AI ? keyword rules, pt-BR).
+// Light symptom → specialty mapping (no AI — keyword rules, pt-BR).
 
 import { slugify } from "@/lib/public-slugs";
 
@@ -15,15 +15,15 @@ type SymptomRule = {
 
 const RULES: SymptomRule[] = [
   {
-    keywords: ["joelho", "joelhos", "artrose", "menisco", "ligamento", "fratura", "osso", "ossos", "coluna", "costas", "lombar", "h?rnia de disco", "hernia de disco"],
+    keywords: ["joelho", "joelhos", "artrose", "menisco", "ligamento", "fratura", "osso", "ossos", "coluna", "costas", "lombar", "hérnia de disco", "hernia de disco"],
     specialtySlug: "ortopedista",
   },
   {
-    keywords: ["pele", "acne", "espinha", "mancha", "dermatite", "eczema", "queda de cabelo", "calv?cie", "calvicie", "verruga"],
+    keywords: ["pele", "acne", "espinha", "mancha", "dermatite", "eczema", "queda de cabelo", "calvície", "calvicie", "verruga"],
     specialtySlug: "dermatologista",
   },
   {
-    keywords: ["ansiedade", "depress?o", "depressao", "ins?nia", "insonia", "p?nico", "panico", "estresse", "tristeza", "humor"],
+    keywords: ["ansiedade", "depressão", "depressao", "insônia", "insonia", "pânico", "panico", "estresse", "tristeza", "humor"],
     specialtySlug: "psiquiatra",
   },
   {
@@ -31,43 +31,43 @@ const RULES: SymptomRule[] = [
     specialtySlug: "psicologo",
   },
   {
-    keywords: ["cora??o", "coracao", "press?o alta", "pressao alta", "hipertens?o", "hipertensao", "palpita??o", "palpitacao"],
+    keywords: ["coração", "coracao", "pressão alta", "pressao alta", "hipertensão", "hipertensao", "palpitação", "palpitacao"],
     specialtySlug: "cardiologista",
   },
   {
-    keywords: ["diabetes", "tireoide", "horm?nio", "hormonio", "obesidade", "emagrecer", "peso"],
+    keywords: ["diabetes", "tireoide", "hormônio", "hormonio", "obesidade", "emagrecer", "peso"],
     specialtySlug: "endocrinologista",
   },
   {
-    keywords: ["olho", "olhos", "vis?o", "visao", "miopia", "astigmatismo", "catarata"],
+    keywords: ["olho", "olhos", "visão", "visao", "miopia", "astigmatismo", "catarata"],
     specialtySlug: "oftalmologista",
   },
   {
-    keywords: ["gravidez", "gr?vida", "gravida", "gestante", "menstrua??o", "menstruacao", "?tero", "utero", "ov?rio", "ovario"],
+    keywords: ["gravidez", "grávida", "gravida", "gestante", "menstruação", "menstruacao", "útero", "utero", "ovário", "ovario"],
     specialtySlug: "ginecologista",
   },
   {
-    keywords: ["crian?a", "crianca", "beb?", "bebe", "infantil", "pediatra"],
+    keywords: ["criança", "crianca", "bebê", "bebe", "infantil", "pediatra"],
     specialtySlug: "pediatra",
   },
   {
-    keywords: ["dieta", "nutri??o", "nutricao", "alimenta??o", "alimentacao", "emagrecimento"],
+    keywords: ["dieta", "nutrição", "nutricao", "alimentação", "alimentacao", "emagrecimento"],
     specialtySlug: "nutricionista",
   },
   {
-    keywords: ["urina", "pr?stata", "prostata", "rim", "rins", "bexiga"],
+    keywords: ["urina", "próstata", "prostata", "rim", "rins", "bexiga"],
     specialtySlug: "urologista",
   },
   {
-    keywords: ["dor de cabe?a", "enxaqueca", "tontura", "convuls?o", "convulsao", "formigamento"],
+    keywords: ["dor de cabeça", "enxaqueca", "tontura", "convulsão", "convulsao", "formigamento"],
     specialtySlug: "neurologista",
   },
   {
-    keywords: ["dent", "dente", "dentes", "gengiva", "c?rie", "carie"],
+    keywords: ["dent", "dente", "dentes", "gengiva", "cárie", "carie"],
     specialtySlug: "dentista",
   },
   {
-    keywords: ["fisioterapia", "reabilita??o", "reabilitacao", "p?s-operat?rio", "pos-operatorio"],
+    keywords: ["fisioterapia", "reabilitação", "reabilitacao", "pós-operatório", "pos-operatorio"],
     specialtySlug: "fisioterapeuta",
   },
 ];

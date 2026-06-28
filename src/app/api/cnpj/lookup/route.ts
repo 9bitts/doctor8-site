@@ -18,12 +18,12 @@ export async function GET(req: NextRequest) {
 
   const digits = stripCnpj(cnpj);
   if (!isValidCnpj(digits)) {
-    return NextResponse.json({ error: "CNPJ inv?lido" }, { status: 400 });
+    return NextResponse.json({ error: "CNPJ inválido" }, { status: 400 });
   }
 
   const result = await lookupCnpj(digits);
   if (!result) {
-    return NextResponse.json({ error: "CNPJ n?o encontrado" }, { status: 404 });
+    return NextResponse.json({ error: "CNPJ não encontrado" }, { status: 404 });
   }
 
   return NextResponse.json(result);

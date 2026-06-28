@@ -56,7 +56,7 @@ export async function ensureLegacyLocation(
   await db.practiceLocation.create({
     data: {
       ...where,
-      name: legacy.clinicName || "Consult?rio principal",
+      name: legacy.clinicName || "Consultório principal",
       address: legacy.clinicAddress || "",
       city: legacy.clinicCity || "",
       state: legacy.clinicState,

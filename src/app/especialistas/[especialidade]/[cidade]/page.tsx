@@ -20,7 +20,7 @@ export async function generateMetadata({
 
   return {
     title: `${specialty} em ${city} | Doctor8`,
-    description: `Encontre ${specialty} em ${city}. Compare profissionais, hor?rios e agende sua consulta.`,
+    description: `Encontre ${specialty} em ${city}. Compare profissionais, horários e agende sua consulta.`,
     alternates: {
       canonical: buildPublicSearchUrl(params.especialidade, params.cidade),
     },

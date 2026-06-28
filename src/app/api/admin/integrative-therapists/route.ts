@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest) {
     email: p.user?.email ?? null,
     region: p.user?.region ?? null,
     subtitle: p.picsPractices.length
-      ? `${p.picsPractices.length} pr?tica(s) PICS ? ${p.trainingInstitution}`
+      ? `${p.picsPractices.length} prática(s) PICS — ${p.trainingInstitution}`
       : p.trainingInstitution,
     verified: p.verified,
     verifiedAt: p.verifiedAt ? p.verifiedAt.toISOString() : null,

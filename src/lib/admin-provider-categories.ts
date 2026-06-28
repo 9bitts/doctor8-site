@@ -27,8 +27,8 @@ export type AdminProviderTab =
   | "outros";
 
 export const ADMIN_PROVIDER_TABS: { id: AdminProviderTab; labelPt: string }[] = [
-  { id: "medicos", labelPt: "M?dicos" },
-  { id: "psicologos", labelPt: "Psic?logos" },
+  { id: "medicos", labelPt: "Médicos" },
+  { id: "psicologos", labelPt: "Psicólogos" },
   { id: "nutricionistas", labelPt: "Nutricionistas" },
   { id: "fisioterapeutas", labelPt: "Fisioterapeutas" },
   { id: "psicanalistas", labelPt: "Psicanalistas" },

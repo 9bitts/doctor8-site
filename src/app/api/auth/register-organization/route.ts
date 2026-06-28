@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     const cnpjDigits = stripCnpj(parsed.cnpj);
     if (!isValidCnpj(cnpjDigits)) {
       return NextResponse.json(
-        { error: { cnpj: ["CNPJ inv?lido"] } },
+        { error: { cnpj: ["CNPJ inválido"] } },
         { status: 400 },
       );
     }
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
     if (existingCnpj) {
       return NextResponse.json(
-        { error: { cnpj: ["CNPJ j? cadastrado"] } },
+        { error: { cnpj: ["CNPJ já cadastrado"] } },
         { status: 409 },
       );
     }

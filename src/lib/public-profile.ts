@@ -396,7 +396,7 @@ export function buildPhysicianJsonLd(
     name,
     medicalSpecialty: specialtyLabel,
     url,
-    description: profile.bio || `${specialtyLabel} ? ${name}`,
+    description: profile.bio || `${specialtyLabel} — ${name}`,
   };
 
   if (profile.avatarUrl) jsonLd.image = profile.avatarUrl;

@@ -170,7 +170,7 @@ export default function PublicBookingPanel({
               <option key={svc.id} value={svc.id}>
                 {svc.name}
                 {svc.priceCents != null
-                  ? ` ? ${fmtPrice(svc.priceCents, svc.currency || profile.currency, locale)}`
+                  ? ` — ${fmtPrice(svc.priceCents, svc.currency || profile.currency, locale)}`
                   : ""}
               </option>
             ))}

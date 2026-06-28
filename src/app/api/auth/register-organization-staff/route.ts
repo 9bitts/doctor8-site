@@ -60,14 +60,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (!invite || invite.acceptedAt || invite.expiresAt < new Date()) {
-      return NextResponse.json({ error: { general: ["Convite inv?lido ou expirado"] } }, { status: 400 });
+      return NextResponse.json({ error: { general: ["Convite inválido ou expirado"] } }, { status: 400 });
     }
 
     const email = invite.email.toLowerCase();
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json(
-        { error: { email: ["Este e-mail j? possui conta. Fa?a login e aceite o convite."] } },
+        { error: { email: ["Este e-mail já possui conta. Faça login e aceite o convite."] } },
         { status: 409 },
       );
     }

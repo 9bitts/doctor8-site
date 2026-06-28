@@ -65,7 +65,7 @@ export default function RegisterOrganizationStaffPage() {
       }
       router.push("/login?callbackUrl=/organization");
     } catch {
-      setError("Erro de conex?o");
+      setError("Erro de conexão");
     } finally {
       setSaving(false);
     }
@@ -84,7 +84,7 @@ export default function RegisterOrganizationStaffPage() {
       <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center max-w-md">
           <AlertCircle className="mx-auto text-red-400 mb-4" size={40} />
-          <p className="text-white font-semibold mb-2">Convite inv?lido ou expirado</p>
+          <p className="text-white font-semibold mb-2">Convite inválido ou expirado</p>
           <Link href="/login" className="text-indigo-400 text-sm hover:underline">Ir para login</Link>
         </div>
       </div>
@@ -136,7 +136,7 @@ export default function RegisterOrganizationStaffPage() {
           </div>
           <div className="space-y-2 text-sm text-slate-300">
             <label className="flex gap-2"><input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} /> Aceito os Termos</label>
-            <label className="flex gap-2"><input type="checkbox" checked={acceptedPrivacy} onChange={(e) => setAcceptedPrivacy(e.target.checked)} /> Aceito a Pol?tica de Privacidade</label>
+            <label className="flex gap-2"><input type="checkbox" checked={acceptedPrivacy} onChange={(e) => setAcceptedPrivacy(e.target.checked)} /> Aceito a Política de Privacidade</label>
             <label className="flex gap-2"><input type="checkbox" checked={acceptedGdpr} onChange={(e) => setAcceptedGdpr(e.target.checked)} /> Aceito LGPD</label>
           </div>
           <button type="submit" disabled={saving || !acceptedTerms || !acceptedPrivacy || !acceptedGdpr}

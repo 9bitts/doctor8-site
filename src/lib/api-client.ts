@@ -27,10 +27,10 @@ export function apiErrorMessage(
     if (typeof data.detail === "string" && data.detail.trim()) return data.detail;
   }
   if (!parsed.ok && parsed.status >= 500) {
-    return labels?.server ?? "Servidor indisponivel no momento. Tente novamente em instantes.";
+    return labels?.server ?? "Servidor indisponível no momento. Tente novamente em instantes.";
   }
   if (!parsed.data) {
-    return (labels?.invalid ?? "Resposta invalida do servidor (HTTP {{status}}).").replace(
+    return (labels?.invalid ?? "Resposta inválida do servidor (HTTP {{status}}).").replace(
       "{{status}}",
       String(parsed.status),
     );

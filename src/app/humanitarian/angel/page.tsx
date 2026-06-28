@@ -206,7 +206,7 @@ export default function HumanitarianAngelPage() {
                     <p className="font-semibold text-white truncate">{p.patientName}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {p.poolLabel} ? {t(lang, `angel.priority.${p.priority}`)}
-                      {p.lastFollowUp ? ` ? ${t(lang, "angel.portal.contacted")}` : ""}
+                      {p.lastFollowUp ? ` — ${t(lang, "angel.portal.contacted")}` : ""}
                     </p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-500 shrink-0" />

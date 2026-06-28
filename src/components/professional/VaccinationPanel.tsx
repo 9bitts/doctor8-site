@@ -292,7 +292,7 @@ export default function VaccinationPanel({
                     {new Date(v.administeredAt).toLocaleDateString(locale)}
                     {" ? "}
                     {t(`vac.network.${v.network.toLowerCase()}`)}
-                    {v.batchNumber && ` ? ${t("vac.batch")}: ${v.batchNumber}`}
+                    {v.batchNumber && ` — ${t("vac.batch")}: ${v.batchNumber}`}
                   </p>
                   {v.notes && <p className="text-xs text-slate-500 mt-1">{v.notes}</p>}
                 </div>
