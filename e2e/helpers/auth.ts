@@ -1,8 +1,12 @@
 import type { Page } from "@playwright/test";
 
 export function e2ePatientCredentials(): { email: string; password: string } | null {
-  const email = process.env.E2E_PATIENT_EMAIL?.trim();
-  const password = process.env.E2E_PATIENT_PASSWORD?.trim();
+  const email =
+    process.env.E2E_PATIENT_EMAIL?.trim() ||
+    (process.env.CI ? "e2e-patient@doctor8.test" : undefined);
+  const password =
+    process.env.E2E_PATIENT_PASSWORD?.trim() ||
+    (process.env.CI ? "TestPassword1!" : undefined);
   if (!email || !password) return null;
   return { email, password };
 }

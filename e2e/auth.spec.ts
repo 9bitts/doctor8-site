@@ -58,4 +58,16 @@ test.describe("authenticated patient", () => {
     });
     await expect(page.locator("body")).toBeVisible();
   });
+
+  test("humanitarian intake API responds for logged-in patient", async ({ page }) => {
+    const creds = e2ePatientCredentials()!;
+    await loginWithCredentials(page, creds.email, creds.password);
+    await waitForAuthenticatedSession(page);
+    const res = await page.request.get(
+      `/api/humanitarian/intake?campaignSlug=${VENEZUELA_SLUG}`,
+    );
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.intake?.campaignId).toBeTruthy();
+  });
 });

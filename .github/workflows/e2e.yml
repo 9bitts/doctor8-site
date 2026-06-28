@@ -1,0 +1,71 @@
+name: E2E
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: doctor8_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/doctor8_e2e
+      AUTH_SECRET: ci-e2e-auth-secret-minimum-32-characters
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ci-e2e-auth-secret-minimum-32-characters
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
+      E2E_PATIENT_EMAIL: e2e-patient@doctor8.test
+      E2E_PATIENT_PASSWORD: TestPassword1!
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+
+      - name: Seed E2E fixtures
+        run: node scripts/seed-e2e.mjs
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
