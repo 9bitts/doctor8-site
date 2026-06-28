@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revokeSmartClientAccess } from "@/lib/fhir/smart-token-maintenance";
+import { getSmartClientName } from "@/lib/fhir/smart-oauth-clients";
 
 export async function GET() {
   const session = await auth();
@@ -21,7 +22,14 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ apps: tokens });
+  const apps = await Promise.all(
+    tokens.map(async (t) => ({
+      ...t,
+      clientName: (await getSmartClientName(t.clientId)) || t.clientId,
+    })),
+  );
+
+  return NextResponse.json({ apps });
 }
 
 export async function DELETE(req: Request) {

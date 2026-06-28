@@ -8,6 +8,7 @@ import { useT } from "@/lib/i18n/I18nProvider";
 type AppRow = {
   id: string;
   clientId: string;
+  clientName?: string;
   scope: string;
   expiresAt: string;
   createdAt: string;
@@ -63,9 +64,15 @@ export default function ConnectedAppsPage() {
           {apps.map((app) => (
             <li key={app.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-semibold text-slate-800 text-sm">{app.clientId}</p>
+                <p className="font-semibold text-slate-800 text-sm">{app.clientName || app.clientId}</p>
+                {app.clientName && app.clientName !== app.clientId && (
+                  <p className="text-xs text-slate-400 font-mono truncate">{app.clientId}</p>
+                )}
                 <p className="text-xs text-slate-500 mt-1 font-mono truncate">{app.scope}</p>
                 <p className="text-xs text-slate-400 mt-2">
+                  {t("smart.apps.authorizedAt")} {new Date(app.createdAt).toLocaleString()}
+                </p>
+                <p className="text-xs text-slate-400">
                   {t("smart.apps.expires")} {new Date(app.expiresAt).toLocaleString()}
                 </p>
               </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Shield, Loader2, X, Check } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 
@@ -11,6 +11,7 @@ function FhirAuthorizeInner() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [clientName, setClientName] = useState<string | null>(null);
 
   const redirectUri = sp.get("redirect_uri") || "";
   const clientId = sp.get("client_id") || "doctor8-public";
@@ -18,6 +19,13 @@ function FhirAuthorizeInner() {
   const state = sp.get("state") || undefined;
   const codeChallenge = sp.get("code_challenge") || "";
   const codeChallengeMethod = sp.get("code_challenge_method") || "";
+
+  useEffect(() => {
+    fetch(`/api/fhir/smart/client-info?client_id=${encodeURIComponent(clientId)}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.name) setClientName(d.name); })
+      .catch(() => {});
+  }, [clientId]);
 
   async function respond(action: "allow" | "deny") {
     if (!redirectUri || !codeChallenge || codeChallengeMethod !== "S256") {
@@ -83,7 +91,10 @@ function FhirAuthorizeInner() {
       <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 text-sm">
         <div>
           <p className="text-xs font-semibold text-slate-500 uppercase">{t("smart.consent.app")}</p>
-          <p className="font-medium text-slate-800 mt-0.5">{clientId}</p>
+          <p className="font-medium text-slate-800 mt-0.5">{clientName || clientId}</p>
+          {clientName && clientName !== clientId && (
+            <p className="text-xs text-slate-400 font-mono mt-0.5">{clientId}</p>
+          )}
           <p className="text-xs text-slate-400 mt-1">{host}</p>
         </div>
         <div>

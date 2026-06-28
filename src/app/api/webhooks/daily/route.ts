@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { getDailyRecordingAccessLink } from "@/lib/daily";
 import { markDailyRecordingReady } from "@/lib/daily-recording-log";
 
@@ -69,6 +70,10 @@ export async function POST(req: NextRequest) {
 
   if (event.type !== "recording.ready-to-download") {
     return NextResponse.json({ received: true, ignored: event.type });
+  }
+
+  if (!isDailyCloudRecordingEnabled()) {
+    return NextResponse.json({ received: true, skipped: "cloud recording disabled" });
   }
 
   const roomName = event.payload?.room_name;

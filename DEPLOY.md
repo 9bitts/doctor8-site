@@ -88,7 +88,15 @@ Substitua SEU_USUARIO pelo seu usuário do GitHub.
 ### Daily.co (vídeo)
 1. Acesse https://dashboard.daily.co e crie uma conta
 2. "Developers" → "API Keys"
-3. Copie a chave → DAILY_API_KEY
+3. Copie a chave → `DAILY_API_KEY`
+
+**Gravação cloud (opcional — desligada por padrão)**  
+O Doctor8 **não grava** consultas automaticamente. Só ative se quiser avaliar custo depois:
+
+- `DAILY_CLOUD_RECORDING=1` — cobrança extra na Daily (~US$ 0,013/min gravado + storage)
+- Webhook `POST /api/webhooks/daily` + `DAILY_WEBHOOK_SECRET` — só necessário **com** gravação ligada
+
+Sem essas variáveis, vídeo funciona normalmente e **não há taxa de gravação**.
 
 ---
 
@@ -239,7 +247,10 @@ Usuários americanos acessam `us.doctor8.app` (ou `doctor8.app`).
 → Verifique se STRIPE_WEBHOOK_SECRET bate com o valor no dashboard do Stripe
 
 **Vídeo não abre**
-→ Confirme DAILY_API_KEY e que a URL do webhook está apontando para o domínio correto
+→ Confirme `DAILY_API_KEY` no Railway
+
+**Gravação cloud (se ativar no futuro)**
+→ `DAILY_CLOUD_RECORDING=1`, webhook em `/api/webhooks/daily`, `DAILY_WEBHOOK_SECRET` do POST `/webhooks` da Daily
 
 ---
 
