@@ -15,7 +15,7 @@ function safeDecrypt(v: string | null): string {
 }
 
 const LABELS = {
-  pt: { title: "Biblioteca", description: "Descri??o", link: "Link", date: "Data" },
+  pt: { title: "Biblioteca", description: "Descrição", link: "Link", date: "Data" },
   en: { title: "Library", description: "Description", link: "Link", date: "Date" },
   es: { title: "Biblioteca", description: "Descripci?n", link: "Enlace", date: "Fecha" },
 };

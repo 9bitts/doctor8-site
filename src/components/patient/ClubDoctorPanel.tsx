@@ -42,15 +42,15 @@ function subscriptionStatus(sub: SubInfo | null): {
 } {
   if (!sub || sub.status === "inactive") {
     return {
-      label: "Nao assinante",
-      detail: "Voce ainda nao faz parte do Club Doctor.",
+      label: "Não assinante",
+      detail: "Você ainda não faz parte do Club Doctor.",
       tone: "slate",
     };
   }
   if (sub.status === "past_due") {
     return {
       label: "Pagamento pendente",
-      detail: "Atualize o pagamento para manter os beneficios.",
+      detail: "Atualize o pagamento para manter os benefícios.",
       tone: "rose",
     };
   }
@@ -63,10 +63,10 @@ function subscriptionStatus(sub: SubInfo | null): {
   }
   if (ACTIVE.includes(sub.status) && sub.cancelAtPeriodEnd) {
     return {
-      label: "Ativo ? cancelando",
+      label: "Ativo — cancelando",
       detail: sub.currentPeriodEnd
-        ? `Beneficios ate ${new Date(sub.currentPeriodEnd).toLocaleDateString("pt-BR")}.`
-        : "Cancelamento agendado para o fim do periodo.",
+        ? `Benefícios até ${new Date(sub.currentPeriodEnd).toLocaleDateString("pt-BR")}.`
+        : "Cancelamento agendado para o fim do período.",
       tone: "amber",
     };
   }
@@ -74,8 +74,8 @@ function subscriptionStatus(sub: SubInfo | null): {
     return {
       label: "Em dia",
       detail: sub.currentPeriodEnd
-        ? `Proxima cobranca em ${new Date(sub.currentPeriodEnd).toLocaleDateString("pt-BR")}.`
-        : "Sua assinatura esta ativa.",
+        ? `Próxima cobrança em ${new Date(sub.currentPeriodEnd).toLocaleDateString("pt-BR")}.`
+        : "Sua assinatura está ativa.",
       tone: "emerald",
     };
   }
@@ -113,12 +113,12 @@ export default function ClubDoctorPanel() {
     CLUB_BILLING_REGION_OPTIONS.find((o) => o.region === billingRegion)?.priceHint ?? "";
 
   const benefits = [
-    "Cartao fidelidade: carimbos viram mensalidade gratis",
-    "Acesso a plataforma Doctor8 e todos os servicos",
+    "Cartão fidelidade: carimbos viram mensalidade grátis",
+    "Acesso à plataforma Doctor8 e todos os serviços",
     "Clube de compras coletivas",
     "Descontos em medicamentos e exames (parceiros)",
-    "Conteudos educativos e suporte tecnico",
-    "Consultas cobradas pelo valor do profissional, sem desconto automatico",
+    "Conteúdos educativos e suporte técnico",
+    "Consultas cobradas pelo valor do profissional, sem desconto automático",
   ];
 
   useEffect(() => {
@@ -196,7 +196,7 @@ export default function ClubDoctorPanel() {
   }
 
   async function cancel() {
-    if (!confirm("Cancelar o Club Doctor? Voce mantem os beneficios ate o fim do periodo atual.")) return;
+    if (!confirm("Cancelar o Club Doctor? Você mantém os benefícios até o fim do período atual.")) return;
     setWorking(true);
     setMsg("");
     try {
@@ -204,11 +204,11 @@ export default function ClubDoctorPanel() {
       const d = await res.json();
       if (res.ok) {
         setMsgTone("info");
-        setMsg("Seu Club Doctor sera cancelado ao fim do periodo atual.");
+        setMsg("Seu Club Doctor será cancelado ao fim do período atual.");
         await load();
       } else {
         setMsgTone("error");
-        setMsg(d.error || "Nao foi possivel cancelar.");
+        setMsg(d.error || "Não foi possível cancelar.");
       }
     } catch {
       setMsgTone("error");
@@ -231,7 +231,7 @@ export default function ClubDoctorPanel() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Club Doctor</h1>
         <p className="text-slate-500 mt-1">
-          Sua assinatura, carimbos e beneficios do clube.
+          Sua assinatura, carimbos e benefícios do clube.
         </p>
       </div>
 
@@ -297,16 +297,16 @@ export default function ClubDoctorPanel() {
 
         {stamps?.readyForFreeMonth ? (
           <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
-            Voce tem {stampCount} carimbos! A proxima mensalidade do Club sera gratuita automaticamente.
+            Você tem {stampCount} carimbos! A próxima mensalidade do Club será gratuita automaticamente.
           </p>
         ) : (
           <p className="text-sm text-slate-500">
-            Faltam <strong>{stamps?.stampsToFreeMonth ?? target}</strong> carimbos para a proxima mensalidade gratis.
+            Faltam <strong>{stamps?.stampsToFreeMonth ?? target}</strong> carimbos para a próxima mensalidade grátis.
           </p>
         )}
 
         <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-1">
-          <p><strong>+1</strong> cada consulta paga e concluida (qualquer profissional)</p>
+          <p><strong>+1</strong> cada consulta paga e concluída (qualquer profissional)</p>
           <p><strong>+1</strong> cada mensalidade Club paga</p>
           <p>
             <strong>+1 bonus</strong> ao consultar 3 tipos diferentes de profissional em 12 meses
@@ -316,10 +316,10 @@ export default function ClubDoctorPanel() {
           </p>
           {stamps && stamps.kindsInWindowLabels.length > 0 && (
             <p className="text-slate-400">
-              Tipos ja consultados: {stamps.kindsInWindowLabels.join(", ")}
+              Tipos já consultados: {stamps.kindsInWindowLabels.join(", ")}
             </p>
           )}
-          <p className="text-slate-400">Carimbos nao expiram. Credito so na mensalidade, nunca em consultas.</p>
+          <p className="text-slate-400">Carimbos não expiram. Crédito só na mensalidade, nunca em consultas.</p>
         </div>
       </div>
 
@@ -334,10 +334,10 @@ export default function ClubDoctorPanel() {
           <p className="text-3xl font-bold mb-2">Club Doctor</p>
           <p className="text-emerald-50 text-sm">
             {sub!.cancelAtPeriodEnd
-              ? `Beneficios ate ${
+              ? `Benefícios até ${
                   sub!.currentPeriodEnd
                     ? new Date(sub!.currentPeriodEnd).toLocaleDateString("pt-BR")
-                    : "o fim do periodo"
+                    : "o fim do período"
                 }.`
               : sub!.currentPeriodEnd
                 ? `Renova em ${new Date(sub!.currentPeriodEnd).toLocaleDateString("pt-BR")}`
@@ -362,7 +362,7 @@ export default function ClubDoctorPanel() {
             <CreditCard size={18} className="text-emerald-600" /> Assinar Club Doctor
           </h2>
           <p className="text-sm text-slate-500">
-            Opcional e sem pressao ? ajuda a Doctor8 a evoluir e libera o cartao fidelidade.
+            Opcional e sem pressão — ajuda a Doctor8 a evoluir e libera o cartão fidelidade.
           </p>
 
           <div>
@@ -376,7 +376,7 @@ export default function ClubDoctorPanel() {
             >
               {CLUB_BILLING_REGION_OPTIONS.map((opt) => (
                 <option key={opt.region} value={opt.region}>
-                  {opt.labelPt} ? {opt.priceHint}
+                  {opt.labelPt} — {opt.priceHint}
                 </option>
               ))}
             </select>

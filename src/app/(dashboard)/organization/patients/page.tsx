@@ -38,7 +38,7 @@ export default function OrganizationPatientsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Pacientes</h1>
-        <p className="text-slate-500 text-sm mt-1">Vis\u00e3o consolidada de todos os profissionais</p>
+        <p className="text-slate-500 text-sm mt-1">Visão consolidada de todos os profissionais</p>
       </div>
 
       <form onSubmit={handleSearch} className="relative">
@@ -46,7 +46,7 @@ export default function OrganizationPatientsPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nome ou e-mail\u2026"
+          placeholder="Buscar por nome ou e-mail…"
           className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
         />
       </form>

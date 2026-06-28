@@ -38,8 +38,8 @@ export default function OrganizationReportsPage() {
   }, [period]);
 
   const periods = [
-    { value: "this_month", label: "Este m\u00eas" },
-    { value: "last_month", label: "M\u00eas passado" },
+    { value: "this_month", label: "Este mês" },
+    { value: "last_month", label: "Mês passado" },
     { value: "3_months", label: "3 meses" },
     { value: "this_year", label: "Este ano" },
   ];
@@ -48,8 +48,8 @@ export default function OrganizationReportsPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Relat\u00f3rios</h1>
-          <p className="text-slate-500 text-sm mt-1">Produtividade e receita da cl\u00ednica</p>
+          <h1 className="text-2xl font-bold text-slate-900">Relatórios</h1>
+          <p className="text-slate-500 text-sm mt-1">Produtividade e receita da clínica</p>
         </div>
         <select value={period} onChange={(e) => setPeriod(e.target.value)}
           className="border border-slate-200 rounded-xl px-3 py-2 text-sm">
@@ -63,7 +63,7 @@ export default function OrganizationReportsPage() {
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { icon: BarChart3, label: "Consultas", value: String(data.overview.totalAppointments), sub: `${data.overview.completionRate}% conclu\u00eddas` },
+              { icon: BarChart3, label: "Consultas", value: String(data.overview.totalAppointments), sub: `${data.overview.completionRate}% concluídas` },
               { icon: TrendingUp, label: "Receita", value: fmt(data.overview.totalRevenueCents, data.currency), sub: "consultas pagas" },
               { icon: Users, label: "Profissionais", value: String(data.overview.professionalCount), sub: "ativos" },
               { icon: AlertTriangle, label: "No-show", value: `${data.overview.noShowRate}%`, sub: `${data.overview.noShowCount} faltas` },
@@ -81,14 +81,14 @@ export default function OrganizationReportsPage() {
             <div className="bg-white rounded-2xl border border-slate-200 p-6">
               <h2 className="font-semibold text-slate-900 mb-4">Por profissional</h2>
               {data.byProfessional.length === 0 ? (
-                <p className="text-slate-400 text-sm">Sem dados no per\u00edodo.</p>
+                <p className="text-slate-400 text-sm">Sem dados no período.</p>
               ) : (
                 <div className="space-y-3">
                   {data.byProfessional.map((p) => (
                     <div key={p.name} className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
                       <div>
                         <p className="text-sm font-medium text-slate-900">Dr. {p.name}</p>
-                        <p className="text-xs text-slate-500">{p.specialty} \u00b7 {p.completed} atend. \u00b7 {p.noShow} faltas</p>
+                        <p className="text-xs text-slate-500">{p.specialty} · {p.completed} atend. · {p.noShow} faltas</p>
                       </div>
                       <span className="text-sm font-medium text-indigo-600">{fmt(p.revenueCents, data.currency)}</span>
                     </div>
@@ -100,7 +100,7 @@ export default function OrganizationReportsPage() {
             <div className="bg-white rounded-2xl border border-slate-200 p-6">
               <h2 className="font-semibold text-slate-900 mb-4">Por especialidade</h2>
               {data.bySpecialty.length === 0 ? (
-                <p className="text-slate-400 text-sm">Sem dados no per\u00edodo.</p>
+                <p className="text-slate-400 text-sm">Sem dados no período.</p>
               ) : (
                 <div className="space-y-3">
                   {data.bySpecialty.map((s) => (

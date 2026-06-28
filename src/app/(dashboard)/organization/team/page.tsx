@@ -125,7 +125,7 @@ export default function OrganizationTeamPage() {
               <div key={p.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0 gap-4">
                 <div>
                   <p className="font-medium text-slate-900">Dr. {p.name}</p>
-                  <p className="text-xs text-slate-500">{p.specialty} \u00b7 {p.email}</p>
+                  <p className="text-xs text-slate-500">{p.specialty} · {p.email}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="text-xs text-slate-500">Repasse %</label>
