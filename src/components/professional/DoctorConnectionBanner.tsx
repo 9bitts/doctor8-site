@@ -10,7 +10,6 @@ import {
   parseBillingRegion,
   regionsMismatch,
   billingRegionLabel,
-  REGION_MISMATCH_MESSAGE,
   SETTINGS_PROFILE_PATH,
   type BillingRegion,
 } from "@/lib/billing-regions";
@@ -49,7 +48,7 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
 
   async function goToCheckout() {
     if (regionMismatch) {
-      setMsg(REGION_MISMATCH_MESSAGE);
+      setMsg(t("billing.regionMismatch"));
       return;
     }
     setLoading(true);

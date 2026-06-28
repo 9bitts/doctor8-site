@@ -40,14 +40,20 @@ export default function PatientsAdminClient() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Pacientes</h1>
-        <p className="text-slate-500 mt-1">{patients.length} pacientes cadastrados</p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("admin.patients.title")}</h1>
+        <p className="text-slate-500 mt-1">
+          {t("admin.patients.summary").replace("{{count}}", String(patients.length))}
+        </p>
       </div>
 
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome ou e-mail..."
-          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t("admin.patients.searchPlaceholder")}
+          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+        />
       </div>
 
       {loading ? (
@@ -57,7 +63,7 @@ export default function PatientsAdminClient() {
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
           <Users className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="text-slate-400 text-sm">Nenhum paciente encontrado</p>
+          <p className="text-slate-400 text-sm">{t("admin.patients.empty")}</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
@@ -68,11 +74,17 @@ export default function PatientsAdminClient() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 text-sm">{p.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{p.email || "sem e-mail"} · {p.region || "—"}</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {p.email || t("admin.patients.noEmail")} · {p.region || "—"}
+                </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xs text-slate-400">{p.appointments} consultas</p>
-                <p className="text-xs text-slate-400">{p.documents} documentos</p>
+                <p className="text-xs text-slate-400">
+                  {t("admin.patients.appointments").replace("{{n}}", String(p.appointments))}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {t("admin.patients.documents").replace("{{n}}", String(p.documents))}
+                </p>
               </div>
             </div>
           ))}

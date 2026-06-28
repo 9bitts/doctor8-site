@@ -6,7 +6,8 @@
 import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 import DigitalSignSettings from "@/components/professional/DigitalSignSettings";
 import PushNotificationSettings from "@/components/PushNotificationSettings";
 import { readApiJson, apiErrorMessage } from "@/lib/api-client";
@@ -15,7 +16,6 @@ import {
   parseBillingRegion,
   regionsMismatch,
   billingRegionLabel,
-  REGION_MISMATCH_MESSAGE,
   SETTINGS_PROFILE_PATH,
   type BillingRegion,
 } from "@/lib/billing-regions";
@@ -27,9 +27,14 @@ import {
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-400 transition";
 
+function formatPriceHint(priceHint: string, perMonth: string): string {
+  return priceHint.replace("/mês", perMonth).replace("/mes", perMonth);
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProfessionalAccountPage() {
-  const t = useT();
+  const { lang, t } = useI18n();
+  const locale = localeOf(lang);
 
   const PASSWORD_RULES = [
     { key: "acct.rule8",      test: (p: string) => p.length >= 8 },
@@ -90,7 +95,7 @@ export default function ProfessionalAccountPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("subscribed") === "true") {
       setSubMsgTone("success");
-      setSubMsg("Doctor Connection ativado com sucesso.");
+      setSubMsg(t("proConn.account.subSuccess"));
       window.history.replaceState({}, "", "/professional/account");
     } else if (params.get("subscribe") === "doctor-connection") {
       pendingCheckout.current = true;
@@ -143,7 +148,7 @@ export default function ProfessionalAccountPage() {
   async function startSubscription() {
     if (regionMismatch) {
       setSubMsgTone("warning");
-      setSubMsg(REGION_MISMATCH_MESSAGE);
+      setSubMsg(t("billing.regionMismatch"));
       return;
     }
     setSubWorking(true);
@@ -216,11 +221,9 @@ export default function ProfessionalAccountPage() {
       {/* Mensalidade profissional */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <CreditCard size={18} className="text-brand-500" /> Doctor Connection
+          <CreditCard size={18} className="text-brand-500" /> {t("proConn.account.title")}
         </h2>
-        <p className="text-sm text-slate-500">
-          Mensalidade para profissionais na Doctor8. Pague com cartao ou boleto (Brasil).
-        </p>
+        <p className="text-sm text-slate-500">{t("proConn.account.desc")}</p>
         {subMsg && (
           <div
             className={`flex items-start gap-2 rounded-xl p-3 text-sm ${
@@ -240,13 +243,13 @@ export default function ProfessionalAccountPage() {
           </div>
         )}
         <p className="text-xs text-slate-500">
-          Região da conta: <strong>{billingRegionLabel(profileRegion)}</strong>
+          {t("billing.accountRegionLabel")} <strong>{billingRegionLabel(profileRegion)}</strong>
           {profileRegion !== billingRegion && (
             <>
               {" "}
-              — para cobrar em outra moeda, altere em{" "}
+              {t("billing.changeCurrencyIn")}{" "}
               <Link href={SETTINGS_PROFILE_PATH} className="text-brand-600 underline font-medium">
-                Meu Perfil
+                {t("billing.changeInProfile")}
               </Link>
               .
             </>
@@ -258,11 +261,14 @@ export default function ProfessionalAccountPage() {
           </div>
         ) : isSubActive ? (
           <div className="space-y-3">
-            <p className="text-sm text-emerald-700 font-medium">Assinatura ativa</p>
+            <p className="text-sm text-emerald-700 font-medium">{t("proConn.account.active")}</p>
             {sub?.currentPeriodEnd && (
               <p className="text-xs text-slate-500">
-                Periodo atual ate {new Date(sub.currentPeriodEnd).toLocaleDateString("pt-BR")}
-                {sub.cancelAtPeriodEnd ? " (cancelamento agendado)" : ""}
+                {t("proConn.account.periodEnd").replace(
+                  "{{date}}",
+                  new Date(sub.currentPeriodEnd).toLocaleDateString(locale),
+                )}
+                {sub.cancelAtPeriodEnd ? ` ${t("proConn.account.cancelPending")}` : ""}
               </p>
             )}
             {!sub?.cancelAtPeriodEnd && (
@@ -272,7 +278,7 @@ export default function ProfessionalAccountPage() {
                 disabled={subWorking}
                 className="text-sm font-semibold text-red-600 hover:text-red-700"
               >
-                {subWorking ? t("acct.saving") : "Cancelar Doctor Connection"}
+                {subWorking ? t("acct.saving") : t("proConn.account.cancelBtn")}
               </button>
             )}
           </div>
@@ -280,7 +286,7 @@ export default function ProfessionalAccountPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">
-                Moeda de cobrança
+                {t("billing.currency")}
               </label>
               <select
                 value={billingRegion}
@@ -289,27 +295,28 @@ export default function ProfessionalAccountPage() {
               >
                 {BILLING_REGION_OPTIONS.map((opt) => (
                   <option key={opt.region} value={opt.region}>
-                    {opt.labelPt} — {opt.priceHint}
+                    {t("billing.currencyOption")
+                      .replace("{{label}}", opt.labelPt)
+                      .replace("{{price}}", formatPriceHint(opt.priceHint, t("billing.perMonth")))}
                   </option>
                 ))}
               </select>
               {billingRegion === "BR" && !regionMismatch && (
-                <p className="text-xs text-slate-500 mt-1.5">
-                  No checkout: cartao ou boleto.
-                </p>
+                <p className="text-xs text-slate-500 mt-1.5">{t("billing.checkoutBr")}</p>
               )}
               {regionMismatch && (
                 <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-2">
-                  <p>{REGION_MISMATCH_MESSAGE}</p>
+                  <p>{t("billing.regionMismatch")}</p>
                   <p>
-                    Sua conta está em <strong>{billingRegionLabel(profileRegion)}</strong>, mas você
-                    selecionou <strong>{billingRegionLabel(billingRegion)}</strong>.
+                    {t("billing.regionMismatchDetail")
+                      .replace("{{profile}}", billingRegionLabel(profileRegion))
+                      .replace("{{selected}}", billingRegionLabel(billingRegion))}
                   </p>
                   <Link
                     href={SETTINGS_PROFILE_PATH}
                     className="inline-flex font-semibold text-amber-900 underline"
                   >
-                    Abrir Meu Perfil e alterar região
+                    {t("billing.openProfileChange")}
                   </Link>
                 </div>
               )}
@@ -321,7 +328,7 @@ export default function ProfessionalAccountPage() {
             className="bg-brand-500 hover:bg-brand-400 disabled:opacity-40 text-white font-semibold px-6 py-2.5 rounded-xl transition text-sm flex items-center gap-2"
           >
             {subWorking && <Loader2 size={15} className="animate-spin" />}
-            Assinar Doctor Connection
+            {t("proConn.account.subscribeBtn")}
           </button>
           </div>
         )}

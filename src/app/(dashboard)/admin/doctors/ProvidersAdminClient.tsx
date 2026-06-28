@@ -20,6 +20,8 @@ import {
   Mail,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import {
   ADMIN_PROVIDER_TABS,
@@ -83,8 +85,13 @@ const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
   outros: <Users size={14} />,
 };
 
+function providerTabLabel(tab: AdminProviderTab, t: (key: TranslationKey | string) => string): string {
+  return t(`admin.providers.tab.${tab}`);
+}
+
 export default function ProvidersAdminClient() {
   const { lang, t } = useI18n();
+  const locale = localeOf(lang);
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab") as AdminProviderTab | null;
@@ -185,30 +192,30 @@ export default function ProvidersAdminClient() {
       const res = await fetch(`/api/admin/providers/${userId}/license-documents`);
       const data = await res.json();
       if (!res.ok || !data.documents?.length) {
-        alert(data.documents?.length === 0 ? "Nenhum documento enviado." : "Erro ao carregar documentos.");
+        alert(data.documents?.length === 0 ? t("admin.providers.docsEmpty") : t("admin.providers.docsLoadFail"));
         return;
       }
       for (const doc of data.documents) {
         if (doc.viewUrl) window.open(doc.viewUrl, "_blank", "noopener,noreferrer");
       }
     } catch {
-      alert("Erro ao carregar documentos.");
+      alert(t("admin.providers.docsLoadFail"));
     }
     setDocsBusyId(null);
   }
 
   async function verifyUserEmail(userId: string) {
-    if (!confirm("Marcar o e-mail deste usuário como verificado? Ele poderá fazer login.")) return;
+    if (!confirm(t("admin.providers.verifyEmailConfirm"))) return;
     setVerifyingEmailUserId(userId);
     try {
       const res = await fetch(`/api/admin/users/${userId}/verify-email`, { method: "POST" });
       if (!res.ok) {
-        alert("Não foi possível verificar o e-mail.");
+        alert(t("admin.providers.verifyEmailFail"));
         return;
       }
       await load();
     } catch {
-      alert("Erro ao verificar e-mail.");
+      alert(t("admin.providers.verifyEmailErr"));
     }
     setVerifyingEmailUserId(null);
   }
@@ -261,20 +268,21 @@ export default function ProvidersAdminClient() {
 
   const emptyLabel =
     activeTab === "anjos"
-      ? "Nenhum anjo encontrado"
+      ? t("admin.providers.emptyAngels")
       : activeTab === "psicanalistas"
-        ? "Nenhum psicanalista encontrado"
+        ? t("admin.providers.emptyPsychoanalysts")
         : activeTab === "terapeutas"
-          ? "Nenhum terapeuta integrativo encontrado"
-          : `Nenhum profissional em ${tabMeta.labelPt.toLowerCase()}`;
+          ? t("admin.providers.emptyTherapists")
+          : t("admin.providers.emptyCategory").replace(
+              "{{category}}",
+              providerTabLabel(tabMeta.id, t).toLowerCase(),
+            );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Profissionais</h1>
-        <p className="text-slate-500 mt-1">
-          Aprova\u00e7\u00e3o libera listagem p\u00fablica e atendimento humanit\u00e1rio (volunt\u00e1rios)
-        </p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("admin.providers.title")}</h1>
+        <p className="text-slate-500 mt-1">{t("admin.providers.subtitle")}</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -290,7 +298,7 @@ export default function ProvidersAdminClient() {
             }`}
           >
             {TAB_ICONS[tab.id]}
-            {tab.labelPt}
+            {providerTabLabel(tab.id, t)}
           </button>
         ))}
       </div>
@@ -300,13 +308,15 @@ export default function ProvidersAdminClient() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar por nome, e-mail ou especialidade..."
+          placeholder={t("admin.providers.searchPlaceholder")}
           className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
         />
       </div>
 
       <p className="text-xs text-slate-400">
-        {tabMeta.labelPt}: {listCount} cadastro(s)
+        {t("admin.providers.listCount")
+          .replace("{{category}}", providerTabLabel(tabMeta.id, t))
+          .replace("{{count}}", String(listCount))}
       </p>
 
       {loading ? (
@@ -330,17 +340,17 @@ export default function ProvidersAdminClient() {
                     </p>
                     {a.approvalStatus === "APPROVED" && (
                       <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                        Aprovado
+                        {t("admin.providers.angelApproved")}
                       </span>
                     )}
                     {a.approvalStatus === "PENDING" && (
                       <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-                        Aguardando
+                        {t("admin.providers.angelPending")}
                       </span>
                     )}
                     {a.approvalStatus === "REJECTED" && (
                       <span className="text-[11px] font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">
-                        Rejeitado
+                        {t("admin.providers.angelRejected")}
                       </span>
                     )}
                   </div>
@@ -348,12 +358,12 @@ export default function ProvidersAdminClient() {
                     <Mail size={11} />
                     {a.email}
                     {!a.emailVerified && (
-                      <span className="text-amber-600 font-medium">(e-mail n\u00e3o verificado)</span>
+                      <span className="text-amber-600 font-medium">{t("admin.providers.emailUnverified")}</span>
                     )}
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Idiomas: {a.languages.join(", ").toUpperCase()} \u00b7{" "}
-                    {new Date(a.createdAt).toLocaleDateString("pt-BR")}
+                    {t("admin.providers.languages")} {a.languages.join(", ").toUpperCase()} ·{" "}
+                    {new Date(a.createdAt).toLocaleDateString(locale)}
                   </p>
                   {a.motivation && (
                     <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">{a.motivation}</p>
@@ -372,7 +382,7 @@ export default function ProvidersAdminClient() {
                       ) : (
                         <Mail size={14} />
                       )}
-                      Verificar e-mail
+                      {t("admin.providers.verifyEmail")}
                     </button>
                   )}
                 {a.approvalStatus === "PENDING" && (
@@ -388,7 +398,7 @@ export default function ProvidersAdminClient() {
                       ) : (
                         <CheckCircle2 size={14} />
                       )}
-                      Aprovar
+                      {t("admin.providers.approve")}
                     </button>
                     <button
                       type="button"
@@ -396,7 +406,7 @@ export default function ProvidersAdminClient() {
                       onClick={() => actAngel(a.userId, "reject")}
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 text-xs font-semibold"
                     >
-                      <XCircle size={14} /> Rejeitar
+                      <XCircle size={14} /> {t("admin.providers.reject")}
                     </button>
                   </div>
                 )}
@@ -433,13 +443,14 @@ export default function ProvidersAdminClient() {
 }
 
 function StatusBadge({ verified }: { verified: boolean }) {
+  const { t } = useI18n();
   return verified ? (
     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-      <CheckCircle2 size={11} /> Listagem aprovada
+      <CheckCircle2 size={11} /> {t("admin.providers.listingApproved")}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-      Aguardando aprova\u00e7\u00e3o
+      {t("admin.providers.pendingApproval")}
     </span>
   );
 }
@@ -469,6 +480,7 @@ function ActionButtons({
   onViewDocs: (userId: string) => void;
   onVerifyEmail?: (userId: string) => void;
 }) {
+  const { t } = useI18n();
   const emailOk = emailVerified !== false;
   return (
     <div className="flex flex-col gap-2 shrink-0">
@@ -484,7 +496,7 @@ function ActionButtons({
           ) : (
             <Mail size={14} />
           )}
-          Verificar e-mail
+          {t("admin.providers.verifyEmail")}
         </button>
       )}
       {licenseDocCount > 0 && (
@@ -499,7 +511,7 @@ function ActionButtons({
           ) : (
             <FileText size={14} />
           )}
-          Ver docs ({licenseDocCount})
+          {t("admin.providers.viewDocs").replace("{{n}}", String(licenseDocCount))}
         </button>
       )}
       <button
@@ -519,7 +531,7 @@ function ActionButtons({
         ) : (
           <CheckCircle2 size={14} />
         )}
-        {verified ? "Revogar" : "Aprovar listagem"}
+        {verified ? t("admin.providers.revoke") : t("admin.providers.approveListing")}
       </button>
     </div>
   );
@@ -544,6 +556,7 @@ function ProfessionalList({
   onViewDocs: (userId: string) => void;
   onVerifyEmail: (userId: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
       {rows.map((d) => (
@@ -557,21 +570,25 @@ function ProfessionalList({
               <StatusBadge verified={d.verified} />
               {d.isPublic && d.verified && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
-                  <Globe size={11} /> P\u00fablico
+                  <Globe size={11} /> {t("admin.providers.public")}
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 flex-wrap">
-              {getProfessionLabel(lang as "pt" | "en" | "es", d.specialty)} · {d.email || "sem e-mail"} ·{" "}
+              {getProfessionLabel(lang as "pt" | "en" | "es", d.specialty)} · {d.email || t("admin.providers.noEmail")} ·{" "}
               {d.region || "—"}
               {!d.emailVerified && (
-                <span className="text-amber-600 font-medium">(e-mail n\u00e3o verificado)</span>
+                <span className="text-amber-600 font-medium">{t("admin.providers.emailUnverified")}</span>
               )}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
-              Licen\u00e7a {d.licenseNumber} ({d.licenseCountry}) \u00b7 {d.appointments} consultas \u00b7 {d.charts}{" "}
-              fichas
-              {d.licenseDocCount > 0 && ` \u00b7 ${d.licenseDocCount} doc(s) registro`}
+              {t("admin.providers.licenseLine")
+                .replace("{{number}}", d.licenseNumber)
+                .replace("{{country}}", d.licenseCountry)
+                .replace("{{appointments}}", String(d.appointments))
+                .replace("{{charts}}", String(d.charts))}
+              {d.licenseDocCount > 0 &&
+                t("admin.providers.licenseDocs").replace("{{n}}", String(d.licenseDocCount))}
             </p>
             {d.publicUrl && (
               <a
@@ -622,6 +639,7 @@ function ProviderList({
   onViewDocs: (userId: string) => void;
   onVerifyEmail: (userId: string) => void;
 }) {
+  const { t } = useI18n();
   const Icon = kind === "psychoanalyst" ? Brain : Leaf;
   const bg = kind === "psychoanalyst" ? "bg-violet-100 text-violet-600" : "bg-teal-100 text-teal-600";
 
@@ -638,19 +656,22 @@ function ProviderList({
               <StatusBadge verified={p.verified} />
               {p.isPublic && p.verified && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
-                  <Globe size={11} /> P\u00fablico
+                  <Globe size={11} /> {t("admin.providers.public")}
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 flex-wrap">
-              {p.subtitle} · {p.email || "sem e-mail"} · {p.region || "—"}
+              {p.subtitle} · {p.email || t("admin.providers.noEmail")} · {p.region || "—"}
               {!p.emailVerified && (
-                <span className="text-amber-600 font-medium">(e-mail n\u00e3o verificado)</span>
+                <span className="text-amber-600 font-medium">{t("admin.providers.emailUnverified")}</span>
               )}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
-              {p.appointments} consultas \u00b7 {p.charts} fichas
-              {p.licenseDocCount > 0 && ` \u00b7 ${p.licenseDocCount} doc(s) registro`}
+              {t("admin.providers.statsLine")
+                .replace("{{appointments}}", String(p.appointments))
+                .replace("{{charts}}", String(p.charts))}
+              {p.licenseDocCount > 0 &&
+                t("admin.providers.licenseDocs").replace("{{n}}", String(p.licenseDocCount))}
             </p>
             {p.publicUrl && (
               <a

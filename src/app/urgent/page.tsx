@@ -166,12 +166,12 @@ export default function UrgentPage() {
           window.location.href = `/patient/tcle?returnUrl=${encodeURIComponent("/urgent")}`;
           return;
         }
-        setError(data.error || "Erro ao entrar na fila.");
+        setError(data.error || t("urgent.errJoin"));
         setJoining(null);
         return;
       }
       startQueuePolling(data.entry.id);
-    } catch { setError("Erro de rede."); }
+    } catch { setError(t("common.loadError")); }
     setJoining(null);
   }
 
@@ -222,7 +222,7 @@ export default function UrgentPage() {
         body:    JSON.stringify({ sessionId: payModal.sessionId }),
       });
       const intentData = await intentRes.json();
-      if (!intentRes.ok) { setError(intentData.error || "Erro ao iniciar pagamento."); setPayLoading(false); return; }
+      if (!intentRes.ok) { setError(intentData.error || t("urgent.errPayment")); setPayLoading(false); return; }
 
       const { error: stripeError, paymentIntent } = await stripeRef.current.confirmCardPayment(
         intentData.clientSecret,
@@ -240,7 +240,7 @@ export default function UrgentPage() {
           paymentIntent.id,
         );
       }
-    } catch { setError("Erro de rede."); }
+    } catch { setError(t("common.loadError")); }
     setPayLoading(false);
   }
 
@@ -277,9 +277,9 @@ export default function UrgentPage() {
         body:    JSON.stringify({ queueId: queueEntry.id }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Erro."); setEntering(false); return; }
+      if (!res.ok) { setError(data.error || t("common.actionError")); setEntering(false); return; }
       window.location.href = `/video/jit/${queueEntry.id}`;
-    } catch { setError("Erro de rede."); }
+    } catch { setError(t("common.loadError")); }
     setEntering(false);
   }
 

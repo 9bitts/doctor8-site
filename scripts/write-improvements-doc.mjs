@@ -109,6 +109,8 @@ GOOGLE_CALENDAR_ID=primary
 | Share/room p\u00fablicos i18n erros (Lote 37) | OK |
 | Share p\u00fablico i18n completo + admin clubes (Lote 38) | OK |
 | Magic link + mapa paciente + admin categorias (Lote 39) | OK |
+| Conta pro Doctor Connection + admin providers parcial (Lote 40) | OK |
+| Admin providers completo + pacientes admin (Lote 41) | OK |
 
 ---
 
