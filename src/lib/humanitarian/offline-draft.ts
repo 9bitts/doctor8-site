@@ -101,3 +101,25 @@ export function loadCachedVolunteerDashboard<T>(): T | null {
     return null;
   }
 }
+
+const ANGEL_CACHE_KEY = "doctor8:hum:angel:dash";
+
+export function cacheAngelDashboard(state: unknown): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(ANGEL_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), state }));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadCachedAngelDashboard<T>(): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(ANGEL_CACHE_KEY);
+    if (!raw) return null;
+    return (JSON.parse(raw) as { state: T }).state ?? null;
+  } catch {
+    return null;
+  }
+}

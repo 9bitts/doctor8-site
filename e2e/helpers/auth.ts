@@ -12,8 +12,12 @@ export function e2ePatientCredentials(): { email: string; password: string } | n
 }
 
 export function e2eProfessionalCredentials(): { email: string; password: string } | null {
-  const email = process.env.E2E_PROFESSIONAL_EMAIL?.trim();
-  const password = process.env.E2E_PROFESSIONAL_PASSWORD?.trim();
+  const email =
+    process.env.E2E_PROFESSIONAL_EMAIL?.trim() ||
+    (process.env.CI ? "e2e-volunteer@doctor8.test" : undefined);
+  const password =
+    process.env.E2E_PROFESSIONAL_PASSWORD?.trim() ||
+    (process.env.CI ? "TestPassword1!" : undefined);
   if (!email || !password) return null;
   return { email, password };
 }

@@ -11,6 +11,20 @@ const en = new Set(extractKeys(enBlock));
 const pt = new Set(extractKeys(ptBlock));
 const es = new Set(extractKeys(esBlock));
 
+const missingPt = [...en].filter((k) => !pt.has(k));
+const missingEs = [...en].filter((k) => !es.has(k));
+
 console.log("Counts:", { en: en.size, pt: pt.size, es: es.size });
-console.log("Missing in PT:", [...en].filter((k) => !pt.has(k)));
-console.log("Missing in ES:", [...en].filter((k) => !es.has(k)));
+
+if (missingPt.length) {
+  console.error("Missing in PT:", missingPt);
+}
+if (missingEs.length) {
+  console.error("Missing in ES:", missingEs);
+}
+
+if (missingPt.length || missingEs.length) {
+  process.exit(1);
+}
+
+console.log("All i18n keys present in PT and ES.");

@@ -36,6 +36,8 @@ jobs:
       PLAYWRIGHT_BASE_URL: http://localhost:3000
       E2E_PATIENT_EMAIL: e2e-patient@doctor8.test
       E2E_PATIENT_PASSWORD: TestPassword1!
+      E2E_PROFESSIONAL_EMAIL: e2e-volunteer@doctor8.test
+      E2E_PROFESSIONAL_PASSWORD: TestPassword1!
 
     steps:
       - uses: actions/checkout@v4

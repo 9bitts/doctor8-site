@@ -13,6 +13,7 @@
     "start": "node scripts/railway-start.mjs",
     "migrate:recover": "node scripts/migrate-recover.mjs",
     "lint": "next lint",
+    "check:i18n": "node scripts/check-i18n-keys.mjs",
     "test:e2e": "playwright test",
     "seed:e2e": "node scripts/seed-e2e.mjs",
     "db:push": "prisma db push",

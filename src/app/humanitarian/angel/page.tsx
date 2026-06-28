@@ -10,6 +10,8 @@ import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
+import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
+import { cacheAngelDashboard, loadCachedAngelDashboard } from "@/lib/humanitarian/offline-draft";
 import { buildWhatsAppUrl } from "@/lib/humanitarian/angel";
 
 interface PatientRow {
@@ -63,8 +65,15 @@ export default function HumanitarianAngelPage() {
       const data = await res.json();
       setStatus(data.status || "UNKNOWN");
       setPatients(data.patients || []);
+      cacheAngelDashboard({ status: data.status, patients: data.patients });
     } catch {
-      setError(t(lang, "angel.portal.loadError"));
+      const cached = loadCachedAngelDashboard<{ status: string; patients: PatientRow[] }>();
+      if (cached) {
+        setStatus(cached.status);
+        setPatients(cached.patients);
+      } else {
+        setError(t(lang, "angel.portal.loadError"));
+      }
     }
     setLoading(false);
   }, [lang, router]);
@@ -159,6 +168,7 @@ export default function HumanitarianAngelPage() {
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
       <div className="max-w-4xl mx-auto px-4 py-6">
+        <HumanitarianOfflineBanner lang={lang} />
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center">
             <Heart className="w-6 h-6 text-rose-400" />

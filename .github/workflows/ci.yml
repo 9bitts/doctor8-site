@@ -24,6 +24,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check i18n keys
+        run: npm run check:i18n
+
       - name: Build
         run: npm run build
         env:

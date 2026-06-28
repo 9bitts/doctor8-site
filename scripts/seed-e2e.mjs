@@ -21,9 +21,16 @@ const DEFAULT_PATIENT = {
 };
 
 const POOLS = [
-  { slug: "medico", labelEs: "M?dico general", labelPt: "M?dico cl?nico", labelEn: "General physician", maxWaiting: 500, sortOrder: 1 },
-  { slug: "psicologo", labelEs: "Psic?logo", labelPt: "Psic?logo", labelEn: "Psychologist", maxWaiting: 200, sortOrder: 2 },
+  { slug: "medico", labelEs: "M\u00e9dico general", labelPt: "M\u00e9dico cl\u00ednico", labelEn: "General physician", maxWaiting: 500, sortOrder: 1 },
+  { slug: "psicologo", labelEs: "Psic\u00f3logo", labelPt: "Psic\u00f3logo", labelEn: "Psychologist", maxWaiting: 200, sortOrder: 2 },
 ];
+
+const DEFAULT_PROFESSIONAL = {
+  email: process.env.E2E_PROFESSIONAL_EMAIL || "e2e-volunteer@doctor8.test",
+  password: process.env.E2E_PROFESSIONAL_PASSWORD || "TestPassword1!",
+  firstName: "E2E",
+  lastName: "Volunteer",
+};
 
 function encrypt(plaintext) {
   if (!plaintext) return plaintext;
@@ -127,9 +134,78 @@ async function seedPatient({ email, password, firstName, lastName }) {
   console.log(`[seed-e2e] Patient ${normalized} ready`);
 }
 
+async function seedProfessional({ email, password, firstName, lastName }) {
+  const passwordHash = await bcrypt.hash(password, 12);
+  const normalized = email.toLowerCase();
+
+  const user = await prisma.user.upsert({
+    where: { email: normalized },
+    create: {
+      email: normalized,
+      passwordHash,
+      role: UserRole.PROFESSIONAL,
+      region: UserRegion.VE,
+      language: "es",
+      emailVerified: new Date(),
+    },
+    update: {
+      passwordHash,
+      role: UserRole.PROFESSIONAL,
+      region: UserRegion.VE,
+      emailVerified: new Date(),
+      deletedAt: null,
+      lockedUntil: null,
+      failedLoginAttempts: 0,
+    },
+  });
+
+  await prisma.professionalProfile.upsert({
+    where: { userId: user.id },
+    create: {
+      userId: user.id,
+      firstName,
+      lastName,
+      licenseNumber: "E2E-0001",
+      licenseCountry: "VE",
+      specialty: "general",
+      verified: true,
+      verifiedAt: new Date(),
+      verifiedBy: "seed-e2e",
+    },
+    update: {
+      firstName,
+      lastName,
+      verified: true,
+      verifiedAt: new Date(),
+      verifiedBy: "seed-e2e",
+    },
+  });
+
+  for (const type of [ConsentType.TERMS_OF_SERVICE, ConsentType.PRIVACY_POLICY]) {
+    const existing = await prisma.consent.findFirst({
+      where: { userId: user.id, type },
+    });
+    if (!existing) {
+      await prisma.consent.create({
+        data: {
+          userId: user.id,
+          type,
+          version: "1.0",
+          granted: true,
+          ipAddress: "127.0.0.1",
+          userAgent: "seed-e2e",
+        },
+      });
+    }
+  }
+
+  console.log(`[seed-e2e] Professional ${normalized} ready (verified)`);
+}
+
 async function main() {
   await seedCampaign();
   await seedPatient(DEFAULT_PATIENT);
+  await seedProfessional(DEFAULT_PROFESSIONAL);
 }
 
 main()
