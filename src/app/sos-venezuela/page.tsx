@@ -15,6 +15,7 @@ import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianLangSwitcher, {
   getHumanitarianLang,
 } from "@/components/humanitarian/HumanitarianLangSwitcher";
+import PwaInstallPrompt from "@/components/humanitarian/PwaInstallPrompt";
 
 function t(lang: Lang, key: string) {
   return translate(lang, key);
@@ -167,6 +168,7 @@ export default function SosVenezuelaPage() {
           {t(lang, "hum.landing.partner")}
         </a>
       </main>
+      <PwaInstallPrompt lang={lang} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Loader2, ChevronRight, ChevronLeft, CheckCircle2 } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
@@ -17,6 +17,12 @@ import {
 import type { AnamneseDto, IntakePrefillDto } from "@/lib/humanitarian/intake";
 import { mergeAnamneseWithTriageHints } from "@/lib/humanitarian/triage-anamnese-prefill";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
+import {
+  clearHumanitarianDraft,
+  humanitarianDraftKey,
+  loadHumanitarianDraft,
+  saveHumanitarianDraft,
+} from "@/lib/humanitarian/offline-draft";
 import { parsePhoneToParts } from "@/lib/humanitarian/phone";
 
 type Props = {
@@ -26,6 +32,16 @@ type Props = {
 
 const STEPS = ["identification", "services", "specialty", "basicNeeds", "consent"] as const;
 type Step = (typeof STEPS)[number];
+
+type AnamneseLocalDraft = {
+  step: Step;
+  identification: IdentificationData;
+  serviceTypes: AnamneseServiceType[];
+  specialty: SpecialtyData;
+  basicNeeds: BasicNeedsData;
+  consent: { shareWithVolunteer: boolean; shareWithAngelVolunteer: boolean };
+  additionalNotes: string;
+};
 
 function t(lang: Lang, key: string) {
   return translate(lang, key);
@@ -67,6 +83,9 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
   const [consent, setConsent] = useState({ shareWithVolunteer: true, shareWithAngelVolunteer: false });
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [triagePrefillApplied, setTriagePrefillApplied] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftReadyRef = useRef(false);
+  const draftKey = humanitarianDraftKey("anamnese", campaignSlug);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -85,7 +104,10 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
         window.location.href = `/humanitarian/${campaignSlug}/triage`;
         return;
       }
-      if (intake.anamneseComplete) setDone(true);
+      if (intake.anamneseComplete) {
+        clearHumanitarianDraft(draftKey);
+        setDone(true);
+      }
 
       const prefill: IntakePrefillDto | undefined = intake.prefill;
       const saved: AnamneseDto | undefined = intake.anamnese;
@@ -152,6 +174,45 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading || done) return;
+    if (!draftReadyRef.current) {
+      const local = loadHumanitarianDraft<AnamneseLocalDraft>(draftKey);
+      if (local) {
+        setStep(local.step);
+        setIdentification(local.identification);
+        setServiceTypes(local.serviceTypes);
+        setSpecialty(local.specialty);
+        setBasicNeeds(local.basicNeeds);
+        setConsent(local.consent);
+        setAdditionalNotes(local.additionalNotes);
+        setDraftRestored(true);
+      }
+      draftReadyRef.current = true;
+      return;
+    }
+    saveHumanitarianDraft(draftKey, {
+      step,
+      identification,
+      serviceTypes,
+      specialty,
+      basicNeeds,
+      consent,
+      additionalNotes,
+    });
+  }, [
+    loading,
+    done,
+    draftKey,
+    step,
+    identification,
+    serviceTypes,
+    specialty,
+    basicNeeds,
+    consent,
+    additionalNotes,
+  ]);
+
   const stepIndex = STEPS.indexOf(step);
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
@@ -184,6 +245,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
         return;
       }
       if (section === "consent") {
+        clearHumanitarianDraft(draftKey);
         setDone(true);
       } else {
         const next = STEPS[stepIndex + 1];
@@ -246,7 +308,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
 
   return (
     <div className="space-y-6">
-      <HumanitarianOfflineBanner lang={lang} />
+      <HumanitarianOfflineBanner lang={lang} draftRestored={draftRestored} />
       <div>
         <p className="text-xs text-emerald-300/80 uppercase tracking-wide font-medium">
           {t(lang, "hum.anamnese.eyebrow")}

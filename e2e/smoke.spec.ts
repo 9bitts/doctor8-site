@@ -19,4 +19,16 @@ test.describe("public smoke", () => {
     const json = await res.json();
     expect(json.name).toContain("Doctor8");
   });
+
+  test("service worker is served", async ({ request }) => {
+    const res = await request.get("/sw.js");
+    expect(res.ok()).toBeTruthy();
+    const body = await res.text();
+    expect(body).toContain("doctor8-hum-v1");
+  });
+
+  test("PWA icons are served", async ({ request }) => {
+    const res = await request.get("/icons/icon-192.svg");
+    expect(res.ok()).toBeTruthy();
+  });
 });

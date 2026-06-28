@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import SupportWidget from "@/components/SupportWidget";
+import PwaRegister from "@/components/PwaRegister";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
 import { normalizeLang } from "@/lib/i18n/translations";
 
@@ -35,6 +36,7 @@ export default function RootLayout({
         <I18nProvider initialLang={lang}>
           {children}
           <SupportWidget />
+          <PwaRegister />
         </I18nProvider>
       </body>
     </html>
