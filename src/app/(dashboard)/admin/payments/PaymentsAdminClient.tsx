@@ -3,6 +3,7 @@
 // src/app/(dashboard)/admin/payments/PaymentsAdminClient.tsx
 import { useState, useEffect } from "react";
 import { CreditCard, Loader2, CheckCircle2, Clock } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface Payment {
   id: string;
@@ -33,6 +34,7 @@ function fmtDate(iso: string) {
 }
 
 export default function PaymentsAdminClient() {
+  const { t } = useI18n();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [totals, setTotals] = useState<Total[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +72,7 @@ export default function PaymentsAdminClient() {
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-400 py-10 justify-center">
-          <Loader2 size={18} className="animate-spin" /> Carregando...
+          <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
         </div>
       ) : payments.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">

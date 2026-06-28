@@ -84,7 +84,7 @@ const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
 };
 
 export default function ProvidersAdminClient() {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab") as AdminProviderTab | null;
@@ -311,7 +311,7 @@ export default function ProvidersAdminClient() {
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-400 py-10 justify-center">
-          <Loader2 size={18} className="animate-spin" /> Carregando...
+          <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
         </div>
       ) : listCount === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">

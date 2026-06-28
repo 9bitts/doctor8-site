@@ -45,15 +45,15 @@ export default function LicenseDocumentsUpload() {
     try {
       const res = await fetch("/api/provider/license-documents");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load");
+      if (!res.ok) throw new Error(data.error || t("licenseDocs.errLoad"));
       setDocuments(data.documents || []);
       setMaxDocuments(data.maxDocuments || 20);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load");
+      setError(e instanceof Error ? e.message : t("licenseDocs.errLoad"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -83,13 +83,13 @@ export default function LicenseDocumentsUpload() {
           body: form,
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Upload failed");
+        if (!res.ok) throw new Error(data.error || t("licenseDocs.errUpload"));
       }
       setLabel("");
       setUploadSuccess(true);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
+      setError(e instanceof Error ? e.message : t("licenseDocs.errUpload"));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -103,11 +103,11 @@ export default function LicenseDocumentsUpload() {
       const res = await fetch(`/api/provider/license-documents/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Delete failed");
+        throw new Error(data.error || t("licenseDocs.errDelete"));
       }
       setDocuments((prev) => prev.filter((d) => d.id !== id));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Delete failed");
+      setError(e instanceof Error ? e.message : t("licenseDocs.errDelete"));
     } finally {
       setDeletingId(null);
     }
@@ -163,7 +163,7 @@ export default function LicenseDocumentsUpload() {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-800 truncate">
-                      {doc.label ? `${doc.label} ? ` : ""}
+                      {doc.label ? `${doc.label} · ` : ""}
                       {doc.fileName}
                     </p>
                     <p className="text-xs text-slate-400">{formatBytes(doc.fileSize)}</p>

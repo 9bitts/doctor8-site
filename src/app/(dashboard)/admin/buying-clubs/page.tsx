@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ShoppingBag, Loader2, Search, Users, Stethoscope, User } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface Club {
   id: string;
@@ -24,6 +25,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function BuyingClubsAdminClient() {
+  const { t } = useI18n();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -74,7 +76,7 @@ export default function BuyingClubsAdminClient() {
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-400 py-10 justify-center">
-          <Loader2 size={18} className="animate-spin" /> Carregando...
+          <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">

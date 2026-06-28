@@ -228,7 +228,7 @@ export default function UrgentPage() {
         intentData.clientSecret,
         { payment_method: { card: cardElementRef.current } }
       );
-      if (stripeError) { setError(stripeError.message || "Pagamento falhou."); setPayLoading(false); return; }
+      if (stripeError) { setError(stripeError.message || t("urgent.payFailed")); setPayLoading(false); return; }
 
       if (paymentIntent.status === "succeeded") {
         setPayModal(null);
@@ -508,7 +508,7 @@ export default function UrgentPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-bold text-slate-900 flex items-center gap-2">
-                <CreditCard size={18} className="text-blue-500" /> Pagamento
+                <CreditCard size={18} className="text-blue-500" /> {t("urgent.payTitle")}
               </h2>
               <button onClick={() => setPayModal(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
             </div>
@@ -534,13 +534,13 @@ export default function UrgentPage() {
 
             <div>
               <p className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1.5">
-                <CreditCard size={13} /> Dados do cartão
+                <CreditCard size={13} /> {t("urgent.cardDetails")}
               </p>
               <div id="jit-card-element"
                 className="border border-slate-200 rounded-xl px-4 py-3.5 bg-white focus-within:ring-2 focus-within:ring-blue-500/30 focus-within:border-blue-400 transition min-h-[48px]" />
               {!stripeLoaded && (
                 <div className="flex items-center gap-2 mt-2 text-xs text-slate-400">
-                  <Loader2 size={12} className="animate-spin" /> Carregando...
+                  <Loader2 size={12} className="animate-spin" /> {t("urgent.loading")}
                 </div>
               )}
             </div>
@@ -550,7 +550,7 @@ export default function UrgentPage() {
               {payLoading ? <><Loader2 size={16} className="animate-spin" /> Processando...</> : <><Lock size={16} /> Pagar e entrar na fila</>}
             </button>
             <p className="text-xs text-slate-400 text-center flex items-center justify-center gap-1">
-              <Lock size={11} /> Pagamento seguro via Stripe
+              <Lock size={11} /> {t("urgent.secureStripe")}
             </p>
           </div>
         </div>

@@ -136,4 +136,12 @@ test.describe("authenticated patient", () => {
     expect(types).toContain("Patient");
     expect(types.some((t: string) => t === "Encounter" || t === "ServiceRequest" || t === "MedicationRequest")).toBeTruthy();
   });
+
+  test("legacy /settings redirects patient to account page", async ({ page }) => {
+    const creds = e2ePatientCredentials()!;
+    await loginWithCredentials(page, creds.email, creds.password);
+    await waitForAuthenticatedSession(page);
+    await page.goto("/settings");
+    await expect(page).toHaveURL(/\/patient\/account/, { timeout: 15_000 });
+  });
 });

@@ -6,6 +6,21 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { FileText, Pill, Clock, AlertCircle, Loader2, Shield } from "lucide-react";
+import { translate, normalizeLang, type Lang, type TranslationKey } from "@/lib/i18n/translations";
+
+const LANG_KEY = "doctor8.lang";
+
+function detectLang(): Lang {
+  if (typeof window === "undefined") return "pt";
+  try {
+    const stored = localStorage.getItem(LANG_KEY);
+    if (stored) return normalizeLang(stored);
+  } catch { /* ignore */ }
+  const l = document.documentElement.lang || navigator.language || "pt";
+  if (l.startsWith("en")) return "en";
+  if (l.startsWith("es")) return "es";
+  return "pt";
+}
 
 interface SharedData {
   title: string;
@@ -23,6 +38,13 @@ export default function SharedRecordPage() {
   const [data, setData] = useState<SharedData | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState<Lang>("pt");
+
+  const t = (key: TranslationKey) => translate(lang, key);
+
+  useEffect(() => {
+    setLang(detectLang());
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -32,9 +54,9 @@ export default function SharedRecordPage() {
         if (d.error) setError(d.error);
         else setData(d);
       })
-      .catch(() => setError("Failed to load the shared record."))
+      .catch(() => setError(t("sharePublic.errLoad")))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, lang]);
 
   if (loading) {
     return (
@@ -49,7 +71,7 @@ export default function SharedRecordPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-red-200 shadow-sm p-8 max-w-md w-full text-center">
           <AlertCircle size={40} className="text-red-400 mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-slate-800 mb-2">Link unavailable</h2>
+          <h2 className="text-lg font-bold text-slate-800 mb-2">{t("sharePublic.unavailableTitle")}</h2>
           <p className="text-slate-500 text-sm">{error}</p>
         </div>
       </div>

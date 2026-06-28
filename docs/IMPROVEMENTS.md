@@ -1,43 +1,43 @@
-# Doctor8 ? Backlog de melhorias
+# Doctor8 — Backlog de melhorias
 
-Lista viva de melhorias propostas e status. Lotes pequenos, baixo risco ao fluxo humanit?rio (triagem ? fila ? v?deo ? WhatsApp).
+Lista viva de melhorias propostas e status. Lotes pequenos, baixo risco ao fluxo humanitário (triagem → fila → vídeo → WhatsApp).
 
 ---
 
-## Em implementa??o / pr?ximo
+## Em implementação / próximo
 
 | # | Item | Prioridade | Notas |
 |---|------|------------|-------|
-| **M1** | **Google Meet com legendas traduzidas** | Alta (BR ? VE) | Ver spec abaixo ? espelha handoff WhatsApp |
-| M2 | WhatsApp Business API (templates Meta) | M?dia | Aguardando aprova??o Meta; c?digo i18n pronto |
-| M3 | Sentry em produ??o | Baixa | S? ativa com `SENTRY_DSN` |
-| M4 | Grava??o cloud Daily | Baixa | Off por padr?o; avaliar custo antes |
-| M5 | Consultas agendadas: canal Meet opcional | M?dia | Depois do humanit?rio (M1) |
-| M6 | `/settings` legado em ingl?s ? i18n | Baixa | P?gina duplicada; preferir `/*/account` |
+| **M1** | **Google Meet com legendas traduzidas** | Alta (BR ↔ VE) | Ver spec abaixo — espelha handoff WhatsApp |
+| M2 | WhatsApp Business API (templates Meta) | Média | Aguardando aprovação Meta; código i18n pronto |
+| M3 | Sentry em produção | Baixa | Só ativa com `SENTRY_DSN` |
+| M4 | Gravação cloud Daily | Baixa | Off por padrão; avaliar custo antes |
+| M5 | Consultas agendadas: canal Meet opcional | Média | Depois do humanitário (M1) |
+| M6 | `/settings` legado | Baixa | Redireciona para `/*/account` (feito) |
 
 ---
 
-## M1 ? Google Meet com tradu??o (spec)
+## M1 — Google Meet com tradução (spec)
 
-**Objetivo:** Igual ao bot?o **WhatsApp** no painel do volunt?rio ? o profissional escolhe o canal; o paciente v? na tela o que foi escolhido e ambos seguem para a op??o.
+**Objetivo:** Igual ao botão **WhatsApp** no painel do voluntário — o profissional escolhe o canal; o paciente vê na tela o que foi escolhido e ambos seguem para a opção.
 
-**Contexto:** Google Workspace Enterprise Plus (Doctor8) j? inclui Meet com **legendas traduzidas** (PT ? ES). Daily.co no app n?o oferece isso nativamente.
+**Contexto:** Google Workspace Enterprise Plus (Doctor8) já inclui Meet com **legendas traduzidas** (PT ↔ ES). Daily.co no app não oferece isso nativamente.
 
 ### UX (espelho do WhatsApp)
 
-**Volunt?rio** (`/humanitarian/volunteer`), com paciente em `CALLED` / `IN_PROGRESS`:
+**Voluntário** (`/humanitarian/volunteer`), com paciente em `CALLED` / `IN_PROGRESS`:
 
-| Bot?o | A??o |
+| Botão | Ação |
 |-------|------|
-| Entrar na consulta (Daily) | Fluxo atual ? `/video/humanitarian/{entryId}` |
-| WhatsApp | Handoff existente ? `POST .../whatsapp-contact` |
-| **Google Meet (legendas traduzidas)** | **Novo** ? cria link Meet, notifica paciente |
+| Entrar na consulta (Daily) | Fluxo atual — `/video/humanitarian/{entryId}` |
+| WhatsApp | Handoff existente — `POST .../whatsapp-contact` |
+| **Google Meet (legendas traduzidas)** | **Novo** — cria link Meet, notifica paciente |
 
-**Paciente** (fila / sala de v?deo):
+**Paciente** (fila / sala de vídeo):
 
 - Polling existente em `VideoConsultRoom` (hoje detecta `completionChannel === "WHATSAPP"`)
-- Nova tela **Meet handoff**: link da reuni?o + instru??es PT/EN/ES para ativar legendas traduzidas
-- Paciente na fila (`/humanitarian/{slug}`) tamb?m mostra banner quando canal = Meet
+- Nova tela **Meet handoff**: link da reunião + instruções PT/EN/ES para ativar legendas traduzidas
+- Paciente na fila (`/humanitarian/{slug}`) também mostra banner quando canal = Meet
 
 ### Modelo de dados (migration aditiva)
 
@@ -50,65 +50,63 @@ enum HumanitarianCompletionChannel {
 ```
 
 - Reutilizar `meetingUrl` para URL do Meet quando canal = Meet
-- Opcional: `consultChannel` em `HumanitarianQueueEntry` se quisermos escolha **antes** de encerrar (hoje WhatsApp s? seta no fim)
 
 ### Backend
 
-- `handoffHumanitarianEntryViaGoogleMeet()` em `src/lib/humanitarian/dispatcher.ts` (paralelo a `handoffHumanitarianEntryViaWhatsApp`)
+- `handoffHumanitarianEntryViaGoogleMeet()` em `src/lib/humanitarian/dispatcher.ts`
 - `POST /api/humanitarian/queue/[entryId]/google-meet-contact`
-- Gera??o do link Meet (fase 1): **Google Calendar API** com service account do dom?nio Doctor8, ou link `meet.google.com/new` + instru??es (fase 0 / MVP)
-- Notifica??o: `notifyHumanitarianMeetHandoff()` + chaves i18n `hum.notif.meetHandoff.*`, `hum.page.meetHandoff*`
+- Geração do link Meet (fase 1): Google Calendar API ou `meet.google.com/new` (MVP)
+- Notificação: `notifyHumanitarianMeetHandoff()` + chaves i18n `hum.notif.meetHandoff.*`, `hum.page.meetHandoff*`
 
 ### Frontend
 
-- Bot?o no volunt?rio + loading state (como WhatsApp)
+- Botão no voluntário + loading state (como WhatsApp)
 - Componente handoff em `VideoConsultRoom.tsx` (como `whatsappHandoff`)
-- Instru??es de legendas: Configura??es ? Legendas ? Traduzir ? PT (m?dico) / ES (paciente VE)
+- Instruções de legendas: Configurações → Legendas → Traduzir → PT (médico) / ES (paciente VE)
 
-### Vari?veis de ambiente (fase API)
+### Variáveis de ambiente (fase API)
 
 ```
 GOOGLE_MEET_ENABLED=1
-GOOGLE_SERVICE_ACCOUNT_JSON=...   # Calendar API ? criar evento com conferenceData
+GOOGLE_SERVICE_ACCOUNT_JSON=...
 GOOGLE_CALENDAR_ID=primary
 ```
 
-### Escopo futuro
+### Referências no código hoje
 
-- Consultas agendadas (`Appointment.meetingUrl` Meet vs Daily)
-- Profissional escolhe canal padr?o nas configura??es
-- E2E: mock Meet URL sem chamar Google
-
-### Refer?ncias no c?digo hoje
-
-- Handoff WhatsApp: `src/lib/humanitarian/dispatcher.ts` ? `handoffHumanitarianEntryViaWhatsApp`
-- UI volunt?rio: `src/app/humanitarian/volunteer/page.tsx`
+- Handoff WhatsApp: `src/lib/humanitarian/dispatcher.ts` → `handoffHumanitarianEntryViaWhatsApp`
+- UI voluntário: `src/app/humanitarian/volunteer/page.tsx`
 - Tela paciente WhatsApp: `src/components/VideoConsultRoom.tsx` (`whatsappHandoff`)
-- Enum: `prisma/schema.prisma` ? `HumanitarianCompletionChannel`
+- Enum: `prisma/schema.prisma` → `HumanitarianCompletionChannel`
 
 ---
 
-## Conclu?do (resumo por ?rea)
+## Concluído (resumo)
 
-| ?rea | Status |
+| Área | Status |
 |------|--------|
-| Seguran?a OAuth, PHI, CSP, salas Daily privadas | ? |
-| Teleconsulta Daily + sidebar ficha | ? |
-| Humanit?rio: triagem, fila, WhatsApp handoff, anamnese, offline | ? |
-| PWA + service worker humanit?rio | ? |
-| Notifica??es i18n (titleKey/bodyKey) | ? |
-| Encoding PT/ES/EN + `check:encoding` no CI | ? |
-| E2E: fila ? v?deo (Daily mock), volunt?rio, smoke legal | ? |
-| SMART OAuth + admin clientes | ? |
-| QStash lembretes anamnese | ? |
-| Farm?cia: s? CMED informativo (sem checkout) | ? |
-| Convite paciente / PatientNoAccountPanel | ? |
-| Grava??o Daily off + webhook opcional | ? |
+| Segurança OAuth, PHI, CSP, salas Daily privadas | OK |
+| Teleconsulta Daily + sidebar ficha | OK |
+| Humanitário: triagem, fila, WhatsApp handoff, anamnese, offline | OK |
+| PWA + service worker humanitário | OK |
+| Notificações i18n (titleKey/bodyKey) | OK |
+| Encoding PT/ES/EN + `check:encoding` no CI | OK |
+| E2E: fila → vídeo (Daily mock), voluntário, smoke legal | OK |
+| SMART OAuth + admin clientes | OK |
+| QStash lembretes anamnese | OK |
+| Farmácia: só CMED informativo (sem checkout) | OK |
+| Convite paciente / PatientNoAccountPanel | OK |
+| Gravação Daily off + webhook opcional | OK |
+| Biblioteca recursos i18n (Lote 35) | OK |
+| `/settings` → redirect conta (Lote 36) | OK |
+| Admin loading i18n (Lote 36) | OK |
+| JIT pagamento + license docs i18n (Lote 37) | OK |
+| Share/room públicos i18n erros (Lote 37) | OK |
 
 ---
 
 ## Regras de deploy
 
-- Migrations **aditivas** ? OK em hor?rio de uso
+- Migrations **aditivas** — OK em horário de uso
 - Trocar fluxo WhatsApp API ou auth = avisar antes
-- Meet (M1) = migration enum + novos endpoints; Daily continua padr?o
+- Meet (M1) = migration enum + novos endpoints; Daily continua padrão

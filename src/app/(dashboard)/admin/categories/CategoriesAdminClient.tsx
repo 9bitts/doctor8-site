@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import {
   Layers, Plus, X, Loader2, Pencil, Eye, EyeOff, Trash2, AlertCircle,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface Cat {
   id: string;
@@ -22,6 +23,7 @@ interface Cat {
 interface Group { group: string; groupOrder: number; items: Cat[]; }
 
 export default function CategoriesAdminClient() {
+  const { t } = useI18n();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -130,7 +132,7 @@ export default function CategoriesAdminClient() {
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-400 py-10 justify-center">
-          <Loader2 size={18} className="animate-spin" /> Carregando...
+          <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
         </div>
       ) : groups.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
