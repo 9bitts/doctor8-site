@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
+import DailyPrebuiltEmbed, { type DailyPrebuiltHandle } from "@/components/DailyPrebuiltEmbed";
 import { translate } from "@/lib/i18n/translations";
 import { buildVideoChartLinks, videoReturnPath } from "@/lib/video-chart-nav";
 
@@ -158,6 +159,7 @@ export default function VideoConsultRoom({
     chiefComplaint: string | null;
   } | null>(null);
   const notesAssistantRef = useRef<ConsultNotesAssistantHandle>(null);
+  const dailyRef = useRef<DailyPrebuiltHandle>(null);
 
   const t = (k: string) => T[k]?.[lang] ?? T[k]?.["en"] ?? k;
 
@@ -428,6 +430,7 @@ export default function VideoConsultRoom({
     } else if (!window.confirm(t("leaveConfirm"))) {
       return;
     }
+    await dailyRef.current?.leave();
     router.push(leaveDestination(roomData));
   }
 
@@ -489,11 +492,11 @@ export default function VideoConsultRoom({
               : "flex-1 w-full"
           }`}
         >
-          <iframe
-            src={`${data.url}?t=${data.token}`}
-            allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
-            className="flex-1 w-full h-full border-0 min-h-[200px]"
-            title="Teleconsultation"
+          <DailyPrebuiltEmbed
+            ref={dailyRef}
+            url={data.url}
+            token={data.token}
+            className="flex-1 w-full h-full min-h-[200px]"
           />
         </div>
 

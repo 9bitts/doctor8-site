@@ -5,6 +5,9 @@ import Link from "next/link";
 import { Loader2, AlertTriangle, ChevronRight } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
 import type { HumanitarianTriageData } from "@/lib/humanitarian/triage";
+import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
+import { humanitarianDraftKey } from "@/lib/humanitarian/offline-draft";
+import { useHumanitarianDraft } from "@/hooks/useHumanitarianDraft";
 
 type Props = {
   lang: Lang;
@@ -72,7 +75,8 @@ function YesNo({
 }
 
 export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete }: Props) {
-  const [data, setData] = useState<HumanitarianTriageData>(EMPTY);
+  const draftKey = humanitarianDraftKey("triage", campaignSlug);
+  const { data, setData, restored, clearDraft } = useHumanitarianDraft(draftKey, EMPTY);
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +121,7 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
         setSaving(false);
         return;
       }
+      clearDraft();
       onComplete();
     } catch {
       setError(t(lang, "hum.page.networkError"));
@@ -126,6 +131,7 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
 
   return (
     <div className="space-y-6">
+      <HumanitarianOfflineBanner lang={lang} draftRestored={restored} />
       <div>
         <p className="text-xs text-rose-300/80 uppercase tracking-wide font-medium">
           {t(lang, "hum.triage.eyebrow")}

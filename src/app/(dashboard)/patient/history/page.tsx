@@ -434,6 +434,10 @@ export default function HistoryPage() {
             className="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 font-semibold px-5 py-3 rounded-xl transition flex items-center gap-2">
             <Download size={16} /> {t("hist.exportPDF")}
           </a>
+          <a href="/api/patient/history/fhir" target="_blank" rel="noopener noreferrer"
+            className="bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 font-semibold px-5 py-3 rounded-xl transition flex items-center gap-2">
+            <Download size={16} /> {t("hist.exportFHIR")}
+          </a>
         </div>
 
       </form>

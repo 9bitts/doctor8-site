@@ -1,5 +1,5 @@
 // src/lib/video.ts
-// Video call integration using Daily.co
+// Legacy Daily.co helpers — prefer @/lib/daily for new code.
 // Daily.co offers HIPAA-compliant video with BAA available
 // Docs: https://docs.daily.co
 

@@ -16,6 +16,7 @@ import {
 } from "@/lib/humanitarian/anamnese";
 import type { AnamneseDto, IntakePrefillDto } from "@/lib/humanitarian/intake";
 import { mergeAnamneseWithTriageHints } from "@/lib/humanitarian/triage-anamnese-prefill";
+import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 import { parsePhoneToParts } from "@/lib/humanitarian/phone";
 
 type Props = {
@@ -245,6 +246,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
 
   return (
     <div className="space-y-6">
+      <HumanitarianOfflineBanner lang={lang} />
       <div>
         <p className="text-xs text-emerald-300/80 uppercase tracking-wide font-medium">
           {t(lang, "hum.anamnese.eyebrow")}

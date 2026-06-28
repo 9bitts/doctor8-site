@@ -14,6 +14,11 @@ import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowS
 import HumanitarianPhoneGate from "@/components/humanitarian/HumanitarianPhoneGate";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 import { humanitarianFlowStep } from "@/lib/humanitarian/patient-flow";
+import {
+  cacheHumanitarianQueueState,
+  loadCachedHumanitarianQueueState,
+} from "@/lib/humanitarian/offline-draft";
+import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 
 interface PoolInfo {
   id: string;
@@ -173,11 +178,15 @@ export default function HumanitarianCampaignPage() {
       const data = await res.json();
       if (res.ok && data.entry) {
         setEntry(data.entry);
+        cacheHumanitarianQueueState(slug, data.entry);
         if (["DONE", "CANCELLED", "NO_SHOW"].includes(data.entry.status)) {
           clearInterval(pollRef.current);
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+      const cached = loadCachedHumanitarianQueueState<typeof entry>(slug);
+      if (cached) setEntry(cached);
+    }
   }
 
   async function joinPool(poolSlug: string) {
@@ -317,6 +326,7 @@ export default function HumanitarianCampaignPage() {
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
       <div className="space-y-6">
+        <HumanitarianOfflineBanner lang={lang} />
         <HumanitarianFlowStepper
           lang={lang}
           current={humanitarianFlowStep(

@@ -1,16 +1,18 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   ExternalLink,
   Info,
   Loader2,
   Search,
+  ShoppingBag,
   Tag,
   X,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
+import type { PharmacyIntegrationMode, PharmacyOffer, PharmacyPublicConfig } from "@/lib/pharmacy-marketplace/types";
 
 type SearchHit = {
   drugCatalogId?: string;
@@ -61,16 +63,28 @@ interface PharmacyMarketplacePanelProps {
 
 export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplacePanelProps) {
   const t = useT();
+  const [config, setConfig] = useState<PharmacyPublicConfig | null>(null);
+  const [cep, setCep] = useState("");
   const [filters, setFilters] = useState<SearchFilters>(EMPTY_FILTERS);
   const [results, setResults] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [selected, setSelected] = useState<SearchHit | null>(null);
   const [reference, setReference] = useState<ReferencePrice | null>(null);
+  const [offers, setOffers] = useState<PharmacyOffer[]>([]);
+  const [fallbackPurchaseUrl, setFallbackPurchaseUrl] = useState<string | null>(null);
+  const [offerMode, setOfferMode] = useState<PharmacyIntegrationMode>("disabled");
   const [detailLoading, setDetailLoading] = useState(false);
   const [referenceMissing, setReferenceMissing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/patient/pharmacy/config")
+      .then((r) => r.json())
+      .then(setConfig)
+      .catch(() => {});
+  }, []);
 
   const runSearch = useCallback(async () => {
     if (!hasAnyFilter(filters)) {
@@ -94,6 +108,8 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
         params.set("activeIngredient", filters.activeIngredient.trim());
       }
       if (filters.presentation.trim()) params.set("presentation", filters.presentation.trim());
+      const cepDigits = cep.replace(/\D/g, "");
+      if (cepDigits.length >= 8) params.set("cep", cepDigits);
 
       const res = await fetch(`/api/patient/pharmacy/search?${params}`);
       const data = await res.json();
@@ -101,11 +117,14 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
     } finally {
       setSearching(false);
     }
-  }, [filters]);
+  }, [filters, cep]);
 
   const loadPrice = useCallback(async (hit: SearchHit) => {
     setSelected(hit);
     setReference(null);
+    setOffers([]);
+    setFallbackPurchaseUrl(null);
+    setOfferMode("disabled");
     setReferenceMissing(false);
     setSaveError(null);
     setDetailLoading(true);
@@ -118,25 +137,35 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
         params.set("activeIngredient", hit.activeIngredient);
         params.set("presentation", hit.presentation);
       }
+      const cepDigits = cep.replace(/\D/g, "");
+      if (cepDigits.length >= 8) params.set("cep", cepDigits);
 
       const res = await fetch(`/api/patient/pharmacy/offers?${params}`);
       const data = await res.json();
       if (res.ok) {
         setReference(data.reference || null);
         setReferenceMissing(!data.reference);
+        setOffers(data.offers || []);
+        setFallbackPurchaseUrl(data.fallbackPurchaseUrl || null);
+        setOfferMode(data.mode || "disabled");
       }
     } finally {
       setDetailLoading(false);
     }
-  }, []);
+  }, [cep]);
 
   function closeModal() {
     setSelected(null);
     setReference(null);
+    setOffers([]);
+    setFallbackPurchaseUrl(null);
+    setOfferMode("disabled");
     setReferenceMissing(false);
     setSaveError(null);
     setDetailLoading(false);
   }
+
+  const marketplaceEnabled = config?.marketplaceEnabled ?? false;
 
   async function handleSave() {
     if (!selected?.drugCatalogId) return;
@@ -213,6 +242,26 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
           placeholder={t("pharmacy.filterPresentationPlaceholder")}
         />
       </div>
+
+      {marketplaceEnabled && (
+        <label className="block">
+          <span className="text-xs font-medium text-slate-600 mb-1 block">{t("pharmacy.cepPlaceholder")}</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={cep}
+            onChange={(e) => setCep(e.target.value)}
+            placeholder="00000-000"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+        </label>
+      )}
+
+      {!marketplaceEnabled && config && (
+        <p className="text-xs text-slate-500 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+          {t("pharmacy.comingSoon")}
+        </p>
+      )}
 
       <button
         type="button"
@@ -292,7 +341,9 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
               {detailLoading ? (
                 <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
                   <Loader2 size={22} className="animate-spin text-blue-500" />
-                  {t("pharmacy.loadingReference")}
+                  {marketplaceEnabled && offerMode === "api"
+                    ? t("pharmacy.loadingOffers")
+                    : t("pharmacy.loadingReference")}
                 </div>
               ) : reference ? (
                 <div className="text-center space-y-3">
@@ -320,6 +371,53 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
               ) : referenceMissing ? (
                 <p className="text-sm text-slate-500 text-center py-6">{t("pharmacy.referenceNotFound")}</p>
               ) : null}
+
+              {!detailLoading && marketplaceEnabled && (
+                <div className="space-y-3 border-t border-slate-100 pt-4">
+                  <p className="text-xs text-slate-500">{t("pharmacy.deeplinkHint")}</p>
+                  {offerMode === "api" && offers.length > 0 ? (
+                    <div className="space-y-2">
+                      {offers.map((offer, i) => (
+                        <div
+                          key={`${offer.pharmacyName}-${i}`}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{offer.pharmacyName}</p>
+                            {offer.deliveryEta && (
+                              <p className="text-xs text-slate-500 mt-0.5">{offer.deliveryEta}</p>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold text-emerald-600">{formatBrl(offer.priceCents)}</p>
+                            <a
+                              href={offer.purchaseUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-blue-600 hover:underline"
+                            >
+                              {t("pharmacy.buy")}
+                              <ExternalLink size={11} />
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : fallbackPurchaseUrl ? (
+                    <a
+                      href={fallbackPurchaseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition flex items-center justify-center gap-2"
+                    >
+                      <ShoppingBag size={16} />
+                      {t("pharmacy.compareAndBuy")}
+                      <ExternalLink size={14} />
+                    </a>
+                  ) : null}
+                  <p className="text-[11px] text-slate-400 leading-relaxed">{t("pharmacy.disclaimer")}</p>
+                </div>
+              )}
 
               {!detailLoading && reference && (
                 <button

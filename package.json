@@ -13,6 +13,7 @@
     "start": "node scripts/railway-start.mjs",
     "migrate:recover": "node scripts/migrate-recover.mjs",
     "lint": "next lint",
+    "test:e2e": "playwright test",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
@@ -20,6 +21,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.4.1",
+    "@daily-co/daily-js": "^0.85.0",
     "@aws-sdk/client-s3": "^3.626.0",
     "@aws-sdk/client-sns": "^3.1075.0",
     "@aws-sdk/s3-request-presigner": "^3.626.0",
@@ -56,6 +58,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20.14.15",

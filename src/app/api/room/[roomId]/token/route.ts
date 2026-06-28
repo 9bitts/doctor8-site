@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { createMeetingToken } from "@/lib/video";
+import { createMeetingToken } from "@/lib/daily";
 import { audit } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
 import { decrypt } from "@/lib/encryption";
@@ -73,7 +73,9 @@ export async function GET(
   }
 
   const roomName = `doctor8-${params.roomId}`;
-  const token = await createMeetingToken(roomName, participantName, isProfessional);
+  const expUnix =
+    Math.floor(scheduledAt.getTime() / 1000) + (appointment.durationMins + 60) * 60;
+  const token = await createMeetingToken(roomName, participantName, isProfessional, expUnix);
 
   // HIPAA audit log
   await db.auditLog.create({
