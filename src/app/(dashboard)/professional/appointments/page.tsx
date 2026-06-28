@@ -5,8 +5,9 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
 import { translate, normalizeLang, localeOf, Lang } from "@/lib/i18n/translations";
-import { Calendar, Video, MapPin, FileText, ClipboardList } from "lucide-react";
+import { Calendar, Video, MapPin, FileText, ClipboardList, Pill, FlaskConical, ScrollText } from "lucide-react";
 import Link from "next/link";
+import { chartActionUrl } from "@/lib/video-chart-nav";
 import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import { decrypt } from "@/lib/encryption";
 
@@ -143,12 +144,41 @@ export default async function ProfessionalAppointments() {
             </div>
           )}
           {chartId && (
-            <Link
-              href={`/professional/patients/${chartId}`}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 mt-2 hover:underline"
-            >
-              <FileText size={11} /> {t("proappt.viewChart")}
-            </Link>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Link
+                href={`/professional/patients/${chartId}`}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
+              >
+                <FileText size={11} /> {t("proappt.viewChart")}
+              </Link>
+              <Link
+                href={chartActionUrl("/professional/prescriptions", chartId, {
+                  view: "prescription",
+                  returnUrl: "/professional/appointments",
+                })}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
+              >
+                <Pill size={11} /> {t("chartAct.prescribe")}
+              </Link>
+              <Link
+                href={chartActionUrl("/professional/prescriptions", chartId, {
+                  view: "exam",
+                  returnUrl: "/professional/appointments",
+                })}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
+              >
+                <FlaskConical size={11} /> {t("chartAct.exam")}
+              </Link>
+              <Link
+                href={chartActionUrl("/professional/prescriptions", chartId, {
+                  view: "document",
+                  returnUrl: "/professional/appointments",
+                })}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
+              >
+                <ScrollText size={11} /> {t("chartAct.document")}
+              </Link>
+            </div>
           )}
         </div>
         <div className="text-right shrink-0">

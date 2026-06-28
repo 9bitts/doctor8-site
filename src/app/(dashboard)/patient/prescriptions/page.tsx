@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
-import { FileText, Download, Loader2, Pill, Calendar } from "lucide-react";
+import { FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw } from "lucide-react";
 
 interface MedItem {
   name: string;
@@ -33,16 +33,19 @@ export default function PatientPrescriptionsPage() {
 
   const [prescriptions, setPrescriptions] = useState<RxItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => { fetchData(); }, []);
 
   async function fetchData() {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await fetch("/api/patient/prescriptions");
+      if (!res.ok) { setLoadError(true); return; }
       const d = await res.json();
       setPrescriptions(d.prescriptions || []);
-    } catch { /* ignore */ }
+    } catch { setLoadError(true); }
     finally { setLoading(false); }
   }
 
@@ -57,7 +60,15 @@ export default function PatientPrescriptionsPage() {
         <p className="text-slate-500 text-sm mt-1">{t("myrx.subtitle")}</p>
       </div>
 
-      {loading ? (
+      {loadError ? (
+        <div className="flex flex-col items-center gap-3 py-16 bg-white rounded-2xl border border-amber-200">
+          <AlertCircle size={28} className="text-amber-500" />
+          <p className="text-sm text-slate-600">{t("common.loadError")}</p>
+          <button type="button" onClick={fetchData} className="text-sm font-semibold text-emerald-600 flex items-center gap-1">
+            <RefreshCw size={14} /> {t("common.retry")}
+          </button>
+        </div>
+      ) : loading ? (
         <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-slate-400" /></div>
       ) : prescriptions.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">

@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useT } from "@/lib/i18n/I18nProvider";
-import { Pill, Plus, Trash2, Tag, Stethoscope, X, Loader2, Share2, Download, Pencil } from "lucide-react";
+import { Pill, Plus, Trash2, Tag, Stethoscope, X, Loader2, Share2, Download, Pencil, AlertCircle, RefreshCw } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 import PharmacyMarketplacePanel from "@/components/patient/PharmacyMarketplacePanel";
 
@@ -37,6 +37,7 @@ export default function MedicationsPage() {
   const [activeTab, setActiveTab] = useState<Flow>("CLINICAL");
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -55,11 +56,13 @@ export default function MedicationsPage() {
 
   async function fetchMedications() {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await fetch("/api/patient/medications");
+      if (!res.ok) { setLoadError(true); return; }
       const data = await res.json();
       setMedications(data.medications || []);
-    } catch { /* handle error */ }
+    } catch { setLoadError(true); }
     finally { setLoading(false); }
   }
 
@@ -212,7 +215,15 @@ export default function MedicationsPage() {
             </p>
           )}
 
-          {loading ? (
+          {loadError ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <AlertCircle size={24} className="text-amber-500" />
+              <p className="text-sm text-slate-600">{t("common.loadError")}</p>
+              <button type="button" onClick={fetchMedications} className="text-sm font-semibold text-emerald-600 flex items-center gap-1">
+                <RefreshCw size={14} /> {t("common.retry")}
+              </button>
+            </div>
+          ) : loading ? (
             <div className="flex justify-center py-10">
               <Loader2 size={24} className="animate-spin text-slate-400" />
             </div>

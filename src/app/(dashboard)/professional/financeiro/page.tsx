@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
 import { RateioSection } from "./RateioSection";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
+import { financeTypeLabel, FINANCE_TYPE_COLORS } from "@/lib/finance-display";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 type Period = "this_month" | "last_month" | "3_months" | "6_months" | "this_year" | "all";
@@ -52,47 +55,53 @@ interface FinanceData {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function fmt(cents: number, currency: string): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style:    "currency",
+function fmt(cents: number, currency: string, locale: string): string {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
     currency: currency || "BRL",
   }).format(cents / 100);
 }
 
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
-    day:   "2-digit",
+function fmtDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
+    day: "2-digit",
     month: "short",
-    year:  "numeric",
+    year: "numeric",
   });
 }
 
-const PERIOD_LABELS: Record<Period, string> = {
-  this_month: "Este mês",
-  last_month: "Mês passado",
-  "3_months": "Últimos 3 meses",
-  "6_months": "Últimos 6 meses",
-  this_year:  "Este ano",
-  all:        "Todo o período",
+const PERIOD_KEYS: Record<Period, string> = {
+  this_month: "fin.periodThisMonth",
+  last_month: "fin.periodLastMonth",
+  "3_months": "fin.period3Months",
+  "6_months": "fin.period6Months",
+  this_year: "fin.periodThisYear",
+  all: "fin.periodAll",
 };
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-  "Teleconsulta":   <Stethoscope size={14} />,
-  "Presencial":     <MapPin size={14} />,
-  "Plantão Online": <Radio size={14} />,
-};
-
-const TYPE_COLORS: Record<string, string> = {
-  "Teleconsulta":   "bg-brand-100 text-brand-600",
-  "Presencial":     "bg-purple-100 text-purple-700",
-  "Plantão Online": "bg-brand-100 text-brand-600",
+  TELECONSULT: <Stethoscope size={14} />,
+  IN_PERSON: <MapPin size={14} />,
+  JIT: <Radio size={14} />,
 };
 
 // ── Mini bar chart (pure CSS) ─────────────────────────────────────────────────
-function BarChart({ data, currency }: { data: ChartPoint[]; currency: string }) {
+function BarChart({
+  data, currency, locale, emptyText, legendNet, legendComm, consultLabel, netLabel, grossLabel,
+}: {
+  data: ChartPoint[];
+  currency: string;
+  locale: string;
+  emptyText: string;
+  legendNet: string;
+  legendComm: string;
+  consultLabel: (count: number) => string;
+  netLabel: string;
+  grossLabel: string;
+}) {
   if (!data.length) return (
     <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
-      Sem dados para exibir
+      {emptyText}
     </div>
   );
 
@@ -125,9 +134,9 @@ function BarChart({ data, currency }: { data: ChartPoint[]; currency: string }) 
               {/* Tooltip */}
               <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs rounded-lg px-2 py-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
                 <p className="font-semibold">{d.label}</p>
-                <p>Líquido: {fmt(d.net, currency)}</p>
-                <p>Bruto: {fmt(d.gross, currency)}</p>
-                <p>{d.count} consulta{d.count !== 1 ? "s" : ""}</p>
+                <p>{netLabel}: {fmt(d.net, currency, locale)}</p>
+                <p>{grossLabel}: {fmt(d.gross, currency, locale)}</p>
+                <p>{consultLabel(d.count)}</p>
               </div>
               {/* Commission segment */}
               <div
@@ -157,11 +166,11 @@ function BarChart({ data, currency }: { data: ChartPoint[]; currency: string }) 
       <div className="flex items-center gap-4 justify-center mt-1">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-brand-500" />
-          <span className="text-xs text-slate-500">Líquido (seu)</span>
+          <span className="text-xs text-slate-500">{legendNet}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-rose-200" />
-          <span className="text-xs text-slate-500">Comissão Doctor8</span>
+          <span className="text-xs text-slate-500">{legendComm}</span>
         </div>
       </div>
     </div>
@@ -170,6 +179,8 @@ function BarChart({ data, currency }: { data: ChartPoint[]; currency: string }) 
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function FinanceiroPage() {
+  const { t, lang } = useI18n();
+  const locale = localeOf(lang);
   const [period,  setPeriod]  = useState<Period>("this_month");
   const [data,    setData]    = useState<FinanceData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -199,11 +210,9 @@ export default function FinanceiroPage() {
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <TrendingUp size={24} className="text-brand-500" /> Financeiro
+            <TrendingUp size={24} className="text-brand-500" /> {t("fin.title")}
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Seus ganhos, repasses e o rateio do livro aberto
-          </p>
+          <p className="text-slate-500 text-sm mt-1">{t("fin.subtitle")}</p>
         </div>
 
         {/* Period selector */}
@@ -213,8 +222,8 @@ export default function FinanceiroPage() {
             onChange={(e) => setPeriod(e.target.value as Period)}
             className="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30 shadow-sm cursor-pointer"
           >
-            {Object.entries(PERIOD_LABELS).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
+            {Object.entries(PERIOD_KEYS).map(([v, key]) => (
+              <option key={v} value={v}>{t(key)}</option>
             ))}
           </select>
           <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -240,49 +249,49 @@ export default function FinanceiroPage() {
             {/* Líquido */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 col-span-2 lg:col-span-1">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Seu ganho líquido</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("fin.netEarnings")}</p>
                 <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
                   <DollarSign size={15} className="text-brand-500" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{fmt(data.totalNetCents, currency)}</p>
-              <p className="text-xs text-slate-400 mt-1">após comissão de 15%</p>
+              <p className="text-2xl font-bold text-slate-900">{fmt(data.totalNetCents, currency, locale)}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("fin.afterCommission")}</p>
             </div>
 
             {/* Bruto */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Valor bruto</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("fin.grossTotal")}</p>
                 <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
                   <ArrowUpRight size={15} className="text-brand-500" />
                 </div>
               </div>
-              <p className="text-xl font-bold text-slate-900">{fmt(data.totalGrossCents, currency)}</p>
-              <p className="text-xs text-slate-400 mt-1">total cobrado</p>
+              <p className="text-xl font-bold text-slate-900">{fmt(data.totalGrossCents, currency, locale)}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("fin.totalCharged")}</p>
             </div>
 
             {/* Comissão */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Comissão Doctor8</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("fin.commission")}</p>
                 <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
                   <Percent size={15} className="text-rose-600" />
                 </div>
               </div>
-              <p className="text-xl font-bold text-slate-900">{fmt(data.totalCommissionCents, currency)}</p>
-              <p className="text-xs text-slate-400 mt-1">15% → custos + rateio</p>
+              <p className="text-xl font-bold text-slate-900">{fmt(data.totalCommissionCents, currency, locale)}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("fin.commissionHint")}</p>
             </div>
 
             {/* Consultas */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Consultas</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("fin.consultations")}</p>
                 <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
                   <FileText size={15} className="text-purple-600" />
                 </div>
               </div>
               <p className="text-xl font-bold text-slate-900">{data.totalCount}</p>
-              <p className="text-xs text-slate-400 mt-1">no período</p>
+              <p className="text-xs text-slate-400 mt-1">{t("fin.inPeriod")}</p>
             </div>
           </div>
 
@@ -291,12 +300,10 @@ export default function FinanceiroPage() {
             <div className="bg-gradient-to-r from-brand-500 to-accent-500 rounded-2xl p-5 text-white flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <p className="text-sm font-semibold opacity-90 flex items-center gap-1.5">
-                  <Calendar size={15} /> Projeção para este mês
+                  <Calendar size={15} /> {t("fin.projectionTitle")}
                 </p>
-                <p className="text-3xl font-bold mt-1">{fmt(data.projectionCents, currency)}</p>
-                <p className="text-xs opacity-70 mt-1">
-                  Estimativa baseada no ritmo atual de consultas
-                </p>
+                <p className="text-3xl font-bold mt-1">{fmt(data.projectionCents, currency, locale)}</p>
+                <p className="text-xs opacity-70 mt-1">{t("fin.projectionHint")}</p>
               </div>
               <div className="bg-white/20 rounded-xl px-4 py-3 text-center">
                 <p className="text-2xl font-bold">
@@ -305,7 +312,7 @@ export default function FinanceiroPage() {
                     : "—"
                   }
                 </p>
-                <p className="text-xs opacity-80">a receber ainda</p>
+                <p className="text-xs opacity-80">{t("fin.projectionRemaining")}</p>
               </div>
             </div>
           )}
@@ -315,19 +322,26 @@ export default function FinanceiroPage() {
             {/* Gráfico */}
             <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4">
-                <BarChart3 size={16} className="text-brand-500" /> Evolução mensal
+                <BarChart3 size={16} className="text-brand-500" /> {t("fin.monthlyChart")}
               </h2>
               <BarChart
                 data={data.chartData.map(d => ({ label: d.label, net: d.net, gross: d.gross, count: d.count, commissionCents: d.gross - d.net }))}
                 currency={currency}
+                locale={locale}
+                emptyText={t("fin.noChartData")}
+                legendNet={t("fin.legendNet")}
+                legendComm={t("fin.legendCommission")}
+                netLabel={t("fin.net")}
+                grossLabel={t("fin.gross")}
+                consultLabel={(n) => (n === 1 ? t("fin.oneConsult") : t("fin.nConsults").replace("{{n}}", String(n)))}
               />
             </div>
 
             {/* Por tipo */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-              <h2 className="text-sm font-bold text-slate-700 mb-4">Por tipo de consulta</h2>
+              <h2 className="text-sm font-bold text-slate-700 mb-4">{t("fin.byType")}</h2>
               {Object.keys(data.byType).length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-8">Sem dados</p>
+                <p className="text-sm text-slate-400 text-center py-8">{t("fin.noData")}</p>
               ) : (
                 <div className="space-y-3">
                   {Object.entries(data.byType).map(([type, info]) => {
@@ -337,17 +351,19 @@ export default function FinanceiroPage() {
                     return (
                       <div key={type}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[type] || "bg-slate-100 text-slate-600"}`}>
-                            {TYPE_ICONS[type]} {type}
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${FINANCE_TYPE_COLORS[type] || "bg-slate-100 text-slate-600"}`}>
+                            {TYPE_ICONS[type]} {financeTypeLabel(type, t)}
                           </span>
-                          <span className="text-xs text-slate-500">{info.count} consulta{info.count !== 1 ? "s" : ""}</span>
+                          <span className="text-xs text-slate-500">
+                            {info.count === 1 ? t("fin.oneConsult") : t("fin.nConsults").replace("{{n}}", String(info.count))}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                             <div className="h-full bg-brand-500 rounded-full" style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-xs font-semibold text-slate-700 w-16 text-right">
-                            {fmt(info.netCents, currency)}
+                            {fmt(info.netCents, currency, locale)}
                           </span>
                         </div>
                       </div>
@@ -357,16 +373,16 @@ export default function FinanceiroPage() {
                   {/* Totalizador */}
                   <div className="pt-3 border-t border-slate-100 space-y-1">
                     <div className="flex justify-between text-xs text-slate-500">
-                      <span>Total bruto</span>
-                      <span>{fmt(data.totalGrossCents, currency)}</span>
+                      <span>{t("fin.grossTotal")}</span>
+                      <span>{fmt(data.totalGrossCents, currency, locale)}</span>
                     </div>
                     <div className="flex justify-between text-xs text-rose-600">
-                      <span>Comissão Doctor8 (15%)</span>
-                      <span>− {fmt(data.totalCommissionCents, currency)}</span>
+                      <span>{t("fin.commissionPct")}</span>
+                      <span>− {fmt(data.totalCommissionCents, currency, locale)}</span>
                     </div>
                     <div className="flex justify-between text-sm font-bold text-brand-600 pt-1 border-t border-slate-100">
-                      <span>Seu líquido</span>
-                      <span>{fmt(data.totalNetCents, currency)}</span>
+                      <span>{t("fin.yourNet")}</span>
+                      <span>{fmt(data.totalNetCents, currency, locale)}</span>
                     </div>
                   </div>
                 </div>
@@ -377,19 +393,14 @@ export default function FinanceiroPage() {
           {/* ── Aviso de comissão ── */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-start gap-3 text-xs text-slate-500">
             <Info size={14} className="shrink-0 mt-0.5 text-slate-400" />
-            <p>
-              A comissão de <strong>15%</strong> não é lucro da Doctor8. Ela entra num caixa transparente
-              que paga os custos do sistema (IA, servidores, vídeo, taxas) e <strong>tudo o que sobra volta
-              para os profissionais</strong> no rateio mensal — veja o livro aberto abaixo. A Doctor8 se
-              mantém pela mensalidade, não pela comissão.
-            </p>
+            <p>{t("fin.commissionNote")}</p>
           </div>
 
           {/* ── Lista de transações ── */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <FileText size={16} className="text-slate-400" /> Transações
+                <FileText size={16} className="text-slate-400" /> {t("fin.transactions")}
                 <span className="text-xs font-normal text-slate-400">({data.transactions.length})</span>
               </h2>
             </div>
@@ -397,19 +408,19 @@ export default function FinanceiroPage() {
             {data.transactions.length === 0 ? (
               <div className="py-16 text-center">
                 <DollarSign size={36} className="text-slate-200 mx-auto mb-3" />
-                <p className="text-slate-400 text-sm">Nenhuma transação no período</p>
-                <p className="text-slate-300 text-xs mt-1">As consultas pagas aparecerão aqui</p>
+                <p className="text-slate-400 text-sm">{t("fin.noTransactions")}</p>
+                <p className="text-slate-300 text-xs mt-1">{t("fin.noTransactionsHint")}</p>
               </div>
             ) : (
               <>
                 {/* Header da tabela */}
                 <div className="hidden sm:grid grid-cols-12 gap-2 px-5 py-2 bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  <div className="col-span-2">Data</div>
-                  <div className="col-span-3">Tipo</div>
-                  <div className="col-span-1 text-center">Pac.</div>
-                  <div className="col-span-2 text-right">Bruto</div>
-                  <div className="col-span-2 text-right text-rose-500">Comissão</div>
-                  <div className="col-span-2 text-right text-brand-500">Líquido</div>
+                  <div className="col-span-2">{t("fin.colDate")}</div>
+                  <div className="col-span-3">{t("fin.colType")}</div>
+                  <div className="col-span-1 text-center">{t("fin.colPatient")}</div>
+                  <div className="col-span-2 text-right">{t("fin.gross")}</div>
+                  <div className="col-span-2 text-right text-rose-500">{t("fin.commissionShort")}</div>
+                  <div className="col-span-2 text-right text-brand-500">{t("fin.net")}</div>
                 </div>
 
                 <div className="divide-y divide-slate-100">
@@ -419,24 +430,24 @@ export default function FinanceiroPage() {
                       <div className="sm:hidden flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${TYPE_COLORS[tx.type] || "bg-slate-100 text-slate-600"}`}>
-                              {TYPE_ICONS[tx.type]} {tx.type}
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${FINANCE_TYPE_COLORS[tx.type] || "bg-slate-100 text-slate-600"}`}>
+                              {TYPE_ICONS[tx.type]} {financeTypeLabel(tx.type, t)}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-400 mt-1">{fmtDate(tx.date)}</p>
+                          <p className="text-xs text-slate-400 mt-1">{fmtDate(tx.date, locale)}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-brand-600">{fmt(tx.netCents, tx.currency)}</p>
-                          <p className="text-xs text-slate-400">de {fmt(tx.grossCents, tx.currency)}</p>
+                          <p className="text-sm font-bold text-brand-600">{fmt(tx.netCents, tx.currency, locale)}</p>
+                          <p className="text-xs text-slate-400">{t("fin.fromGross").replace("{{amount}}", fmt(tx.grossCents, tx.currency, locale))}</p>
                         </div>
                       </div>
 
                       {/* Desktop */}
                       <div className="hidden sm:grid grid-cols-12 gap-2 items-center">
-                        <div className="col-span-2 text-xs text-slate-500">{fmtDate(tx.date)}</div>
+                        <div className="col-span-2 text-xs text-slate-500">{fmtDate(tx.date, locale)}</div>
                         <div className="col-span-3">
-                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[tx.type] || "bg-slate-100 text-slate-600"}`}>
-                            {TYPE_ICONS[tx.type]} {tx.type}
+                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${FINANCE_TYPE_COLORS[tx.type] || "bg-slate-100 text-slate-600"}`}>
+                            {TYPE_ICONS[tx.type]} {financeTypeLabel(tx.type, t)}
                           </span>
                         </div>
                         <div className="col-span-1 flex justify-center">
@@ -444,9 +455,9 @@ export default function FinanceiroPage() {
                             {tx.patientInitials}
                           </div>
                         </div>
-                        <div className="col-span-2 text-right text-sm text-slate-600">{fmt(tx.grossCents, tx.currency)}</div>
-                        <div className="col-span-2 text-right text-sm text-rose-500">− {fmt(tx.commissionCents, tx.currency)}</div>
-                        <div className="col-span-2 text-right text-sm font-bold text-brand-600">{fmt(tx.netCents, tx.currency)}</div>
+                        <div className="col-span-2 text-right text-sm text-slate-600">{fmt(tx.grossCents, tx.currency, locale)}</div>
+                        <div className="col-span-2 text-right text-sm text-rose-500">− {fmt(tx.commissionCents, tx.currency, locale)}</div>
+                        <div className="col-span-2 text-right text-sm font-bold text-brand-600">{fmt(tx.netCents, tx.currency, locale)}</div>
                       </div>
                     </div>
                   ))}
@@ -460,8 +471,8 @@ export default function FinanceiroPage() {
                       className="text-sm text-brand-500 hover:text-brand-600 font-semibold"
                     >
                       {showAll
-                        ? "Mostrar menos"
-                        : `Ver todas as ${data.transactions.length} transações`
+                        ? t("fin.showLess")
+                        : t("fin.showAllTx").replace("{{n}}", String(data.transactions.length))
                       }
                     </button>
                   </div>

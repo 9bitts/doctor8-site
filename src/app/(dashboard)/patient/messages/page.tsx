@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
-import { Send, Search, Loader2, MessageSquare, ArrowLeft, Plus, X, Users } from "lucide-react";
+import { Send, Search, Loader2, MessageSquare, ArrowLeft, Plus, X, Users, AlertCircle, RefreshCw } from "lucide-react";
 
 interface Conversation {
   userId: string;
@@ -52,6 +52,7 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -116,10 +117,14 @@ export default function MessagesPage() {
   }, [messages]);
 
   async function fetchConversations() {
+    setLoadError(false);
     try {
       const res = await fetch("/api/messages");
+      if (!res.ok) { setLoadError(true); return; }
       const d = await res.json();
       setConversations(d.conversations || []);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -312,7 +317,15 @@ export default function MessagesPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
+          {loadError ? (
+            <div className="flex flex-col items-center gap-3 py-10 px-4 text-center">
+              <AlertCircle size={22} className="text-amber-500" />
+              <p className="text-sm text-slate-600">{t("common.loadError")}</p>
+              <button type="button" onClick={() => { setLoading(true); fetchConversations(); }} className="text-sm font-semibold text-emerald-600 flex items-center gap-1">
+                <RefreshCw size={14} /> {t("common.retry")}
+              </button>
+            </div>
+          ) : loading ? (
             <div className="flex justify-center py-10"><Loader2 size={20} className="animate-spin text-slate-400" /></div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-12">

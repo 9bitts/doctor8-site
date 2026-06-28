@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
     transactions.push({
       id:              appt.id,
       date:            appt.scheduledAt.toISOString(),
-      type:            appt.type === "TELECONSULT" ? "Teleconsulta" : "Presencial",
+      type:            appt.type === "TELECONSULT" ? "TELECONSULT" : "IN_PERSON",
       patientInitials: initials,
       grossCents:      gross,
       commissionCents: commission,
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
     transactions.push({
       id:              jp.id,
       date:            jp.createdAt.toISOString(),
-      type:            "Plantão Online",
+      type:            "JIT",
       patientInitials: initials,
       grossCents:      gross,
       commissionCents: commission,

@@ -17,6 +17,7 @@ import {
 } from "@/lib/billing-regions";
 import { readApiJson, apiErrorMessage } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 
 interface SubInfo {
   status: string;
@@ -35,55 +36,43 @@ interface StampInfo {
 
 const ACTIVE = ["active", "trialing"];
 
-function subscriptionStatus(sub: SubInfo | null): {
+function subscriptionStatus(
+  sub: SubInfo | null,
+  t: (k: string) => string,
+  locale: string,
+): {
   label: string;
   detail: string;
   tone: "emerald" | "amber" | "rose" | "slate";
 } {
   if (!sub || sub.status === "inactive") {
-    return {
-      label: "Não assinante",
-      detail: "Você ainda não faz parte do Club Doctor.",
-      tone: "slate",
-    };
+    return { label: t("club.statusInactive"), detail: t("club.statusInactiveDetail"), tone: "slate" };
   }
   if (sub.status === "past_due") {
-    return {
-      label: "Pagamento pendente",
-      detail: "Atualize o pagamento para manter os benefícios.",
-      tone: "rose",
-    };
+    return { label: t("club.statusPastDue"), detail: t("club.statusPastDueDetail"), tone: "rose" };
   }
   if (sub.status === "cancelled") {
-    return {
-      label: "Assinatura encerrada",
-      detail: "Renove quando quiser voltar ao Club.",
-      tone: "slate",
-    };
+    return { label: t("club.statusCancelled"), detail: t("club.statusCancelledDetail"), tone: "slate" };
   }
   if (ACTIVE.includes(sub.status) && sub.cancelAtPeriodEnd) {
     return {
-      label: "Ativo — cancelando",
+      label: t("club.statusCancelling"),
       detail: sub.currentPeriodEnd
-        ? `Benefícios até ${new Date(sub.currentPeriodEnd).toLocaleDateString("pt-BR")}.`
-        : "Cancelamento agendado para o fim do período.",
+        ? t("club.statusCancellingDetail").replace("{{date}}", new Date(sub.currentPeriodEnd).toLocaleDateString(locale))
+        : t("club.statusCancellingNoDate"),
       tone: "amber",
     };
   }
   if (ACTIVE.includes(sub.status)) {
     return {
-      label: "Em dia",
+      label: t("club.statusActive"),
       detail: sub.currentPeriodEnd
-        ? `Próxima cobrança em ${new Date(sub.currentPeriodEnd).toLocaleDateString("pt-BR")}.`
-        : "Sua assinatura está ativa.",
+        ? t("club.statusActiveDetail").replace("{{date}}", new Date(sub.currentPeriodEnd).toLocaleDateString(locale))
+        : t("club.statusActiveNoDate"),
       tone: "emerald",
     };
   }
-  return {
-    label: sub.status,
-    detail: "Confira os detalhes abaixo.",
-    tone: "slate",
-  };
+  return { label: sub.status, detail: t("club.statusGeneric"), tone: "slate" };
 }
 
 const toneClasses = {
@@ -94,7 +83,8 @@ const toneClasses = {
 };
 
 export default function ClubDoctorPanel() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const locale = localeOf(lang);
   const [sub, setSub] = useState<SubInfo | null>(null);
   const [stamps, setStamps] = useState<StampInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +95,7 @@ export default function ClubDoctorPanel() {
   const [profileRegion, setProfileRegion] = useState<BillingRegion>("US");
 
   const regionMismatch = regionsMismatch(profileRegion, billingRegion);
-  const status = subscriptionStatus(sub);
+  const status = subscriptionStatus(sub, t, locale);
   const isActive = sub && ACTIVE.includes(sub.status);
   const stampCount = stamps?.balance ?? 0;
   const target = stamps?.stampsForFreeMonth ?? 10;
@@ -113,12 +103,8 @@ export default function ClubDoctorPanel() {
     CLUB_BILLING_REGION_OPTIONS.find((o) => o.region === billingRegion)?.priceHint ?? "";
 
   const benefits = [
-    "Cartão fidelidade: carimbos viram mensalidade grátis",
-    "Acesso à plataforma Doctor8 e todos os serviços",
-    "Clube de compras coletivas",
-    "Descontos em medicamentos e exames (parceiros)",
-    "Conteúdos educativos e suporte técnico",
-    "Consultas cobradas pelo valor do profissional, sem desconto automático",
+    t("club.benefit1"), t("club.benefit2"), t("club.benefit3"),
+    t("club.benefit4"), t("club.benefit5"), t("club.benefit6"),
   ];
 
   useEffect(() => {
@@ -137,7 +123,7 @@ export default function ClubDoctorPanel() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("subscribed") === "true") {
       setMsgTone("info");
-      setMsg("Bem-vindo ao Club Doctor! Sua assinatura foi confirmada.");
+      setMsg(t("club.welcome"));
       window.history.replaceState({}, "", "/patient/club-doctor");
     }
   }, []);
@@ -196,7 +182,7 @@ export default function ClubDoctorPanel() {
   }
 
   async function cancel() {
-    if (!confirm("Cancelar o Club Doctor? Você mantém os benefícios até o fim do período atual.")) return;
+    if (!confirm(t("club.cancelConfirm"))) return;
     setWorking(true);
     setMsg("");
     try {
@@ -204,15 +190,15 @@ export default function ClubDoctorPanel() {
       const d = await res.json();
       if (res.ok) {
         setMsgTone("info");
-        setMsg("Seu Club Doctor será cancelado ao fim do período atual.");
+        setMsg(t("club.cancelScheduled"));
         await load();
       } else {
         setMsgTone("error");
-        setMsg(d.error || "Não foi possível cancelar.");
+        setMsg(d.error || t("club.cancelError"));
       }
     } catch {
       setMsgTone("error");
-      setMsg("Erro de conexao.");
+      setMsg(t("billing.err.connection"));
     } finally {
       setWorking(false);
     }
@@ -229,10 +215,8 @@ export default function ClubDoctorPanel() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Club Doctor</h1>
-        <p className="text-slate-500 mt-1">
-          Sua assinatura, carimbos e benefícios do clube.
-        </p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("club.title")}</h1>
+        <p className="text-slate-500 mt-1">{t("club.subtitle")}</p>
       </div>
 
       {/* Status */}
@@ -249,7 +233,7 @@ export default function ClubDoctorPanel() {
             <p className="font-semibold text-base">{status.label}</p>
             <p className="text-sm mt-0.5 opacity-90">{status.detail}</p>
             <p className="text-xs mt-2 opacity-75">
-              Região da conta: {billingRegionLabel(profileRegion)}
+              {t("club.accountRegion").replace("{{region}}", billingRegionLabel(profileRegion))}
             </p>
           </div>
         </div>
@@ -273,7 +257,7 @@ export default function ClubDoctorPanel() {
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-            <Stamp size={18} className="text-emerald-600" /> Seus carimbos
+            <Stamp size={18} className="text-emerald-600" /> {t("club.stampsTitle")}
           </h2>
           <span className="text-2xl font-bold text-emerald-600">
             {stampCount} <span className="text-sm font-normal text-slate-400">/ {target}</span>
@@ -297,29 +281,29 @@ export default function ClubDoctorPanel() {
 
         {stamps?.readyForFreeMonth ? (
           <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
-            Você tem {stampCount} carimbos! A próxima mensalidade do Club será gratuita automaticamente.
+            {t("club.stampsReady").replace("{{n}}", String(stampCount))}
           </p>
         ) : (
           <p className="text-sm text-slate-500">
-            Faltam <strong>{stamps?.stampsToFreeMonth ?? target}</strong> carimbos para a próxima mensalidade grátis.
+            {t("club.stampsRemaining").replace("{{n}}", String(stamps?.stampsToFreeMonth ?? target))}
           </p>
         )}
 
         <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-1">
-          <p><strong>+1</strong> cada consulta paga e concluída (qualquer profissional)</p>
-          <p><strong>+1</strong> cada mensalidade Club paga</p>
+          <p><strong>+1</strong> {t("club.stampRule1")}</p>
+          <p><strong>+1</strong> {t("club.stampRule2")}</p>
           <p>
-            <strong>+1 bonus</strong> ao consultar 3 tipos diferentes de profissional em 12 meses
+            <strong>+1 {t("club.stampBonus")}</strong> {t("club.stampRule3")}
             {stamps && stamps.kindsNeededForBonus > 0 && (
-              <> (faltam {stamps.kindsNeededForBonus})</>
+              <> ({t("club.stampNeedMore").replace("{{n}}", String(stamps.kindsNeededForBonus))})</>
             )}
           </p>
           {stamps && stamps.kindsInWindowLabels.length > 0 && (
             <p className="text-slate-400">
-              Tipos já consultados: {stamps.kindsInWindowLabels.join(", ")}
+              {t("club.stampTypesSeen")}: {stamps.kindsInWindowLabels.join(", ")}
             </p>
           )}
-          <p className="text-slate-400">Carimbos não expiram. Crédito só na mensalidade, nunca em consultas.</p>
+          <p className="text-slate-400">{t("club.stampNoExpire")}</p>
         </div>
       </div>
 
@@ -328,20 +312,18 @@ export default function ClubDoctorPanel() {
           <div className="flex items-center gap-2 mb-1">
             <ShieldCheck size={20} />
             <span className="text-sm font-semibold uppercase tracking-wide">
-              {sub!.cancelAtPeriodEnd ? "Ativo - cancelando" : "Membro ativo"}
+              {sub!.cancelAtPeriodEnd ? t("club.memberCancelling") : t("club.memberActive")}
             </span>
           </div>
-          <p className="text-3xl font-bold mb-2">Club Doctor</p>
+          <p className="text-3xl font-bold mb-2">{t("club.title")}</p>
           <p className="text-emerald-50 text-sm">
             {sub!.cancelAtPeriodEnd
-              ? `Benefícios até ${
-                  sub!.currentPeriodEnd
-                    ? new Date(sub!.currentPeriodEnd).toLocaleDateString("pt-BR")
-                    : "o fim do período"
-                }.`
+              ? t("club.benefitsUntil").replace("{{date}}", sub!.currentPeriodEnd
+                  ? new Date(sub!.currentPeriodEnd).toLocaleDateString(locale)
+                  : t("club.periodEnd"))
               : sub!.currentPeriodEnd
-                ? `Renova em ${new Date(sub!.currentPeriodEnd).toLocaleDateString("pt-BR")}`
-                : "Assinatura ativa"}
+                ? t("club.renewsOn").replace("{{date}}", new Date(sub!.currentPeriodEnd).toLocaleDateString(locale))
+                : t("club.activeSub")}
           </p>
 
           {!sub!.cancelAtPeriodEnd && (
@@ -352,22 +334,20 @@ export default function ClubDoctorPanel() {
               className="mt-6 bg-white/15 hover:bg-white/25 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition flex items-center gap-2"
             >
               {working ? <Loader2 className="animate-spin" size={15} /> : <X size={15} />}
-              Cancelar assinatura
+              {t("club.cancelBtn")}
             </button>
           )}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
           <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-            <CreditCard size={18} className="text-emerald-600" /> Assinar Club Doctor
+            <CreditCard size={18} className="text-emerald-600" /> {t("club.subscribeTitle")}
           </h2>
-          <p className="text-sm text-slate-500">
-            Opcional e sem pressão — ajuda a Doctor8 a evoluir e libera o cartão fidelidade.
-          </p>
+          <p className="text-sm text-slate-500">{t("club.subscribeHint")}</p>
 
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1.5">
-              Moeda de cobrança
+              {t("billing.currency")}
             </label>
             <select
               value={billingRegion}
@@ -381,13 +361,13 @@ export default function ClubDoctorPanel() {
               ))}
             </select>
             {billingRegion === "BR" && !regionMismatch && (
-              <p className="text-xs text-slate-500 mt-1.5">Cartão ou boleto no checkout.</p>
+              <p className="text-xs text-slate-500 mt-1.5">{t("club.checkoutHintBr")}</p>
             )}
             {regionMismatch && (
               <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-2">
                 <p>{patientRegionMismatchMessage()}</p>
                 <Link href={PATIENT_ACCOUNT_PATH} className="inline-flex font-semibold underline">
-                  Abrir Conta e alterar região
+                  {t("club.openAccountRegion")}
                 </Link>
               </div>
             )}
@@ -397,7 +377,7 @@ export default function ClubDoctorPanel() {
             <span className="text-3xl font-bold text-slate-900">
               {selectedPrice.replace("/mês", "").replace("/mes", "")}
             </span>
-            <span className="text-slate-500 text-sm mb-1">/mês</span>
+            <span className="text-slate-500 text-sm mb-1">{t("billing.perMonth")}</span>
           </div>
 
           <button
@@ -407,13 +387,13 @@ export default function ClubDoctorPanel() {
             className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 justify-center"
           >
             {working ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
-            Entrar no Club Doctor
+            {t("club.joinBtn")}
           </button>
         </div>
       )}
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-        <h2 className="font-semibold text-slate-800 mb-4">Beneficios do Club</h2>
+        <h2 className="font-semibold text-slate-800 mb-4">{t("club.benefitsTitle")}</h2>
         <ul className="space-y-3">
           {benefits.map((b) => (
             <li key={b} className="flex items-start gap-3 text-sm text-slate-700">
@@ -425,7 +405,7 @@ export default function ClubDoctorPanel() {
           ))}
         </ul>
         <p className="text-xs text-slate-400 mt-5">
-          O Club Doctor não é plano de saúde. Consultas são cobradas pelo valor definido pelo profissional.
+          {t("club.disclaimer")}
         </p>
       </div>
     </div>

@@ -30,6 +30,7 @@ import AudiogramPanel from "@/components/professional/AudiogramPanel";
 import ClinicalCalculators from "@/components/professional/ClinicalCalculators";
 import ImageCompareModal from "@/components/professional/ImageCompareModal";
 import ChartSharePanel from "@/components/professional/ChartSharePanel";
+import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
 import {
   RecordTimelineFilters,
   PinnedAnamnesisCard,
@@ -863,6 +864,12 @@ export default function RecordDetailClient({
                   </a>
                 )}
               </div>
+            )}
+            {canEdit && isOwner && (
+              <ChartClinicalActions
+                chartId={chart.id}
+                returnUrl={`/professional/patients/${chart.id}`}
+              />
             )}
           </div>
         </div>
