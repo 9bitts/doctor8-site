@@ -129,7 +129,13 @@ export interface VideoConsultFetchResult {
   error?: string;
   opensAt?: string;
   whatsappHandoff?: { professionalName: string; campaignSlug?: string };
-  meetHandoff?: { professionalName: string; campaignSlug?: string; meetUrl?: string | null };
+  meetHandoff?: {
+    professionalName: string;
+    campaignSlug?: string;
+    meetUrl?: string | null;
+    backHref?: string;
+    backLabelKey?: string;
+  };
 }
 
 export default function VideoConsultRoom({
@@ -159,7 +165,10 @@ export default function VideoConsultRoom({
     professionalName: string;
     campaignSlug?: string;
     meetUrl?: string | null;
+    backHref?: string;
+    backLabelKey?: string;
   } | null>(null);
+  const [meetLoading, setMeetLoading] = useState(false);
   const [humanitarianIntake, setHumanitarianIntake] = useState<{
     summary: Parameters<typeof HumanitarianIntakeSummary>[0]["summary"];
     chiefComplaint: string | null;
@@ -259,6 +268,53 @@ export default function VideoConsultRoom({
     return () => clearInterval(poll);
   }, [data, lang]);
 
+  useEffect(() => {
+    if (!data || data.kind !== "appointment" || data.role !== "patient" || !data.appointmentId) {
+      return;
+    }
+    const appointmentId = data.appointmentId;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/appointments/${appointmentId}/video`);
+        const d = await res.json();
+        if (res.status === 410 && d.error === "MEET_HANDOFF") {
+          setMeetHandoff({
+            professionalName: d.professionalName || "",
+            meetUrl: d.meetUrl,
+            backHref: "/patient/appointments",
+            backLabelKey: "appt.page.meetHandoffBack",
+          });
+          setData(null);
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+    return () => clearInterval(poll);
+  }, [data]);
+
+  async function requestAppointmentMeet(appointmentId: string) {
+    setMeetLoading(true);
+    try {
+      const res = await fetch(`/api/appointments/${appointmentId}/google-meet`, { method: "POST" });
+      const d = await res.json();
+      if (!res.ok) {
+        const msg =
+          d.error === "MEET_DISABLED"
+            ? translate(lang, "hum.vol.meetDisabled")
+            : d.error === "MEET_CREATE_FAILED"
+              ? translate(lang, "hum.vol.meetCreateFailed")
+              : d.message || translate(lang, "hum.page.networkError");
+        window.alert(msg);
+        return;
+      }
+      if (d.meetUrl) {
+        window.open(d.meetUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      window.alert(translate(lang, "hum.page.networkError"));
+    }
+    setMeetLoading(false);
+  }
+
   async function loadRecords(recordId: string, providerPanel?: VideoConsultData["providerPanel"]) {
     setRecordsLoading(true);
     try {
@@ -351,6 +407,10 @@ export default function VideoConsultRoom({
 
   if (meetHandoff) {
     const slug = meetHandoff.campaignSlug || "venezuela-terremoto-2026";
+    const backHref = meetHandoff.backHref ?? `/humanitarian/${slug}`;
+    const backLabel = meetHandoff.backLabelKey
+      ? translate(lang, meetHandoff.backLabelKey)
+      : translate(lang, "hum.page.meetHandoffBack");
     const desc = translate(lang, "hum.page.meetHandoffDesc").replace(
       "{{professional}}",
       meetHandoff.professionalName || translate(lang, "hum.vol.patientAssigned"),
@@ -380,10 +440,10 @@ export default function VideoConsultRoom({
           )}
           <button
             type="button"
-            onClick={() => router.push(`/humanitarian/${slug}`)}
+            onClick={() => router.push(backHref)}
             className="w-full bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 rounded-xl text-sm transition"
           >
-            {translate(lang, "hum.page.meetHandoffBack")}
+            {backLabel}
           </button>
         </div>
       </div>
@@ -524,6 +584,21 @@ export default function VideoConsultRoom({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {isPro && data.kind === "appointment" && data.appointmentId && (
+            <button
+              type="button"
+              onClick={() => requestAppointmentMeet(data.appointmentId!)}
+              disabled={meetLoading}
+              className="hidden sm:flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-blue-500/40 bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 transition disabled:opacity-50"
+            >
+              {meetLoading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <ExternalLink size={14} />
+              )}
+              {translate(lang, "hum.vol.requestMeet")}
+            </button>
+          )}
           {isPro && (
             <button
               type="button"

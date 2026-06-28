@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logWhatsAppDelivery } from "@/lib/integration-logs";
 
-const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim() || "";
+export const dynamic = "force-dynamic";
 
 /** Meta WhatsApp Cloud API webhook ? verification + delivery status updates. */
 export async function GET(req: NextRequest) {
+  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim() || "";
   const sp = req.nextUrl.searchParams;
   const mode = sp.get("hub.mode");
-  const token = sp.get("hub.verify_token");
+  const token = sp.get("hub.verify_token")?.trim();
   const challenge = sp.get("hub.challenge");
 
-  if (mode === "subscribe" && VERIFY_TOKEN && token === VERIFY_TOKEN && challenge) {
-    return new NextResponse(challenge, { status: 200 });
+  if (mode === "subscribe" && verifyToken && token === verifyToken && challenge) {
+    return new NextResponse(challenge, {
+      status: 200,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   }
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }

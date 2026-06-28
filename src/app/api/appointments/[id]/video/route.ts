@@ -81,8 +81,6 @@ export async function GET(
     return NextResponse.json({ error: "EXPIRED", message: "This appointment has already ended." }, { status: 410 });
   }
 
-  const room = await getOrCreateRoom(appointment.id, appointment.scheduledAt, duration);
-
   const providerLabel = provider
     ? `${appointment.professional ? "Dr. " : ""}${
         appointment.psychoanalyst
@@ -90,6 +88,21 @@ export async function GET(
           : `${provider.firstName} ${provider.lastName}`
       }`
     : "";
+
+  if (appointment.videoChannel === "GOOGLE_MEET") {
+    return NextResponse.json(
+      {
+        error: "MEET_HANDOFF",
+        message: "Join your consultation on Google Meet.",
+        professionalName: providerLabel || "Profissional",
+        meetUrl: appointment.meetingUrl,
+        role: isPatient ? "patient" : "professional",
+      },
+      { status: 410 },
+    );
+  }
+
+  const room = await getOrCreateRoom(appointment.id, appointment.scheduledAt, duration);
 
   const userName = isPatient
     ? `${appointment.patient.firstName} ${appointment.patient.lastName}`

@@ -8,10 +8,10 @@ Lista viva de melhorias propostas e status. Lotes pequenos, baixo risco ao fluxo
 
 | # | Item | Prioridade | Notas |
 |---|------|------------|-------|
-| M2 | WhatsApp Business API (templates Meta) | Média | Aguardando aprovação Meta; código i18n pronto |
+| M2 | WhatsApp Business API (templates Meta) | Média | **Em espera** — webhook OK; falta registrar número (+55 31…) |
 | M3 | Sentry em produção | Baixa | Só ativa com `SENTRY_DSN` |
 | M4 | Gravação cloud Daily | Baixa | Off por padrão; avaliar custo antes |
-| M5 | Consultas agendadas: canal Meet opcional | Média | Depois do humanitário (M1) |
+| M5 | Consultas agendadas: canal Meet opcional | Média | Código pronto — migration + botão na sala Daily |
 | M6 | `/settings` legado | Baixa | Redireciona para `/*/account` (feito) |
 
 ---
@@ -109,6 +109,7 @@ GOOGLE_CALENDAR_ID=primary
 | Admin humanitário i18n (Lote 43) | OK |
 | Organization team/patients/ledger/convenios i18n (Lote 43) | OK |
 | Google Meet handoff humanitário MVP (M1) | OK — Calendar API + `GOOGLE_MEET_ENABLED=1` |
+| Google Meet opcional em consultas agendadas (M5) | OK — profissional escolhe na sala Daily |
 
 ---
 

@@ -219,6 +219,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sw.js|icons/|manifest.webmanifest).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|icons/|manifest.webmanifest|api/webhooks).*)",
   ],
 };

@@ -57,6 +57,11 @@ enum AppointmentType {
   IN_PERSON
 }
 
+enum AppointmentVideoChannel {
+  DAILY
+  GOOGLE_MEET
+}
+
 enum DocumentType {
   PRESCRIPTION
   EXAM_REQUEST
@@ -794,6 +799,7 @@ model Appointment {
   status           AppointmentStatus   @default(PENDING)
 
   // Teleconsult
+  videoChannel     AppointmentVideoChannel @default(DAILY)
   meetingUrl       String?
   meetingRoomId    String?
 

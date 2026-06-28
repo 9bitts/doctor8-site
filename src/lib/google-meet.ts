@@ -12,6 +12,10 @@ export type MeetLinkParams = {
   attendeeEmails?: string[];
   /** When set and on the Workspace domain, the event is created on this user's calendar (they become host). */
   hostEmail?: string | null;
+  /** Scheduled appointment — uses slot time in Calendar fallback */
+  scheduledAt?: Date;
+  durationMins?: number;
+  kind?: "humanitarian" | "appointment";
 };
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
@@ -160,9 +164,13 @@ async function createMeetViaCalendarApi(params: MeetLinkParams): Promise<string 
   if (!auth) return null;
 
   const calendar = google.calendar({ version: "v3", auth });
-  const start = new Date();
-  const end = new Date(start.getTime() + 60 * 60 * 1000);
-  const requestId = `hum-${params.entryId}-${Date.now()}`;
+  const isAppointment = params.kind === "appointment" && params.scheduledAt;
+  const start = isAppointment ? params.scheduledAt! : new Date();
+  const end = isAppointment
+    ? new Date(start.getTime() + (params.durationMins ?? 30) * 60 * 1000)
+    : new Date(start.getTime() + 60 * 60 * 1000);
+  const prefix = isAppointment ? "appt" : "hum";
+  const requestId = `${prefix}-${params.entryId}-${Date.now()}`;
 
   const concierge = calendarUserEmail();
   const attendees = uniqueEmails(
@@ -171,18 +179,30 @@ async function createMeetViaCalendarApi(params: MeetLinkParams): Promise<string 
     concierge,
   ).map((email) => ({ email, responseStatus: "accepted" as const }));
 
+  const summary = isAppointment
+    ? `Doctor8 — consulta ${params.patientName}`
+    : `Doctor8 humanitário — ${params.patientName}`;
+  const description = isAppointment
+    ? [
+        "Consulta agendada Doctor8",
+        `Paciente: ${params.patientName}`,
+        `Profissional: ${params.volunteerName}`,
+        `Consulta: ${params.entryId}`,
+      ].join("\n")
+    : [
+        "Consulta humanitária Doctor8",
+        `Paciente: ${params.patientName}`,
+        `Voluntário: ${params.volunteerName}`,
+        `Entrada: ${params.entryId}`,
+      ].join("\n");
+
   const { data } = await calendar.events.insert({
     calendarId: "primary",
     conferenceDataVersion: 1,
     sendUpdates: "none",
     requestBody: {
-      summary: `Doctor8 humanitário — ${params.patientName}`,
-      description: [
-        "Consulta humanitária Doctor8",
-        `Paciente: ${params.patientName}`,
-        `Voluntário: ${params.volunteerName}`,
-        `Entrada: ${params.entryId}`,
-      ].join("\n"),
+      summary,
+      description,
       start: { dateTime: start.toISOString(), timeZone: "America/Sao_Paulo" },
       end: { dateTime: end.toISOString(), timeZone: "America/Sao_Paulo" },
       anyoneCanAddSelf: true,
@@ -211,6 +231,31 @@ async function createMeetViaCalendarApi(params: MeetLinkParams): Promise<string 
  * - https://www.googleapis.com/auth/meetings.space.created
  */
 export async function createHumanitarianMeetLink(params: MeetLinkParams): Promise<string> {
+  return createMeetLink({ ...params, kind: params.kind ?? "humanitarian" });
+}
+
+export async function createAppointmentMeetLink(params: {
+  appointmentId: string;
+  patientName: string;
+  providerName: string;
+  scheduledAt: Date;
+  durationMins: number;
+  attendeeEmails?: string[];
+  hostEmail?: string | null;
+}): Promise<string> {
+  return createMeetLink({
+    entryId: params.appointmentId,
+    patientName: params.patientName,
+    volunteerName: params.providerName,
+    attendeeEmails: params.attendeeEmails,
+    hostEmail: params.hostEmail,
+    scheduledAt: params.scheduledAt,
+    durationMins: params.durationMins,
+    kind: "appointment",
+  });
+}
+
+async function createMeetLink(params: MeetLinkParams): Promise<string> {
   const configured = parseServiceAccountJson() && calendarUserEmail();
 
   if (configured) {
