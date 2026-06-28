@@ -7,6 +7,7 @@ import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { ensureAnalysandForPatient } from "@/lib/providers";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { isVolunteerOnEntry } from "@/lib/humanitarian/volunteer-eligibility";
+import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -177,5 +178,6 @@ export async function GET(
     durationMins: entry.pool.campaign.estimatedMinutesPerPatient || 15,
     entryId: entry.id,
     kind: "humanitarian" as const,
+    cloudRecordingEnabled: isDailyCloudRecordingEnabled(),
   });
 }

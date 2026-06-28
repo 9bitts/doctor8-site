@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   ExternalLink,
@@ -18,6 +18,18 @@ type SearchHit = {
   activeIngredient: string;
   presentation: string;
   manufacturer?: string | null;
+};
+
+type PharmacyOffer = {
+  pharmacyName: string;
+  priceCents: number;
+  purchaseUrl: string;
+  deliveryEta?: string;
+};
+
+type PharmacyConfig = {
+  marketplaceEnabled: boolean;
+  mode: string;
 };
 
 type ReferencePrice = {
@@ -71,6 +83,19 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
   const [referenceMissing, setReferenceMissing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [pharmacyConfig, setPharmacyConfig] = useState<PharmacyConfig | null>(null);
+  const [cep, setCep] = useState("");
+  const [offers, setOffers] = useState<PharmacyOffer[]>([]);
+  const [purchaseUrl, setPurchaseUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/patient/pharmacy/config")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => {
+        if (cfg) setPharmacyConfig({ marketplaceEnabled: cfg.marketplaceEnabled, mode: cfg.mode });
+      })
+      .catch(() => {});
+  }, []);
 
   const runSearch = useCallback(async () => {
     if (!hasAnyFilter(filters)) {
@@ -85,6 +110,8 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
     setReference(null);
     setReferenceMissing(false);
     setSaveError(null);
+    setOffers([]);
+    setPurchaseUrl(null);
 
     try {
       const params = new URLSearchParams();
@@ -103,11 +130,13 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
     }
   }, [filters]);
 
-  const loadPrice = useCallback(async (hit: SearchHit) => {
+  const loadPrice = useCallback(async (hit: SearchHit, cepValue?: string) => {
     setSelected(hit);
     setReference(null);
     setReferenceMissing(false);
     setSaveError(null);
+    setOffers([]);
+    setPurchaseUrl(null);
     setDetailLoading(true);
 
     try {
@@ -118,23 +147,32 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
         params.set("activeIngredient", hit.activeIngredient);
         params.set("presentation", hit.presentation);
       }
+      const cepDigits = (cepValue ?? cep).replace(/\D/g, "");
+      if (cepDigits.length >= 8) params.set("cep", cepDigits);
 
       const res = await fetch(`/api/patient/pharmacy/offers?${params}`);
       const data = await res.json();
       if (res.ok) {
         setReference(data.reference || null);
         setReferenceMissing(!data.reference);
+        setOffers(data.offers || []);
+        setPurchaseUrl(data.fallbackPurchaseUrl || null);
       }
     } finally {
       setDetailLoading(false);
     }
-  }, []);
+  }, [cep]);
+
+  const marketplaceActive =
+    pharmacyConfig?.marketplaceEnabled && pharmacyConfig.mode !== "disabled";
 
   function closeModal() {
     setSelected(null);
     setReference(null);
     setReferenceMissing(false);
     setSaveError(null);
+    setOffers([]);
+    setPurchaseUrl(null);
     setDetailLoading(false);
   }
 
@@ -324,6 +362,62 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
               ) : referenceMissing ? (
                 <p className="text-sm text-slate-500 text-center py-6">{t("pharmacy.referenceNotFound")}</p>
               ) : null}
+
+              {!detailLoading && marketplaceActive && purchaseUrl && (
+                <div className="rounded-xl border border-blue-100 bg-blue-50/80 p-4 space-y-3">
+                  <p className="text-xs text-blue-900 leading-relaxed">{t("pharmacy.deeplinkHint")}</p>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-blue-800 mb-1">
+                      CEP
+                    </label>
+                    <input
+                      value={cep}
+                      onChange={(e) => setCep(e.target.value)}
+                      placeholder={t("pharmacy.cepPlaceholder")}
+                      className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-800"
+                    />
+                    <p className="mt-1 text-[10px] text-blue-700/80">{t("pharmacy.deeplinkCepHint")}</p>
+                  </div>
+                  {offers.length > 0 && (
+                    <ul className="space-y-2 text-left">
+                      {offers.slice(0, 3).map((offer) => (
+                        <li
+                          key={`${offer.pharmacyName}-${offer.purchaseUrl}`}
+                          className="flex items-center justify-between gap-2 text-xs bg-white rounded-lg border border-blue-100 px-3 py-2"
+                        >
+                          <span className="font-medium text-slate-800 truncate">{offer.pharmacyName}</span>
+                          <a
+                            href={offer.purchaseUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 text-blue-600 font-semibold hover:underline"
+                          >
+                            {formatBrl(offer.priceCents)}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <a
+                    href={purchaseUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm py-3 transition"
+                  >
+                    {t("pharmacy.compareAndBuy")}
+                    <ExternalLink size={14} />
+                  </a>
+                  {cep.replace(/\D/g, "").length >= 8 && selected && (
+                    <button
+                      type="button"
+                      onClick={() => loadPrice(selected, cep)}
+                      className="w-full text-xs font-medium text-blue-700 hover:text-blue-900 transition"
+                    >
+                      {t("pharmacy.searchButton")}
+                    </button>
+                  )}
+                </div>
+              )}
 
               {!detailLoading && reference && (
                 <button

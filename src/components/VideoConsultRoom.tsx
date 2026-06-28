@@ -32,6 +32,7 @@ export interface VideoConsultData {
   kind?: "appointment" | "jit" | "humanitarian";
   queueId?: string;
   entryId?: string;
+  cloudRecordingEnabled?: boolean;
 }
 
 interface ClinicalRecord {
@@ -620,6 +621,14 @@ export default function VideoConsultRoom({
           </div>
         </div>
       </div>
+
+      {data.cloudRecordingEnabled && (
+        <div className="bg-amber-500/10 border-b border-amber-500/25 px-4 py-2 text-center">
+          <p className="text-amber-200/90 text-xs leading-relaxed">
+            {translate(lang, "video.cloudRecordingNotice")}
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden relative flex-col lg:flex-row min-h-0">
         {/* Video — always visible; on mobile stays above the chart drawer */}

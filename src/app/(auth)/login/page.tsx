@@ -351,6 +351,16 @@ function LoginForm() {
                 {t("login.createAccount")}
               </Link>
             </p>
+            <p className="text-slate-500 text-xs mt-4">{t("login.proPortalHint")}</p>
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+              <Link href="/login" className="text-emerald-400/90 hover:text-emerald-300 font-medium transition">
+                {t("login.proDoctorPortal")}
+              </Link>
+              <span className="text-slate-600" aria-hidden="true">·</span>
+              <Link href="/login/psicologo" className="text-violet-400/90 hover:text-violet-300 font-medium transition">
+                {t("login.proPsychologistPortal")}
+              </Link>
+            </div>
           </div>
         </div>
       </div>

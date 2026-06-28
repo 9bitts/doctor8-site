@@ -13,6 +13,7 @@ import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { ensureAnalysandForPatient } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
+import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 
 export async function GET(
   req: NextRequest,
@@ -160,5 +161,6 @@ export async function GET(
     scheduledAt:    appointment.scheduledAt.toISOString(),
     durationMins:   duration,
     appointmentId:  appointment.id,
+    cloudRecordingEnabled: isDailyCloudRecordingEnabled(),
   });
 }

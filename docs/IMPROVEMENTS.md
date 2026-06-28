@@ -9,9 +9,11 @@ Lista viva de melhorias propostas e status. Lotes pequenos, baixo risco ao fluxo
 | # | Item | Prioridade | Notas |
 |---|------|------------|-------|
 | M2 | WhatsApp Business API (templates Meta) | Média | **Em espera** — webhook OK; falta registrar número (+55 31…) |
-| M3 | Sentry em produção | Baixa | Só ativa com `SENTRY_DSN` |
-| M4 | Gravação cloud Daily | Baixa | Off por padrão; avaliar custo antes |
+| M3 | Sentry em produção | Baixa | Código pronto — setar `SENTRY_DSN` no Railway |
+| M4 | Gravação cloud Daily | Baixa | Off por padrão; banner na sala quando `DAILY_CLOUD_RECORDING=1` |
 | M5 | Consultas agendadas: canal Meet opcional | Média | Código pronto — migration + botão na sala Daily |
+| M7 | Portal profissional na home/login | Baixa | Links médico + psicólogo no footer e login |
+| M8 | Farmácia deeplink parceiro | Baixa | UI quando `PHARMACY_MARKETPLACE_ENABLED=true` |
 | M6 | `/settings` legado | Baixa | Redireciona para `/*/account` (feito) |
 
 ---
@@ -110,6 +112,10 @@ GOOGLE_CALENDAR_ID=primary
 | Organization team/patients/ledger/convenios i18n (Lote 43) | OK |
 | Google Meet handoff humanitário MVP (M1) | OK — Calendar API + `GOOGLE_MEET_ENABLED=1` |
 | Google Meet opcional em consultas agendadas (M5) | OK — profissional escolhe na sala Daily |
+| Footer/login: portal médico + psicólogo (M7) | OK |
+| Farmácia deeplink Consulta Remédios (M8) | OK — `PHARMACY_MARKETPLACE_ENABLED=true` |
+| Sentry client DSN fallback + docs (M3) | OK — ativar com `SENTRY_DSN` |
+| Banner gravação Daily na teleconsulta (M4) | OK — quando `DAILY_CLOUD_RECORDING=1` |
 
 ---
 

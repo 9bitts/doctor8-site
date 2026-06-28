@@ -1,13 +1,21 @@
-/** Shared Sentry options ? disabled unless SENTRY_DSN is set (no impact when unset). */
+/** Shared Sentry options — disabled unless SENTRY_DSN is set (no impact when unset). */
 import type { ErrorEvent, EventHint } from "@sentry/nextjs";
 
+export function getSentryDsn(): string | undefined {
+  const dsn =
+    process.env.SENTRY_DSN?.trim() ||
+    process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() ||
+    "";
+  return dsn || undefined;
+}
+
 export function isSentryEnabled(): boolean {
-  return typeof process.env.SENTRY_DSN === "string" && process.env.SENTRY_DSN.length > 0;
+  return Boolean(getSentryDsn());
 }
 
 export function getSentryOptions() {
   return {
-    dsn: process.env.SENTRY_DSN,
+    dsn: getSentryDsn(),
     enabled: isSentryEnabled(),
     environment:
       process.env.RAILWAY_ENVIRONMENT_NAME ||

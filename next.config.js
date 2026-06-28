@@ -70,12 +70,16 @@ const nextConfig = {
   },
 };
 
+const sentryEnabled = Boolean(
+  process.env.SENTRY_DSN?.trim() || process.env.NEXT_PUBLIC_SENTRY_DSN?.trim(),
+);
+
 const sentryWebpackPluginOptions = {
   silent: true,
-  disableServerWebpackPlugin: !process.env.SENTRY_DSN,
-  disableClientWebpackPlugin: !process.env.SENTRY_DSN,
+  disableServerWebpackPlugin: !sentryEnabled,
+  disableClientWebpackPlugin: !sentryEnabled,
 };
 
-module.exports = process.env.SENTRY_DSN
+module.exports = sentryEnabled
   ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
   : nextConfig;

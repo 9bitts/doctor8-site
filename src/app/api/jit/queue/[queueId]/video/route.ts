@@ -7,6 +7,7 @@ import { decrypt } from "@/lib/encryption";
 import { createMeetingToken } from "@/lib/daily";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
+import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -113,5 +114,6 @@ export async function GET(
     durationMins: entry.session.estimatedMinutesPerPatient || 20,
     queueId: entry.id,
     kind: "jit" as const,
+    cloudRecordingEnabled: isDailyCloudRecordingEnabled(),
   });
 }

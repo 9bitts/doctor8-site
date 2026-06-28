@@ -23,6 +23,7 @@ export type LandingContent = {
   footer: {
     desc: string; services: string; professionals: string; legal: string;
     serviceLinks: string[]; proLinks: string[]; legalLinks: string[];
+    proDoctorLogin: string; proPsychologistLogin: string;
     copyright: string;
   };
   cookie: { text: string; accept: string; decline: string };
@@ -96,7 +97,9 @@ const pt: LandingContent = {
     desc: "Plataforma de sa\u00fade digital para pacientes e profissionais. Conforme LGPD e HIPAA. Atua\u00e7\u00e3o no Brasil, EUA, Europa e Venezuela.",
     services: "Servi\u00e7os", professionals: "Profissionais", legal: "Legal",
     serviceLinks: ["Especialidades", "Club Doctor", "Cannabis Medicinal", "Doctor Energy"],
-    proLinks: ["Cadastre-se como profissional", "Entrar na plataforma"],
+    proLinks: ["Cadastre-se como profissional", "Entrar como médico"],
+    proDoctorLogin: "Entrar como médico",
+    proPsychologistLogin: "Entrar como psicólogo",
     legalLinks: ["Pol\u00edtica de Privacidade", "Termos de Uso", "LGPD", "DPO"],
     copyright: "\u00a9 2026 Doctor8. Todos os direitos reservados.",
   },
@@ -192,7 +195,9 @@ const en: LandingContent = {
     desc: "Digital health platform for patients and professionals. LGPD and HIPAA compliant. Operating in Brazil, US, Europe and Venezuela.",
     services: "Services", professionals: "Professionals", legal: "Legal",
     serviceLinks: ["Specialties", "Club Doctor", "Medical Cannabis", "Doctor Energy"],
-    proLinks: ["Register as professional", "Sign into platform"],
+    proLinks: ["Register as professional", "Sign in as doctor"],
+    proDoctorLogin: "Sign in as doctor",
+    proPsychologistLogin: "Sign in as psychologist",
     legalLinks: ["Privacy Policy", "Terms of Service", "LGPD", "DPO"],
     copyright: "\u00a9 2026 Doctor8. All rights reserved.",
   },
@@ -270,7 +275,13 @@ const es: LandingContent = {
     sub: "Reg\u00edstrate gratis y agenda tu primera consulta hoy.",
     primary: "Crear cuenta gratis", secondary: "Club Doctor \u2014 R$34,90/m\u00eas",
   },
-  footer: { ...en.footer, desc: "Plataforma de salud digital para pacientes y profesionales. Conforme LGPD y HIPAA. Brasil, EE.UU., Europa y Venezuela.", copyright: "\u00a9 2026 Doctor8. Todos los derechos reservados." },
+  footer: {
+    ...en.footer,
+    desc: "Plataforma de salud digital para pacientes y profesionales. Conforme LGPD y HIPAA. Brasil, EE.UU., Europa y Venezuela.",
+    proDoctorLogin: "Entrar como médico",
+    proPsychologistLogin: "Entrar como psicólogo",
+    copyright: "\u00a9 2026 Doctor8. Todos los derechos reservados.",
+  },
   cookie: { text: "Usamos cookies para mejorar tu experiencia. Al continuar, aceptas nuestra", accept: "Aceptar", decline: "Rechazar" },
   platform: {
     eyebrow: "Tu \u00e1rea de paciente",
