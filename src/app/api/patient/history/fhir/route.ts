@@ -56,6 +56,12 @@ export async function GET() {
     take: 50,
   });
 
+  const prescriptionRows = await db.prescription.findMany({
+    where: { document: { patientId: patient.id } },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+
   await audit.exportData(session.user.id);
 
   const bundle = buildPatientFhirBundle({
@@ -91,6 +97,21 @@ export async function GET() {
         title: safeDecrypt(d.title),
         createdAt: d.createdAt.toISOString(),
         items: parsed.items,
+      };
+    }),
+    prescriptions: prescriptionRows.map((p) => {
+      const meds = Array.isArray(p.medications)
+        ? (p.medications as { name?: string; dosage?: string; frequency?: string }[])
+        : [];
+      return {
+        id: p.id,
+        createdAt: p.createdAt.toISOString(),
+        validUntil: p.validUntil?.toISOString() ?? null,
+        medications: meds.map((m) => ({
+          name: m.name || "",
+          dosage: m.dosage,
+          frequency: m.frequency,
+        })),
       };
     }),
   });

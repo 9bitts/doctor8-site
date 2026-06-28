@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getDataResidencyInfo } from "@/lib/data-residency";
+import type { BillingRegion } from "@/lib/billing-regions";
 import { z } from "zod";
 
 const schema = z.object({
@@ -19,7 +21,10 @@ export async function GET() {
   });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json({ region: user.region });
+  return NextResponse.json({
+    region: user.region,
+    dataResidency: getDataResidencyInfo(user.region as BillingRegion),
+  });
 }
 
 export async function PATCH(req: NextRequest) {

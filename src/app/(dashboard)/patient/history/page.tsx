@@ -454,6 +454,23 @@ export default function HistoryPage() {
           </a>
         </div>
 
+        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">{t("hist.interopTitle")}</p>
+            <p className="text-xs text-slate-500 mt-1">{t("hist.interopDesc")}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a href="/.well-known/smart-configuration" target="_blank" rel="noopener noreferrer"
+              className="text-sm font-medium text-emerald-700 bg-white border border-emerald-200 hover:border-emerald-300 px-4 py-2 rounded-xl transition">
+              {t("hist.smartConfig")}
+            </a>
+            <a href="/fhir/metadata" target="_blank" rel="noopener noreferrer"
+              className="text-sm font-medium text-emerald-700 bg-white border border-emerald-200 hover:border-emerald-300 px-4 py-2 rounded-xl transition">
+              {t("hist.fhirMetadata")}
+            </a>
+          </div>
+        </div>
+
       </form>
 
       {showShareModal && (

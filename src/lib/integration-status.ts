@@ -2,6 +2,7 @@
 
 import { getWhatsAppReadiness } from "@/lib/whatsapp";
 import { isWebPushEnabled } from "@/lib/web-push";
+import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { isSentryEnabled } from "../../sentry.shared.config";
 
 export type IntegrationHealth = "ok" | "partial" | "missing" | "fallback";
@@ -53,7 +54,9 @@ export function getIntegrationStatuses(): IntegrationRow[] {
       detail: dailyOk
         ? process.env.E2E_MOCK_DAILY === "1"
           ? "Mock mode (E2E_MOCK_DAILY)."
-          : "Daily.co API key configured."
+          : isDailyCloudRecordingEnabled()
+            ? "Daily.co API key configured; cloud recording enabled."
+            : "Daily.co API key configured."
         : "Video calls need DAILY_API_KEY.",
     },
     {

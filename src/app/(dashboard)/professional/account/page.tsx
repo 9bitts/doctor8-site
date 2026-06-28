@@ -8,6 +8,7 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/I18nProvider";
 import DigitalSignSettings from "@/components/professional/DigitalSignSettings";
+import PushNotificationSettings from "@/components/PushNotificationSettings";
 import { readApiJson, apiErrorMessage } from "@/lib/api-client";
 import {
   BILLING_REGION_OPTIONS,
@@ -426,6 +427,8 @@ export default function ProfessionalAccountPage() {
           </>
         )}
       </div>
+
+      <PushNotificationSettings />
 
       {/* Sign out */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

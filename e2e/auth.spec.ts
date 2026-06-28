@@ -134,6 +134,6 @@ test.describe("authenticated patient", () => {
     expect(body.resourceType).toBe("Bundle");
     const types = (body.entry || []).map((e: { resource?: { resourceType?: string } }) => e.resource?.resourceType);
     expect(types).toContain("Patient");
-    expect(types.some((t: string) => t === "Encounter" || t === "ServiceRequest")).toBeTruthy();
+    expect(types.some((t: string) => t === "Encounter" || t === "ServiceRequest" || t === "MedicationRequest")).toBeTruthy();
   });
 });

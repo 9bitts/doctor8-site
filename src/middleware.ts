@@ -30,6 +30,8 @@ const PUBLIC_ROUTES = [
   "/embed/",       // embeddable booking widget (iframe)
   "/share/",     // shared medical records (token-based)
   "/club/join",  // buying club invite landing (public)
+  "/.well-known/", // SMART on FHIR discovery
+  "/fhir/",        // FHIR metadata (public read)
 ];
 
 function isPublicRoute(pathname: string): boolean {
@@ -86,6 +88,9 @@ export default auth((req) => {
 
   // Public read-only APIs (professional profiles, slots)
   if (pathname.startsWith("/api/public/")) return NextResponse.next();
+
+  // FHIR SMART discovery (no PHI)
+  if (pathname.startsWith("/api/fhir/smart/")) return NextResponse.next();
 
   // CNPJ lookup during registration
   if (pathname.startsWith("/api/cnpj/")) return NextResponse.next();

@@ -17,8 +17,12 @@ export function getConsultationPaymentMethodTypes(
 
 export function getSubscriptionPaymentMethodTypes(currency: string): string[] {
   const cur = currency.toLowerCase();
-  // Recurring: card + boleto in BR. PIX recorrente (Pix Automatico) exige setup extra no Stripe.
-  if (cur === "brl") return ["card", "boleto"];
+  if (cur === "brl") {
+    if (process.env.STRIPE_SUBSCRIPTION_PIX === "1") {
+      return ["card", "boleto", "pix"];
+    }
+    return ["card", "boleto"];
+  }
   return ["card"];
 }
 

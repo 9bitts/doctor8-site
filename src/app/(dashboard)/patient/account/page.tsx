@@ -18,6 +18,8 @@ import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
   Eye, EyeOff, LogOut, Shield, User, Globe,
 } from "lucide-react";
+import PushNotificationSettings from "@/components/PushNotificationSettings";
+import type { DataResidencyInfo } from "@/lib/data-residency";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition";
@@ -79,6 +81,7 @@ export default function AccountPage() {
   const [regionSaving, setRegionSaving] = useState(false);
   const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");
+  const [dataResidency, setDataResidency] = useState<DataResidencyInfo | null>(null);
 
   const isPasswordValid = PASSWORD_RULES.every((r) => r.test(newPwd));
   const passwordsMatch = newPwd === confirmPwd;
@@ -94,6 +97,9 @@ export default function AccountPage() {
       .then((d) => {
         if (d?.region) {
           setAccountRegion(parseBillingRegion(d.region, accountRegion));
+        }
+        if (d?.dataResidency) {
+          setDataResidency(d.dataResidency);
         }
       })
       .catch(() => {});
@@ -237,11 +243,20 @@ export default function AccountPage() {
         body: JSON.stringify({ region: accountRegion }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Não foi possível salvar a região.");
+      if (!res.ok) throw new Error(data.error || t("acct.regionErr"));
       setRegionSaved(true);
+      if (data.region) {
+        setAccountRegion(parseBillingRegion(data.region, accountRegion));
+      }
+      fetch("/api/user/region")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.dataResidency) setDataResidency(d.dataResidency);
+        })
+        .catch(() => {});
       setTimeout(() => setRegionSaved(false), 4000);
     } catch (e) {
-      setRegionError(e instanceof Error ? e.message : "Erro ao salvar região.");
+      setRegionError(e instanceof Error ? e.message : t("acct.regionErr"));
     } finally {
       setRegionSaving(false);
     }
@@ -256,10 +271,10 @@ export default function AccountPage() {
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Globe size={18} className="text-emerald-600" /> Região da conta
+          <Globe size={18} className="text-emerald-600" /> {t("acct.regionTitle")}
         </h2>
         <p className="text-sm text-slate-500">
-          Define a moeda do Club Doctor e de outros pagamentos. Para PIX e boleto, selecione Brasil.
+          {t("acct.regionDesc")}
         </p>
         {regionError && (
           <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
@@ -268,12 +283,12 @@ export default function AccountPage() {
         )}
         {regionSaved && (
           <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-            Região atualizada. Você já pode assinar o Club Doctor na moeda escolhida.
+            {t("acct.regionSaved")}
           </p>
         )}
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">País / região</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">{t("acct.regionLabel")}</label>
             <select
               value={accountRegion}
               onChange={(e) => setAccountRegion(parseBillingRegion(e.target.value, accountRegion))}
@@ -291,9 +306,28 @@ export default function AccountPage() {
             className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0"
           >
             {regionSaving && <Loader2 size={14} className="animate-spin" />}
-            Salvar região
+            {t("acct.regionSave")}
           </button>
         </div>
+        {dataResidency && (
+          <div className="border-t border-slate-100 pt-4 space-y-2">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+              {t("acct.dataResidencyTitle")}
+            </p>
+            <dl className="grid sm:grid-cols-2 gap-2 text-sm">
+              <div className="bg-slate-50 rounded-xl px-3 py-2">
+                <dt className="text-xs text-slate-500">{t("acct.dataResidencyDeploy")}</dt>
+                <dd className="font-medium text-slate-800">{dataResidency.deployRegion}</dd>
+              </div>
+              <div className="bg-slate-50 rounded-xl px-3 py-2">
+                <dt className="text-xs text-slate-500">{t("acct.dataResidencyStorage")}</dt>
+                <dd className="font-medium text-slate-800">
+                  {dataResidency.storageProvider} · {dataResidency.storageRegion}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        )}
       </div>
 
       {/* Current account info */}
@@ -584,6 +618,8 @@ export default function AccountPage() {
           </>
         )}
       </div>
+
+      <PushNotificationSettings />
 
       {/* Sign out */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

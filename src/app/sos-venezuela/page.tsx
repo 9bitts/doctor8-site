@@ -31,14 +31,38 @@ function poolName(slug: string, lang: Lang) {
 
 export default function SosVenezuelaPage() {
   const [lang, setLang] = useState<Lang>("es");
+  const [livePools, setLivePools] = useState<
+    { slug: string; label: string; waiting: number; maxWaiting: number; volunteersOnline: number; isFull: boolean }[]
+  >([]);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(false);
 
   useEffect(() => {
     setLang(getHumanitarianLang());
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    setStatsLoading(true);
+    setStatsError(false);
+    const langParam = lang === "pt" ? "pt" : lang === "en" ? "en" : "es";
+    fetch(`/api/humanitarian/campaigns/${VENEZUELA_CAMPAIGN_SLUG}?lang=${langParam}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => {
+        if (active && Array.isArray(d.pools)) setLivePools(d.pools);
+      })
+      .catch(() => {
+        if (active) setStatsError(true);
+      })
+      .finally(() => {
+        if (active) setStatsLoading(false);
+      });
+    return () => { active = false; };
+  }, [lang]);
+
   const campaignPath = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
-  const patientRegister = `/register?region=VE&role=PATIENT&callbackUrl=${encodeURIComponent("/patient")}`;
-  const patientLogin = `/login?callbackUrl=${encodeURIComponent("/patient")}`;
+  const patientRegister = `/register?region=VE&role=PATIENT&callbackUrl=${encodeURIComponent(campaignPath)}`;
+  const patientLogin = `/login?callbackUrl=${encodeURIComponent(campaignPath)}`;
   const volRegister = `/register/professional/signup?region=VE&role=PROFESSIONAL&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
   const volLogin = `/login?callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
   const psychoVolRegister = `/register/professional/signup?region=VE&role=PSYCHOANALYST&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
@@ -91,8 +115,17 @@ export default function SosVenezuelaPage() {
             <ChevronRight size={18} className="mt-3 opacity-70 group-hover:translate-x-0.5 transition" />
           </Link>
           <Link
+            href={patientLogin}
+            className="group bg-emerald-600/30 hover:bg-emerald-600/40 border border-emerald-500/40 rounded-2xl p-5 sm:p-6 transition"
+          >
+            <Radio size={24} className="mb-3 text-emerald-300" />
+            <p className="font-bold text-lg">{t(lang, "hum.landing.ctaReturning")}</p>
+            <p className="text-sm text-emerald-100/80 mt-1">{t(lang, "hum.landing.ctaReturningHint")}</p>
+            <ChevronRight size={18} className="mt-3 opacity-70 group-hover:translate-x-0.5 transition" />
+          </Link>
+          <Link
             href={volRegister}
-            className="group bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-5 sm:p-6 transition"
+            className="group bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-5 sm:p-6 transition sm:col-span-2"
           >
             <Stethoscope size={24} className="mb-3 text-rose-300" />
             <p className="font-bold text-lg">{t(lang, "hum.landing.ctaVolunteer")}</p>
@@ -138,20 +171,50 @@ export default function SosVenezuelaPage() {
             <Users size={18} className="text-rose-400" />
             {t(lang, "hum.landing.poolsTitle")}
           </h2>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {DEFAULT_VENEZUELA_POOLS.map((p) => (
-              <div
-                key={p.slug}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm"
-              >
-                <p className="font-medium">{poolName(p.slug, lang)}</p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {lang === "en" ? "Up to" : lang === "pt" ? "At?" : "Hasta"} {p.maxWaiting}{" "}
-                  {lang === "en" ? "in queue" : lang === "pt" ? "na fila" : "en fila"}
-                </p>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs text-slate-500">{t(lang, "hum.landing.liveStats")}</p>
+          {statsLoading ? (
+            <p className="text-sm text-slate-400">{t(lang, "hum.landing.statsLoading")}</p>
+          ) : statsError && livePools.length === 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {DEFAULT_VENEZUELA_POOLS.map((p) => (
+                <div
+                  key={p.slug}
+                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm"
+                >
+                  <p className="font-medium">{poolName(p.slug, lang)}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {t(lang, "hum.landing.statsUnavailable")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {(livePools.length > 0 ? livePools : DEFAULT_VENEZUELA_POOLS.map((p) => ({
+                slug: p.slug,
+                label: poolName(p.slug, lang),
+                waiting: 0,
+                maxWaiting: p.maxWaiting,
+                volunteersOnline: 0,
+                isFull: false,
+              }))).map((p) => (
+                <div
+                  key={p.slug}
+                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm"
+                >
+                  <p className="font-medium">{p.label || poolName(p.slug, lang)}</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {p.waiting} / {p.maxWaiting} {t(lang, "hum.landing.waiting")}
+                    {" · "}
+                    {p.volunteersOnline} {t(lang, "hum.landing.volunteersOnline")}
+                  </p>
+                  {p.isFull && (
+                    <p className="text-xs text-amber-400 mt-1">{t(lang, "hum.landing.queueFull")}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <p className="text-xs text-slate-500 leading-relaxed text-center px-2">

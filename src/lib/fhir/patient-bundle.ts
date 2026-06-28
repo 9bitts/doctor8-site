@@ -30,6 +30,12 @@ export type PatientFhirInput = {
     createdAt: string;
     items: string[];
   }[];
+  prescriptions?: {
+    id: string;
+    createdAt: string;
+    validUntil: string | null;
+    medications: { name: string; dosage?: string; frequency?: string }[];
+  }[];
 };
 
 function fhirDate(value: string): string {
@@ -199,6 +205,25 @@ export function buildPatientFhirBundle(input: PatientFhirInput): FhirResource {
               }
             : {}),
         },
+      },
+    });
+  }
+
+  for (const rx of input.prescriptions || []) {
+    const medNames = rx.medications.map((m) => m.name).join(", ");
+    entries.push({
+      fullUrl: `urn:uuid:rx-${rx.id}`,
+      resource: {
+        resourceType: "MedicationRequest",
+        id: rx.id,
+        status: rx.validUntil && new Date(rx.validUntil) < new Date() ? "completed" : "active",
+        intent: "order",
+        subject: { reference: patientRef },
+        authoredOn: rx.createdAt,
+        medicationCodeableConcept: { text: medNames || "Prescription" },
+        dosageInstruction: rx.medications.map((m) => ({
+          text: [m.name, m.dosage, m.frequency].filter(Boolean).join(" — "),
+        })),
       },
     });
   }

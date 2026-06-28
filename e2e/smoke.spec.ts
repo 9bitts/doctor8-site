@@ -86,8 +86,28 @@ test.describe("public smoke", () => {
     expect(res?.status()).toBeLessThan(500);
   });
 
+  test("SMART configuration is public", async ({ request }) => {
+    const res = await request.get("/.well-known/smart-configuration");
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.authorization_endpoint).toContain("smart/authorize");
+    expect(body.capabilities).toContain("launch-standalone");
+  });
+
+  test("FHIR metadata is public", async ({ request }) => {
+    const res = await request.get("/fhir/metadata");
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.resourceType).toBe("CapabilityStatement");
+  });
+
   test("admin integrations page responds", async ({ page }) => {
     const res = await page.goto("/admin/integrations");
+    expect(res?.status()).toBeLessThan(500);
+  });
+
+  test("admin home hub responds", async ({ page }) => {
+    const res = await page.goto("/admin");
     expect(res?.status()).toBeLessThan(500);
   });
 });

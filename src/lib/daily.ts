@@ -3,6 +3,8 @@
 // Rooms are created on demand, named after the appointment ID (deterministic).
 // Private rooms + meeting tokens: only the patient and the professional can join.
 
+import { dailyRoomBaseProperties } from "@/lib/data-residency";
+
 const DAILY_API = "https://api.daily.co/v1";
 
 function headers() {
@@ -39,16 +41,11 @@ export async function getOrCreateRoom(
     body: JSON.stringify({
       name: roomName,
       privacy: "private",
-      properties: {
+      properties: dailyRoomBaseProperties({
         nbf,
         exp,
-        max_participants: 4, // patient + professional + margin (e.g. guardian)
-        enable_chat: true,
-        enable_screenshare: true,
-        enable_prejoin_ui: true,
-        enable_knocking: false,
-        eject_at_room_exp: true,
-      },
+        max_participants: 4,
+      }),
     }),
   });
 
@@ -135,15 +132,11 @@ export async function createEphemeralRoom(
       },
       body: JSON.stringify({
         privacy: "private",
-        properties: {
+        properties: dailyRoomBaseProperties({
           exp,
           max_participants: maxParticipants,
-          enable_chat: true,
-          enable_screenshare: true,
-          enable_prejoin_ui: true,
           enable_knocking: enableKnocking,
-          eject_at_room_exp: true,
-        },
+        }),
       }),
     });
     if (!res.ok) return null;

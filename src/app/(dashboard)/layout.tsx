@@ -101,6 +101,7 @@ const ORGANIZATION_NAV: NavItem[] = [
 ];
 
 const ADMIN_NAV: NavItem[] = [
+  { href: "/admin", labelKey: "admin.home.title", icon: <Shield size={18} />, roles: ["ADMIN"] },
   { href: "/admin/categories", labelKey: "nav.adminCategories", icon: <Layers size={18} />, roles: ["ADMIN"] },
   { href: "/admin/doctors", labelKey: "nav.adminDoctors", icon: <Stethoscope size={18} />, roles: ["ADMIN"] },
   { href: "/admin/patients", labelKey: "nav.adminPatients", icon: <Users size={18} />, roles: ["ADMIN"] },
