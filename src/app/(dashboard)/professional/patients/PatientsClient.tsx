@@ -7,8 +7,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { useT } from "@/lib/i18n/I18nProvider";
-import { Users, Plus, X, ChevronRight, CheckCircle2, AlertCircle, Search } from "lucide-react";
+import { useT, useI18n } from "@/lib/i18n/I18nProvider";
+import { Users, Plus, X, ChevronRight, CheckCircle2, AlertCircle, Search, Send, Loader2 } from "lucide-react";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
 
 interface Chart {
@@ -22,11 +22,14 @@ interface Chart {
 
 export default function PatientsClient({ initialCharts }: { initialCharts: Chart[] }) {
   const t = useT();
+  const { lang } = useI18n();
   const [charts, setCharts] = useState<Chart[]>(initialCharts);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [inviteFeedback, setInviteFeedback] = useState<Record<string, "sent" | "error">>({});
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -102,6 +105,31 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
     [charts, search],
   );
 
+  async function sendInvite(chartId: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setInvitingId(chartId);
+    setInviteFeedback((prev) => {
+      const next = { ...prev };
+      delete next[chartId];
+      return next;
+    });
+    try {
+      const res = await fetch(`/api/professional/records/${chartId}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: lang }),
+      });
+      setInviteFeedback((prev) => ({
+        ...prev,
+        [chartId]: res.ok ? "sent" : "error",
+      }));
+    } catch {
+      setInviteFeedback((prev) => ({ ...prev, [chartId]: "error" }));
+    }
+    setInvitingId(null);
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -160,7 +188,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   <p className="font-semibold text-slate-800 text-sm">
                     {c.firstName} {c.lastName}
                   </p>
-                  <p className="text-xs mt-0.5">
+                  <div className="text-xs mt-0.5">
                     {c.hasAccount ? (
                       <span className="text-brand-500 inline-flex items-center gap-1">
                         <CheckCircle2 size={12} /> {t("pat.hasAccount")}
@@ -171,7 +199,32 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                         <span className="leading-snug">{t("pat.noAccount")}</span>
                       </span>
                     )}
-                  </p>
+                    {!c.hasAccount && c.email && (
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={(e) => sendInvite(c.id, e)}
+                          disabled={invitingId === c.id}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-white bg-brand-500 hover:bg-brand-600 px-2.5 py-1 rounded-lg disabled:opacity-50 transition"
+                        >
+                          {invitingId === c.id ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Send size={12} />
+                          )}
+                          {t("pat.sendInvite")}
+                        </button>
+                        {inviteFeedback[c.id] === "sent" && (
+                          <span className="text-xs text-brand-600 inline-flex items-center gap-1">
+                            <CheckCircle2 size={12} /> {t("pat.inviteSent")}
+                          </span>
+                        )}
+                        {inviteFeedback[c.id] === "error" && (
+                          <span className="text-xs text-rose-600">{t("pat.inviteError")}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <ChevronRight size={18} className="text-slate-300 shrink-0" />
               </Link>

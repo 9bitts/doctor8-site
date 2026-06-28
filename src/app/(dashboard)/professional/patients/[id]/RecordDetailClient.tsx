@@ -571,7 +571,7 @@ export default function RecordDetailClient({
       const res = await fetch(`/api/professional/records/${chart.id}/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ language: lang }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -752,7 +752,7 @@ export default function RecordDetailClient({
 
   // Helper: is the registration data essentially empty?
   const regEmpty = !reg.dateOfBirth && !reg.addressLine1 && !reg.city && !reg.cpf && !reg.sex;
-  const sexLabel = reg.sex === "F" ? "Feminino" : reg.sex === "M" ? "Masculino" : reg.sex === "O" ? "Outro" : "";
+  const sexLabel = reg.sex === "F" ? t("pat.sexF") : reg.sex === "M" ? t("pat.sexM") : reg.sex === "O" ? t("pat.sexO") : "";
 
   const pinnedAnamnesis = useMemo(() => findPinnedAnamnesis(docs), [docs]);
   const filteredDocs = useMemo(
@@ -839,8 +839,9 @@ export default function RecordDetailClient({
                   <CheckCircle2 size={12} /> {t("rec.hasAccount")}
                 </span>
               ) : (
-                <span className="text-amber-600 inline-flex items-center gap-1">
-                  <AlertCircle size={12} /> {t("rec.noAccount")}
+                <span className="text-amber-600 flex items-start gap-1.5">
+                  <AlertCircle size={12} className="shrink-0 mt-0.5" />
+                  <span className="leading-snug">{t("rec.noAccount")}</span>
                 </span>
               )}
             </p>
@@ -881,7 +882,7 @@ export default function RecordDetailClient({
         {/* ── P1-b: registration data (for the prescription) ── */}
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Dados para a receita</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("rec.regSection")}</p>
             {!editingReg && canEdit && isOwner && (
               <button
                 onClick={openRegEditor}
@@ -896,7 +897,7 @@ export default function RecordDetailClient({
             <div className="space-y-3 bg-slate-50 rounded-xl p-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Data de nascimento</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("rec.birthLabel")}</label>
                   <input
                     type="date"
                     value={regDraft.dateOfBirth}
@@ -905,21 +906,21 @@ export default function RecordDetailClient({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Sexo</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.sex")}</label>
                   <select
                     value={regDraft.sex}
                     onChange={(e) => setRegDraft({ ...regDraft, sex: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                   >
-                    <option value="">Selecione</option>
-                    <option value="F">Feminino</option>
-                    <option value="M">Masculino</option>
-                    <option value="O">Outro</option>
+                    <option value="">{t("pat.sexSelect")}</option>
+                    <option value="F">{t("pat.sexF")}</option>
+                    <option value="M">{t("pat.sexM")}</option>
+                    <option value="O">{t("pat.sexO")}</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">CPF <span className="text-slate-400">(opcional)</span></label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.cpf")} <span className="text-slate-400">{t("pat.cpfHint")}</span></label>
                 <input
                   value={regDraft.cpf}
                   onChange={(e) => setRegDraft({ ...regDraft, cpf: e.target.value })}
@@ -928,17 +929,17 @@ export default function RecordDetailClient({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Endereço</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.address")}</label>
                 <input
                   value={regDraft.addressLine1}
                   onChange={(e) => setRegDraft({ ...regDraft, addressLine1: e.target.value })}
-                  placeholder="Rua, número, complemento"
+                  placeholder={t("pat.addressPlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Cidade</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.city")}</label>
                   <input
                     value={regDraft.city}
                     onChange={(e) => setRegDraft({ ...regDraft, city: e.target.value })}
@@ -946,7 +947,7 @@ export default function RecordDetailClient({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Estado</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.state")}</label>
                   <input
                     value={regDraft.state}
                     onChange={(e) => setRegDraft({ ...regDraft, state: e.target.value })}
@@ -956,7 +957,7 @@ export default function RecordDetailClient({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">País</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.country")}</label>
                   <input
                     value={regDraft.country}
                     onChange={(e) => setRegDraft({ ...regDraft, country: e.target.value })}
@@ -964,7 +965,7 @@ export default function RecordDetailClient({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">CEP</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.zip")}</label>
                   <input
                     value={regDraft.zipCode}
                     onChange={(e) => setRegDraft({ ...regDraft, zipCode: e.target.value })}
@@ -984,7 +985,7 @@ export default function RecordDetailClient({
                   onClick={() => { setEditingReg(false); setRegMsg(null); }}
                   className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-white"
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </button>
                 <button
                   onClick={saveReg}
@@ -992,19 +993,19 @@ export default function RecordDetailClient({
                   className="flex-1 py-2 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
                 >
                   {regSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                  Salvar
+                  {t("lib.save")}
                 </button>
               </div>
             </div>
           ) : regEmpty ? (
             <p className="text-sm text-slate-400">
-              Nenhum dado cadastral ainda. Eles são usados na emissão da receita.
+              {t("rec.regEmpty")}
             </p>
           ) : (
             <div className="text-sm text-slate-600 space-y-1">
-              {reg.dateOfBirth && <p><span className="text-slate-400">Nascimento:</span> {reg.dateOfBirth.split("-").reverse().join("/")}</p>}
-              {sexLabel && <p><span className="text-slate-400">Sexo:</span> {sexLabel}</p>}
-              {reg.cpf && <p><span className="text-slate-400">CPF:</span> {reg.cpf}</p>}
+              {reg.dateOfBirth && <p><span className="text-slate-400">{t("rec.birthLabel")}:</span> {reg.dateOfBirth.split("-").reverse().join("/")}</p>}
+              {sexLabel && <p><span className="text-slate-400">{t("pat.sex")}:</span> {sexLabel}</p>}
+              {reg.cpf && <p><span className="text-slate-400">{t("pat.cpf")}:</span> {reg.cpf}</p>}
               {(reg.addressLine1 || reg.city || reg.state || reg.country || reg.zipCode) && (
                 <p className="inline-flex items-start gap-1">
                   <MapPin size={13} className="text-slate-400 mt-0.5 shrink-0" />
@@ -1018,7 +1019,7 @@ export default function RecordDetailClient({
 
           {regMsg === "saved" && !editingReg && (
             <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1">
-              <CheckCircle2 size={12} /> Dados salvos.
+              <CheckCircle2 size={12} /> {t("rec.regSaved")}
             </p>
           )}
         </div>
@@ -1074,7 +1075,7 @@ export default function RecordDetailClient({
                     className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                   >
                     {inviteSending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-                    Send invite
+                    {t("rec.sendInvite")}
                   </button>
                 )}
               </div>
@@ -1083,12 +1084,12 @@ export default function RecordDetailClient({
             {/* messages */}
             {emailMsg === "saved" && (
               <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1">
-                <CheckCircle2 size={12} /> Email updated.
+                <CheckCircle2 size={12} /> {t("rec.emailUpdated")}
               </p>
             )}
             {emailMsg === "linked" && (
               <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1">
-                <CheckCircle2 size={12} /> Email updated and linked to an existing account.
+                <CheckCircle2 size={12} /> {t("rec.emailLinked")}
               </p>
             )}
             {emailMsg?.startsWith("error:") && (
@@ -1098,7 +1099,7 @@ export default function RecordDetailClient({
             )}
             {inviteMsg === "sent" && (
               <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1">
-                <Mail size={12} /> Invite sent to {chartEmail}.
+                <Mail size={12} /> {t("rec.inviteSentTo").replace("{{email}}", chartEmail || "")}
               </p>
             )}
             {inviteMsg?.startsWith("error:") && (
@@ -1326,16 +1327,16 @@ export default function RecordDetailClient({
                     <>
                     {status === "shared" ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">
-                        <CheckCircle2 size={14} /> Shared with patient
+                        <CheckCircle2 size={14} /> {t("rec.shareShared")}
                       </span>
                     ) : status === "invited" ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">
-                        <Mail size={14} /> Invitation sent
+                        <Mail size={14} /> {t("rec.shareInvited")}
                       </span>
                     ) : status === "needsInvite" ? (
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-                          <AlertCircle size={14} /> Patient has no account yet
+                          <AlertCircle size={14} /> {t("rec.shareNeedsInvite")}
                         </span>
                         <button
                           onClick={() => handleInvite(d.id)}
@@ -1343,12 +1344,12 @@ export default function RecordDetailClient({
                           className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg disabled:opacity-50"
                         >
                           {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-                          Send invite email
+                          {t("rec.sendInvite")}
                         </button>
                       </div>
                     ) : status === "noEmail" ? (
                       <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-                        <AlertCircle size={14} /> No account and no email on file — add an email to the chart to invite
+                        <AlertCircle size={14} /> {t("rec.shareNoEmail")}
                       </span>
                     ) : status.startsWith("error:") ? (
                       <div className="flex items-center gap-2">
@@ -1357,7 +1358,7 @@ export default function RecordDetailClient({
                           onClick={() => handleShare(d.id)}
                           className="text-xs font-medium text-slate-600 hover:text-slate-800 underline"
                         >
-                          Retry
+                          {t("rec.retry")}
                         </button>
                       </div>
                     ) : (
