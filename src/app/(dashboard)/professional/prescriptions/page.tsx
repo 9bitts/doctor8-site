@@ -4,12 +4,13 @@
 // Memed-style prescription UI: reuse, manual add, recent carousel.
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import {
   Plus, Trash2, FileText, Download, Loader2, CheckCircle2, Search,
   AlertCircle, ChevronRight, AlertTriangle, PenLine, Pill, ArrowLeft, Copy,
-  Clock, User, FlaskConical, ScrollText, LayoutTemplate, BookmarkPlus,
+  Clock, User, FlaskConical, ScrollText, LayoutTemplate, BookmarkPlus, Send,
 } from "lucide-react";
 import { EmissionsSignModal, RX_STYLES, type SignTarget, type EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
 import { EmissionPostSaveFlow, type SavedEmission } from "@/components/professional/emissions/EmissionPostSaveFlow";
@@ -307,6 +308,12 @@ export default function PrescriptionsPage() {
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [lockPatient, setLockPatient] = useState(false);
   const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
+  const [invitingPatient, setInvitingPatient] = useState(false);
+  const [inviteFeedback, setInviteFeedback] = useState<"sent" | "error" | null>(null);
+
+  useEffect(() => {
+    setInviteFeedback(null);
+  }, [selectedPatient?.id]);
 
   useEffect(() => {
     fetchAll();
@@ -422,6 +429,23 @@ export default function PrescriptionsPage() {
 
   async function loadCharts() {
     await searchPatients("");
+  }
+
+  async function sendPatientInvite() {
+    if (!selectedPatient?.email || selectedPatient.hasAccount) return;
+    setInvitingPatient(true);
+    setInviteFeedback(null);
+    try {
+      const res = await fetch(`/api/professional/records/${selectedPatient.id}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: lang }),
+      });
+      setInviteFeedback(res.ok ? "sent" : "error");
+    } catch {
+      setInviteFeedback("error");
+    }
+    setInvitingPatient(false);
   }
 
   async function importPatientChart(item: ImportablePatient) {
@@ -812,21 +836,56 @@ export default function PrescriptionsPage() {
               </div>
 
               {selectedPatient ? (
-                <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl p-3">
-                  <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
-                    {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl p-3">
+                    <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
+                      {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</p>
+                      <p className="text-xs mt-0.5 text-slate-500">
+                        {selectedPatient.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
+                      </p>
+                    </div>
+                    {!lockPatient && (
+                    <button onClick={() => { setSelectedPatient(null); setPatientQuery(""); }}
+                      className="text-xs text-brand-500 hover:text-brand-700 font-semibold shrink-0">
+                      {t("rx2.changePatient")}
+                    </button>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-                    <p className="text-xs mt-0.5 text-slate-500">
-                      {selectedPatient.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
-                    </p>
-                  </div>
-                  {!lockPatient && (
-                  <button onClick={() => { setSelectedPatient(null); setPatientQuery(""); }}
-                    className="text-xs text-brand-500 hover:text-brand-700 font-semibold shrink-0">
-                    {t("rx2.changePatient")}
-                  </button>
+                  {!selectedPatient.hasAccount && (
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/80 p-3 space-y-2">
+                      <p className="text-xs text-amber-900 leading-snug">{t("rx2.noAccountHint")}</p>
+                      {selectedPatient.email ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={sendPatientInvite}
+                            disabled={invitingPatient}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-white bg-brand-500 hover:bg-brand-600 px-2.5 py-1.5 rounded-lg disabled:opacity-50 transition"
+                          >
+                            {invitingPatient ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                            {t("pat.sendInvite")}
+                          </button>
+                          {inviteFeedback === "sent" && (
+                            <span className="text-xs text-brand-600 inline-flex items-center gap-1">
+                              <CheckCircle2 size={12} /> {t("pat.inviteSent")}
+                            </span>
+                          )}
+                          {inviteFeedback === "error" && (
+                            <span className="text-xs text-rose-600">{t("pat.inviteError")}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/professional/patients/${selectedPatient.id}`}
+                          className="text-xs font-medium text-brand-600 hover:underline inline-block"
+                        >
+                          {t("pat.openChartToAddEmail")} →
+                        </Link>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (

@@ -186,14 +186,14 @@ export default function PsychologySessionsPage() {
       const res = await fetch(`/api/professional/documents/${docId}/share`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
-        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || "Failed") }));
+        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || t("rec.updateFailed")) }));
       } else if (data.shared) {
         setShareStatus((s) => ({ ...s, [docId]: "shared" }));
       } else if (data.needsInvite) {
         setShareStatus((s) => ({ ...s, [docId]: data.hasEmail ? "needsInvite" : "noEmail" }));
       }
     } catch {
-      setShareStatus((s) => ({ ...s, [docId]: "error:Network error" }));
+      setShareStatus((s) => ({ ...s, [docId]: "error:" + t("rec.networkError") }));
     }
     setSharingId(null);
   }
@@ -204,12 +204,12 @@ export default function PsychologySessionsPage() {
       const res = await fetch(`/api/professional/documents/${docId}/share`, { method: "PUT" });
       const data = await res.json();
       if (!res.ok) {
-        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || "Failed") }));
+        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || t("rx3.inviteError")) }));
       } else if (data.invited) {
         setShareStatus((s) => ({ ...s, [docId]: "invited" }));
       }
     } catch {
-      setShareStatus((s) => ({ ...s, [docId]: "error:Network error" }));
+      setShareStatus((s) => ({ ...s, [docId]: "error:" + t("rec.networkError") }));
     }
     setSharingId(null);
   }
