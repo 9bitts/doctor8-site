@@ -231,6 +231,7 @@ export default async function PatientDashboard() {
         { href: "/patient/messages", labelKey: "nav.messages", icon: <MessageSquare size={20} />, accent: "bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200", badge: unreadMessages || undefined },
         { href: "/patient/history/share", labelKey: "pdash.quick.share", icon: <FileText size={20} />, accent: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200" },
         { href: "/api/patient/history/pdf", labelKey: "pdash.quick.export", icon: <FileText size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200" },
+        { href: "/api/patient/history/fhir", labelKey: "pdash.quick.exportFhir", icon: <FileText size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200" },
       ],
     },
     {

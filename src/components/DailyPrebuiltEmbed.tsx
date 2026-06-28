@@ -26,9 +26,11 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       if (!call) return;
       try {
         await call.leave();
+        call.destroy();
       } catch {
         /* already left */
       }
+      callRef.current = null;
     },
   }));
 

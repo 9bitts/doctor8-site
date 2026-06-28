@@ -11,6 +11,11 @@ import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
+import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
+import {
+  cacheVolunteerDashboard,
+  loadCachedVolunteerDashboard,
+} from "@/lib/humanitarian/offline-draft";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 
 interface PoolRow {
@@ -94,6 +99,12 @@ export default function HumanitarianVolunteerPage() {
       setPools(data.pools || []);
       setCurrentEntry(data.currentEntry);
       setActivePoolSlug(data.activeVolunteer?.poolSlug ?? null);
+      cacheVolunteerDashboard({
+        campaign: data.campaign,
+        pools: data.pools,
+        currentEntry: data.currentEntry,
+        activePoolSlug: data.activeVolunteer?.poolSlug ?? null,
+      });
 
       if (data.activeVolunteer?.status === "ONLINE" || data.activeVolunteer?.status === "BUSY") {
         if (!pollRef.current) {
@@ -101,7 +112,20 @@ export default function HumanitarianVolunteerPage() {
         }
       }
     } catch {
-      setError(t(lang, "hum.vol.connectionError"));
+      const cached = loadCachedVolunteerDashboard<{
+        campaign: { name: string; active: boolean } | null;
+        pools: PoolRow[];
+        currentEntry: CurrentEntry | null;
+        activePoolSlug: string | null;
+      }>();
+      if (cached) {
+        setCampaign(cached.campaign);
+        setPools(cached.pools);
+        setCurrentEntry(cached.currentEntry);
+        setActivePoolSlug(cached.activePoolSlug);
+      } else {
+        setError(t(lang, "hum.vol.connectionError"));
+      }
     }
     setLoading(false);
   }, [lang]);
@@ -217,6 +241,7 @@ export default function HumanitarianVolunteerPage() {
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang}>
       <div className="space-y-6">
+        <HumanitarianOfflineBanner lang={lang} />
         <div>
           <p className="text-xs text-rose-600 font-medium uppercase tracking-wide">
             {t(lang, "hum.shell.volunteer")}

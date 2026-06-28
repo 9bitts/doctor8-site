@@ -76,3 +76,28 @@ export function loadCachedHumanitarianQueueState<T>(campaignSlug: string): T | n
     return null;
   }
 }
+
+const VOLUNTEER_CACHE_KEY = "doctor8:hum:volunteer:dash";
+
+export function cacheVolunteerDashboard(state: unknown): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(
+      VOLUNTEER_CACHE_KEY,
+      JSON.stringify({ savedAt: Date.now(), state }),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadCachedVolunteerDashboard<T>(): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(VOLUNTEER_CACHE_KEY);
+    if (!raw) return null;
+    return (JSON.parse(raw) as { state: T }).state ?? null;
+  } catch {
+    return null;
+  }
+}
