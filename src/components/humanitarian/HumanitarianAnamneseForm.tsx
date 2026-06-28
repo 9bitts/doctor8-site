@@ -15,6 +15,7 @@ import {
   type SpecialtyData,
 } from "@/lib/humanitarian/anamnese";
 import type { AnamneseDto, IntakePrefillDto } from "@/lib/humanitarian/intake";
+import { mergeAnamneseWithTriageHints } from "@/lib/humanitarian/triage-anamnese-prefill";
 import { parsePhoneToParts } from "@/lib/humanitarian/phone";
 
 type Props = {
@@ -64,6 +65,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
   });
   const [consent, setConsent] = useState({ shareWithVolunteer: true, shareWithAngelVolunteer: false });
   const [additionalNotes, setAdditionalNotes] = useState("");
+  const [triagePrefillApplied, setTriagePrefillApplied] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,38 +88,58 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
 
       const prefill: IntakePrefillDto | undefined = intake.prefill;
       const saved: AnamneseDto | undefined = intake.anamnese;
+      const hints = intake.anamneseHints;
 
-      const prefillPhone = prefill?.phone || saved?.identification?.phone || "";
-      const phoneParts = saved?.identification?.phoneDdi
+      const merged = hints
+        ? mergeAnamneseWithTriageHints(
+            {
+              identification: saved?.identification,
+              serviceTypes: saved?.serviceTypes,
+              specialty: saved?.specialty,
+              basicNeeds: saved?.basicNeeds,
+            },
+            hints,
+          )
+        : null;
+
+      setTriagePrefillApplied(!!merged?.usedHints);
+
+      const idSource = merged?.identification || saved?.identification;
+      const prefillPhone = prefill?.phone || idSource?.phone || "";
+      const phoneParts = idSource?.phoneDdi
         ? {
-            ddi: saved.identification.phoneDdi,
-            ddd: saved.identification.phoneDdd || "",
-            number: saved.identification.phoneNumber || "",
+            ddi: idSource.phoneDdi,
+            ddd: idSource.phoneDdd || "",
+            number: idSource.phoneNumber || "",
           }
         : prefillPhone
           ? parsePhoneToParts(prefillPhone)
           : { ddi: "58", ddd: "", number: "" };
 
       setIdentification({
-        fullName: saved?.identification?.fullName || prefill?.fullName || "",
-        ageOrDob: saved?.identification?.ageOrDob || prefill?.ageOrDob || "",
-        sex: saved?.identification?.sex || prefill?.sex || "",
-        phone: saved?.identification?.phone || prefillPhone,
+        fullName: idSource?.fullName || prefill?.fullName || "",
+        ageOrDob: idSource?.ageOrDob || prefill?.ageOrDob || "",
+        sex: idSource?.sex || prefill?.sex || "",
+        phone: idSource?.phone || prefillPhone,
         phoneDdi: phoneParts.ddi,
         phoneDdd: phoneParts.ddd,
         phoneNumber: phoneParts.number,
-        email: saved?.identification?.email || prefill?.email || "",
-        state: saved?.identification?.state || prefill?.state || "",
-        municipality: saved?.identification?.municipality || prefill?.municipality || "",
-        shelterStatus: saved?.identification?.shelterStatus,
-        housingDamage: saved?.identification?.housingDamage,
-        householdSize: saved?.identification?.householdSize || "",
-        deathsOrMissing: saved?.identification?.deathsOrMissing ?? false,
-        accessWaterFoodMeds: saved?.identification?.accessWaterFoodMeds,
+        email: idSource?.email || prefill?.email || "",
+        state: idSource?.state || prefill?.state || "",
+        municipality: idSource?.municipality || prefill?.municipality || "",
+        shelterStatus: idSource?.shelterStatus ?? saved?.identification?.shelterStatus,
+        housingDamage: idSource?.housingDamage ?? saved?.identification?.housingDamage,
+        householdSize: idSource?.householdSize || saved?.identification?.householdSize || "",
+        deathsOrMissing: idSource?.deathsOrMissing ?? saved?.identification?.deathsOrMissing ?? false,
+        accessWaterFoodMeds: idSource?.accessWaterFoodMeds ?? saved?.identification?.accessWaterFoodMeds,
       });
-      setServiceTypes((saved?.serviceTypes || []) as AnamneseServiceType[]);
-      setSpecialty(saved?.specialty || {});
-      if (saved?.basicNeeds) setBasicNeeds(saved.basicNeeds);
+      setServiceTypes((merged?.serviceTypes || saved?.serviceTypes || []) as AnamneseServiceType[]);
+      setSpecialty(merged?.specialty || saved?.specialty || {});
+      setBasicNeeds(merged?.basicNeeds || saved?.basicNeeds || {
+        needsMedicationHelp: false,
+        needsShelterGuidance: false,
+        separatedChildOrElderlyAlone: false,
+      });
       setAdditionalNotes(saved?.additionalNotes || "");
     } catch {
       setError(t(lang, "hum.page.networkError"));
@@ -229,6 +251,11 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
         </p>
         <h1 className="text-xl sm:text-2xl font-bold text-white mt-1">{t(lang, "hum.anamnese.title")}</h1>
         <p className="text-slate-400 text-sm mt-2">{t(lang, "hum.anamnese.subtitle")}</p>
+        {triagePrefillApplied && (
+          <p className="text-xs text-emerald-200/90 bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-3 py-2 mt-3">
+            {t(lang, "hum.anamnese.triagePrefillBanner")}
+          </p>
+        )}
       </div>
 
       <div>

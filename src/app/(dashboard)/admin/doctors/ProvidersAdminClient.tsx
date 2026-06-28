@@ -329,11 +329,11 @@ export default function ProvidersAdminClient() {
                     <Mail size={11} />
                     {a.email}
                     {!a.emailVerified && (
-                      <span className="text-amber-600 font-medium">(e-mail n?o verificado)</span>
+                      <span className="text-amber-600 font-medium">(e-mail n\u00e3o verificado)</span>
                     )}
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Idiomas: {a.languages.join(", ").toUpperCase()} ?{" "}
+                    Idiomas: {a.languages.join(", ").toUpperCase()} \u00b7{" "}
                     {new Date(a.createdAt).toLocaleDateString("pt-BR")}
                   </p>
                   {a.motivation && (
@@ -491,18 +491,18 @@ function ProfessionalList({
               <StatusBadge verified={d.verified} />
               {d.isPublic && d.verified && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
-                  <Globe size={11} /> P?blico
+                  <Globe size={11} /> P\u00fablico
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {getProfessionLabel(lang as "pt" | "en" | "es", d.specialty)} ? {d.email || "sem e-mail"} ?{" "}
-              {d.region || "?"}
+              {getProfessionLabel(lang as "pt" | "en" | "es", d.specialty)} \u00b7 {d.email || "sem e-mail"} \u00b7{" "}
+              {d.region || "\u2014"}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
-              Licen?a {d.licenseNumber} ({d.licenseCountry}) ? {d.appointments} consultas ? {d.charts}{" "}
+              Licen\u00e7a {d.licenseNumber} ({d.licenseCountry}) \u00b7 {d.appointments} consultas \u00b7 {d.charts}{" "}
               fichas
-              {d.licenseDocCount > 0 && ` ? ${d.licenseDocCount} doc(s) registro`}
+              {d.licenseDocCount > 0 && ` \u00b7 ${d.licenseDocCount} doc(s) registro`}
             </p>
             {d.publicUrl && (
               <a
@@ -562,16 +562,16 @@ function ProviderList({
               <StatusBadge verified={p.verified} />
               {p.isPublic && p.verified && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
-                  <Globe size={11} /> P?blico
+                  <Globe size={11} /> P\u00fablico
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {p.subtitle} ? {p.email || "sem e-mail"} ? {p.region || "?"}
+              {p.subtitle} \u00b7 {p.email || "sem e-mail"} \u00b7 {p.region || "\u2014"}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
-              {p.appointments} consultas ? {p.charts} fichas
-              {p.licenseDocCount > 0 && ` ? ${p.licenseDocCount} doc(s) registro`}
+              {p.appointments} consultas \u00b7 {p.charts} fichas
+              {p.licenseDocCount > 0 && ` \u00b7 ${p.licenseDocCount} doc(s) registro`}
             </p>
             {p.publicUrl && (
               <a

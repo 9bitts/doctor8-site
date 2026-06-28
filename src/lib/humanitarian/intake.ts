@@ -22,6 +22,11 @@ import {
 import type { HumanitarianIntakeStatus, HumanitarianPriority } from "@prisma/client";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
+import { decryptTriageData } from "@/lib/humanitarian/intake-encryption";
+import {
+  buildAnamneseHintsFromTriage,
+  type AnamneseHintsFromTriage,
+} from "@/lib/humanitarian/triage-anamnese-prefill";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -62,6 +67,7 @@ export interface IntakeStatusDto {
   phoneReady: boolean;
   anamnese?: AnamneseDto;
   prefill?: IntakePrefillDto;
+  anamneseHints?: AnamneseHintsFromTriage;
 }
 
 function mapAnamnese(intake: Record<string, unknown>): AnamneseDto {
@@ -146,6 +152,29 @@ export async function getPatientIntakeStatus(
   const tcleAccepted = await hasTelemedicineTcle(patientUserId);
   const phoneReady = !!(await resolvePatientHumanitarianPhone(patientUserId));
 
+  let anamneseBlock: Pick<IntakeStatusDto, "anamnese" | "prefill" | "anamneseHints"> = {};
+  if (opts?.includeAnamnese) {
+    const anamnese = mapAnamnese(intake as unknown as Record<string, unknown>);
+    let anamneseHints: AnamneseHintsFromTriage | undefined;
+    if (valid && intake.triageData) {
+      try {
+        const triage = decryptTriageData(
+          intake.triageData as Parameters<typeof decryptTriageData>[0],
+        );
+        if (triage) {
+          anamneseHints = buildAnamneseHintsFromTriage(triage, intake.forceMedicalPool);
+        }
+      } catch {
+        /* ignore corrupt triage blob */
+      }
+    }
+    anamneseBlock = {
+      anamnese,
+      prefill: await getIntakePrefill(patientUserId),
+      ...(anamneseHints ? { anamneseHints } : {}),
+    };
+  }
+
   return {
     id: intake.id,
     status: intake.status,
@@ -161,12 +190,7 @@ export async function getPatientIntakeStatus(
     anamneseStarted: intake.status !== "TRIAGE_ONLY",
     tcleAccepted,
     phoneReady,
-    ...(opts?.includeAnamnese
-      ? {
-          anamnese: mapAnamnese(intake as unknown as Record<string, unknown>),
-          prefill: await getIntakePrefill(patientUserId),
-        }
-      : {}),
+    ...anamneseBlock,
   };
 }
 

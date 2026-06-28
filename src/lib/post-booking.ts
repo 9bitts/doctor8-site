@@ -33,8 +33,8 @@ export async function onAppointmentBooked(opts: {
 
   const lines = [
     intake.visitReason.trim(),
-    intake.healthPlanLabel ? `Conv?nio: ${intake.healthPlanLabel}` : null,
-    intake.serviceName ? `Servi?o: ${intake.serviceName}` : null,
+    intake.healthPlanLabel ? `Conv\u00eanio: ${intake.healthPlanLabel}` : null,
+    intake.serviceName ? `Servi\u00e7o: ${intake.serviceName}` : null,
   ].filter(Boolean);
 
   await db.medicalDocument.create({
@@ -43,7 +43,7 @@ export async function onAppointmentBooked(opts: {
       professionalId: opts.providerId,
       appointmentId: opts.appointmentId,
       type: "CLINICAL_NOTE",
-      title: encrypt("Pr?-consulta (agendamento online)"),
+      title: encrypt("Pr\u00e9-consulta (agendamento online)"),
       content: encrypt(lines.join("\n")),
     },
   });
