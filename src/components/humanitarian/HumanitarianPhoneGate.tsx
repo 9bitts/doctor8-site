@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Phone, MessageCircle } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
+import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 
 type Props = {
   lang: Lang;
@@ -42,6 +43,10 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setError(t(lang, "hum.offline.submitBlocked"));
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -77,6 +82,7 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
 
   return (
     <div className="bg-white border border-emerald-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+      <HumanitarianOfflineBanner lang={lang} />
       <div className="flex items-start gap-3">
         <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
           <MessageCircle size={22} className="text-emerald-600" />

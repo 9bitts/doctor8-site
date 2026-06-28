@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { createNotification } from "@/lib/notifications";
+import { translate } from "@/lib/i18n/translations";
 import { decrypt } from "@/lib/encryption";
 
 function safeDecrypt(v: string | null): string {
@@ -249,10 +250,10 @@ export async function PATCH(req: NextRequest) {
       // Notify patient
       await createNotification({
         userId: e.patientUserId,
-        title:  "Você perdeu sua vez",
-        body:   "Você não entrou na consulta a tempo. Se ainda precisar de atendimento, entre na fila novamente.",
-        type:   "system",
-        data:   {
+        title: translate("en", "notif.jit.missed.title"),
+        body: translate("en", "notif.jit.missed.body"),
+        type: "system",
+        data: {
           sessionId,
           titleKey: "notif.jit.missed.title",
           bodyKey: "notif.jit.missed.body",
@@ -344,10 +345,10 @@ export async function PATCH(req: NextRequest) {
     // Notify patient
     await createNotification({
       userId: called.patientUserId,
-      title:  "É a sua vez!",
-      body:   "O médico está pronto para te atender. Você tem 2 minutos para entrar na consulta.",
-      type:   "message",
-      data:   {
+      title: translate("en", "notif.jit.yourTurn.title"),
+      body: translate("en", "notif.jit.yourTurn.body"),
+      type: "message",
+      data: {
         queueId: called.id,
         meetingUrl,
         sessionId,

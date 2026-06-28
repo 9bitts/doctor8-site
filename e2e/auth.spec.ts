@@ -22,6 +22,13 @@ test.describe("authentication", () => {
     const res = await request.get("/api/humanitarian/queue/nonexistent-id/video");
     expect(res.status()).toBe(401);
   });
+
+  test("humanitarian queue API returns 401 without session", async ({ request }) => {
+    const res = await request.get(
+      `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`,
+    );
+    expect(res.status()).toBe(401);
+  });
 });
 
 test.describe("authenticated patient", () => {
@@ -54,6 +61,17 @@ test.describe("authenticated patient", () => {
     await loginWithCredentials(page, creds.email, creds.password, carePath);
     await waitForAuthenticatedSession(page);
     await page.waitForURL(new RegExp(`/humanitarian/${VENEZUELA_SLUG}`), {
+      timeout: 30_000,
+    });
+    await expect(page.locator("body")).toBeVisible();
+  });
+
+  test("patient can open humanitarian TCLE page when logged in", async ({ page }) => {
+    const creds = e2ePatientCredentials()!;
+    const tclePath = `/humanitarian/${VENEZUELA_SLUG}/tcle`;
+    await loginWithCredentials(page, creds.email, creds.password, tclePath);
+    await waitForAuthenticatedSession(page);
+    await page.waitForURL(new RegExp(`/humanitarian/${VENEZUELA_SLUG}/tcle`), {
       timeout: 30_000,
     });
     await expect(page.locator("body")).toBeVisible();

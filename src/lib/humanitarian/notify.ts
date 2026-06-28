@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
+import { translate } from "@/lib/i18n/translations";
+import { interpolate } from "@/lib/notification-i18n";
 import { buildClinicalDocumentWaMeUrl } from "@/lib/whatsapp";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import type { HumanitarianCampaignReportDto } from "@/lib/humanitarian/types";
@@ -180,8 +182,11 @@ export async function notifyHumanitarianJoined(opts: {
 }) {
   await createNotification({
     userId: opts.patientUserId,
-    title: "Estás en la fila humanitaria",
-    body: `${opts.poolLabel} — posición ${opts.position}. Te avisaremos cuando sea tu turno.`,
+    title: translate("en", "hum.notif.joined.title"),
+    body: interpolate(translate("en", "hum.notif.joined.body"), {
+      pool: opts.poolLabel,
+      position: opts.position,
+    }),
     type: "system",
     data: {
       link: `/humanitarian/${opts.campaignSlug}`,
@@ -216,8 +221,8 @@ export async function notifyHumanitarianYourTurn(opts: {
 
   await createNotification({
     userId: opts.patientUserId,
-    title: "¡Es tu turno!",
-    body: `${pro} está listo. Tienes 3 minutos para entrar a la consulta gratuita.`,
+    title: translate("en", "hum.notif.yourTurn.title"),
+    body: interpolate(translate("en", "hum.notif.yourTurn.body"), { professional: pro }),
     type: "message",
     data: {
       entryId: opts.entryId,
@@ -233,8 +238,8 @@ export async function notifyHumanitarianYourTurn(opts: {
 export async function notifyHumanitarianMissedTurn(patientUserId: string, campaignSlug: string) {
   await createNotification({
     userId: patientUserId,
-    title: "Perdiste tu turno",
-    body: "No entraste a tiempo. Si aún necesitas atención, vuelve a unirte a la fila.",
+    title: translate("en", "hum.notif.missed.title"),
+    body: translate("en", "hum.notif.missed.body"),
     type: "system",
     data: {
       link: `/humanitarian/${campaignSlug}`,
@@ -257,8 +262,10 @@ export async function notifyVolunteerAssigned(opts: {
     : "";
   await createNotification({
     userId: opts.volunteerUserId,
-    title: "Paciente asignado",
-    body: `${opts.patientName} fue asignado a tu consulta humanitaria.${flags}`,
+    title: translate("en", "hum.notif.volunteerAssigned.title"),
+    body: interpolate(translate("en", "hum.notif.volunteerAssigned.body"), {
+      patient: opts.patientName,
+    }) + flags,
     type: "system",
     data: {
       entryId: opts.entryId,
@@ -276,8 +283,8 @@ export async function notifyHumanitarianAnamneseReminder(opts: {
 }) {
   await createNotification({
     userId: opts.patientUserId,
-    title: "Complete su ficha médica",
-    body: "Ayude al voluntario completando la anamnesis cuando pueda.",
+    title: translate("en", "hum.notif.anamnese.title"),
+    body: translate("en", "hum.notif.anamnese.body"),
     type: "system",
     data: {
       link: `/humanitarian/${opts.campaignSlug}/anamnese`,
@@ -294,8 +301,10 @@ export async function notifyHumanitarianWhatsAppHandoff(opts: {
 }) {
   await createNotification({
     userId: opts.patientUserId,
-    title: "Voluntário entrará em contato",
-    body: `${opts.volunteerName} vai falar com você pelo WhatsApp para iniciar o atendimento.`,
+    title: translate("en", "hum.notif.whatsappHandoff.title"),
+    body: interpolate(translate("en", "hum.notif.whatsappHandoff.body"), {
+      professional: opts.volunteerName,
+    }),
     type: "system",
     data: {
       link: `/humanitarian/${opts.campaignSlug}`,

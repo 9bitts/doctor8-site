@@ -9,6 +9,7 @@ import { translate, type Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import TelemedicineTcleConsent from "@/components/consent/TelemedicineTcleConsent";
 import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
+import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 
 function t(lang: Lang, key: string) {
@@ -72,6 +73,10 @@ export default function HumanitarianTclePage() {
       setError(t(lang, "tcle.required"));
       return;
     }
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setError(t(lang, "hum.offline.submitBlocked"));
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -107,6 +112,7 @@ export default function HumanitarianTclePage() {
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
       <div className="max-w-lg mx-auto space-y-6 py-4">
         <HumanitarianFlowStepper lang={lang} current="tcle" dark />
+        <HumanitarianOfflineBanner lang={lang} />
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
             <FileText size={22} className="text-emerald-400" />
