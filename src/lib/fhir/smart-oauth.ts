@@ -1,5 +1,9 @@
 import crypto from "crypto";
 import { db } from "@/lib/db";
+import {
+  isRedirectUriAllowedForClient,
+  isRegisteredSmartClient,
+} from "@/lib/fhir/smart-oauth-clients";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 export const ACCESS_TOKEN_TTL_SEC = 3600;
@@ -9,19 +13,35 @@ export function getSmartClientId(): string {
   return process.env.SMART_OAUTH_CLIENT_ID?.trim() || "doctor8-public";
 }
 
-export function isRedirectUriAllowed(uri: string): boolean {
-  const allowlist = (process.env.SMART_OAUTH_REDIRECT_URIS || "")
+function envRedirectAllowlist(): string[] {
+  return (process.env.SMART_OAUTH_REDIRECT_URIS || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+}
 
+function localhostRedirectAllowed(uri: string): boolean {
+  try {
+    const u = new URL(uri);
+    return u.hostname === "localhost" || u.hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+export async function isSmartClientIdAllowed(clientId: string): Promise<boolean> {
+  if (clientId === getSmartClientId()) return true;
+  return isRegisteredSmartClient(clientId);
+}
+
+export async function isRedirectUriAllowed(uri: string, clientId?: string): Promise<boolean> {
+  if (clientId && (await isRedirectUriAllowedForClient(clientId, uri))) {
+    return true;
+  }
+
+  const allowlist = envRedirectAllowlist();
   if (allowlist.length === 0) {
-    try {
-      const u = new URL(uri);
-      return u.hostname === "localhost" || u.hostname === "127.0.0.1";
-    } catch {
-      return false;
-    }
+    return localhostRedirectAllowed(uri);
   }
   return allowlist.includes(uri);
 }

@@ -162,3 +162,33 @@ export async function deleteDailyRoom(roomName: string): Promise<void> {
     /* non-fatal */
   }
 }
+
+/** Fetch a time-limited download link for a cloud recording. */
+export async function getDailyRecordingAccessLink(
+  recordingId: string,
+): Promise<{ downloadUrl: string; durationSecs?: number } | null> {
+  const key = process.env.DAILY_API_KEY;
+  if (!key || !recordingId) return null;
+
+  try {
+    const res = await fetch(`${DAILY_API}/recordings/${recordingId}/access-link`, {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) {
+      console.error("[DAILY] recording access-link failed:", await res.text());
+      return null;
+    }
+    const data = (await res.json()) as {
+      download_link?: string;
+      duration?: number;
+    };
+    if (!data.download_link) return null;
+    return {
+      downloadUrl: data.download_link,
+      durationSecs: typeof data.duration === "number" ? data.duration : undefined,
+    };
+  } catch (e) {
+    console.error("[DAILY] recording access-link error:", e);
+    return null;
+  }
+}

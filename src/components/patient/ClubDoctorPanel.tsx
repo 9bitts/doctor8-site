@@ -181,6 +181,26 @@ export default function ClubDoctorPanel() {
     }
   }
 
+  async function openBillingPortal() {
+    setWorking(true);
+    setMsg("");
+    try {
+      const res = await fetch("/api/payments/subscription/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.portalUrl) {
+        window.location.href = data.portalUrl;
+        return;
+      }
+      setMsgTone("error");
+      setMsg(data.error || t("club.portalError"));
+    } catch {
+      setMsgTone("error");
+      setMsg(t("billing.err.connection"));
+    } finally {
+      setWorking(false);
+    }
+  }
+
   async function cancel() {
     if (!confirm(t("club.cancelConfirm"))) return;
     setWorking(true);
@@ -250,6 +270,21 @@ export default function ClubDoctorPanel() {
           }`}
         >
           {msg}
+        </div>
+      )}
+
+      {sub?.status === "past_due" && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5 space-y-3">
+          <p className="text-sm text-rose-800">{t("club.pastDuePixHint")}</p>
+          <button
+            type="button"
+            onClick={openBillingPortal}
+            disabled={working}
+            className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+          >
+            {working ? <Loader2 className="animate-spin" size={15} /> : <CreditCard size={15} />}
+            {t("club.updatePayment")}
+          </button>
         </div>
       )}
 

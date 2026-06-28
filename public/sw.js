@@ -1,5 +1,9 @@
-const CACHE = "doctor8-hum-v5";
-const API_CACHE = "doctor8-hum-api-v5";
+const CACHE = "doctor8-hum-v6";
+const API_CACHE = "doctor8-hum-api-v6";
+const OUTBOX_DB = "doctor8-hum";
+const OUTBOX_STORE = "outbox";
+const SYNC_TAG = "hum-outbox-sync";
+
 const PRECACHE = [
   "/sos-venezuela",
   "/humanitarian/venezuela-terremoto-2026",
@@ -39,6 +43,72 @@ function isHumanitarianShell(pathname) {
 function isCampaignApi(pathname) {
   return pathname.startsWith("/api/humanitarian/campaigns/");
 }
+
+function openOutboxDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(OUTBOX_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(OUTBOX_STORE)) {
+        db.createObjectStore(OUTBOX_STORE, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function readOutboxItems(db) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OUTBOX_STORE, "readonly");
+    const req = tx.objectStore(OUTBOX_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function removeOutboxItem(db, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OUTBOX_STORE, "readwrite");
+    tx.objectStore(OUTBOX_STORE).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function flushOutboxFromSw() {
+  const db = await openOutboxDb();
+  const items = await readOutboxItems(db);
+  if (!items.length) return 0;
+
+  let flushed = 0;
+  for (const item of items) {
+    if (!item.url || !item.url.startsWith("/api/humanitarian/")) continue;
+    try {
+      const res = await fetch(item.url, {
+        method: item.method || "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(item.body || {}),
+      });
+      if (res.ok) {
+        await removeOutboxItem(db, item.id);
+        flushed += 1;
+      } else {
+        break;
+      }
+    } catch {
+      break;
+    }
+  }
+  return flushed;
+}
+
+self.addEventListener("sync", (event) => {
+  if (event.tag === SYNC_TAG) {
+    event.waitUntil(flushOutboxFromSw());
+  }
+});
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;

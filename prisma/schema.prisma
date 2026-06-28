@@ -2803,16 +2803,32 @@ model SmartRefreshToken {
 }
 
 model DailyRecordingLog {
-  id                  String   @id @default(cuid())
+  id                  String    @id @default(cuid())
   appointmentId       String?
   humanitarianEntryId String?
   dailyRoomName       String
-  cloudRecording      Boolean  @default(true)
-  createdAt           DateTime @default(now())
+  cloudRecording      Boolean   @default(true)
+  recordingId         String?
+  downloadUrl         String?
+  durationSecs        Int?
+  status              String    @default("pending") // pending | ready | error
+  readyAt             DateTime?
+  createdAt           DateTime  @default(now())
 
   @@index([appointmentId])
   @@index([humanitarianEntryId])
+  @@index([dailyRoomName])
   @@index([createdAt])
+}
+
+model SmartOAuthClient {
+  id           String   @id @default(cuid())
+  clientId     String   @unique
+  name         String
+  redirectUris String   // comma-separated allowlist
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model QStashJobLog {

@@ -55,7 +55,7 @@ export function getIntegrationStatuses(): IntegrationRow[] {
         ? process.env.E2E_MOCK_DAILY === "1"
           ? "Mock mode (E2E_MOCK_DAILY)."
           : isDailyCloudRecordingEnabled()
-            ? "Daily.co API key configured; cloud recording enabled (rooms logged)."
+            ? "Daily.co API key configured; cloud recording enabled. Webhook: POST /api/webhooks/daily."
             : "Daily.co API key configured."
         : "Video calls need DAILY_API_KEY.",
     },
@@ -118,8 +118,8 @@ export function getIntegrationStatuses(): IntegrationRow[] {
       health: process.env.SMART_OAUTH_REDIRECT_URIS?.trim() ? "ok" : "partial",
       configured: true,
       detail: process.env.SMART_OAUTH_REDIRECT_URIS?.trim()
-        ? "SMART on FHIR OAuth with patient consent and FHIR Patient API."
-        : "SMART OAuth active; set SMART_OAUTH_REDIRECT_URIS for production app callbacks (localhost allowed in dev).",
+        ? "SMART on FHIR OAuth with patient consent. Register third-party apps in Admin ? Integrations."
+        : "SMART OAuth active; set SMART_OAUTH_REDIRECT_URIS or register apps in Admin ? Integrations.",
     },
   ];
 }

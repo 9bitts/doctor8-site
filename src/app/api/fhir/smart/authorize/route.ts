@@ -4,10 +4,17 @@ import { db } from "@/lib/db";
 import {
   getSmartClientId,
   isRedirectUriAllowed,
+  isSmartClientIdAllowed,
 } from "@/lib/fhir/smart-oauth";
 
-function oauthError(redirectUri: string | null, error: string, description: string, state?: string | null) {
-  if (!redirectUri || !isRedirectUriAllowed(redirectUri)) {
+async function oauthError(
+  redirectUri: string | null,
+  clientId: string,
+  error: string,
+  description: string,
+  state?: string | null,
+) {
+  if (!redirectUri || !(await isRedirectUriAllowed(redirectUri, clientId))) {
     return NextResponse.json({ error, error_description: description }, { status: 400 });
   }
   const url = new URL(redirectUri);
@@ -30,17 +37,17 @@ export async function GET(req: NextRequest) {
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org").replace(/\/$/, "");
 
-  if (!redirectUri || !isRedirectUriAllowed(redirectUri)) {
+  if (!redirectUri || !(await isRedirectUriAllowed(redirectUri, clientId))) {
     return NextResponse.json({ error: "invalid_request", error_description: "redirect_uri not allowed" }, { status: 400 });
   }
   if (responseType !== "code") {
-    return oauthError(redirectUri, "unsupported_response_type", "Only code is supported.", state);
+    return oauthError(redirectUri, clientId, "unsupported_response_type", "Only code is supported.", state);
   }
-  if (clientId !== getSmartClientId()) {
-    return oauthError(redirectUri, "invalid_client", "Unknown client_id.", state);
+  if (!(await isSmartClientIdAllowed(clientId))) {
+    return oauthError(redirectUri, clientId, "invalid_client", "Unknown client_id.", state);
   }
   if (!codeChallenge || codeChallengeMethod !== "S256") {
-    return oauthError(redirectUri, "invalid_request", "PKCE S256 code_challenge required.", state);
+    return oauthError(redirectUri, clientId, "invalid_request", "PKCE S256 code_challenge required.", state);
   }
 
   const session = await auth();
@@ -52,7 +59,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (session.user.role !== "PATIENT") {
-    return oauthError(redirectUri, "access_denied", "Only patient accounts can authorize FHIR access.", state);
+    return oauthError(redirectUri, clientId, "access_denied", "Only patient accounts can authorize FHIR access.", state);
   }
 
   const patient = await db.patientProfile.findUnique({
@@ -60,7 +67,7 @@ export async function GET(req: NextRequest) {
     select: { id: true },
   });
   if (!patient) {
-    return oauthError(redirectUri, "access_denied", "Patient profile required.", state);
+    return oauthError(redirectUri, clientId, "access_denied", "Patient profile required.", state);
   }
 
   const consentUrl = new URL("/patient/fhir-authorize", appUrl);

@@ -6,6 +6,7 @@ import {
   createAuthorizationCode,
   getSmartClientId,
   isRedirectUriAllowed,
+  isSmartClientIdAllowed,
 } from "@/lib/fhir/smart-oauth";
 import { z } from "zod";
 
@@ -50,10 +51,10 @@ export async function POST(req: NextRequest) {
     action,
   } = parsed.data;
 
-  if (!isRedirectUriAllowed(redirectUri)) {
+  if (!(await isRedirectUriAllowed(redirectUri, clientId))) {
     return NextResponse.json({ error: "redirect_uri not allowed" }, { status: 400 });
   }
-  if (clientId !== getSmartClientId()) {
+  if (!(await isSmartClientIdAllowed(clientId))) {
     return NextResponse.json({ error: "invalid_client" }, { status: 400 });
   }
 

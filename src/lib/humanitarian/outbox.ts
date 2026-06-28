@@ -109,6 +109,18 @@ async function writeOutbox(items: OutboxItem[]): Promise<void> {
   }
 }
 
+async function requestOutboxBackgroundSync(): Promise<void> {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    if ("sync" in reg) {
+      await (reg as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } }).sync.register("hum-outbox-sync");
+    }
+  } catch {
+    /* Background Sync not supported */
+  }
+}
+
 export async function enqueueHumanitarianSubmit(
   item: Omit<OutboxItem, "id" | "createdAt">,
 ): Promise<string> {
@@ -116,6 +128,7 @@ export async function enqueueHumanitarianSubmit(
   const next: OutboxItem = { ...item, id, createdAt: Date.now() };
   const items = await readOutbox();
   await writeOutbox([...items, next]);
+  await requestOutboxBackgroundSync();
   return id;
 }
 

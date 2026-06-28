@@ -1,4 +1,4 @@
-export type HumanitarianFlowStep = "triage" | "tcle" | "care" | "waiting" | "consult";
+export type HumanitarianFlowStep = "triage" | "tcle" | "anamnese" | "care" | "waiting" | "consult";
 
 export function humanitarianCareHref(
   slug: string,
@@ -19,6 +19,7 @@ export function humanitarianFlowStep(
 ): HumanitarianFlowStep {
   if (!intake.triageValid) return "triage";
   if (!intake.tcleAccepted) return "tcle";
+  if (!intake.anamneseComplete && !inQueue) return "anamnese";
   if (inQueue) return "waiting";
   return "care";
 }

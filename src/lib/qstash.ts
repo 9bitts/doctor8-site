@@ -107,6 +107,41 @@ export async function scheduleReviewRequest(
   });
 }
 
+interface ScheduleHumanitarianAnamneseParams {
+  patientUserId: string;
+  campaignSlug: string;
+  intakeId: string;
+  delaySeconds?: number;
+}
+
+/** Remind patient to complete optional anamnese while waiting in queue. */
+export async function scheduleHumanitarianAnamneseReminder({
+  patientUserId,
+  campaignSlug,
+  intakeId,
+  delaySeconds = 30 * 60,
+}: ScheduleHumanitarianAnamneseParams): Promise<void> {
+  if (!QSTASH_TOKEN || delaySeconds < 60) return;
+
+  const endpoint = `${APP_URL}/api/reminders/humanitarian-anamnese`;
+
+  const res = await fetch(`${QSTASH_URL}/v2/publish/${endpoint}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${QSTASH_TOKEN}`,
+      "Content-Type": "application/json",
+      "Upstash-Delay": `${delaySeconds}s`,
+      "Upstash-Retries": "2",
+      "Upstash-Deduplication-Id": `hum-anamnese:${intakeId}`,
+    },
+    body: JSON.stringify({ patientUserId, campaignSlug, intakeId }),
+  });
+
+  if (!res.ok) {
+    console.error("[QSTASH] Failed to schedule humanitarian anamnese reminder:", await res.text());
+  }
+}
+
 let qstashReceiver: Receiver | null = null;
 
 function getQStashReceiver(): Receiver | null {

@@ -50,39 +50,13 @@ import {
 import { consultDraftKey } from "@/lib/ai-consult-notes";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
 import {
   buildRecordCopyText, formatRecordContentForDisplay, parseRecordContent,
   isPsychologyStructuredContent, countRecordAttachments,
 } from "@/lib/record-content";
 import { isImageFile, rotateImageFile } from "@/lib/image-rotate";
-
-// P2: inline texts for rec.* keys (not yet in translations.ts)
-const REC_TEXTS: Record<string, Record<string, string>> = {
-  titleLabel:       { pt: "Título complementar", en: "Additional title", es: "Título complementario" },
-  titlePlaceholder: { pt: "opcional — assunto extra do registro", en: "optional — extra subject for this record", es: "opcional — asunto adicional del registro" },
-  whatsapp:         { pt: "Abrir WhatsApp", en: "Open WhatsApp", es: "Abrir WhatsApp" },
-  errCid:           { pt: "Selecione um CID para o registro.", en: "Select an ICD code for this record.", es: "Seleccione un CIE para el registro." },
-  errCategory:      { pt: "Escolha uma categoria.", en: "Please choose a category.", es: "Elige una categoría." },
-  sendMessage:      { pt: "Enviar mensagem", en: "Send message", es: "Enviar mensaje" },
-  verConv:          { pt: "Ver conversa", en: "View conversation", es: "Ver conversación" },
-  copy:             { pt: "Copiar texto", en: "Copy text", es: "Copiar texto" },
-  copied:           { pt: "Copiado!", en: "Copied!", es: "¡Copiado!" },
-  print:            { pt: "Imprimir", en: "Print", es: "Imprimir" },
-  edit:             { pt: "Editar", en: "Edit", es: "Editar" },
-  sharedReadOnly:   { pt: "Compartilhado pelo paciente — somente leitura", en: "Shared by patient — read only", es: "Compartido por el paciente — solo lectura" },
-  rotateLeft:       { pt: "Girar esquerda", en: "Rotate left", es: "Girar izquierda" },
-  rotateRight:      { pt: "Girar direita", en: "Rotate right", es: "Girar derecha" },
-  editRecord:       { pt: "Editar registro", en: "Edit record", es: "Editar registro" },
-  saveChanges:      { pt: "Salvar alterações", en: "Save changes", es: "Guardar cambios" },
-  expand:           { pt: "Ver detalhes", en: "View details", es: "Ver detalles" },
-  collapse:         { pt: "Recolher", en: "Collapse", es: "Contraer" },
-  attachments:      { pt: "anexos", en: "attachments", es: "adjuntos" },
-  attachLoading:    { pt: "Carregando anexos…", en: "Loading attachments…", es: "Cargando adjuntos…" },
-  addMoreFiles:     { pt: "Este registro já tem {n} anexo(s). Novos arquivos serão adicionados aos existentes.", en: "This record already has {n} attachment(s). New files will be added to the existing ones.", es: "Este registro ya tiene {n} adjunto(s). Los archivos nuevos se añadirán a los existentes." },
-  addFilesHint:     { pt: "Selecione um ou mais arquivos para adicionar.", en: "Select one or more files to add.", es: "Seleccione uno o más archivos para añadir." },
-  openFile:         { pt: "Abrir arquivo", en: "Open file", es: "Abrir archivo" },
-};
 
 interface Chart {
   id: string;
@@ -130,11 +104,11 @@ const CONTENT_PREVIEW_CHARS = 160;
 function RecordAttachmentStrip({
   docId,
   count,
-  rt,
+  t,
 }: {
   docId: string;
   count: number;
-  rt: (k: string) => string;
+  t: (k: string) => string;
 }) {
   const [files, setFiles] = useState<RecordFilePreview[]>([]);
   const [loading, setLoading] = useState(false);
@@ -170,11 +144,11 @@ function RecordAttachmentStrip({
     <div className="mt-2">
       {loading && (
         <p className="text-xs text-slate-400 inline-flex items-center gap-1">
-          <Loader2 size={12} className="animate-spin" /> {rt("attachLoading")}
+          <Loader2 size={12} className="animate-spin" /> {t("rec.attachLoading")}
         </p>
       )}
       {error && !loading && (
-        <p className="text-xs text-rose-500">{rt("attachLoading")}</p>
+        <p className="text-xs text-rose-500">{t("rec.attachLoading")}</p>
       )}
       {files.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin max-w-full">
@@ -184,7 +158,7 @@ function RecordAttachmentStrip({
               href={f.url}
               target="_blank"
               rel="noopener noreferrer"
-              title={f.name || rt("openFile")}
+              title={f.name || t("rec.openFile")}
               className="flex-shrink-0 snap-start w-20 h-20 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden hover:border-brand-300 hover:ring-2 hover:ring-brand-100 transition"
             >
               {f.kind === "image" ? (
@@ -257,11 +231,7 @@ export default function RecordDetailClient({
   const { lang, t } = useI18n();
   const searchParams = useSearchParams();
   const consultReturnUrl = searchParams.get("returnUrl");
-  // Detect current language via a known key, then serve inline rec.* texts
-  const _lang = t("common.cancel") === "Cancelar" ? "pt" : t("common.cancel") === "Cancelar" ? "es" : t("common.cancel") === "Cancel" ? "en" : "en";
-  const _langFull = t("greeting.morning") === "Bom dia" ? "pt" : t("greeting.morning") === "Buenos días" ? "es" : "en";
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
-  const rt = (key: string) => REC_TEXTS[key]?.[_langFull] ?? REC_TEXTS[key]?.["en"] ?? key;
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio">("records");
   const [recordFilter, setRecordFilter] = useState<RecordTimelineFilter>("all");
@@ -481,7 +451,7 @@ export default function RecordDetailClient({
   }
 
   async function handleCopy(doc: Doc, label: string) {
-    const locale = _langFull === "pt" ? "pt-BR" : _langFull === "es" ? "es-ES" : "en-US";
+    const locale = localeOf(lang);
     const text = buildRecordCopyText({
       categoryLabel: label,
       title: doc.title,
@@ -623,11 +593,11 @@ export default function RecordDetailClient({
 
   async function handleCreate() {
     if (!cidSelection) {
-      setError(rt("errCid"));
+      setError(t("rec.errCid"));
       return;
     }
     if (!categoryId) {
-      setError(rt("errCategory"));
+      setError(t("rec.errCategory"));
       return;
     }
     setSaving(true);
@@ -700,7 +670,7 @@ export default function RecordDetailClient({
   async function handleUpdate() {
     if (!editingDoc) return;
     if (!cidSelection && !title.trim()) {
-      setError(rt("errCid"));
+      setError(t("rec.errCid"));
       return;
     }
     setSaving(true);
@@ -777,14 +747,14 @@ export default function RecordDetailClient({
     }, 80);
   }
 
-  const localeFull = _langFull === "pt" ? "pt-BR" : _langFull === "es" ? "es-ES" : "en-US";
+  const localeFull = localeOf(lang);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <VideoConsultReturnBanner
         returnUrl={consultReturnUrl}
         patientName={`${chart.firstName} ${chart.lastName}`}
-        lang={_langFull as "pt" | "en" | "es"}
+        lang={lang}
       />
       <Link
         href="/professional/patients"
@@ -826,7 +796,7 @@ export default function RecordDetailClient({
                     href={`https://wa.me/${waPhone(chart.phone)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title={rt("whatsapp")}
+                    title={t("rec.whatsapp")}
                     className="inline-flex items-center gap-1 text-xs font-medium text-brand-500 hover:text-brand-600 bg-brand-50 hover:bg-brand-100 px-2 py-0.5 rounded-full transition"
                   >
                     <MessageCircle size={12} /> WhatsApp
@@ -853,14 +823,14 @@ export default function RecordDetailClient({
                   href={`/professional/messages?with=${chart.linkedUserId}`}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg transition"
                 >
-                  <MessageCircle size={13} /> {rt("sendMessage")}
+                  <MessageCircle size={13} /> {t("rec.sendMessage")}
                 </a>
                 {hasConversation && (
                   <a
                     href={`/professional/messages?with=${chart.linkedUserId}`}
                     className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition"
                   >
-                    <ExternalLink size={13} /> {rt("verConv")}
+                    <ExternalLink size={13} /> {t("rec.verConv")}
                   </a>
                 )}
               </div>
@@ -1269,14 +1239,14 @@ export default function RecordDetailClient({
                     )}
                     {attachmentCount > 0 && (
                       <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                        <Paperclip size={12} /> {attachmentCount} {rt("attachments")}
+                        <Paperclip size={12} /> {attachmentCount} {t("rec.attachments")}
                       </span>
                     )}
                   </div>
                   <p className="font-semibold text-slate-800 text-sm">{d.title}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {new Date(d.createdAt).toLocaleString(
-                      _langFull === "pt" ? "pt-BR" : _langFull === "es" ? "es-ES" : "en-US",
+                      localeOf(lang),
                       { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }
                     )}
                   </p>
@@ -1286,10 +1256,10 @@ export default function RecordDetailClient({
                     </p>
                   )}
                   {attachmentCount > 0 && (
-                    <RecordAttachmentStrip key={`${d.id}-${attachmentCount}`} docId={d.id} count={attachmentCount} rt={rt} />
+                    <RecordAttachmentStrip key={`${d.id}-${attachmentCount}`} docId={d.id} count={attachmentCount} t={t} />
                   )}
                   {d.sourceDocumentId && (
-                    <p className="text-xs text-amber-600 mt-1">{rt("sharedReadOnly")}</p>
+                    <p className="text-xs text-amber-600 mt-1">{t("rec.sharedReadOnly")}</p>
                   )}
 
                   {canExpand && (
@@ -1299,7 +1269,7 @@ export default function RecordDetailClient({
                       className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
                     >
                       {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      {isExpanded ? rt("collapse") : rt("expand")}
+                      {isExpanded ? t("rec.collapse") : t("rec.expand")}
                     </button>
                   )}
 
@@ -1311,14 +1281,14 @@ export default function RecordDetailClient({
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
                     >
                       {copiedId === d.id ? <CheckCircle2 size={14} className="text-brand-500" /> : <Copy size={14} />}
-                      {copiedId === d.id ? rt("copied") : rt("copy")}
+                      {copiedId === d.id ? t("rec.copied") : t("rec.copy")}
                     </button>
                     <button
                       type="button"
                       onClick={() => handlePrint(d.id)}
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
                     >
-                      <Printer size={14} /> {rt("print")}
+                      <Printer size={14} /> {t("rec.print")}
                     </button>
                     {canEdit && d.canEdit !== false && !d.sourceDocumentId && !isPsychologyStructuredContent(d.content) && (
                       <button
@@ -1326,7 +1296,7 @@ export default function RecordDetailClient({
                         onClick={() => openEditForm(d)}
                         className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
                       >
-                        <Pencil size={14} /> {rt("edit")}
+                        <Pencil size={14} /> {t("rec.edit")}
                       </button>
                     )}
                     <AiSummarizeButton documentId={d.id} />
@@ -1396,7 +1366,7 @@ export default function RecordDetailClient({
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
               <h2 className="font-bold text-slate-800">
-                {editingDoc ? rt("editRecord") : t("rec.modal.newRecord")}
+                {editingDoc ? t("rec.editRecord") : t("rec.modal.newRecord")}
               </h2>
               <button onClick={() => { setShowForm(false); resetForm(); }} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
@@ -1482,12 +1452,12 @@ export default function RecordDetailClient({
               )}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  {cidSelection ? rt("titleLabel") : `${rt("titleLabel")} *`}
+                  {cidSelection ? t("rec.titleLabel") : `${t("rec.titleLabel")} *`}
                 </label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={rt("titlePlaceholder")}
+                  placeholder={t("rec.titlePlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                 />
               </div>
@@ -1510,11 +1480,11 @@ export default function RecordDetailClient({
                 </label>
                 {editingDoc && (editingDoc.attachmentCount ?? (editingDoc.hasFile ? 1 : 0)) > 0 && files.length === 0 && (
                   <p className="text-xs text-slate-500 mb-2">
-                    {rt("addMoreFiles").replace("{n}", String(editingDoc.attachmentCount ?? (editingDoc.hasFile ? 1 : 0)))}
+                    {t("rec.addMoreFiles").replace("{n}", String(editingDoc.attachmentCount ?? (editingDoc.hasFile ? 1 : 0)))}
                   </p>
                 )}
                 {editingDoc && (editingDoc.attachmentCount ?? 0) === 0 && !editingDoc.hasFile && (
-                  <p className="text-xs text-slate-500 mb-2">{rt("addFilesHint")}</p>
+                  <p className="text-xs text-slate-500 mb-2">{t("rec.addFilesHint")}</p>
                 )}
                 <input
                   type="file"
@@ -1542,7 +1512,7 @@ export default function RecordDetailClient({
                         className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 disabled:opacity-50"
                       >
                         {rotating ? <Loader2 size={12} className="animate-spin" /> : <RotateCw size={12} className="-scale-x-100" />}
-                        {rt("rotateLeft")}
+                        {t("rec.rotateLeft")}
                       </button>
                       <button
                         type="button"
@@ -1551,7 +1521,7 @@ export default function RecordDetailClient({
                         className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 disabled:opacity-50"
                       >
                         {rotating ? <Loader2 size={12} className="animate-spin" /> : <RotateCw size={12} />}
-                        {rt("rotateRight")}
+                        {t("rec.rotateRight")}
                       </button>
                     </div>
                   </div>
@@ -1574,7 +1544,7 @@ export default function RecordDetailClient({
                   disabled={saving || (!editingDoc && categoriesLoading)}
                   className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50"
                 >
-                  {saving ? t("docs.modal.saving") : editingDoc ? rt("saveChanges") : t("rec.modal.save")}
+                  {saving ? t("docs.modal.saving") : editingDoc ? t("rec.saveChanges") : t("rec.modal.save")}
                 </button>
               </div>
             </div>

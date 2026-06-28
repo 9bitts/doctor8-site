@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { getIntegrationStatuses } from "@/lib/integration-status";
 import { probeWhatsAppGraph, getWhatsAppReadiness } from "@/lib/whatsapp";
-import { countDailyRecordingsSince } from "@/lib/daily-recording-log";
+import { countDailyRecordingsSince, countDailyRecordingsReadySince } from "@/lib/daily-recording-log";
 import { db } from "@/lib/db";
 
 export async function GET() {
@@ -27,6 +27,7 @@ export async function GET() {
     recentQstashJobs,
     whatsappProbe,
     dailyRecordings7d,
+    dailyRecordingsReady7d,
   ] = await Promise.all([
     db.appointment.count({
       where: {
@@ -59,6 +60,7 @@ export async function GET() {
     }),
     wa.configured ? probeWhatsAppGraph() : Promise.resolve(null),
     countDailyRecordingsSince(since7dPast),
+    countDailyRecordingsReadySince(since7dPast),
   ]);
 
   const integrations = getIntegrationStatuses().map((row) => {
@@ -87,6 +89,7 @@ export async function GET() {
       whatsappDeliveries24h,
       recentQstashJobs,
       dailyRecordings7d,
+      dailyRecordingsReady7d,
     },
   });
 }

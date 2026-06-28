@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plug, Loader2, RefreshCw, CheckCircle2, AlertTriangle, MinusCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import SmartClientsAdminPanel from "@/components/admin/SmartClientsAdminPanel";
 
 type Health = "ok" | "partial" | "missing" | "fallback";
 
@@ -22,6 +23,7 @@ interface QstashStats {
   qstashFailed24h: number;
   whatsappDeliveries24h: number;
   dailyRecordings7d?: number;
+  dailyRecordingsReady7d?: number;
   recentQstashJobs?: {
     jobType: string;
     status: string;
@@ -136,6 +138,7 @@ export default function AdminIntegrationsPage() {
               { label: t("admin.int.qstashFailed24h"), value: qstash.qstashFailed24h },
               { label: t("admin.int.whatsappDeliveries24h"), value: qstash.whatsappDeliveries24h },
               { label: t("admin.int.dailyRecordings7d"), value: qstash.dailyRecordings7d ?? 0 },
+              { label: t("admin.int.dailyRecordingsReady7d"), value: qstash.dailyRecordingsReady7d ?? 0 },
             ].map((s) => (
               <div key={s.label} className="bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
                 <p className="text-xs text-slate-500">{s.label}</p>
@@ -158,6 +161,8 @@ export default function AdminIntegrationsPage() {
           )}
         </div>
       )}
+
+      <SmartClientsAdminPanel />
 
       <p className="text-xs text-slate-400">{t("admin.int.footer")}</p>
     </div>

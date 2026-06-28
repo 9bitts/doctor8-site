@@ -11,6 +11,7 @@ import {
   joinHumanitarianQueue,
 } from "@/lib/humanitarian/dispatcher";
 import { notifyHumanitarianJoined } from "@/lib/humanitarian/notify";
+import { scheduleHumanitarianAnamneseReminder } from "@/lib/qstash";
 import { requireValidIntake } from "@/lib/humanitarian/intake";
 import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
@@ -196,6 +197,14 @@ export async function POST(req: NextRequest) {
     position,
     campaignSlug: campaign.slug,
   });
+
+  if (intake.status !== "COMPLETE") {
+    await scheduleHumanitarianAnamneseReminder({
+      patientUserId: session.user.id,
+      campaignSlug: campaign.slug,
+      intakeId: intake.id,
+    });
+  }
 
   await assignNextInPool(pool.id);
 
