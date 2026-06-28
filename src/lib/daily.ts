@@ -100,3 +100,65 @@ export async function createMeetingToken(
   const data = await res.json();
   return data.token;
 }
+
+export type EphemeralRoomOptions = {
+  maxParticipants?: number;
+  durationSeconds?: number;
+  enableKnocking?: boolean;
+};
+
+/** Creates a short-lived private room (JIT queue, humanitarian). Returns null if Daily is not configured. */
+export async function createEphemeralRoom(
+  options: EphemeralRoomOptions = {},
+): Promise<DailyRoom | null> {
+  const key = process.env.DAILY_API_KEY;
+  if (!key) return null;
+
+  const {
+    maxParticipants = 2,
+    durationSeconds = 7200,
+    enableKnocking = false,
+  } = options;
+
+  const exp = Math.floor(Date.now() / 1000) + durationSeconds;
+
+  try {
+    const res = await fetch(`${DAILY_API}/rooms`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        privacy: "private",
+        properties: {
+          exp,
+          max_participants: maxParticipants,
+          enable_chat: true,
+          enable_screenshare: true,
+          enable_prejoin_ui: true,
+          enable_knocking: enableKnocking,
+          eject_at_room_exp: true,
+        },
+      }),
+    });
+    if (!res.ok) return null;
+    const room = await res.json();
+    return { name: room.name, url: room.url };
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteDailyRoom(roomName: string): Promise<void> {
+  const key = process.env.DAILY_API_KEY;
+  if (!key) return;
+  try {
+    await fetch(`${DAILY_API}/rooms/${roomName}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${key}` },
+    });
+  } catch {
+    /* non-fatal */
+  }
+}

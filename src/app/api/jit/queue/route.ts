@@ -314,23 +314,10 @@ export async function PATCH(req: NextRequest) {
     let meetingUrl = "";
     let meetingRoomId = "";
     try {
-      const dailyRes = await fetch("https://api.daily.co/v1/rooms", {
-        method:  "POST",
-        headers: {
-          "Content-Type":  "application/json",
-          "Authorization": `Bearer ${process.env.DAILY_API_KEY}`,
-        },
-        body: JSON.stringify({
-          properties: {
-            exp:            Math.floor(Date.now() / 1000) + 7200, // 2h
-            enable_chat:    true,
-            enable_knocking: false,
-          },
-        }),
-      });
-      const room = await dailyRes.json();
-      meetingUrl    = room.url || "";
-      meetingRoomId = room.name || "";
+      const { createEphemeralRoom } = await import("@/lib/daily");
+      const room = await createEphemeralRoom({ maxParticipants: 2 });
+      meetingUrl = room?.url || "";
+      meetingRoomId = room?.name || "";
     } catch { /* non-fatal — meeting URL stays empty */ }
 
     const expiresAt = new Date(now.getTime() + jitSession.noShowTimeoutSeconds * 1000);
