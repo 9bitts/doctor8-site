@@ -1,7 +1,7 @@
 "use client";
 
 // src/app/(dashboard)/professional/financeiro/RateioSection.tsx
-// Segunda secao do Financeiro: livro aberto (comissao - custos = pote) + rateio do profissional.
+// Segunda seção do Financeiro: livro aberto (comissão - custos = pote) + rateio do profissional.
 
 import { useEffect, useState } from "react";
 import {

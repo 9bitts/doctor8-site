@@ -29,8 +29,8 @@ test.describe("public smoke", () => {
   test("privacy page body has no corrupted encoding", async ({ page }) => {
     await page.goto("/privacy");
     const body = await page.locator("body").innerText();
-    expect(body).not.toMatch(/publicit\?ria|Endere\?o|N\?o\./);
-    expect(body).toMatch(/Pol?tica de Privacidade|Privacidade/i);
+    expect(body).not.toMatch(/publicit\?ria|Endere\?o|N\?o\.|: ? o |: ? a |como est?o/);
+    await expect(page.locator("body")).toContainText("Pol?tica de Privacidade");
   });
 
   test("privacy page title has no encoding glitches", async ({ page }) => {
@@ -42,8 +42,9 @@ test.describe("public smoke", () => {
   test("terms page body has no corrupted encoding", async ({ page }) => {
     await page.goto("/terms");
     const body = await page.locator("body").innerText();
-    expect(body).not.toMatch(/USU\?RIO|Pol\?tica|servi\?os/);
-    expect(body).toMatch(/Termos de Uso|Usu?rio/i);
+    expect(body).not.toMatch(/USU\?RIO|Pol\?tica|servi\?os|: ? o |: ? a |como est?o/);
+    await expect(page.locator("body")).toContainText("Termos de Uso");
+    await expect(page.locator("body")).toContainText("Acordo do Usu?rio");
   });
 
   test("PWA manifest is served", async ({ request }) => {
