@@ -94,9 +94,9 @@ export default function OrganizationTeamPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <h2 className="font-semibold text-slate-900 mb-2">C?digo para profissionais</h2>
+        <h2 className="font-semibold text-slate-900 mb-2">C\u00f3digo para profissionais</h2>
         <p className="text-sm text-slate-500 mb-4">
-          M?dicos cadastrados no Doctor8 podem vincular-se ? cl?nica em Configura??es ? Organiza??o, usando este c?digo.
+          M\u00e9dicos cadastrados no Doctor8 podem vincular-se \u00e0 cl\u00ednica em Configura\u00e7\u00f5es \u2192 Organiza\u00e7\u00e3o, usando este c\u00f3digo.
         </p>
         <div className="flex items-center gap-3">
           <code className="flex-1 bg-slate-100 rounded-xl px-4 py-3 text-sm font-mono text-slate-800 truncate">
@@ -125,7 +125,7 @@ export default function OrganizationTeamPage() {
               <div key={p.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0 gap-4">
                 <div>
                   <p className="font-medium text-slate-900">Dr. {p.name}</p>
-                  <p className="text-xs text-slate-500">{p.specialty} ? {p.email}</p>
+                  <p className="text-xs text-slate-500">{p.specialty} \u00b7 {p.email}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="text-xs text-slate-500">Repasse %</label>

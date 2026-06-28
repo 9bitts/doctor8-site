@@ -123,4 +123,14 @@ test.describe("authenticated patient", () => {
     const body = await res.json();
     expect(body.intake?.campaignId).toBeTruthy();
   });
+
+  test("patient can export FHIR bundle when logged in", async ({ page }) => {
+    const creds = e2ePatientCredentials()!;
+    await loginWithCredentials(page, creds.email, creds.password);
+    await waitForAuthenticatedSession(page);
+    const res = await page.request.get("/api/patient/history/fhir");
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.resourceType).toBe("Bundle");
+  });
 });

@@ -50,14 +50,14 @@ export async function GET(
 
   const location =
     appointment.type === "TELECONSULT"
-      ? "Teleconsulta ? Doctor8"
+      ? "Teleconsulta \u2014 Doctor8"
       : [appointment.professional?.clinicAddress, appointment.professional?.clinicCity].filter(Boolean).join(", ") ||
-        "Consulta presencial ? Doctor8";
+        "Consulta presencial \u2014 Doctor8";
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
   const ics = buildAppointmentIcs({
     appointmentId: appointment.id,
-    summary: `Consulta ? Dr. ${doctorName}`,
+    summary: `Consulta com Dr. ${doctorName}`,
     description: `${specialty}\n${appointment.type === "TELECONSULT" ? "Teleconsulta online" : "Consulta presencial"}\n\nDoctor8: ${appUrl}/patient/appointments`,
     location,
     url: appointment.meetingUrl ?? `${appUrl}/video/${appointment.id}`,

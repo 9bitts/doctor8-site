@@ -16,6 +16,7 @@ import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { getPatientActiveHumanitarianEntry } from "@/lib/humanitarian/notify";
 import { checkRateLimit, RATE_LIMITS, rateLimitResponse } from "@/lib/rate-limit";
+import { normalizeLang, translate } from "@/lib/i18n/translations";
 
 const joinSchema = z.object({
   campaignSlug: z.string(),
@@ -161,7 +162,7 @@ export async function POST(req: NextRequest) {
   const activeCount = await countActiveInPool(pool.id);
   if (activeCount >= pool.maxWaiting) {
     return NextResponse.json(
-      { error: "QUEUE_FULL", message: "La fila est? llena. Intenta m?s tarde." },
+      { error: "QUEUE_FULL", message: translate(lang, "hum.api.queueFullMessage") },
       { status: 429 },
     );
   }
@@ -180,7 +181,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     if (e instanceof HumanitarianQueueFullError) {
       return NextResponse.json(
-        { error: "QUEUE_FULL", message: "La fila est? llena. Intenta m?s tarde." },
+        { error: "QUEUE_FULL", message: translate(lang, "hum.api.queueFullMessage") },
         { status: 429 },
       );
     }

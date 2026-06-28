@@ -13,6 +13,12 @@ test.describe("public smoke", () => {
     await expect(page.locator("body")).toBeVisible();
   });
 
+  test("humanitarian landing metadata has no encoding glitches", async ({ page }) => {
+    await page.goto("/humanitarian/venezuela-terremoto-2026");
+    const title = await page.title();
+    expect(title).not.toMatch(/\?/);
+  });
+
   test("PWA manifest is served", async ({ request }) => {
     const res = await request.get("/manifest.webmanifest");
     expect(res.ok()).toBeTruthy();

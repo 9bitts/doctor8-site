@@ -1,4 +1,4 @@
-// Brazilian health plans (conv?nios) for public search.
+// Brazilian health plans (conv\u00eanios) for public search.
 
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/public-slugs";
@@ -6,10 +6,10 @@ import { slugify } from "@/lib/public-slugs";
 export const DEFAULT_HEALTH_PLANS = [
   "Unimed",
   "Amil",
-  "Bradesco Sa?de",
-  "SulAm?rica",
+  "Bradesco Sa\u00fade",
+  "SulAm\u00e9rica",
   "Golden Cross",
-  "NotreDame Interm?dica",
+  "NotreDame Interm\u00e9dica",
   "Hapvida",
   "Porto Seguro",
   "Prevent Senior",

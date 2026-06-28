@@ -147,7 +147,7 @@ export default function HumanitarianIntakesPanel({ slug = VENEZUELA_CAMPAIGN_SLU
                   <div className="px-4 pb-4 space-y-3 border-t border-slate-50 bg-slate-50/50">
                     {row.forceMedicalPool && (
                       <p className="text-xs text-amber-700 font-medium pt-3">
-                        Encaminhamento m?dico recomendado
+                        Encaminhamento m\u00e9dico recomendado
                       </p>
                     )}
                     <HumanitarianIntakeSummary summary={summary} lang="pt" compact />
