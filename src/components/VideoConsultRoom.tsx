@@ -8,7 +8,7 @@ import {
   Loader2, Video, Clock, AlertCircle, ArrowLeft, ShieldCheck,
   ChevronRight, ChevronLeft, FileText, Plus, Send, Stethoscope,
   Pill, X, CheckCircle2, ClipboardList, PhoneOff, FlaskConical,
-  ScrollText, BarChart3, ExternalLink, MessageCircle, Syringe,
+  ScrollText, BarChart3, ExternalLink, MessageCircle, Syringe, Activity,
 } from "lucide-react";
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
@@ -69,6 +69,8 @@ const T: Record<string, Record<Lang, string>> = {
   saveNote:       { pt: "Salvar", en: "Save", es: "Guardar" },
   dental:         { pt: "Odontograma", en: "Dental chart", es: "Odontograma" },
   vaccines:       { pt: "Vacinas", en: "Vaccines", es: "Vacunas" },
+  evolution:      { pt: "Evolução", en: "Evolution", es: "Evolución" },
+  diagnoses:      { pt: "Diagnósticos", en: "Diagnoses", es: "Diagnósticos" },
   saving:         { pt: "Salvando...", en: "Saving...", es: "Guardando..." },
   saved:          { pt: "Salvo!", en: "Saved!", es: "¡Guardado!" },
   recentRecords:  { pt: "Registros recentes", en: "Recent records", es: "Registros recientes" },
@@ -620,6 +622,26 @@ export default function VideoConsultRoom({
                           className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-200 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg transition"
                         >
                           <ClipboardList size={13} /> {t("dental")}
+                        </a>
+                      )}
+                      {chartLinks.evolution && (
+                        <a
+                          href={chartLinks.evolution}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-200 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg transition"
+                        >
+                          <Activity size={13} /> {t("evolution")}
+                        </a>
+                      )}
+                      {chartLinks.diagnoses && (
+                        <a
+                          href={chartLinks.diagnoses}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-200 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg transition"
+                        >
+                          <Stethoscope size={13} /> {t("diagnoses")}
                         </a>
                       )}
                     </div>

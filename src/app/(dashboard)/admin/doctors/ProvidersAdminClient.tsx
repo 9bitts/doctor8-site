@@ -254,7 +254,7 @@ export default function ProvidersAdminClient() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Profissionais</h1>
         <p className="text-slate-500 mt-1">
-          Aprova??o libera listagem p?blica e atendimento humanit?rio (volunt?rios)
+          Aprova\u00e7\u00e3o libera listagem p\u00fablica e atendimento humanit\u00e1rio (volunt\u00e1rios)
         </p>
       </div>
 
@@ -399,7 +399,7 @@ function StatusBadge({ verified }: { verified: boolean }) {
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-      Aguardando aprova??o
+      Aguardando aprova\u00e7\u00e3o
     </span>
   );
 }

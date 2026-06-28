@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { Loader2, ArrowLeft, Share2 } from "lucide-react";
+import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 
 interface Note {
   id: string;
@@ -14,9 +15,12 @@ interface Note {
 }
 
 export default function AnalysandDetailPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const params = useParams();
+  const searchParams = useSearchParams();
   const analysandId = params.id as string;
+  const consultReturnUrl = searchParams.get("returnUrl");
+  const noteRef = useRef<HTMLTextAreaElement>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState("");
@@ -35,6 +39,13 @@ export default function AnalysandDetailPage() {
   }
 
   useEffect(() => { loadNotes(); }, [analysandId]);
+
+  useEffect(() => {
+    if (searchParams.get("newRecord") === "1") {
+      noteRef.current?.focus();
+      noteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [searchParams]);
 
   async function saveNote(e: React.FormEvent) {
     e.preventDefault();
@@ -70,6 +81,10 @@ export default function AnalysandDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      <VideoConsultReturnBanner
+        returnUrl={consultReturnUrl}
+        lang={lang as "pt" | "en" | "es"}
+      />
       <Link href="/psychoanalyst/analysands" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
         <ArrowLeft size={16} /> {t("pa.analysands.back")}
       </Link>
@@ -82,6 +97,7 @@ export default function AnalysandDetailPage() {
       <form onSubmit={saveNote} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3 shadow-sm">
         <label className="text-sm font-medium text-slate-700">{t("pa.sessions.newNote")}</label>
         <textarea
+          ref={noteRef}
           className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm min-h-[120px] focus:outline-none focus:ring-2 focus:ring-violet-500/40"
           value={content}
           onChange={(e) => setContent(e.target.value)}

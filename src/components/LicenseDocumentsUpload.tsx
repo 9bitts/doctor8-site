@@ -38,6 +38,7 @@ export default function LicenseDocumentsUpload() {
   const [maxDocuments, setMaxDocuments] = useState(20);
   const [label, setLabel] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const load = useCallback(async () => {
     setError("");
@@ -69,6 +70,7 @@ export default function LicenseDocumentsUpload() {
 
     setUploading(true);
     setError("");
+    setUploadSuccess(false);
 
     try {
       for (const file of list) {
@@ -84,6 +86,7 @@ export default function LicenseDocumentsUpload() {
         if (!res.ok) throw new Error(data.error || "Upload failed");
       }
       setLabel("");
+      setUploadSuccess(true);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed");
@@ -126,6 +129,12 @@ export default function LicenseDocumentsUpload() {
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
           {error}
+        </p>
+      )}
+
+      {uploadSuccess && !error && (
+        <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
+          {t("licenseDocs.uploadSuccess")}
         </p>
       )}
 
