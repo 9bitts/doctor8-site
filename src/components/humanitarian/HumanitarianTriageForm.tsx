@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Loader2, AlertTriangle, ChevronRight } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
 import type { HumanitarianTriageData } from "@/lib/humanitarian/triage";
@@ -16,7 +15,11 @@ type Props = {
   onComplete: () => void;
 };
 
-const EMPTY: HumanitarianTriageData = {
+type TriageFormData = Omit<HumanitarianTriageData, "deviceOwnership"> & {
+  deviceOwnership?: HumanitarianTriageData["deviceOwnership"];
+};
+
+const EMPTY: TriageFormData = {
   pregnantOrLactating: false,
   age65Plus: false,
   disabilityOrReducedMobility: false,
@@ -101,13 +104,18 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
     [],
   );
 
-  function patch<K extends keyof HumanitarianTriageData>(key: K, value: HumanitarianTriageData[K]) {
+  function patch<K extends keyof TriageFormData>(key: K, value: TriageFormData[K]) {
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
   async function submit() {
-    const payload = {
+    if (!data.deviceOwnership) {
+      setError(t(lang, "hum.triage.deviceRequired"));
+      return;
+    }
+    const payload: HumanitarianTriageData = {
       ...data,
+      deviceOwnership: data.deviceOwnership,
       headTraumaDescription: data.headTrauma ? data.headTraumaDescription?.trim() || undefined : undefined,
     };
 
@@ -358,15 +366,6 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
       )}
 
       <p className="text-xs text-slate-500 text-center leading-relaxed">{t(lang, "hum.page.disclaimer")}</p>
-
-      <p className="text-center text-sm">
-        <Link
-          href={`/humanitarian/${campaignSlug}/anamnese`}
-          className="text-slate-400 hover:text-emerald-400 underline underline-offset-2"
-        >
-          {t(lang, "hum.triage.anamneseLink")}
-        </Link>
-      </p>
     </div>
   );
 }

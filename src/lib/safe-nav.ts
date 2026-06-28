@@ -1,4 +1,5 @@
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
 /** Navigate back when history exists; otherwise go to a safe in-app fallback. */
 export function navigateBack(router: AppRouterInstance, fallbackHref: string) {
@@ -12,6 +13,16 @@ export function navigateBack(router: AppRouterInstance, fallbackHref: string) {
     }
   }
   router.push(fallbackHref);
+}
+
+/** Contextual fallback for video room error/wait screens when session data is unavailable. */
+export function videoBackFallback(): string {
+  if (typeof window === "undefined") return "/patient";
+  const p = window.location.pathname;
+  if (p.includes("/video/humanitarian")) return `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
+  if (p.includes("/video/jit")) return "/urgent";
+  if (p.includes("/video/")) return "/patient/appointments";
+  return "/patient";
 }
 
 /** Contextual fallback for humanitarian sub-routes when browser history is empty. */

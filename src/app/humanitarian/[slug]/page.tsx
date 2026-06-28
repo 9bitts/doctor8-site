@@ -113,7 +113,7 @@ export default function HumanitarianCampaignPage() {
       .then((r) => r.json())
       .then(async (s) => {
         if (!s?.user) {
-          router.push("/login?callbackUrl=/patient");
+          router.push(`/login?callbackUrl=${encodeURIComponent(`/humanitarian/${slug}`)}`);
           return;
         }
         if (s.user.role !== "PATIENT") {
@@ -151,7 +151,7 @@ export default function HumanitarianCampaignPage() {
           setQueueStale(false);
         }
       })
-      .catch(() => router.push("/login?callbackUrl=/patient"));
+      .catch(() => router.push(`/login?callbackUrl=${encodeURIComponent(`/humanitarian/${slug}`)}`));
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);

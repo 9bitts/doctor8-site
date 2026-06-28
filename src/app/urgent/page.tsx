@@ -286,7 +286,15 @@ export default function UrgentPage() {
 
   function leaveQueue() {
     clearInterval(pollRef.current);
+    const id = queueEntry?.id;
     setQueueEntry(null);
+    if (id) {
+      fetch("/api/jit/queue/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ queueId: id }),
+      }).catch(() => {});
+    }
     loadAvailable();
   }
 
@@ -454,7 +462,7 @@ export default function UrgentPage() {
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
-                      {pro.professional.name.charAt(4)}
+                      {pro.professional.name.replace(/^Dr\.?\s*/i, "").trim().charAt(0).toUpperCase() || "?"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900">{pro.professional.name}</p>
@@ -492,7 +500,7 @@ export default function UrgentPage() {
                     ) : (
                       <button onClick={() => openPayModal(pro)} disabled={joining === pro.sessionId}
                         className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
-                        <Lock size={14} /> Pagar e entrar na fila · {formatCurrency(pro.priceAmount, pro.currency, lang)}
+                        <Lock size={14} /> {t("urgent.payAndJoinWithPrice").replace("{{price}}", formatCurrency(pro.priceAmount, pro.currency, lang))}
                       </button>
                     )}
                   </div>
@@ -516,15 +524,15 @@ export default function UrgentPage() {
 
             <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-1">
               <div className="flex justify-between">
-                <span className="text-slate-500">Profissional</span>
+                <span className="text-slate-500">{t("urgent.professional")}</span>
                 <span className="font-medium">{payModal.professional.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Especialidade</span>
+                <span className="text-slate-500">{t("urgent.specialty")}</span>
                 <span>{getProfessionLabel(lang, payModal.specialty)}</span>
               </div>
               <div className="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-200 mt-1">
-                <span>Total</span>
+                <span>{t("urgent.total")}</span>
                 <span>{formatCurrency(payModal.priceAmount, payModal.currency, lang)}</span>
               </div>
             </div>
@@ -548,7 +556,7 @@ export default function UrgentPage() {
 
             <button onClick={handleJitPayment} disabled={payLoading || !stripeLoaded || !cardComplete}
               className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition">
-              {payLoading ? <><Loader2 size={16} className="animate-spin" /> Processando...</> : <><Lock size={16} /> Pagar e entrar na fila</>}
+              {payLoading ? <><Loader2 size={16} className="animate-spin" /> {t("urgent.processing")}</> : <><Lock size={16} /> {t("urgent.payAndJoin")}</>}
             </button>
             <p className="text-xs text-slate-400 text-center flex items-center justify-center gap-1">
               <Lock size={11} /> {t("urgent.secureStripe")}

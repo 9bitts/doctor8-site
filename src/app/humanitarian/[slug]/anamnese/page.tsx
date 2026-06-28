@@ -26,7 +26,7 @@ export default function HumanitarianAnamnesePage() {
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
-      .then((s) => {
+      .then(async (s) => {
         if (!s?.user) {
           router.push(`/login?callbackUrl=/humanitarian/${slug}/anamnese`);
           return;
@@ -35,6 +35,18 @@ export default function HumanitarianAnamnesePage() {
           router.push("/humanitarian/volunteer");
           return;
         }
+
+        const intakeRes = await fetch(`/api/humanitarian/intake?campaignSlug=${slug}`);
+        const intakeData = await intakeRes.json();
+        if (!intakeRes.ok || !intakeData.intake?.triageValid) {
+          router.replace(`/humanitarian/${slug}/triage`);
+          return;
+        }
+        if (!intakeData.intake?.tcleAccepted) {
+          router.replace(`/humanitarian/${slug}/tcle?return=${encodeURIComponent(`/humanitarian/${slug}/anamnese`)}`);
+          return;
+        }
+
         setLoading(false);
       })
       .catch(() => router.push(`/login?callbackUrl=/humanitarian/${slug}/anamnese`));

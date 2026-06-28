@@ -1,3 +1,5 @@
+import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+
 /** System knowledge injected into the Doctor8 support AI assistant prompt. */
 export const SUPPORT_SYSTEM_KNOWLEDGE = `
 DOCTOR8 OVERVIEW:
@@ -7,13 +9,13 @@ PATIENT AREAS (after login at /login):
 - Dashboard home: /patient
 - Book appointments: /patient/appointments ? search professionals, pick slot, pay with Stripe
 - Urgent care (paid immediate queue): /urgent
-- Humanitarian SOS Venezuela (free): /humanitarian/venezuela ? triage ? TCLE consent ? phone ? join queue ? video call
+- Humanitarian SOS Venezuela (free): /humanitarian/${VENEZUELA_CAMPAIGN_SLUG} ? triage ? TCLE consent ? phone ? join queue ? video call
 - Medical history: /patient/medical-history ? health questionnaire; share with doctors
 - Medications: /patient/medications ? clinical list + purchase list; export PDF via "Export PDF" button
 - My prescriptions: /patient/prescriptions ? prescriptions issued by doctors; download signed PDF
 - Exam requests: /patient/exam-requests ? lab/imaging orders from doctors
 - Documents: /patient/documents
-- Shared with me (formerly "From my doctor"): /patient/resources ? materials/links/files shared by doctors
+- Shared with me: /patient/resources ? materials/links/files shared by doctors
 - Messages: /patient/messages ? encrypted chat with professionals
 - Connected apps: /patient/connected-apps
 - Account settings: /patient/settings
@@ -27,13 +29,13 @@ PRESCRIPTIONS FLOW (patient):
 
 HUMANITARIAN SOS VENEZUELA FLOW:
 1. Login/register required
-2. Quick triage (~2 min) at /humanitarian/venezuela/triage ? vulnerability + device ownership (own vs borrowed phone)
-3. TCLE telemedicine consent at /humanitarian/venezuela/tcle
-4. Phone verification gate on main page
+2. Quick triage (~2 min) at /humanitarian/${VENEZUELA_CAMPAIGN_SLUG}/triage ? vulnerability + device ownership (own vs borrowed phone)
+3. TCLE telemedicine consent at /humanitarian/${VENEZUELA_CAMPAIGN_SLUG}/tcle
+4. Phone verification gate on main page /humanitarian/${VENEZUELA_CAMPAIGN_SLUG}
 5. Choose care type pool (medical, psychology, etc.) and join queue
-6. When called, enter video room within 3 minutes
+6. When called, enter video room within 3 minutes at /video/humanitarian/{entryId}
 7. To leave consultation: red "Leave" button ? ends session and frees queue for next patient
-8. Optional full anamnesis at /humanitarian/venezuela/anamnese
+8. Optional full anamnesis at /humanitarian/${VENEZUELA_CAMPAIGN_SLUG}/anamnese
 9. Volunteers: /humanitarian/volunteer ? go online, accept patients from queue
 
 PROFESSIONAL AREAS:

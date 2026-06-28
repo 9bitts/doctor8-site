@@ -17,9 +17,12 @@ function safeDecrypt(v: string | null): string {
   try { return decrypt(v); } catch { return v; }
 }
 
+import { stripe } from "@/lib/stripe";
+
 const joinSchema = z.object({
   sessionId: z.string(),
   specialty:  z.string().min(1).max(100),
+  paymentIntentId: z.string().optional(),
 });
 
 const callSchema = z.object({
@@ -134,7 +137,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success)
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { sessionId, specialty } = parsed.data;
+  const { sessionId, specialty, paymentIntentId } = parsed.data;
 
   if (!(await hasTelemedicineTcle(session.user.id))) {
     return NextResponse.json(
@@ -149,6 +152,30 @@ export async function POST(req: NextRequest) {
   const jitSession = await db.jitSession.findUnique({ where: { id: sessionId } });
   if (!jitSession || jitSession.status !== "ONLINE")
     return NextResponse.json({ error: "Session not available" }, { status: 404 });
+
+  let verifiedPaymentId: string | undefined;
+  if (!jitSession.isFree && jitSession.priceAmount > 0) {
+    if (!paymentIntentId) {
+      return NextResponse.json({ error: "Payment required" }, { status: 402 });
+    }
+    try {
+      const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (intent.status !== "succeeded") {
+        return NextResponse.json({ error: "Payment not completed" }, { status: 402 });
+      }
+      if (intent.amount !== jitSession.priceAmount) {
+        return NextResponse.json({ error: "Payment amount mismatch" }, { status: 402 });
+      }
+      if (intent.metadata?.sessionId !== sessionId || intent.metadata?.userId !== session.user.id) {
+        return NextResponse.json({ error: "Invalid payment" }, { status: 402 });
+      }
+      verifiedPaymentId = paymentIntentId;
+    } catch {
+      return NextResponse.json({ error: "Could not verify payment" }, { status: 402 });
+    }
+  } else if (paymentIntentId) {
+    verifiedPaymentId = paymentIntentId;
+  }
 
   // Check if patient is already in this queue
   const existing = await db.jitQueue.findFirst({
@@ -186,6 +213,7 @@ export async function POST(req: NextRequest) {
             status: "WAITING",
             position,
             specialty,
+            paymentId: verifiedPaymentId ?? null,
           },
         });
       },

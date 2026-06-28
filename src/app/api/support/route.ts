@@ -11,7 +11,13 @@ import {
 } from "@/lib/rate-limit";
 import { SUPPORT_SYSTEM_KNOWLEDGE } from "@/lib/support-knowledge";
 
-const SYSTEM_PROMPT = `You are the Doctor8 support assistant — friendly, precise, and focused on helping users navigate the platform.
+const LANG_INSTRUCTION: Record<string, string> = {
+  pt: "Responda sempre em português do Brasil.",
+  en: "Always respond in English.",
+  es: "Responde siempre en español.",
+};
+
+const SYSTEM_PROMPT_BASE = `You are the Doctor8 support assistant — friendly, precise, and focused on helping users navigate the platform.
 
 ${SUPPORT_SYSTEM_KNOWLEDGE}`;
 
@@ -25,11 +31,15 @@ export async function POST(req: NextRequest) {
     });
     if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
 
-    const { messages } = await req.json();
+    const { messages, lang } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
+
+    const langKey = typeof lang === "string" && lang.startsWith("pt") ? "pt"
+      : typeof lang === "string" && lang.startsWith("es") ? "es" : "en";
+    const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\n${LANG_INSTRUCTION[langKey]}`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -41,7 +51,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 600,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: messages.slice(-6),
       }),
     });

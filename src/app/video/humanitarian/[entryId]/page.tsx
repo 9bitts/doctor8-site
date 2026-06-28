@@ -2,6 +2,26 @@
 
 import { useParams } from "next/navigation";
 import VideoConsultRoom, { VideoConsultData, VideoConsultFetchResult } from "@/components/VideoConsultRoom";
+import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+
+const ERR: Record<string, string> = {
+  pt: "N\u00e3o foi poss\u00edvel abrir a sala.",
+  en: "Could not open the room.",
+  es: "No se pudo abrir la sala.",
+};
+
+function roomError(): string {
+  if (typeof window === "undefined") return ERR.es;
+  try {
+    const saved = window.localStorage.getItem("doctor8.lang") || "";
+    if (saved.startsWith("pt")) return ERR.pt;
+    if (saved.startsWith("en")) return ERR.en;
+  } catch { /* ignore */ }
+  const nav = (navigator.language || "").toLowerCase();
+  if (nav.startsWith("pt")) return ERR.pt;
+  if (nav.startsWith("en")) return ERR.en;
+  return ERR.es;
+}
 
 export default function HumanitarianVideoPage() {
   const params = useParams();
@@ -29,10 +49,10 @@ export default function HumanitarianVideoPage() {
         };
       }
       if (d.error === "TCLE_REQUIRED") {
-        window.location.href = `/humanitarian/venezuela-terremoto-2026/tcle?return=${encodeURIComponent(`/video/humanitarian/${entryId}`)}`;
+        window.location.href = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}/tcle?return=${encodeURIComponent(`/video/humanitarian/${entryId}`)}`;
         return { error: "Redirecting to consent form..." };
       }
-      return { error: d.message || d.error || "No se pudo abrir la sala." };
+      return { error: d.message || d.error || roomError() };
     }
     return { data: { ...d, kind: "humanitarian", queueId: entryId, entryId } };
   }
