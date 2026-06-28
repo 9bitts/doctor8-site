@@ -31,7 +31,7 @@ export default function ConsultPricingSettings() {
           setAcceptsInPerson(p.acceptsInPerson ?? false);
         }
       })
-      .catch(() => setError("Nao foi possivel carregar o preco da consulta."))
+      .catch(() => setError("Não foi possível carregar o preço da consulta."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -46,7 +46,7 @@ export default function ConsultPricingSettings() {
       const profileRes = await fetch("/api/professional/profile");
       const profileData = await profileRes.json();
       const p = profileData.profile;
-      if (!p) throw new Error("Perfil nao encontrado.");
+      if (!p) throw new Error("Perfil não encontrado.");
 
       const res = await fetch("/api/professional/profile", {
         method: "POST",
@@ -99,7 +99,7 @@ export default function ConsultPricingSettings() {
             <DollarSign size={18} className="text-brand-500" /> {t("set.consultation")}
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            Valor cobrado dos pacientes e tipos de atendimento que voce oferece.
+            Valor cobrado dos pacientes e tipos de atendimento que você oferece.
           </p>
         </div>
         {saved && (
@@ -176,7 +176,7 @@ export default function ConsultPricingSettings() {
         className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2"
       >
         {saving && <Loader2 size={14} className="animate-spin" />}
-        {saving ? t("set.saving") : "Salvar preco da consulta"}
+        {saving ? t("set.saving") : "Salvar preço da consulta"}
       </button>
     </div>
   );

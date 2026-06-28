@@ -181,11 +181,11 @@ export default function ProfessionalAccountPage() {
       const res = await fetch("/api/payments/professional-subscription", { method: "DELETE" });
       const d = await res.json();
       if (res.ok) {
-        setSubMsg("Seu Doctor Connection sera cancelado ao fim do periodo atual.");
+        setSubMsg("Seu Doctor Connection será cancelado ao fim do período atual.");
         const refreshed = await fetch("/api/payments/professional-subscription").then((r) => r.json());
         setSub(refreshed.subscription || null);
       } else {
-        setSubMsg(d.error || "Nao foi possivel cancelar.");
+        setSubMsg(d.error || "Não foi possível cancelar.");
       }
     } catch {
       setSubMsg("Erro de conexao.");
@@ -239,7 +239,7 @@ export default function ProfessionalAccountPage() {
           </div>
         )}
         <p className="text-xs text-slate-500">
-          Regiao da conta: <strong>{billingRegionLabel(profileRegion)}</strong>
+          Região da conta: <strong>{billingRegionLabel(profileRegion)}</strong>
           {profileRegion !== billingRegion && (
             <>
               {" "}
@@ -279,7 +279,7 @@ export default function ProfessionalAccountPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">
-                Moeda de cobranca
+                Moeda de cobrança
               </label>
               <select
                 value={billingRegion}
@@ -301,14 +301,14 @@ export default function ProfessionalAccountPage() {
                 <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-2">
                   <p>{REGION_MISMATCH_MESSAGE}</p>
                   <p>
-                    Sua conta esta em <strong>{billingRegionLabel(profileRegion)}</strong>, mas voce
+                    Sua conta está em <strong>{billingRegionLabel(profileRegion)}</strong>, mas você
                     selecionou <strong>{billingRegionLabel(billingRegion)}</strong>.
                   </p>
                   <Link
                     href={SETTINGS_PROFILE_PATH}
                     className="inline-flex font-semibold text-amber-900 underline"
                   >
-                    Abrir Meu Perfil e alterar regiao
+                    Abrir Meu Perfil e alterar região
                   </Link>
                 </div>
               )}

@@ -264,7 +264,7 @@ const es: LandingContent = {
   cta: {
     titleEm: "Cuida tu salud", titleRest: " desde donde est\u00e9s",
     sub: "Reg\u00edstrate gratis y agenda tu primera consulta hoy.",
-    primary: "Crear cuenta gratis", secondary: "Club Doctor \u2014 R$34,90/mes",
+    primary: "Crear cuenta gratis", secondary: "Club Doctor \u2014 R$34,90/m\u00eas",
   },
   footer: { ...en.footer, desc: "Plataforma de salud digital para pacientes y profesionales. Conforme LGPD y HIPAA. Brasil, EE.UU., Europa y Venezuela.", copyright: "\u00a9 2026 Doctor8. Todos los derechos reservados." },
   cookie: { text: "Usamos cookies para mejorar tu experiencia. Al continuar, aceptas nuestra", accept: "Aceptar", decline: "Rechazar" },

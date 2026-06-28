@@ -1,5 +1,5 @@
 // Common Brazilian lab abbreviations ? CBHPM codes / search terms.
-// CBHPM uses formal names (e.g. "Desidrogenase l?ctica"), not everyday acronyms.
+// CBHPM uses formal names (e.g. "Desidrogenase lática"), not everyday acronyms.
 
 function norm(s: string): string {
   return s

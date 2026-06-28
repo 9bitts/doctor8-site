@@ -16,7 +16,7 @@ export async function readApiJson<T = Record<string, unknown>>(
 
 export function apiErrorMessage(
   parsed: { ok: boolean; status: number; data: Record<string, unknown> | null; raw: string },
-  fallback = "Nao foi possivel completar a operacao.",
+  fallback = "Não foi possível completar a operação.",
   labels?: { server?: string; invalid?: string },
 ): string {
   const data = parsed.data;

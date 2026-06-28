@@ -10,10 +10,10 @@ export const BILLING_REGION_OPTIONS: {
   labelPt: string;
   priceHint: string;
 }[] = [
-  { region: "BR", currency: "BRL", labelPt: "Brasil (BRL)", priceHint: "R$ 89,90/mes" },
-  { region: "US", currency: "USD", labelPt: "EUA (USD)", priceHint: "US$ 24,90/mes" },
-  { region: "EU", currency: "EUR", labelPt: "Europa (EUR)", priceHint: "EUR 22,90/mes" },
-  { region: "VE", currency: "USD", labelPt: "Venezuela (USD)", priceHint: "US$ 24,90/mes" },
+  { region: "BR", currency: "BRL", labelPt: "Brasil (BRL)", priceHint: "R$ 89,90/mês" },
+  { region: "US", currency: "USD", labelPt: "EUA (USD)", priceHint: "US$ 24,90/mês" },
+  { region: "EU", currency: "EUR", labelPt: "Europa (EUR)", priceHint: "EUR 22,90/mês" },
+  { region: "VE", currency: "USD", labelPt: "Venezuela (USD)", priceHint: "US$ 24,90/mês" },
 ];
 
 export const ACCOUNT_REGION_OPTIONS: {
@@ -47,7 +47,7 @@ export function regionsMismatch(
 }
 
 export const REGION_MISMATCH_MESSAGE =
-  "Para pagar na moeda escolhida, altere a regiao da sua conta em Meu Perfil e salve. A moeda de cobranca deve ser a mesma da regiao do cadastro.";
+  "Para pagar na moeda escolhida, altere a região da sua conta em Meu Perfil e salve. A moeda de cobrança deve ser a mesma da região do cadastro.";
 
 export const SETTINGS_PROFILE_PATH = "/professional/settings";
 export const PATIENT_ACCOUNT_PATH = "/patient/account";
@@ -58,12 +58,12 @@ export const CLUB_BILLING_REGION_OPTIONS: {
   labelPt: string;
   priceHint: string;
 }[] = [
-  { region: "BR", currency: "BRL", labelPt: "Brasil (BRL)", priceHint: "R$ 34,90/mes" },
-  { region: "US", currency: "USD", labelPt: "EUA (USD)", priceHint: "US$ 9,90/mes" },
-  { region: "EU", currency: "EUR", labelPt: "Europa (EUR)", priceHint: "EUR 8,90/mes" },
-  { region: "VE", currency: "USD", labelPt: "Venezuela (USD)", priceHint: "US$ 9,90/mes" },
+  { region: "BR", currency: "BRL", labelPt: "Brasil (BRL)", priceHint: "R$ 34,90/mês" },
+  { region: "US", currency: "USD", labelPt: "EUA (USD)", priceHint: "US$ 9,90/mês" },
+  { region: "EU", currency: "EUR", labelPt: "Europa (EUR)", priceHint: "EUR 8,90/mês" },
+  { region: "VE", currency: "USD", labelPt: "Venezuela (USD)", priceHint: "US$ 9,90/mês" },
 ];
 
 export function patientRegionMismatchMessage(): string {
-  return "Para pagar na moeda escolhida, altere a regiao da sua conta em Conta e salve. A moeda deve ser a mesma da regiao do cadastro.";
+  return "Para pagar na moeda escolhida, altere a região da sua conta em Conta e salve. A moeda deve ser a mesma da região do cadastro.";
 }

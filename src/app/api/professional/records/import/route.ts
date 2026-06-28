@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     : null);
 
   if (!resolvedProfile) {
-    return NextResponse.json({ error: "Paciente nao encontrado" }, { status: 404 });
+    return NextResponse.json({ error: "Paciente não encontrado" }, { status: 404 });
   }
 
   const email = resolvedProfile.user?.email?.toLowerCase() ?? null;
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
   const phone = resolvedProfile.phone ? safeDecrypt(resolvedProfile.phone) : "";
   if (!phone.trim()) {
     return NextResponse.json(
-      { error: "O paciente nao tem telefone no cadastro. Crie a ficha manualmente em Pacientes." },
+      { error: "O paciente não tem telefone no cadastro. Crie a ficha manualmente em Pacientes." },
       { status: 400 },
     );
   }

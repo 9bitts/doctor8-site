@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   if (!paymentIntent || paymentIntent.status !== "succeeded") {
     return NextResponse.json({
       status: "pending",
-      message: "Pagamento ainda nao confirmado.",
+      message: "Pagamento ainda não confirmado.",
     });
   }
 

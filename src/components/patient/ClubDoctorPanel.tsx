@@ -249,7 +249,7 @@ export default function ClubDoctorPanel() {
             <p className="font-semibold text-base">{status.label}</p>
             <p className="text-sm mt-0.5 opacity-90">{status.detail}</p>
             <p className="text-xs mt-2 opacity-75">
-              Regiao da conta: {billingRegionLabel(profileRegion)}
+              Região da conta: {billingRegionLabel(profileRegion)}
             </p>
           </div>
         </div>
@@ -367,7 +367,7 @@ export default function ClubDoctorPanel() {
 
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1.5">
-              Moeda de cobranca
+              Moeda de cobrança
             </label>
             <select
               value={billingRegion}
@@ -381,13 +381,13 @@ export default function ClubDoctorPanel() {
               ))}
             </select>
             {billingRegion === "BR" && !regionMismatch && (
-              <p className="text-xs text-slate-500 mt-1.5">Cartao ou boleto no checkout.</p>
+              <p className="text-xs text-slate-500 mt-1.5">Cartão ou boleto no checkout.</p>
             )}
             {regionMismatch && (
               <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-2">
                 <p>{patientRegionMismatchMessage()}</p>
                 <Link href={PATIENT_ACCOUNT_PATH} className="inline-flex font-semibold underline">
-                  Abrir Conta e alterar regiao
+                  Abrir Conta e alterar região
                 </Link>
               </div>
             )}
@@ -395,9 +395,9 @@ export default function ClubDoctorPanel() {
 
           <div className="flex items-end gap-2">
             <span className="text-3xl font-bold text-slate-900">
-              {selectedPrice.replace("/mes", "")}
+              {selectedPrice.replace("/mês", "").replace("/mes", "")}
             </span>
-            <span className="text-slate-500 text-sm mb-1">/mes</span>
+            <span className="text-slate-500 text-sm mb-1">/mês</span>
           </div>
 
           <button
@@ -425,7 +425,7 @@ export default function ClubDoctorPanel() {
           ))}
         </ul>
         <p className="text-xs text-slate-400 mt-5">
-          O Club Doctor nao e plano de saude. Consultas sao cobradas pelo valor definido pelo profissional.
+          O Club Doctor não é plano de saúde. Consultas são cobradas pelo valor definido pelo profissional.
         </p>
       </div>
     </div>

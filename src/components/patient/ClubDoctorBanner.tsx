@@ -23,7 +23,7 @@ type Props = {
 };
 
 function formatPriceHint(priceHint: string, perMonth: string): string {
-  return priceHint.replace("/mes", perMonth);
+  return priceHint.replace("/mês", perMonth).replace("/mes", perMonth);
 }
 
 export default function ClubDoctorBanner({ subscribed, defaultRegion }: Props) {

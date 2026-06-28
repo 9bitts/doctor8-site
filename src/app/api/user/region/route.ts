@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Nao e possivel alterar a regiao com uma assinatura ativa. Cancele primeiro em Conta.",
+          "Não é possível alterar a região com uma assinatura ativa. Cancele primeiro em Conta.",
         code: "ACTIVE_SUBSCRIPTION",
       },
       { status: 400 },

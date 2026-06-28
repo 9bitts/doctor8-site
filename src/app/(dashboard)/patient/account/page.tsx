@@ -237,11 +237,11 @@ export default function AccountPage() {
         body: JSON.stringify({ region: accountRegion }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Nao foi possivel salvar a regiao.");
+      if (!res.ok) throw new Error(data.error || "Não foi possível salvar a região.");
       setRegionSaved(true);
       setTimeout(() => setRegionSaved(false), 4000);
     } catch (e) {
-      setRegionError(e instanceof Error ? e.message : "Erro ao salvar regiao.");
+      setRegionError(e instanceof Error ? e.message : "Erro ao salvar região.");
     } finally {
       setRegionSaving(false);
     }
@@ -256,7 +256,7 @@ export default function AccountPage() {
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Globe size={18} className="text-emerald-600" /> Regiao da conta
+          <Globe size={18} className="text-emerald-600" /> Região da conta
         </h2>
         <p className="text-sm text-slate-500">
           Define a moeda do Club Doctor e de outros pagamentos. Para PIX e boleto, selecione Brasil.
@@ -273,7 +273,7 @@ export default function AccountPage() {
         )}
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">Pais / regiao</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">País / região</label>
             <select
               value={accountRegion}
               onChange={(e) => setAccountRegion(parseBillingRegion(e.target.value, accountRegion))}
@@ -291,7 +291,7 @@ export default function AccountPage() {
             className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0"
           >
             {regionSaving && <Loader2 size={14} className="animate-spin" />}
-            Salvar regiao
+            Salvar região
           </button>
         </div>
       </div>

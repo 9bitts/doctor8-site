@@ -116,9 +116,9 @@ export function RateioSection({ currency: fallbackCurrency }: { currency: string
           <BookOpen size={18} className="text-brand-500" /> Livro aberto &middot; Rateio
         </h2>
         <p className="text-sm text-slate-500 mt-2 max-w-2xl">
-          Aqui voce acompanha, de forma transparente, todo o caixa da comissao:
-          o que entrou, os custos do sistema na fonte, e quanto do pote volta para voce.
-          O primeiro fechamento mensal ainda nao aconteceu; assim que ele rodar, o livro aparece aqui.
+          Aqui você acompanha, de forma transparente, todo o caixa da comissão:
+          o que entrou, os custos do sistema na fonte, e quanto do pote volta para você.
+          O primeiro fechamento mensal ainda não aconteceu; assim que ele rodar, o livro aparece aqui.
         </p>
       </div>
     );
@@ -152,7 +152,7 @@ export function RateioSection({ currency: fallbackCurrency }: { currency: string
               </>
             ) : (
               <>
-                <p className="text-2xl font-bold mt-1">Nao participou deste mes</p>
+                <p className="text-2xl font-bold mt-1">Não participou deste mês</p>
                 <p className="text-xs opacity-80 mt-1">{m?.disqualReason || "Sem consultas validas no periodo."}</p>
               </>
             )}
@@ -221,8 +221,8 @@ export function RateioSection({ currency: fallbackCurrency }: { currency: string
         <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex items-start gap-2 text-[11px] text-slate-500">
           <Info size={13} className="shrink-0 mt-0.5 text-slate-400" />
           <p>
-            Cada linha de custo aponta a fonte de onde o valor foi apurado. Os numeros sao auditados
-            anualmente por um contador independente. O pote e sempre max(0, comissao - custos).
+            Cada linha de custo aponta a fonte de onde o valor foi apurado. Os números são auditados
+            anualmente por um contador independente. O pote é sempre max(0, comissão - custos).
           </p>
         </div>
       </div>
@@ -239,7 +239,7 @@ export function RateioSection({ currency: fallbackCurrency }: { currency: string
               <div key={i} className="px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-700 capitalize">{fmtMonth(h.month)}</p>
-                  <p className="text-xs text-slate-400">pote do mes: {fmt(h.poolCents, h.currency)}</p>
+                  <p className="text-xs text-slate-400">pote do mês: {fmt(h.poolCents, h.currency)}</p>
                 </div>
                 <span className={`text-sm font-bold ${h.qualified ? "text-brand-600" : "text-slate-400"}`}>
                   {h.qualified ? fmt(h.totalCents, h.currency) : "-"}

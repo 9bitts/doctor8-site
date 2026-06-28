@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     });
     const profile = await getProviderProfile(session.user.id);
     if (!user || !profile) {
-      return NextResponse.json({ error: "Perfil profissional nao encontrado." }, { status: 404 });
+      return NextResponse.json({ error: "Perfil profissional não encontrado." }, { status: 404 });
     }
 
     const profileRegion = parseBillingRegion(user.region || session.user.region, "US");
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "A moeda escolhida nao corresponde a regiao da sua conta. Altere a regiao em Meu Perfil para pagar nessa moeda.",
+            "A moeda escolhida não corresponde à região da sua conta. Altere a região em Meu Perfil para pagar nessa moeda.",
           code: "REGION_MISMATCH",
           profileRegion,
           settingsPath: "/professional/settings",
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
       console.error("[PRO-SUBSCRIPTION] Professional price not configured for region:", region);
       return NextResponse.json(
         {
-          error: "Preco do Doctor Connection nao configurado no servidor. Contate o suporte.",
+          error: "Preço do Doctor Connection não configurado no servidor. Contate o suporte.",
           code: "PRICE_NOT_CONFIGURED",
         },
         { status: 500 },
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json(
-        { error: "Pagamentos nao configurados no servidor.", code: "STRIPE_NOT_CONFIGURED" },
+        { error: "Pagamentos não configurados no servidor.", code: "STRIPE_NOT_CONFIGURED" },
         { status: 503 },
       );
     }
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
 
     if (!checkoutSession.url) {
       return NextResponse.json(
-        { error: "Stripe nao retornou URL de checkout.", code: "STRIPE_NO_URL" },
+        { error: "Stripe não retornou URL de checkout.", code: "STRIPE_NO_URL" },
         { status: 502 },
       );
     }

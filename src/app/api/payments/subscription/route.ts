@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       select: { firstName: true, lastName: true },
     });
     if (!user || !patient) {
-      return NextResponse.json({ error: "Perfil de paciente nao encontrado." }, { status: 404 });
+      return NextResponse.json({ error: "Perfil de paciente não encontrado." }, { status: 404 });
     }
 
     const profileRegion = parseBillingRegion(user.region || session.user.region, "US");
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "A moeda escolhida nao corresponde a regiao da sua conta. Altere a regiao em Conta para pagar nessa moeda.",
+            "A moeda escolhida não corresponde à região da sua conta. Altere a região em Conta para pagar nessa moeda.",
           code: "REGION_MISMATCH",
           profileRegion,
           settingsPath: "/patient/account",
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       console.error("[SUBSCRIPTION] Club price is not configured for region:", region);
       return NextResponse.json(
         {
-          error: "Preco do Club Doctor nao configurado no servidor. Contate o suporte.",
+          error: "Preço do Club Doctor não configurado no servidor. Contate o suporte.",
           code: "PRICE_NOT_CONFIGURED",
         },
         { status: 500 },
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json(
-        { error: "Pagamentos nao configurados no servidor.", code: "STRIPE_NOT_CONFIGURED" },
+        { error: "Pagamentos não configurados no servidor.", code: "STRIPE_NOT_CONFIGURED" },
         { status: 503 },
       );
     }
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     });
     if (!checkoutSession.url) {
       return NextResponse.json(
-        { error: "Stripe nao retornou URL de checkout.", code: "STRIPE_NO_URL" },
+        { error: "Stripe não retornou URL de checkout.", code: "STRIPE_NO_URL" },
         { status: 502 },
       );
     }
