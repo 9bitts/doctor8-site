@@ -33,6 +33,7 @@ const EMPTY: HumanitarianTriageData = {
   headTraumaDescription: "",
   selfHarmThoughts: false,
   quickComplaint: "",
+  deviceOwnership: undefined,
 };
 
 function t(lang: Lang, key: string) {
@@ -185,9 +186,36 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
               />
             </div>
           ))}
+          <div className="space-y-2 pt-2 border-t border-white/10">
+            <p className="text-sm text-slate-300">{t(lang, "hum.triage.q.deviceOwnership")}</p>
+            <p className="text-xs text-slate-500">{t(lang, "hum.triage.q.deviceOwnershipHint")}</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {(["proprio", "emprestado"] as const).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => patch("deviceOwnership", opt)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition ${
+                    data.deviceOwnership === opt
+                      ? "border-emerald-400 bg-emerald-500/20 text-white"
+                      : "border-white/10 bg-slate-900/40 text-slate-400 hover:border-white/20"
+                  }`}
+                >
+                  {t(lang, `hum.triage.device.${opt}`)}
+                </button>
+              ))}
+            </div>
+          </div>
           <button
             type="button"
-            onClick={() => setStep(2)}
+            onClick={() => {
+              if (!data.deviceOwnership) {
+                setError(t(lang, "hum.triage.deviceRequired"));
+                return;
+              }
+              setError(null);
+              setStep(2);
+            }}
             className="w-full py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold flex items-center justify-center gap-2"
           >
             {t(lang, "hum.triage.next")}

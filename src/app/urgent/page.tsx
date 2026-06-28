@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { translate, normalizeLang, Lang, TranslationKey } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
+import { navigateBack } from "@/lib/safe-nav";
 
 const LANG_KEY = "doctor8.lang";
 
@@ -399,7 +400,7 @@ export default function UrgentPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-slate-400 hover:text-slate-600">
+          <button onClick={() => navigateBack(router, "/patient")} className="text-slate-400 hover:text-slate-600">
             <ArrowLeft size={20} />
           </button>
           <div className="flex-1">

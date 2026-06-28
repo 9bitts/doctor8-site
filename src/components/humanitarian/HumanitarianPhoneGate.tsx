@@ -98,7 +98,7 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
           <div>
             <label className="text-xs font-medium text-slate-600">{t(lang, "hum.phone.ddi")}</label>
             <input
-              className="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"
+              className="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
               value={ddi}
               onChange={(e) => setDdi(e.target.value.replace(/\D/g, "").slice(0, 4))}
               placeholder="58"
@@ -108,7 +108,7 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
           <div>
             <label className="text-xs font-medium text-slate-600">{t(lang, "hum.phone.ddd")}</label>
             <input
-              className="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"
+              className="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
               value={ddd}
               onChange={(e) => setDdd(e.target.value.replace(/\D/g, "").slice(0, 3))}
               placeholder="412"
@@ -118,7 +118,7 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
           <div className="col-span-1">
             <label className="text-xs font-medium text-slate-600">{t(lang, "hum.phone.number")}</label>
             <input
-              className="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"
+              className="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
               value={number}
               onChange={(e) => setNumber(e.target.value.replace(/\D/g, "").slice(0, 15))}
               placeholder="1234567"

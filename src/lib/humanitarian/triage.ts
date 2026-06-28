@@ -24,6 +24,8 @@ export const humanitarianTriageSchema = z.object({
   headTraumaDescription: z.string().max(500).optional(),
   selfHarmThoughts: z.boolean(),
   quickComplaint: z.string().max(500).optional(),
+  /** Whether the device used for the consult belongs to the patient or is borrowed. */
+  deviceOwnership: z.enum(["proprio", "emprestado"]),
 });
 
 export type HumanitarianTriageData = z.infer<typeof humanitarianTriageSchema>;

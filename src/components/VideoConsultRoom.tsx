@@ -15,6 +15,7 @@ import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianInt
 import DailyPrebuiltEmbed, { type DailyPrebuiltHandle } from "@/components/DailyPrebuiltEmbed";
 import { translate } from "@/lib/i18n/translations";
 import { buildVideoChartLinks, videoReturnPath } from "@/lib/video-chart-nav";
+import { navigateBack } from "@/lib/safe-nav";
 
 export interface VideoConsultData {
   url: string;
@@ -504,7 +505,7 @@ export default function VideoConsultRoom({
             <p className="text-xs text-slate-500 mb-1 uppercase tracking-wide">{t("opensIn")}</p>
             <p className="text-emerald-400 font-bold text-4xl tabular-nums">{countdown || "..."}</p>
           </div>
-          <button type="button" onClick={() => router.back()} className="text-slate-400 hover:text-white text-sm font-medium flex items-center gap-2 mx-auto transition">
+          <button type="button" onClick={() => navigateBack(router, "/patient")} className="text-slate-400 hover:text-white text-sm font-medium flex items-center gap-2 mx-auto transition">
             <ArrowLeft size={15} /> {t("back")}
           </button>
         </div>
@@ -521,7 +522,7 @@ export default function VideoConsultRoom({
           </div>
           <h1 className="text-white text-xl font-bold mb-2">{t("unavailable")}</h1>
           <p className="text-slate-400 text-sm mb-8">{error}</p>
-          <button type="button" onClick={() => router.back()} className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition flex items-center gap-2 mx-auto">
+          <button type="button" onClick={() => navigateBack(router, "/patient")} className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition flex items-center gap-2 mx-auto">
             <ArrowLeft size={15} /> {t("back")}
           </button>
         </div>
@@ -554,25 +555,42 @@ export default function VideoConsultRoom({
     } else if (!window.confirm(t("leaveConfirm"))) {
       return;
     }
+
+    if (
+      roomData.kind === "humanitarian" &&
+      roomData.role === "patient" &&
+      roomData.entryId
+    ) {
+      setLeavingCall(true);
+      try {
+        await fetch("/api/humanitarian/queue/patient-leave", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ entryId: roomData.entryId }),
+        });
+      } catch { /* still leave room */ }
+      setLeavingCall(false);
+    }
+
     await dailyRef.current?.leave();
     router.push(leaveDestination(roomData));
   }
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between gap-2 shrink-0 z-10">
+      <div className="bg-slate-900 border-b border-slate-800 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 shrink-0 z-10">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
             type="button"
             onClick={handleLeaveCall}
             disabled={leavingCall}
-            className="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 hover:bg-red-500/25 hover:text-red-200 transition disabled:opacity-50"
+            className="shrink-0 flex items-center gap-1.5 text-xs sm:text-sm font-bold px-3 sm:px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white border border-red-400/40 shadow-md shadow-red-950/40 transition disabled:opacity-50 min-h-[44px]"
             aria-label={t("leaveCall")}
           >
             {leavingCall
-              ? <Loader2 size={14} className="animate-spin shrink-0" />
-              : <PhoneOff size={14} className="shrink-0" />}
-            <span className="hidden sm:inline">{leavingCall ? t("leaveProcessing") : t("leaveCall")}</span>
+              ? <Loader2 size={16} className="animate-spin shrink-0" />
+              : <PhoneOff size={16} className="shrink-0" />}
+            <span>{leavingCall ? t("leaveProcessing") : t("leaveCall")}</span>
           </button>
           <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 hidden sm:flex">
             <Video size={16} className="text-emerald-400" />

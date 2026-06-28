@@ -476,6 +476,49 @@ export async function handoffHumanitarianEntryViaGoogleMeet(
   return { meetUrl, patientName };
 }
 
+/** Patient leaves the video room — frees volunteer and advances the queue. */
+export async function patientEndHumanitarianConsultation(
+  entryId: string,
+  patientUserId: string,
+): Promise<void> {
+  const entry = await db.humanitarianQueueEntry.findUnique({
+    where: { id: entryId },
+    select: { id: true, patientUserId: true, status: true, poolId: true, volunteerId: true },
+  });
+  if (!entry || entry.patientUserId !== patientUserId) {
+    throw new Error("Forbidden");
+  }
+  if (!["CALLED", "IN_PROGRESS"].includes(entry.status)) {
+    return;
+  }
+
+  const now = new Date();
+  await db.$transaction(async (tx) => {
+    const updated = await tx.humanitarianQueueEntry.updateMany({
+      where: {
+        id: entryId,
+        patientUserId,
+        status: { in: ["CALLED", "IN_PROGRESS"] },
+      },
+      data: {
+        status: "DONE",
+        endedAt: now,
+        completionChannel: "VIDEO",
+      },
+    });
+    if (updated.count === 0) return;
+
+    if (entry.volunteerId) {
+      await tx.humanitarianVolunteer.update({
+        where: { id: entry.volunteerId },
+        data: { status: "ONLINE", currentEntryId: null },
+      });
+    }
+  });
+
+  await assignNextInPool(entry.poolId);
+}
+
 export async function cancelHumanitarianEntry(
   entryId: string,
   patientUserId: string,

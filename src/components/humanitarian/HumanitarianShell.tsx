@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Heart, ArrowLeft, Home, User, Stethoscope, ExternalLink } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
 import { HUMANITARIAN_LANDING_URL, VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianLangSwitcher from "@/components/humanitarian/HumanitarianLangSwitcher";
+import { humanitarianBackFallback, navigateBack } from "@/lib/safe-nav";
 
 type UserRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "ADMIN" | "ORGANIZATION" | "ANGEL";
 
@@ -34,6 +35,7 @@ export default function HumanitarianShell({
   showBack = true,
 }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const t = (key: string) => translate(lang, key);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
 
@@ -77,13 +79,14 @@ export default function HumanitarianShell({
         <div className="max-w-2xl mx-auto w-full px-4 sm:px-6">
           <div className="flex items-center gap-2 py-3">
             {showBack && (
-              <Link
-                href={accountHref}
+              <button
+                type="button"
+                onClick={() => navigateBack(router, humanitarianBackFallback(pathname))}
                 className={`p-2 rounded-lg shrink-0 ${dark ? "text-slate-400 hover:text-white hover:bg-white/10" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"}`}
                 aria-label={t("hum.shell.back")}
               >
                 <ArrowLeft size={20} />
-              </Link>
+              </button>
             )}
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${dark ? "bg-rose-500/20" : "bg-rose-100"}`}>

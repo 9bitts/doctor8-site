@@ -118,6 +118,7 @@ type Labels = {
   selfHarm: string;
   traumaDetail: string;
   quickComplaint: string;
+  deviceOwnership: string;
   identification: string;
   name: string;
   ageDob: string;
@@ -183,6 +184,7 @@ const L: Record<Lang, Labels> = {
     selfHarm: "Autoles\u00e3o",
     traumaDetail: "Trauma (detalhe)",
     quickComplaint: "Relato do paciente (triagem)",
+    deviceOwnership: "Aparelho",
     identification: "Identifica\u00e7\u00e3o",
     name: "Nome",
     ageDob: "Idade/nasc.",
@@ -246,6 +248,7 @@ const L: Record<Lang, Labels> = {
     selfHarm: "Self-harm thoughts",
     traumaDetail: "Trauma (detail)",
     quickComplaint: "Patient note (triage)",
+    deviceOwnership: "Device",
     identification: "Identification",
     name: "Name",
     ageDob: "Age/DOB",
@@ -309,6 +312,7 @@ const L: Record<Lang, Labels> = {
     selfHarm: "Autolesi\u00f3n",
     traumaDetail: "Trauma (detalle)",
     quickComplaint: "Relato del paciente (triaje)",
+    deviceOwnership: "Dispositivo",
     identification: "Identificaci\u00f3n",
     name: "Nombre",
     ageDob: "Edad/nac.",
@@ -368,6 +372,16 @@ function yesNo(v: boolean | undefined | null, lang: Lang): string {
   const t = L[lang];
   if (v == null) return t.empty;
   return v ? t.yes : t.no;
+}
+
+const DEVICE_OWNERSHIP_LABELS: Record<Lang, Record<string, string>> = {
+  pt: { proprio: "Aparelho próprio", emprestado: "Aparelho emprestado" },
+  en: { proprio: "Own device", emprestado: "Borrowed device" },
+  es: { proprio: "Dispositivo propio", emprestado: "Dispositivo prestado" },
+};
+
+function deviceOwnershipLabel(v: string, lang: Lang): string {
+  return DEVICE_OWNERSHIP_LABELS[lang][v] || v;
 }
 
 function str(v: unknown, lang: Lang): string {
@@ -451,6 +465,12 @@ export function buildIntakeSummary(
         { label: t.feverGi, value: yesNo(triage.feverOrGi, lang) },
         { label: t.headTrauma, value: yesNo(triage.headTrauma, lang) },
         { label: t.selfHarm, value: yesNo(triage.selfHarmThoughts, lang) },
+        ...(triage.deviceOwnership
+          ? [{
+              label: t.deviceOwnership,
+              value: deviceOwnershipLabel(triage.deviceOwnership, lang),
+            }]
+          : []),
         ...(triage.quickComplaint?.trim()
           ? [{ label: t.quickComplaint, value: triage.quickComplaint.trim() }]
           : []),
