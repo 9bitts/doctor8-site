@@ -3,6 +3,7 @@ import { decrypt } from "@/lib/encryption";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { ensureAnalysandForPatient, ensureIntegrativeClientForPatient } from "@/lib/providers";
 import { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
+import { logDailyRecording } from "@/lib/daily-recording-log";
 import { DEFAULT_VENEZUELA_POOLS, poolLabel } from "@/lib/humanitarian/constants";
 import {
   notifyHumanitarianMissedTurn,
@@ -141,6 +142,13 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
     });
 
     if (!updated) return null;
+
+    if (room.name) {
+      await logDailyRecording({
+        dailyRoomName: room.name,
+        humanitarianEntryId: updated.id,
+      });
+    }
 
     const full = await db.humanitarianQueueEntry.findUnique({
       where: { id: updated.id },

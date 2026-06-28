@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { revokeSmartClientAccess } from "@/lib/fhir/smart-token-maintenance";
 
 export async function GET() {
   const session = await auth();
@@ -31,10 +32,12 @@ export async function DELETE(req: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const deleted = await db.smartAccessToken.deleteMany({
+  const row = await db.smartAccessToken.findFirst({
     where: { id, userId: session.user.id },
+    select: { clientId: true },
   });
+  if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (deleted.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await revokeSmartClientAccess(session.user.id, row.clientId);
   return NextResponse.json({ success: true });
 }

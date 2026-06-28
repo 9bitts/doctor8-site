@@ -12,6 +12,47 @@ import {
   type ConsultationPaymentMeta,
 } from "@/lib/fulfill-consultation";
 import { isClubPriceId } from "@/lib/stripe-payment-methods";
+import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
+
+async function notifyClubPaymentIssue(
+  userId: string,
+  bodyKey: "notif.clubPayment.failed" | "notif.clubPayment.actionRequired",
+) {
+  const copy = storedNotificationText("notif.clubPayment.title", bodyKey);
+  await createNotification({
+    userId,
+    title: copy.title,
+    body: copy.body,
+    type: "payment",
+    data: {
+      url: "/patient/club",
+      link: "/patient/club",
+      titleKey: "notif.clubPayment.title",
+      bodyKey,
+    },
+  }).catch(() => {});
+}
+
+async function updateClubSubscriptionStatus(
+  stripeCustomerId: string,
+  stripeSubscriptionId: string,
+  status: string,
+): Promise<string | null> {
+  const existing = await db.subscription.findFirst({
+    where: { stripeCustomerId },
+    select: { id: true, userId: true },
+  });
+  if (!existing) return null;
+  await db.subscription.update({
+    where: { id: existing.id },
+    data: {
+      status,
+      stripeSubscriptionId,
+    },
+  });
+  return existing.userId;
+}
 
 async function resolveClubUserId(stripeCustomerId: string, stripeSubscriptionId?: string | null) {
   const sub = await db.subscription.findFirst({
@@ -165,6 +206,46 @@ export async function POST(req: NextRequest) {
         }
       } catch (e) {
         console.error("[WEBHOOK] Subscription stamp on invoice.paid:", e);
+      }
+    }
+    return NextResponse.json({ received: true });
+  }
+
+  if (event.type === "invoice.payment_failed") {
+    const invoice = event.data.object as { customer?: string; subscription?: string };
+    if (invoice.subscription && invoice.customer) {
+      try {
+        const club = await isClubSubscription(invoice.subscription as string);
+        if (club) {
+          const userId = await updateClubSubscriptionStatus(
+            invoice.customer as string,
+            invoice.subscription as string,
+            "past_due",
+          );
+          if (userId) await notifyClubPaymentIssue(userId, "notif.clubPayment.failed");
+        }
+      } catch (e) {
+        console.error("[WEBHOOK] invoice.payment_failed:", e);
+      }
+    }
+    return NextResponse.json({ received: true });
+  }
+
+  if (event.type === "invoice.payment_action_required") {
+    const invoice = event.data.object as { customer?: string; subscription?: string };
+    if (invoice.subscription && invoice.customer) {
+      try {
+        const club = await isClubSubscription(invoice.subscription as string);
+        if (club) {
+          const userId = await updateClubSubscriptionStatus(
+            invoice.customer as string,
+            invoice.subscription as string,
+            "past_due",
+          );
+          if (userId) await notifyClubPaymentIssue(userId, "notif.clubPayment.actionRequired");
+        }
+      } catch (e) {
+        console.error("[WEBHOOK] invoice.payment_action_required:", e);
       }
     }
     return NextResponse.json({ received: true });

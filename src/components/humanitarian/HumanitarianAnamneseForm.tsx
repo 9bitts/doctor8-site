@@ -23,6 +23,7 @@ import {
   loadHumanitarianDraft,
   saveHumanitarianDraft,
 } from "@/lib/humanitarian/offline-draft";
+import { enqueueHumanitarianSubmit } from "@/lib/humanitarian/outbox";
 import { parsePhoneToParts } from "@/lib/humanitarian/phone";
 
 type Props = {
@@ -217,12 +218,6 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
   async function saveSection(section: Step) {
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      setError(t(lang, "hum.offline.submitBlocked"));
-      return;
-    }
-    setSaving(true);
-    setError(null);
     let data: unknown;
     if (section === "identification") data = identification;
     else if (section === "services") data = { serviceTypes };
@@ -235,6 +230,19 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
         additionalNotes: additionalNotes.trim() || undefined,
       };
     }
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      await enqueueHumanitarianSubmit({
+        url: "/api/humanitarian/intake",
+        method: "PATCH",
+        body: { campaignSlug, section, data },
+      });
+      setError(t(lang, "hum.offline.queuedSubmit"));
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
 
     try {
       const res = await fetch("/api/humanitarian/intake", {

@@ -110,6 +110,13 @@ test.describe("public smoke", () => {
     expect(body.error).toBe("invalid_request");
   });
 
+  test("SMART refresh token rejects missing token", async ({ request }) => {
+    const res = await request.post("/api/fhir/smart/token", {
+      form: { grant_type: "refresh_token", client_id: "doctor8-public" },
+    });
+    expect(res.status()).toBe(400);
+  });
+
   test("FHIR Patient requires Bearer token", async ({ request }) => {
     const res = await request.get("/fhir/Patient/test-id");
     expect(res.status()).toBe(401);

@@ -110,7 +110,7 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
     };
 
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      enqueueHumanitarianSubmit({
+      await enqueueHumanitarianSubmit({
         url: "/api/humanitarian/intake",
         method: "POST",
         body: { campaignSlug, triage: payload },

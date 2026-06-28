@@ -55,7 +55,7 @@ export function getIntegrationStatuses(): IntegrationRow[] {
         ? process.env.E2E_MOCK_DAILY === "1"
           ? "Mock mode (E2E_MOCK_DAILY)."
           : isDailyCloudRecordingEnabled()
-            ? "Daily.co API key configured; cloud recording enabled."
+            ? "Daily.co API key configured; cloud recording enabled (rooms logged)."
             : "Daily.co API key configured."
         : "Video calls need DAILY_API_KEY.",
     },

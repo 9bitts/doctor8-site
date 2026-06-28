@@ -8,6 +8,7 @@ import { Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import HumanitarianAnamneseForm from "@/components/humanitarian/HumanitarianAnamneseForm";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
+import { useHumanitarianOutboxFlush } from "@/hooks/useHumanitarianOutboxFlush";
 
 export default function HumanitarianAnamnesePage() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function HumanitarianAnamnesePage() {
 
   const [lang, setLang] = useState<Lang>("es");
   const [loading, setLoading] = useState(true);
+
+  useHumanitarianOutboxFlush(() => router.refresh());
 
   useEffect(() => {
     setLang(getHumanitarianLang());

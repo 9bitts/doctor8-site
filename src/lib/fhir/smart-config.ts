@@ -8,7 +8,7 @@ export function getSmartConfiguration() {
     issuer: base,
     authorization_endpoint: `${base}/api/fhir/smart/authorize`,
     token_endpoint: `${base}/api/fhir/smart/token`,
-    grant_types_supported: ["authorization_code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
     response_types_supported: ["code"],
     scopes_supported: ["openid", "fhirUser", "patient/*.read", "launch/patient"],
     capabilities: [

@@ -1,4 +1,6 @@
-const OUTBOX_KEY = "doctor8:hum:outbox";
+const DB_NAME = "doctor8-hum";
+const STORE = "outbox";
+const LEGACY_KEY = "doctor8:hum:outbox";
 
 export type OutboxItem = {
   id: string;
@@ -8,10 +10,51 @@ export type OutboxItem = {
   createdAt: number;
 };
 
-function readOutbox(): OutboxItem[] {
+function idbSupported(): boolean {
+  return typeof window !== "undefined" && "indexedDB" in window;
+}
+
+function openDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.createObjectStore(STORE, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function readAllIdb(): Promise<OutboxItem[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readonly");
+    const store = tx.objectStore(STORE);
+    const req = store.getAll();
+    req.onsuccess = () => resolve((req.result as OutboxItem[]) || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function writeAllIdb(items: OutboxItem[]): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    const store = tx.objectStore(STORE);
+    store.clear();
+    for (const item of items) store.put(item);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function readLegacy(): OutboxItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(OUTBOX_KEY);
+    const raw = localStorage.getItem(LEGACY_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as OutboxItem[];
     return Array.isArray(parsed) ? parsed : [];
@@ -20,33 +63,74 @@ function readOutbox(): OutboxItem[] {
   }
 }
 
-function writeOutbox(items: OutboxItem[]): void {
-  if (typeof window === "undefined") return;
+async function migrateLegacy(): Promise<void> {
+  const legacy = readLegacy();
+  if (!legacy.length) return;
+  const current = await readAllIdb();
+  if (current.length === 0) {
+    await writeAllIdb(legacy);
+  }
   try {
-    localStorage.setItem(OUTBOX_KEY, JSON.stringify(items));
+    localStorage.removeItem(LEGACY_KEY);
   } catch {
-    /* quota */
+    /* ignore */
   }
 }
 
-export function enqueueHumanitarianSubmit(item: Omit<OutboxItem, "id" | "createdAt">): string {
+async function readOutbox(): Promise<OutboxItem[]> {
+  if (typeof window === "undefined") return [];
+  if (!idbSupported()) return readLegacy();
+  try {
+    await migrateLegacy();
+    return await readAllIdb();
+  } catch {
+    return readLegacy();
+  }
+}
+
+async function writeOutbox(items: OutboxItem[]): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (!idbSupported()) {
+    try {
+      localStorage.setItem(LEGACY_KEY, JSON.stringify(items));
+    } catch {
+      /* quota */
+    }
+    return;
+  }
+  try {
+    await writeAllIdb(items);
+  } catch {
+    try {
+      localStorage.setItem(LEGACY_KEY, JSON.stringify(items));
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+export async function enqueueHumanitarianSubmit(
+  item: Omit<OutboxItem, "id" | "createdAt">,
+): Promise<string> {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   const next: OutboxItem = { ...item, id, createdAt: Date.now() };
-  writeOutbox([...readOutbox(), next]);
+  const items = await readOutbox();
+  await writeOutbox([...items, next]);
   return id;
 }
 
-export function listHumanitarianOutbox(): OutboxItem[] {
+export async function listHumanitarianOutbox(): Promise<OutboxItem[]> {
   return readOutbox();
 }
 
-export function removeHumanitarianOutboxItem(id: string): void {
-  writeOutbox(readOutbox().filter((i) => i.id !== id));
+export async function removeHumanitarianOutboxItem(id: string): Promise<void> {
+  const items = await readOutbox();
+  await writeOutbox(items.filter((i) => i.id !== id));
 }
 
 export async function flushHumanitarianOutbox(): Promise<number> {
   if (typeof window === "undefined" || !navigator.onLine) return 0;
-  const items = readOutbox();
+  const items = await readOutbox();
   if (items.length === 0) return 0;
 
   let flushed = 0;
@@ -58,7 +142,7 @@ export async function flushHumanitarianOutbox(): Promise<number> {
         body: JSON.stringify(item.body),
       });
       if (res.ok) {
-        removeHumanitarianOutboxItem(item.id);
+        await removeHumanitarianOutboxItem(item.id);
         flushed += 1;
       }
     } catch {

@@ -4,6 +4,7 @@
 // Private rooms + meeting tokens: only the patient and the professional can join.
 
 import { dailyRoomBaseProperties } from "@/lib/data-residency";
+import { logDailyRecording } from "@/lib/daily-recording-log";
 
 const DAILY_API = "https://api.daily.co/v1";
 
@@ -51,6 +52,7 @@ export async function getOrCreateRoom(
 
   if (createRes.ok) {
     const room = await createRes.json();
+    await logDailyRecording({ dailyRoomName: room.name, appointmentId });
     return { name: room.name, url: room.url };
   }
 
@@ -141,6 +143,7 @@ export async function createEphemeralRoom(
     });
     if (!res.ok) return null;
     const room = await res.json();
+    await logDailyRecording({ dailyRoomName: room.name });
     return { name: room.name, url: room.url };
   } catch {
     return null;

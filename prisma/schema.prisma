@@ -2777,8 +2777,42 @@ model SmartAccessToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
+  refreshTokens SmartRefreshToken[]
+
   @@index([token])
   @@index([expiresAt])
+  @@index([userId, clientId])
+}
+
+model SmartRefreshToken {
+  id            String    @id @default(cuid())
+  token         String    @unique
+  accessTokenId String?
+  accessToken   SmartAccessToken? @relation(fields: [accessTokenId], references: [id], onDelete: SetNull)
+  clientId      String
+  userId        String
+  patientId     String
+  scope         String
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([token])
+  @@index([userId, clientId])
+  @@index([expiresAt])
+}
+
+model DailyRecordingLog {
+  id                  String   @id @default(cuid())
+  appointmentId       String?
+  humanitarianEntryId String?
+  dailyRoomName       String
+  cloudRecording      Boolean  @default(true)
+  createdAt           DateTime @default(now())
+
+  @@index([appointmentId])
+  @@index([humanitarianEntryId])
+  @@index([createdAt])
 }
 
 model QStashJobLog {
