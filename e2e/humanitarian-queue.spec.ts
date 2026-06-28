@@ -88,4 +88,53 @@ test.describe.serial("humanitarian queue flow", () => {
     const medicoPool = vol.pools?.find((p: { slug: string }) => p.slug === "medico");
     expect(medicoPool?.waiting).toBeGreaterThanOrEqual(1);
   });
+
+  test("volunteer going online calls waiting patient", async ({ page }) => {
+    test.skip(!e2eProfessionalCredentials(), "Set E2E professional credentials");
+
+    const proCreds = e2eProfessionalCredentials()!;
+    await loginWithCredentials(page, proCreds.email, proCreds.password);
+    await waitForAuthenticatedSession(page);
+
+    const onlineRes = await page.request.post("/api/humanitarian/volunteer?lang=es", {
+      data: {
+        status: "ONLINE",
+        campaignSlug: VENEZUELA_SLUG,
+        poolSlug: "medico",
+      },
+    });
+    expect(onlineRes.ok()).toBeTruthy();
+    const online = await onlineRes.json();
+    expect(online.status).toBe("ONLINE");
+  });
+
+  test("called queue patient can fetch humanitarian video session", async ({ page }) => {
+    const patientCreds = e2eQueuePatientCredentials()!;
+    await loginWithCredentials(page, patientCreds.email, patientCreds.password);
+    await waitForAuthenticatedSession(page);
+
+    let entryId: string | undefined;
+    let status: string | undefined;
+
+    for (let i = 0; i < 15; i++) {
+      const res = await page.request.get(
+        `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`,
+      );
+      const body = await res.json();
+      entryId = body.entry?.id;
+      status = body.entry?.status;
+      if (status === "CALLED") break;
+      await page.waitForTimeout(1000);
+    }
+
+    expect(entryId).toBeTruthy();
+    expect(status).toBe("CALLED");
+
+    const videoRes = await page.request.get(`/api/humanitarian/queue/${entryId}/video`);
+    expect(videoRes.ok()).toBeTruthy();
+    const video = await videoRes.json();
+    expect(video.url).toContain("daily.co");
+    expect(video.token).toBeTruthy();
+    expect(video.kind).toBe("humanitarian");
+  });
 });

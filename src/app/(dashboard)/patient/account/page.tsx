@@ -268,7 +268,7 @@ export default function AccountPage() {
         )}
         {regionSaved && (
           <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-            Regiao atualizada. Voce ja pode assinar o Club Doctor na moeda escolhida.
+            Região atualizada. Você já pode assinar o Club Doctor na moeda escolhida.
           </p>
         )}
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">

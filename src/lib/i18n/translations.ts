@@ -2924,7 +2924,7 @@ const pt: LocaleDict = {
   "appt.payBoleto": "Boleto",
   "appt.payAllMethods": "Todas",
   "appt.brlPaymentHint": "PIX e boleto abrem a pagina segura da Stripe. O boleto pode levar ate 3 dias uteis.",
-  "appt.checkoutRedirect": "Voce sera redirecionado para a Stripe para pagar com o metodo escolhido.",
+  "appt.checkoutRedirect": "Você será redirecionado para a Stripe para pagar com o método escolhido.",
   "appt.paymentPending": "Pagamento pendente. Conclua o PIX ou boleto para confirmar a consulta.",
   "appt.errInitPayment": "Falha ao iniciar o pagamento.",
   "appt.errPaymentFailed": "Pagamento recusado. Tente novamente.",

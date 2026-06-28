@@ -292,7 +292,7 @@ export default function LandingMapPanel({ defaultQuery = "Rio de Janeiro" }: Pro
                     <p className="truncate text-xs text-slate-500">{getProfessionLabel(lang, pro.specialty)}</p>
                     {pro.distanceKm != null && (
                       <p className="text-[10px] text-slate-400">
-                        {pro.distanceKm} km ? {pro.isOnline ? t("map.online") : t("map.offline")}
+                        {pro.distanceKm} km · {pro.isOnline ? t("map.online") : t("map.offline")}
                       </p>
                     )}
                   </div>

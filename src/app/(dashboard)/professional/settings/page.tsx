@@ -222,7 +222,7 @@ export default function ProfessionalSettings() {
         )}
         {regionSaved && (
           <p className="text-sm text-brand-700 bg-brand-50 border border-brand-200 rounded-xl px-3 py-2">
-            Regiao atualizada. Voce ja pode assinar na moeda escolhida em Conta.
+            Região atualizada. Você já pode assinar na moeda escolhida em Conta.
           </p>
         )}
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">

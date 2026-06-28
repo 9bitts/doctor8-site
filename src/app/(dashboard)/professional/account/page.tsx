@@ -174,7 +174,7 @@ export default function ProfessionalAccountPage() {
   }
 
   async function cancelSubscription() {
-    if (!confirm("Cancelar o Doctor Connection? Voce mantem o acesso ate o fim do periodo atual.")) return;
+    if (!confirm("Cancelar o Doctor Connection? Você mantém o acesso até o fim do período atual.")) return;
     setSubWorking(true);
     setSubMsg("");
     try {

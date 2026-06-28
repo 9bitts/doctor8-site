@@ -19,6 +19,33 @@ test.describe("public smoke", () => {
     expect(title).not.toMatch(/\?/);
   });
 
+  test("terms page has no encoding glitches in title", async ({ page }) => {
+    await page.goto("/terms");
+    const title = await page.title();
+    expect(title).not.toMatch(/\?/);
+    await expect(page.locator("body")).toContainText("Termos de Uso");
+  });
+
+  test("privacy page body has no corrupted encoding", async ({ page }) => {
+    await page.goto("/privacy");
+    const body = await page.locator("body").innerText();
+    expect(body).not.toMatch(/publicit\?ria|Endere\?o|N\?o\./);
+    expect(body).toMatch(/Pol?tica de Privacidade|Privacidade/i);
+  });
+
+  test("privacy page title has no encoding glitches", async ({ page }) => {
+    await page.goto("/privacy");
+    const title = await page.title();
+    expect(title).not.toMatch(/\?/);
+  });
+
+  test("terms page body has no corrupted encoding", async ({ page }) => {
+    await page.goto("/terms");
+    const body = await page.locator("body").innerText();
+    expect(body).not.toMatch(/USU\?RIO|Pol\?tica|servi\?os/);
+    expect(body).toMatch(/Termos de Uso|Usu?rio/i);
+  });
+
   test("PWA manifest is served", async ({ request }) => {
     const res = await request.get("/manifest.webmanifest");
     expect(res.ok()).toBeTruthy();

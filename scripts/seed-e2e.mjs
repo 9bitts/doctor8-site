@@ -301,12 +301,12 @@ async function seedHumanitarianVideoFixtures() {
       userId: proUser.id,
       providerType: ProviderType.HEALTH,
       professionalId: proProfile.id,
-      status: "BUSY",
+      status: "OFFLINE",
     },
     update: {
       providerType: ProviderType.HEALTH,
       professionalId: proProfile.id,
-      status: "BUSY",
+      status: "OFFLINE",
     },
   });
 
