@@ -59,8 +59,8 @@ export default function TemplatesSettingsClient() {
       ]);
       const docData = await docRes.json();
       const rxData = await rxRes.json();
-      if (!docRes.ok) throw new Error(docData.error || "Failed to load document templates");
-      if (!rxRes.ok) throw new Error(rxData.error || "Failed to load prescription templates");
+      if (!docRes.ok) throw new Error(docData.error || t("tmpl.loadError"));
+      if (!rxRes.ok) throw new Error(rxData.error || t("tmpl.loadError"));
       setDocTemplates(docData.templates || []);
       setRxTemplates(rxData.templates || []);
     } catch (e) {

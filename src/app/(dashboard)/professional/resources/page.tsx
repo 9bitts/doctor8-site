@@ -235,7 +235,7 @@ export default function ResourcesPage() {
         fd.append("folder", "resources");
         const up = await fetch("/api/uploads", { method: "POST", body: fd });
         const upData = await up.json();
-        if (!up.ok) { setFormError(upData.error || "Upload failed."); setSaving(false); return; }
+        if (!up.ok) { setFormError(upData.error || t("lib.errUpload")); setSaving(false); return; }
         fileKey = upData.key;
       }
 
@@ -255,7 +255,7 @@ export default function ResourcesPage() {
         }
       );
       const data = await res.json();
-      if (!res.ok) { setFormError(data.error || "Error"); setSaving(false); return; }
+      if (!res.ok) { setFormError(data.error || t("lib.errGeneric")); setSaving(false); return; }
       if (editingId) {
         setResources((prev) => prev.map((r) => r.id === editingId ? data : r));
       } else {
@@ -292,7 +292,7 @@ export default function ResourcesPage() {
       {/* Resource list */}
       {loading ? (
         <div className="flex items-center gap-2 text-slate-400 py-10 justify-center">
-          <Loader2 size={18} className="animate-spin" /> Carregando...
+          <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
         </div>
       ) : resources.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">
