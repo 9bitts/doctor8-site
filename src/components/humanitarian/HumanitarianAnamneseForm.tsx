@@ -217,6 +217,10 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
   async function saveSection(section: Step) {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setError(t(lang, "hum.offline.submitBlocked"));
+      return;
+    }
     setSaving(true);
     setError(null);
     let data: unknown;

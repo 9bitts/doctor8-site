@@ -103,6 +103,10 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
   }
 
   async function submit() {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setError(t(lang, "hum.offline.submitBlocked"));
+      return;
+    }
     setSaving(true);
     setError(null);
     try {

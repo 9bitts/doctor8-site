@@ -66,6 +66,14 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
     };
   }, [url, token]);
 
+  useEffect(() => {
+    function onPageHide() {
+      void callRef.current?.leave();
+    }
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, []);
+
   return <div ref={containerRef} className={`relative ${className}`} />;
 });
 

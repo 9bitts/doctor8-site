@@ -56,6 +56,9 @@ jobs:
       - name: Seed E2E fixtures
         run: node scripts/seed-e2e.mjs
 
+      - name: Check i18n keys
+        run: npm run check:i18n
+
       - name: Build application
         run: npm run build
 

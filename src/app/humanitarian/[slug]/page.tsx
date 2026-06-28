@@ -83,6 +83,7 @@ export default function HumanitarianCampaignPage() {
   const [phoneReady, setPhoneReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
+  const [queueStale, setQueueStale] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -145,6 +146,8 @@ export default function HumanitarianCampaignPage() {
         const queueData = await queueRes.json();
         if (queueRes.ok && queueData.entry) {
           setEntry(queueData.entry);
+          cacheHumanitarianQueueState(slug, queueData.entry);
+          setQueueStale(false);
         }
       })
       .catch(() => router.push("/login?callbackUrl=/patient"));
@@ -179,13 +182,17 @@ export default function HumanitarianCampaignPage() {
       if (res.ok && data.entry) {
         setEntry(data.entry);
         cacheHumanitarianQueueState(slug, data.entry);
+        setQueueStale(false);
         if (["DONE", "CANCELLED", "NO_SHOW"].includes(data.entry.status)) {
           clearInterval(pollRef.current);
         }
       }
     } catch {
-      const cached = loadCachedHumanitarianQueueState<typeof entry>(slug);
-      if (cached) setEntry(cached);
+      const cached = loadCachedHumanitarianQueueState<QueueEntry>(slug);
+      if (cached) {
+        setEntry(cached);
+        setQueueStale(true);
+      }
     }
   }
 
@@ -303,6 +310,7 @@ export default function HumanitarianCampaignPage() {
       <HumanitarianShell lang={lang} onLangChange={setLang} dark>
         <div className="max-w-lg mx-auto space-y-4 mb-4">
           <HumanitarianFlowStepper lang={lang} current="waiting" dark />
+          <HumanitarianOfflineBanner lang={lang} />
         </div>
         <QueueScreen
           lang={lang}
@@ -312,6 +320,7 @@ export default function HumanitarianCampaignPage() {
           entering={entering}
           leaving={leaving}
           switching={switching}
+          queueStale={queueStale}
           onEnter={enterConsultation}
           onLeave={leaveQueue}
           onSwitchPool={switchPool}
@@ -508,6 +517,7 @@ function QueueScreen({
   onRejoin,
   campaignSlug,
   showAnamneseReminder,
+  queueStale = false,
 }: {
   lang: Lang;
   entry: QueueEntry;
@@ -516,6 +526,7 @@ function QueueScreen({
   entering: boolean;
   leaving: boolean;
   switching: string | null;
+  queueStale?: boolean;
   onEnter: () => void;
   onLeave: () => void;
   onSwitchPool: (poolSlug: string, currentPoolLabel: string) => void;
@@ -654,6 +665,11 @@ function QueueScreen({
         <Users size={14} /> {t(lang, "hum.page.volOnline", { count: entry.onlineVolunteers })}
       </p>
       <p className="text-xs text-slate-500 mb-6">{t(lang, "hum.page.keepOpen")}</p>
+      {queueStale && (
+        <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-xl px-3 py-2 mb-4">
+          {t(lang, "hum.offline.queueStale")}
+        </p>
+      )}
       {showAnamneseReminder && entry.status === "WAITING" && (
         <Link
           href={`/humanitarian/${campaignSlug}/anamnese`}
