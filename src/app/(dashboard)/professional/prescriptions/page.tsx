@@ -82,6 +82,7 @@ interface Drug {
 interface MedItem {
   name: string; dosage: string; frequency: string; duration: string; instructions: string;
   presentation?: string; controlled?: boolean; prescriptionType?: string | null;
+  itemKind?: "medication" | "device" | "phytotherapy";
 }
 interface Prescription {
   id: string; createdAt: string; validUntil?: string;
@@ -603,8 +604,16 @@ export default function PrescriptionsPage() {
       name: `${drug.name}${drug.activeIngredient ? ` (${drug.activeIngredient})` : ""}`,
       dosage: "", frequency: "", duration: "", instructions: "",
       presentation: drug.presentation, controlled: drug.controlled, prescriptionType: drug.prescriptionType,
+      itemKind: "medication",
     }]);
     setDrugQuery(""); setDrugResults([]);
+  }
+
+  function isMedItemValid(m: MedItem): boolean {
+    if (!m.name.trim()) return false;
+    const kind = m.itemKind || "medication";
+    if (kind === "medication") return Boolean(m.dosage?.trim() && m.frequency?.trim());
+    return true;
   }
 
   function addManual() {
@@ -612,8 +621,20 @@ export default function PrescriptionsPage() {
     setMedications((prev) => [...prev, {
       name: name || "",
       dosage: "", frequency: "", duration: "", instructions: "",
+      itemKind: "medication",
     }]);
     setDrugQuery(""); setDrugResults([]);
+  }
+
+  function addSpecialItem(kind: "device" | "phytotherapy") {
+    setMedications((prev) => [...prev, {
+      name: "",
+      dosage: "",
+      frequency: "",
+      duration: "",
+      instructions: "",
+      itemKind: kind,
+    }]);
   }
 
   function removeMedication(index: number) { setMedications((prev) => prev.filter((_, i) => i !== index)); }
@@ -629,7 +650,7 @@ export default function PrescriptionsPage() {
   }
 
   async function saveAsRxTemplate() {
-    if (medications.length === 0 || medications.some((m) => !m.name.trim() || !m.dosage || !m.frequency)) {
+    if (medications.length === 0 || medications.some((m) => !isMedItemValid(m))) {
       setFormError(t("rx2.needMeds"));
       return;
     }
@@ -639,8 +660,8 @@ export default function PrescriptionsPage() {
     setFormError("");
     try {
       const cleanMeds = medications.map((m) => ({
-        name: m.name.trim(), dosage: m.dosage, frequency: m.frequency,
-        duration: m.duration, instructions: m.instructions,
+        name: m.name.trim(), dosage: m.dosage || "", frequency: m.frequency || "",
+        duration: m.duration, instructions: m.instructions, itemKind: m.itemKind || "medication",
       }));
       const res = await fetch("/api/professional/templates/prescriptions", {
         method: "POST",
@@ -665,14 +686,14 @@ export default function PrescriptionsPage() {
   async function handleSubmit() {
     setFormError("");
     if (!selectedPatient) { setFormError(t("rx2.needPatient")); return; }
-    if (medications.length === 0 || medications.some((m) => !m.name.trim() || !m.dosage || !m.frequency)) {
+    if (medications.length === 0 || medications.some((m) => !isMedItemValid(m))) {
       setFormError(t("rx2.needMeds")); return;
     }
     setSaving(true);
     try {
       const cleanMeds = medications.map((m) => ({
-        name: m.name.trim(), dosage: m.dosage, frequency: m.frequency,
-        duration: m.duration, instructions: m.instructions,
+        name: m.name.trim(), dosage: m.dosage || "", frequency: m.frequency || "",
+        duration: m.duration, instructions: m.instructions, itemKind: m.itemKind || "medication",
       }));
       const res = await fetch("/api/professional/prescriptions", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -988,6 +1009,16 @@ export default function PrescriptionsPage() {
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 hover:bg-brand-50 text-brand-600 font-semibold text-sm transition">
                 <Plus size={16} /> {t("rx2.addManual")}
               </button>
+              <div className="grid sm:grid-cols-2 gap-2">
+                <button type="button" onClick={() => addSpecialItem("device")}
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm transition">
+                  <Plus size={14} /> {t("rx.addDevice")}
+                </button>
+                <button type="button" onClick={() => addSpecialItem("phytotherapy")}
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 font-medium text-sm transition">
+                  <Plus size={14} /> {t("rx.addPhytotherapy")}
+                </button>
+              </div>
               <p className="text-xs text-slate-400 text-center -mt-2">{t("rx.manualAlways")}</p>
 
               {drugQuery.trim().length >= 2 && drugResults.length > 0 && (
@@ -1034,10 +1065,18 @@ export default function PrescriptionsPage() {
                 <div className="space-y-3">
                   {medications.map((med, index) => {
                     const ci = controlInfo(med.prescriptionType);
+                    const kind = med.itemKind || "medication";
+                    const kindLabel = kind === "device" ? t("rx.itemKind.device")
+                      : kind === "phytotherapy" ? t("rx.itemKind.phytotherapy") : null;
                     return (
                       <div key={index} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0 space-y-2">
+                            {kindLabel && (
+                              <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-50 text-accent-700 border border-accent-200">
+                                {kindLabel}
+                              </span>
+                            )}
                             <label className="text-xs font-medium text-slate-600">{t("rx2.manualName")}</label>
                             <input type="text" value={med.name}
                               onChange={(e) => updateMedication(index, "name", e.target.value)}
@@ -1054,11 +1093,15 @@ export default function PrescriptionsPage() {
                         </div>
                         <div className="grid sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.dosageLabel")} *</label>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">
+                              {t("rx2.dosageLabel")}{kind === "medication" ? " *" : ` (${t("rx.fieldOptional")})`}
+                            </label>
                             <input type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder={t("rx.medDosagePlaceholder")} className="rx-inp-sm" />
                           </div>
                           <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.frequencyLabel")} *</label>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">
+                              {t("rx2.frequencyLabel")}{kind === "medication" ? " *" : ` (${t("rx.fieldOptional")})`}
+                            </label>
                             <select value={med.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="rx-inp-sm">
                               <option value="">{t("med.freqSelect")}</option>
                               <option value="Once daily">{t("med.freqOnce")}</option>

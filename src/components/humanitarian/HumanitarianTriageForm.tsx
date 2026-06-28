@@ -32,6 +32,7 @@ const EMPTY: HumanitarianTriageData = {
   headTrauma: false,
   headTraumaDescription: "",
   selfHarmThoughts: false,
+  quickComplaint: "",
 };
 
 function t(lang: Lang, key: string) {
@@ -283,6 +284,22 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
               />
             </div>
           )}
+
+          <div className="rounded-xl border border-white/10 bg-slate-900/50 p-4 space-y-2">
+            <label className="text-sm text-slate-200 font-medium">
+              {t(lang, "hum.triage.quickComplaint")}
+            </label>
+            <p className="text-xs text-slate-500">{t(lang, "hum.triage.quickComplaintHint")}</p>
+            <textarea
+              value={data.quickComplaint || ""}
+              onChange={(e) => patch("quickComplaint", e.target.value.slice(0, 500))}
+              rows={3}
+              maxLength={500}
+              className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              placeholder={t(lang, "hum.triage.quickComplaintPlaceholder")}
+            />
+            <p className="text-[10px] text-slate-500 text-right">{(data.quickComplaint || "").length}/500</p>
+          </div>
 
           <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 space-y-2">
             <p className="text-sm text-rose-100 font-medium flex items-center gap-2">

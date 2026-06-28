@@ -13,11 +13,14 @@ export function fileNameFromKey(key: string): string {
   return base.replace(/^[a-f0-9-]{20,}-/i, "");
 }
 
-export function fileKind(key: string): "image" | "pdf" | "video" | "other" {
-  const ext = (key.split(".").pop() || "").toLowerCase();
-  if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "heif"].includes(ext)) return "image";
-  if (ext === "pdf") return "pdf";
+export function fileKind(key: string, name?: string): "image" | "pdf" | "video" | "other" {
+  const fromName = (name?.split(".").pop() || "").toLowerCase();
+  const fromKey = (key.split(".").pop() || "").toLowerCase();
+  const ext = fromName || fromKey;
+  const blob = `${key} ${name || ""}`.toLowerCase();
+  if (ext === "pdf" || blob.includes(".pdf")) return "pdf";
   if (["mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return "video";
+  if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "heif"].includes(ext)) return "image";
   return "other";
 }
 

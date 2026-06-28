@@ -34,9 +34,11 @@ import ChartClinicalActions from "@/components/professional/ChartClinicalActions
 import {
   RecordTimelineFilters,
   PinnedAnamnesisCard,
+  AnamnesisPromptBanner,
   RecordKindBadge,
   RecordTimelineDot,
 } from "@/components/professional/PatientRecordTimeline";
+import { RecordFileThumbnail } from "@/components/professional/RecordFileThumbnail";
 import { hasAnyMetric, type ClinicalMetricsInput } from "@/lib/clinical-metrics";
 import {
   RECORD_KIND_OPTIONS,
@@ -165,10 +167,7 @@ function RecordAttachmentStrip({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={f.url} alt={f.name} className="w-full h-full object-cover" loading="lazy" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1 text-slate-500">
-                  {f.kind === "pdf" ? <FileType size={22} /> : f.kind === "video" ? <Film size={22} /> : <Paperclip size={22} />}
-                  <span className="text-[9px] text-center leading-tight line-clamp-2 px-0.5">{f.name}</span>
-                </div>
+                <RecordFileThumbnail kind={f.kind} name={f.name} />
               )}
             </a>
           ))}
@@ -385,6 +384,14 @@ export default function RecordDetailClient({
     setImagePreview(null);
     setError(null);
     setEditingDoc(null);
+  }
+
+  function openAnamnesisForm() {
+    resetForm();
+    setRecordKind("ANAMNESIS");
+    setChartTab("records");
+    setRecordFilter("anamnesis");
+    setShowForm(true);
   }
 
   function openNewRecordForm() {
@@ -1095,6 +1102,10 @@ export default function RecordDetailClient({
         )}
       </div>
 
+      {!pinnedAnamnesis && chartTab === "records" && (
+        <AnamnesisPromptBanner onCreate={openAnamnesisForm} readOnly={!canEdit} />
+      )}
+
       {/* Chart tabs — scroll horizontal no celular */}
       <div className="max-w-full overflow-x-auto -mx-1 px-1 pb-1">
         <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-max min-w-full sm:min-w-0">
@@ -1216,7 +1227,7 @@ export default function RecordDetailClient({
 
               return (
                 <div key={d.id} id={`record-${d.id}`} className={`relative px-3 py-4 border-b border-slate-50 last:border-0 ${
-                  pinnedAnamnesis?.id === d.id ? "bg-violet-50/40 rounded-xl" : ""
+                  pinnedAnamnesis?.id === d.id ? "bg-accent-50/50 rounded-xl ring-1 ring-accent-100" : ""
                 }`}>
                   <RecordTimelineDot />
                   <div className="flex items-center gap-2 mb-1 flex-wrap">

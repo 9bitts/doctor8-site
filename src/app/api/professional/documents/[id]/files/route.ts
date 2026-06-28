@@ -54,7 +54,7 @@ export async function GET(
     keys.map(async (key, index) => {
       const url = await getSignedReadUrl(key);
       const name = fileNameFromKey(key);
-      const kind = fileKind(key);
+      const kind = fileKind(key, name);
       return { index, url, name, kind };
     }),
   );

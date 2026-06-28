@@ -50,7 +50,7 @@ export function matchesTimelineFilter(
 export function kindBadgeClass(kind: ClinicalRecordKind | string | null | undefined): string {
   switch (kind) {
     case "ANAMNESIS":
-      return "bg-violet-50 text-violet-700 border-violet-200";
+      return "bg-accent-50 text-accent-700 border-accent-200";
     case "EVOLUTION":
       return "bg-sky-50 text-sky-700 border-sky-200";
     case "REPORT":

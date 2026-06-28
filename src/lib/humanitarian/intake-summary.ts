@@ -117,6 +117,7 @@ type Labels = {
   headTrauma: string;
   selfHarm: string;
   traumaDetail: string;
+  quickComplaint: string;
   identification: string;
   name: string;
   ageDob: string;
@@ -181,6 +182,7 @@ const L: Record<Lang, Labels> = {
     headTrauma: "Trauma cabe\u00e7a",
     selfHarm: "Autoles\u00e3o",
     traumaDetail: "Trauma (detalhe)",
+    quickComplaint: "Relato do paciente (triagem)",
     identification: "Identifica\u00e7\u00e3o",
     name: "Nome",
     ageDob: "Idade/nasc.",
@@ -243,6 +245,7 @@ const L: Record<Lang, Labels> = {
     headTrauma: "Head trauma",
     selfHarm: "Self-harm thoughts",
     traumaDetail: "Trauma (detail)",
+    quickComplaint: "Patient note (triage)",
     identification: "Identification",
     name: "Name",
     ageDob: "Age/DOB",
@@ -305,6 +308,7 @@ const L: Record<Lang, Labels> = {
     headTrauma: "Trauma cabeza",
     selfHarm: "Autolesi\u00f3n",
     traumaDetail: "Trauma (detalle)",
+    quickComplaint: "Relato del paciente (triaje)",
     identification: "Identificaci\u00f3n",
     name: "Nombre",
     ageDob: "Edad/nac.",
@@ -447,6 +451,9 @@ export function buildIntakeSummary(
         { label: t.feverGi, value: yesNo(triage.feverOrGi, lang) },
         { label: t.headTrauma, value: yesNo(triage.headTrauma, lang) },
         { label: t.selfHarm, value: yesNo(triage.selfHarmThoughts, lang) },
+        ...(triage.quickComplaint?.trim()
+          ? [{ label: t.quickComplaint, value: triage.quickComplaint.trim() }]
+          : []),
         ...(triage.headTraumaDescription
           ? [{ label: t.traumaDetail, value: triage.headTraumaDescription }]
           : []),

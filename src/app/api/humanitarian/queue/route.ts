@@ -13,6 +13,8 @@ import {
 import { notifyHumanitarianJoined } from "@/lib/humanitarian/notify";
 import { scheduleHumanitarianAnamneseReminder } from "@/lib/qstash";
 import { requireValidIntake } from "@/lib/humanitarian/intake";
+import { decryptHumanitarianIntakeFields } from "@/lib/humanitarian/intake-encryption";
+import type { HumanitarianTriageData } from "@/lib/humanitarian/triage";
 import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { getPatientActiveHumanitarianEntry } from "@/lib/humanitarian/notify";
@@ -95,6 +97,10 @@ export async function POST(req: NextRequest) {
 
   const priority = intake.computedPriority;
 
+  const decrypted = decryptHumanitarianIntakeFields({ triageData: intake.triageData });
+  const triageQuick = (decrypted.triageData as HumanitarianTriageData | null)?.quickComplaint?.trim();
+  const effectiveComplaint = chiefComplaint?.trim() || triageQuick || undefined;
+
   if (!(await hasTelemedicineTcle(session.user.id))) {
     return NextResponse.json(
       {
@@ -175,7 +181,7 @@ export async function POST(req: NextRequest) {
       poolId: pool.id,
       patientUserId: session.user.id,
       priority,
-      chiefComplaint,
+      chiefComplaint: effectiveComplaint,
       maxWaiting: pool.maxWaiting,
       intakeId: intake.id,
     });

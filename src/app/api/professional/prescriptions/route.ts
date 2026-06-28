@@ -20,10 +20,17 @@ import { z } from "zod";
 
 const medicationItemSchema = z.object({
   name: z.string().min(1),
-  dosage: z.string().min(1),
-  frequency: z.string().min(1),
+  dosage: z.string().optional(),
+  frequency: z.string().optional(),
   duration: z.string().optional(),
   instructions: z.string().optional(),
+  itemKind: z.enum(["medication", "device", "phytotherapy"]).optional(),
+}).superRefine((item, ctx) => {
+  const kind = item.itemKind || "medication";
+  if (kind === "medication") {
+    if (!item.dosage?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "dosage required", path: ["dosage"] });
+    if (!item.frequency?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "frequency required", path: ["frequency"] });
+  }
 });
 
 const prescriptionSchema = z.object({

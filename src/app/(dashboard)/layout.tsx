@@ -11,6 +11,7 @@ import NotificationBell from "@/components/NotificationBell";
 import PushSubscribe from "@/components/PushSubscribe";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
 import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
@@ -201,6 +202,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
+
+        <BrVeSolidarityBadge />
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <div className="space-y-1">

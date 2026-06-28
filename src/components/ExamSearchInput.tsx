@@ -137,8 +137,10 @@ export default function ExamSearchInput({
                 onClick={() => selectExam(r)}
                 className="w-full text-left px-3 py-2.5 hover:bg-brand-50 border-b border-slate-50 last:border-0"
               >
-                <span className="text-[11px] font-bold text-brand-600">{r.code}</span>
-                <p className="text-sm text-slate-700 mt-0.5 line-clamp-2">{r.name}</p>
+                {r.code ? (
+                  <span className="text-[11px] font-bold text-brand-600">{r.code}</span>
+                ) : null}
+                <p className={`text-sm text-slate-700 line-clamp-2 ${r.code ? "mt-0.5" : ""}`}>{r.name}</p>
                 {r.groupName && (
                   <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wide">{r.groupName}</p>
                 )}

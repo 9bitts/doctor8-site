@@ -1,6 +1,6 @@
 "use client";
 
-import { Pin } from "lucide-react";
+import { Pin, FileText, Plus } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   TIMELINE_FILTERS,
@@ -46,6 +46,40 @@ export function RecordTimelineFilters({
   );
 }
 
+export function AnamnesisPromptBanner({
+  onCreate,
+  readOnly,
+}: {
+  onCreate: () => void;
+  readOnly?: boolean;
+}) {
+  const { t } = useI18n();
+  if (readOnly) return null;
+
+  return (
+    <div className="bg-gradient-to-r from-accent-50 via-orange-50 to-accent-50 border-2 border-accent-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex items-start gap-3 flex-1 min-w-0">
+        <div className="w-10 h-10 rounded-xl bg-accent-500/15 flex items-center justify-center shrink-0">
+          <FileText size={20} className="text-accent-600" />
+        </div>
+        <div>
+          <p className="text-xs font-bold text-accent-700 uppercase tracking-wide">
+            {t("chart.anamnesisTerm")}
+          </p>
+          <p className="text-sm text-slate-700 mt-0.5">{t("chart.anamnesisPrompt")}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onCreate}
+        className="inline-flex items-center justify-center gap-2 bg-accent-500 hover:bg-accent-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition shrink-0"
+      >
+        <Plus size={16} /> {t("chart.createAnamnesis")}
+      </button>
+    </div>
+  );
+}
+
 export function PinnedAnamnesisCard({
   title,
   preview,
@@ -60,11 +94,11 @@ export function PinnedAnamnesisCard({
   const { t } = useI18n();
 
   return (
-    <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4">
+    <div className="bg-accent-50 border-2 border-accent-200 rounded-2xl p-4 shadow-sm">
       <div className="flex items-start gap-2">
-        <Pin size={16} className="text-violet-600 shrink-0 mt-0.5" />
+        <Pin size={16} className="text-accent-600 shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-violet-700 uppercase tracking-wide">
+          <p className="text-xs font-bold text-accent-700 uppercase tracking-wide">
             {t("timeline.pinnedAnamnesis")}
           </p>
           <p className="font-semibold text-sm text-slate-800 mt-1 truncate">{title}</p>
@@ -75,9 +109,9 @@ export function PinnedAnamnesisCard({
           <button
             type="button"
             onClick={onView}
-            className="text-xs font-semibold text-violet-700 hover:text-violet-900 mt-2"
+            className="text-xs font-semibold text-accent-700 hover:text-accent-800 mt-2"
           >
-            {t("timeline.viewPinned")} ?
+            {t("timeline.viewPinned")} →
           </button>
         </div>
       </div>

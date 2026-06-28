@@ -23,6 +23,7 @@ export const humanitarianTriageSchema = z.object({
   headTrauma: z.boolean(),
   headTraumaDescription: z.string().max(500).optional(),
   selfHarmThoughts: z.boolean(),
+  quickComplaint: z.string().max(500).optional(),
 });
 
 export type HumanitarianTriageData = z.infer<typeof humanitarianTriageSchema>;
