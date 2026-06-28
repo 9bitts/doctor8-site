@@ -75,4 +75,14 @@ test.describe("public smoke", () => {
     const res = await request.get("/icons/icon-192.png");
     expect(res.ok()).toBeTruthy();
   });
+
+  test("patient exam requests page responds", async ({ page }) => {
+    const res = await page.goto("/patient/exam-requests");
+    expect(res?.status()).toBeLessThan(500);
+  });
+
+  test("patient resources page responds", async ({ page }) => {
+    const res = await page.goto("/patient/resources");
+    expect(res?.status()).toBeLessThan(500);
+  });
 });

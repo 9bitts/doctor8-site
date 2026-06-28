@@ -27,6 +27,7 @@ export default function PatientResourcesPage() {
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [actionError, setActionError] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
@@ -52,13 +53,18 @@ export default function PatientResourcesPage() {
 
   async function downloadFile(shareId: string) {
     setDownloadingId(shareId);
+    setActionError(false);
     try {
       const res = await fetch(`/api/patient/resources/${shareId}/file`);
       const data = await res.json();
       if (res.ok && data.url) {
         window.open(data.url, "_blank", "noopener,noreferrer");
+      } else {
+        setActionError(true);
       }
-    } catch { /* ignore */ }
+    } catch {
+      setActionError(true);
+    }
     setDownloadingId(null);
   }
 
@@ -68,6 +74,13 @@ export default function PatientResourcesPage() {
         <h1 className="text-2xl font-bold text-slate-900">{t("presRes.title")}</h1>
         <p className="text-slate-500 text-sm mt-1">{t("presRes.subtitle")}</p>
       </div>
+
+      {actionError && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl">
+          <AlertCircle size={16} className="shrink-0" />
+          <span>{t("common.actionError")}</span>
+        </div>
+      )}
 
       {loadError ? (
         <div className="flex flex-col items-center gap-3 py-16 bg-white rounded-2xl border border-amber-200">

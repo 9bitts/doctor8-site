@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   TrendingUp, DollarSign, Percent, FileText, Calendar,
-  Loader2, AlertCircle, ChevronDown, ArrowUpRight,
+  Loader2, AlertCircle, ChevronDown, ArrowUpRight, RefreshCw,
   Stethoscope, Radio, MapPin, BarChart3, Info,
 } from "lucide-react";
 import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
@@ -191,12 +191,12 @@ export default function FinanceiroPage() {
     setLoading(true); setError("");
     try {
       const res = await fetch(`/api/professional/financeiro?period=${p}`);
-      if (!res.ok) { setError("Erro ao carregar dados financeiros."); return; }
+      if (!res.ok) { setError(t("common.loadError")); return; }
       const d = await res.json();
       setData(d);
-    } catch { setError("Erro de rede."); }
+    } catch { setError(t("common.loadError")); }
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => { loadData(period); }, [period, loadData]);
 
@@ -233,8 +233,16 @@ export default function FinanceiroPage() {
       <ConsultPricingSettings />
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
-          <AlertCircle size={16} /> {error}
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl flex items-center gap-2 flex-wrap">
+          <AlertCircle size={16} className="shrink-0" />
+          <span className="flex-1">{error}</span>
+          <button
+            type="button"
+            onClick={() => loadData(period)}
+            className="text-xs font-semibold text-emerald-600 flex items-center gap-1 hover:underline shrink-0"
+          >
+            <RefreshCw size={13} /> {t("common.retry")}
+          </button>
         </div>
       )}
 

@@ -53,6 +53,7 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [actionError, setActionError] = useState(false);
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -167,6 +168,7 @@ export default function MessagesPage() {
     const content = newMessage.trim();
     setNewMessage("");
     setSending(true);
+    setActionError(false);
 
     const tempMsg: Message = {
       id: `temp-${Date.now()}`,
@@ -182,6 +184,12 @@ export default function MessagesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ receiverId: activeConv.userId, content }),
       });
+      if (!res.ok) {
+        setMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
+        setNewMessage(content);
+        setActionError(true);
+        return;
+      }
       const msg = await res.json();
 
       setMessages((prev) => prev.map((m) => m.id === tempMsg.id ? msg : m));
@@ -195,6 +203,7 @@ export default function MessagesPage() {
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
       setNewMessage(content);
+      setActionError(true);
     } finally {
       setSending(false);
     }
@@ -204,14 +213,16 @@ export default function MessagesPage() {
   async function openNewConv() {
     setShowNewConv(true);
     setContactSearch("");
+    setActionError(false);
     if (role === "PROFESSIONAL") {
       if (charts.length > 0) return;
       setContactsLoading(true);
       try {
         const res = await fetch("/api/professional/records");
+        if (!res.ok) { setActionError(true); return; }
         const data = await res.json();
         setCharts((data.records || []).filter((r: PatientChart) => r.hasAccount && r.linkedUserId));
-      } catch { /* ignore */ }
+      } catch { setActionError(true); }
       setContactsLoading(false);
       return;
     }
@@ -219,9 +230,10 @@ export default function MessagesPage() {
     setContactsLoading(true);
     try {
       const res = await fetch("/api/patient/message-contacts");
+      if (!res.ok) { setActionError(true); return; }
       const data = await res.json();
       setProfessionals(data.contacts || []);
-    } catch { /* ignore */ }
+    } catch { setActionError(true); }
     setContactsLoading(false);
   }
 
@@ -407,6 +419,14 @@ export default function MessagesPage() {
               ))
             )}
           </div>
+
+          {actionError && (
+            <div className="mx-4 mb-2 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-xl">
+              <AlertCircle size={14} className="shrink-0" />
+              <span className="flex-1">{t("common.actionError")}</span>
+              <button type="button" onClick={() => setActionError(false)}><X size={14} /></button>
+            </div>
+          )}
 
           <form onSubmit={sendMessage} className="px-4 py-4 bg-white border-t border-slate-200 flex items-end gap-3">
             <textarea

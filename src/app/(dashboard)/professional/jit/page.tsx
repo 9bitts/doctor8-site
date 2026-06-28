@@ -12,6 +12,7 @@ import {
   Stethoscope, Settings, X,
 } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
 
 interface QueueEntry {
@@ -41,8 +42,8 @@ interface JitSessionData {
 }
 
 // Format currency for display
-function formatCurrency(amountCents: number, currency: string): string {
-  return new Intl.NumberFormat("pt-BR", {
+function formatCurrency(amountCents: number, currency: string, locale: string): string {
+  return new Intl.NumberFormat(locale, {
     style:    "currency",
     currency: currency || "BRL",
   }).format(amountCents / 100);
@@ -51,6 +52,7 @@ function formatCurrency(amountCents: number, currency: string): string {
 export default function JitPage() {
   const t = useT();
   const { lang } = useI18n();
+  const locale = localeOf(lang);
 
   const [session,  setSession]  = useState<JitSessionData | null>(null);
   const [loading,  setLoading]  = useState(true);
@@ -139,11 +141,11 @@ export default function JitPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Erro"); setCfgSaving(false); return; }
+      if (!res.ok) { setError(data.error || t("jit.errGeneric")); setCfgSaving(false); return; }
       setShowConfig(false);
       await loadSession();
       startPolling();
-    } catch { setError("Erro de rede."); }
+    } catch { setError(t("jit.errNetwork")); }
     setCfgSaving(false);
   }
 
@@ -162,7 +164,7 @@ export default function JitPage() {
         setSession(data.session);
         sessionIdRef.current = data.session?.id ?? null;
       }
-    } catch { setError("Erro de rede."); }
+    } catch { setError(t("jit.errNetwork")); }
     setToggling(false);
   }
 
@@ -176,9 +178,9 @@ export default function JitPage() {
         body:    JSON.stringify({ action: "CALL_NEXT", sessionId: session.id }),
       });
       const data = await res.json();
-      if (!res.ok) setError(data.error || "Erro");
+      if (!res.ok) setError(data.error || t("jit.errGeneric"));
       await loadSession();
-    } catch { setError("Erro de rede."); }
+    } catch { setError(t("jit.errNetwork")); }
     setCalling(false);
   }
 
@@ -337,7 +339,7 @@ export default function JitPage() {
               {/* Preview price */}
               {!cfgFree && cfgPriceReais && parsePriceToCents(cfgPriceReais) > 0 && (
                 <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-2.5 text-sm text-brand-600">
-                  ✓ Paciente pagará <strong>{formatCurrency(parsePriceToCents(cfgPriceReais), cfgCurrency)}</strong> para entrar na fila
+                  ✓ Paciente pagará <strong>{formatCurrency(parsePriceToCents(cfgPriceReais), cfgCurrency, locale)}</strong> para entrar na fila
                 </div>
               )}
 
@@ -390,7 +392,7 @@ export default function JitPage() {
             <div className="col-span-2 sm:col-span-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 text-center min-w-0">
               <p className="text-xs sm:text-sm font-semibold text-slate-700 line-clamp-2">{getProfessionLabel(lang, session.specialty)}</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                {session.isFree ? t("jit.free") : formatCurrency(session.priceAmount, session.currency)}
+                {session.isFree ? t("jit.free") : formatCurrency(session.priceAmount, session.currency, locale)}
               </p>
             </div>
           </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, FileText, Pill, ShoppingBag, Stethoscope, Calendar,
   ClipboardList, MessageSquare, Radio, MapPin, Settings, ChevronRight,
+  FlaskConical, BookOpen,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getLandingContent } from "@/lib/landing-content";
@@ -14,6 +15,8 @@ const FEATURES = [
   { key: "medications", href: "/patient/medications", icon: Pill, color: "bg-violet-50 text-violet-600 border-violet-200" },
   { key: "buyingClub", href: "/patient/buying-club", icon: ShoppingBag, color: "bg-amber-50 text-amber-700 border-amber-200" },
   { key: "prescriptions", href: "/patient/prescriptions", icon: Stethoscope, color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
+  { key: "examRequests", href: "/patient/exam-requests", icon: FlaskConical, color: "bg-violet-50 text-violet-600 border-violet-200" },
+  { key: "doctorResources", href: "/patient/resources", icon: BookOpen, color: "bg-sky-50 text-sky-600 border-sky-200" },
   { key: "appointments", href: "/patient/appointments", icon: Calendar, color: "bg-blue-50 text-blue-600 border-blue-200" },
   { key: "documents", href: "/patient/documents", icon: ClipboardList, color: "bg-slate-100 text-slate-700 border-slate-200" },
   { key: "messages", href: "/patient/messages", icon: MessageSquare, color: "bg-sky-50 text-sky-600 border-sky-200" },
