@@ -29,6 +29,30 @@ test.describe("authentication", () => {
     );
     expect(res.status()).toBe(401);
   });
+
+  test("humanitarian intake API returns 401 without session", async ({ request }) => {
+    const res = await request.get(
+      `/api/humanitarian/intake?campaignSlug=${VENEZUELA_SLUG}`,
+    );
+    expect(res.status()).toBe(401);
+  });
+
+  test("jit queue API returns 401 without session", async ({ request }) => {
+    const res = await request.get("/api/jit/queue?sessionId=nonexistent");
+    expect(res.status()).toBe(401);
+  });
+
+  test("volunteer API returns 401 without session", async ({ request }) => {
+    const res = await request.get(
+      `/api/humanitarian/volunteer?campaignSlug=${VENEZUELA_SLUG}`,
+    );
+    expect(res.status()).toBe(401);
+  });
+
+  test("patient FHIR export API returns 401 without session", async ({ request }) => {
+    const res = await request.get("/api/patient/history/fhir");
+    expect(res.status()).toBe(401);
+  });
 });
 
 test.describe("authenticated patient", () => {
@@ -72,6 +96,17 @@ test.describe("authenticated patient", () => {
     await loginWithCredentials(page, creds.email, creds.password, tclePath);
     await waitForAuthenticatedSession(page);
     await page.waitForURL(new RegExp(`/humanitarian/${VENEZUELA_SLUG}/tcle`), {
+      timeout: 30_000,
+    });
+    await expect(page.locator("body")).toBeVisible();
+  });
+
+  test("patient can open humanitarian anamnese page when logged in", async ({ page }) => {
+    const creds = e2ePatientCredentials()!;
+    const anamnesePath = `/humanitarian/${VENEZUELA_SLUG}/anamnese`;
+    await loginWithCredentials(page, creds.email, creds.password, anamnesePath);
+    await waitForAuthenticatedSession(page);
+    await page.waitForURL(new RegExp(`/humanitarian/${VENEZUELA_SLUG}/anamnese`), {
       timeout: 30_000,
     });
     await expect(page.locator("body")).toBeVisible();

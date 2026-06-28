@@ -1,8 +1,7 @@
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
-import { translate } from "@/lib/i18n/translations";
-import { interpolate } from "@/lib/notification-i18n";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { buildClinicalDocumentWaMeUrl } from "@/lib/whatsapp";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import type { HumanitarianCampaignReportDto } from "@/lib/humanitarian/types";
@@ -180,13 +179,14 @@ export async function notifyHumanitarianJoined(opts: {
   position: number;
   campaignSlug: string;
 }) {
+  const copy = storedNotificationText("hum.notif.joined.title", "hum.notif.joined.body", {
+    pool: opts.poolLabel,
+    position: opts.position,
+  });
   await createNotification({
     userId: opts.patientUserId,
-    title: translate("en", "hum.notif.joined.title"),
-    body: interpolate(translate("en", "hum.notif.joined.body"), {
-      pool: opts.poolLabel,
-      position: opts.position,
-    }),
+    title: copy.title,
+    body: copy.body,
     type: "system",
     data: {
       link: `/humanitarian/${opts.campaignSlug}`,
@@ -219,10 +219,13 @@ export async function notifyHumanitarianYourTurn(opts: {
     `${pro} está listo para atenderte. Entra aquí: ${entryUrl} — Tienes 3 minutos.`;
   const whatsappUrl = phone ? buildClinicalDocumentWaMeUrl(phone, waMessage) : null;
 
+  const turnCopy = storedNotificationText("hum.notif.yourTurn.title", "hum.notif.yourTurn.body", {
+    professional: pro,
+  });
   await createNotification({
     userId: opts.patientUserId,
-    title: translate("en", "hum.notif.yourTurn.title"),
-    body: interpolate(translate("en", "hum.notif.yourTurn.body"), { professional: pro }),
+    title: turnCopy.title,
+    body: turnCopy.body,
     type: "message",
     data: {
       entryId: opts.entryId,
@@ -236,10 +239,11 @@ export async function notifyHumanitarianYourTurn(opts: {
 }
 
 export async function notifyHumanitarianMissedTurn(patientUserId: string, campaignSlug: string) {
+  const missedCopy = storedNotificationText("hum.notif.missed.title", "hum.notif.missed.body");
   await createNotification({
     userId: patientUserId,
-    title: translate("en", "hum.notif.missed.title"),
-    body: translate("en", "hum.notif.missed.body"),
+    title: missedCopy.title,
+    body: missedCopy.body,
     type: "system",
     data: {
       link: `/humanitarian/${campaignSlug}`,
@@ -260,12 +264,15 @@ export async function notifyVolunteerAssigned(opts: {
   const flags = opts.triageFlags?.length
     ? ` Prioridade: ${opts.priority || "ROUTINE"}. Flags: ${opts.triageFlags.join(", ")}.`
     : "";
+  const assignedCopy = storedNotificationText(
+    "hum.notif.volunteerAssigned.title",
+    "hum.notif.volunteerAssigned.body",
+    { patient: opts.patientName },
+  );
   await createNotification({
     userId: opts.volunteerUserId,
-    title: translate("en", "hum.notif.volunteerAssigned.title"),
-    body: interpolate(translate("en", "hum.notif.volunteerAssigned.body"), {
-      patient: opts.patientName,
-    }) + flags,
+    title: assignedCopy.title,
+    body: assignedCopy.body + flags,
     type: "system",
     data: {
       entryId: opts.entryId,
@@ -281,10 +288,11 @@ export async function notifyHumanitarianAnamneseReminder(opts: {
   patientUserId: string;
   campaignSlug: string;
 }) {
+  const anamneseCopy = storedNotificationText("hum.notif.anamnese.title", "hum.notif.anamnese.body");
   await createNotification({
     userId: opts.patientUserId,
-    title: translate("en", "hum.notif.anamnese.title"),
-    body: translate("en", "hum.notif.anamnese.body"),
+    title: anamneseCopy.title,
+    body: anamneseCopy.body,
     type: "system",
     data: {
       link: `/humanitarian/${opts.campaignSlug}/anamnese`,
@@ -299,12 +307,15 @@ export async function notifyHumanitarianWhatsAppHandoff(opts: {
   campaignSlug: string;
   volunteerName: string;
 }) {
+  const handoffCopy = storedNotificationText(
+    "hum.notif.whatsappHandoff.title",
+    "hum.notif.whatsappHandoff.body",
+    { professional: opts.volunteerName },
+  );
   await createNotification({
     userId: opts.patientUserId,
-    title: translate("en", "hum.notif.whatsappHandoff.title"),
-    body: interpolate(translate("en", "hum.notif.whatsappHandoff.body"), {
-      professional: opts.volunteerName,
-    }),
+    title: handoffCopy.title,
+    body: handoffCopy.body,
     type: "system",
     data: {
       link: `/humanitarian/${opts.campaignSlug}`,

@@ -1,5 +1,5 @@
 import { parseNotificationData } from "@/lib/notification-links";
-import { Lang, localeOf } from "@/lib/i18n/translations";
+import { Lang, localeOf, translate } from "@/lib/i18n/translations";
 
 type TranslateFn = (key: string) => string;
 
@@ -10,6 +10,18 @@ export function interpolate(
   return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) =>
     params[key] !== undefined && params[key] !== null ? String(params[key]) : ""
   );
+}
+
+/** English fallback stored in DB; UI localizes via titleKey/bodyKey in notification data. */
+export function storedNotificationText(
+  titleKey: string,
+  bodyKey: string,
+  params?: Record<string, string | number | undefined>
+): { title: string; body: string } {
+  return {
+    title: translate("en", titleKey),
+    body: interpolate(translate("en", bodyKey), params ?? {}),
+  };
 }
 
 function formatParams(

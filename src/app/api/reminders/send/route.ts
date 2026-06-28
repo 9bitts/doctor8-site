@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { verifyQStashSignature } from "@/lib/qstash";
 import {
   isWhatsAppConfigured,
@@ -152,12 +153,24 @@ export async function POST(req: NextRequest) {
         reviewUrl,
         language: patientUser.language,
       });
+      const reviewCopy = storedNotificationText(
+        "notif.reviewRequest.title",
+        "notif.reviewRequest.body",
+        { doctor: doctorName },
+      );
       await createNotification({
         userId: patientUser.id,
-        title: "Avalie sua consulta",
-        body: `Como foi sua consulta com ${doctorName}?`,
+        title: reviewCopy.title,
+        body: reviewCopy.body,
         type: "review_request",
-        data: { appointmentId, providerId, providerType },
+        data: {
+          appointmentId,
+          providerId,
+          providerType,
+          titleKey: "notif.reviewRequest.title",
+          bodyKey: "notif.reviewRequest.body",
+          bodyParams: { doctor: doctorName },
+        },
       }).catch(() => {});
     } catch (e) {
       console.error("[REMINDER] Review request failed:", e);
@@ -275,10 +288,15 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const reminderCopy = storedNotificationText(
+        "notif.apptReminder.title",
+        "notif.apptReminder.body3h",
+        { doctor: doctorName },
+      );
       await createNotification({
         userId: patientUser.id,
-        title: "Lembrete de consulta",
-        body: `Sua consulta com Dr. ${doctorName} é em 3 horas.`,
+        title: reminderCopy.title,
+        body: reminderCopy.body,
         type: "appointment_reminder",
         data: {
           appointmentId,
@@ -298,10 +316,16 @@ export async function POST(req: NextRequest) {
 
   // ── BELL NOTIFICATION ──────────────────────────────────────────────────────
   if (type === "bell") {
+    const bodyKey =
+      hoursUntil >= 24 ? "notif.apptReminder.bodyTomorrow" : "notif.apptReminder.bodySoon";
+    const bellCopy = storedNotificationText("notif.apptReminder.titleHours", bodyKey, {
+      doctor: doctorName,
+      hours: hoursUntil,
+    });
     await createNotification({
       userId: patientUser.id,
-      title: `Consulta em ${hoursUntil}h`,
-      body: `Lembrete: sua consulta com Dr. ${doctorName} é ${hoursUntil >= 24 ? "amanhã" : "em breve"}.`,
+      title: bellCopy.title,
+      body: bellCopy.body,
       type: "appointment_reminder",
       data: {
         appointmentId,

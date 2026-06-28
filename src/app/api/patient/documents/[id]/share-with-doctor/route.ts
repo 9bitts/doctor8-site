@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { z } from "zod";
 
 const schema = z.object({
@@ -98,10 +99,14 @@ export async function POST(
     },
   });
 
+  const shareCopy = storedNotificationText("notif.docShared.title", "notif.docShared.body", {
+    name: patientName,
+    title: docTitle,
+  });
   await createNotification({
     userId: professional.userId,
-    title: "Document shared",
-    body: `${patientName} shared a document with you: ${docTitle}`,
+    title: shareCopy.title,
+    body: shareCopy.body,
     type: "shared_record",
     data: {
       fromUserId: session.user.id,
@@ -171,10 +176,14 @@ export async function DELETE(
         content: encrypt(`📌 Unshared a document: ${docTitle}`),
       },
     });
+    const unshareCopy = storedNotificationText("notif.docUnshared.title", "notif.docUnshared.body", {
+      name: patientName,
+      title: docTitle,
+    });
     await createNotification({
       userId: professional.userId,
-      title: "Document unshared",
-      body: `${patientName} unshared a document: ${docTitle}`,
+      title: unshareCopy.title,
+      body: unshareCopy.body,
       type: "shared_record",
       data: {
         fromUserId: session.user.id,

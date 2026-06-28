@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { decrypt } from "@/lib/encryption";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -109,12 +110,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const titleKey =
+      type === "history" ? "notif.patientShare.titleHistory" : "notif.patientShare.titleMeds";
+    const bodyKey =
+      type === "history" ? "notif.patientShare.bodyHistory" : "notif.patientShare.bodyMeds";
+    const shareCopy = storedNotificationText(titleKey, bodyKey, { name: patientName });
+
     // Create notification for the professional
     await db.notification.create({
       data: {
         userId: professionalUserId,
-        title: `${patientName} shared their ${label}`,
-        body: `Tap to view the ${label} they shared with you.`,
+        title: shareCopy.title,
+        body: shareCopy.body,
         type: "shared_record",
         data: {
           shareUrl,

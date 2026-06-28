@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { z } from "zod";
 
 const sendSchema = z.object({
@@ -138,16 +139,20 @@ export async function POST(req: NextRequest) {
       professionalProfile: { select: { firstName: true, lastName: true } },
     },
   });
+  const senderName = displayName(sender);
+  const messageCopy = storedNotificationText("notif.message.title", "notif.message.body", {
+    name: senderName,
+  });
   await createNotification({
     userId: receiverId,
-    title: "New message",
-    body: `${displayName(sender)} sent you a message.`,
+    title: messageCopy.title,
+    body: messageCopy.body,
     type: "message",
     data: {
       fromUserId: session.user.id,
       titleKey: "notif.message.title",
       bodyKey: "notif.message.body",
-      bodyParams: { name: displayName(sender) },
+      bodyParams: { name: senderName },
     },
   });
 

@@ -4,6 +4,7 @@
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { sendPrescriptionNotification } from "@/lib/email-prescription";
 import { sendEmissionWhatsApp } from "@/lib/emission-whatsapp";
 
@@ -22,19 +23,10 @@ function shareUrl(hasAccount: boolean, kind: EmissionDeliverKind): string {
   return `${APP_URL}/patient/documents`;
 }
 
-const NOTIFY_COPY: Record<EmissionDeliverKind, { title: string; body: (doctor: string) => string }> = {
-  prescription: {
-    title: "Nova receita / New prescription",
-    body: (d) => `Dr. ${d}`,
-  },
-  exam: {
-    title: "Novo pedido de exame / New exam request",
-    body: (d) => `Dr. ${d} enviou um pedido de exame`,
-  },
-  document: {
-    title: "Novo documento clínico / New clinical document",
-    body: (d) => `Dr. ${d} enviou um documento`,
-  },
+const EMISSION_NOTIF_KEYS: Record<EmissionDeliverKind, { titleKey: string; bodyKey: string }> = {
+  prescription: { titleKey: "notif.prescription.title", bodyKey: "notif.prescription.body" },
+  exam: { titleKey: "notif.exam.title", bodyKey: "notif.exam.body" },
+  document: { titleKey: "notif.document.title", bodyKey: "notif.document.body" },
 };
 
 export interface DeliverResult {
@@ -133,18 +125,19 @@ export async function deliverEmissionToPatient(
     const lastName = record ? safeDecrypt(record.lastName) : profile ? safeDecrypt(profile.lastName) : "";
 
     if (notifyUserId) {
-      const copy = NOTIFY_COPY.prescription;
+      const keys = EMISSION_NOTIF_KEYS.prescription;
+      const copy = storedNotificationText(keys.titleKey, keys.bodyKey, { doctor: doctorName });
       try {
         await createNotification({
           userId: notifyUserId,
           title: copy.title,
-          body: copy.body(doctorName),
+          body: copy.body,
           type: "system",
           data: {
             prescriptionId: prescription.id,
             documentId: prescription.documentId,
-            titleKey: "notif.prescription.title",
-            bodyKey: "notif.prescription.body",
+            titleKey: keys.titleKey,
+            bodyKey: keys.bodyKey,
             bodyParams: { doctor: doctorName },
           },
         });
@@ -228,18 +221,19 @@ export async function deliverEmissionToPatient(
   }
 
   if (linkedUserId) {
-    const copy = NOTIFY_COPY[docKind];
+    const keys = EMISSION_NOTIF_KEYS[docKind];
+    const copy = storedNotificationText(keys.titleKey, keys.bodyKey, { doctor: doctorName });
     try {
       await createNotification({
         userId: linkedUserId,
         title: copy.title,
-        body: copy.body(doctorName),
+        body: copy.body,
         type: "system",
         data: {
           documentId: document.id,
           type: document.type,
-          titleKey: docKind === "exam" ? "notif.exam.title" : "notif.document.title",
-          bodyKey: docKind === "exam" ? "notif.exam.body" : "notif.document.body",
+          titleKey: keys.titleKey,
+          bodyKey: keys.bodyKey,
           bodyParams: { doctor: doctorName },
         },
       });

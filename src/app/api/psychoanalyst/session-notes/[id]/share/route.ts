@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { sendPatientInvite } from "@/lib/email";
 
 function safeDecrypt(v: string | null): string {
@@ -82,16 +83,20 @@ export async function POST(
     });
   }
 
+  const analystName = `${safeDecrypt(psychoanalyst.firstName)} ${safeDecrypt(psychoanalyst.lastName)}`;
+  const sessionCopy = storedNotificationText("notif.sessionShared.title", "notif.sessionShared.body", {
+    analyst: analystName,
+  });
   await createNotification({
     userId: linkedUserId,
-    title: "New session note shared",
-    body: `${safeDecrypt(psychoanalyst.firstName)} ${safeDecrypt(psychoanalyst.lastName)} shared a session note with you.`,
+    title: sessionCopy.title,
+    body: sessionCopy.body,
     type: "shared_record",
     data: {
       documentId: doc.id,
       titleKey: "notif.sessionShared.title",
       bodyKey: "notif.sessionShared.body",
-      bodyParams: { analyst: `${safeDecrypt(psychoanalyst.firstName)} ${safeDecrypt(psychoanalyst.lastName)}` },
+      bodyParams: { analyst: analystName },
     },
   });
 

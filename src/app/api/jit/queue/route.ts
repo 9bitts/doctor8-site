@@ -9,7 +9,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { createNotification } from "@/lib/notifications";
-import { translate } from "@/lib/i18n/translations";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { decrypt } from "@/lib/encryption";
 
 function safeDecrypt(v: string | null): string {
@@ -248,10 +248,11 @@ export async function PATCH(req: NextRequest) {
         data:  { status: "NO_SHOW", endedAt: now },
       });
       // Notify patient
+      const missedCopy = storedNotificationText("notif.jit.missed.title", "notif.jit.missed.body");
       await createNotification({
         userId: e.patientUserId,
-        title: translate("en", "notif.jit.missed.title"),
-        body: translate("en", "notif.jit.missed.body"),
+        title: missedCopy.title,
+        body: missedCopy.body,
         type: "system",
         data: {
           sessionId,
@@ -343,10 +344,11 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Notify patient
+    const turnCopy = storedNotificationText("notif.jit.yourTurn.title", "notif.jit.yourTurn.body");
     await createNotification({
       userId: called.patientUserId,
-      title: translate("en", "notif.jit.yourTurn.title"),
-      body: translate("en", "notif.jit.yourTurn.body"),
+      title: turnCopy.title,
+      body: turnCopy.body,
       type: "message",
       data: {
         queueId: called.id,

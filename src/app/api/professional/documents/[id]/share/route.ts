@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { sendPatientInvite } from "@/lib/email";
 
 function safeDecrypt(v: string | null): string {
@@ -97,16 +98,20 @@ export async function POST(
   }
 
   // Bell notification (Phase 1)
+  const doctorName = `${professional.firstName} ${professional.lastName}`;
+  const recordCopy = storedNotificationText("notif.recordShared.title", "notif.recordShared.body", {
+    doctor: doctorName,
+  });
   await createNotification({
     userId: linkedUserId,
-    title: "New medical record shared",
-    body: `Dr. ${professional.firstName} ${professional.lastName} shared a record with you.`,
+    title: recordCopy.title,
+    body: recordCopy.body,
     type: "shared_record",
     data: {
       documentId: doc.id,
       titleKey: "notif.recordShared.title",
       bodyKey: "notif.recordShared.body",
-      bodyParams: { doctor: `${professional.firstName} ${professional.lastName}` },
+      bodyParams: { doctor: doctorName },
     },
   });
 

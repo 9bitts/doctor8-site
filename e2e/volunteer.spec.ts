@@ -5,6 +5,15 @@ import {
   waitForAuthenticatedSession,
 } from "./helpers/auth";
 
+const VENEZUELA_SLUG = "venezuela-terremoto-2026";
+
+test.describe("volunteer access", () => {
+  test("volunteer dashboard redirects to login when unauthenticated", async ({ page }) => {
+    await page.goto("/humanitarian/volunteer");
+    await expect(page).toHaveURL(/\/login/);
+  });
+});
+
 test.describe("authenticated volunteer", () => {
   test.beforeEach(() => {
     test.skip(!e2eProfessionalCredentials(), "Set E2E_PROFESSIONAL_EMAIL and E2E_PROFESSIONAL_PASSWORD");

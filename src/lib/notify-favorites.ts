@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { getProfessionInfo } from "@/lib/profession-label";
 
 export async function notifyFavoritePatientsOnline(professionalId: string): Promise<void> {
@@ -22,11 +23,16 @@ export async function notifyFavoritePatientsOnline(professionalId: string): Prom
   const name = `${prefix} ${pro.firstName} ${pro.lastName}`;
 
   await Promise.all(
-    favorites.map((fav) =>
-      createNotification({
+    favorites.map((fav) => {
+      const copy = storedNotificationText(
+        "notif.favoriteOnline.title",
+        "notif.favoriteOnline.body",
+        { name, specialty: pro.specialty },
+      );
+      return createNotification({
         userId: fav.patientUserId,
-        title: `${name} está online`,
-        body: `Seu profissional favorito está disponível para atendimento imediato em ${pro.specialty}.`,
+        title: copy.title,
+        body: copy.body,
         type: "system",
         data: {
           kind: "favorite_online",
@@ -36,7 +42,7 @@ export async function notifyFavoritePatientsOnline(professionalId: string): Prom
           bodyKey: "notif.favoriteOnline.body",
           bodyParams: { name, specialty: pro.specialty },
         },
-      })
-    )
+      });
+    })
   );
 }

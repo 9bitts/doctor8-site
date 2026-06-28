@@ -12,6 +12,8 @@ import { db } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
+import { localeOf } from "@/lib/i18n/translations";
 import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 
@@ -110,11 +112,19 @@ export async function POST(
         : `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
       : "Provider";
 
+  const cancelCopy = storedNotificationText(
+    "notif.apptCancelled.title",
+    "notif.apptCancelled.body",
+    {
+      name: cancellerName,
+      date: new Date(appointment.scheduledAt).toLocaleDateString(localeOf("en")),
+    },
+  );
   await createNotification({
     userId: notifyUserId,
-    title:  "Consulta cancelada",
-    body:   `${cancellerName} cancelou a consulta do dia ${new Date(appointment.scheduledAt).toLocaleDateString("pt-BR")}.`,
-    type:   "system",
+    title: cancelCopy.title,
+    body: cancelCopy.body,
+    type: "system",
     data:   {
       appointmentId: params.id,
       refunded,
