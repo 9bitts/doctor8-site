@@ -201,7 +201,10 @@ export default function HistoryPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        setError(t("hist.errSave"));
+        return;
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {

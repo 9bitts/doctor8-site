@@ -166,28 +166,28 @@ export default function ProfessionalAccountPage() {
       }));
     } catch {
       setSubMsgTone("error");
-      setSubMsg("Erro de conexao. Verifique sua internet e tente novamente.");
+      setSubMsg(t("billing.err.connection"));
     } finally {
       setSubWorking(false);
     }
   }
 
   async function cancelSubscription() {
-    if (!confirm("Cancelar o Doctor Connection? Você mantém o acesso até o fim do período atual.")) return;
+    if (!confirm(t("billing.cancelConfirm"))) return;
     setSubWorking(true);
     setSubMsg("");
     try {
       const res = await fetch("/api/payments/professional-subscription", { method: "DELETE" });
       const d = await res.json();
       if (res.ok) {
-        setSubMsg("Seu Doctor Connection será cancelado ao fim do período atual.");
+        setSubMsg(t("billing.cancelScheduled"));
         const refreshed = await fetch("/api/payments/professional-subscription").then((r) => r.json());
         setSub(refreshed.subscription || null);
       } else {
-        setSubMsg(d.error || "Não foi possível cancelar.");
+        setSubMsg(d.error || t("billing.cancelFail"));
       }
     } catch {
-      setSubMsg("Erro de conexao.");
+      setSubMsg(t("billing.err.connection"));
     } finally {
       setSubWorking(false);
     }

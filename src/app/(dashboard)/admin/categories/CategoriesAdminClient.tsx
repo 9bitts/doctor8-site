@@ -45,8 +45,8 @@ export default function CategoriesAdminClient() {
       const res = await fetch("/api/admin/categories");
       const data = await res.json();
       if (res.ok) setGroups(data.groups || []);
-      else setErr(data.error || "Erro ao carregar.");
-    } catch { setErr("Erro de rede."); }
+      else setErr(data.error || t("admin.categories.errLoad"));
+    } catch { setErr(t("common.loadError")); }
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -66,7 +66,7 @@ export default function CategoriesAdminClient() {
   }
 
   async function handleSave() {
-    if (!name.trim() || !groupName.trim()) { setErr("Nome e grupo são obrigatórios."); return; }
+    if (!name.trim() || !groupName.trim()) { setErr(t("admin.categories.errRequired")); return; }
     setSaving(true); setErr(null);
     try {
       const payload = { name, groupName, groupOrder, itemOrder, legacyType };
@@ -80,10 +80,10 @@ export default function CategoriesAdminClient() {
             body: JSON.stringify(payload),
           });
       const data = await res.json();
-      if (!res.ok) { setErr(typeof data.error === "string" ? data.error : "Não foi possível salvar."); setSaving(false); return; }
+      if (!res.ok) { setErr(typeof data.error === "string" ? data.error : t("admin.categories.errSave")); setSaving(false); return; }
       setShowForm(false);
       await load();
-    } catch { setErr("Erro de rede."); }
+    } catch { setErr(t("common.loadError")); }
     setSaving(false);
   }
 
@@ -101,15 +101,15 @@ export default function CategoriesAdminClient() {
 
   async function handleDelete(c: Cat) {
     if (c.usageCount > 0) {
-      alert(`Esta categoria tem ${c.usageCount} registro(s) e não pode ser excluída. Desative-a em vez disso.`);
+      alert(t("admin.categories.deleteBlocked").replace("{{n}}", String(c.usageCount)));
       return;
     }
-    if (!confirm(`Excluir a categoria "${c.name}"? Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(t("admin.categories.deleteConfirm").replace("{{name}}", c.name))) return;
     setBusyId(c.id);
     try {
       const res = await fetch(`/api/admin/categories/${c.id}`, { method: "DELETE" });
       const data = await res.json();
-      if (!res.ok) alert(data.error || "Não foi possível excluir.");
+      if (!res.ok) alert(data.error || t("admin.categories.errDelete"));
       await load();
     } catch { /* ignore */ }
     setBusyId(null);
@@ -119,14 +119,14 @@ export default function CategoriesAdminClient() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Categorias</h1>
-          <p className="text-slate-500 mt-1">Gerencie as categorias de documentos da plataforma</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("admin.categories.title")}</h1>
+          <p className="text-slate-500 mt-1">{t("admin.categories.subtitle")}</p>
         </div>
         <button
           onClick={openCreate}
           className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
         >
-          <Plus size={18} /> Nova categoria
+          <Plus size={18} /> {t("admin.categories.new")}
         </button>
       </div>
 
@@ -137,7 +137,7 @@ export default function CategoriesAdminClient() {
       ) : groups.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
           <Layers className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="text-slate-400 text-sm">Nenhuma categoria ainda</p>
+          <p className="text-slate-400 text-sm">{t("admin.categories.empty")}</p>
         </div>
       ) : (
         <div className="space-y-5">
@@ -145,7 +145,11 @@ export default function CategoriesAdminClient() {
             <div key={g.group} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
               <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                 <h2 className="font-bold text-slate-700 text-sm">{g.group}</h2>
-                <span className="text-xs text-slate-400">ordem {g.groupOrder} · {g.items.length} categorias</span>
+                <span className="text-xs text-slate-400">
+                  {t("admin.categories.groupMeta")
+                    .replace("{{order}}", String(g.groupOrder))
+                    .replace("{{count}}", String(g.items.length))}
+                </span>
               </div>
               <div className="divide-y divide-slate-50">
                 {g.items.map((c) => (
@@ -153,24 +157,25 @@ export default function CategoriesAdminClient() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className={`text-sm font-medium ${c.active ? "text-slate-800" : "text-slate-400 line-through"}`}>{c.name}</p>
-                        {!c.active && <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">inativa</span>}
-                        {c.isSystem && <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">sistema</span>}
-                        {c.usageCount > 0 && <span className="text-[11px] text-slate-500">· {c.usageCount} uso(s)</span>}
+                        {!c.active && <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{t("admin.categories.inactive")}</span>}
+                        {c.isSystem && <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{t("admin.categories.system")}</span>}
+                        {c.usageCount > 0 && <span className="text-[11px] text-slate-500">{t("admin.categories.usageCount").replace("{{n}}", String(c.usageCount))}</span>}
                       </div>
                       <p className="text-xs text-slate-400 mt-0.5">{c.slug}{c.legacyType ? ` · ${c.legacyType}` : ""}</p>
                     </div>
                     <button onClick={() => openEdit(c)} disabled={busyId === c.id}
-                      className="text-slate-400 hover:text-emerald-600 p-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50" aria-label="Editar">
+                      className="text-slate-400 hover:text-emerald-600 p-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50" aria-label={t("admin.categories.edit")}>
                       <Pencil size={16} />
                     </button>
                     <button onClick={() => toggleActive(c)} disabled={busyId === c.id}
                       className="text-slate-400 hover:text-amber-600 p-2 rounded-lg hover:bg-amber-50 disabled:opacity-50"
-                      aria-label={c.active ? "Desativar" : "Ativar"}>
+                      aria-label={c.active ? t("admin.categories.deactivate") : t("admin.categories.activate")}>
                       {busyId === c.id ? <Loader2 size={16} className="animate-spin" /> : c.active ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                     <button onClick={() => handleDelete(c)} disabled={busyId === c.id || c.usageCount > 0}
                       className="text-slate-300 hover:text-rose-600 p-2 rounded-lg hover:bg-rose-50 disabled:opacity-30"
-                      aria-label="Excluir" title={c.usageCount > 0 ? "Tem registros — desative" : "Excluir"}>
+                      aria-label={t("admin.categories.delete")}
+                      title={c.usageCount > 0 ? t("admin.categories.deleteHasRecords") : t("admin.categories.delete")}>
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -185,35 +190,38 @@ export default function CategoriesAdminClient() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
-              <h2 className="font-bold text-slate-800">{editing ? "Editar categoria" : "Nova categoria"}</h2>
+              <h2 className="font-bold text-slate-800">{editing ? t("admin.categories.formEdit") : t("admin.categories.formNew")}</h2>
               <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Nome *</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Exame de sangue"
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("admin.categories.nameLabel")}</label>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("admin.categories.namePlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Grupo *</label>
-                <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Ex.: Exames"
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t("admin.categories.groupLabel")}</label>
+                <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder={t("admin.categories.groupPlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Ordem do grupo</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("admin.categories.groupOrderLabel")}</label>
                   <input type="number" value={groupOrder} onChange={(e) => setGroupOrder(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Ordem do item</label>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("admin.categories.itemOrderLabel")}</label>
                   <input type="number" value={itemOrder} onChange={(e) => setItemOrder(parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Tipo legado <span className="text-slate-400">(opcional)</span></label>
-                <input value={legacyType} onChange={(e) => setLegacyType(e.target.value)} placeholder="Ex.: EXAM_RESULT"
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  {t("admin.categories.legacyLabel")}{" "}
+                  <span className="text-slate-400">{t("admin.categories.legacyOptional")}</span>
+                </label>
+                <input value={legacyType} onChange={(e) => setLegacyType(e.target.value)} placeholder={t("admin.categories.legacyPlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm" />
               </div>
 
@@ -224,9 +232,9 @@ export default function CategoriesAdminClient() {
               )}
 
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50">Cancelar</button>
+                <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50">{t("common.cancel")}</button>
                 <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm disabled:opacity-50">
-                  {saving ? "Salvando..." : editing ? "Salvar" : "Criar"}
+                  {saving ? t("admin.categories.saving") : editing ? t("common.save") : t("admin.categories.create")}
                 </button>
               </div>
             </div>

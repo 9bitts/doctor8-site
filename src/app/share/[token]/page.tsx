@@ -1,12 +1,17 @@
 "use client";
 
-// src/app/share/[token]/page.tsx
 // Public page — anyone with the link can view the shared record (no login needed)
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { FileText, Pill, Clock, AlertCircle, Loader2, Shield } from "lucide-react";
-import { translate, normalizeLang, type Lang, type TranslationKey } from "@/lib/i18n/translations";
+import {
+  translate,
+  normalizeLang,
+  localeOf,
+  type Lang,
+  type TranslationKey,
+} from "@/lib/i18n/translations";
 
 const LANG_KEY = "doctor8.lang";
 
@@ -31,6 +36,34 @@ interface SharedData {
   content: Record<string, unknown>;
 }
 
+type MedRow = {
+  name?: string;
+  dosage?: string;
+  frequency?: string;
+  prescribedBy?: string;
+  notes?: string;
+};
+
+type HistoryContent = Record<string, unknown> & {
+  medications?: MedRow[];
+  bloodType?: string;
+  allergies?: string;
+  weight?: number;
+  height?: number;
+  profession?: string;
+  chiefComplaint?: string;
+  symptomDuration?: string;
+  painScale?: number;
+  chronicConditions?: string[];
+  currentMedications?: string;
+  surgeries?: string;
+  familyHistory?: string;
+  smoking?: string;
+  alcohol?: string;
+  exercise?: string;
+  sleep?: string;
+};
+
 export default function SharedRecordPage() {
   const params = useParams();
   const token = params.token as string;
@@ -41,6 +74,7 @@ export default function SharedRecordPage() {
   const [lang, setLang] = useState<Lang>("pt");
 
   const t = (key: TranslationKey) => translate(lang, key);
+  const locale = localeOf(lang);
 
   useEffect(() => {
     setLang(detectLang());
@@ -80,12 +114,25 @@ export default function SharedRecordPage() {
 
   if (!data) return null;
 
-  const isMedications = data.type === "OTHER" || (data.content as any).medications;
-  const content = data.content;
+  const content = data.content as HistoryContent;
+  const isMedications = data.type === "OTHER" || content.medications;
+  const meds = content.medications;
+
+  const sharedDate = new Date(data.createdAt).toLocaleDateString(locale, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const expiresDate = data.expiresAt
+    ? new Date(data.expiresAt).toLocaleDateString(locale, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
       <div className="bg-white border-b border-slate-200 px-4 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <span className="text-xl font-black text-slate-900">
@@ -93,13 +140,12 @@ export default function SharedRecordPage() {
           </span>
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <Shield size={12} className="text-emerald-500" />
-            HIPAA & GDPR Compliant
+            {t("sharePublic.compliance")}
           </div>
         </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        {/* Record header */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
@@ -111,39 +157,50 @@ export default function SharedRecordPage() {
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold text-slate-900">{data.title}</h1>
-              <p className="text-sm text-slate-500 mt-1">Patient: <strong>{data.patientName}</strong></p>
-              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+              <p className="text-sm text-slate-500 mt-1">
+                {t("sharePublic.patientLabel")}: <strong>{data.patientName}</strong>
+              </p>
+              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1 flex-wrap">
                 <Clock size={11} />
-                Shared on {new Date(data.createdAt).toLocaleDateString("en-US", {
-                  month: "long", day: "numeric", year: "numeric",
-                })}
-                {data.expiresAt && (
-                  <> · Expires {new Date(data.expiresAt).toLocaleDateString("en-US", {
-                    month: "short", day: "numeric", year: "numeric",
-                  })}</>
+                {t("sharePublic.sharedOn")} {sharedDate}
+                {expiresDate && (
+                  <> · {t("sharePublic.expires")} {expiresDate}</>
                 )}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Medications view */}
-        {isMedications && Array.isArray((content as any).medications) && (
+        {isMedications && Array.isArray(meds) && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <h2 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <Pill size={16} className="text-emerald-500" /> Active Medications
+              <Pill size={16} className="text-emerald-500" /> {t("sharePublic.activeMeds")}
             </h2>
-            {(content as any).medications.length === 0 ? (
-              <p className="text-slate-400 text-sm">No medications listed.</p>
+            {meds.length === 0 ? (
+              <p className="text-slate-400 text-sm">{t("sharePublic.noMeds")}</p>
             ) : (
               <div className="space-y-3">
-                {(content as any).medications.map((med: any, i: number) => (
+                {meds.map((med, i) => (
                   <div key={i} className="border border-slate-100 rounded-xl p-4">
                     <p className="font-semibold text-slate-800">{med.name}</p>
-                    {med.dosage && <p className="text-sm text-slate-500 mt-1">Dosage: {med.dosage}</p>}
-                    {med.frequency && <p className="text-sm text-slate-500">Frequency: {med.frequency}</p>}
-                    {med.prescribedBy && <p className="text-sm text-slate-500">Prescribed by: {med.prescribedBy}</p>}
-                    {med.notes && <p className="text-sm text-slate-400 mt-2 italic">{med.notes}</p>}
+                    {med.dosage && (
+                      <p className="text-sm text-slate-500 mt-1">
+                        {t("sharePublic.dosage")}: {med.dosage}
+                      </p>
+                    )}
+                    {med.frequency && (
+                      <p className="text-sm text-slate-500">
+                        {t("sharePublic.frequency")}: {med.frequency}
+                      </p>
+                    )}
+                    {med.prescribedBy && (
+                      <p className="text-sm text-slate-500">
+                        {t("sharePublic.prescribedBy")}: {med.prescribedBy}
+                      </p>
+                    )}
+                    {med.notes && (
+                      <p className="text-sm text-slate-400 mt-2 italic">{med.notes}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -151,78 +208,85 @@ export default function SharedRecordPage() {
           </div>
         )}
 
-        {/* Medical history view */}
         {!isMedications && (
           <div className="space-y-4">
-            {/* Basic info */}
-            <Section title="Patient Information">
-              <Row label="Blood Type" value={(content as any).bloodType} />
-              <Row label="Allergies" value={(content as any).allergies} />
-              <Row label="Weight" value={(content as any).weight ? `${(content as any).weight} kg` : null} />
-              <Row label="Height" value={(content as any).height ? `${(content as any).height} cm` : null} />
-              <Row label="Profession" value={(content as any).profession} />
+            <Section title={t("sharePublic.secPatientInfo")}>
+              <Row label={t("sharePublic.bloodType")} value={content.bloodType} />
+              <Row label={t("sharePublic.allergies")} value={content.allergies} />
+              <Row
+                label={t("sharePublic.weight")}
+                value={content.weight ? `${content.weight} kg` : null}
+              />
+              <Row
+                label={t("sharePublic.height")}
+                value={content.height ? `${content.height} cm` : null}
+              />
+              <Row label={t("sharePublic.profession")} value={content.profession} />
             </Section>
 
-            {/* Chief complaint */}
-            {(content as any).chiefComplaint && (
-              <Section title="Reason for Consultation">
-                <p className="text-sm text-slate-700">{(content as any).chiefComplaint}</p>
-                {(content as any).symptomDuration && <Row label="Duration" value={(content as any).symptomDuration} />}
-                {(content as any).painScale && <Row label="Pain scale" value={`${(content as any).painScale}/10`} />}
+            {content.chiefComplaint && (
+              <Section title={t("sharePublic.reasonConsult")}>
+                <p className="text-sm text-slate-700">{content.chiefComplaint}</p>
+                {content.symptomDuration && (
+                  <Row label={t("sharePublic.duration")} value={content.symptomDuration} />
+                )}
+                {content.painScale != null && (
+                  <Row label={t("sharePublic.painScale")} value={`${content.painScale}/10`} />
+                )}
               </Section>
             )}
 
-            {/* Chronic conditions */}
-            {Array.isArray((content as any).chronicConditions) && (content as any).chronicConditions.length > 0 && (
-              <Section title="Chronic Conditions">
+            {Array.isArray(content.chronicConditions) && content.chronicConditions.length > 0 && (
+              <Section title={t("sharePublic.chronicConditions")}>
                 <div className="flex flex-wrap gap-2">
-                  {(content as any).chronicConditions.map((c: string) => (
-                    <span key={c} className="bg-rose-50 text-rose-700 text-xs px-3 py-1.5 rounded-full">{c}</span>
+                  {content.chronicConditions.map((c) => (
+                    <span
+                      key={c}
+                      className="bg-rose-50 text-rose-700 text-xs px-3 py-1.5 rounded-full"
+                    >
+                      {c}
+                    </span>
                   ))}
                 </div>
               </Section>
             )}
 
-            {/* Medications in history */}
-            {(content as any).currentMedications && (
-              <Section title="Current Medications">
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{(content as any).currentMedications}</p>
+            {content.currentMedications && (
+              <Section title={t("sharePublic.currentMeds")}>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                  {content.currentMedications}
+                </p>
               </Section>
             )}
 
-            {/* Surgeries */}
-            {(content as any).surgeries && (
-              <Section title="Surgeries & Hospitalizations">
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{(content as any).surgeries}</p>
+            {content.surgeries && (
+              <Section title={t("sharePublic.surgeries")}>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{content.surgeries}</p>
               </Section>
             )}
 
-            {/* Family history */}
-            {(content as any).familyHistory && (
-              <Section title="Family History">
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{(content as any).familyHistory}</p>
+            {content.familyHistory && (
+              <Section title={t("sharePublic.familyHistory")}>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                  {content.familyHistory}
+                </p>
               </Section>
             )}
 
-            {/* Lifestyle */}
-            {((content as any).smoking || (content as any).alcohol || (content as any).exercise) && (
-              <Section title="Lifestyle">
-                <Row label="Smoking" value={(content as any).smoking} />
-                <Row label="Alcohol" value={(content as any).alcohol} />
-                <Row label="Exercise" value={(content as any).exercise} />
-                <Row label="Sleep quality" value={(content as any).sleep} />
+            {(content.smoking || content.alcohol || content.exercise) && (
+              <Section title={t("sharePublic.lifestyle")}>
+                <Row label={t("sharePublic.smoking")} value={content.smoking} />
+                <Row label={t("sharePublic.alcohol")} value={content.alcohol} />
+                <Row label={t("sharePublic.exercise")} value={content.exercise} />
+                <Row label={t("sharePublic.sleep")} value={content.sleep} />
               </Section>
             )}
           </div>
         )}
 
-        {/* Footer */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
           <Shield size={16} className="text-blue-500 mt-0.5 shrink-0" />
-          <p className="text-xs text-blue-700">
-            This record was securely shared by the patient via Doctor8.
-            All health data is encrypted and handled in compliance with HIPAA and GDPR regulations.
-          </p>
+          <p className="text-xs text-blue-700">{t("sharePublic.footer")}</p>
         </div>
       </div>
     </div>

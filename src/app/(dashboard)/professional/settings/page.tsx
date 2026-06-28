@@ -108,12 +108,12 @@ export default function ProfessionalSettings() {
         body: JSON.stringify({ region: accountRegion }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Não foi possível salvar a região.");
+      if (!res.ok) throw new Error(data.error || t("acct.regionErr"));
       setRegionSaved(true);
       setTimeout(() => setRegionSaved(false), 4000);
       router.refresh();
     } catch (e) {
-      setRegionError(e instanceof Error ? e.message : "Erro ao salvar região.");
+      setRegionError(e instanceof Error ? e.message : t("acct.regionErr"));
     } finally {
       setRegionSaving(false);
     }

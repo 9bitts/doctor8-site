@@ -102,6 +102,8 @@ GOOGLE_CALENDAR_ID=primary
 | Admin loading i18n (Lote 36) | OK |
 | JIT pagamento + license docs i18n (Lote 37) | OK |
 | Share/room públicos i18n erros (Lote 37) | OK |
+| Share público i18n completo + admin clubes (Lote 38) | OK |
+| Magic link + mapa paciente + admin categorias (Lote 39) | OK |
 
 ---
 

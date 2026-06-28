@@ -85,6 +85,14 @@ test.describe("public smoke", () => {
     expect(res.ok()).toBeTruthy();
   });
 
+  test("shared record page handles invalid token", async ({ page }) => {
+    const res = await page.goto("/share/invalid-token-e2e");
+    expect(res?.status()).toBeLessThan(500);
+    await expect(page.locator("body")).toBeVisible();
+    const body = await page.locator("body").innerText();
+    expect(body).toMatch(/indispon|unavailable|no disponible/i);
+  });
+
   test("patient exam requests page responds", async ({ page }) => {
     const res = await page.goto("/patient/exam-requests");
     expect(res?.status()).toBeLessThan(500);
