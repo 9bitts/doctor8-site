@@ -512,7 +512,7 @@ export default function RecordDetailClient({
       });
       const data = await res.json();
       if (!res.ok) {
-        setEmailMsg("error:" + (typeof data.error === "string" ? data.error : "Failed to update email"));
+        setEmailMsg("error:" + (typeof data.error === "string" ? data.error : t("rec.emailUpdateFailed")));
       } else {
         setChartEmail(data.email);
         setHasAccount(!!data.hasAccount);
@@ -520,7 +520,7 @@ export default function RecordDetailClient({
         setEmailMsg(data.hasAccount ? "linked" : "saved");
       }
     } catch {
-      setEmailMsg("error:Network error");
+      setEmailMsg("error:" + t("rec.networkError"));
     }
     setEmailSaving(false);
   }
@@ -551,14 +551,14 @@ export default function RecordDetailClient({
       });
       const data = await res.json();
       if (!res.ok) {
-        setRegMsg("error:" + (typeof data.error === "string" ? data.error : "Failed to save"));
+        setRegMsg("error:" + (typeof data.error === "string" ? data.error : t("rec.regSaveFailed")));
       } else {
         setReg(regDraft);
         setEditingReg(false);
         setRegMsg("saved");
       }
     } catch {
-      setRegMsg("error:Network error");
+      setRegMsg("error:" + t("rec.networkError"));
     }
     setRegSaving(false);
   }
@@ -575,12 +575,12 @@ export default function RecordDetailClient({
       });
       const data = await res.json();
       if (!res.ok) {
-        setInviteMsg("error:" + (typeof data.error === "string" ? data.error : "Failed to send invite"));
+        setInviteMsg("error:" + (typeof data.error === "string" ? data.error : t("rx3.inviteError")));
       } else {
         setInviteMsg("sent");
       }
     } catch {
-      setInviteMsg("error:Network error");
+      setInviteMsg("error:" + t("rec.networkError"));
     }
     setInviteSending(false);
   }
@@ -592,14 +592,14 @@ export default function RecordDetailClient({
       const res = await fetch(`/api/professional/documents/${docId}/share`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
-        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || "Failed") }));
+        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || t("rec.updateFailed")) }));
       } else if (data.shared) {
         setShareStatus((s) => ({ ...s, [docId]: "shared" }));
       } else if (data.needsInvite) {
         setShareStatus((s) => ({ ...s, [docId]: data.hasEmail ? "needsInvite" : "noEmail" }));
       }
     } catch {
-      setShareStatus((s) => ({ ...s, [docId]: "error:Network error" }));
+      setShareStatus((s) => ({ ...s, [docId]: "error:" + t("rec.networkError") }));
     }
     setSharingId(null);
   }
@@ -610,12 +610,12 @@ export default function RecordDetailClient({
       const res = await fetch(`/api/professional/documents/${docId}/share`, { method: "PUT" });
       const data = await res.json();
       if (!res.ok) {
-        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || "Failed") }));
+        setShareStatus((s) => ({ ...s, [docId]: "error:" + (data.error || t("rx3.inviteError")) }));
       } else if (data.invited) {
         setShareStatus((s) => ({ ...s, [docId]: "invited" }));
       }
     } catch {
-      setShareStatus((s) => ({ ...s, [docId]: "error:Network error" }));
+      setShareStatus((s) => ({ ...s, [docId]: "error:" + t("rec.networkError") }));
     }
     setSharingId(null);
   }
@@ -1031,7 +1031,7 @@ export default function RecordDetailClient({
 
             {editingEmail ? (
               <div className="space-y-2">
-                <label className="block text-xs font-medium text-slate-600">Email</label>
+                <label className="block text-xs font-medium text-slate-600">{t("pat.email")}</label>
                 <div className="flex gap-2 flex-wrap">
                   <input
                     type="email"

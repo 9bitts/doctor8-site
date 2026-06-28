@@ -292,14 +292,14 @@ export default function PsychologySessionsPage() {
     if (status === "shared") {
       return (
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 bg-violet-50 px-3 py-1.5 rounded-lg">
-          <CheckCircle2 size={14} /> {at("shared")}
+          <CheckCircle2 size={14} /> {t("rec.shareShared")}
         </span>
       );
     }
     if (status === "invited") {
       return (
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 bg-violet-50 px-3 py-1.5 rounded-lg">
-          <Mail size={14} /> {at("invited")}
+          <Mail size={14} /> {t("rec.shareInvited")}
         </span>
       );
     }
@@ -307,7 +307,7 @@ export default function PsychologySessionsPage() {
       return (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-            <AlertCircle size={14} /> {at("needsInvite")}
+            <AlertCircle size={14} /> {t("rec.shareNeedsInvite")}
           </span>
           <button
             onClick={() => handleInvite(note.id)}
@@ -315,7 +315,7 @@ export default function PsychologySessionsPage() {
             className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 px-3 py-1.5 rounded-lg disabled:opacity-50"
           >
             {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-            {at("sendInvite")}
+            {t("rec.sendInvite")}
           </button>
         </div>
       );
@@ -323,7 +323,7 @@ export default function PsychologySessionsPage() {
     if (status === "noEmail") {
       return (
         <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-          <AlertCircle size={14} /> {at("noEmail")}
+          <AlertCircle size={14} /> {t("rec.shareNoEmail")}
         </span>
       );
     }
@@ -335,7 +335,7 @@ export default function PsychologySessionsPage() {
             onClick={() => handleShare(note.id)}
             className="text-xs font-medium text-slate-600 hover:text-slate-800 underline"
           >
-            {at("share")}
+            {t("rec.shareWithPatient")}
           </button>
         </div>
       );
@@ -349,7 +349,7 @@ export default function PsychologySessionsPage() {
         className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-violet-600 border border-slate-200 hover:border-violet-200 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
       >
         {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
-        {at("share")}
+        {t("rec.shareWithPatient")}
       </button>
     );
   }

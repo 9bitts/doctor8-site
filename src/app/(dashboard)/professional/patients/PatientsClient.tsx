@@ -199,6 +199,11 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                         <span className="leading-snug">{t("pat.noAccount")}</span>
                       </span>
                     )}
+                    {!c.hasAccount && !c.email && (
+                      <span className="text-brand-600 mt-1.5 inline-block font-medium">
+                        {t("pat.openChartToAddEmail")} →
+                      </span>
+                    )}
                     {!c.hasAccount && c.email && (
                       <div className="mt-2 flex items-center gap-2 flex-wrap">
                         <button
