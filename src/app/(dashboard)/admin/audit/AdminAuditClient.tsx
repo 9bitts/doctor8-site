@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ScrollText, Loader2, RefreshCw, Filter } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 
 interface AuditRow {
   id: string;
@@ -15,7 +16,8 @@ interface AuditRow {
 }
 
 export default function AdminAuditClient() {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
+  const locale = localeOf(lang);
   const [logs, setLogs] = useState<AuditRow[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -85,7 +87,7 @@ export default function AdminAuditClient() {
           <input
             value={resource}
             onChange={(e) => { setResource(e.target.value); setPage(1); }}
-            placeholder="MedicalDocument"
+            placeholder={t("admin.audit.resourcePlaceholder")}
             className="mt-1 block w-full text-sm border border-slate-200 rounded-lg px-3 py-2"
           />
         </div>
@@ -116,7 +118,7 @@ export default function AdminAuditClient() {
               ) : logs.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-50/80">
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                    {new Date(row.createdAt).toLocaleString()}
+                    {new Date(row.createdAt).toLocaleString(locale)}
                   </td>
                   <td className="px-4 py-3">
                     <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">{row.action}</span>
@@ -145,8 +147,9 @@ export default function AdminAuditClient() {
             disabled={page <= 1 || loading}
             onClick={() => setPage((p) => p - 1)}
             className="text-sm px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40"
+            aria-label={t("admin.audit.prevPage")}
           >
-            ?
+            ←
           </button>
           <span className="text-sm text-slate-500">{page} / {totalPages}</span>
           <button
@@ -154,8 +157,9 @@ export default function AdminAuditClient() {
             disabled={page >= totalPages || loading}
             onClick={() => setPage((p) => p + 1)}
             className="text-sm px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40"
+            aria-label={t("admin.audit.nextPage")}
           >
-            ?
+            →
           </button>
         </div>
       )}

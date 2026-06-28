@@ -4,12 +4,13 @@
 import { useState, useEffect } from "react";
 import { CreditCard, Loader2, CheckCircle2, Clock } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 
 interface Payment {
   id: string;
   patientName: string;
   doctorName: string;
-  amount: number;       // cents
+  amount: number;
   currency: string;
   status: string;
   paid: boolean;
@@ -20,21 +21,26 @@ interface Payment {
 }
 interface Total { currency: string; paidCount: number; paidAmount: number; }
 
-function money(cents: number, currency: string) {
+function money(cents: number, currency: string, locale: string) {
   const v = (cents || 0) / 100;
   try {
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: currency || "USD" }).format(v);
+    return new Intl.NumberFormat(locale, { style: "currency", currency: currency || "USD" }).format(v);
   } catch {
     return `${currency} ${v.toFixed(2)}`;
   }
 }
-function fmtDate(iso: string) {
-  try { return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }); }
-  catch { return iso.slice(0, 10); }
+
+function fmtDate(iso: string, locale: string) {
+  try {
+    return new Date(iso).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
+  } catch {
+    return iso.slice(0, 10);
+  }
 }
 
 export default function PaymentsAdminClient() {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
+  const locale = localeOf(lang);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [totals, setTotals] = useState<Total[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,18 +59,21 @@ export default function PaymentsAdminClient() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Pagamentos</h1>
-        <p className="text-slate-500 mt-1">Pagamentos de consultas na plataforma</p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("admin.payments.title")}</h1>
+        <p className="text-slate-500 mt-1">{t("admin.payments.subtitle")}</p>
       </div>
 
-      {/* Totais */}
       {totals.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {totals.map((t) => (
-            <div key={t.currency} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-              <p className="text-xs text-slate-400 uppercase tracking-wide">Recebido ({t.currency})</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{money(t.paidAmount, t.currency)}</p>
-              <p className="text-xs text-slate-500 mt-1">{t.paidCount} pagamento(s) confirmado(s)</p>
+          {totals.map((tot) => (
+            <div key={tot.currency} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <p className="text-xs text-slate-400 uppercase tracking-wide">
+                {t("admin.payments.received").replace("{{currency}}", tot.currency)}
+              </p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{money(tot.paidAmount, tot.currency, locale)}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {t("admin.payments.confirmedCount").replace("{{count}}", String(tot.paidCount))}
+              </p>
             </div>
           ))}
         </div>
@@ -77,8 +86,8 @@ export default function PaymentsAdminClient() {
       ) : payments.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
           <CreditCard className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="text-slate-400 text-sm">Nenhum pagamento ainda</p>
-          <p className="text-slate-400 text-xs mt-1">Quando os pagamentos forem processados, aparecerão aqui</p>
+          <p className="text-slate-400 text-sm">{t("admin.payments.empty")}</p>
+          <p className="text-slate-400 text-xs mt-1">{t("admin.payments.emptyHint")}</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
@@ -90,13 +99,20 @@ export default function PaymentsAdminClient() {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 text-sm">{p.patientName} <span className="text-slate-400 font-normal">→</span> {p.doctorName}</p>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Consulta em {fmtDate(p.scheduledAt)} · {p.paid ? `pago em ${p.paidAt ? fmtDate(p.paidAt) : "—"}` : "não pago"} · {p.status}
+                  {t("admin.payments.appointmentOn").replace("{{date}}", fmtDate(p.scheduledAt, locale))}
+                  {" · "}
+                  {p.paid
+                    ? t("admin.payments.paidOn").replace("{{date}}", p.paidAt ? fmtDate(p.paidAt, locale) : "—")
+                    : t("admin.payments.notPaid")}
+                  {" · "}{p.status}
                 </p>
                 {p.stripePaymentId && <p className="text-[11px] text-slate-400 mt-0.5">Stripe: {p.stripePaymentId}</p>}
               </div>
               <div className="text-right shrink-0">
-                <p className="font-bold text-slate-900 text-sm">{money(p.amount, p.currency)}</p>
-                <p className={`text-[11px] mt-0.5 ${p.paid ? "text-emerald-600" : "text-slate-400"}`}>{p.paid ? "Confirmado" : "Pendente"}</p>
+                <p className="font-bold text-slate-900 text-sm">{money(p.amount, p.currency, locale)}</p>
+                <p className={`text-[11px] mt-0.5 ${p.paid ? "text-emerald-600" : "text-slate-400"}`}>
+                  {p.paid ? t("admin.payments.statusConfirmed") : t("admin.payments.statusPending")}
+                </p>
               </div>
             </div>
           ))}

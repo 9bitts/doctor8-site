@@ -111,6 +111,7 @@ GOOGLE_CALENDAR_ID=primary
 | Magic link + mapa paciente + admin categorias (Lote 39) | OK |
 | Conta pro Doctor Connection + admin providers parcial (Lote 40) | OK |
 | Admin providers completo + pacientes admin (Lote 41) | OK |
+| Admin pagamentos + audit + JIT events (Lote 42) | OK |
 
 ---
 
