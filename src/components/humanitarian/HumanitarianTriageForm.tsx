@@ -7,6 +7,7 @@ import { translate, Lang } from "@/lib/i18n/translations";
 import type { HumanitarianTriageData } from "@/lib/humanitarian/triage";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 import { humanitarianDraftKey } from "@/lib/humanitarian/offline-draft";
+import { enqueueHumanitarianSubmit } from "@/lib/humanitarian/outbox";
 import { useHumanitarianDraft } from "@/hooks/useHumanitarianDraft";
 
 type Props = {
@@ -103,17 +104,24 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
   }
 
   async function submit() {
+    const payload = {
+      ...data,
+      headTraumaDescription: data.headTrauma ? data.headTraumaDescription?.trim() || undefined : undefined,
+    };
+
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      setError(t(lang, "hum.offline.submitBlocked"));
+      enqueueHumanitarianSubmit({
+        url: "/api/humanitarian/intake",
+        method: "POST",
+        body: { campaignSlug, triage: payload },
+      });
+      setError(t(lang, "hum.offline.queuedSubmit"));
       return;
     }
+
     setSaving(true);
     setError(null);
     try {
-      const payload = {
-        ...data,
-        headTraumaDescription: data.headTrauma ? data.headTraumaDescription?.trim() || undefined : undefined,
-      };
       const res = await fetch("/api/humanitarian/intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

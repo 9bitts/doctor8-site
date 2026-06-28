@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
-  createAuthorizationCode,
   getSmartClientId,
   isRedirectUriAllowed,
 } from "@/lib/fhir/smart-oauth";
@@ -64,18 +63,7 @@ export async function GET(req: NextRequest) {
     return oauthError(redirectUri, "access_denied", "Patient profile required.", state);
   }
 
-  const code = await createAuthorizationCode({
-    clientId,
-    userId: session.user.id,
-    patientId: patient.id,
-    redirectUri,
-    scope,
-    codeChallenge,
-  });
-
-  const callback = new URL(redirectUri);
-  callback.searchParams.set("code", code);
-  if (state) callback.searchParams.set("state", state);
-
-  return NextResponse.redirect(callback);
+  const consentUrl = new URL("/patient/fhir-authorize", appUrl);
+  consentUrl.search = sp.toString();
+  return NextResponse.redirect(consentUrl);
 }

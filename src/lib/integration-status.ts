@@ -113,5 +113,13 @@ export function getIntegrationStatuses(): IntegrationRow[] {
         ? "Browser push via VAPID keys (in-app + push)."
         : "Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to enable browser push.",
     },
+    {
+      id: "smart",
+      health: process.env.SMART_OAUTH_REDIRECT_URIS?.trim() ? "ok" : "partial",
+      configured: true,
+      detail: process.env.SMART_OAUTH_REDIRECT_URIS?.trim()
+        ? "SMART on FHIR OAuth with patient consent and FHIR Patient API."
+        : "SMART OAuth active; set SMART_OAUTH_REDIRECT_URIS for production app callbacks (localhost allowed in dev).",
+    },
   ];
 }

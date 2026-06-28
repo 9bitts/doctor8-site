@@ -37,6 +37,7 @@ export async function scheduleReminder({
       "Content-Type": "application/json",
       "Upstash-Delay": `${delaySeconds}s`,
       "Upstash-Retries": "3",
+      "Upstash-Deduplication-Id": `${appointmentId}:${type}:${remindersEpoch}`,
     },
     body: JSON.stringify({ appointmentId, type, remindersEpoch }),
   });

@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
-import { buildClinicalDocumentWaMeUrl } from "@/lib/whatsapp";
+import { buildClinicalDocumentWaMeUrl, sendHumanitarianYourTurnWhatsApp } from "@/lib/whatsapp";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import type { HumanitarianCampaignReportDto } from "@/lib/humanitarian/types";
 
@@ -212,12 +212,28 @@ export async function notifyHumanitarianYourTurn(opts: {
     where: { userId: opts.patientUserId },
     select: { firstName: true },
   });
+  const user = await db.user.findUnique({
+    where: { id: opts.patientUserId },
+    select: { language: true },
+  });
   const firstName = profile ? safeDecrypt(profile.firstName) : "paciente";
   const pro = opts.professionalName || "un profesional voluntario";
   const waMessage =
     `Hola ${firstName}, es tu turno en Doctor8 (atención humanitaria). ` +
     `${pro} está listo para atenderte. Entra aquí: ${entryUrl} — Tienes 3 minutos.`;
-  const whatsappUrl = phone ? buildClinicalDocumentWaMeUrl(phone, waMessage) : null;
+  let whatsappUrl = phone ? buildClinicalDocumentWaMeUrl(phone, waMessage) : null;
+
+  if (phone) {
+    const wa = await sendHumanitarianYourTurnWhatsApp({
+      toPhone: phone,
+      patientFirstName: firstName,
+      professionalName: pro,
+      entryUrl,
+      language: (user?.language as "pt" | "en" | "es") ?? "es",
+    });
+    if (wa.ok) whatsappUrl = null;
+    else if (wa.waMeUrl) whatsappUrl = wa.waMeUrl;
+  }
 
   const turnCopy = storedNotificationText("hum.notif.yourTurn.title", "hum.notif.yourTurn.body", {
     professional: pro,
@@ -230,6 +246,7 @@ export async function notifyHumanitarianYourTurn(opts: {
     data: {
       entryId: opts.entryId,
       link: videoPath,
+      url: videoPath,
       whatsappUrl: whatsappUrl ?? undefined,
       titleKey: "hum.notif.yourTurn.title",
       bodyKey: "hum.notif.yourTurn.body",

@@ -283,3 +283,79 @@ export function buildClinicalDocumentWaMeUrl(
   if (!to) return null;
   return `https://wa.me/${to}?text=${encodeURIComponent(message)}`;
 }
+
+/** Humanitarian "your turn" template — falls back to wa.me when API unset. */
+export async function sendHumanitarianYourTurnWhatsApp(opts: {
+  toPhone: string;
+  patientFirstName: string;
+  professionalName: string;
+  entryUrl: string;
+  language?: Lang;
+}): Promise<{ ok: boolean; messageId?: string; skipped?: boolean; waMeUrl?: string }> {
+  const lang = opts.language ?? "es";
+  const waMeUrl =
+    buildClinicalDocumentWaMeUrl(
+      opts.toPhone,
+      `Hola ${opts.patientFirstName}, es tu turno en Doctor8. ${opts.professionalName} te espera: ${opts.entryUrl}`,
+    ) ?? undefined;
+
+  if (!isWhatsAppConfigured()) {
+    return { ok: false, skipped: true, waMeUrl };
+  }
+
+  const templateName =
+    process.env.WHATSAPP_HUMANITARIAN_TURN_TEMPLATE?.trim() || "doctor8_humanitarian_your_turn";
+  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const to = normalizeWhatsAppPhone(opts.toPhone);
+  if (!to) return { ok: false, skipped: true, waMeUrl };
+
+  const res = await fetch(
+    `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: whatsappTemplateLocale(lang) },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                { type: "text", text: opts.patientFirstName.slice(0, 256) },
+                { type: "text", text: opts.professionalName.slice(0, 256) },
+                { type: "text", text: opts.entryUrl.slice(0, 256) },
+              ],
+            },
+          ],
+        },
+      }),
+    },
+  );
+
+  const data = (await res.json().catch(() => ({}))) as {
+    messages?: { id: string }[];
+    error?: { message?: string };
+  };
+
+  if (!res.ok) {
+    await logWhatsAppDelivery({
+      template: templateName,
+      phone: to,
+      status: "failed",
+      detail: data?.error?.message,
+    });
+    return { ok: false, skipped: false, waMeUrl };
+  }
+
+  const messageId = data.messages?.[0]?.id;
+  await logWhatsAppDelivery({ messageId, template: templateName, phone: to, status: "sent" });
+  return { ok: true, messageId, waMeUrl };
+}

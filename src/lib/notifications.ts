@@ -37,11 +37,13 @@ export async function createNotification(params: {
     const url =
       typeof params.data?.url === "string"
         ? params.data.url
-        : params.type === "message"
-          ? "/patient/messages"
-          : params.type === "appointment_reminder" || params.type === "appointment_confirmed"
-            ? "/patient/appointments"
-            : "/patient";
+        : typeof params.data?.link === "string"
+          ? params.data.link
+          : params.type === "message"
+            ? "/patient/messages"
+            : params.type === "appointment_reminder" || params.type === "appointment_confirmed"
+              ? "/patient/appointments"
+              : "/patient";
 
     sendWebPushToUser(params.userId, {
       title: params.title,

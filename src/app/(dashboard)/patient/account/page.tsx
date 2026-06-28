@@ -18,6 +18,7 @@ import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
   Eye, EyeOff, LogOut, Shield, User, Globe,
 } from "lucide-react";
+import Link from "next/link";
 import PushNotificationSettings from "@/components/PushNotificationSettings";
 import type { DataResidencyInfo } from "@/lib/data-residency";
 
@@ -620,6 +621,19 @@ export default function AccountPage() {
       </div>
 
       <PushNotificationSettings />
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">{t("acct.connectedApps")}</p>
+          <p className="text-xs text-slate-400 mt-0.5">{t("acct.connectedAppsDesc")}</p>
+        </div>
+        <Link
+          href="/patient/connected-apps"
+          className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 shrink-0"
+        >
+          {t("smart.consent.manageApps")} →
+        </Link>
+      </div>
 
       {/* Sign out */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

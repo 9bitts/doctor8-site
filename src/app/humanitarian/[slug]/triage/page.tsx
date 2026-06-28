@@ -9,6 +9,7 @@ import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import HumanitarianTriageForm from "@/components/humanitarian/HumanitarianTriageForm";
 import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
+import { useHumanitarianOutboxFlush } from "@/hooks/useHumanitarianOutboxFlush";
 
 export default function HumanitarianTriagePage() {
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function HumanitarianTriagePage() {
 
   const [lang, setLang] = useState<Lang>("es");
   const [loading, setLoading] = useState(true);
+
+  useHumanitarianOutboxFlush(() => router.refresh());
 
   useEffect(() => {
     setLang(getHumanitarianLang());

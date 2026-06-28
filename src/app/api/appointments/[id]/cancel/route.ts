@@ -97,6 +97,7 @@ export async function POST(
       cancelledAt: new Date(),
       cancelledBy: session.user.id,
       cancelReason: reason,
+      remindersEpoch: { increment: 1 },
     },
   });
 
