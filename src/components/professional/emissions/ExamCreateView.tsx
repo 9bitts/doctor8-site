@@ -9,6 +9,7 @@ import type { SavedEmission } from "./EmissionPostSaveFlow";
 import ExamSearchInput, { formatExamItem, parseExamItemLine } from "@/components/ExamSearchInput";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
+import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
 
 interface ExamCreateViewProps {
   t: (k: string) => string;
@@ -116,7 +117,10 @@ export function ExamCreateView({
 
       <Card title={t("rx2.selectPatient")}>
         {selectedPatient ? (
-          <PatientChip patient={selectedPatient} t={t} onClear={lockPatient ? undefined : () => setSelectedPatient(null)} />
+          <div className="space-y-3">
+            <PatientChip patient={selectedPatient} t={t} onClear={lockPatient ? undefined : () => setSelectedPatient(null)} />
+            <PatientNoAccountPanel patient={selectedPatient} />
+          </div>
         ) : lockPatient ? (
           <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
         ) : (
@@ -140,7 +144,10 @@ export function ExamCreateView({
                   <button key={c.id} onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); }}
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left">
                     <span className="font-medium text-sm">{c.firstName} {c.lastName}</span>
-                    <ChevronRight size={14} className="ml-auto text-slate-300" />
+                    <span className="text-xs text-slate-400 ml-auto mr-1">
+                      {c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
+                    </span>
+                    <ChevronRight size={14} className="text-slate-300 shrink-0" />
                   </button>
                 ))}
               </div>

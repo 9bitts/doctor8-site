@@ -9,6 +9,7 @@ import { localeOf } from "@/lib/i18n/translations";
 import type { Chart } from "./types";
 import type { SavedEmission } from "./EmissionPostSaveFlow";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
+import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
 
 const DOC_TYPES = [
   { value: "CERTIFICATE", labelKey: "rx.docTypeCertificate" },
@@ -165,18 +166,24 @@ export function DocumentCreateView({
       <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
         <label className="text-sm font-semibold text-slate-800">{t("rx2.selectPatient")}</label>
         {selectedPatient ? (
-          <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl p-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm">
-              {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl p-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm">
+                {selectedPatient.firstName[0]}{selectedPatient.lastName[0]}
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {selectedPatient.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
+                </p>
+              </div>
+              {!lockPatient && (
+              <button onClick={() => setSelectedPatient(null)} className="text-xs text-brand-500 font-semibold">
+                {t("rx2.changePatient")}
+              </button>
+              )}
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-            </div>
-            {!lockPatient && (
-            <button onClick={() => setSelectedPatient(null)} className="text-xs text-brand-500 font-semibold">
-              {t("rx2.changePatient")}
-            </button>
-            )}
+            <PatientNoAccountPanel patient={selectedPatient} />
           </div>
         ) : lockPatient ? (
           <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
@@ -201,7 +208,10 @@ export function DocumentCreateView({
                   <button key={c.id} onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); }}
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left">
                     <span className="font-medium text-sm">{c.firstName} {c.lastName}</span>
-                    <ChevronRight size={14} className="ml-auto text-slate-300" />
+                    <span className="text-xs text-slate-400 ml-auto mr-1">
+                      {c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
+                    </span>
+                    <ChevronRight size={14} className="text-slate-300 shrink-0" />
                   </button>
                 ))}
               </div>

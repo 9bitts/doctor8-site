@@ -335,7 +335,7 @@ export default function PsychologySessionsPage() {
             onClick={() => handleShare(note.id)}
             className="text-xs font-medium text-slate-600 hover:text-slate-800 underline"
           >
-            {t("rec.shareWithPatient")}
+            {t("rec.retry")}
           </button>
         </div>
       );

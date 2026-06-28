@@ -262,7 +262,7 @@ export default function ResourcesPage() {
         setResources((prev) => [data, ...prev]);
       }
       closeForm();
-    } catch { setFormError("Network error."); }
+    } catch { setFormError(t("rec.networkError")); }
     setSaving(false);
   }
 
