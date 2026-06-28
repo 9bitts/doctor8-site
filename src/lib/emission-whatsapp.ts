@@ -8,7 +8,13 @@ import {
   sendClinicalDocumentWhatsApp,
   type WhatsAppDeliveryStatus,
 } from "@/lib/whatsapp";
+import {
+  buildClinicalDocumentWaMeMessage,
+  clinicalDocumentLabel,
+  resolveWhatsAppLang,
+} from "@/lib/whatsapp-i18n";
 import type { EmissionDeliverKind } from "@/lib/emission-deliver";
+import type { Lang } from "@/lib/i18n/translations";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://doctor8.app";
 
@@ -23,33 +29,20 @@ export type WhatsAppDeliverResult = {
   waMeUrl?: string | null;
 };
 
-const DOC_LABEL: Record<EmissionDeliverKind, string> = {
-  prescription: "receita m?dica",
-  exam: "pedido de exame",
-  document: "documento cl?nico",
-};
-
 function shareUrl(hasAccount: boolean, kind: EmissionDeliverKind): string {
   if (!hasAccount) return `${APP_URL}/register`;
   if (kind === "prescription") return `${APP_URL}/patient/prescriptions`;
   return `${APP_URL}/patient/documents`;
 }
 
-function defaultMessage(
-  patientName: string,
-  doctorName: string,
-  kind: EmissionDeliverKind,
-  url: string,
-  custom?: string,
-): string {
-  if (custom?.trim()) {
-    return custom
-      .replace(/\{\{name\}\}/g, patientName)
-      .replace(/\{\{doctor\}\}/g, doctorName)
-      .replace(/\{\{link\}\}/g, url);
-  }
-  const label = DOC_LABEL[kind];
-  return `Ol? ${patientName}, Dr(a). ${doctorName} enviou um(a) ${label} no Doctor8. Acesse: ${url}`;
+async function resolvePatientLanguage(
+  linkedUserId: string | null | undefined,
+  profileUserId: string | null | undefined,
+): Promise<Lang> {
+  const userId = linkedUserId || profileUserId;
+  if (!userId) return "pt";
+  const user = await db.user.findUnique({ where: { id: userId }, select: { language: true } });
+  return resolveWhatsAppLang(user?.language);
 }
 
 async function resolvePatientPhone(
@@ -98,7 +91,15 @@ export async function sendEmissionWhatsApp(opts: {
     const patientName = `${firstName} ${lastName}`.trim() || "paciente";
     const hasAccount = !!(record?.linkedUserId || profile?.userId);
     const url = shareUrl(hasAccount, kind);
-    const msg = defaultMessage(patientName, doctorName, kind, url, customMessage);
+    const lang = await resolvePatientLanguage(record?.linkedUserId, profile?.userId);
+    const msg = buildClinicalDocumentWaMeMessage({
+      patientName,
+      doctorName,
+      kind,
+      accessUrl: url,
+      lang,
+      customMessage,
+    });
     const waMeUrl = phone ? buildClinicalDocumentWaMeUrl(phone, msg) : null;
 
     if (!phone) {
@@ -122,7 +123,8 @@ export async function sendEmissionWhatsApp(opts: {
       patientName,
       doctorName,
       accessUrl: url,
-      documentLabel: DOC_LABEL[kind],
+      documentLabel: clinicalDocumentLabel(kind, lang),
+      language: lang,
     });
 
     if (result.skipped) {
@@ -175,7 +177,15 @@ export async function sendEmissionWhatsApp(opts: {
     const docKind: EmissionDeliverKind =
       document.type === "EXAM_REQUEST" || document.type === "EXAM_RESULT" ? "exam" : "document";
     const url = shareUrl(hasAccount, docKind);
-    const msg = defaultMessage(patientName, doctorName, docKind, url, customMessage);
+    const lang = await resolvePatientLanguage(record?.linkedUserId, profile?.userId);
+    const msg = buildClinicalDocumentWaMeMessage({
+      patientName,
+      doctorName,
+      kind: docKind,
+      accessUrl: url,
+      lang,
+      customMessage,
+    });
     const waMeUrl = phone ? buildClinicalDocumentWaMeUrl(phone, msg) : null;
 
     if (!phone) {
@@ -199,7 +209,8 @@ export async function sendEmissionWhatsApp(opts: {
       patientName,
       doctorName,
       accessUrl: url,
-      documentLabel: DOC_LABEL[docKind],
+      documentLabel: clinicalDocumentLabel(docKind, lang),
+      language: lang,
     });
 
     if (result.skipped) {

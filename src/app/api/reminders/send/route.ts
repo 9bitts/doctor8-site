@@ -14,6 +14,10 @@ import {
   isWhatsAppConfigured,
   sendAppointmentReminderWhatsApp,
 } from "@/lib/whatsapp";
+import {
+  buildAppointmentReminderWaMeMessage,
+  resolveWhatsAppLang,
+} from "@/lib/whatsapp-i18n";
 import { z } from "zod";
 
 const schema = z.object({
@@ -24,20 +28,6 @@ const schema = z.object({
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
   try { return decrypt(v); } catch { return v; }
-}
-
-function buildWhatsAppMessage(
-  patientName: string,
-  doctorName: string,
-  scheduledAt: Date,
-  meetingUrl: string | null
-): string {
-  const time = scheduledAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  const date = scheduledAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-  let msg = `🏥 *Doctor8 — Lembrete de consulta*\n\nOlá ${patientName}! Sua consulta com *Dr. ${doctorName}* é hoje às *${time}* (${date}).`;
-  if (meetingUrl) msg += `\n\n🎥 Acesse aqui: ${meetingUrl}`;
-  msg += `\n\n_Se precisar cancelar, acesse app.doctor8.org_`;
-  return msg;
 }
 
 export async function POST(req: NextRequest) {
@@ -215,6 +205,7 @@ export async function POST(req: NextRequest) {
       : "Provider";
   const scheduledAt = new Date(appointment.scheduledAt);
   const hoursUntil = Math.round((scheduledAt.getTime() - Date.now()) / 3600000);
+  const waLang = resolveWhatsAppLang(patientUser.language);
 
   // ── 24h EMAIL ──────────────────────────────────────────────────────────────
   if (type === "24h_email") {
@@ -242,7 +233,13 @@ export async function POST(req: NextRequest) {
       let whatsappUrl: string | undefined;
       if (rawPhone) {
         const phone = rawPhone.replace(/\D/g, "");
-        const message = buildWhatsAppMessage(patientName, doctorName, scheduledAt, appointment.meetingUrl);
+        const message = buildAppointmentReminderWaMeMessage({
+          patientName,
+          doctorName,
+          scheduledAt,
+          meetingUrl: appointment.meetingUrl,
+          lang: waLang,
+        });
         whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
       }
 
@@ -268,7 +265,13 @@ export async function POST(req: NextRequest) {
     const rawPhone = appointment.patient.phone ? safeDecrypt(appointment.patient.phone) : null;
     if (rawPhone) {
       const phone = rawPhone.replace(/\D/g, "");
-      const message = buildWhatsAppMessage(patientName, doctorName, scheduledAt, appointment.meetingUrl);
+      const message = buildAppointmentReminderWaMeMessage({
+        patientName,
+        doctorName,
+        scheduledAt,
+        meetingUrl: appointment.meetingUrl,
+        lang: waLang,
+      });
       const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
 
       let apiSent = false;
@@ -279,6 +282,7 @@ export async function POST(req: NextRequest) {
           doctorName,
           scheduledAt,
           meetingUrl: appointment.meetingUrl,
+          language: waLang,
         });
         if (result.ok) {
           apiSent = true;

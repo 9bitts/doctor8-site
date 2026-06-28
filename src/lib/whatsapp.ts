@@ -1,4 +1,11 @@
-// Meta WhatsApp Cloud API ? appointment reminder templates (utility category).
+// Meta WhatsApp Cloud API — appointment reminder templates (utility category).
+
+import type { Lang } from "@/lib/i18n/translations";
+import {
+  clinicalDocumentLabel,
+  formatWhatsAppDateTime,
+  whatsappTemplateLocale,
+} from "@/lib/whatsapp-i18n";
 
 const GRAPH_VERSION = process.env.WHATSAPP_GRAPH_API_VERSION || "v22.0";
 
@@ -7,6 +14,36 @@ export function isWhatsAppConfigured(): boolean {
     process.env.WHATSAPP_ACCESS_TOKEN?.trim() &&
       process.env.WHATSAPP_PHONE_NUMBER_ID?.trim()
   );
+}
+
+export type WhatsAppReadiness = {
+  configured: boolean;
+  reminderTemplate: string;
+  documentTemplate: string;
+  /** True when env vars are set; templates must still be approved in Meta Business Manager. */
+  readyToSend: boolean;
+  fallbackMode: "wa_me_links";
+  note: string;
+};
+
+/** Inspect config without calling Meta (no network). Safe for admin dashboards. */
+export function getWhatsAppReadiness(): WhatsAppReadiness {
+  const configured = isWhatsAppConfigured();
+  const reminderTemplate =
+    process.env.WHATSAPP_REMINDER_TEMPLATE?.trim() || "doctor8_appointment_reminder";
+  const documentTemplate =
+    process.env.WHATSAPP_DOCUMENT_TEMPLATE?.trim() || "doctor8_clinical_document";
+
+  return {
+    configured,
+    reminderTemplate,
+    documentTemplate,
+    readyToSend: configured,
+    fallbackMode: "wa_me_links",
+    note: configured
+      ? "Credentials set. Messages send only if Meta approved the utility templates with matching names and languages."
+      : "Meta API not configured — app uses wa.me link fallbacks until WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID are set.",
+  };
 }
 
 /** E.164 digits only, no +. Prepends default country code when missing. */
@@ -27,30 +64,24 @@ export async function sendAppointmentReminderWhatsApp(opts: {
   doctorName: string;
   scheduledAt: Date;
   meetingUrl?: string | null;
+  language?: Lang;
 }): Promise<{ ok: boolean; messageId?: string; error?: string; skipped?: boolean }> {
   if (!isWhatsAppConfigured()) {
     return { ok: false, skipped: true };
   }
 
+  const lang = opts.language ?? "pt";
   const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
   const templateName =
     process.env.WHATSAPP_REMINDER_TEMPLATE?.trim() || "doctor8_appointment_reminder";
-  const templateLang = process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "pt_BR";
+  const templateLang = whatsappTemplateLocale(lang);
 
   const to = normalizeWhatsAppPhone(opts.toPhone);
   if (!to) return { ok: false, error: "Invalid phone number" };
 
-  const time = opts.scheduledAt.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const date = opts.scheduledAt.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-  });
-
   const firstName = opts.patientName.trim().split(/\s+/)[0] || opts.patientName;
+  const { combined } = formatWhatsAppDateTime(opts.scheduledAt, lang);
 
   const components: Record<string, unknown>[] = [
     {
@@ -58,7 +89,7 @@ export async function sendAppointmentReminderWhatsApp(opts: {
       parameters: [
         { type: "text", text: firstName.slice(0, 256) },
         { type: "text", text: opts.doctorName.slice(0, 256) },
-        { type: "text", text: `${date} ?s ${time}`.slice(0, 256) },
+        { type: "text", text: combined.slice(0, 256) },
       ],
     },
   ];
@@ -124,22 +155,24 @@ export async function sendClinicalDocumentWhatsApp(opts: {
   doctorName: string;
   accessUrl: string;
   documentLabel?: string;
+  language?: Lang;
 }): Promise<{ ok: boolean; messageId?: string; error?: string; skipped?: boolean }> {
   if (!isWhatsAppConfigured()) {
     return { ok: false, skipped: true };
   }
 
+  const lang = opts.language ?? "pt";
   const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
   const templateName =
     process.env.WHATSAPP_DOCUMENT_TEMPLATE?.trim() || "doctor8_clinical_document";
-  const templateLang = process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "pt_BR";
+  const templateLang = whatsappTemplateLocale(lang);
 
   const to = normalizeWhatsAppPhone(opts.toPhone);
   if (!to) return { ok: false, error: "Invalid phone number" };
 
   const firstName = opts.patientName.trim().split(/\s+/)[0] || opts.patientName;
-  const docLabel = (opts.documentLabel || "documento clínico").slice(0, 256);
+  const docLabel = (opts.documentLabel || clinicalDocumentLabel("document", lang)).slice(0, 256);
   const link = opts.accessUrl.slice(0, 256);
 
   const res = await fetch(

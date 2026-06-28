@@ -7,25 +7,14 @@ import {
   sendAppointmentReminderWhatsApp,
   buildClinicalDocumentWaMeUrl,
 } from "@/lib/whatsapp";
+import {
+  buildAppointmentReminderWaMeMessage,
+  resolveWhatsAppLang,
+} from "@/lib/whatsapp-i18n";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
   try { return decrypt(v); } catch { return v; }
-}
-
-function buildWaMeMessage(
-  orgName: string,
-  patientName: string,
-  doctorName: string,
-  scheduledAt: Date,
-  meetingUrl: string | null,
-): string {
-  const time = scheduledAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  const date = scheduledAt.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
-  let msg = `?? *${orgName}*\n\nOl? ${patientName}! Sua consulta com *Dr. ${doctorName}* est? agendada para *${date}* ?s *${time}*.`;
-  if (meetingUrl) msg += `\n\n?? Link: ${meetingUrl}`;
-  msg += `\n\n_Confirma??o enviada via Doctor8_`;
-  return msg;
 }
 
 export async function POST(
@@ -60,7 +49,7 @@ export async function POST(
       status: { in: ["CONFIRMED", "PENDING"] },
     },
     include: {
-      patient: { select: { firstName: true, lastName: true, phone: true } },
+      patient: { select: { firstName: true, lastName: true, phone: true, userId: true } },
       professional: { select: { firstName: true, lastName: true } },
     },
   });
@@ -77,20 +66,33 @@ export async function POST(
     return NextResponse.json({ error: "NO_PHONE", status: "NO_PHONE" }, { status: 400 });
   }
 
+  const patientUser = appointment.patient.userId
+    ? await db.user.findUnique({
+        where: { id: appointment.patient.userId },
+        select: { language: true },
+      })
+    : null;
+  const waLang = resolveWhatsAppLang(patientUser?.language);
+  const waMeText = buildAppointmentReminderWaMeMessage({
+    patientName,
+    doctorName: `${org.nomeFantasia} — Dr. ${doctorName}`,
+    scheduledAt: appointment.scheduledAt,
+    meetingUrl: appointment.meetingUrl,
+    lang: waLang,
+  });
+
   if (isWhatsAppConfigured()) {
     const result = await sendAppointmentReminderWhatsApp({
       toPhone: phone,
       patientName,
-      doctorName: `${org.nomeFantasia} ? Dr. ${doctorName}`,
+      doctorName: `${org.nomeFantasia} — Dr. ${doctorName}`,
       scheduledAt: appointment.scheduledAt,
       meetingUrl: appointment.meetingUrl,
+      language: waLang,
     });
 
     if (result.skipped) {
-      const waUrl = buildClinicalDocumentWaMeUrl(
-        phone,
-        buildWaMeMessage(org.nomeFantasia, patientName.split(" ")[0], doctorName, appointment.scheduledAt, appointment.meetingUrl),
-      );
+      const waUrl = buildClinicalDocumentWaMeUrl(phone, waMeText);
       return NextResponse.json({ status: "SKIPPED", waUrl, mode });
     }
 
@@ -102,10 +104,7 @@ export async function POST(
     });
   }
 
-  const waUrl = buildClinicalDocumentWaMeUrl(
-    phone,
-    buildWaMeMessage(org.nomeFantasia, patientName.split(" ")[0], doctorName, appointment.scheduledAt, appointment.meetingUrl),
-  );
+  const waUrl = buildClinicalDocumentWaMeUrl(phone, waMeText);
 
   return NextResponse.json({ status: "SKIPPED", waUrl, mode });
 }
