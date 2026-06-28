@@ -94,9 +94,9 @@ export default function OrganizationTeamPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <h2 className="font-semibold text-slate-900 mb-2">C\u00f3digo para profissionais</h2>
+        <h2 className="font-semibold text-slate-900 mb-2">Código para profissionais</h2>
         <p className="text-sm text-slate-500 mb-4">
-          M\u00e9dicos cadastrados no Doctor8 podem vincular-se \u00e0 cl\u00ednica em Configura\u00e7\u00f5es \u2192 Organiza\u00e7\u00e3o, usando este c\u00f3digo.
+          Médicos cadastrados no Doctor8 podem vincular-se à clínica em Configurações → Organização, usando este código.
         </p>
         <div className="flex items-center gap-3">
           <code className="flex-1 bg-slate-100 rounded-xl px-4 py-3 text-sm font-mono text-slate-800 truncate">
@@ -184,7 +184,7 @@ export default function OrganizationTeamPage() {
               className="border border-slate-200 rounded-xl px-3 py-2 text-sm"
             >
               <option value="ADMIN">Admin</option>
-              <option value="RECEPTIONIST">Recep??o</option>
+              <option value="RECEPTIONIST">Recepção</option>
               <option value="FINANCE">Financeiro</option>
               <option value="HR">RH</option>
               <option value="ACCOUNTANT">Contabilidade</option>
@@ -194,7 +194,7 @@ export default function OrganizationTeamPage() {
               disabled={inviting}
               className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-500 disabled:opacity-50"
             >
-              {inviting ? "Enviando?" : "Convidar"}
+              {inviting ? "Enviando…" : "Convidar"}
             </button>
           </form>
         )}

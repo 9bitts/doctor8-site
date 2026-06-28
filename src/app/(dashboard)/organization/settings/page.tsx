@@ -67,7 +67,7 @@ export default function OrganizationSettingsPage() {
   }
 
   if (!org) {
-    return <p className="text-slate-500">Organiza??o n?o encontrada.</p>;
+    return <p className="text-slate-500">Organização não encontrada.</p>;
   }
 
   const canEdit = org.memberRole === "OWNER" || org.memberRole === "ADMIN";
@@ -79,8 +79,8 @@ export default function OrganizationSettingsPage() {
           <Building2 className="text-indigo-600" size={20} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Configura??es</h1>
-          <p className="text-slate-500 text-sm">Dados da organiza??o (CNPJ)</p>
+          <h1 className="text-2xl font-bold text-slate-900">Configurações</h1>
+          <p className="text-slate-500 text-sm">Dados da organização (CNPJ)</p>
         </div>
       </div>
 
@@ -90,7 +90,7 @@ export default function OrganizationSettingsPage() {
           <input disabled value={org.cnpj} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Raz?o social</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Razão social</label>
           <input disabled value={org.razaoSocial} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-500" />
         </div>
         <div>
@@ -140,7 +140,7 @@ export default function OrganizationSettingsPage() {
               onChange={(e) => setOrg({ ...org, whatsappRemindersEnabled: e.target.checked })}
               className="rounded"
             />
-            <span className="text-sm text-slate-700">Lembretes e confirmacoes via WhatsApp</span>
+            <span className="text-sm text-slate-700">Lembretes e confirmações via WhatsApp</span>
           </label>
         )}
         {canEdit && (
@@ -149,7 +149,7 @@ export default function OrganizationSettingsPage() {
             disabled={saving}
             className="w-full bg-indigo-600 text-white font-medium py-3 rounded-xl hover:bg-indigo-500 disabled:opacity-50 transition"
           >
-            {saving ? "Salvando?" : "Salvar altera??es"}
+            {saving ? "Salvando…" : "Salvar alterações"}
           </button>
         )}
       </form>

@@ -97,7 +97,7 @@ export default async function OrganizationDashboard() {
       color: "text-emerald-600 bg-emerald-50",
     },
     {
-      label: "Receita do m\u00eas",
+      label: "Receita do mês",
       value: fmt(monthRevenue._sum.priceAmount || 0, org.currency),
       icon: TrendingUp,
       href: "/organization/financeiro",
@@ -117,14 +117,14 @@ export default async function OrganizationDashboard() {
           </div>
           <p className="text-slate-500 text-sm ml-13">
             CNPJ {org.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}
-            \u00b7 {staffCount} colaborador{staffCount !== 1 ? "es" : ""}
+            · {staffCount} colaborador{staffCount !== 1 ? "es" : ""}
           </p>
         </div>
         <Link
           href="/organization/settings"
           className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
         >
-          Configura\u00e7\u00f5es
+          Configurações
         </Link>
       </div>
 
@@ -151,13 +151,13 @@ export default async function OrganizationDashboard() {
         <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6">
           <h2 className="font-semibold text-indigo-900 mb-2">Vincule seus profissionais</h2>
           <p className="text-indigo-700 text-sm mb-4">
-            Compartilhe o c\u00f3digo de convite com os m\u00e9dicos da cl\u00ednica para que eles se vinculem \u00e0 organiza\u00e7\u00e3o.
+            Compartilhe o código de convite com os médicos da clínica para que eles se vinculem à organização.
           </p>
           <Link
             href="/organization/team"
             className="inline-flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-indigo-500 transition"
           >
-            Ver c\u00f3digo de convite
+            Ver código de convite
             <ChevronRight size={16} />
           </Link>
         </div>
@@ -165,7 +165,7 @@ export default async function OrganizationDashboard() {
 
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-slate-900">Pr\u00f3ximas consultas</h2>
+          <h2 className="font-semibold text-slate-900">Próximas consultas</h2>
           <Link href="/organization/appointments" className="text-sm text-indigo-600 hover:text-indigo-700">
             Ver agenda
           </Link>

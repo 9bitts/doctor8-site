@@ -87,12 +87,12 @@ export default function OrganizationLedgerPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 break-words">Contas a pagar e receber</h1>
-          <p className="text-slate-500 text-sm mt-1">Fluxo financeiro da cl?nica</p>
+          <p className="text-slate-500 text-sm mt-1">Fluxo financeiro da cl\u00ednica</p>
         </div>
         {canManage && (
           <button onClick={() => setShowForm(!showForm)}
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-indigo-500 min-h-[44px]">
-            <Plus size={16} /> Novo lan?amento
+            <Plus size={16} /> Novo lan\u00e7amento
           </button>
         )}
       </div>
@@ -114,7 +114,7 @@ export default function OrganizationLedgerPage() {
       {summary.overdueCount > 0 && (
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-800 text-sm">
           <AlertTriangle size={16} />
-          {summary.overdueCount} lan?amento(s) vencido(s)
+          {summary.overdueCount} lan\u00e7amento(s) vencido(s)
         </div>
       )}
 
@@ -130,7 +130,7 @@ export default function OrganizationLedgerPage() {
               onChange={(e) => setForm({ ...form, category: e.target.value })}
               className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
           </div>
-          <input required placeholder="Descri??o" value={form.description}
+          <input required placeholder="Descri\u00e7\u00e3o" value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
           <div className="flex gap-3">
@@ -143,7 +143,7 @@ export default function OrganizationLedgerPage() {
           </div>
           <button type="submit" disabled={saving}
             className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium disabled:opacity-50">
-            {saving ? "Salvando?" : "Salvar lan?amento"}
+            {saving ? "Salvando\u2026" : "Salvar lan\u00e7amento"}
           </button>
         </form>
       )}
@@ -153,21 +153,21 @@ export default function OrganizationLedgerPage() {
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
           {entries.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-12">Nenhum lan?amento ainda.</p>
+            <p className="text-slate-400 text-sm text-center py-12">Nenhum lan\u00e7amento ainda.</p>
           ) : entries.map((e) => (
             <div key={e.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-5 py-4">
               <div className="min-w-0">
                 <p className="font-medium text-slate-900">{e.description}</p>
                 <p className="text-xs text-slate-500">
                   {e.type === "INCOME" ? "Receita" : "Despesa"}
-                  {e.category ? ` ? ${e.category}` : ""}
-                  {e.dueDate ? ` ? Venc. ${new Date(e.dueDate).toLocaleDateString("pt-BR")}` : ""}
-                  {e.isOverdue && <span className="text-amber-600 ml-1">? Vencido</span>}
+                  {e.category ? ` \u00b7 ${e.category}` : ""}
+                  {e.dueDate ? ` \u00b7 Venc. ${new Date(e.dueDate).toLocaleDateString("pt-BR")}` : ""}
+                  {e.isOverdue && <span className="text-amber-600 ml-1">\u00b7 Vencido</span>}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <span className={`font-semibold ${e.type === "INCOME" ? "text-emerald-600" : "text-red-600"}`}>
-                  {e.type === "EXPENSE" ? "?" : "+"}{fmt(e.amountCents, currency)}
+                  {e.type === "EXPENSE" ? "\u2212" : "+"}{fmt(e.amountCents, currency)}
                 </span>
                 {e.status === "PENDING" && canManage && (
                   <button onClick={() => markPaid(e.id)} title="Marcar como pago"

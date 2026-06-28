@@ -47,8 +47,8 @@ export default function OrganizationFinanceiroPage() {
   }, [period]);
 
   const periods = [
-    { value: "this_month", label: "Este m?s" },
-    { value: "last_month", label: "M?s passado" },
+    { value: "this_month", label: "Este m\u00eas" },
+    { value: "last_month", label: "M\u00eas passado" },
     { value: "3_months", label: "3 meses" },
     { value: "this_year", label: "Este ano" },
   ];
@@ -81,7 +81,7 @@ export default function OrganizationFinanceiroPage() {
             {[
               { label: "Receita bruta", value: fmt(totalGross, currency), color: "text-slate-900" },
               { label: "Repasse profissionais", value: fmt(totalProfessional, currency), color: "text-violet-600" },
-              { label: "Receita da cl?nica", value: fmt(totalClinic, currency), color: "text-indigo-600" },
+              { label: "Receita da cl\u00ednica", value: fmt(totalClinic, currency), color: "text-indigo-600" },
             ].map((card) => (
               <div key={card.label} className="bg-white rounded-2xl border border-slate-200 p-5">
                 <div className="flex items-center gap-2 mb-2">
@@ -96,7 +96,7 @@ export default function OrganizationFinanceiroPage() {
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
             <h2 className="font-semibold text-slate-900 mb-4">Por profissional</h2>
             {byProfessional.length === 0 ? (
-              <p className="text-slate-400 text-sm">Sem receitas no per?odo.</p>
+              <p className="text-slate-400 text-sm">Sem receitas no per\u00edodo.</p>
             ) : (
               <div className="space-y-3">
                 {byProfessional.map((p) => (
@@ -104,12 +104,12 @@ export default function OrganizationFinanceiroPage() {
                     <div>
                       <p className="font-medium text-slate-900">{p.name}</p>
                       <p className="text-xs text-slate-500">
-                        {p.count} consulta{p.count !== 1 ? "s" : ""} ? repasse {p.repassePercent}%
+                        {p.count} consulta{p.count !== 1 ? "s" : ""} \u00b7 repasse {p.repassePercent}%
                       </p>
                     </div>
                     <div className="text-right text-sm">
                       <p className="text-violet-600 font-medium">{fmt(p.professionalCents, currency)}</p>
-                      <p className="text-slate-400 text-xs">Cl?nica: {fmt(p.clinicCents, currency)}</p>
+                      <p className="text-slate-400 text-xs">Cl\u00ednica: {fmt(p.clinicCents, currency)}</p>
                     </div>
                   </div>
                 ))}

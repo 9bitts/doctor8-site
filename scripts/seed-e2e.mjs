@@ -25,6 +25,15 @@ const POOLS = [
   { slug: "psicologo", labelEs: "Psic\u00f3logo", labelPt: "Psic\u00f3logo", labelEn: "Psychologist", maxWaiting: 200, sortOrder: 2 },
 ];
 
+const DEFAULT_QUEUE_PATIENT = {
+  email: process.env.E2E_QUEUE_PATIENT_EMAIL || "e2e-queue-patient@doctor8.test",
+  password: process.env.E2E_QUEUE_PATIENT_PASSWORD || "TestPassword1!",
+  firstName: "E2E",
+  lastName: "Queue",
+};
+
+const E2E_QUEUE_PHONE = "+584121234567";
+
 const DEFAULT_PROFESSIONAL = {
   email: process.env.E2E_PROFESSIONAL_EMAIL || "e2e-volunteer@doctor8.test",
   password: process.env.E2E_PROFESSIONAL_PASSWORD || "TestPassword1!",
@@ -75,7 +84,7 @@ async function seedCampaign() {
   console.log(`[seed-e2e] Campaign ${VENEZUELA_SLUG} ready`);
 }
 
-async function seedPatient({ email, password, firstName, lastName }) {
+async function seedPatient({ email, password, firstName, lastName, phone }) {
   const passwordHash = await bcrypt.hash(password, 12);
   const normalized = email.toLowerCase();
 
@@ -106,10 +115,12 @@ async function seedPatient({ email, password, firstName, lastName }) {
       userId: user.id,
       firstName: encrypt(firstName),
       lastName: encrypt(lastName),
+      ...(phone ? { phone: encrypt(phone) } : {}),
     },
     update: {
       firstName: encrypt(firstName),
       lastName: encrypt(lastName),
+      ...(phone ? { phone: encrypt(phone) } : {}),
     },
   });
 
@@ -324,11 +335,77 @@ async function seedHumanitarianVideoFixtures() {
   console.log("[seed-e2e] Humanitarian CALLED queue entry ready for video E2E");
 }
 
+async function seedHumanitarianQueueFixtures() {
+  const campaign = await prisma.humanitarianCampaign.findUnique({
+    where: { slug: VENEZUELA_SLUG },
+    select: { id: true },
+  });
+  if (!campaign) throw new Error("Campaign missing ? run seedCampaign first");
+
+  await seedPatient({ ...DEFAULT_QUEUE_PATIENT, phone: E2E_QUEUE_PHONE });
+
+  const patient = await prisma.user.findUnique({
+    where: { email: DEFAULT_QUEUE_PATIENT.email.toLowerCase() },
+    select: { id: true },
+  });
+  if (!patient) throw new Error("Queue patient missing");
+
+  await prisma.consent.upsert({
+    where: {
+      userId_type_version: {
+        userId: patient.id,
+        type: ConsentType.TELEMEDICINE_TCLE,
+        version: TELEMEDICINE_TCLE_VERSION,
+      },
+    },
+    create: {
+      userId: patient.id,
+      type: ConsentType.TELEMEDICINE_TCLE,
+      version: TELEMEDICINE_TCLE_VERSION,
+      granted: true,
+      grantedAt: new Date(),
+      ipAddress: "127.0.0.1",
+      userAgent: "seed-e2e",
+    },
+    update: { granted: true, revokedAt: null, grantedAt: new Date() },
+  });
+
+  await prisma.humanitarianIntake.upsert({
+    where: {
+      campaignId_patientUserId: { campaignId: campaign.id, patientUserId: patient.id },
+    },
+    create: {
+      campaignId: campaign.id,
+      patientUserId: patient.id,
+      status: "COMPLETE",
+      triageCompletedAt: new Date(),
+      computedPriority: "ROUTINE",
+      telemedicineTcleAt: new Date(),
+      telemedicineTcleVersion: TELEMEDICINE_TCLE_VERSION,
+      consentAt: new Date(),
+    },
+    update: {
+      status: "COMPLETE",
+      triageCompletedAt: new Date(),
+      computedPriority: "ROUTINE",
+      telemedicineTcleAt: new Date(),
+      telemedicineTcleVersion: TELEMEDICINE_TCLE_VERSION,
+    },
+  });
+
+  await prisma.humanitarianQueueEntry.deleteMany({
+    where: { patientUserId: patient.id, campaignId: campaign.id },
+  });
+
+  console.log("[seed-e2e] Queue patient ready (intake complete, no queue entry)");
+}
+
 async function main() {
   await seedCampaign();
   await seedPatient(DEFAULT_PATIENT);
   await seedProfessional(DEFAULT_PROFESSIONAL);
   await seedHumanitarianVideoFixtures();
+  await seedHumanitarianQueueFixtures();
 }
 
 main()

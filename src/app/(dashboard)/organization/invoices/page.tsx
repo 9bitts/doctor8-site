@@ -54,7 +54,7 @@ export default function OrganizationInvoicesPage() {
         <Receipt className="text-indigo-600" size={24} />
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Notas fiscais (NFS-e)</h1>
-          <p className="text-slate-500 text-sm">Emissao manual ? integracao Focus NFe na proxima versao</p>
+          <p className="text-slate-500 text-sm">Emissão manual — integração Focus NFe na próxima versão</p>
         </div>
       </div>
 

@@ -102,7 +102,7 @@ export default function OrganizationHrPage() {
                     <p className="font-medium">{e.fullName}</p>
                     <p className="text-slate-500">{e.employmentType} {e.jobTitle ? `- ${e.jobTitle}` : ""}</p>
                   </div>
-                  {e.salaryCents ? <span>{fmt(e.salaryCents)}/mes</span> : null}
+                  {e.salaryCents ? <span>{fmt(e.salaryCents)}/mês</span> : null}
                 </div>
               ))}
             </div>

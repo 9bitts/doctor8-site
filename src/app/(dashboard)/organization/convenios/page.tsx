@@ -170,7 +170,7 @@ export default function OrganizationConveniosPage() {
             {guides.map((g) => (
               <div key={g.id} className="px-5 py-3 flex justify-between text-sm">
                 <span>{g.guideNumber} - {g.patientName} ({g.operatorName})</span>
-                <span className="font-medium">{fmt(g.amountCents)} ? {g.status}</span>
+                <span className="font-medium">{fmt(g.amountCents)} · {g.status}</span>
               </div>
             ))}
           </div>
@@ -186,7 +186,7 @@ export default function OrganizationConveniosPage() {
             <div key={b.id} className="px-5 py-4 flex items-center justify-between">
               <div>
                 <p className="font-medium">{b.batchNumber} - {b.operatorName}</p>
-                <p className="text-xs text-slate-500">{b.guideCount} guias ? {fmt(b.totalAmountCents)} ? {b.status}</p>
+                <p className="text-xs text-slate-500">{b.guideCount} guias · {fmt(b.totalAmountCents)} · {b.status}</p>
               </div>
               <button onClick={() => exportBatch(b.id, b.batchNumber)}
                 className="flex items-center gap-1 text-indigo-600 text-sm font-medium hover:text-indigo-700">

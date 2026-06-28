@@ -11,6 +11,17 @@ export function e2ePatientCredentials(): { email: string; password: string } | n
   return { email, password };
 }
 
+export function e2eQueuePatientCredentials(): { email: string; password: string } | null {
+  const email =
+    process.env.E2E_QUEUE_PATIENT_EMAIL?.trim() ||
+    (process.env.CI ? "e2e-queue-patient@doctor8.test" : undefined);
+  const password =
+    process.env.E2E_QUEUE_PATIENT_PASSWORD?.trim() ||
+    (process.env.CI ? "TestPassword1!" : undefined);
+  if (!email || !password) return null;
+  return { email, password };
+}
+
 export function e2eProfessionalCredentials(): { email: string; password: string } | null {
   const email =
     process.env.E2E_PROFESSIONAL_EMAIL?.trim() ||

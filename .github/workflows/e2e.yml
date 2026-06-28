@@ -38,6 +38,8 @@ jobs:
       E2E_PATIENT_PASSWORD: TestPassword1!
       E2E_PROFESSIONAL_EMAIL: e2e-volunteer@doctor8.test
       E2E_PROFESSIONAL_PASSWORD: TestPassword1!
+      E2E_QUEUE_PATIENT_EMAIL: e2e-queue-patient@doctor8.test
+      E2E_QUEUE_PATIENT_PASSWORD: TestPassword1!
       E2E_MOCK_DAILY: "1"
 
     steps:
