@@ -6,11 +6,14 @@ import { getProfessionLabel } from "@/lib/professions";
 import type { PublicProfileData } from "@/lib/public-profile";
 import PublicBookingPanel from "@/components/public/PublicBookingPanel";
 import PublicProfileTracker from "@/components/public/PublicProfileTracker";
+import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
+import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 
 export default function EmbedBookingClient({ profile }: { profile: PublicProfileData }) {
   const { lang, t } = useI18n();
   const name = `${profile.firstName} ${profile.lastName}`.trim();
   const specialtyLabel = getProfessionLabel(lang, profile.specialty);
+  const showAcuraBadge = isAcuraVolunteerProvider(profile.verified, profile.acuraVolunteer);
 
   return (
     <>
@@ -32,6 +35,11 @@ export default function EmbedBookingClient({ profile }: { profile: PublicProfile
           <div className="min-w-0">
             <p className="font-bold text-slate-900 truncate">{name}</p>
             <p className="text-sm text-brand-600 truncate">{specialtyLabel}</p>
+            {showAcuraBadge && (
+              <div className="mt-1">
+                <AcuraVolunteerBadge />
+              </div>
+            )}
           </div>
         </div>
 

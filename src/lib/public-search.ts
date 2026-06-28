@@ -47,6 +47,7 @@ export type PublicSearchResult = {
   publicPath: string;
   slotPreview: DaySlots[];
   nextSlotAt: string | null;
+  acuraVolunteer: boolean;
 };
 
 export type PublicSearchSort =
@@ -280,6 +281,7 @@ export async function searchPublicListings(
         locationCount: locRows.length,
         slotPreview,
         nextSlotAt,
+        acuraVolunteer: p.acuraVolunteer,
       });
     }
   }
@@ -369,6 +371,7 @@ export async function searchPublicListings(
         locationCount: locRows.length,
         slotPreview,
         nextSlotAt,
+        acuraVolunteer: p.acuraVolunteer,
       });
     }
   }

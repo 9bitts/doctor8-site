@@ -10,6 +10,8 @@ import {
 import type { PublicSearchResult } from "@/lib/public-search";
 import { cityToSeoSlug } from "@/lib/public-slugs";
 import { trackPublicBookClick } from "@/components/public/PublicProfileTracker";
+import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
+import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 
 function StarRating({ avg, count }: { avg: number | null; count: number }) {
   if (!avg || count === 0) return null;
@@ -54,6 +56,7 @@ export default function PublicResultCard({
         minute: "2-digit",
       })
     : null;
+  const showAcuraBadge = isAcuraVolunteerProvider(true, pro.acuraVolunteer);
 
   return (
     <article className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition">
@@ -95,6 +98,7 @@ export default function PublicResultCard({
           </div>
 
           <div className="flex flex-wrap gap-1.5 mt-3">
+            {showAcuraBadge && <AcuraVolunteerBadge />}
             {pro.acceptsTeleconsult && (
               <span className="text-[10px] font-medium bg-brand-50 text-brand-700 px-2 py-1 rounded-full inline-flex items-center gap-1">
                 <Video size={10} /> {t("pub.teleconsult")}

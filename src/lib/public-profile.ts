@@ -81,6 +81,7 @@ export type PublicProfileData = {
   googleBusinessUrl: string | null;
   locations: PracticeLocationDto[];
   services: ProviderServiceDto[];
+  acuraVolunteer: boolean;
 };
 
 async function uniqueSlug(base: string): Promise<string> {
@@ -200,6 +201,7 @@ function mapCardToPublicProfile(
       clinicLatitude: number | null;
       clinicLongitude: number | null;
       verified: boolean;
+      acuraVolunteer: boolean;
     } | null;
     psychoanalyst: {
       id: string;
@@ -223,6 +225,7 @@ function mapCardToPublicProfile(
       clinicLatitude: number | null;
       clinicLongitude: number | null;
       verified: boolean;
+      acuraVolunteer: boolean;
     } | null;
   },
   reviews: { avg: number | null; count: number }
@@ -266,6 +269,7 @@ function mapCardToPublicProfile(
       googleBusinessUrl: card.googleBusinessUrl,
       locations: [],
       services: [],
+      acuraVolunteer: p.acuraVolunteer,
     };
   }
 
@@ -307,6 +311,7 @@ function mapCardToPublicProfile(
       googleBusinessUrl: card.googleBusinessUrl,
       locations: [],
       services: [],
+      acuraVolunteer: p.acuraVolunteer,
     };
   }
 

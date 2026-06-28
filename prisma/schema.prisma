@@ -515,6 +515,9 @@ model ProfessionalProfile {
   verifiedAt      DateTime?
   verifiedBy      String?
 
+  // AcuraBrasil volunteer badge (opt-in; shown on booking cards + public profile)
+  acuraVolunteer  Boolean  @default(false)
+
   // Payouts (rateio) — conta Stripe Connect para receber o rateio mensal
   stripeConnectAccountId String?
 
@@ -610,6 +613,8 @@ model PsychoanalystProfile {
   verifiedAt      DateTime?
   verifiedBy      String?
 
+  acuraVolunteer  Boolean  @default(false)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -687,6 +692,8 @@ model IntegrativeTherapistProfile {
   verified        Boolean  @default(false)
   verifiedAt      DateTime?
   verifiedBy      String?
+
+  acuraVolunteer  Boolean  @default(false)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

@@ -15,6 +15,8 @@ import { getProfessionInfo } from "@/lib/profession-label";
 import { parseLocalDate } from "@/lib/scheduling";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import ReviewPromptModal from "@/components/ReviewPromptModal";
+import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
+import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
   CreditCard, Loader2, CheckCircle2, AlertCircle, Star, MapPin, Lock,
@@ -43,6 +45,8 @@ interface Professional {
   license?: string | null;
   trainingInstitution?: string | null;
   yearsOfPractice?: number | null;
+  acuraVolunteer?: boolean;
+  verified?: boolean;
 }
 
 interface SlotDay {
@@ -110,6 +114,7 @@ export default function AppointmentsPage() {
   const [error, setError]                 = useState("");
   const [search, setSearch]               = useState("");
   const [specialty, setSpecialty]         = useState("All");
+  const [volunteersOnly, setVolunteersOnly] = useState(false);
   const [type, setType]                   = useState<"TELECONSULT" | "IN_PERSON">("TELECONSULT");
   const [appointments, setAppointments]   = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
@@ -562,7 +567,8 @@ export default function AppointmentsPage() {
   const filtered = professionals.filter((p) => {
     const matchSearch = search === "" || `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) || specialtyMatchesSearch(lang, p.specialty, search);
     const matchSpec   = matchesSpecialtyFilter(specialty, p);
-    return matchSearch && matchSpec;
+    const matchVolunteer = !volunteersOnly || isAcuraVolunteerProvider(!!p.verified, !!p.acuraVolunteer);
+    return matchSearch && matchSpec && matchVolunteer;
   });
 
   const selectedService = providerServices.find((s) => s.id === selectedServiceId);
@@ -721,6 +727,13 @@ export default function AppointmentsPage() {
                   {specialtyFilterLabel(s)}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setVolunteersOnly((v) => !v)}
+                className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-semibold transition border ${volunteersOnly ? "bg-sky-500 text-white border-sky-500" : "bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100"}`}
+              >
+                {t("acura.vol.filter")}
+              </button>
             </div>
           </div>
 
@@ -1199,6 +1212,7 @@ function ProAvatar({ pro, className = "w-14 h-14 rounded-2xl" }: { pro: Pick<Pro
 
 function DoctorCard({ pro, onSelect, locale, lang, t }: { pro: Professional; onSelect: () => void; locale: string; lang: Lang; t: (k: string) => string }) {
   const isAnalyst = pro.providerType === "psychoanalyst";
+  const showAcuraBadge = isAcuraVolunteerProvider(!!pro.verified, !!pro.acuraVolunteer);
   const displayName = isAnalyst
     ? `${pro.firstName} ${pro.lastName}`
     : `Dr. ${pro.firstName} ${pro.lastName}`;
@@ -1230,7 +1244,8 @@ function DoctorCard({ pro, onSelect, locale, lang, t }: { pro: Professional; onS
         </div>
       </div>
       {pro.bio && <p className="text-xs text-slate-500 mt-3 line-clamp-2">{pro.bio}</p>}
-      <div className="flex items-center gap-2 mt-4">
+      <div className="flex items-center gap-2 mt-4 flex-wrap">
+        {showAcuraBadge && <AcuraVolunteerBadge />}
         {pro.acceptsTeleconsult && <span className="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium"><Video size={11} /> {t("appt.online")}</span>}
         {pro.acceptsInPerson && <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium"><Building2 size={11} /> {t("appt.inPerson")}</span>}
         <button className="ml-auto flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800">{t("appt.book")} <ChevronRight size={13} /></button>

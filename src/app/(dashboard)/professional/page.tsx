@@ -18,6 +18,7 @@ import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
 import MarketPricingCard from "@/components/professional/MarketPricingCard";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
+import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
@@ -206,6 +207,11 @@ export default async function ProfessionalDashboard() {
         lang={lang}
         campaignActive={!!humanitarianCampaign?.active}
         volunteer={humanitarianVolunteer}
+      />
+
+      <AcuraVolunteerOptIn
+        initialChecked={professional.acuraVolunteer}
+        verified={professional.verified}
       />
 
       <DoctorConnectionBanner

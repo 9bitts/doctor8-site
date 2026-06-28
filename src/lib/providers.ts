@@ -36,6 +36,7 @@ export interface UnifiedProvider {
   verified: boolean;
   sessionDurationMins: number;
   virtualCardSlug: string | null;
+  acuraVolunteer: boolean;
 }
 
 type ListOpts = {
@@ -91,6 +92,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
           licenseState: true,
           verified: true,
           virtualCard: { select: { slug: true } },
+          acuraVolunteer: true,
         },
         orderBy: { firstName: "asc" },
         take,
@@ -126,6 +128,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
           associations: true,
           verified: true,
           sessionDurationMins: true,
+          acuraVolunteer: true,
         },
         orderBy: { firstName: "asc" },
         take,
@@ -161,6 +164,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
         verified: p.verified,
         sessionDurationMins: 30,
         virtualCardSlug: p.virtualCard?.slug ?? null,
+        acuraVolunteer: p.acuraVolunteer,
       };
     });
 
@@ -190,6 +194,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
     verified: p.verified,
     sessionDurationMins: p.sessionDurationMins,
     virtualCardSlug: null,
+    acuraVolunteer: p.acuraVolunteer,
   }));
 
   return [...healthMapped, ...analystMapped]
@@ -226,6 +231,7 @@ export async function getUnifiedProvider(
         licenseState: true,
         verified: true,
         virtualCard: { select: { slug: true } },
+        acuraVolunteer: true,
       },
     });
     if (!p) return null;
@@ -256,6 +262,7 @@ export async function getUnifiedProvider(
       verified: p.verified,
       sessionDurationMins: 30,
       virtualCardSlug: p.virtualCard?.slug ?? null,
+      acuraVolunteer: p.acuraVolunteer,
     };
   }
 
@@ -283,6 +290,7 @@ export async function getUnifiedProvider(
       associations: true,
       verified: true,
       sessionDurationMins: true,
+      acuraVolunteer: true,
     },
   });
   if (!p) return null;
@@ -312,6 +320,7 @@ export async function getUnifiedProvider(
     verified: p.verified,
     sessionDurationMins: p.sessionDurationMins,
     virtualCardSlug: null,
+    acuraVolunteer: p.acuraVolunteer,
   };
 }
 

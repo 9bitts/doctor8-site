@@ -19,6 +19,8 @@ import PublicProfilePlaces from "@/components/public/PublicProfilePlaces";
 import PublicServicesList from "@/components/public/PublicServicesList";
 import PublicReviewsSection from "@/components/public/PublicReviewsSection";
 import PublicProfileTracker from "@/components/public/PublicProfileTracker";
+import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
+import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 
 export async function generateMetadata({
   params,
@@ -85,6 +87,7 @@ export default async function PublicSpecialistPage({
   const jsonLd = buildPhysicianJsonLd(profile, buildPublicProfileUrl(profile));
 
   const currency = profile.currency || "BRL";
+  const showAcuraBadge = isAcuraVolunteerProvider(profile.verified, profile.acuraVolunteer);
 
   return (
     <>
@@ -139,6 +142,11 @@ export default async function PublicSpecialistPage({
                     )}
                   </div>
                   <p className="text-brand-600 font-medium mt-0.5">{specialtyLabel}</p>
+                  {showAcuraBadge && (
+                    <div className="mt-2">
+                      <AcuraVolunteerBadge size="md" />
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 mt-2 flex-wrap">
                     <StarRating avg={profile.ratingAvg} count={profile.ratingCount} />
                     {profile.license && (

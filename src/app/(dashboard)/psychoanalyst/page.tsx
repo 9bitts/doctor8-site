@@ -8,6 +8,7 @@ import { decryptPsychoanalystNameFields, safeDecrypt } from "@/lib/psychoanalyst
 import { Calendar, Users, ChevronRight, Video, Settings, FileText } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
+import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
@@ -82,6 +83,11 @@ export default async function PsychoanalystDashboard() {
         lang={lang}
         campaignActive={!!humanitarianCampaign?.active}
         volunteer={humanitarianVolunteer}
+      />
+
+      <AcuraVolunteerOptIn
+        initialChecked={profile.acuraVolunteer}
+        verified={profile.verified}
       />
 
       <DoctorConnectionBanner

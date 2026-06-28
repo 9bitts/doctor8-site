@@ -9,6 +9,7 @@ import { picBySlug, picLabel } from "@/lib/pics/practices";
 import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
+import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
@@ -72,6 +73,11 @@ export default async function IntegrativeTherapistDashboard() {
         lang={lang}
         campaignActive={!!humanitarianCampaign?.active}
         volunteer={humanitarianVolunteer}
+      />
+
+      <AcuraVolunteerOptIn
+        initialChecked={profile.acuraVolunteer}
+        verified={profile.verified}
       />
 
       <div>
