@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Copy, Loader2, Users, Stethoscope, CheckCircle2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type Staff = { id: string; email: string; role: string; status: string };
 type Prof = {
@@ -15,6 +16,7 @@ type Prof = {
 };
 
 export default function OrganizationTeamPage() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [professionals, setProfessionals] = useState<Prof[]>([]);
@@ -89,15 +91,13 @@ export default function OrganizationTeamPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Equipe</h1>
-        <p className="text-slate-500 text-sm mt-1">Colaboradores e profissionais vinculados</p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("org.team.title")}</h1>
+        <p className="text-slate-500 text-sm mt-1">{t("org.team.subtitle")}</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <h2 className="font-semibold text-slate-900 mb-2">Código para profissionais</h2>
-        <p className="text-sm text-slate-500 mb-4">
-          Médicos cadastrados no Doctor8 podem vincular-se à clínica em Configurações → Organização, usando este código.
-        </p>
+        <h2 className="font-semibold text-slate-900 mb-2">{t("org.team.inviteCodeTitle")}</h2>
+        <p className="text-sm text-slate-500 mb-4">{t("org.team.inviteCodeDesc")}</p>
         <div className="flex items-center gap-3">
           <code className="flex-1 bg-slate-100 rounded-xl px-4 py-3 text-sm font-mono text-slate-800 truncate">
             {inviteCode}
@@ -107,7 +107,7 @@ export default function OrganizationTeamPage() {
             className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-3 rounded-xl text-sm font-medium hover:bg-indigo-500 transition"
           >
             {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-            {copied ? "Copiado!" : "Copiar"}
+            {copied ? t("org.team.copied") : t("org.team.copy")}
           </button>
         </div>
       </div>
@@ -115,10 +115,12 @@ export default function OrganizationTeamPage() {
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
         <div className="flex items-center gap-2 mb-4">
           <Stethoscope size={18} className="text-violet-600" />
-          <h2 className="font-semibold text-slate-900">Profissionais ({professionals.length})</h2>
+          <h2 className="font-semibold text-slate-900">
+            {t("org.team.professionals").replace("{{n}}", String(professionals.length))}
+          </h2>
         </div>
         {professionals.length === 0 ? (
-          <p className="text-slate-400 text-sm">Nenhum profissional vinculado ainda.</p>
+          <p className="text-slate-400 text-sm">{t("org.team.noProfessionals")}</p>
         ) : (
           <div className="space-y-3">
             {professionals.map((p) => (
@@ -128,7 +130,7 @@ export default function OrganizationTeamPage() {
                   <p className="text-xs text-slate-500">{p.specialty} · {p.email}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs text-slate-500">Repasse %</label>
+                  <label className="text-xs text-slate-500">{t("org.team.repasse")}</label>
                   <input
                     type="number"
                     min={0}
@@ -146,7 +148,7 @@ export default function OrganizationTeamPage() {
                     onClick={() => saveRepasse(p.professionalId)}
                     className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
                   >
-                    Salvar
+                    {t("common.save")}
                   </button>
                 </div>
               </div>
@@ -158,7 +160,9 @@ export default function OrganizationTeamPage() {
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
         <div className="flex items-center gap-2 mb-4">
           <Users size={18} className="text-indigo-600" />
-          <h2 className="font-semibold text-slate-900">Colaboradores ({staff.length})</h2>
+          <h2 className="font-semibold text-slate-900">
+            {t("org.team.staff").replace("{{n}}", String(staff.length))}
+          </h2>
         </div>
         <div className="space-y-2 mb-6">
           {staff.map((m) => (
@@ -173,7 +177,7 @@ export default function OrganizationTeamPage() {
           <form onSubmit={inviteStaff} className="flex flex-wrap gap-3 pt-4 border-t border-slate-100">
             <input
               type="email"
-              placeholder="E-mail do colaborador"
+              placeholder={t("org.team.staffEmailPlaceholder")}
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               className="flex-1 min-w-[200px] border border-slate-200 rounded-xl px-4 py-2 text-sm"
@@ -194,7 +198,7 @@ export default function OrganizationTeamPage() {
               disabled={inviting}
               className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-500 disabled:opacity-50"
             >
-              {inviting ? "Enviando…" : "Convidar"}
+              {inviting ? t("org.team.inviting") : t("org.team.invite")}
             </button>
           </form>
         )}

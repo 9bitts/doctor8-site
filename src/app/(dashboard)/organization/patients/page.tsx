@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Search, Users } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type Patient = {
   id: string;
@@ -14,6 +15,7 @@ type Patient = {
 };
 
 export default function OrganizationPatientsPage() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [query, setQuery] = useState("");
@@ -37,8 +39,8 @@ export default function OrganizationPatientsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Pacientes</h1>
-        <p className="text-slate-500 text-sm mt-1">Visão consolidada de todos os profissionais</p>
+        <h1 className="text-2xl font-bold text-slate-900">{t("org.patients.title")}</h1>
+        <p className="text-slate-500 text-sm mt-1">{t("org.patients.subtitle")}</p>
       </div>
 
       <form onSubmit={handleSearch} className="relative">
@@ -46,7 +48,7 @@ export default function OrganizationPatientsPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nome ou e-mail…"
+          placeholder={t("org.patients.searchPlaceholder")}
           className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
         />
       </form>
@@ -58,7 +60,7 @@ export default function OrganizationPatientsPage() {
       ) : patients.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
           <Users className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="text-slate-500">Nenhum paciente encontrado.</p>
+          <p className="text-slate-500">{t("org.patients.empty")}</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
@@ -70,12 +72,12 @@ export default function OrganizationPatientsPage() {
                 </p>
                 <p className="text-sm text-slate-500">
                   {p.professionalName}
-                  {p.specialty ? ` \u00b7 ${p.specialty}` : ""}
+                  {p.specialty ? ` · ${p.specialty}` : ""}
                 </p>
                 {p.email && <p className="text-xs text-slate-400 mt-0.5">{p.email}</p>}
               </div>
               <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">
-                {p.appointmentCount} consulta{p.appointmentCount !== 1 ? "s" : ""}
+                {t("org.patients.appointments").replace("{{n}}", String(p.appointmentCount))}
               </span>
             </div>
           ))}

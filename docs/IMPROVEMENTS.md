@@ -8,7 +8,6 @@ Lista viva de melhorias propostas e status. Lotes pequenos, baixo risco ao fluxo
 
 | # | Item | Prioridade | Notas |
 |---|------|------------|-------|
-| **M1** | **Google Meet com legendas traduzidas** | Alta (BR ↔ VE) | Ver spec abaixo — espelha handoff WhatsApp |
 | M2 | WhatsApp Business API (templates Meta) | Média | Aguardando aprovação Meta; código i18n pronto |
 | M3 | Sentry em produção | Baixa | Só ativa com `SENTRY_DSN` |
 | M4 | Gravação cloud Daily | Baixa | Off por padrão; avaliar custo antes |
@@ -107,6 +106,9 @@ GOOGLE_CALENDAR_ID=primary
 | Conta pro Doctor Connection + admin providers parcial (Lote 40) | OK |
 | Admin providers completo + pacientes admin (Lote 41) | OK |
 | Admin pagamentos + audit + JIT events (Lote 42) | OK |
+| Admin humanitário i18n (Lote 43) | OK |
+| Organization team/patients/ledger/convenios i18n (Lote 43) | OK |
+| Google Meet handoff humanitário MVP (M1) | OK — Calendar API + `GOOGLE_MEET_ENABLED=1` |
 
 ---
 

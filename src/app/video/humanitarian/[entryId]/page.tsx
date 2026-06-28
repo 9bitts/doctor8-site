@@ -19,6 +19,15 @@ export default function HumanitarianVideoPage() {
           },
         };
       }
+      if (d.error === "MEET_HANDOFF") {
+        return {
+          meetHandoff: {
+            professionalName: d.professionalName || "",
+            campaignSlug: d.campaignSlug,
+            meetUrl: d.meetUrl,
+          },
+        };
+      }
       if (d.error === "TCLE_REQUIRED") {
         window.location.href = `/humanitarian/venezuela-terremoto-2026/tcle?return=${encodeURIComponent(`/video/humanitarian/${entryId}`)}`;
         return { error: "Redirecting to consent form..." };

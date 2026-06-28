@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Heart, Loader2, Power, PowerOff, Phone, Users, Radio,
-  CheckCircle2, AlertCircle, MessageCircle,
+  CheckCircle2, AlertCircle, MessageCircle, Video,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
@@ -78,6 +78,7 @@ export default function HumanitarianVolunteerPage() {
   const [toggling, setToggling] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
   const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [meetLoading, setMeetLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -211,6 +212,37 @@ export default function HumanitarianVolunteerPage() {
     setWhatsappLoading(false);
   }
 
+  async function requestGoogleMeetContact() {
+    if (!currentEntry) return;
+    setMeetLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/humanitarian/queue/${currentEntry.id}/google-meet-contact`,
+        { method: "POST" },
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setError(
+          data.error === "MEET_DISABLED"
+            ? t(lang, "hum.vol.meetDisabled")
+            : data.error === "MEET_CREATE_FAILED"
+              ? t(lang, "hum.vol.meetCreateFailed")
+              : data.message || t(lang, "hum.page.networkError"),
+        );
+        return;
+      }
+      if (data.meetUrl) {
+        window.open(data.meetUrl, "_blank", "noopener,noreferrer");
+      }
+      setCurrentEntry(null);
+      await load();
+    } catch {
+      setError(t(lang, "hum.page.networkError"));
+    }
+    setMeetLoading(false);
+  }
+
   async function completeConsultation() {
     if (!currentEntry) return;
     setCompleting(true);
@@ -309,6 +341,19 @@ export default function HumanitarianVolunteerPage() {
                   <MessageCircle size={16} />
                 )}
                 {t(lang, "hum.vol.requestWhatsApp")}
+              </button>
+              <button
+                type="button"
+                onClick={requestGoogleMeetContact}
+                disabled={meetLoading}
+                className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {meetLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Video size={16} />
+                )}
+                {t(lang, "hum.vol.requestMeet")}
               </button>
               <button
                 type="button"

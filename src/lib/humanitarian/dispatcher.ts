@@ -3,6 +3,7 @@ import { decrypt } from "@/lib/encryption";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { ensureAnalysandForPatient, ensureIntegrativeClientForPatient } from "@/lib/providers";
 import { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
+import { createHumanitarianMeetLink } from "@/lib/google-meet";
 import { logDailyRecording } from "@/lib/daily-recording-log";
 import { DEFAULT_VENEZUELA_POOLS, poolLabel } from "@/lib/humanitarian/constants";
 import {
@@ -378,6 +379,94 @@ export async function handoffHumanitarianEntryViaWhatsApp(
   await assignNextInPool(entry.poolId);
 
   return { whatsappUrl, patientName };
+}
+
+export async function handoffHumanitarianEntryViaGoogleMeet(
+  entryId: string,
+  volunteerUserId: string,
+): Promise<{ meetUrl: string; patientName: string }> {
+  const now = new Date();
+
+  const entry = await db.humanitarianQueueEntry.findUnique({
+    where: { id: entryId },
+    include: {
+      volunteer: {
+        include: {
+          professional: { select: { id: true, firstName: true, lastName: true } },
+          psychoanalyst: { select: { id: true, firstName: true, lastName: true } },
+        },
+      },
+      pool: { include: { campaign: { select: { slug: true } } } },
+    },
+  });
+
+  if (!entry?.volunteer || entry.volunteer.userId !== volunteerUserId) {
+    throw new Error("Forbidden");
+  }
+  if (!["CALLED", "IN_PROGRESS"].includes(entry.status)) {
+    throw new Error("NOT_ACTIVE");
+  }
+
+  const patientProfile = await db.patientProfile.findUnique({
+    where: { userId: entry.patientUserId },
+    select: { firstName: true, lastName: true },
+  });
+  const patientName = patientProfile
+    ? `${safeDecrypt(patientProfile.firstName)} ${safeDecrypt(patientProfile.lastName)}`.trim()
+    : "Paciente";
+
+  let volunteerName = "Voluntário Doctor8";
+  if (entry.volunteer.professional) {
+    const p = entry.volunteer.professional;
+    volunteerName = `Dr. ${p.firstName} ${p.lastName}`;
+  } else if (entry.volunteer.psychoanalyst) {
+    const p = entry.volunteer.psychoanalyst;
+    volunteerName = `${p.firstName} ${p.lastName}`;
+  }
+
+  const meetUrl = await createHumanitarianMeetLink({
+    entryId,
+    patientName,
+    volunteerName,
+  });
+
+  await db.$transaction(async (tx) => {
+    const done = await tx.humanitarianQueueEntry.updateMany({
+      where: {
+        id: entryId,
+        status: { in: ["CALLED", "IN_PROGRESS"] },
+        volunteer: { userId: volunteerUserId },
+      },
+      data: {
+        status: "DONE",
+        endedAt: now,
+        completionChannel: "GOOGLE_MEET",
+        meetingUrl: meetUrl,
+      },
+    });
+    if (done.count === 0) throw new Error("Forbidden");
+
+    await tx.humanitarianVolunteer.update({
+      where: { id: entry.volunteerId! },
+      data: { status: "ONLINE", currentEntryId: null },
+    });
+  });
+
+  if (entry.volunteer.professionalId) {
+    await ensurePatientRecord(entry.volunteer.professionalId, entry.patientUserId).catch(() => {});
+  }
+
+  const { notifyHumanitarianMeetHandoff } = await import("@/lib/humanitarian/notify");
+  await notifyHumanitarianMeetHandoff({
+    patientUserId: entry.patientUserId,
+    campaignSlug: entry.pool.campaign.slug,
+    volunteerName,
+    meetUrl,
+  });
+
+  await assignNextInPool(entry.poolId);
+
+  return { meetUrl, patientName };
 }
 
 export async function cancelHumanitarianEntry(

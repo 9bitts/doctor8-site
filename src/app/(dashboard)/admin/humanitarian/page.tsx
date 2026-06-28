@@ -8,6 +8,7 @@ import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianIntakesPanel from "@/components/humanitarian/HumanitarianIntakesPanel";
 import HumanitarianAngelsAdminPanel from "@/components/humanitarian/HumanitarianAngelsAdminPanel";
 import AcuraVolunteersAdminPanel from "@/components/admin/AcuraVolunteersAdminPanel";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface CampaignReport {
   campaignId: string;
@@ -36,6 +37,7 @@ interface CampaignReport {
 }
 
 export default function AdminHumanitarianPage() {
+  const { t } = useI18n();
   const [reports, setReports] = useState<CampaignReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
@@ -102,14 +104,26 @@ export default function AdminHumanitarianPage() {
     setExporting(false);
   }
 
+  const stats = (c: CampaignReport) => [
+    { label: t("admin.humanitarian.statWaiting"), value: c.totals.waiting, icon: Radio, color: "text-amber-600" },
+    { label: t("admin.humanitarian.statInConsult"), value: c.totals.inConsult, icon: Users, color: "text-blue-600" },
+    { label: t("admin.humanitarian.statCompletedToday"), value: c.totals.completedToday, icon: CheckCircle2, color: "text-emerald-600" },
+    {
+      label: t("admin.humanitarian.statVolunteers"),
+      value: `${c.totals.volunteersOnline}/${c.totals.volunteersBusy}`,
+      icon: Heart,
+      color: "text-rose-600",
+    },
+  ];
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Heart size={22} className="text-rose-500" />
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Atenci?n humanitaria</h1>
-            <p className="text-sm text-slate-500">Monitor en tiempo real ? Venezuela</p>
+            <h1 className="text-2xl font-bold text-slate-900">{t("admin.humanitarian.title")}</h1>
+            <p className="text-sm text-slate-500">{t("admin.humanitarian.subtitle")}</p>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -118,7 +132,7 @@ export default function AdminHumanitarianPage() {
             onClick={load}
             className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium flex items-center gap-2"
           >
-            <RefreshCw size={14} /> Atualizar
+            <RefreshCw size={14} /> {t("admin.humanitarian.refresh")}
           </button>
           <button
             type="button"
@@ -127,27 +141,30 @@ export default function AdminHumanitarianPage() {
             className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
           >
             {seeding ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
-            Ativar Venezuela
+            {t("admin.humanitarian.seedVenezuela")}
           </button>
         </div>
       </div>
 
       <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-sm text-rose-900 space-y-2">
-        <p className="font-medium">Enlaces de campa?a</p>
+        <p className="font-medium">{t("admin.humanitarian.linksTitle")}</p>
         <p className="text-rose-800">
-          Landing p?blica: <code className="bg-white/80 px-1 rounded">/sos-venezuela</code>
+          {t("admin.humanitarian.publicLanding")}{" "}
+          <code className="bg-white/80 px-1 rounded">/sos-venezuela</code>
         </p>
         <p className="text-rose-800">
-          Pacientes: <code className="bg-white/80 px-1 rounded">/humanitarian/{VENEZUELA_CAMPAIGN_SLUG}</code>
-          {" ? "}
-          Voluntarios: <code className="bg-white/80 px-1 rounded">/humanitarian/volunteer</code>
+          {t("admin.humanitarian.patientsPath")}{" "}
+          <code className="bg-white/80 px-1 rounded">/humanitarian/{VENEZUELA_CAMPAIGN_SLUG}</code>
+          {" · "}
+          {t("admin.humanitarian.volunteersPath")}{" "}
+          <code className="bg-white/80 px-1 rounded">/humanitarian/volunteer</code>
         </p>
       </div>
 
       {loading && reports.length === 0 ? (
         <Loader2 size={24} className="animate-spin text-emerald-500" />
       ) : reports.length === 0 ? (
-        <p className="text-slate-500 text-sm">Nenhuma campanha. Clique em &quot;Ativar Venezuela&quot;.</p>
+        <p className="text-slate-500 text-sm">{t("admin.humanitarian.noCampaigns")}</p>
       ) : (
         reports.map((c) => (
           <div key={c.campaignId} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-5">
@@ -164,7 +181,7 @@ export default function AdminHumanitarianPage() {
                   className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-                  CSV fila hoy
+                  {t("admin.humanitarian.csvQueue")}
                 </button>
                 <button
                   type="button"
@@ -173,10 +190,10 @@ export default function AdminHumanitarianPage() {
                   className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {exporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-                  CSV fichas
+                  {t("admin.humanitarian.csvIntakes")}
                 </button>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${c.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                  {c.active ? "Activa" : "Pausada"}
+                  {c.active ? t("admin.humanitarian.active") : t("admin.humanitarian.paused")}
                 </span>
                 <button
                   type="button"
@@ -184,18 +201,13 @@ export default function AdminHumanitarianPage() {
                   onClick={() => toggleActive(c.slug, !c.active)}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
                 >
-                  {c.active ? "Pausar" : "Activar"}
+                  {c.active ? t("admin.humanitarian.pause") : t("admin.humanitarian.activate")}
                 </button>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: "En fila", value: c.totals.waiting, icon: Radio, color: "text-amber-600" },
-                { label: "En consulta", value: c.totals.inConsult, icon: Users, color: "text-blue-600" },
-                { label: "Atendidos hoy", value: c.totals.completedToday, icon: CheckCircle2, color: "text-emerald-600" },
-                { label: "Voluntarios", value: `${c.totals.volunteersOnline}/${c.totals.volunteersBusy}`, icon: Heart, color: "text-rose-600" },
-              ].map((stat) => (
+              {stats(c).map((stat) => (
                 <div key={stat.label} className="bg-slate-50 rounded-xl p-3">
                   <p className="text-xs text-slate-500">{stat.label}</p>
                   <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
@@ -204,9 +216,11 @@ export default function AdminHumanitarianPage() {
             </div>
 
             <div className="flex flex-wrap gap-4 text-xs text-slate-500">
-              <span>No-show hoy: {c.totals.noShowsToday}</span>
+              <span>{t("admin.humanitarian.noShowToday").replace("{{n}}", String(c.totals.noShowsToday))}</span>
               {c.totals.avgWaitMinutesToday != null && (
-                <span>Espera media hoy: ~{c.totals.avgWaitMinutesToday} min</span>
+                <span>
+                  {t("admin.humanitarian.avgWait").replace("{{n}}", String(c.totals.avgWaitMinutesToday))}
+                </span>
               )}
             </div>
 
@@ -214,12 +228,12 @@ export default function AdminHumanitarianPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-slate-500 border-b">
-                    <th className="pb-2 pr-4">Fila</th>
-                    <th className="pb-2 pr-4">Esperando</th>
-                    <th className="pb-2 pr-4">Crisis</th>
-                    <th className="pb-2 pr-4">Cap.</th>
-                    <th className="pb-2 pr-4">Hoy</th>
-                    <th className="pb-2">Voluntarios</th>
+                    <th className="pb-2 pr-4">{t("admin.humanitarian.colPool")}</th>
+                    <th className="pb-2 pr-4">{t("admin.humanitarian.colWaiting")}</th>
+                    <th className="pb-2 pr-4">{t("admin.humanitarian.colCrisis")}</th>
+                    <th className="pb-2 pr-4">{t("admin.humanitarian.colCap")}</th>
+                    <th className="pb-2 pr-4">{t("admin.humanitarian.colToday")}</th>
+                    <th className="pb-2">{t("admin.humanitarian.colVolunteers")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -238,7 +252,11 @@ export default function AdminHumanitarianPage() {
                       </td>
                       <td className="py-2.5 pr-4">{p.maxWaiting}</td>
                       <td className="py-2.5 pr-4">{p.completedToday}</td>
-                      <td className="py-2.5">{p.volunteersOnline} libres ? {p.volunteersBusy} ocupados</td>
+                      <td className="py-2.5">
+                        {t("admin.humanitarian.volFreeBusy")
+                          .replace("{{free}}", String(p.volunteersOnline))
+                          .replace("{{busy}}", String(p.volunteersBusy))}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -249,9 +267,7 @@ export default function AdminHumanitarianPage() {
       )}
 
       <HumanitarianIntakesPanel slug={VENEZUELA_CAMPAIGN_SLUG} />
-
       <AcuraVolunteersAdminPanel />
-
       <HumanitarianAngelsAdminPanel />
     </div>
   );

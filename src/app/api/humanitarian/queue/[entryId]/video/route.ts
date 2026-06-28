@@ -64,11 +64,7 @@ export async function GET(
   }
 
   if (!["CALLED", "IN_PROGRESS"].includes(entry.status)) {
-    if (
-      isPatient &&
-      entry.status === "DONE" &&
-      entry.completionChannel === "WHATSAPP"
-    ) {
+    if (isPatient && entry.status === "DONE") {
       let proName = "Profesional";
       const vol = entry.volunteer;
       if (vol?.professional) {
@@ -78,15 +74,29 @@ export async function GET(
       } else if (vol?.integrativeTherapist) {
         proName = `${vol.integrativeTherapist.firstName} ${vol.integrativeTherapist.lastName}`;
       }
-      return NextResponse.json(
-        {
-          error: "WHATSAPP_HANDOFF",
-          message: "Your volunteer will contact you on WhatsApp.",
-          professionalName: proName,
-          campaignSlug: entry.pool.campaign.slug,
-        },
-        { status: 410 },
-      );
+      if (entry.completionChannel === "WHATSAPP") {
+        return NextResponse.json(
+          {
+            error: "WHATSAPP_HANDOFF",
+            message: "Your volunteer will contact you on WhatsApp.",
+            professionalName: proName,
+            campaignSlug: entry.pool.campaign.slug,
+          },
+          { status: 410 },
+        );
+      }
+      if (entry.completionChannel === "GOOGLE_MEET") {
+        return NextResponse.json(
+          {
+            error: "MEET_HANDOFF",
+            message: "Join your consultation on Google Meet.",
+            professionalName: proName,
+            campaignSlug: entry.pool.campaign.slug,
+            meetUrl: entry.meetingUrl,
+          },
+          { status: 410 },
+        );
+      }
     }
     return NextResponse.json(
       { error: "NOT_READY", message: "Consultation is not active yet." },

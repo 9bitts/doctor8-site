@@ -342,3 +342,29 @@ export async function notifyHumanitarianWhatsAppHandoff(opts: {
     },
   }).catch(() => {});
 }
+
+export async function notifyHumanitarianMeetHandoff(opts: {
+  patientUserId: string;
+  campaignSlug: string;
+  volunteerName: string;
+  meetUrl: string;
+}) {
+  const handoffCopy = storedNotificationText(
+    "hum.notif.meetHandoff.title",
+    "hum.notif.meetHandoff.body",
+    { professional: opts.volunteerName },
+  );
+  await createNotification({
+    userId: opts.patientUserId,
+    title: handoffCopy.title,
+    body: handoffCopy.body,
+    type: "system",
+    data: {
+      link: `/humanitarian/${opts.campaignSlug}`,
+      titleKey: "hum.notif.meetHandoff.title",
+      bodyKey: "hum.notif.meetHandoff.body",
+      bodyParams: { professional: opts.volunteerName },
+      meetUrl: opts.meetUrl,
+    },
+  }).catch(() => {});
+}

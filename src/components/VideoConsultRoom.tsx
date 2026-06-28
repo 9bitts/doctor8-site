@@ -129,6 +129,7 @@ export interface VideoConsultFetchResult {
   error?: string;
   opensAt?: string;
   whatsappHandoff?: { professionalName: string; campaignSlug?: string };
+  meetHandoff?: { professionalName: string; campaignSlug?: string; meetUrl?: string | null };
 }
 
 export default function VideoConsultRoom({
@@ -154,6 +155,11 @@ export default function VideoConsultRoom({
     professionalName: string;
     campaignSlug?: string;
   } | null>(null);
+  const [meetHandoff, setMeetHandoff] = useState<{
+    professionalName: string;
+    campaignSlug?: string;
+    meetUrl?: string | null;
+  } | null>(null);
   const [humanitarianIntake, setHumanitarianIntake] = useState<{
     summary: Parameters<typeof HumanitarianIntakeSummary>[0]["summary"];
     chiefComplaint: string | null;
@@ -171,6 +177,10 @@ export default function VideoConsultRoom({
       const result = await fetchSession();
       if (result.whatsappHandoff) {
         setWhatsappHandoff(result.whatsappHandoff);
+        return;
+      }
+      if (result.meetHandoff) {
+        setMeetHandoff(result.meetHandoff);
         return;
       }
       if (result.opensAt) {
@@ -229,6 +239,18 @@ export default function VideoConsultRoom({
           setWhatsappHandoff({
             professionalName: d.entry.professionalName || "",
             campaignSlug: d.entry.campaignSlug,
+          });
+          setData(null);
+        }
+        if (
+          res.ok &&
+          d.entry?.status === "DONE" &&
+          d.entry?.completionChannel === "GOOGLE_MEET"
+        ) {
+          setMeetHandoff({
+            professionalName: d.entry.professionalName || "",
+            campaignSlug: d.entry.campaignSlug,
+            meetUrl: d.entry.meetingUrl,
           });
           setData(null);
         }
@@ -326,6 +348,47 @@ export default function VideoConsultRoom({
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opensAt]);
+
+  if (meetHandoff) {
+    const slug = meetHandoff.campaignSlug || "venezuela-terremoto-2026";
+    const desc = translate(lang, "hum.page.meetHandoffDesc").replace(
+      "{{professional}}",
+      meetHandoff.professionalName || translate(lang, "hum.vol.patientAssigned"),
+    );
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="bg-slate-900 border border-blue-500/30 rounded-3xl p-10 max-w-md w-full text-center">
+          <div className="w-20 h-20 rounded-full bg-blue-500/15 border border-blue-500/40 flex items-center justify-center mx-auto mb-6">
+            <Video size={36} className="text-blue-400" />
+          </div>
+          <h1 className="text-white text-xl font-bold mb-3">
+            {translate(lang, "hum.page.meetHandoffTitle")}
+          </h1>
+          <p className="text-slate-300 text-sm mb-4 leading-relaxed">{desc}</p>
+          <p className="text-slate-500 text-xs mb-6">
+            {translate(lang, "hum.page.meetHandoffHint")}
+          </p>
+          {meetHandoff.meetUrl && (
+            <a
+              href={meetHandoff.meetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl text-sm transition mb-3"
+            >
+              {translate(lang, "hum.page.meetHandoffJoin")}
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => router.push(`/humanitarian/${slug}`)}
+            className="w-full bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 rounded-xl text-sm transition"
+          >
+            {translate(lang, "hum.page.meetHandoffBack")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (whatsappHandoff) {
     const slug = whatsappHandoff.campaignSlug || "venezuela-terremoto-2026";

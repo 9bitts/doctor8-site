@@ -2,14 +2,18 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Plus, Download, Shield } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 
-function fmt(c: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(c / 100);
+function fmt(c: number, locale: string) {
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" }).format(c / 100);
 }
 
 type Tab = "convenios" | "guias" | "lotes";
 
 export default function OrganizationConveniosPage() {
+  const { lang, t } = useI18n();
+  const locale = localeOf(lang);
   const [tab, setTab] = useState<Tab>("convenios");
   const [loading, setLoading] = useState(true);
   const [plans, setPlans] = useState<{ id: string; operatorName: string; ansRegistry: string | null; active: boolean }[]>([]);
@@ -87,14 +91,16 @@ export default function OrganizationConveniosPage() {
     if (res.ok) await load();
   }
 
-  function exportBatch(id: string, batchNumber: string) {
+  function exportBatch(id: string) {
     window.open(`/api/organization/tiss/batches/${id}/export`, "_blank");
   }
 
+  const draftCount = guides.filter((g) => !g.batchId).length;
+
   const tabs: { id: Tab; label: string }[] = [
-    { id: "convenios", label: "Convenios" },
-    { id: "guias", label: "Guias TISS" },
-    { id: "lotes", label: "Lotes" },
+    { id: "convenios", label: t("org.convenios.tabPlans") },
+    { id: "guias", label: t("org.convenios.tabGuides") },
+    { id: "lotes", label: t("org.convenios.tabBatches") },
   ];
 
   return (
@@ -102,16 +108,16 @@ export default function OrganizationConveniosPage() {
       <div className="flex items-center gap-3">
         <Shield className="text-indigo-600" size={24} />
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Convenios e TISS</h1>
-          <p className="text-slate-500 text-sm">Operadoras, guias de consulta e lotes para faturamento</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t("org.convenios.title")}</h1>
+          <p className="text-slate-500 text-sm">{t("org.convenios.subtitle")}</p>
         </div>
       </div>
 
       <div className="flex gap-2 border-b border-slate-200">
-        {tabs.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${tab === t.id ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500"}`}>
-            {t.label}
+        {tabs.map((tabItem) => (
+          <button key={tabItem.id} onClick={() => setTab(tabItem.id)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${tab === tabItem.id ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500"}`}>
+            {tabItem.label}
           </button>
         ))}
       </div>
@@ -121,22 +127,24 @@ export default function OrganizationConveniosPage() {
       ) : tab === "convenios" ? (
         <div className="space-y-4">
           <form onSubmit={addPlan} className="bg-white rounded-2xl border p-5 grid sm:grid-cols-3 gap-3">
-            <input required placeholder="Nome da operadora" value={newPlan.operatorName} onChange={(e) => setNewPlan({ ...newPlan, operatorName: e.target.value })}
+            <input required placeholder={t("org.convenios.operatorPlaceholder")} value={newPlan.operatorName} onChange={(e) => setNewPlan({ ...newPlan, operatorName: e.target.value })}
               className="border rounded-xl px-3 py-2 text-sm" />
-            <input placeholder="Registro ANS" value={newPlan.ansRegistry} onChange={(e) => setNewPlan({ ...newPlan, ansRegistry: e.target.value })}
+            <input placeholder={t("org.convenios.ansPlaceholder")} value={newPlan.ansRegistry} onChange={(e) => setNewPlan({ ...newPlan, ansRegistry: e.target.value })}
               className="border rounded-xl px-3 py-2 text-sm" />
             <button type="submit" className="bg-indigo-600 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-1">
-              <Plus size={16} /> Cadastrar
+              <Plus size={16} /> {t("org.convenios.register")}
             </button>
           </form>
           <div className="bg-white rounded-2xl border divide-y">
-            {plans.length === 0 ? <p className="p-6 text-slate-400 text-sm">Nenhum convenio cadastrado.</p> : plans.map((p) => (
+            {plans.length === 0 ? <p className="p-6 text-slate-400 text-sm">{t("org.convenios.noPlans")}</p> : plans.map((p) => (
               <div key={p.id} className="px-5 py-4 flex justify-between">
                 <div>
                   <p className="font-medium">{p.operatorName}</p>
                   <p className="text-xs text-slate-500">ANS: {p.ansRegistry || "?"}</p>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${p.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100"}`}>{p.active ? "Ativo" : "Inativo"}</span>
+                <span className={`text-xs px-2 py-1 rounded-full ${p.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100"}`}>
+                  {p.active ? t("org.convenios.active") : t("org.convenios.inactive")}
+                </span>
               </div>
             ))}
           </div>
@@ -147,50 +155,50 @@ export default function OrganizationConveniosPage() {
             <div className="grid sm:grid-cols-2 gap-3">
               <select required value={newGuide.orgHealthPlanId} onChange={(e) => setNewGuide({ ...newGuide, orgHealthPlanId: e.target.value })}
                 className="border rounded-xl px-3 py-2 text-sm">
-                <option value="">Convenio</option>
+                <option value="">{t("org.convenios.selectPlan")}</option>
                 {plans.map((p) => <option key={p.id} value={p.id}>{p.operatorName}</option>)}
               </select>
               <select required value={newGuide.professionalId} onChange={(e) => setNewGuide({ ...newGuide, professionalId: e.target.value })}
                 className="border rounded-xl px-3 py-2 text-sm">
-                <option value="">Profissional</option>
+                <option value="">{t("org.convenios.selectProfessional")}</option>
                 {professionals.map((p) => <option key={p.professionalId} value={p.professionalId}>{p.name}</option>)}
               </select>
-              <input required placeholder="Nome do paciente" value={newGuide.patientName} onChange={(e) => setNewGuide({ ...newGuide, patientName: e.target.value })}
+              <input required placeholder={t("org.convenios.patientNamePlaceholder")} value={newGuide.patientName} onChange={(e) => setNewGuide({ ...newGuide, patientName: e.target.value })}
                 className="border rounded-xl px-3 py-2 text-sm" />
-              <input placeholder="Carteirinha" value={newGuide.cardNumber} onChange={(e) => setNewGuide({ ...newGuide, cardNumber: e.target.value })}
+              <input placeholder={t("org.convenios.cardPlaceholder")} value={newGuide.cardNumber} onChange={(e) => setNewGuide({ ...newGuide, cardNumber: e.target.value })}
                 className="border rounded-xl px-3 py-2 text-sm" />
-              <input required placeholder="Valor (R$)" value={newGuide.amount} onChange={(e) => setNewGuide({ ...newGuide, amount: e.target.value })}
+              <input required placeholder={t("org.ledger.amountPlaceholder")} value={newGuide.amount} onChange={(e) => setNewGuide({ ...newGuide, amount: e.target.value })}
                 className="border rounded-xl px-3 py-2 text-sm" />
               <input type="date" value={newGuide.serviceDate} onChange={(e) => setNewGuide({ ...newGuide, serviceDate: e.target.value })}
                 className="border rounded-xl px-3 py-2 text-sm" />
             </div>
-            <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium">Criar guia</button>
+            <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium">{t("org.convenios.createGuide")}</button>
           </form>
           <div className="bg-white rounded-2xl border divide-y">
             {guides.map((g) => (
               <div key={g.id} className="px-5 py-3 flex justify-between text-sm">
                 <span>{g.guideNumber} - {g.patientName} ({g.operatorName})</span>
-                <span className="font-medium">{fmt(g.amountCents)} · {g.status}</span>
+                <span className="font-medium">{fmt(g.amountCents, locale)} · {g.status}</span>
               </div>
             ))}
           </div>
-          {guides.filter((g) => !g.batchId).length > 0 && (
+          {draftCount > 0 && (
             <button onClick={createBatch} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium text-sm">
-              Gerar lote com {guides.filter((g) => !g.batchId).length} guia(s) em rascunho
+              {t("org.convenios.createBatch").replace("{{n}}", String(draftCount))}
             </button>
           )}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border divide-y">
-          {batches.length === 0 ? <p className="p-6 text-slate-400 text-sm">Nenhum lote.</p> : batches.map((b) => (
+          {batches.length === 0 ? <p className="p-6 text-slate-400 text-sm">{t("org.convenios.noBatches")}</p> : batches.map((b) => (
             <div key={b.id} className="px-5 py-4 flex items-center justify-between">
               <div>
                 <p className="font-medium">{b.batchNumber} - {b.operatorName}</p>
-                <p className="text-xs text-slate-500">{b.guideCount} guias · {fmt(b.totalAmountCents)} · {b.status}</p>
+                <p className="text-xs text-slate-500">{b.guideCount} · {fmt(b.totalAmountCents, locale)} · {b.status}</p>
               </div>
-              <button onClick={() => exportBatch(b.id, b.batchNumber)}
+              <button onClick={() => exportBatch(b.id)}
                 className="flex items-center gap-1 text-indigo-600 text-sm font-medium hover:text-indigo-700">
-                <Download size={16} /> XML TISS
+                <Download size={16} /> {t("org.convenios.exportXml")}
               </button>
             </div>
           ))}
