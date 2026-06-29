@@ -92,12 +92,15 @@ const PSYCHOLOGIST_NAV: NavItem[] = [
 
 const PSYCHOANALYST_NAV: NavItem[] = [
   { href: "/psychoanalyst", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/psychoanalyst/doctor-connection", labelKey: "nav.doctorConnection", icon: <Sparkles size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/psychoanalyst/freud", labelKey: "pa.freud.nav", icon: <Brain size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/analysands", labelKey: "pa.nav.analysands", icon: <Users size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/psychoanalyst/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PSYCHOANALYST"] },
 ];
 
 const INTEGRATIVE_THERAPIST_NAV: NavItem[] = [
@@ -217,9 +220,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         `}
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/50">
-          <Link href={isPsychologist ? "/psychologist" : "/"} className="text-2xl font-black text-white tracking-tight">
+          <Link href={isPsychologist ? "/psychologist" : isPsychoanalyst ? "/psychoanalyst" : "/"} className="text-2xl font-black text-white tracking-tight">
             {isPsychologist ? (
               <span className="uppercase">Psicologia</span>
+            ) : isPsychoanalyst ? (
+              <span className="uppercase">Psicanálise</span>
             ) : (
               <>Doctor<span className={logoAccent}>8</span></>
             )}
@@ -289,6 +294,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             <span className="text-lg font-bold text-slate-900 uppercase">
               {isPsychologist ? (
                 "Psicologia"
+              ) : isPsychoanalyst ? (
+                "Psicanálise"
               ) : (
                 <>Doctor<span className={logoAccentHeader}>8</span></>
               )}

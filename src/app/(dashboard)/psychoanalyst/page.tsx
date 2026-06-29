@@ -5,7 +5,7 @@ import { audit } from "@/lib/audit";
 import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
 import { getUserLang } from "@/lib/i18n/server-lang";
 import { decryptPsychoanalystNameFields, safeDecrypt } from "@/lib/psychoanalyst-api";
-import { Calendar, Users, ChevronRight, Video, Settings, FileText } from "lucide-react";
+import { Calendar, Users, ChevronRight, Video, Settings, FileText, Sparkles, Brain, BookOpen } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
@@ -93,6 +93,7 @@ export default async function PsychoanalystDashboard() {
       <DoctorConnectionBanner
         subscribed={hasActiveSubscription}
         defaultRegion={userRow?.region || session.user.region}
+        accountHref="/psychoanalyst/account"
       />
 
       <div>
@@ -126,6 +127,9 @@ export default async function PsychoanalystDashboard() {
         {[
           { href: "/psychoanalyst/analysands", icon: Users, label: t("pa.nav.analysands") },
           { href: "/psychoanalyst/appointments", icon: Calendar, label: t("nav.appointments") },
+          { href: "/psychoanalyst/doctor-connection", icon: Sparkles, label: t("nav.doctorConnection") },
+          { href: "/psychoanalyst/freud", icon: Brain, label: t("pa.freud.nav") },
+          { href: "/psychoanalyst/resources", icon: BookOpen, label: t("nav.library") },
           { href: "/psychoanalyst/settings", icon: Settings, label: t("nav.myProfile") },
           { href: "/psychoanalyst/settings/availability", icon: Video, label: t("nav.availability") },
         ].map((item) => (
