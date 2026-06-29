@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Calendar, MessageCircle } from "lucide-react";
-import { readOrgProfessionalCookie } from "@/lib/work-context";
+import { readOrgProviderScopeCookie } from "@/lib/work-context";
 
 type Appt = {
   id: string;
@@ -29,8 +29,8 @@ export default function OrganizationAppointmentsPage() {
       from: from.toISOString(),
       to: to.toISOString(),
     });
-    const scopeId = readOrgProfessionalCookie();
-    if (scopeId) params.set("professionalId", scopeId);
+    const scopeKey = readOrgProviderScopeCookie();
+    if (scopeKey) params.set("providerScope", scopeKey);
     const res = await fetch(`/api/organization/appointments?${params}`);
     const data = await res.json();
     if (res.ok) setAppointments(data.appointments || []);

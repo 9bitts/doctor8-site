@@ -1,5 +1,10 @@
-// Scope cookies for organization (filter by doctor) and professional (solo vs clinic).
+// Scope cookies for organization (filter by provider) and professional (solo vs clinic).
 
+import { buildProviderScopeKey } from "@/lib/organization-providers";
+import type { ProviderType } from "@prisma/client";
+
+export const ORG_PROVIDER_COOKIE = "doctor8_org_provider";
+/** @deprecated use ORG_PROVIDER_COOKIE ? legacy doctor-only filter */
 export const ORG_PROFESSIONAL_COOKIE = "doctor8_org_professional";
 export const PRO_SCOPE_COOKIE = "doctor8_pro_scope";
 
@@ -14,27 +19,48 @@ export function resolveOrgProfessionalFilter(
   return allIds.includes(id) ? [id] : allIds;
 }
 
-export function readOrgProfessionalCookie(): string {
+function readCookie(name: string): string {
   if (typeof document === "undefined") return "";
-  const match = document.cookie.match(
-    new RegExp(`(?:^|; )${ORG_PROFESSIONAL_COOKIE}=([^;]*)`),
-  );
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : "";
 }
 
-export function writeOrgProfessionalCookie(professionalId: string): void {
+export function readOrgProviderScopeCookie(): string {
+  const composite = readCookie(ORG_PROVIDER_COOKIE);
+  if (composite) return composite;
+  const legacyDoctorId = readCookie(ORG_PROFESSIONAL_COOKIE);
+  if (legacyDoctorId) {
+    return buildProviderScopeKey("HEALTH", legacyDoctorId);
+  }
+  return "";
+}
+
+/** @deprecated */
+export function readOrgProfessionalCookie(): string {
+  const scope = readOrgProviderScopeCookie();
+  if (scope.startsWith("HEALTH:")) return scope.slice("HEALTH:".length);
+  return readCookie(ORG_PROFESSIONAL_COOKIE);
+}
+
+export function writeOrgProviderScopeCookie(scopeKey: string): void {
   if (typeof document === "undefined") return;
-  const value = professionalId ? encodeURIComponent(professionalId) : "";
-  document.cookie = `${ORG_PROFESSIONAL_COOKIE}=${value};path=/;max-age=31536000;SameSite=Lax`;
-  window.dispatchEvent(new CustomEvent("doctor8-org-scope-change", { detail: professionalId }));
+  const value = scopeKey ? encodeURIComponent(scopeKey) : "";
+  document.cookie = `${ORG_PROVIDER_COOKIE}=${value};path=/;max-age=31536000;SameSite=Lax`;
+  document.cookie = `${ORG_PROFESSIONAL_COOKIE}=;path=/;max-age=0;SameSite=Lax`;
+  window.dispatchEvent(new CustomEvent("doctor8-org-scope-change", { detail: scopeKey }));
+}
+
+/** @deprecated */
+export function writeOrgProfessionalCookie(professionalId: string): void {
+  if (!professionalId) {
+    writeOrgProviderScopeCookie("");
+    return;
+  }
+  writeOrgProviderScopeCookie(buildProviderScopeKey("HEALTH", professionalId));
 }
 
 export function readProScopeCookie(): ProScope {
-  if (typeof document === "undefined") return "solo";
-  const match = document.cookie.match(
-    new RegExp(`(?:^|; )${PRO_SCOPE_COOKIE}=([^;]*)`),
-  );
-  const v = match ? decodeURIComponent(match[1]) : "solo";
+  const v = readCookie(PRO_SCOPE_COOKIE);
   return v === "clinic" ? "clinic" : "solo";
 }
 
@@ -44,10 +70,28 @@ export function writeProScopeCookie(scope: ProScope): void {
   window.dispatchEvent(new CustomEvent("doctor8-pro-scope-change", { detail: scope }));
 }
 
-/** Server-side: read org professional filter from request cookies. */
-export function orgProfessionalIdFromCookie(
-  cookieValue: string | undefined,
-): string | undefined {
+/** Server-side: resolve org provider scope from cookies or legacy doctor id. */
+export function orgProviderScopeFromCookies(getCookie: (name: string) => string | undefined): string | undefined {
+  const composite = getCookie(ORG_PROVIDER_COOKIE)?.trim();
+  if (composite) return decodeURIComponent(composite);
+  const legacy = getCookie(ORG_PROFESSIONAL_COOKIE)?.trim();
+  if (legacy) return buildProviderScopeKey("HEALTH", legacy);
+  return undefined;
+}
+
+/** Server-side: read legacy doctor-only filter. */
+export function orgProfessionalIdFromCookie(cookieValue: string | undefined): string | undefined {
   const v = cookieValue?.trim();
   return v || undefined;
+}
+
+export function providerScopeFromQuery(
+  providerScope: string | null | undefined,
+  professionalId: string | null | undefined,
+): string | undefined {
+  const scope = providerScope?.trim();
+  if (scope) return scope;
+  const legacyId = professionalId?.trim();
+  if (legacyId) return buildProviderScopeKey("HEALTH" as ProviderType, legacyId);
+  return undefined;
 }

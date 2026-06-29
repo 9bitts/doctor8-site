@@ -9,6 +9,7 @@ import {
   type PicCategory,
 } from "@/lib/pics/practices";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
+import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
 import { Loader2, CheckCircle2, Video, Building2, DollarSign, Leaf } from "lucide-react";
 
 const inputClass =
@@ -340,6 +341,10 @@ export default function IntegrativeTherapistSettingsPage() {
         {saving ? <Loader2 size={16} className="animate-spin" /> : null}
         {t("common.save")}
       </button>
+      <OrganizationJoinSettings
+        listEndpoint="/api/integrative-therapist/organization"
+        joinEndpoint="/api/integrative-therapist/organization"
+      />
     </div>
   );
 }

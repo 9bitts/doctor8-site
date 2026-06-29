@@ -6,6 +6,7 @@ import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
+import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
 import { Loader2, CheckCircle2, Video, Building2, DollarSign } from "lucide-react";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
@@ -241,6 +242,11 @@ export default function PsychoanalystSettingsPage() {
           {saving ? t("avail.saving") : saved ? t("avail.saved") : t("common.save")}
         </button>
       </div>
+
+      <OrganizationJoinSettings
+        listEndpoint="/api/psychoanalyst/organization"
+        joinEndpoint="/api/psychoanalyst/organization"
+      />
     </div>
   );
 }

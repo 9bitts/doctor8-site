@@ -1414,6 +1414,7 @@ model Organization {
 
   members              OrganizationMember[]
   professionals        OrganizationProfessional[]
+  linkedProviders      OrganizationLinkedProvider[]
   repasseRules         OrganizationRepasseRule[]
   invites              OrganizationInvite[]
   ledgerEntries        OrganizationLedgerEntry[]
@@ -1465,6 +1466,21 @@ model OrganizationProfessional {
   @@unique([organizationId, professionalId])
   @@index([professionalId])
   @@index([organizationId])
+}
+
+model OrganizationLinkedProvider {
+  id                String                         @id @default(cuid())
+  organizationId    String
+  organization      Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  providerType      ProviderType
+  providerProfileId String
+  repassePercent    Float                          @default(70)
+  status            OrganizationProfessionalStatus @default(ACTIVE)
+  joinedAt          DateTime                       @default(now())
+
+  @@unique([organizationId, providerType, providerProfileId])
+  @@index([organizationId])
+  @@index([providerType, providerProfileId])
 }
 
 model OrganizationRepasseRule {

@@ -2,11 +2,15 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { getOrganizationMembership, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import { getOrganizationMembership } from "@/lib/organization-auth";
 import {
-  ORG_PROFESSIONAL_COOKIE,
-  orgProfessionalIdFromCookie,
-  resolveOrgProfessionalFilter,
+  getOrganizationProviderScopeIds,
+  resolveProviderScopeFilter,
+  scopeHasProviders,
+} from "@/lib/organization-providers";
+import {
+  ORG_PROVIDER_COOKIE,
+  orgProviderScopeFromCookies,
 } from "@/lib/work-context";
 import Link from "next/link";
 import {
@@ -29,11 +33,19 @@ export default async function OrganizationDashboard() {
   if (!membership) redirect("/login");
 
   const org = membership.organization;
-  const allProfessionalIds = await getOrganizationProfessionalIds(org.id);
-  const scopeId = orgProfessionalIdFromCookie(
-    cookies().get(ORG_PROFESSIONAL_COOKIE)?.value,
-  );
-  const professionalIds = resolveOrgProfessionalFilter(allProfessionalIds, scopeId);
+  const allScope = await getOrganizationProviderScopeIds(org.id);
+  const scopeKey = orgProviderScopeFromCookies((name) => cookies().get(name)?.value);
+  const scope = resolveProviderScopeFilter(allScope, scopeKey);
+  const { professionalIds, psychoanalystIds, integrativeTherapistIds } = scope;
+
+  const appointmentOr: Array<Record<string, unknown>> = [];
+  if (professionalIds.length) appointmentOr.push({ professionalId: { in: professionalIds } });
+  if (psychoanalystIds.length) appointmentOr.push({ psychoanalystId: { in: psychoanalystIds } });
+  if (integrativeTherapistIds.length) {
+    appointmentOr.push({ integrativeTherapistId: { in: integrativeTherapistIds } });
+  }
+
+  const hasProviders = scopeHasProviders(scope);
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -42,19 +54,19 @@ export default async function OrganizationDashboard() {
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   const [todayAppointments, monthRevenue, patientCount, staffCount] = await Promise.all([
-    professionalIds.length > 0
+    hasProviders && appointmentOr.length > 0
       ? db.appointment.count({
           where: {
-            professionalId: { in: professionalIds },
+            OR: appointmentOr,
             scheduledAt: { gte: todayStart, lte: todayEnd },
             status: { in: ["CONFIRMED", "PENDING", "COMPLETED"] },
           },
         })
       : Promise.resolve(0),
-    professionalIds.length > 0
+    hasProviders && appointmentOr.length > 0
       ? db.appointment.aggregate({
           where: {
-            professionalId: { in: professionalIds },
+            OR: appointmentOr,
             status: "COMPLETED",
             paidAt: { not: null },
             scheduledAt: { gte: monthStart },
@@ -62,27 +74,47 @@ export default async function OrganizationDashboard() {
           _sum: { priceAmount: true },
         })
       : Promise.resolve({ _sum: { priceAmount: 0 } }),
-    professionalIds.length > 0
-      ? db.patientRecord.count({ where: { professionalId: { in: professionalIds } } })
+    hasProviders
+      ? Promise.all([
+          professionalIds.length
+            ? db.patientRecord.count({ where: { professionalId: { in: professionalIds } } })
+            : 0,
+          psychoanalystIds.length
+            ? db.analysandRecord.count({ where: { psychoanalystId: { in: psychoanalystIds } } })
+            : 0,
+          integrativeTherapistIds.length
+            ? db.integrativeClientRecord.count({
+                where: { integrativeTherapistId: { in: integrativeTherapistIds } },
+              })
+            : 0,
+        ]).then(([a, b, c]) => a + b + c)
       : Promise.resolve(0),
     db.organizationMember.count({ where: { organizationId: org.id, status: "ACTIVE" } }),
   ]);
 
-  const upcoming = professionalIds.length > 0
-    ? await db.appointment.findMany({
-        where: {
-          professionalId: { in: professionalIds },
-          scheduledAt: { gte: new Date() },
-          status: { in: ["CONFIRMED", "PENDING"] },
-        },
-        include: {
-          patient: { select: { firstName: true, lastName: true } },
-          professional: { select: { firstName: true, lastName: true, specialty: true } },
-        },
-        orderBy: { scheduledAt: "asc" },
-        take: 5,
-      })
-    : [];
+  const upcoming =
+    hasProviders && appointmentOr.length > 0
+      ? await db.appointment.findMany({
+          where: {
+            OR: appointmentOr,
+            scheduledAt: { gte: new Date() },
+            status: { in: ["CONFIRMED", "PENDING"] },
+          },
+          include: {
+            patient: { select: { firstName: true, lastName: true } },
+            professional: { select: { firstName: true, lastName: true, specialty: true } },
+            psychoanalyst: { select: { firstName: true, lastName: true } },
+            integrativeTherapist: { select: { firstName: true, lastName: true } },
+          },
+          orderBy: { scheduledAt: "asc" },
+          take: 5,
+        })
+      : [];
+
+  const totalProviders =
+    allScope.professionalIds.length +
+    allScope.psychoanalystIds.length +
+    allScope.integrativeTherapistIds.length;
 
   const cards = [
     {
@@ -94,7 +126,7 @@ export default async function OrganizationDashboard() {
     },
     {
       label: "Profissionais",
-      value: String(professionalIds.length),
+      value: String(totalProviders),
       icon: Stethoscope,
       href: "/organization/team",
       color: "text-violet-600 bg-violet-50",
@@ -157,11 +189,11 @@ export default async function OrganizationDashboard() {
         ))}
       </div>
 
-      {professionalIds.length === 0 && (
+      {!scopeHasProviders(allScope) && (
         <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6">
           <h2 className="font-semibold text-indigo-900 mb-2">Vincule seus profissionais</h2>
           <p className="text-indigo-700 text-sm mb-4">
-            Compartilhe o código de convite com os médicos da clínica para que eles se vinculem à organização.
+            Compartilhe o código de convite com médicos, psicanalistas e terapeutas integrativos para vincularem-se à organização.
           </p>
           <Link
             href="/organization/team"
@@ -191,8 +223,13 @@ export default async function OrganizationDashboard() {
                     {a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : "?"}
                   </p>
                   <p className="text-xs text-slate-500">
-                    Dr. {a.professional?.firstName} {a.professional?.lastName}
-                    {a.professional?.specialty ? ` \u00b7 ${a.professional.specialty}` : ""}
+                    {a.professional
+                      ? `Dr. ${a.professional.firstName} ${a.professional.lastName}${a.professional.specialty ? ` · ${a.professional.specialty}` : ""}`
+                      : a.psychoanalyst
+                        ? `${a.psychoanalyst.firstName} ${a.psychoanalyst.lastName} · Psicanálise`
+                        : a.integrativeTherapist
+                          ? `${a.integrativeTherapist.firstName} ${a.integrativeTherapist.lastName} · Terapia integrativa`
+                          : "—"}
                   </p>
                 </div>
                 <div className="text-right">

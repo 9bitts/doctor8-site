@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import { canManageTeam } from "@/lib/organization-auth";
+import { listOrganizationProviders } from "@/lib/organization-providers";
 import { db } from "@/lib/db";
-import { requireOrganization, canManageTeam } from "@/lib/organization-auth";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { sendOrganizationStaffInvite } from "@/lib/email";
 
 export async function GET() {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const [staff, professionals] = await Promise.all([
+  const [staff, providers] = await Promise.all([
     db.organizationMember.findMany({
       where: { organizationId: ctx.organizationId },
       include: {
@@ -17,22 +19,7 @@ export async function GET() {
       },
       orderBy: { joinedAt: "asc" },
     }),
-    db.organizationProfessional.findMany({
-      where: { organizationId: ctx.organizationId },
-      include: {
-        professional: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            specialty: true,
-            licenseNumber: true,
-            user: { select: { email: true } },
-          },
-        },
-      },
-      orderBy: { joinedAt: "asc" },
-    }),
+    listOrganizationProviders(ctx.organizationId),
   ]);
 
   return NextResponse.json({
@@ -45,17 +32,19 @@ export async function GET() {
       joinedAt: m.joinedAt.toISOString(),
       lastLoginAt: m.user.lastLoginAt?.toISOString() ?? null,
     })),
-    professionals: professionals.map((p) => ({
-      id: p.id,
-      professionalId: p.professionalId,
-      name: `${p.professional.firstName} ${p.professional.lastName}`,
-      specialty: p.professional.specialty,
-      licenseNumber: p.professional.licenseNumber,
-      email: p.professional.user.email,
+    professionals: providers.map((p) => ({
+      id: p.scopeKey,
+      professionalId: p.providerProfileId,
+      providerType: p.providerType,
+      name: p.name,
+      specialty: p.specialty,
+      licenseNumber: "",
+      email: "",
       repassePercent: p.repassePercent,
       status: p.status,
-      joinedAt: p.joinedAt.toISOString(),
+      joinedAt: p.joinedAt,
     })),
+    providers,
     inviteCode: ctx.organization.inviteCode,
     canManageTeam: canManageTeam(ctx.memberRole),
   });
@@ -67,8 +56,8 @@ const inviteStaffSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = inviteStaffSchema.safeParse(body);
@@ -135,8 +124,8 @@ const repasseSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "FINANCE"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = repasseSchema.safeParse(body);

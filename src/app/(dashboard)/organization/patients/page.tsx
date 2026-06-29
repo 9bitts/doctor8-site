@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Search, Users } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { readOrgProfessionalCookie } from "@/lib/work-context";
+import { readOrgProviderScopeCookie } from "@/lib/work-context";
 
 type Patient = {
   id: string;
@@ -25,8 +25,8 @@ export default function OrganizationPatientsPage() {
     setLoading(true);
     const params = new URLSearchParams();
     if (q) params.set("q", q);
-    const scopeId = readOrgProfessionalCookie();
-    if (scopeId) params.set("professionalId", scopeId);
+    const scopeKey = readOrgProviderScopeCookie();
+    if (scopeKey) params.set("providerScope", scopeKey);
     const qs = params.toString();
     const res = await fetch(`/api/organization/patients${qs ? `?${qs}` : ""}`);
     const data = await res.json();
