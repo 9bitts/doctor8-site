@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { JitQueueStatus } from "@prisma/client";
 import { z } from "zod";
+import { touchJitHeartbeat } from "@/lib/jit-session-lifecycle";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -128,6 +129,8 @@ export async function GET() {
 
   if (!jitSession) return NextResponse.json({ session: null });
 
+  await touchJitHeartbeat(professional.id);
+
   return NextResponse.json({ session: serializeJitSession(jitSession) });
 }
 
@@ -167,6 +170,7 @@ export async function POST(req: NextRequest) {
       maxQueueSize:                d.maxQueueSize,
       estimatedMinutesPerPatient:  d.estimatedMinutesPerPatient,
       jitEventId:                  d.jitEventId || null,
+      lastHeartbeatAt:             new Date(),
     },
   });
 
@@ -203,7 +207,10 @@ export async function PATCH(req: NextRequest) {
 
   const updated = await db.jitSession.update({
     where: { id: activeSession.id },
-    data: parsed.data,
+    data: {
+      ...parsed.data,
+      ...(parsed.data.status !== "OFFLINE" ? { lastHeartbeatAt: new Date() } : {}),
+    },
     include: jitSessionInclude,
   });
 

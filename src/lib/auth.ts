@@ -327,7 +327,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signOut(message) {
       const token = "token" in message ? message.token : null;
       if (token?.id) {
-        await audit.logout(token.id as string);
+        const userId = token.id as string;
+        await audit.logout(userId);
+        const { closeJitSessionsForUser } = await import("@/lib/jit-session-lifecycle");
+        await closeJitSessionsForUser(userId);
       }
     },
   },

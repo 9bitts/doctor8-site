@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { activeOnlineJitSessionWhere } from "@/lib/jit-session-lifecycle";
 import { geocodeAddress, buildClinicAddress, haversineKm, GeoPoint } from "@/lib/geo";
 import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
@@ -132,7 +133,7 @@ export async function getProfessionalsMap(query: ProfessionalsMapQuery) {
           clinicLatitude: true,
           clinicLongitude: true,
           jitSessions: {
-            where: { status: "ONLINE" },
+            where: activeOnlineJitSessionWhere(),
             select: {
               id: true,
               specialty: true,

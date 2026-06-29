@@ -14,6 +14,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import OrganizationScopeSwitcher from "@/components/organization/OrganizationScopeSwitcher";
 import ProfessionalScopeSwitcher from "@/components/professional/ProfessionalScopeSwitcher";
 import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
+import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
 import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
@@ -200,6 +201,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
+      <JitSessionHeartbeat enabled={isProfessional} />
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}

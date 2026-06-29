@@ -2245,12 +2245,15 @@ model JitSession {
 
   queue           JitQueue[]
 
+  lastHeartbeatAt DateTime?           // updated while professional is active on plantão
+
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
   @@index([professionalId])
   @@index([status])
   @@index([specialty])
+  @@index([lastHeartbeatAt])
 }
 
 model JitQueue {

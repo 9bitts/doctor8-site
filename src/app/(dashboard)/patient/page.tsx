@@ -19,6 +19,7 @@ import Link from "next/link";
 import PatientChecklistWrapper from "./PatientChecklistWrapper";
 import PatientTourWrapper from "./PatientTourWrapper";
 import { isPatientHistoryFilled } from "@/lib/patient-history-status";
+import { activeOnlineJitSessionWhere } from "@/lib/jit-session-lifecycle";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 import ChartLinkNoticeBanner from "@/components/patient/ChartLinkNoticeBanner";
 import PatientUpcomingConsultBanner from "@/components/patient/PatientUpcomingConsultBanner";
@@ -117,7 +118,7 @@ export default async function PatientDashboard() {
     db.message.count({
       where: { receiverId: userId, readAt: null, deletedAt: null },
     }),
-    db.jitSession.count({ where: { status: "ONLINE" } }),
+    db.jitSession.count({ where: activeOnlineJitSessionWhere() }),
     db.jitQueue.findFirst({
       where: {
         patientUserId: userId,

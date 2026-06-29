@@ -5,17 +5,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { activeOnlineJitSessionWhere, expireStaleJitSessions } from "@/lib/jit-session-lifecycle";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  await expireStaleJitSessions();
 
   const { searchParams } = new URL(req.url);
   const specialty = searchParams.get("specialty"); // optional filter
 
   const sessions = await db.jitSession.findMany({
     where: {
-      status: "ONLINE",
+      ...activeOnlineJitSessionWhere(),
       ...(specialty ? { specialty: { contains: specialty, mode: "insensitive" } } : {}),
     },
     include: {
