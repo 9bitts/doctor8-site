@@ -49,6 +49,13 @@ export function getPharmacyUtmParams(): Record<string, string> {
   };
 }
 
+/** UTM on partner links can trigger Cloudflare blocks until Consulta Remédios whitelists Doctor8. */
+export function isPharmacyTrackingEnabled(): boolean {
+  if (process.env.PHARMACY_UTM_ENABLED === "true") return true;
+  if (process.env.PHARMACY_UTM_ENABLED === "false") return false;
+  return Boolean(process.env.PHARMACY_AFFILIATE_ID?.trim());
+}
+
 export function isPharmacyReferenceEnabled(): boolean {
   const raw = process.env.PHARMACY_REFERENCE_ENABLED;
   if (raw === "false") return false;

@@ -1,35 +1,12 @@
 import { db } from "@/lib/db";
-import {
-  getPharmacyIntegrationMode,
-  getPharmacyUtmParams,
-} from "../config";
+import { getPharmacyIntegrationMode } from "../config";
+import { buildPartnerPurchaseUrl } from "../partner-url";
 import type {
   PharmacyDrugRef,
   PharmacyMarketplaceProvider,
   PharmacyOffer,
   PharmacySearchHit,
 } from "../types";
-
-const BASE_URL =
-  process.env.PHARMACY_PARTNER_BASE_URL?.trim() ||
-  "https://consultaremedios.com.br";
-
-function slugify(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function appendTracking(url: string): string {
-  const parsed = new URL(url);
-  for (const [key, value] of Object.entries(getPharmacyUtmParams())) {
-    parsed.searchParams.set(key, value);
-  }
-  return parsed.toString();
-}
 
 function catalogHitToDrugRef(hit: PharmacySearchHit): PharmacyDrugRef {
   return {
@@ -77,7 +54,6 @@ export const consultaRemediosProvider: PharmacyMarketplaceProvider = {
       activeIngredient: drug.activeIngredient,
       presentation: drug.presentation,
       manufacturer: drug.manufacturer,
-      externalId: slugify(drug.name),
     }));
   },
 
@@ -90,18 +66,7 @@ export const consultaRemediosProvider: PharmacyMarketplaceProvider = {
   },
 
   buildPurchaseUrl(drug: PharmacyDrugRef, cep?: string): string {
-    const slug = slugify(drug.name);
-    const path = slug ? `/${slug}` : "/busca";
-    const url = new URL(path, BASE_URL);
-
-    if (!slug) {
-      url.searchParams.set("q", drug.name);
-    }
-    if (cep) {
-      url.searchParams.set("cep", cep.replace(/\D/g, ""));
-    }
-
-    return appendTracking(url.toString());
+    return buildPartnerPurchaseUrl(drug, cep);
   },
 };
 
@@ -147,7 +112,7 @@ async function fetchPartnerOffers(
       currency: "BRL" as const,
       deliveryEta: offer.deliveryEta,
       inStock: offer.inStock ?? true,
-      purchaseUrl: appendTracking(offer.purchaseUrl),
+      purchaseUrl: offer.purchaseUrl,
     }));
   } catch {
     return [];

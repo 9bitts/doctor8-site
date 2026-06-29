@@ -69,7 +69,7 @@ export type PharmacyOffersResponse = {
   drug: PharmacyDrugRef;
   cep?: string;
   offers: PharmacyOffer[];
-  fallbackPurchaseUrl: string;
+  fallbackPurchaseUrl?: string;
   reference?: PharmacyReferencePrice | null;
 };
 

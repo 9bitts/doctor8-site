@@ -1,5 +1,7 @@
 "use client";
 
+import { Heart } from "lucide-react";
+
 /** Compact BR + VE solidarity badge for dashboard sidebar. */
 export default function BrVeSolidarityBadge() {
   return (
@@ -46,8 +48,8 @@ export default function BrVeSolidarityBadge() {
         />
         <circle cx="120" cy="22" r="3" fill="#e05930" />
       </svg>
-      <p className="px-3 py-2 text-[10px] leading-snug text-slate-400 text-center border-t border-white/5">
-        Brasil ? Venezuela
+      <p className="px-3 py-2 text-[10px] leading-snug text-slate-400 text-center border-t border-white/5 flex items-center justify-center gap-1">
+        Brasil <Heart size={10} className="text-red-500 fill-red-500 shrink-0" aria-hidden /> Venezuela
       </p>
     </div>
   );

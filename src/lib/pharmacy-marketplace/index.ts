@@ -6,6 +6,10 @@ import {
 } from "./config";
 import { consultaRemediosProvider } from "./providers/consulta-remedios";
 import { getCmedReferencePrice } from "./reference-price";
+import {
+  pharmacyOutApiPath,
+  pharmacyOutApiPathForPartnerUrl,
+} from "./partner-url";
 import type {
   PharmacyDrugRef,
   PharmacyMarketplaceProvider,
@@ -117,9 +121,12 @@ export async function getPharmacyOffers(
 ): Promise<PharmacyOffersResponse> {
   const provider = getProvider();
   const mode = getPharmacyIntegrationMode();
-  const fallbackPurchaseUrl = provider.buildPurchaseUrl(drug, cep);
-  const offers =
+  const rawOffers =
     mode === "disabled" ? [] : await provider.getOffers(drug, cep);
+  const offers = rawOffers.map((offer) => ({
+    ...offer,
+    purchaseUrl: pharmacyOutApiPathForPartnerUrl(offer.purchaseUrl),
+  }));
   const reference = await getCmedReferencePrice(drug);
 
   return {
@@ -128,7 +135,8 @@ export async function getPharmacyOffers(
     drug,
     cep,
     offers,
-    fallbackPurchaseUrl,
+    fallbackPurchaseUrl:
+      mode === "disabled" ? undefined : pharmacyOutApiPath(drug, cep),
     reference,
   };
 }

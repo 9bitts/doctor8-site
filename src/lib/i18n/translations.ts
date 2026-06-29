@@ -4228,7 +4228,7 @@ const pt: LocaleDict = {
   "pharmacy.loadingOffers": "Carregando ofertas das farmácias...",
   "pharmacy.buy": "Comprar",
   "pharmacy.compareAndBuy": "Comparar preços e comprar",
-  "pharmacy.deeplinkHint": "Veja preços e opções de entrega das farmácias parceiras na sua região.",
+  "pharmacy.deeplinkHint": "Veja preços nas farmácias parceiras. Abrimos a busca no Consulta Remédios pelo Doctor8 (sem rastreamento até o acordo comercial).",
   "pharmacy.deeplinkCepHint": "CEP opcional para preços locais no site parceiro.",
   "pharmacy.disclaimer": "A Doctor8 não vende medicamentos. Preços CMED são apenas informativos. Compra e entrega são feitas pelas farmácias. Alguns produtos exigem receita médica.",
   "pharmacy.comingSoon": "Comparação de preços e compra online estarão disponíveis aqui em breve.",
