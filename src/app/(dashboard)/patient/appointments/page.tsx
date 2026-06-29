@@ -9,6 +9,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import AppointmentsAnchorScroll from "@/components/AppointmentsAnchorScroll";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, formatSlotCount, Lang } from "@/lib/i18n/translations";
 import {
@@ -84,6 +86,8 @@ const APPT_TIP_KEYS: Partial<Record<Step, string>> = {
 export default function AppointmentsPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
+  const searchParams = useSearchParams();
+  const highlightApptId = searchParams.get("id");
 
   const SPECIALTIES = ["All", "General Practice", "Cardiology", "Psychology", PSYCHOANALYSIS_SPECIALTY, "Nutrition", "Cannabis Medicine", "Dermatology"] as const;
 
@@ -691,6 +695,7 @@ export default function AppointmentsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <AppointmentsAnchorScroll queryId={highlightApptId} ready={!loading} />
 
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -751,7 +756,7 @@ export default function AppointmentsPage() {
               const canCancel  = hoursUntil > 0;
               const canReschedule = hoursUntil > 24;
               return (
-                <div key={apt.id} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm flex-wrap">
+                <div key={apt.id} id={`appt-${apt.id}`} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm flex-wrap scroll-mt-24">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-800 truncate">
                       Dr. {apt.professional?.firstName} {apt.professional?.lastName}

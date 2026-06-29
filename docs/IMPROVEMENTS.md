@@ -8,10 +8,8 @@ Lista viva de melhorias **pendentes**. Lotes pequenos, baixo risco ao fluxo huma
 
 | # | Item | Prioridade | O que falta |
 |---|------|------------|-------------|
-| M2 | WhatsApp Business API (templates Meta) | Média | Railway: token + phone ID + webhook + app secret OK — confirmar template `WHATSAPP_REMINDER_TEMPLATE` aprovado na Meta |
-| M3 | Sentry em produção | Baixa | Código pronto — definir `SENTRY_DSN` no Railway |
+| M2 | WhatsApp Business API (templates Meta) | **Alta** | Renovar `WHATSAPP_ACCESS_TOKEN` na Meta (token expirado no probe) + confirmar template `WHATSAPP_REMINDER_TEMPLATE` aprovado |
 | M4 | Gravação cloud Daily | Baixa | Off por padrão — `DAILY_CLOUD_RECORDING=1` + banner já no código |
-| M9 | Busca pública: banner + filtro voluntários AcuraBrasil | Média | OK — `PublicSearchClient`, landing e filtro `acuraVolunteers=1` |
 | M10 | Google Meet em produção (humanitário + agendamentos) | Média | Código OK — service account + `GOOGLE_MEET_ENABLED=1` no Railway (ver `.env.example`) |
 | M11 | Farmácia marketplace ativo | Baixa | Código OK — `PHARMACY_MARKETPLACE_ENABLED=true` (+ UTM/affiliate se quiser) |
 
@@ -21,9 +19,30 @@ Lista viva de melhorias **pendentes**. Lotes pequenos, baixo risco ao fluxo huma
 
 | Item | Notas |
 |------|--------|
+| Cron backup | Agendar POST `/api/cron/reminders` e `/api/cron/post-consult-notes` com header `x-cron-secret` (Railway Cron ou cron-job.org) |
+| Backfill busca | `npm run backfill:search-text` no Railway após deploy das migrations de search |
 | Admins com login | Rodar `node scripts/fix-admin-users.mjs --promote` no Railway se ainda não feito |
 | Contas profissionais Acura | Promover/verificar e-mails via admin ou scripts one-off (ex. psicólogo `contato@acurabrasil.org`) |
-| Migration países Américas | Deve rodar no deploy (`registration_americas_regions`); conferir após push |
+| Migrations pendentes | `20260629000000_patient_search_invites`, `20260629110000_organization_linked_providers` |
+
+---
+
+## Concluído recentemente (integrações + fluxo consultas)
+
+| Item | Status |
+|------|--------|
+| M3 Sentry em produção | OK — `SENTRY_DSN` ativo no painel Admin → Integrações |
+| QStash + lembretes | OK — vars configuradas; painel mostra stats |
+| Web Push (VAPID) | OK — vars no Railway |
+| Twilio SMS | OK |
+| Deep link pós-consulta (`#appt-{id}` prof / `?id=` paciente) | OK |
+| Banner pré-consulta paciente (48h) | OK |
+| Org multi-provider (reports, accounting, TISS, repasse) | OK |
+| M9 banner + filtro Acura (busca pública + landing) | OK |
+| Admin Integrações: Google Meet, Farmácia, Cron rows + i18n | OK |
+| Hint token WhatsApp expirado no admin | OK |
+| Migração T1: rotas `/api/professional/*` → `requireProfessionalApi` (exc. sign/callback OAuth) | OK |
+| `.env.example` seção CRON + QStash | OK |
 
 ---
 

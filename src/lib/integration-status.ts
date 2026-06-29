@@ -4,6 +4,8 @@ import { getWhatsAppReadiness } from "@/lib/whatsapp";
 import { isWebPushEnabled, getVapidPublicKey } from "@/lib/web-push";
 import { isSmsConfigured, usesTwilioVerify } from "@/lib/sms";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
+import { isGoogleMeetEnabled, isCalendarMeetConfigured } from "@/lib/google-meet";
+import { getPharmacyIntegrationMode } from "@/lib/pharmacy-marketplace/config";
 import { isSentryEnabled } from "../../sentry.shared.config";
 
 export type IntegrationHealth = "ok" | "partial" | "missing" | "fallback";
@@ -34,6 +36,10 @@ export function getIntegrationStatuses(): IntegrationRow[] {
   const qstashVerify = has(process.env.QSTASH_CURRENT_SIGNING_KEY);
   const s3Ok = has(process.env.AWS_ACCESS_KEY_ID) && has(process.env.AWS_S3_BUCKET);
   const anthropicOk = has(process.env.ANTHROPIC_API_KEY);
+  const cronOk = has(process.env.CRON_SECRET);
+  const meetEnabled = isGoogleMeetEnabled();
+  const meetCalendar = isCalendarMeetConfigured();
+  const pharmacyMode = getPharmacyIntegrationMode();
 
   return [
     {
@@ -129,6 +135,35 @@ export function getIntegrationStatuses(): IntegrationRow[] {
           ? "Browser push active (VAPID keys + NEXT_PUBLIC_VAPID_PUBLIC_KEY)."
           : `VAPID server keys set. Add NEXT_PUBLIC_VAPID_PUBLIC_KEY=${vapidPublic ? "(same as VAPID_PUBLIC_KEY)" : ""} for client subscription.`
         : "Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to enable browser push.",
+    },
+    {
+      id: "googlemeet",
+      health: meetEnabled && meetCalendar ? "ok" : meetEnabled ? "partial" : "missing",
+      configured: meetEnabled,
+      detail: meetEnabled
+        ? meetCalendar
+          ? "Google Meet enabled with service account + calendar user (humanitarian + appointments)."
+          : "GOOGLE_MEET_ENABLED=1 but missing GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_CALENDAR_USER."
+        : "Optional — set GOOGLE_MEET_ENABLED=1 + service account (see .env.example).",
+    },
+    {
+      id: "pharmacy",
+      health: pharmacyMode === "api" ? "ok" : pharmacyMode === "deeplink" ? "partial" : "missing",
+      configured: pharmacyMode !== "disabled",
+      detail:
+        pharmacyMode === "api"
+          ? "Pharmacy marketplace API mode (PHARMACY_MARKETPLACE_ENABLED + API keys)."
+          : pharmacyMode === "deeplink"
+            ? "Partner deeplink active (Consulta Remédios). Set PHARMACY_UTM_ENABLED when whitelisted."
+            : "Set PHARMACY_MARKETPLACE_ENABLED=true for Compare and buy links.",
+    },
+    {
+      id: "cron",
+      health: cronOk ? "ok" : qstashOk ? "partial" : "missing",
+      configured: cronOk,
+      detail: cronOk
+        ? "CRON_SECRET set — schedule POST /api/cron/reminders and /api/cron/post-consult-notes (header x-cron-secret)."
+        : "Generate CRON_SECRET for backup cron; QStash is primary when configured.",
     },
     {
       id: "smart",

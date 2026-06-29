@@ -10,6 +10,7 @@ import Link from "next/link";
 import { chartActionUrl } from "@/lib/video-chart-nav";
 import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import { decrypt } from "@/lib/encryption";
+import AppointmentsAnchorClient from "@/components/professional/AppointmentsAnchorClient";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -218,6 +219,7 @@ export default async function ProfessionalAppointments() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      <AppointmentsAnchorClient />
       <div>
         <h1 className="text-2xl font-bold text-slate-900">{t("proappt.title")}</h1>
         <p className="text-slate-500 mt-1">{t("proappt.subtitle")}</p>

@@ -1,17 +1,22 @@
 // src/app/api/professional/availability/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { validateAvailabilityBlocks } from "@/lib/availability-validation";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({ where: { userId: session.user.id } });
-  if (!professional) return NextResponse.json({ slots: [], acuraVolunteer: false, badgeVisible: false });
+  const professional = await db.professionalProfile.findUnique({
+    where: { id: ctx.professional.id },
+    select: { id: true, acuraVolunteer: true, verified: true },
+  });
+  if (!professional) {
+    return NextResponse.json({ slots: [], acuraVolunteer: false, badgeVisible: false });
+  }
 
   const slots = await db.availabilitySlot.findMany({
     where: { professionalId: professional.id, isActive: true },
@@ -33,12 +38,15 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const { slots } = await req.json();
 
-  const professional = await db.professionalProfile.findUnique({ where: { userId: session.user.id } });
+  const professional = await db.professionalProfile.findUnique({
+    where: { id: ctx.professional.id },
+    select: { id: true, acuraVolunteer: true, verified: true },
+  });
   if (!professional) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const normalized = (slots as {
@@ -52,41 +60,37 @@ export async function PUT(req: NextRequest) {
     dayOfWeek: s.dayOfWeek,
     startTime: s.startTime,
     endTime: s.endTime,
+    slotDurationMins: s.slotDuration,
+    slotGapMins: s.slotGap ?? 0,
     volunteerOnly: !!s.volunteerOnly,
   }));
 
-  const overlapKey = validateAvailabilityBlocks(normalized);
-  if (overlapKey) {
-    return NextResponse.json({ error: overlapKey }, { status: 400 });
+  const validationError = validateAvailabilityBlocks(normalized);
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   const hasVolunteerBlocks = normalized.some((s) => s.volunteerOnly);
   if (hasVolunteerBlocks && !isAcuraVolunteerProvider(professional.verified, professional.acuraVolunteer)) {
-    return NextResponse.json({ error: "acura_volunteer_required" }, { status: 403 });
+    return NextResponse.json({ error: "ACURA_VOLUNTEER_REQUIRED" }, { status: 400 });
   }
 
-  await db.$transaction([
-    db.availabilitySlot.deleteMany({ where: { professionalId: professional.id } }),
-    db.availabilitySlot.createMany({
-      data: (slots as {
-        dayOfWeek: number;
-        startTime: string;
-        endTime: string;
-        slotDuration: number;
-        slotGap?: number;
-        volunteerOnly?: boolean;
-      }[]).map((s) => ({
+  await db.availabilitySlot.deleteMany({ where: { professionalId: professional.id } });
+
+  if (normalized.length > 0) {
+    await db.availabilitySlot.createMany({
+      data: normalized.map((s) => ({
         professionalId: professional.id,
         dayOfWeek: s.dayOfWeek,
         startTime: s.startTime,
         endTime: s.endTime,
-        slotDurationMins: s.slotDuration,
-        slotGapMins: s.slotGap ?? 0,
-        volunteerOnly: !!s.volunteerOnly,
+        slotDurationMins: s.slotDurationMins,
+        slotGapMins: s.slotGapMins,
+        volunteerOnly: s.volunteerOnly,
         isActive: true,
       })),
-    }),
-  ]);
+    });
+  }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ ok: true });
 }

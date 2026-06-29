@@ -65,13 +65,22 @@ export async function GET() {
 
   const integrations = getIntegrationStatuses().map((row) => {
     if (row.id === "whatsapp" && whatsappProbe) {
-      const health = whatsappProbe.ok && wa.productionReady ? "ok" : row.health;
+      const expired = /expired|session has expired/i.test(whatsappProbe.detail);
+      const health =
+        whatsappProbe.ok && wa.productionReady
+          ? "ok"
+          : expired
+            ? "partial"
+            : row.health;
+      const expiredHint = expired
+        ? " WHATSAPP_ACCESS_TOKEN expired — regenerate in Meta Developers and update Railway."
+        : "";
       return {
         ...row,
         health,
         detail: whatsappProbe.ok
           ? `${wa.note} Live: ${whatsappProbe.detail}`
-          : `${wa.note} Graph probe: ${whatsappProbe.detail}`,
+          : `${wa.note}${expiredHint} Graph probe: ${whatsappProbe.detail}`,
       };
     }
     return row;
