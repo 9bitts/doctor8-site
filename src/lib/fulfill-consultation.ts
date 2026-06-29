@@ -26,6 +26,7 @@ export type ConsultationPaymentMeta = {
   providerSpecialty?: string;
   durationMins?: string;
   patientName?: string;
+  volunteerBooking?: string;
 };
 
 export class AppointmentSlotTakenError extends Error {
@@ -35,6 +36,43 @@ export class AppointmentSlotTakenError extends Error {
   }
 }
 
+export async function fulfillVolunteerConsultation(params: {
+  userId: string;
+  providerType: "health" | "psychoanalyst";
+  providerId: string;
+  scheduledAt: string;
+  type: "TELECONSULT" | "IN_PERSON";
+  acceptedCancellationPolicy: boolean;
+  bookingSource?: string;
+  visitReason?: string;
+  healthPlanSlug?: string;
+  healthPlanLabel?: string;
+  serviceId?: string;
+  serviceName?: string;
+}): Promise<{ appointmentId: string; created: boolean }> {
+  return fulfillConsultationPayment({
+    stripePaymentId: "",
+    amount: 0,
+    currency: "BRL",
+    metadata: {
+      userId: params.userId,
+      providerType: params.providerType,
+      professionalId: params.providerType === "health" ? params.providerId : undefined,
+      psychoanalystId: params.providerType === "psychoanalyst" ? params.providerId : undefined,
+      scheduledAt: params.scheduledAt,
+      type: params.type,
+      visitReason: params.visitReason,
+      healthPlanSlug: params.healthPlanSlug,
+      healthPlanLabel: params.healthPlanLabel,
+      serviceId: params.serviceId,
+      serviceName: params.serviceName,
+      acceptedCancellationPolicy: params.acceptedCancellationPolicy ? "true" : undefined,
+      bookingSource: params.bookingSource ?? "acura_volunteer",
+      volunteerBooking: "true",
+    },
+  });
+}
+
 export async function fulfillConsultationPayment(params: {
   stripePaymentId: string;
   amount: number;
@@ -42,6 +80,7 @@ export async function fulfillConsultationPayment(params: {
   metadata: ConsultationPaymentMeta;
 }): Promise<{ appointmentId: string; created: boolean }> {
   const { stripePaymentId, amount, currency, metadata } = params;
+  const isVolunteerBooking = metadata.volunteerBooking === "true" || amount === 0;
   const {
     userId,
     scheduledAt,
@@ -120,9 +159,10 @@ export async function fulfillConsultationPayment(params: {
 
   const { appointment, created } = await db.$transaction(
     async (tx) => {
-      const existingPayment = await tx.appointment.findFirst({
-        where: { stripePaymentId },
-      });
+      const existingPayment =
+        stripePaymentId && !isVolunteerBooking
+          ? await tx.appointment.findFirst({ where: { stripePaymentId } })
+          : null;
       if (existingPayment) {
         return { appointment: existingPayment, created: false };
       }
@@ -146,11 +186,11 @@ export async function fulfillConsultationPayment(params: {
           type: (type as "TELECONSULT" | "IN_PERSON") || "TELECONSULT",
           status: "CONFIRMED",
           priceAmount: amount,
-          currency,
-          stripePaymentId,
-          paidAt: new Date(),
+          currency: isVolunteerBooking ? "BRL" : currency,
+          stripePaymentId: isVolunteerBooking ? null : stripePaymentId,
+          paidAt: isVolunteerBooking ? null : new Date(),
           durationMins,
-          bookingSource: (bookingSource as any) || "patient_panel",
+          bookingSource: (bookingSource as any) || (isVolunteerBooking ? "acura_volunteer" : "patient_panel"),
           ...(intakePayload ? { chiefComplaint: intakePayload } : {}),
         },
       });

@@ -164,7 +164,14 @@ export default function AppointmentsPage() {
   const [visitReason, setVisitReason] = useState("");
 
   useEffect(() => { fetchProfessionals(); fetchAppointments(); fetchPastAppointments(); }, []);
-  useEffect(() => { if (step === "payment" && !stripeLoaded && paymentMethod === "card") loadStripe(); }, [step, paymentMethod]);
+  useEffect(() => {
+    if (step !== "payment" || stripeLoaded || paymentMethod !== "card") return;
+    const meta =
+      selectedDay?.slots.find((s) => s.datetime === selectedSlot) ??
+      slots.flatMap((d) => d.slots).find((s) => s.datetime === selectedSlot);
+    if (meta?.volunteerOnly) return;
+    loadStripe();
+  }, [step, paymentMethod, selectedSlot, selectedDay, slots, stripeLoaded]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -546,6 +553,55 @@ export default function AppointmentsPage() {
     finally { setPayLoading(false); }
   }
 
+  async function handleVolunteerBooking() {
+    if (!selectedPro || !selectedSlot || !acceptedPolicy) return;
+    if (!requireTcleForTeleconsult()) return;
+    setPayLoading(true);
+    setError("");
+    try {
+      const selectedService = providerServices.find((s) => s.id === selectedServiceId);
+      const selectedPlan =
+        healthPlanSlug === "particular"
+          ? { slug: "particular", name: t("appt.healthPlanPrivate") }
+          : providerPlans.find((p) => p.slug === healthPlanSlug) ?? {
+              slug: healthPlanSlug,
+              name: healthPlanSlug,
+            };
+
+      const res = await fetch("/api/appointments/volunteer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          providerType: selectedPro.providerType || "health",
+          professionalId: selectedPro.providerType === "health" ? selectedPro.id : undefined,
+          psychoanalystId: selectedPro.providerType === "psychoanalyst" ? selectedPro.id : undefined,
+          scheduledAt: selectedSlot,
+          type,
+          acceptedCancellationPolicy: acceptedPolicy,
+          bookingSource,
+          visitReason: visitReason.trim() || undefined,
+          healthPlanSlug: selectedPlan.slug,
+          healthPlanLabel: selectedPlan.name,
+          ...(selectedServiceId && selectedService
+            ? { serviceId: selectedServiceId, serviceName: selectedService.name }
+            : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error?.general?.[0] || t("appt.errNotConfirmed"));
+        return;
+      }
+      setConfirmedId(data.appointmentId);
+      setStep("confirmed");
+      fetchAppointments();
+    } catch {
+      setError(t("appt.errGeneric"));
+    } finally {
+      setPayLoading(false);
+    }
+  }
+
   async function handleCancel() {
     if (!cancelModal) return;
     setCancelLoading(true);
@@ -609,6 +665,11 @@ export default function AppointmentsPage() {
   const needsHistoryNotice = selectedPro?.providerType !== "psychoanalyst";
   const slotsShowVolunteerLegend = dayHasVolunteerSlots(slots);
 
+  const selectedSlotMeta =
+    selectedDay?.slots.find((s) => s.datetime === selectedSlot) ??
+    slots.flatMap((d) => d.slots).find((s) => s.datetime === selectedSlot);
+  const selectedSlotIsVolunteer = !!selectedSlotMeta?.volunteerOnly && !!selectedSlotMeta?.available;
+
   const selectedService = providerServices.find((s) => s.id === selectedServiceId);
   const checkoutPriceCents = selectedService?.priceCents ?? selectedPro?.consultPrice ?? 0;
   const checkoutCurrency = selectedService?.currency || selectedPro?.currency || "USD";
@@ -618,8 +679,11 @@ export default function AppointmentsPage() {
     ? new Intl.NumberFormat(locale, { style: "currency", currency: checkoutCurrency }).format(checkoutPriceCents / 100)
     : "";
 
-  const usesHostedCheckout = isBrlCheckout && paymentMethod !== "card";
-  const canPay = acceptedPolicy && (usesHostedCheckout || (stripeLoaded && cardComplete));
+  const usesHostedCheckout = isBrlCheckout && paymentMethod !== "card" && !selectedSlotIsVolunteer;
+  const canPay = selectedSlotIsVolunteer
+    ? acceptedPolicy
+    : acceptedPolicy && (usesHostedCheckout || (stripeLoaded && cardComplete));
+  const summaryPriceLabel = selectedSlotIsVolunteer ? t("appt.volunteerFreeTotal") : priceDisplay;
 
   // Tips per step
   const tipKey = step === "payment" ? APPT_TIP_KEYS.payment : APPT_TIP_KEYS[step];
@@ -939,7 +1003,8 @@ export default function AppointmentsPage() {
                 )}
                 {selectedSlot && (
                   <button type="button" onClick={goToPayment} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-4 rounded-xl transition text-base">
-                    {t("appt.continueToPayment")} <ChevronRight size={18} className="shrink-0" />
+                    {selectedSlotIsVolunteer ? t("appt.continueVolunteerBooking") : t("appt.continueToPayment")}{" "}
+                    <ChevronRight size={18} className="shrink-0" />
                   </button>
                 )}
               </>
@@ -951,7 +1016,15 @@ export default function AppointmentsPage() {
       {/* STEP 3: PAYMENT */}
       {step === "payment" && selectedPro && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-          <h2 className="font-bold text-slate-900 text-lg">{t("appt.completePayment")}</h2>
+          <h2 className="font-bold text-slate-900 text-lg">
+            {selectedSlotIsVolunteer ? t("appt.volunteerBookingTitle") : t("appt.completePayment")}
+          </h2>
+
+          {selectedSlotIsVolunteer && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
+              {t("appt.volunteerBookingIntro")}
+            </div>
+          )}
 
           {error && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
@@ -973,7 +1046,7 @@ export default function AppointmentsPage() {
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">{t("appt.orderSummary")}</p>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t("appt.consultWith")} {selectedPro.lastName}</span>
-              <span className="font-semibold">{priceDisplay}</span>
+              <span className="font-semibold">{summaryPriceLabel}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t("appt.date")}</span>
@@ -989,7 +1062,7 @@ export default function AppointmentsPage() {
             </div>
             <div className="border-t border-slate-200 mt-3 pt-3 flex justify-between font-bold text-slate-900">
               <span>{t("appt.total")}</span>
-              <span>{priceDisplay}</span>
+              <span className={selectedSlotIsVolunteer ? "text-green-700" : ""}>{summaryPriceLabel}</span>
             </div>
           </div>
 
@@ -1059,7 +1132,7 @@ export default function AppointmentsPage() {
             </ul>
           </div>
 
-          {isBrlCheckout && (
+          {isBrlCheckout && !selectedSlotIsVolunteer && (
             <div className="space-y-3">
               <p className="text-sm font-semibold text-slate-700">{t("appt.paymentMethodLabel")}</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1088,7 +1161,7 @@ export default function AppointmentsPage() {
             </div>
           )}
 
-          {!usesHostedCheckout && (
+          {!usesHostedCheckout && !selectedSlotIsVolunteer && (
           <div>
             <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
               <CreditCard size={16} /> {t("appt.cardDetails")}
@@ -1102,7 +1175,7 @@ export default function AppointmentsPage() {
           </div>
           )}
 
-          {usesHostedCheckout && (
+          {usesHostedCheckout && !selectedSlotIsVolunteer && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
               <p className="font-medium">{t("appt.checkoutRedirect")}</p>
             </div>
@@ -1130,17 +1203,27 @@ export default function AppointmentsPage() {
           )}
 
           <button
-            onClick={() => (usesHostedCheckout ? handleCheckoutPayment(paymentMethod) : handlePayment())}
+            onClick={() => (selectedSlotIsVolunteer ? handleVolunteerBooking() : usesHostedCheckout ? handleCheckoutPayment(paymentMethod) : handlePayment())}
             disabled={payLoading || !canPay}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-slate-800 to-emerald-600 text-white font-bold py-4 rounded-xl transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+            className={`w-full flex items-center justify-center gap-2 text-white font-bold py-4 rounded-xl transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-base ${
+              selectedSlotIsVolunteer
+                ? "bg-gradient-to-r from-green-700 to-green-500"
+                : "bg-gradient-to-r from-slate-800 to-emerald-600"
+            }`}
           >
-            {payLoading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
-            {payLoading ? t("appt.processing") : `${t("appt.pay")} ${priceDisplay}`}
+            {payLoading ? <Loader2 size={18} className="animate-spin" /> : selectedSlotIsVolunteer ? <CheckCircle2 size={18} /> : <Lock size={18} />}
+            {payLoading
+              ? t("appt.processing")
+              : selectedSlotIsVolunteer
+                ? t("appt.confirmVolunteerBooking")
+                : `${t("appt.pay")} ${priceDisplay}`}
           </button>
 
+          {!selectedSlotIsVolunteer && (
           <p className="text-xs text-slate-400 text-center flex items-center justify-center gap-1">
             <Lock size={11} /> {t("appt.securedBy")}
           </p>
+          )}
         </div>
       )}
 
@@ -1178,7 +1261,9 @@ export default function AppointmentsPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">{t("appt.amountPaid")}</span>
-              <span className="font-semibold text-emerald-600">{priceDisplay}</span>
+              <span className={`font-semibold ${selectedSlotIsVolunteer ? "text-green-700" : "text-emerald-600"}`}>
+                {selectedSlotIsVolunteer ? t("appt.volunteerFreeTotal") : priceDisplay}
+              </span>
             </div>
           </div>
           {selectedPro.providerType !== "psychoanalyst" && (

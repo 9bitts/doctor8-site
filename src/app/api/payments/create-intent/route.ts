@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { stripe, getOrCreateStripeCustomer, getCurrency } from "@/lib/stripe";
 import { getConsultationPaymentMethodTypes } from "@/lib/stripe-payment-methods";
 import { getUnifiedProvider, type ProviderType } from "@/lib/providers";
+import { assertPaidSlotBooking, VolunteerSlotBookingError } from "@/lib/volunteer-slot-booking";
 import { z } from "zod";
 
 const schema = z.object({
@@ -38,6 +39,18 @@ export async function POST(req: NextRequest) {
 
   const provider = await getUnifiedProvider(providerId, providerType as ProviderType);
   if (!provider) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+
+  try {
+    await assertPaidSlotBooking(providerId, providerType as ProviderType, scheduledAt);
+  } catch (e) {
+    if (e instanceof VolunteerSlotBookingError && e.code === "volunteer_slot_requires_free_booking") {
+      return NextResponse.json(
+        { error: { general: ["This volunteer slot is free — use volunteer booking instead of payment."] } },
+        { status: 400 },
+      );
+    }
+    throw e;
+  }
 
   const patient = await db.patientProfile.findUnique({
     where: { userId: session.user.id },
