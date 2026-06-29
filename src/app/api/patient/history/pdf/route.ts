@@ -7,6 +7,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { decrypt } from "@/lib/encryption";
+import { getAppUrl } from "@/lib/email-core";
+import { printBrandLogoImg } from "@/lib/brand";
 
 export async function GET() {
   const session = await auth();
@@ -76,7 +78,7 @@ export async function GET() {
 
 <div class="header">
   <div>
-    <div class="logo">Doctor<span>8</span></div>
+    <div class="logo">${printBrandLogoImg(getAppUrl())}</div>
     <div style="font-size:11px;color:#666;margin-top:4px;">Secure Health Platform</div>
   </div>
   <div class="meta">

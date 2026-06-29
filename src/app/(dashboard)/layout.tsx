@@ -14,6 +14,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import OrganizationScopeSwitcher from "@/components/organization/OrganizationScopeSwitcher";
 import ProfessionalScopeSwitcher from "@/components/professional/ProfessionalScopeSwitcher";
 import { resolveLoginPathForSession } from "@/lib/auth-portals";
+import { BrandLogo, BrandLogoLink } from "@/components/brand/BrandLogo";
 import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
 import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
 import {
@@ -191,8 +192,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
   const isOrganization = role === "ORGANIZATION";
-  const logoAccent = isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
-  const logoAccentHeader = isOrganization ? "text-indigo-500" : isPsychologist ? "text-violet-500" : isProfessional ? "text-accent-500" : isPsychoanalyst ? "text-violet-500" : isIntegrativeTherapist ? "text-teal-500" : "text-emerald-500";
   const navActive = isOrganization
     ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
     : isPsychologist
@@ -225,15 +224,17 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         `}
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/50">
-          <Link href={isPsychologist ? "/psychologist" : isPsychoanalyst ? "/psychoanalyst" : "/"} className="text-2xl font-black text-white tracking-tight">
-            {isPsychologist ? (
-              <span className="uppercase">{t("portal.psychologyBrand")}</span>
-            ) : isPsychoanalyst ? (
-              <span className="uppercase">Psicanálise</span>
-            ) : (
-              <>Doctor<span className={logoAccent}>8</span></>
-            )}
-          </Link>
+          {isPsychologist ? (
+            <Link href="/psychologist" className="text-lg font-black text-white tracking-tight uppercase">
+              {t("portal.psychologyBrand")}
+            </Link>
+          ) : isPsychoanalyst ? (
+            <Link href="/psychoanalyst" className="text-lg font-black text-white tracking-tight uppercase">
+              Psicanálise
+            </Link>
+          ) : (
+            <BrandLogoLink href="/" variant="on-dark" size="md" />
+          )}
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
             <X size={20} />
           </button>
@@ -302,7 +303,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               ) : isPsychoanalyst ? (
                 "Psicanálise"
               ) : (
-                <>Doctor<span className={logoAccentHeader}>8</span></>
+                <BrandLogo variant="on-light" size="sm" className="inline-block" />
               )}
             </span>
           </div>

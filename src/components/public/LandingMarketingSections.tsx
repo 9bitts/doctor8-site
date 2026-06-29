@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import {
   Lock, Shield, Globe, CreditCard, Smartphone, Check, Star, Leaf, Zap,
   Stethoscope, Brain, Utensils, Heart, Dumbbell, ArrowRight, Instagram, MessageCircle, Mail,
@@ -237,9 +238,7 @@ export default function LandingMarketingSections() {
         <div className="mx-auto max-w-6xl">
           <div className="mb-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div className="sm:col-span-2 lg:col-span-1">
-              <div className="mb-3 text-xl font-extrabold text-white">
-                Doctor<span className="text-accent-500">8</span>
-              </div>
+              <BrandLogoLink variant="on-dark" size="md" className="mb-3" />
               <p className="mb-4 text-sm leading-relaxed">{c.footer.desc}</p>
               <div className="flex gap-2">
                 <a href="https://instagram.com/doctor8oficial" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 transition hover:bg-white/20" aria-label="Instagram">

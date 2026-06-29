@@ -9,6 +9,7 @@ import { HUMANITARIAN_LANDING_URL, VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanit
 import HumanitarianLangSwitcher from "@/components/humanitarian/HumanitarianLangSwitcher";
 import { humanitarianBackFallback, navigateBack } from "@/lib/safe-nav";
 import { resolveRoleHome } from "@/lib/role-home";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 type UserRole =
   | "PATIENT"
@@ -108,6 +109,7 @@ export default function HumanitarianShell({
               </button>
             )}
             <div className="flex items-center gap-2 min-w-0 flex-1">
+              <BrandLogo variant={dark ? "on-dark" : "on-light"} size="sm" className="shrink-0" />
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${dark ? "bg-rose-500/20" : "bg-rose-100"}`}>
                 <Heart size={18} className="text-rose-500" />
               </div>

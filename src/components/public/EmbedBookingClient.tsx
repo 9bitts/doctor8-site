@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getProfessionLabel } from "@/lib/professions";
 import type { PublicProfileData } from "@/lib/public-profile";
@@ -50,16 +50,9 @@ export default function EmbedBookingClient({ profile }: { profile: PublicProfile
           bookingFrom="public_embed"
         />
 
-        <p className="text-center text-[10px] text-slate-400 pt-1">
-          {t("pubEmbed.poweredBy")}{" "}
-          <Link
-            href={profile.publicPath}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-brand-500 hover:underline"
-          >
-            Doctor8
-          </Link>
+        <p className="text-center text-[10px] text-slate-400 pt-1 flex items-center justify-center gap-1.5 flex-wrap">
+          <span>{t("pubEmbed.poweredBy")}</span>
+          <BrandLogoLink href="/" variant="on-light" size="sm" />
         </p>
       </div>
     </>

@@ -17,6 +17,7 @@ import HumanitarianLangSwitcher, {
 } from "@/components/humanitarian/HumanitarianLangSwitcher";
 import PwaInstallPrompt from "@/components/humanitarian/PwaInstallPrompt";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 function t(lang: Lang, key: string) {
   return translate(lang, key);
@@ -106,7 +107,8 @@ export default function SosVenezuelaPage() {
     <div className="min-h-screen bg-slate-950 text-white flex flex-col overflow-x-hidden">
       <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/90 backdrop-blur-md">
         <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <BrandLogo variant="on-dark" size="sm" className="shrink-0" />
             <div className="w-9 h-9 rounded-xl bg-rose-500/20 flex items-center justify-center shrink-0">
               <Heart size={18} className="text-rose-400" />
             </div>

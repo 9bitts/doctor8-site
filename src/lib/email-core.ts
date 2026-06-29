@@ -1,6 +1,7 @@
 // Shared Resend helpers — deliverability + consistent sender identity
 
 import { Resend } from "resend";
+import { emailBrandLogoImg } from "./brand";
 
 export type EmailLang = "en" | "pt" | "es";
 
@@ -149,8 +150,8 @@ export function emailFooter(lang: EmailLang): string {
 export function emailHeader(heading: string): string {
   return `
     <div style="background:linear-gradient(135deg,#0a4d6e,#00b87a);padding:32px;text-align:center;">
-      <h1 style="color:white;font-size:28px;font-weight:900;margin:0;">Doctor<span style="color:#a7f3d0;">8</span></h1>
-      <p style="color:rgba(255,255,255,.85);margin:8px 0 0;font-size:15px;">${heading}</p>
+      ${emailBrandLogoImg(getAppUrl())}
+      <p style="color:rgba(255,255,255,.85);margin:12px 0 0;font-size:15px;">${heading}</p>
     </div>`;
 }
 

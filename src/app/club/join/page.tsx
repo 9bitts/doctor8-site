@@ -8,6 +8,7 @@ import { buyingClubPageForRole } from "@/lib/buying-club-auth";
 import {
   ShoppingBag, Users, Loader2, LogIn, UserPlus, AlertCircle,
 } from "lucide-react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const LANG_KEY = "doctor8.lang";
 
@@ -201,9 +202,7 @@ export default function ClubJoinPage() {
         </div>
 
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-            Doctor<span className="text-emerald-500">8</span>
-          </h2>
+          <BrandLogo variant="on-light" size="lg" className="mx-auto" />
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-100 shadow-lg p-6">

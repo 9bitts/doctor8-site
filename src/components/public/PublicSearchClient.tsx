@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -205,9 +206,7 @@ export default function PublicSearchClient({
       <header className="bg-brand-500 text-white sticky top-0 z-20 shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4">
-            <Link href="/" className="text-xl font-black shrink-0">
-              Doctor<span className="text-accent-400">8</span>
-            </Link>
+            <BrandLogoLink href="/" variant="on-dark" size="md" />
             <div className="flex items-center gap-3 text-sm shrink-0">
               <Link href="/login" className="hover:underline opacity-90">{t("pub.headerLogin")}</Link>
               <Link href="/register" className="bg-white text-brand-600 font-semibold px-4 py-2 rounded-full">

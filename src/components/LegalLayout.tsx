@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import { sanitizeLegalHtml } from "@/lib/sanitize-html";
 
 interface Section {
@@ -35,9 +36,7 @@ export default function LegalLayout({
       {/* Nav */}
       <nav className="bg-slate-900 border-b border-slate-700/50 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="font-bold text-xl text-white" style={{ fontFamily: "sans-serif" }}>
-            Doctor<span style={{ color: "#e05930" }}>8</span>
-          </Link>
+          <BrandLogoLink variant="on-dark" size="md" />
           <div className="flex gap-2">
             {(["pt", "en", "es"] as Lang[]).map((l) => (
               <button

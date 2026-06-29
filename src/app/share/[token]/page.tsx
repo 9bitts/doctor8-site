@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { FileText, Pill, Clock, AlertCircle, Loader2, Shield } from "lucide-react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   translate,
   normalizeLang,
@@ -135,9 +136,7 @@ export default function SharedRecordPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-200 px-4 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <span className="text-xl font-black text-slate-900">
-            Doctor<span className="text-emerald-500">8</span>
-          </span>
+          <BrandLogo variant="on-light" size="md" />
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <Shield size={12} className="text-emerald-500" />
             {t("sharePublic.compliance")}

@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { decrypt } from "@/lib/encryption";
+import { getAppUrl } from "@/lib/email-core";
+import { printBrandLogoImg } from "@/lib/brand";
 
 function esc(s: string): string {
   return s
@@ -170,7 +172,7 @@ export async function GET() {
 <body>
 <div class="header">
   <div>
-    <div class="logo">Doctor<span>8</span></div>
+    <div class="logo">${printBrandLogoImg(getAppUrl())}</div>
     <div style="font-size:11px;color:#666;margin-top:4px;">${L.subtitle}</div>
   </div>
   <div style="text-align:right;font-size:11px;color:#666;">

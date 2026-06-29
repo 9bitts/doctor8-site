@@ -1,6 +1,7 @@
 // Public professional profile ? SEO URL: /especialistas/[especialidade]/[cidade]/[slug]
 
 import { notFound, redirect } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Video, Building2, Star, CheckCircle2, Stethoscope, Award, MapPin, ExternalLink,
@@ -101,8 +102,15 @@ export default async function PublicSpecialistPage({
         {/* Header */}
         <header className="bg-brand-500 text-white">
           <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="text-xl font-black tracking-tight">
-              Doctor<span className="text-accent-400">8</span>
+            <Link href="/" className="inline-flex shrink-0">
+              <Image
+                src="/branding/doctor8-logo.png"
+                alt="Doctor8"
+                width={160}
+                height={44}
+                className="h-9 w-auto mix-blend-screen"
+                priority
+              />
             </Link>
             <div className="flex items-center gap-3 text-sm">
               <Link href="/login" className="hover:underline opacity-90">

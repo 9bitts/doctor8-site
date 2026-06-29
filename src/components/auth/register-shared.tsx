@@ -14,7 +14,7 @@ import {
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
 import { getLoginAccentStyles } from "@/components/auth/login-shared";
 import type { LoginAccent } from "@/lib/auth-portals";
-import { AuthLogo } from "@/components/auth/auth-logo";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   buildVerifyAccountHref,
   resolveLoginPathForRegistration,
@@ -83,7 +83,7 @@ export function RegisterLanguageSelector({
 export function RegisterLogo(_props?: { accent?: LoginAccent }) {
   return (
     <div className="text-center mb-8">
-      <AuthLogo className="h-10 w-auto mx-auto mix-blend-screen" />
+      <BrandLogo variant="on-dark" size="md" className="mx-auto" />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import {
   Calendar, Video, ClipboardList, Pill, CreditCard, BadgeCheck,
   Stethoscope, Brain, Sparkles, Leaf, Dumbbell, Utensils, Heart,
@@ -107,9 +108,7 @@ export function ProNav({ c, lang, onLangChange }: { c: ProLandingContent; lang: 
   return (
     <nav className="sticky top-0 z-[200] border-b border-white/[0.07] bg-d8-dark/95 backdrop-blur-md">
       <div className="mx-auto flex h-[66px] max-w-[1180px] items-center gap-6 px-6">
-        <Link href="/register/professional" className="shrink-0 text-[21px] font-extrabold tracking-tight text-white">
-          Doctor<span className="text-brand-400">8</span>
-        </Link>
+        <BrandLogoLink href="/register/professional" variant="on-dark" size="md" className="shrink-0" />
         <ul className={`${open ? "flex" : "hidden"} absolute left-0 right-0 top-[66px] flex-col gap-4 border-b border-white/10 bg-d8-dark p-6 md:static md:flex md:flex-1 md:flex-row md:border-0 md:bg-transparent md:p-0`}>
           {links.map((l) => (
             <li key={l.href}>
@@ -143,7 +142,7 @@ export function ProFooter({ c }: { c: ProLandingContent }) {
       <div className="mx-auto max-w-[1180px]">
         <div className="mb-12 grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
-            <p className="mb-3 text-xl font-extrabold text-white">Doctor<span className="text-brand-400">8</span></p>
+            <BrandLogoLink href="/register/professional" variant="on-dark" size="md" className="mb-3" />
             <p className="mb-5 text-[13px] leading-relaxed text-white/50">{c.footer.desc}</p>
             <div className="flex gap-2.5">
               <a href="https://instagram.com/doctor8oficial" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.07] text-white/70 transition hover:bg-white/15">

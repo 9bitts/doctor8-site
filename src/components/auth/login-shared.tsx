@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { LoginAccent, PortalHeaderIcon } from "@/lib/auth-portals";
 import { buildVerifyAccountHref, MAIN_LOGIN } from "@/lib/auth-portals";
-import { AuthLogo } from "@/components/auth/auth-logo";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export type { LoginAccent };
 
@@ -223,7 +223,7 @@ export function LoginHeader({
           <Icon className={`w-7 h-7 ${HEADER_ICON_COLOR[accent]}`} aria-hidden />
         </div>
       )}
-      <AuthLogo className="h-10 w-auto mx-auto mix-blend-screen" />
+      <BrandLogo variant="on-dark" size="md" className="mx-auto" priority />
       {tagline ? <p className="text-slate-400 mt-2 text-sm">{tagline}</p> : null}
     </div>
   );

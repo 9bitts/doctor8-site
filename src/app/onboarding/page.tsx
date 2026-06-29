@@ -3,6 +3,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Loader2, CheckCircle2, User, Stethoscope, ChevronRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
@@ -73,7 +74,7 @@ function OnboardingInner() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-white">Doctor<span className="text-emerald-400">8</span></h1>
+          <BrandLogo variant="on-dark" size="lg" className="mx-auto" priority />
           <p className="text-slate-400 mt-2 text-sm">{t("onb.tagline")}</p>
         </div>
 

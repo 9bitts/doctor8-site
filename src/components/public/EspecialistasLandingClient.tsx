@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import { Sora } from "next/font/google";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getLandingContent } from "@/lib/landing-content";
@@ -160,9 +161,7 @@ export default function EspecialistasLandingClient() {
 
       <nav className="sticky top-0 z-50 border-b border-white/10 bg-d8-dark/95 backdrop-blur-md">
         <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-2 sm:gap-4 px-4 sm:px-6 min-w-0">
-          <Link href="/" className="shrink-0 text-[22px] font-extrabold text-white">
-            Doctor<span className="text-accent-500">8</span>
-          </Link>
+          <BrandLogoLink href="/" variant="on-dark" size="md" className="shrink-0" />
 
           <ul className={`${mobileOpen ? "flex" : "hidden"} absolute left-0 right-0 top-[68px] z-50 flex-col gap-3 border-b border-white/10 bg-d8-dark px-6 py-4 md:static md:flex md:flex-1 md:flex-row md:items-center md:border-0 md:bg-transparent md:p-0`}>
             {navLinks.map((l) => (
