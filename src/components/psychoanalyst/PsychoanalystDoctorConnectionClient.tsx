@@ -64,6 +64,12 @@ export default function PsychoanalystDoctorConnectionClient({ subscribed, defaul
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+      <DoctorConnectionBanner
+        subscribed={subscribed}
+        defaultRegion={defaultRegion}
+        accountHref="/psychoanalyst/account"
+      />
+
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
           <Sparkles size={28} className="text-violet-600" />
@@ -73,12 +79,6 @@ export default function PsychoanalystDoctorConnectionClient({ subscribed, defaul
           <p className="text-slate-500 mt-1 max-w-2xl">{t("pa.doctorConnection.subtitle")}</p>
         </div>
       </div>
-
-      <DoctorConnectionBanner
-        subscribed={subscribed}
-        defaultRegion={defaultRegion}
-        accountHref="/psychoanalyst/account"
-      />
 
       {subscribed && (
         <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-5">

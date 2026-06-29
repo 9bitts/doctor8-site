@@ -188,7 +188,7 @@ export function FinanceiroDashboard({
   apiPath = "/api/professional/financeiro",
   showPricingSettings = true,
   showRateio = true,
-}: FinanceiroDashboardProps = {}) {
+}: FinanceiroDashboardProps) {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
   const [period,  setPeriod]  = useState<Period>("this_month");
@@ -506,4 +506,6 @@ export function FinanceiroDashboard({
   );
 }
 
-export default FinanceiroDashboard;
+export default function ProfessionalFinanceiroPage() {
+  return <FinanceiroDashboard />;
+}

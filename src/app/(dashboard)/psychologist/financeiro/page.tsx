@@ -1,1 +1,5 @@
-export { default } from "@/app/(dashboard)/professional/financeiro/page";
+import { FinanceiroDashboard } from "@/app/(dashboard)/professional/financeiro/page";
+
+export default function PsychologistFinanceiroPage() {
+  return <FinanceiroDashboard />;
+}

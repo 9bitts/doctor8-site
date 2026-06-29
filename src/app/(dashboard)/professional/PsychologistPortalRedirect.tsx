@@ -19,6 +19,7 @@ const PATH_MAP: [string, string][] = [
   ["/professional/financeiro", "/psychologist/financeiro"],
   ["/professional/messages", "/psychologist/messages"],
   ["/professional/account", "/psychologist/account"],
+  ["/professional/doctor-connection", "/psychologist/doctor-connection"],
   ["/professional/jit", "/psychologist/jit"],
   ["/professional", "/psychologist"],
 ];

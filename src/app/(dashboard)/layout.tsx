@@ -52,6 +52,7 @@ const PATIENT_NAV: NavItem[] = [
 
 const PROFESSIONAL_NAV: NavItem[] = [
   { href: "/professional", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/professional/doctor-connection", labelKey: "nav.doctorConnection", icon: <Sparkles size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/patients", labelKey: "nav.patients", icon: <Users size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/professional/psychology", labelKey: "nav.psychologyArea", icon: <Brain size={18} />, roles: ["PROFESSIONAL"] },

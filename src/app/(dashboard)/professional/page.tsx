@@ -11,7 +11,7 @@ import { getUserLang } from "@/lib/i18n/server-lang";
 import {
   Calendar, Users, DollarSign, Clock, ChevronRight, Video, Radio,
   Inbox, MessageSquare, Stethoscope, BookOpen, UserCog, Settings,
-  Layers, TrendingUp, Activity,
+  Layers, TrendingUp, Activity, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
@@ -200,6 +200,7 @@ export default async function ProfessionalDashboard() {
       title: t("prodash.quick.group.manage"),
       items: [
         { href: "/professional/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
+        { href: "/professional/doctor-connection", labelKey: "nav.doctorConnection", icon: <Sparkles size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
         { href: "/professional/messages", labelKey: "nav.messages", icon: <MessageSquare size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200", badge: unreadMessages || undefined },
         { href: "/professional/settings", labelKey: "nav.myProfile", icon: <UserCog size={20} />, accent: "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200" },
         { href: "/professional/account", labelKey: "nav.account", icon: <Settings size={20} />, accent: "bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200" },
