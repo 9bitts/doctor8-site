@@ -12,6 +12,7 @@ import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianV
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
+import { getIntegrativeVisitMetaByPatientUserIds } from "@/lib/integrative-appointment-meta";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 
 export default async function IntegrativeTherapistDashboard() {
@@ -51,7 +52,7 @@ export default async function IntegrativeTherapistDashboard() {
           status: { in: ["CONFIRMED", "PENDING"] },
           scheduledAt: { gte: new Date() },
         },
-        include: { patient: { select: { firstName: true, lastName: true } } },
+        include: { patient: { select: { firstName: true, lastName: true, userId: true } } },
         orderBy: { scheduledAt: "asc" },
         take: 5,
       }),
@@ -69,6 +70,11 @@ export default async function IntegrativeTherapistDashboard() {
 
   const needsPracticeSetup = profile.picsPractices.length === 0;
   const canStartConsult = clientCount > 0;
+
+  const visitMetaByUser = await getIntegrativeVisitMetaByPatientUserIds(
+    profile.id,
+    upcoming.map((a) => a.patient.userId),
+  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -216,7 +222,13 @@ export default async function IntegrativeTherapistDashboard() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {upcoming.map((apt) => (
+            {upcoming.map((apt) => {
+              const meta = visitMetaByUser.get(apt.patient.userId);
+              const visitLabel =
+                meta?.visitType === "first"
+                  ? t("it.consult.firstVisit")
+                  : t("it.consult.returnVisit");
+              return (
               <div
                 key={apt.id}
                 className="px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -228,25 +240,45 @@ export default async function IntegrativeTherapistDashboard() {
                   <p className="text-xs text-slate-500 mt-0.5">
                     {new Date(apt.scheduledAt).toLocaleString(locale)}
                   </p>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">
+                      {visitLabel}
+                    </span>
+                    {meta?.mainPractice && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        {(() => {
+                          const p = picBySlug(meta.mainPractice!);
+                          return p ? picLabel(p, lang) : meta.mainPractice;
+                        })()}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-slate-400">
+                      {meta?.suggestedDurationMins ?? 60} min
+                    </span>
+                  </div>
                 </div>
-                {apt.type === "TELECONSULT" && (
-                  <a
-                    href={`/video/${apt.id}`}
-                    className="w-full sm:w-auto text-center text-xs font-bold bg-teal-500 text-white px-3 py-2.5 rounded-xl hover:bg-teal-600 min-h-[44px] inline-flex items-center justify-center shrink-0"
-                  >
-                    {t("proappt.join")}
-                  </a>
+                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                {apt.status === "CONFIRMED" && (
+                  apt.type === "TELECONSULT" ? (
+                    <a
+                      href={`/video/${apt.id}`}
+                      className="w-full sm:w-auto text-center text-xs font-bold bg-teal-500 text-white px-3 py-2.5 rounded-xl hover:bg-teal-600 min-h-[44px] inline-flex items-center justify-center"
+                    >
+                      {t("proappt.join")}
+                    </a>
+                  ) : (
+                    <a
+                      href={`/integrative-therapist/consult/${apt.id}`}
+                      className="w-full sm:w-auto text-center text-xs font-bold bg-slate-800 text-white px-3 py-2.5 rounded-xl hover:bg-slate-700 min-h-[44px] inline-flex items-center justify-center"
+                    >
+                      {t("it.consult.start")}
+                    </a>
+                  )
                 )}
-                {apt.type === "IN_PERSON" && apt.status === "CONFIRMED" && (
-                  <a
-                    href={`/integrative-therapist/consult/${apt.id}`}
-                    className="w-full sm:w-auto text-center text-xs font-bold bg-slate-800 text-white px-3 py-2.5 rounded-xl hover:bg-slate-700 min-h-[44px] inline-flex items-center justify-center shrink-0"
-                  >
-                    {t("it.consult.start")}
-                  </a>
-                )}
+                </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

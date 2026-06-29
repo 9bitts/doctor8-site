@@ -2,15 +2,42 @@ import { translate, type Lang } from "@/lib/i18n/translations";
 import { HOMEOPATIA_TEMPLATE } from "./homeopatia";
 import { ACUPUNTURA_TEMPLATE } from "./acupuntura";
 import { FITOTERAPIA_TEMPLATE } from "./fitoterapia";
+import { MEDITACAO_TEMPLATE } from "./meditacao";
+import { YOGA_TEMPLATE } from "./yoga";
+import { ARTETERAPIA_TEMPLATE } from "./arteterapia";
+import { SHANTALA_TEMPLATE } from "./shantala";
+import { REIKI_TEMPLATE } from "./reiki";
+import { AROMATERAPIA_TEMPLATE } from "./aromaterapia";
+import { BIODANCA_TEMPLATE } from "./biodanca";
+import { REFLEXOTERAPIA_TEMPLATE } from "./reflexoterapia";
+import { MUSICOTERAPIA_TEMPLATE } from "./musicoterapia";
+import { TERAPIA_FLORAIS_TEMPLATE } from "./terapia_florais";
+import { AYURVEDA_TEMPLATE } from "./ayurveda";
+import { HIPNOTERAPIA_TEMPLATE } from "./hipnoterapia";
 import type { ConsultTemplate, StructuredValues } from "./types";
-export { hasStructuredTemplate } from "./types";
 export type { ConsultTemplate, StructuredField, StructuredValues } from "./types";
 
 const TEMPLATES: Record<string, ConsultTemplate> = {
   homeopatia: HOMEOPATIA_TEMPLATE,
   acupuntura: ACUPUNTURA_TEMPLATE,
   fitoterapia: FITOTERAPIA_TEMPLATE,
+  meditacao: MEDITACAO_TEMPLATE,
+  yoga: YOGA_TEMPLATE,
+  arteterapia: ARTETERAPIA_TEMPLATE,
+  shantala: SHANTALA_TEMPLATE,
+  reiki: REIKI_TEMPLATE,
+  aromaterapia: AROMATERAPIA_TEMPLATE,
+  biodanca: BIODANCA_TEMPLATE,
+  reflexoterapia: REFLEXOTERAPIA_TEMPLATE,
+  musicoterapia: MUSICOTERAPIA_TEMPLATE,
+  terapia_florais: TERAPIA_FLORAIS_TEMPLATE,
+  ayurveda: AYURVEDA_TEMPLATE,
+  hipnoterapia: HIPNOTERAPIA_TEMPLATE,
 };
+
+export function hasStructuredTemplate(slug: string): boolean {
+  return Boolean(TEMPLATES[slug]);
+}
 
 export function getConsultTemplate(slug: string): ConsultTemplate | undefined {
   return TEMPLATES[slug];

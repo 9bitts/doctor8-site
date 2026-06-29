@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   PICS_PRACTICES,
@@ -8,59 +10,91 @@ import {
   picCategoryLabel,
   type PicCategory,
 } from "@/lib/pics/practices";
+import PracticeSettings from "@/components/PracticeSettings";
+import PublicListingSettings from "@/components/PublicListingSettings";
+import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
-import { Loader2, CheckCircle2, Video, Building2, DollarSign, Leaf } from "lucide-react";
+import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
+import {
+  parseRegistrationRegion,
+  type RegistrationRegionCode,
+} from "@/lib/registration-regions";
+import {
+  Loader2,
+  CheckCircle2,
+  User,
+  Leaf,
+  Camera,
+  X,
+  Building2,
+  Globe,
+  Calendar,
+} from "lucide-react";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40";
 
-const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
-
 export default function IntegrativeTherapistSettingsPage() {
   const { t, lang } = useI18n();
+  const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [trainingInstitution, setTrainingInstitution] = useState("");
   const [certifications, setCertifications] = useState("");
   const [yearsOfPractice, setYearsOfPractice] = useState("0");
   const [bio, setBio] = useState("");
   const [selectedPractices, setSelectedPractices] = useState<string[]>([]);
-  const [price, setPrice] = useState("");
-  const [currency, setCurrency] = useState("BRL");
-  const [acceptsTeleconsult, setAcceptsTeleconsult] = useState(true);
-  const [acceptsInPerson, setAcceptsInPerson] = useState(false);
-  const [sessionDurationMins, setSessionDurationMins] = useState("50");
+  const [clinicName, setClinicName] = useState("");
+  const [clinicAddress, setClinicAddress] = useState("");
   const [clinicCity, setClinicCity] = useState("");
+  const [clinicState, setClinicState] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
+  const [clinicZip, setClinicZip] = useState("");
+  const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("US");
+  const [regionSaving, setRegionSaving] = useState(false);
+  const [regionSaved, setRegionSaved] = useState(false);
+  const [regionError, setRegionError] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/integrative-therapist/profile");
-        if (res.ok) {
-          const d = await res.json();
+        const [profileRes, regionRes] = await Promise.all([
+          fetch("/api/integrative-therapist/profile"),
+          fetch("/api/user/region"),
+        ]);
+        if (regionRes.ok) {
+          const regionData = await regionRes.json();
+          const r = regionData?.region;
+          if (r) setAccountRegion(parseRegistrationRegion(r, accountRegion));
+        }
+        if (profileRes.ok) {
+          const d = await profileRes.json();
           const p = d.profile;
           if (p) {
+            setAvatarUrl(p.avatarUrl || "");
             setFirstName(p.firstName || "");
             setLastName(p.lastName || "");
+            setPhone(p.phone || "");
             setTrainingInstitution(p.trainingInstitution || "");
             setCertifications(p.certifications || "");
             setYearsOfPractice(String(p.yearsOfPractice ?? 0));
             setBio(p.bio || "");
             setSelectedPractices(p.picsPractices || []);
-            setPrice(p.consultPrice ? String(p.consultPrice / 100) : "");
-            setCurrency(p.currency || "BRL");
-            setAcceptsTeleconsult(p.acceptsTeleconsult ?? true);
-            setAcceptsInPerson(p.acceptsInPerson ?? false);
-            setSessionDurationMins(String(p.sessionDurationMins || 50));
+            setClinicName(p.clinicName || "");
+            setClinicAddress(p.clinicAddress || "");
             setClinicCity(p.clinicCity || "");
+            setClinicState(p.clinicState || "");
             setClinicCountry(p.clinicCountry || "");
+            setClinicZip(p.clinicZip || "");
           }
         }
       } finally {
@@ -76,9 +110,66 @@ export default function IntegrativeTherapistSettingsPage() {
     );
   }
 
+  async function saveAccountRegion() {
+    setRegionSaving(true);
+    setRegionError("");
+    setRegionSaved(false);
+    try {
+      const res = await fetch("/api/user/region", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ region: accountRegion }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t("acct.regionErr"));
+      setRegionSaved(true);
+      setTimeout(() => setRegionSaved(false), 4000);
+      router.refresh();
+    } catch (e) {
+      setRegionError(e instanceof Error ? e.message : t("acct.regionErr"));
+    } finally {
+      setRegionSaving(false);
+    }
+  }
+
+  function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError(t("set.errPhoto"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 400;
+        let width = img.width;
+        let height = img.height;
+        if (width > height && width > max) {
+          height = (height * max) / width;
+          width = max;
+        } else if (height > max) {
+          width = (width * max) / height;
+          height = max;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          setAvatarUrl(canvas.toDataURL("image/jpeg", 0.85));
+        }
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function handleSave() {
     setError("");
-    if (!firstName || !lastName || !trainingInstitution || !price) {
+    if (!firstName || !lastName || !trainingInstitution) {
       setError(t("it.settings.errRequired"));
       return;
     }
@@ -94,26 +185,29 @@ export default function IntegrativeTherapistSettingsPage() {
         body: JSON.stringify({
           firstName,
           lastName,
+          phone,
           trainingInstitution,
           certifications,
           yearsOfPractice: Number(yearsOfPractice),
           bio,
           picsPractices: selectedPractices,
-          consultPrice: Math.round(Number(price) * 100),
-          currency,
-          acceptsTeleconsult,
-          acceptsInPerson,
-          sessionDurationMins: Number(sessionDurationMins),
+          avatarUrl,
+          clinicName,
+          clinicAddress,
           clinicCity,
+          clinicState,
           clinicCountry,
+          clinicZip,
         }),
       });
       if (!res.ok) {
-        setError(t("it.settings.errSave"));
+        const d = await res.json().catch(() => ({}));
+        setError(d.error || t("it.settings.errSave"));
         return;
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      router.refresh();
     } finally {
       setSaving(false);
     }
@@ -141,8 +235,10 @@ export default function IntegrativeTherapistSettingsPage() {
     );
   }
 
+  const initials = (firstName[0] || "") + (lastName[0] || "");
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 pb-10">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <Leaf className="text-teal-500" size={24} />
@@ -160,8 +256,83 @@ export default function IntegrativeTherapistSettingsPage() {
         </div>
       )}
 
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Globe size={18} className="text-teal-500" /> {t("it.settings.accountRegion")}
+        </h2>
+        <p className="text-sm text-slate-500">{t("it.settings.accountRegionDesc")}</p>
+        {regionError && (
+          <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+            {regionError}
+          </p>
+        )}
+        {regionSaved && (
+          <p className="text-sm text-teal-700 bg-teal-50 border border-teal-200 rounded-xl px-3 py-2">
+            {t("it.settings.accountRegionSaved")}
+          </p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">{t("it.settings.countryRegion")}</label>
+            <RegistrationRegionSelect
+              value={accountRegion}
+              onChange={setAccountRegion}
+              lang={lang}
+              className={inputClass}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={saveAccountRegion}
+            disabled={regionSaving}
+            className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0"
+          >
+            {regionSaving && <Loader2 size={14} className="animate-spin" />}
+            {t("it.settings.saveRegion")}
+          </button>
+        </div>
+      </div>
+
+      <PublicListingSettings apiPath="/api/integrative-therapist/public-profile" />
+      <HealthPlansSettings apiPath="/api/integrative-therapist/health-plans" />
+      <PracticeSettings apiPath="/api/integrative-therapist/practice" />
+
       <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-slate-800">{t("it.settings.identity")}</h2>
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <User size={18} className="text-teal-500" />
+          {t("it.settings.photoIdentity")}
+        </h2>
+        <div className="flex items-center gap-5">
+          <div className="relative">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-24 h-24 rounded-2xl object-cover border border-slate-200" />
+            ) : (
+              <div className="w-24 h-24 rounded-2xl bg-teal-100 flex items-center justify-center text-teal-600 text-2xl font-bold">
+                {initials || <Camera size={28} />}
+              </div>
+            )}
+            {avatarUrl && (
+              <button
+                type="button"
+                onClick={() => setAvatarUrl("")}
+                className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-1 shadow hover:bg-rose-50"
+              >
+                <X size={14} className="text-rose-500" />
+              </button>
+            )}
+          </div>
+          <div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="bg-white border border-slate-200 hover:border-teal-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm flex items-center gap-2"
+            >
+              <Camera size={15} /> {avatarUrl ? t("set.changePhoto") : t("set.uploadPhoto")}
+            </button>
+            <p className="text-xs text-slate-400 mt-2">{t("set.photoHint")}</p>
+          </div>
+        </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-medium text-slate-600">{t("reg.firstName")}</label>
@@ -172,6 +343,19 @@ export default function IntegrativeTherapistSettingsPage() {
             <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>
         </div>
+        <div>
+          <label className="text-xs font-medium text-slate-600">{t("it.settings.phone")}</label>
+          <input
+            className={inputClass}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder={t("it.settings.phoneHint")}
+          />
+        </div>
+      </section>
+
+      <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+        <h2 className="font-semibold text-slate-800">{t("it.settings.identity")}</h2>
         <div>
           <label className="text-xs font-medium text-slate-600">{t("it.settings.institution")}</label>
           <input
@@ -252,99 +436,70 @@ export default function IntegrativeTherapistSettingsPage() {
 
       <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <DollarSign size={18} className="text-teal-500" />
-          {t("it.settings.practice")}
+          <Building2 size={18} className="text-teal-500" />
+          {t("set.clinicAddress")}{" "}
+          <span className="text-slate-400 text-sm font-normal">{t("set.optional")}</span>
         </h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-slate-600">{t("it.settings.price")}</label>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              className={inputClass}
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
+            <label className="text-xs font-medium text-slate-600">{t("set.clinicName")}</label>
+            <input className={inputClass} value={clinicName} onChange={(e) => setClinicName(e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600">{t("it.settings.currency")}</label>
-            <select
-              className={inputClass}
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            <label className="text-xs font-medium text-slate-600">{t("set.address")}</label>
+            <input className={inputClass} value={clinicAddress} onChange={(e) => setClinicAddress(e.target.value)} />
           </div>
         </div>
-        <div>
-          <label className="text-xs font-medium text-slate-600">{t("it.settings.duration")}</label>
-          <input
-            type="number"
-            min={15}
-            className={inputClass}
-            value={sessionDurationMins}
-            onChange={(e) => setSessionDurationMins(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={acceptsTeleconsult}
-              onChange={(e) => setAcceptsTeleconsult(e.target.checked)}
-              className="rounded border-slate-300 text-teal-600"
-            />
-            <Video size={14} className="text-teal-500" />
-            {t("it.settings.teleconsult")}
-          </label>
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={acceptsInPerson}
-              onChange={(e) => setAcceptsInPerson(e.target.checked)}
-              className="rounded border-slate-300 text-teal-600"
-            />
-            <Building2 size={14} className="text-teal-500" />
-            {t("it.settings.inPerson")}
-          </label>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <label className="text-xs font-medium text-slate-600">{t("it.settings.city")}</label>
+            <label className="text-xs font-medium text-slate-600">{t("set.city")}</label>
             <input className={inputClass} value={clinicCity} onChange={(e) => setClinicCity(e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-600">{t("it.settings.country")}</label>
-            <input
-              className={inputClass}
-              value={clinicCountry}
-              onChange={(e) => setClinicCountry(e.target.value)}
-            />
+            <label className="text-xs font-medium text-slate-600">{t("set.state")}</label>
+            <input className={inputClass} value={clinicState} onChange={(e) => setClinicState(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600">{t("set.country")}</label>
+            <input className={inputClass} value={clinicCountry} onChange={(e) => setClinicCountry(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600">{t("set.zip")}</label>
+            <input className={inputClass} value={clinicZip} onChange={(e) => setClinicZip(e.target.value)} />
           </div>
         </div>
       </section>
 
       <LicenseDocumentsUpload />
 
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving}
-        className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        {saving ? <Loader2 size={16} className="animate-spin" /> : null}
-        {t("common.save")}
-      </button>
       <OrganizationJoinSettings
         listEndpoint="/api/integrative-therapist/organization"
         joinEndpoint="/api/integrative-therapist/organization"
       />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sticky bottom-4 bg-white/80 backdrop-blur rounded-2xl border border-slate-100 shadow-lg p-3">
+        <p className="text-xs text-slate-400 sm:pl-2 flex items-center gap-1.5">
+          <Calendar size={14} />
+          {t("set.availabilityNote")}{" "}
+          <Link href="/integrative-therapist/settings/availability" className="text-teal-600 underline">
+            {t("set.availabilityLink")}
+          </Link>
+          . {t("it.settings.pricingNote")}{" "}
+          <Link href="/integrative-therapist/financeiro" className="text-teal-600 underline">
+            {t("nav.financeiro")}
+          </Link>
+          .
+        </p>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shrink-0 min-h-[44px]"
+        >
+          {saving ? <Loader2 size={16} className="animate-spin" /> : null}
+          {t("set.saveProfile")}
+        </button>
+      </div>
     </div>
   );
 }

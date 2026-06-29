@@ -9,6 +9,7 @@ export async function GET(_req: NextRequest) {
   const profiles = await db.integrativeTherapistProfile.findMany({
     orderBy: { createdAt: "desc" },
     include: {
+      virtualCard: { select: { isPublic: true, slug: true } },
       user: {
         select: {
           email: true,
@@ -36,9 +37,11 @@ export async function GET(_req: NextRequest) {
     appointments: p._count.appointments,
     charts: p._count.clientRecords,
     createdAt: p.createdAt.toISOString(),
-    isPublic: false,
+    isPublic: p.virtualCard?.isPublic ?? false,
     licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
-    publicUrl: null as string | null,
+    publicUrl: p.virtualCard?.slug
+      ? `${process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app"}/dr/${p.virtualCard.slug}`
+      : null,
   }));
 
   return NextResponse.json({ providers });

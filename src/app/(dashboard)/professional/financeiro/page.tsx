@@ -11,7 +11,9 @@ import {
   Loader2, AlertCircle, ChevronDown, ArrowUpRight, RefreshCw,
   Stethoscope, Radio, MapPin, BarChart3, Info,
 } from "lucide-react";
-import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
+import ConsultPricingSettings, {
+  type ConsultPricingSettingsProps,
+} from "@/components/professional/ConsultPricingSettings";
 import { RateioSection } from "./RateioSection";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -182,12 +184,14 @@ export type FinanceiroDashboardProps = {
   apiPath?: string;
   showPricingSettings?: boolean;
   showRateio?: boolean;
+  pricingSettingsProps?: ConsultPricingSettingsProps;
 };
 
 export function FinanceiroDashboard({
   apiPath = "/api/professional/financeiro",
   showPricingSettings = true,
   showRateio = true,
+  pricingSettingsProps,
 }: FinanceiroDashboardProps) {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
@@ -240,7 +244,7 @@ export function FinanceiroDashboard({
         </div>
       </div>
 
-      {showPricingSettings && <ConsultPricingSettings />}
+      {showPricingSettings && <ConsultPricingSettings {...pricingSettingsProps} />}
 
       {error && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl flex items-center gap-2 flex-wrap">

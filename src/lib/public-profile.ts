@@ -97,6 +97,7 @@ async function uniqueSlug(base: string): Promise<string> {
 export async function ensureVirtualCard(opts: {
   professionalId?: string;
   psychoanalystId?: string;
+  integrativeTherapistId?: string;
   firstName: string;
   lastName: string;
   specialty: string;
@@ -109,7 +110,9 @@ export async function ensureVirtualCard(opts: {
   const existing = await db.virtualCard.findFirst({
     where: opts.professionalId
       ? { professionalId: opts.professionalId }
-      : { psychoanalystId: opts.psychoanalystId },
+      : opts.psychoanalystId
+        ? { psychoanalystId: opts.psychoanalystId }
+        : { integrativeTherapistId: opts.integrativeTherapistId },
   });
 
   if (existing) {
@@ -129,6 +132,7 @@ export async function ensureVirtualCard(opts: {
     data: {
       professionalId: opts.professionalId ?? null,
       psychoanalystId: opts.psychoanalystId ?? null,
+      integrativeTherapistId: opts.integrativeTherapistId ?? null,
       slug,
       specialtySlug,
       citySlug,

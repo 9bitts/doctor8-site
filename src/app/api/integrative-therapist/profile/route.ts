@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { PICS_SLUGS } from "@/lib/pics/practices";
+import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
 import { decryptIntegrativeNameFields, requireIntegrativeTherapist } from "@/lib/integrative-therapist-api";
 
 export async function GET() {
@@ -27,24 +28,24 @@ export async function POST(req: NextRequest) {
   const {
     firstName,
     lastName,
+    phone,
     picsPractices,
     trainingInstitution,
     certifications,
     yearsOfPractice,
     bio,
-    consultPrice,
-    currency,
-    acceptsTeleconsult,
-    acceptsInPerson,
-    sessionDurationMins,
+    avatarUrl,
     clinicName,
+    clinicAddress,
     clinicCity,
+    clinicState,
     clinicCountry,
+    clinicZip,
   } = body;
 
-  if (!firstName || !lastName || !trainingInstitution || consultPrice == null) {
+  if (!firstName || !lastName || !trainingInstitution) {
     return NextResponse.json(
-      { error: "Missing required fields: name, training institution and price." },
+      { error: "Missing required fields: name and training institution." },
       { status: 400 },
     );
   }
@@ -53,12 +54,20 @@ export async function POST(req: NextRequest) {
     ? picsPractices.filter((s: string) => PICS_SLUGS.includes(s))
     : [];
 
+  if (practiceList.length === 0) {
+    return NextResponse.json({ error: "Select at least one PICS practice." }, { status: 400 });
+  }
+
+  const existing = await db.integrativeTherapistProfile.findUnique({
+    where: { id: therapist.id },
+  });
+
   const isComplete = Boolean(
     firstName &&
       lastName &&
       trainingInstitution &&
-      Number(consultPrice) > 0 &&
-      practiceList.length > 0,
+      practiceList.length > 0 &&
+      (existing?.consultPrice ?? 0) > 0,
   );
 
   const profile = await db.integrativeTherapistProfile.update({
@@ -66,22 +75,35 @@ export async function POST(req: NextRequest) {
     data: {
       firstName,
       lastName,
+      phone: phone || null,
       picsPractices: practiceList,
       trainingInstitution,
       certifications: certifications || null,
       yearsOfPractice: Number(yearsOfPractice) || 0,
       bio: bio || null,
-      consultPrice: Number(consultPrice),
-      currency: currency || "USD",
-      acceptsTeleconsult: Boolean(acceptsTeleconsult),
-      acceptsInPerson: Boolean(acceptsInPerson),
-      sessionDurationMins: Number(sessionDurationMins) || 50,
+      avatarUrl: avatarUrl || null,
       clinicName: clinicName || null,
+      clinicAddress: clinicAddress || null,
       clinicCity: clinicCity || null,
+      clinicState: clinicState || null,
       clinicCountry: clinicCountry || null,
+      clinicZip: clinicZip || null,
     },
   });
 
+  const { ensureVirtualCard } = await import("@/lib/public-profile");
+  await ensureVirtualCard({
+    integrativeTherapistId: profile.id,
+    firstName,
+    lastName,
+    specialty: INTEGRATIVE_THERAPY_SPECIALTY,
+    clinicCity: profile.clinicCity,
+  });
+
   await audit.updateRecord(session.user.id, "IntegrativeTherapistProfile", profile.id);
-  return NextResponse.json({ profile, success: true, profileComplete: isComplete });
+  return NextResponse.json({
+    profile: decryptIntegrativeNameFields(profile),
+    success: true,
+    profileComplete: isComplete,
+  });
 }

@@ -12,6 +12,7 @@ interface IntegrativeStructuredFormProps {
   values: StructuredValues;
   onChange: (values: StructuredValues) => void;
   dark?: boolean;
+  sectionKeys?: string[];
 }
 
 export default function IntegrativeStructuredForm({
@@ -20,6 +21,7 @@ export default function IntegrativeStructuredForm({
   values,
   onChange,
   dark = false,
+  sectionKeys,
 }: IntegrativeStructuredFormProps) {
   const t = (key: string) => translate(lang, key);
   const template = getConsultTemplate(practiceSlug);
@@ -29,14 +31,16 @@ export default function IntegrativeStructuredForm({
     const grouped = new Map<string, typeof template.fields>();
     for (const field of template.fields) {
       const section = field.sectionKey ?? "it.tpl.section.notes";
+      if (sectionKeys?.length && !sectionKeys.includes(section)) continue;
       const list = grouped.get(section) ?? [];
       list.push(field);
       grouped.set(section, list);
     }
     return Array.from(grouped.entries());
-  }, [template]);
+  }, [template, sectionKeys]);
 
   if (!template) return null;
+  if (sections.length === 0) return null;
 
   const label = dark ? "text-xs font-medium text-slate-300" : "text-xs font-medium text-slate-600";
   const sectionTitle = dark ? "text-[10px] font-bold uppercase tracking-wide text-teal-400" : "text-[10px] font-bold uppercase tracking-wide text-teal-700";
@@ -51,7 +55,9 @@ export default function IntegrativeStructuredForm({
 
   return (
     <div className="space-y-4">
-      <p className={`${label} font-semibold`}>{t("it.tpl.structuredTitle")}</p>
+      {!sectionKeys?.length && (
+        <p className={`${label} font-semibold`}>{t("it.tpl.structuredTitle")}</p>
+      )}
       {sections.map(([sectionKey, fields]) => (
         <div key={sectionKey} className="space-y-2.5">
           <p className={sectionTitle}>{t(sectionKey)}</p>

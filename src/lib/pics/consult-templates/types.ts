@@ -22,7 +22,3 @@ export interface ConsultTemplate {
 }
 
 export type StructuredValues = Record<string, string | boolean>;
-
-export function hasStructuredTemplate(slug: string): boolean {
-  return ["homeopatia", "acupuntura", "fitoterapia"].includes(slug);
-}

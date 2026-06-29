@@ -7,7 +7,19 @@ export type ReferenceSectionId =
   | "tea_preparation"
   | "phyto_safety"
   | "homeo_care"
-  | "acu_care";
+  | "acu_care"
+  | "medit_care"
+  | "yoga_care"
+  | "art_care"
+  | "shantala_care"
+  | "reiki_care"
+  | "aroma_care"
+  | "biodanca_care"
+  | "reflex_care"
+  | "music_care"
+  | "florais_care"
+  | "ayur_care"
+  | "hypno_care";
 
 export interface ReferenceSection {
   id: ReferenceSectionId;
@@ -23,6 +35,18 @@ const SECTIONS_BY_PRACTICE: Record<string, ReferenceSectionId[]> = {
   fitoterapia: SHARED_PHYTO,
   homeopatia: ["homeo_care"],
   acupuntura: ["acu_care", "tea_preparation"],
+  meditacao: ["medit_care"],
+  yoga: ["yoga_care"],
+  arteterapia: ["art_care"],
+  shantala: ["shantala_care"],
+  reiki: ["reiki_care"],
+  aromaterapia: ["aroma_care"],
+  biodanca: ["biodanca_care"],
+  reflexoterapia: ["reflex_care"],
+  musicoterapia: ["music_care"],
+  terapia_florais: ["florais_care"],
+  ayurveda: ["ayur_care"],
+  hipnoterapia: ["hypno_care"],
 };
 
 const SECTION_DEFS: Record<ReferenceSectionId, Omit<ReferenceSection, "id">> = {
@@ -66,6 +90,54 @@ const SECTION_DEFS: Record<ReferenceSectionId, Omit<ReferenceSection, "id">> = {
       "it.ref.acu.2",
       "it.ref.acu.3",
     ],
+  },
+  medit_care: {
+    titleKey: "it.ref.meditCare",
+    bodyKeys: ["it.ref.medit.1", "it.ref.medit.2", "it.ref.medit.3"],
+  },
+  yoga_care: {
+    titleKey: "it.ref.yogaCare",
+    bodyKeys: ["it.ref.yoga.1", "it.ref.yoga.2", "it.ref.yoga.3"],
+  },
+  art_care: {
+    titleKey: "it.ref.artCare",
+    bodyKeys: ["it.ref.art.1", "it.ref.art.2"],
+  },
+  shantala_care: {
+    titleKey: "it.ref.shantalaCare",
+    bodyKeys: ["it.ref.shantala.1", "it.ref.shantala.2", "it.ref.shantala.3"],
+  },
+  reiki_care: {
+    titleKey: "it.ref.reikiCare",
+    bodyKeys: ["it.ref.reiki.1", "it.ref.reiki.2", "it.ref.reiki.3"],
+  },
+  aroma_care: {
+    titleKey: "it.ref.aromaCare",
+    bodyKeys: ["it.ref.aroma.1", "it.ref.aroma.2", "it.ref.aroma.3"],
+  },
+  biodanca_care: {
+    titleKey: "it.ref.biodancaCare",
+    bodyKeys: ["it.ref.biodanca.1", "it.ref.biodanca.2"],
+  },
+  reflex_care: {
+    titleKey: "it.ref.reflexCare",
+    bodyKeys: ["it.ref.reflex.1", "it.ref.reflex.2"],
+  },
+  music_care: {
+    titleKey: "it.ref.musicCare",
+    bodyKeys: ["it.ref.music.1", "it.ref.music.2"],
+  },
+  florais_care: {
+    titleKey: "it.ref.floraisCare",
+    bodyKeys: ["it.ref.florais.1", "it.ref.florais.2", "it.ref.florais.3"],
+  },
+  ayur_care: {
+    titleKey: "it.ref.ayurCare",
+    bodyKeys: ["it.ref.ayur.1", "it.ref.ayur.2"],
+  },
+  hypno_care: {
+    titleKey: "it.ref.hypnoCare",
+    bodyKeys: ["it.ref.hypno.1", "it.ref.hypno.2"],
   },
 };
 

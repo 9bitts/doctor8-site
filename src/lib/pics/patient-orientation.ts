@@ -59,7 +59,7 @@ export function generatePatientHandout(opts: {
     lines.push(`${t("it.handout.practice")}: ${label}`);
   }
 
-  lines.push("", "?".repeat(40), "");
+  lines.push("", "---", "");
 
   if (practiceSlug === "homeopatia") {
     const block = [
@@ -100,6 +100,93 @@ export function generatePatientHandout(opts: {
       line(t("it.tpl.phyto.orientations"), String(structured.patientOrientations ?? "")),
     ].filter(Boolean) as string[];
     lines.push(...block);
+  } else if (practiceSlug === "meditacao") {
+    const block = [
+      line(t("it.tpl.medit.technique"), String(structured.techniqueTaught ?? "")),
+      line(t("it.tpl.medit.frequency"), String(structured.homeFrequency ?? "")),
+      line(t("it.tpl.medit.posture"), String(structured.postureTips ?? "")),
+      line(t("it.tpl.medit.timeOfDay"), String(structured.bestTimeOfDay ?? "")),
+    ].filter(Boolean) as string[];
+    lines.push(...block);
+  } else if (practiceSlug === "yoga") {
+    const block = [
+      line(t("it.tpl.yoga.practices"), String(structured.practicesTaught ?? "")),
+      line(t("it.tpl.yoga.frequency"), String(structured.homeFrequency ?? "")),
+      line(t("it.tpl.yoga.cautions"), String(structured.cautions ?? "")),
+    ].filter(Boolean) as string[];
+    lines.push(...block);
+  } else if (practiceSlug === "arteterapia") {
+    const block = [
+      line(t("it.tpl.art.homeExercise"), String(structured.homeExercise ?? "")),
+      line(t("it.tpl.art.frequency"), String(structured.frequency ?? "")),
+    ].filter(Boolean) as string[];
+    lines.push(...block);
+  } else if (practiceSlug === "shantala") {
+    const block = [
+      line(t("it.tpl.shantala.technique"), String(structured.techniqueTaught ?? "")),
+      line(t("it.tpl.shantala.frequency"), String(structured.homeFrequency ?? "")),
+      line(t("it.tpl.shantala.cautions"), String(structured.cautions ?? "")),
+    ].filter(Boolean) as string[];
+    lines.push(...block);
+  } else if (practiceSlug === "reiki") {
+    lines.push(
+      ...([
+        line(t("it.tpl.reiki.selfCare"), String(structured.selfCareTips ?? "")),
+        line(t("it.tpl.reiki.frequency"), String(structured.homeFrequency ?? "")),
+      ].filter(Boolean) as string[]),
+    );
+  } else if (practiceSlug === "aromaterapia") {
+    lines.push(
+      ...([
+        line(t("it.tpl.aroma.oils"), String(structured.oilsSelected ?? "")),
+        line(t("it.tpl.aroma.homeUse"), String(structured.homeUse ?? "")),
+        line(t("it.tpl.aroma.cautions"), String(structured.cautions ?? "")),
+      ].filter(Boolean) as string[]),
+    );
+  } else if (practiceSlug === "biodanca") {
+    lines.push(
+      ...([
+        line(t("it.tpl.biodanca.exercises"), String(structured.exercisesTaught ?? "")),
+        line(t("it.tpl.biodanca.frequency"), String(structured.homeFrequency ?? "")),
+      ].filter(Boolean) as string[]),
+    );
+  } else if (practiceSlug === "reflexoterapia") {
+    lines.push(
+      ...([
+        line(t("it.tpl.reflex.selfMassage"), String(structured.selfMassagePoints ?? "")),
+        line(t("it.tpl.reflex.frequency"), String(structured.homeFrequency ?? "")),
+      ].filter(Boolean) as string[]),
+    );
+  } else if (practiceSlug === "musicoterapia") {
+    lines.push(
+      ...([
+        line(t("it.tpl.music.homeListening"), String(structured.homeListening ?? "")),
+        line(t("it.tpl.music.frequency"), String(structured.frequency ?? "")),
+      ].filter(Boolean) as string[]),
+    );
+  } else if (practiceSlug === "terapia_florais") {
+    lines.push(
+      ...([
+        line(t("it.tpl.florais.formula"), String(structured.essencesFormula ?? "")),
+        line(t("it.tpl.florais.posology"), String(structured.posology ?? "")),
+        line(t("it.tpl.florais.orientations"), String(structured.orientations ?? "")),
+      ].filter(Boolean) as string[]),
+    );
+  } else if (practiceSlug === "ayurveda") {
+    lines.push(
+      ...([
+        line(t("it.tpl.ayur.diet"), String(structured.dietRecommendations ?? "")),
+        line(t("it.tpl.ayur.routine"), String(structured.routineRecommendations ?? "")),
+        line(t("it.tpl.ayur.lifestyle"), String(structured.lifestyleTips ?? "")),
+      ].filter(Boolean) as string[]),
+    );
+  } else if (practiceSlug === "hipnoterapia") {
+    lines.push(
+      ...([
+        line(t("it.tpl.hypno.reinforcement"), String(structured.reinforcementPlan ?? "")),
+        line(t("it.tpl.hypno.homePractice"), String(structured.homePractice ?? "")),
+      ].filter(Boolean) as string[]),
+    );
   }
 
   const extra = String(structured.additionalNotes ?? freeTextNote ?? "").trim();
@@ -107,7 +194,7 @@ export function generatePatientHandout(opts: {
     lines.push("", `${t("it.tpl.common.additional")}:`, extra);
   }
 
-  lines.push("", "?".repeat(40), "", t("it.handout.disclaimer"));
+  lines.push("", "---", "", t("it.handout.disclaimer"));
 
   return lines.join("\n").trim();
 }
@@ -128,6 +215,42 @@ export function handoutHasContent(opts: {
   }
   if (practiceSlug === "fitoterapia") {
     return !!(structured.product || structured.dose || structured.patientOrientations || structured.preparation);
+  }
+  if (practiceSlug === "meditacao") {
+    return !!(structured.techniqueTaught || structured.homeFrequency || structured.postureTips);
+  }
+  if (practiceSlug === "yoga") {
+    return !!(structured.practicesTaught || structured.homeFrequency);
+  }
+  if (practiceSlug === "arteterapia") {
+    return !!(structured.homeExercise || structured.frequency);
+  }
+  if (practiceSlug === "shantala") {
+    return !!(structured.techniqueTaught || structured.homeFrequency);
+  }
+  if (practiceSlug === "reiki") {
+    return !!(structured.selfCareTips || structured.homeFrequency);
+  }
+  if (practiceSlug === "aromaterapia") {
+    return !!(structured.oilsSelected || structured.homeUse);
+  }
+  if (practiceSlug === "biodanca") {
+    return !!(structured.exercisesTaught || structured.homeFrequency);
+  }
+  if (practiceSlug === "reflexoterapia") {
+    return !!(structured.selfMassagePoints || structured.homeFrequency);
+  }
+  if (practiceSlug === "musicoterapia") {
+    return !!(structured.homeListening || structured.frequency);
+  }
+  if (practiceSlug === "terapia_florais") {
+    return !!(structured.essencesFormula || structured.posology);
+  }
+  if (practiceSlug === "ayurveda") {
+    return !!(structured.dietRecommendations || structured.routineRecommendations || structured.lifestyleTips);
+  }
+  if (practiceSlug === "hipnoterapia") {
+    return !!(structured.reinforcementPlan || structured.homePractice);
   }
   return false;
 }

@@ -1,4 +1,4 @@
-// Practice locations + services ? shared CRUD for professionals and psychoanalysts.
+// Practice locations + services — shared CRUD for professionals, psychoanalysts and integrative therapists.
 
 import { db } from "@/lib/db";
 
@@ -37,15 +37,20 @@ type LegacyAddress = {
   clinicLongitude?: number | null;
 };
 
+export type ProviderPracticeType = "health" | "psychoanalyst" | "integrative_therapist";
+
+function providerWhere(providerId: string, providerType: ProviderPracticeType) {
+  if (providerType === "health") return { professionalId: providerId };
+  if (providerType === "psychoanalyst") return { psychoanalystId: providerId };
+  return { integrativeTherapistId: providerId };
+}
+
 export async function ensureLegacyLocation(
   providerId: string,
-  providerType: "health" | "psychoanalyst",
-  legacy: LegacyAddress
+  providerType: ProviderPracticeType,
+  legacy: LegacyAddress,
 ) {
-  const where =
-    providerType === "health"
-      ? { professionalId: providerId }
-      : { psychoanalystId: providerId };
+  const where = providerWhere(providerId, providerType);
 
   const count = await db.practiceLocation.count({ where });
   if (count > 0) return;
@@ -72,12 +77,9 @@ export async function ensureLegacyLocation(
 
 export async function getPracticeLocations(
   providerId: string,
-  providerType: "health" | "psychoanalyst"
+  providerType: ProviderPracticeType,
 ): Promise<PracticeLocationDto[]> {
-  const where =
-    providerType === "health"
-      ? { professionalId: providerId }
-      : { psychoanalystId: providerId };
+  const where = providerWhere(providerId, providerType);
 
   const rows = await db.practiceLocation.findMany({
     where,
@@ -101,13 +103,13 @@ export async function getPracticeLocations(
 
 export async function getProviderServices(
   providerId: string,
-  providerType: "health" | "psychoanalyst",
-  activeOnly = false
+  providerType: ProviderPracticeType,
+  activeOnly = false,
 ): Promise<ProviderServiceDto[]> {
-  const where =
-    providerType === "health"
-      ? { professionalId: providerId, ...(activeOnly ? { isActive: true } : {}) }
-      : { psychoanalystId: providerId, ...(activeOnly ? { isActive: true } : {}) };
+  const where = {
+    ...providerWhere(providerId, providerType),
+    ...(activeOnly ? { isActive: true } : {}),
+  };
 
   const rows = await db.providerService.findMany({
     where,
@@ -127,13 +129,10 @@ export async function getProviderServices(
 
 export async function savePracticeLocations(
   providerId: string,
-  providerType: "health" | "psychoanalyst",
-  locations: Omit<PracticeLocationDto, "id">[]
+  providerType: ProviderPracticeType,
+  locations: Omit<PracticeLocationDto, "id">[],
 ) {
-  const where =
-    providerType === "health"
-      ? { professionalId: providerId }
-      : { psychoanalystId: providerId };
+  const where = providerWhere(providerId, providerType);
 
   await db.practiceLocation.deleteMany({ where });
 
@@ -163,13 +162,10 @@ export async function savePracticeLocations(
 
 export async function saveProviderServices(
   providerId: string,
-  providerType: "health" | "psychoanalyst",
-  services: Omit<ProviderServiceDto, "id">[]
+  providerType: ProviderPracticeType,
+  services: Omit<ProviderServiceDto, "id">[],
 ) {
-  const where =
-    providerType === "health"
-      ? { professionalId: providerId }
-      : { psychoanalystId: providerId };
+  const where = providerWhere(providerId, providerType);
 
   await db.providerService.deleteMany({ where });
 

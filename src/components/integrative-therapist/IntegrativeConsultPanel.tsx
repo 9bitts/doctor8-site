@@ -18,6 +18,12 @@ import {
 import IntegrativeStructuredForm from "@/components/integrative-therapist/IntegrativeStructuredForm";
 import IntegrativeReferenceLibrary from "@/components/integrative-therapist/IntegrativeReferenceLibrary";
 import PatientOrientationHandout from "@/components/integrative-therapist/PatientOrientationHandout";
+import {
+  CONSULT_STEPS,
+  CONSULT_STEP_LABEL_KEYS,
+  CONSULT_STEP_SECTIONS,
+  type ConsultStepId,
+} from "@/lib/integrative-consult-steps";
 
 type Lang = "pt" | "en" | "es";
 
@@ -67,7 +73,13 @@ export default function IntegrativeConsultPanel({
   const [noteText, setNoteText] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
+  const [consultStep, setConsultStep] = useState<ConsultStepId>("welcome");
+  const [retentionElapsed, setRetentionElapsed] = useState(0);
+  const [retentionRunning, setRetentionRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const retentionRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const retentionTargetSecs = 25 * 60;
 
   const usesStructured = hasStructuredTemplate(practiceSlug);
 
@@ -119,6 +131,7 @@ export default function IntegrativeConsultPanel({
   useEffect(() => {
     if (hasStructuredTemplate(practiceSlug)) {
       setStructuredValues(emptyStructuredValues(practiceSlug));
+      setConsultStep("welcome");
     }
   }, [practiceSlug]);
 
@@ -128,6 +141,50 @@ export default function IntegrativeConsultPanel({
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!retentionRunning) {
+      if (retentionRef.current) clearInterval(retentionRef.current);
+      return;
+    }
+    retentionRef.current = setInterval(() => setRetentionElapsed((s) => s + 1), 1000);
+    return () => {
+      if (retentionRef.current) clearInterval(retentionRef.current);
+    };
+  }, [retentionRunning]);
+
+  useEffect(() => {
+    if (practiceSlug !== "acupuntura") {
+      setRetentionRunning(false);
+      setRetentionElapsed(0);
+    }
+  }, [practiceSlug]);
+
+  function stepIndex(step: ConsultStepId) {
+    return CONSULT_STEPS.indexOf(step);
+  }
+
+  function goNextStep() {
+    const i = stepIndex(consultStep);
+    if (i < CONSULT_STEPS.length - 1) setConsultStep(CONSULT_STEPS[i + 1]);
+  }
+
+  function goPrevStep() {
+    const i = stepIndex(consultStep);
+    if (i > 0) setConsultStep(CONSULT_STEPS[i - 1]);
+  }
+
+  function toggleRetention() {
+    if (retentionRunning) {
+      setRetentionRunning(false);
+    } else {
+      setRetentionElapsed(0);
+      setRetentionRunning(true);
+    }
+  }
+
+  const retentionRemaining = Math.max(0, retentionTargetSecs - retentionElapsed);
+  const retentionOvertime = retentionElapsed > retentionTargetSecs;
 
   function handleVisitType(next: IntegrativeVisitType) {
     setVisitType(next);
@@ -295,15 +352,97 @@ export default function IntegrativeConsultPanel({
         <IntegrativeReferenceLibrary lang={lang} practiceSlug={practiceSlug} dark={dark} />
       )}
 
-      {usesStructured ? (
+      {practiceSlug === "acupuntura" && (
+        <div className={dark ? "rounded-xl border border-slate-600 bg-slate-700/50 p-3 space-y-2" : "rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-2"}>
+          <p className={`${label} flex items-center gap-1.5`}>
+            <Clock size={12} className="text-teal-500" />
+            {t("it.consult.acu.retention")}
+          </p>
+          <p className={`text-[10px] ${muted}`}>{t("it.consult.acu.retentionHint")}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className={`text-sm font-bold tabular-nums ${dark ? "text-white" : "text-slate-900"}`}>
+              {formatElapsed(retentionElapsed)}
+              <span className={`text-[10px] font-normal ml-2 ${muted}`}>
+                {retentionOvertime ? t("it.consult.overtime") : formatElapsed(retentionRemaining)}
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={toggleRetention}
+              className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg ${
+                retentionRunning
+                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                  : "bg-teal-600 text-white"
+              }`}
+            >
+              {retentionRunning ? t("it.consult.acu.stopRetention") : t("it.consult.acu.startRetention")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {usesStructured && (
+        <div className="flex gap-1 overflow-x-auto pb-1">
+          {CONSULT_STEPS.map((step) => (
+            <button
+              key={step}
+              type="button"
+              onClick={() => setConsultStep(step)}
+              className={`${chipBase} shrink-0 ${consultStep === step ? chipActive : chipIdle}`}
+            >
+              {t(CONSULT_STEP_LABEL_KEYS[step])}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {usesStructured && consultStep === "welcome" && context && (
+        <div className={`text-xs space-y-2 ${dark ? "text-slate-300" : "text-slate-600"}`}>
+          <p>{t("it.consult.welcome.hint")}</p>
+          <p>
+            <span className="font-semibold">{t("it.consult.welcome.sessions")}: </span>
+            {context.priorSessionCount}
+          </p>
+          {context.treatmentGoals && (
+            <p>
+              <span className="font-semibold">{t("it.consult.welcome.goals")}: </span>
+              {context.treatmentGoals}
+            </p>
+          )}
+        </div>
+      )}
+
+      {usesStructured && consultStep !== "welcome" && consultStep !== "close" ? (
         <IntegrativeStructuredForm
           lang={lang}
           practiceSlug={practiceSlug}
           values={structuredValues}
           onChange={setStructuredValues}
           dark={dark}
+          sectionKeys={CONSULT_STEP_SECTIONS[consultStep]}
         />
-      ) : (
+      ) : usesStructured && consultStep === "close" ? (
+        <>
+          <IntegrativeStructuredForm
+            lang={lang}
+            practiceSlug={practiceSlug}
+            values={structuredValues}
+            onChange={setStructuredValues}
+            dark={dark}
+            sectionKeys={CONSULT_STEP_SECTIONS.close}
+          />
+          {context && (
+            <PatientOrientationHandout
+              lang={lang}
+              practiceSlug={practiceSlug}
+              structuredValues={structuredValues}
+              visitType={visitType}
+              clientName={`${context.clientFirstName} ${context.clientLastName}`.trim()}
+              dark={dark}
+            />
+          )}
+        </>
+      ) : !usesStructured ? (
         <div>
           <label className={`${label} mb-1.5 block`}>{t("it.sessions.note")}</label>
           <textarea
@@ -317,19 +456,34 @@ export default function IntegrativeConsultPanel({
             }}
           />
         </div>
+      ) : null}
+
+      {usesStructured && consultStep !== "close" && (
+        <div className="flex gap-2">
+          {stepIndex(consultStep) > 0 && (
+            <button
+              type="button"
+              onClick={goPrevStep}
+              className={`flex-1 text-xs font-semibold py-2 rounded-lg border ${
+                dark ? "border-slate-600 text-slate-300" : "border-slate-200 text-slate-600"
+              }`}
+            >
+              {t("it.consult.step.prev")}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={goNextStep}
+            className={`flex-1 text-xs font-semibold py-2 rounded-lg ${
+              dark ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-800"
+            }`}
+          >
+            {t("it.consult.step.next")}
+          </button>
+        </div>
       )}
 
-      {usesStructured && context && (
-        <PatientOrientationHandout
-          lang={lang}
-          practiceSlug={practiceSlug}
-          structuredValues={structuredValues}
-          visitType={visitType}
-          clientName={`${context.clientFirstName} ${context.clientLastName}`.trim()}
-          dark={dark}
-        />
-      )}
-
+      {(consultStep === "close" || !usesStructured) && (
       <button
         type="button"
         onClick={() => void saveNote()}
@@ -354,6 +508,7 @@ export default function IntegrativeConsultPanel({
           </>
         )}
       </button>
+      )}
     </div>
   );
 }
