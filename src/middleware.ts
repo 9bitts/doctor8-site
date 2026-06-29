@@ -136,7 +136,10 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  const { role } = session.user as { role: string };
+  const { role, professionalSpecialty } = session.user as {
+    role: string;
+    professionalSpecialty?: string | null;
+  };
   const isApi = pathname.startsWith("/api/");
 
   function denyWrongRole(): NextResponse {
@@ -146,7 +149,7 @@ export default auth((req) => {
     if (!role) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
-    const home = resolveRoleHome(role);
+    const home = resolveRoleHome(role, professionalSpecialty);
     if (pathname === home || pathname.startsWith(`${home}/`)) {
       return NextResponse.next();
     }

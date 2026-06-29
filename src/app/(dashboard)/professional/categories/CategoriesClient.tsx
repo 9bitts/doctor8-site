@@ -5,8 +5,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { professionalPatientsHref } from "@/lib/psychologist-portal";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
 import {
   Layers, ChevronRight, ChevronDown, FileText, Paperclip, Loader2,
@@ -28,6 +30,7 @@ interface CategoryRecord {
 
 export default function CategoriesClient() {
   const { lang, t } = useI18n();
+  const pathname = usePathname();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -118,7 +121,7 @@ export default function CategoriesClient() {
                   <AiSummarizeButton documentId={r.id} />
                   {r.chartId && (
                     <Link
-                      href={`/professional/patients/${r.chartId}`}
+                      href={professionalPatientsHref(pathname, r.chartId)}
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 hover:text-brand-600 border border-brand-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
                     >
                       <FolderOpen size={14} /> {t("cat.openChart")}

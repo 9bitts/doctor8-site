@@ -306,6 +306,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
+      if (token.role === "PROFESSIONAL" && token.id) {
+        const profile = await db.professionalProfile.findUnique({
+          where: { userId: token.id as string },
+          select: { specialty: true },
+        });
+        token.professionalSpecialty = profile?.specialty ?? null;
+      } else {
+        token.professionalSpecialty = null;
+      }
+
       // Extend session during active teleconsult (video room keepalive)
       if (trigger === "update" && (session as { consultActive?: boolean })?.consultActive) {
         const consultMaxAge = parseInt(
@@ -323,6 +333,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.region = token.region as string;
+        session.user.professionalSpecialty =
+          (token.professionalSpecialty as string | null | undefined) ?? null;
       }
       return session;
     },

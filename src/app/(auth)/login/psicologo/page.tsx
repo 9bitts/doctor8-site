@@ -64,17 +64,22 @@ function PsychologistLoginForm() {
   }, [searchParams]);
 
   async function resolvePsychologistDestination(): Promise<string> {
-    if (callbackUrl) return safePostLoginUrl("PROFESSIONAL", callbackUrl);
-
     const profRes = await fetch("/api/professional/profile");
+    let specialty: string | null = null;
     if (profRes.ok) {
       const { profile } = await profRes.json();
+      specialty = profile?.specialty ?? null;
+      if (callbackUrl) {
+        return safePostLoginUrl("PROFESSIONAL", callbackUrl, undefined, specialty);
+      }
       if (!profile?.specialty?.trim()) {
         return "/onboarding?portal=psychologist";
       }
       if (isPsychologistSpecialty(profile.specialty)) {
         return PSYCHOLOGIST_HOME;
       }
+    } else if (callbackUrl) {
+      return safePostLoginUrl("PROFESSIONAL", callbackUrl);
     }
     throw new Error("not_psychologist");
   }

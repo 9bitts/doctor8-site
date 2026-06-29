@@ -1,5 +1,11 @@
 // Maps in-app notification type + data to a dashboard route (or external URL).
 
+import {
+  isPsychologistSpecialty,
+  mapProfessionalPathForSpecialty,
+  professionalPortalBaseFromSpecialty,
+} from "@/lib/psychologist-portal";
+
 export type NotificationRole = "PATIENT" | "PROFESSIONAL" | "ADMIN";
 
 export function parseNotificationData(data: unknown): Record<string, unknown> {
@@ -15,12 +21,30 @@ export function parseNotificationData(data: unknown): Record<string, unknown> {
   return {};
 }
 
-function messagesPath(role: NotificationRole): string {
-  return role === "PROFESSIONAL" ? "/professional/messages" : "/patient/messages";
+function proPortal(role: NotificationRole, specialty?: string | null): string {
+  if (role !== "PROFESSIONAL") return "/professional";
+  return professionalPortalBaseFromSpecialty(specialty);
 }
 
-function appointmentsPath(role: NotificationRole): string {
-  return role === "PROFESSIONAL" ? "/professional/appointments" : "/patient/appointments";
+function messagesPath(role: NotificationRole, specialty?: string | null): string {
+  return role === "PROFESSIONAL"
+    ? `${proPortal(role, specialty)}/messages`
+    : "/patient/messages";
+}
+
+function appointmentsPath(role: NotificationRole, specialty?: string | null): string {
+  return role === "PROFESSIONAL"
+    ? `${proPortal(role, specialty)}/appointments`
+    : "/patient/appointments";
+}
+
+function mapProPath(
+  role: NotificationRole,
+  specialty: string | null | undefined,
+  path: string,
+): string {
+  if (role !== "PROFESSIONAL") return path;
+  return mapProfessionalPathForSpecialty(specialty, path);
 }
 
 function internalPathFromUrl(url: string): string | null {
@@ -36,12 +60,17 @@ function internalPathFromUrl(url: string): string | null {
 export function resolveNotificationHref(
   type: string,
   data: unknown,
-  role: NotificationRole
+  role: NotificationRole,
+  professionalSpecialty?: string | null,
 ): string | null {
   const d = parseNotificationData(data);
   const isPro = role === "PROFESSIONAL";
+  const portal = proPortal(role, professionalSpecialty);
+  const isPsych = isPro && isPsychologistSpecialty(professionalSpecialty);
 
-  if (typeof d.link === "string" && d.link.startsWith("/")) return d.link;
+  if (typeof d.link === "string" && d.link.startsWith("/")) {
+    return mapProPath(role, professionalSpecialty, d.link);
+  }
 
   if (typeof d.resourceUrl === "string" && d.resourceUrl.startsWith("http")) {
     return d.resourceUrl;
@@ -51,7 +80,9 @@ export function resolveNotificationHref(
     if (d.shareUrl.startsWith("http")) {
       return internalPathFromUrl(d.shareUrl) ?? d.shareUrl;
     }
-    if (d.shareUrl.startsWith("/")) return d.shareUrl;
+    if (d.shareUrl.startsWith("/")) {
+      return mapProPath(role, professionalSpecialty, d.shareUrl);
+    }
   }
 
   if (typeof d.meetingUrl === "string" && d.meetingUrl.startsWith("http")) {
@@ -62,43 +93,45 @@ export function resolveNotificationHref(
   switch (type) {
     case "message": {
       if (typeof d.fromUserId === "string") {
-        return `${messagesPath(role)}?with=${d.fromUserId}`;
+        return `${messagesPath(role, professionalSpecialty)}?with=${d.fromUserId}`;
       }
       if (typeof d.entryId === "string") return `/video/humanitarian/${d.entryId}`;
       if (typeof d.queueId === "string") return `/video/jit/${d.queueId}`;
-      if (typeof d.link === "string" && d.link.startsWith("/")) return d.link;
-      return messagesPath(role);
+      if (typeof d.link === "string" && d.link.startsWith("/")) {
+        return mapProPath(role, professionalSpecialty, d.link);
+      }
+      return messagesPath(role, professionalSpecialty);
     }
 
     case "shared_record": {
       if (typeof d.documentId === "string") {
         return isPro
-          ? `/professional/shared?documentId=${d.documentId}`
+          ? `${portal}/shared?documentId=${d.documentId}`
           : `/patient/documents?documentId=${d.documentId}`;
       }
-      return isPro ? "/professional/shared" : "/patient/documents";
+      return isPro ? `${portal}/shared` : "/patient/documents";
     }
 
     case "appointment_reminder":
     case "appointment_confirmed": {
       if (typeof d.appointmentId === "string") {
-        return `${appointmentsPath(role)}?id=${d.appointmentId}`;
+        return `${appointmentsPath(role, professionalSpecialty)}?id=${d.appointmentId}`;
       }
-      return appointmentsPath(role);
+      return appointmentsPath(role, professionalSpecialty);
     }
 
     case "DOCUMENT_SHARED": {
       if (typeof d.resourceId === "string") {
-        return `/professional/resources?resourceId=${d.resourceId}`;
+        return `${portal}/resources?resourceId=${d.resourceId}`;
       }
       if (typeof d.documentId === "string") {
         return `/patient/documents?documentId=${d.documentId}`;
       }
-      return isPro ? "/professional/resources" : "/patient/documents";
+      return isPro ? `${portal}/resources` : "/patient/documents";
     }
 
     case "payment":
-      return isPro ? "/professional/financeiro" : "/patient/subscription";
+      return isPro ? `${portal}/financeiro` : "/patient/subscription";
 
     case "favorite_online":
       if (typeof d.professionalId === "string") {
@@ -108,31 +141,39 @@ export function resolveNotificationHref(
 
     case "system": {
       if (d.kind === "post_consult_notes") {
-        if (typeof d.link === "string" && d.link.startsWith("/")) return d.link;
-        if (typeof d.url === "string" && d.url.startsWith("/")) return d.url;
+        if (typeof d.link === "string" && d.link.startsWith("/")) {
+          return mapProPath(role, professionalSpecialty, d.link);
+        }
+        if (typeof d.url === "string" && d.url.startsWith("/")) {
+          return mapProPath(role, professionalSpecialty, d.url);
+        }
         if (typeof d.appointmentId === "string") {
           return isPro
-            ? `/professional/appointments#appt-${d.appointmentId}`
-            : `${appointmentsPath(role)}?id=${d.appointmentId}`;
+            ? `${portal}/appointments#appt-${d.appointmentId}`
+            : `${appointmentsPath(role, professionalSpecialty)}?id=${d.appointmentId}`;
         }
       }
       if (d.kind === "favorite_online" && typeof d.professionalId === "string") {
         return `/patient/find?pro=${d.professionalId}`;
       }
       if (typeof d.prescriptionId === "string") {
-        return isPro ? "/professional/prescriptions" : "/patient/prescriptions";
+        return isPro
+          ? (isPsych ? "/psychologist/documents" : "/professional/prescriptions")
+          : "/patient/prescriptions";
       }
       if (typeof d.documentId === "string") {
         return isPro
-          ? `/professional/shared?documentId=${d.documentId}`
+          ? `${portal}/shared?documentId=${d.documentId}`
           : `/patient/documents?documentId=${d.documentId}`;
       }
       if (typeof d.appointmentId === "string") {
-        return `${appointmentsPath(role)}?id=${d.appointmentId}`;
+        return `${appointmentsPath(role, professionalSpecialty)}?id=${d.appointmentId}`;
       }
       if (typeof d.queueId === "string") return `/video/jit/${d.queueId}`;
       if (typeof d.entryId === "string") return `/video/humanitarian/${d.entryId}`;
-      if (typeof d.link === "string" && d.link.startsWith("/")) return d.link;
+      if (typeof d.link === "string" && d.link.startsWith("/")) {
+        return mapProPath(role, professionalSpecialty, d.link);
+      }
       if (typeof d.sessionId === "string") return "/urgent";
       return null;
     }

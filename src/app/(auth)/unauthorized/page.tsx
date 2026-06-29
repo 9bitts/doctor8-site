@@ -15,7 +15,9 @@ export default function UnauthorizedPage() {
       .then((r) => r.json())
       .then((session) => {
         if (session?.user?.role) {
-          setHome(resolveRoleHome(session.user.role));
+          setHome(
+            resolveRoleHome(session.user.role, session.user.professionalSpecialty),
+          );
         }
       })
       .finally(() => setLoading(false));

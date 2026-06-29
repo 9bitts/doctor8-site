@@ -35,6 +35,7 @@ export default function NotificationBell() {
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [unread, setUnread] = useState(0);
   const [role, setRole] = useState<NotificationRole>("PATIENT");
+  const [professionalSpecialty, setProfessionalSpecialty] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   async function load() {
@@ -61,6 +62,7 @@ export default function NotificationBell() {
       .then((s) => {
         const r = s?.user?.role;
         if (r === "PATIENT" || r === "PROFESSIONAL" || r === "ADMIN") setRole(r);
+        setProfessionalSpecialty(s?.user?.professionalSpecialty ?? null);
       })
       .catch(() => {});
   }, []);
@@ -107,7 +109,7 @@ export default function NotificationBell() {
   }
 
   async function handleNotifClick(n: Notif) {
-    const href = resolveNotificationHref(n.type, n.data, role);
+    const href = resolveNotificationHref(n.type, n.data, role, professionalSpecialty);
     if (!n.readAt) await markOneRead(n.id);
     setOpen(false);
     if (!href) return;
@@ -157,7 +159,7 @@ export default function NotificationBell() {
               </div>
             ) : (
               notifs.map((n) => {
-                const href = resolveNotificationHref(n.type, n.data, role);
+                const href = resolveNotificationHref(n.type, n.data, role, professionalSpecialty);
                 const clickable = Boolean(href);
                 const localized = localizeNotification(n, t, lang);
                 return (

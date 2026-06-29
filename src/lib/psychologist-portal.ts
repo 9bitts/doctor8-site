@@ -47,6 +47,24 @@ export async function resolveProfessionalPortalBaseForUser(
     : "/professional";
 }
 
+export function professionalPortalBaseFromSpecialty(
+  specialty: string | null | undefined,
+): ProfessionalPortalBase {
+  return isPsychologistSpecialty(specialty) ? "/psychologist" : "/professional";
+}
+
+/** Rewrites /professional/* paths to the portal for this specialty (or keeps path). */
+export function mapProfessionalPathForSpecialty(
+  specialty: string | null | undefined,
+  professionalPath: string,
+): string {
+  const base = professionalPortalBaseFromSpecialty(specialty);
+  if (base === "/professional" || !professionalPath.startsWith("/professional")) {
+    return professionalPath;
+  }
+  return professionalPath.replace("/professional", base);
+}
+
 export function psychologistHubHref(pathname: string): string {
   return pathname.startsWith("/psychologist")
     ? PSYCHOLOGIST_HOME

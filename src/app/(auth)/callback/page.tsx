@@ -9,14 +9,18 @@ import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
 import { PSYCHOLOGIST_HOME, isPsychologistSpecialty } from "@/lib/psychologist-portal";
 
 async function resolveProfessionalHome(portal: string | null): Promise<string> {
-  if (portal !== "psychologist") return "/professional";
   const profRes = await fetch("/api/professional/profile");
+  let specialty: string | null = null;
   if (profRes.ok) {
     const { profile } = await profRes.json();
-    if (!profile?.specialty?.trim()) return "/onboarding?portal=psychologist";
-    if (!isPsychologistSpecialty(profile.specialty)) return "/professional";
+    specialty = profile?.specialty ?? null;
+    if (portal === "psychologist") {
+      if (!profile?.specialty?.trim()) return "/onboarding?portal=psychologist";
+      if (!isPsychologistSpecialty(profile.specialty)) return "/professional";
+      return PSYCHOLOGIST_HOME;
+    }
   }
-  return PSYCHOLOGIST_HOME;
+  return resolveRoleHome("PROFESSIONAL", specialty);
 }
 
 export default function CallbackPage() {
@@ -45,6 +49,7 @@ function CallbackInner() {
               session?.user?.role,
               savedCallback,
               resolvePatientPostLoginUrl,
+              session?.user?.professionalSpecialty,
             ),
           );
           return;
@@ -54,7 +59,9 @@ function CallbackInner() {
         } else if (session?.user?.role === "ADMIN") {
           router.replace("/admin");
         } else {
-          router.replace(resolveRoleHome(session?.user?.role));
+          router.replace(
+            resolveRoleHome(session?.user?.role, session?.user?.professionalSpecialty),
+          );
         }
       })
       .catch(() => router.replace("/login"));

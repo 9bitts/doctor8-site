@@ -6,6 +6,7 @@ declare module "next-auth" {
       id: string;
       role: string;
       region: string;
+      professionalSpecialty?: string | null;
     } & DefaultSession["user"];
   }
   interface User {

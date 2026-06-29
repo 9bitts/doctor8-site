@@ -129,7 +129,12 @@ function LoginForm() {
       const role = session?.user?.role;
 
       router.push(
-        safePostLoginUrl(role, callbackUrl || null, resolvePatientPostLoginUrl),
+        safePostLoginUrl(
+          role,
+          callbackUrl || null,
+          resolvePatientPostLoginUrl,
+          session?.user?.professionalSpecialty,
+        ),
       );
       router.refresh();
     } catch {

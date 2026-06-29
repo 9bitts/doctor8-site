@@ -1,10 +1,19 @@
+import {
+  isPsychologistSpecialty,
+  mapProfessionalPathForSpecialty,
+  PSYCHOLOGIST_HOME,
+} from "./psychologist-portal";
+
 /** Default dashboard path after login for each account role. */
-export function resolveRoleHome(role: string | undefined | null): string {
+export function resolveRoleHome(
+  role: string | undefined | null,
+  specialty?: string | null,
+): string {
   switch (role) {
     case "ADMIN":
       return "/admin";
     case "PROFESSIONAL":
-      return "/professional";
+      return isPsychologistSpecialty(specialty) ? PSYCHOLOGIST_HOME : "/professional";
     case "PSYCHOANALYST":
       return "/psychoanalyst";
     case "INTEGRATIVE_THERAPIST":
@@ -57,8 +66,9 @@ export function safePostLoginUrl(
   role: string | undefined | null,
   callbackUrl: string | null | undefined,
   resolvePatientUrl?: (url: string) => string,
+  specialty?: string | null,
 ): string {
-  const home = resolveRoleHome(role);
+  const home = resolveRoleHome(role, specialty);
   const raw = callbackUrl?.trim();
   if (!raw) return home;
 
@@ -80,6 +90,9 @@ export function safePostLoginUrl(
 
   const pathname = path.split("?")[0];
   if (isPathAllowedForRole(pathname, role)) {
+    if (role === "PROFESSIONAL" && isPsychologistSpecialty(specialty)) {
+      return mapProfessionalPathForSpecialty(specialty, path.startsWith("/") ? path : `/${path}`);
+    }
     return path.startsWith("/") ? path : `/${path}`;
   }
 
