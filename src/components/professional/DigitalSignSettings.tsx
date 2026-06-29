@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import {
   PenLine, Smartphone, Loader2, CheckCircle2, AlertCircle, FlaskConical, Lock,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
+import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 
 type SignConfig = {
   configured: boolean;
@@ -25,6 +27,8 @@ function formatCpfInput(value: string): string {
 
 export default function DigitalSignSettings() {
   const t = useT();
+  const pathname = usePathname();
+  const accountPath = mapProfessionalPathToPortal(pathname, "/professional/account");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -65,7 +69,7 @@ export default function DigitalSignSettings() {
     if (signTest) {
       params.delete("signTest");
       const qs = params.toString();
-      window.history.replaceState({}, "", `/professional/account${qs ? `?${qs}` : ""}#digital-sign`);
+      window.history.replaceState({}, "", `${accountPath}${qs ? `?${qs}` : ""}#digital-sign`);
     }
     if (window.location.hash === "#digital-sign" || params.get("digitalSign") === "1") {
       requestAnimationFrame(() => {

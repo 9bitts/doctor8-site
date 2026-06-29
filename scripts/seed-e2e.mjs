@@ -458,6 +458,50 @@ async function seedClinicalFixtures() {
   console.log("[seed-e2e] Clinical fixtures ready (rx, exam, appointment)");
 }
 
+async function seedPsychologistClinicalFixtures() {
+  const patientUser = await prisma.user.findUnique({
+    where: { email: DEFAULT_PATIENT.email.toLowerCase() },
+    select: { id: true },
+  });
+  const psyUser = await prisma.user.findUnique({
+    where: { email: DEFAULT_PSYCHOLOGIST.email.toLowerCase() },
+    select: { id: true },
+  });
+  const psyProfile = await prisma.professionalProfile.findUnique({
+    where: { userId: psyUser?.id },
+    select: { id: true },
+  });
+  if (!patientUser || !psyProfile) {
+    throw new Error("E2E psychologist clinical fixtures — seed patient/psychologist first");
+  }
+
+  const record = await prisma.patientRecord.findFirst({
+    where: { linkedUserId: patientUser.id, professionalId: psyProfile.id },
+    select: { id: true },
+  });
+
+  const chart = record
+    ? await prisma.patientRecord.update({
+        where: { id: record.id },
+        data: {
+          firstName: encrypt("E2E"),
+          lastName: encrypt("PsyPatient"),
+          email: DEFAULT_PATIENT.email.toLowerCase(),
+        },
+      })
+    : await prisma.patientRecord.create({
+        data: {
+          professionalId: psyProfile.id,
+          firstName: encrypt("E2E"),
+          lastName: encrypt("PsyPatient"),
+          email: DEFAULT_PATIENT.email.toLowerCase(),
+          linkedUserId: patientUser.id,
+        },
+      });
+
+  console.log(`[seed-e2e] Psychologist clinical fixtures ready (chart ${chart.id})`);
+}
+
 const TELEMEDICINE_TCLE_VERSION = "1.2";
 const E2E_MEETING_ROOM = "e2e-hum-room";
 const E2E_MEETING_URL = "https://doctor8.daily.co/e2e-hum-room";
@@ -652,6 +696,7 @@ async function main() {
   await seedPsychologist(DEFAULT_PSYCHOLOGIST);
   await seedAdmin(DEFAULT_ADMIN);
   await seedClinicalFixtures();
+  await seedPsychologistClinicalFixtures();
   await seedHumanitarianVideoFixtures();
   await seedHumanitarianQueueFixtures();
 }

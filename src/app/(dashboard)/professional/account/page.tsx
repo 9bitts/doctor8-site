@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import DigitalSignSettings from "@/components/professional/DigitalSignSettings";
@@ -19,6 +20,7 @@ import {
   SETTINGS_PROFILE_PATH,
   type BillingRegion,
 } from "@/lib/billing-regions";
+import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
   Eye, EyeOff, LogOut, Shield, CreditCard,
@@ -34,6 +36,8 @@ function formatPriceHint(priceHint: string, perMonth: string): string {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProfessionalAccountPage() {
   const { lang, t } = useI18n();
+  const pathname = usePathname();
+  const settingsProfilePath = mapProfessionalPathToPortal(pathname, SETTINGS_PROFILE_PATH);
   const locale = localeOf(lang);
 
   const PASSWORD_RULES = [
@@ -248,7 +252,7 @@ export default function ProfessionalAccountPage() {
             <>
               {" "}
               {t("billing.changeCurrencyIn")}{" "}
-              <Link href={SETTINGS_PROFILE_PATH} className="text-brand-600 underline font-medium">
+              <Link href={settingsProfilePath} className="text-brand-600 underline font-medium">
                 {t("billing.changeInProfile")}
               </Link>
               .
@@ -313,7 +317,7 @@ export default function ProfessionalAccountPage() {
                       .replace("{{selected}}", billingRegionLabel(billingRegion))}
                   </p>
                   <Link
-                    href={SETTINGS_PROFILE_PATH}
+                    href={settingsProfilePath}
                     className="inline-flex font-semibold text-amber-900 underline"
                   >
                     {t("billing.openProfileChange")}

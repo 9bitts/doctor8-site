@@ -8,14 +8,29 @@ import { translate, Lang } from "@/lib/i18n/translations";
 import { HUMANITARIAN_LANDING_URL, VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianLangSwitcher from "@/components/humanitarian/HumanitarianLangSwitcher";
 import { humanitarianBackFallback, navigateBack } from "@/lib/safe-nav";
+import { resolveRoleHome } from "@/lib/role-home";
 
-type UserRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "ADMIN" | "ORGANIZATION" | "ANGEL";
+type UserRole =
+  | "PATIENT"
+  | "PROFESSIONAL"
+  | "PSYCHOANALYST"
+  | "INTEGRATIVE_THERAPIST"
+  | "ADMIN"
+  | "ORGANIZATION"
+  | "ANGEL";
 
-function homeHrefForRole(role: UserRole | null, isVolunteer: boolean, isAngel: boolean): string {
+function homeHrefForRole(
+  role: UserRole | null,
+  specialty: string | null | undefined,
+  isVolunteer: boolean,
+  isAngel: boolean,
+): string {
   if (isAngel) return "/humanitarian/angel";
   if (!isVolunteer) return "/patient";
-  if (role === "PSYCHOANALYST") return "/psychoanalyst";
-  if (role === "PROFESSIONAL") return "/professional";
+  if (!role) return "/patient";
+  if (role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST") {
+    return resolveRoleHome(role, specialty);
+  }
   return "/patient";
 }
 
@@ -38,18 +53,22 @@ export default function HumanitarianShell({
   const router = useRouter();
   const t = (key: string) => translate(lang, key);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [professionalSpecialty, setProfessionalSpecialty] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
-      .then((s) => setUserRole((s?.user?.role as UserRole) ?? null))
+      .then((s) => {
+        setUserRole((s?.user?.role as UserRole) ?? null);
+        setProfessionalSpecialty(s?.user?.professionalSpecialty ?? null);
+      })
       .catch(() => {});
   }, []);
 
   const isVolunteer = pathname.includes("/volunteer");
   const isAngel = pathname.includes("/angel");
   const campaignHref = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
-  const accountHref = homeHrefForRole(userRole, isVolunteer, isAngel);
+  const accountHref = homeHrefForRole(userRole, professionalSpecialty, isVolunteer, isAngel);
 
   const navLink = (href: string, active: boolean, label: string, icon: React.ReactNode) => (
     <Link

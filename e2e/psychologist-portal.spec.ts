@@ -46,10 +46,9 @@ test.describe("psychologist portal", () => {
     await expect(page).toHaveURL(/\/psychologist\/patients/);
 
     const patientLink = page.locator('a[href^="/psychologist/patients/"]').first();
-    if (await patientLink.count()) {
-      await patientLink.click();
-      await expect(page).toHaveURL(/\/psychologist\/patients\/[^/]+$/);
-    }
+    await expect(patientLink).toBeVisible({ timeout: 10_000 });
+    await patientLink.click();
+    await expect(page).toHaveURL(/\/psychologist\/patients\/[^/]+$/);
   });
 
   test("session includes psychology specialty for role home", async ({ page }) => {

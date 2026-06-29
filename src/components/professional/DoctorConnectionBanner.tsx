@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Heart, Loader2, X, AlertCircle } from "lucide-react";
 import { readApiJson, apiErrorMessage } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -13,6 +14,7 @@ import {
   SETTINGS_PROFILE_PATH,
   type BillingRegion,
 } from "@/lib/billing-regions";
+import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 
 const DISMISS_KEY = "doctor8-support-banner-dismissed";
 
@@ -28,6 +30,8 @@ function formatPriceHint(priceHint: string, perMonth: string): string {
 
 export default function DoctorConnectionBanner({ subscribed, defaultRegion, accountHref = "/professional/account" }: Props) {
   const { t } = useI18n();
+  const pathname = usePathname();
+  const settingsProfilePath = mapProfessionalPathToPortal(pathname, SETTINGS_PROFILE_PATH);
   const profileRegion = parseBillingRegion(defaultRegion, "US");
 
   const [dismissed, setDismissed] = useState(() => {
@@ -134,7 +138,7 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion, acco
               {regionMismatch && (
                 <p className="text-xs text-amber-700 mt-1">
                   {t("billing.chargeInBefore")}{" "}
-                  <Link href={SETTINGS_PROFILE_PATH} className="underline font-medium">
+                  <Link href={settingsProfilePath} className="underline font-medium">
                     {t("billing.changeInProfile")}
                   </Link>{" "}
                   {t("billing.chargeInAfter").replace("{{region}}", billingRegionLabel(region))}

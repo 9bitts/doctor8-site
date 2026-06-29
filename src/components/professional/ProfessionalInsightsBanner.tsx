@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Mail, Users, Clock, ChevronRight, FileText } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { ProfessionalDashboardInsights } from "@/lib/professional-dashboard-insights";
+import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 
 export default function ProfessionalInsightsBanner({
   insights,
@@ -11,6 +13,8 @@ export default function ProfessionalInsightsBanner({
   insights: ProfessionalDashboardInsights;
 }) {
   const { t } = useI18n();
+  const pathname = usePathname();
+  const mapPath = (path: string) => mapProfessionalPathToPortal(pathname, path);
 
   const items: { key: string; count: number; href: string; icon: React.ReactNode }[] = [];
 
@@ -18,7 +22,7 @@ export default function ProfessionalInsightsBanner({
     items.push({
       key: "needsInvite",
       count: insights.chartsNeedingInvite,
-      href: "/professional/patients",
+      href: mapPath("/professional/patients"),
       icon: <Mail size={18} className="text-brand-600" />,
     });
   }
@@ -26,7 +30,7 @@ export default function ProfessionalInsightsBanner({
     items.push({
       key: "staleInvites",
       count: insights.staleInvites,
-      href: "/professional/patients",
+      href: mapPath("/professional/patients"),
       icon: <Clock size={18} className="text-amber-600" />,
     });
   }
@@ -34,7 +38,7 @@ export default function ProfessionalInsightsBanner({
     items.push({
       key: "postConsultNotes",
       count: insights.completedWithoutNotes,
-      href: "/professional/appointments",
+      href: mapPath("/professional/appointments"),
       icon: <FileText size={18} className="text-violet-600" />,
     });
   }
@@ -42,7 +46,7 @@ export default function ProfessionalInsightsBanner({
     items.push({
       key: "unlinked",
       count: insights.unlinkedWithEmail,
-      href: "/professional/patients",
+      href: mapPath("/professional/patients"),
       icon: <Users size={18} className="text-slate-600" />,
     });
   }

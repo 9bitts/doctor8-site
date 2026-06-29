@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import VideoConsultRoom, { VideoConsultData, VideoConsultFetchResult } from "@/components/VideoConsultRoom";
+import { providerAppointmentsPath, type ProviderChartPanel } from "@/lib/video-chart-nav";
 
 export default function AppointmentVideoPage() {
   const params = useParams();
@@ -15,7 +16,10 @@ export default function AppointmentVideoPage() {
         meetHandoff: {
           professionalName: d.professionalName || "",
           meetUrl: d.meetUrl,
-          backHref: d.role === "professional" ? "/professional/appointments" : "/patient/appointments",
+          backHref:
+            d.role === "professional"
+              ? providerAppointmentsPath((d.providerPanel as ProviderChartPanel) ?? "professional")
+              : "/patient/appointments",
           backLabelKey: "appt.page.meetHandoffBack",
         },
       };

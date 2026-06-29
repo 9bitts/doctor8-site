@@ -15,6 +15,7 @@ import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianV
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
+import ProfessionalChecklist from "@/components/ProfessionalChecklist";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 import { getProfessionLabel } from "@/lib/professions";
@@ -125,6 +126,8 @@ export default async function PsychologistDashboard() {
         defaultRegion={userRow?.region || session.user.region}
         accountHref="/psychologist/account"
       />
+
+      <ProfessionalChecklist />
 
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">

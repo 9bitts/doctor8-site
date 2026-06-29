@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   CheckCircle2, Circle, ChevronRight, X, Sparkles,
   User, Calendar, Users, Pill, Radio, BookOpen, PenLine,
   AlertCircle, RefreshCw,
 } from "lucide-react";
+import { mapProfessionalPathToPortal, professionalPortalBase } from "@/lib/psychologist-portal";
 
 type Lang = "pt" | "en" | "es";
 
@@ -77,6 +79,9 @@ function detectLang(): Lang {
 }
 
 export default function ProfessionalChecklist() {
+  const pathname = usePathname();
+  const psychologyPortal = professionalPortalBase(pathname) === "/psychologist";
+  const mapPath = (path: string) => mapProfessionalPathToPortal(pathname, path);
   const [lang, setLang] = useState<Lang>("pt");
   const [state, setState] = useState<ChecklistState | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -154,13 +159,17 @@ export default function ProfessionalChecklist() {
   }
 
   const items = [
-    { id: "profile", icon: <User size={16} />, href: "/professional/account", done: state.hasProfile, label: t("profile"), hint: t("profileHint") },
-    { id: "availability", icon: <Calendar size={16} />, href: "/professional/settings/availability", done: state.hasAvailability, label: t("availability"), hint: t("availHint") },
-    { id: "digSign", icon: <PenLine size={16} />, href: "/professional/account#digital-sign", done: state.hasDigitalSign, label: t("digSign"), hint: t("digSignHint") },
-    { id: "patient", icon: <Users size={16} />, href: "/professional/patients", done: state.hasPatient, label: t("patient"), hint: t("patientHint") },
-    { id: "prescription", icon: <Pill size={16} />, href: "/professional/prescriptions", done: state.hasPrescription, label: t("prescription"), hint: t("rxHint") },
-    { id: "jit", icon: <Radio size={16} />, href: "/professional/jit", done: state.hasJit, label: t("jit"), hint: t("jitHint") },
-    { id: "resource", icon: <BookOpen size={16} />, href: "/professional/resources", done: state.hasResource, label: t("resource"), hint: t("resourceHint") },
+    { id: "profile", icon: <User size={16} />, href: mapPath("/professional/account"), done: state.hasProfile, label: t("profile"), hint: t("profileHint") },
+    { id: "availability", icon: <Calendar size={16} />, href: mapPath("/professional/settings/availability"), done: state.hasAvailability, label: t("availability"), hint: t("availHint") },
+    ...(!psychologyPortal
+      ? [{ id: "digSign", icon: <PenLine size={16} />, href: mapPath("/professional/account#digital-sign"), done: state.hasDigitalSign, label: t("digSign"), hint: t("digSignHint") }]
+      : []),
+    { id: "patient", icon: <Users size={16} />, href: mapPath("/professional/patients"), done: state.hasPatient, label: t("patient"), hint: t("patientHint") },
+    ...(!psychologyPortal
+      ? [{ id: "prescription", icon: <Pill size={16} />, href: mapPath("/professional/prescriptions"), done: state.hasPrescription, label: t("prescription"), hint: t("rxHint") }]
+      : []),
+    { id: "jit", icon: <Radio size={16} />, href: mapPath("/professional/jit"), done: state.hasJit, label: t("jit"), hint: t("jitHint") },
+    { id: "resource", icon: <BookOpen size={16} />, href: mapPath("/professional/resources"), done: state.hasResource, label: t("resource"), hint: t("resourceHint") },
   ];
 
   const doneCount = items.filter((i) => i.done).length;

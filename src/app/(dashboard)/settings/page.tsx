@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { resolveProfessionalPortalBaseForUser } from "@/lib/psychologist-portal";
 
 /** Legacy URL — redirects to role-specific account page (password, email, region). */
 export default async function SettingsRedirectPage() {
@@ -9,8 +10,12 @@ export default async function SettingsRedirectPage() {
   switch (role) {
     case "PATIENT":
       redirect("/patient/account");
-    case "PROFESSIONAL":
-      redirect("/professional/account");
+    case "PROFESSIONAL": {
+      const portalBase = session?.user?.id
+        ? await resolveProfessionalPortalBaseForUser(session.user.id)
+        : "/professional";
+      redirect(`${portalBase}/account`);
+    }
     case "PSYCHOANALYST":
       redirect("/psychoanalyst/settings");
     case "INTEGRATIVE_THERAPIST":

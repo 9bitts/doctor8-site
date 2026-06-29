@@ -9,6 +9,7 @@ import {
   friendlyStripeCheckoutError,
 } from "@/lib/stripe-subscription-checkout";
 import { parseBillingRegion, paymentMethodsForRegion, regionsMismatch } from "@/lib/billing-regions";
+import { professionalPortalBaseFromSpecialty } from "@/lib/psychologist-portal";
 import { z } from "zod";
 
 const postSchema = z.object({
@@ -20,9 +21,9 @@ const PROVIDER_ROLES = new Set(["PROFESSIONAL", "PSYCHOANALYST"]);
 async function getProviderProfile(userId: string) {
   const professional = await db.professionalProfile.findUnique({
     where: { userId },
-    select: { firstName: true, lastName: true },
+    select: { firstName: true, lastName: true, specialty: true },
   });
-  if (professional) return professional;
+  if (professional) return { ...professional, kind: "professional" as const };
 
   const psychoanalyst = await db.psychoanalystProfile.findUnique({
     where: { userId },
@@ -34,6 +35,8 @@ async function getProviderProfile(userId: string) {
   return {
     firstName: safeDecrypt(psychoanalyst.firstName),
     lastName: safeDecrypt(psychoanalyst.lastName),
+    specialty: null,
+    kind: "psychoanalyst" as const,
   };
 }
 
@@ -81,6 +84,15 @@ export async function POST(req: NextRequest) {
       ? parseBillingRegion(bodyRegion, profileRegion)
       : profileRegion;
 
+    const accountPortalBase =
+      profile.kind === "psychoanalyst"
+        ? "/psychoanalyst"
+        : professionalPortalBaseFromSpecialty(
+            profile.specialty ?? session.user.professionalSpecialty,
+          );
+    const accountPath = `${accountPortalBase}/account`;
+    const settingsPath = `${accountPortalBase}/settings`;
+
     if (regionsMismatch(profileRegion, requestedRegion)) {
       return NextResponse.json(
         {
@@ -88,7 +100,7 @@ export async function POST(req: NextRequest) {
             "A moeda escolhida não corresponde à região da sua conta. Altere a região em Meu Perfil para pagar nessa moeda.",
           code: "REGION_MISMATCH",
           profileRegion,
-          settingsPath: "/professional/settings",
+          settingsPath,
         },
         { status: 400 },
       );
@@ -127,8 +139,8 @@ export async function POST(req: NextRequest) {
       currency,
       userId: session.user.id,
       planKind: "professional",
-      successPath: "/professional/account?subscribed=true",
-      cancelPath: "/professional/account",
+      successPath: `${accountPath}?subscribed=true`,
+      cancelPath: accountPath,
     });
 
     if (!checkoutSession.url) {
