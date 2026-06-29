@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { consumeAuthCallback } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
-import { resolveRoleHome } from "@/lib/role-home";
+import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
 import { PSYCHOLOGIST_HOME } from "@/lib/psychologist-portal";
 
 async function resolveProfessionalHome(portal: string | null): Promise<string> {
@@ -39,13 +39,12 @@ function CallbackInner() {
       .then(async (session) => {
         const savedCallback = consumeAuthCallback();
         if (savedCallback) {
-          const role = session?.user?.role;
           router.replace(
-            role === "PATIENT"
-              ? resolvePatientPostLoginUrl(savedCallback)
-              : role === "ADMIN"
-                ? "/admin"
-                : savedCallback,
+            safePostLoginUrl(
+              session?.user?.role,
+              savedCallback,
+              resolvePatientPostLoginUrl,
+            ),
           );
           return;
         }

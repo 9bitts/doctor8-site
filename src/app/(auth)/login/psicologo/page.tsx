@@ -7,6 +7,7 @@ import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import { PSYCHOLOGIST_HOME, PSYCHOLOGIST_REGISTER, isPsychologistSpecialty } from "@/lib/psychologist-portal";
+import { safePostLoginUrl } from "@/lib/role-home";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail, Brain, ArrowLeft,
 } from "lucide-react";
@@ -63,7 +64,7 @@ function PsychologistLoginForm() {
   }, [searchParams]);
 
   async function resolvePsychologistDestination(): Promise<string> {
-    if (callbackUrl) return callbackUrl;
+    if (callbackUrl) return safePostLoginUrl("PROFESSIONAL", callbackUrl);
 
     const profRes = await fetch("/api/professional/profile");
     if (profRes.ok) {

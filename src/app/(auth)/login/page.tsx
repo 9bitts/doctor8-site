@@ -12,7 +12,7 @@ import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
-import { resolveRoleHome } from "@/lib/role-home";
+import { safePostLoginUrl } from "@/lib/role-home";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail,
 } from "lucide-react";
@@ -128,17 +128,9 @@ function LoginForm() {
       const session = await sessionRes.json();
       const role = session?.user?.role;
 
-      if (callbackUrl) {
-        router.push(
-          role === "PATIENT"
-            ? resolvePatientPostLoginUrl(callbackUrl)
-            : role === "ADMIN"
-              ? "/admin"
-              : callbackUrl,
-        );
-      } else {
-        router.push(resolveRoleHome(role));
-      }
+      router.push(
+        safePostLoginUrl(role, callbackUrl || null, resolvePatientPostLoginUrl),
+      );
       router.refresh();
     } catch {
       setError("generic");

@@ -13,6 +13,7 @@ import {
   orgProviderScopeFromCookies,
 } from "@/lib/work-context";
 import Link from "next/link";
+import { resolveRoleHome } from "@/lib/role-home";
 import {
   Building2, Users, Calendar, TrendingUp, ChevronRight, Stethoscope,
 } from "lucide-react";
@@ -27,7 +28,7 @@ function fmt(cents: number, currency: string) {
 export default async function OrganizationDashboard() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "ORGANIZATION") redirect("/unauthorized");
+  if (session.user.role !== "ORGANIZATION") redirect(resolveRoleHome(session.user.role));
 
   const membership = await getOrganizationMembership(session.user.id);
   if (!membership) redirect("/login");

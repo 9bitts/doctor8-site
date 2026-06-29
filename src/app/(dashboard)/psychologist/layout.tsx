@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { isPsychologistSpecialty, PSYCHOLOGIST_LOGIN } from "@/lib/psychologist-portal";
+import { resolveRoleHome } from "@/lib/role-home";
 
 export default async function PsychologistPortalLayout({
   children,
@@ -11,7 +12,7 @@ export default async function PsychologistPortalLayout({
   const session = await auth();
   if (!session?.user) redirect(PSYCHOLOGIST_LOGIN);
   if (session.user.role !== "PROFESSIONAL" && session.user.role !== "ADMIN") {
-    redirect("/unauthorized");
+    redirect(resolveRoleHome(session.user.role));
   }
 
   if (session.user.role === "PROFESSIONAL") {

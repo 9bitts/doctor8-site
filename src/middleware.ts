@@ -4,6 +4,7 @@
 
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { isPathAllowedForRole, resolveRoleHome } from "@/lib/role-home";
 
 // Public routes — no login required
 const PUBLIC_ROUTES = [
@@ -23,6 +24,7 @@ const PUBLIC_ROUTES = [
   "/verify-account",
   "/verify-sms",
   "/auth/magic",
+  "/unauthorized",
   "/privacy",
   "/terms",
   "/hipaa",
@@ -140,7 +142,14 @@ export default auth((req) => {
     if (isApi) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    if (!role) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+    const home = resolveRoleHome(role);
+    if (pathname === home || pathname.startsWith(`${home}/`)) {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(new URL(home, req.url));
   }
 
   // Role-based protection
