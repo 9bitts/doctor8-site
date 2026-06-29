@@ -1,121 +1,62 @@
 # Doctor8 — Backlog de melhorias
 
-Lista viva de melhorias propostas e status. Lotes pequenos, baixo risco ao fluxo humanitário (triagem → fila → vídeo → WhatsApp).
+Lista viva de melhorias **pendentes**. Lotes pequenos, baixo risco ao fluxo humanitário (triagem → fila → vídeo → WhatsApp).
 
 ---
 
-## Em implementação / próximo
+## Próximo (código ou config no Railway)
 
-| # | Item | Prioridade | Notas |
-|---|------|------------|-------|
-| M2 | WhatsApp Business API (templates Meta) | Média | **Em espera** — webhook OK; falta registrar número (+55 31…) |
-| M3 | Sentry em produção | Baixa | Código pronto — setar `SENTRY_DSN` no Railway |
-| M4 | Gravação cloud Daily | Baixa | Off por padrão; banner na sala quando `DAILY_CLOUD_RECORDING=1` |
-| M5 | Consultas agendadas: canal Meet opcional | Média | Código pronto — migration + botão na sala Daily |
-| M7 | Portal profissional na home/login | Baixa | Links médico + psicólogo no footer e login |
-| M8 | Farmácia deeplink parceiro | Baixa | UI quando `PHARMACY_MARKETPLACE_ENABLED=true` |
-| M6 | `/settings` legado | Baixa | Redireciona para `/*/account` (feito) |
-
----
-
-## M1 — Google Meet com tradução (spec)
-
-**Objetivo:** Igual ao botão **WhatsApp** no painel do voluntário — o profissional escolhe o canal; o paciente vê na tela o que foi escolhido e ambos seguem para a opção.
-
-**Contexto:** Google Workspace Enterprise Plus (Doctor8) já inclui Meet com **legendas traduzidas** (PT ↔ ES). Daily.co no app não oferece isso nativamente.
-
-### UX (espelho do WhatsApp)
-
-**Voluntário** (`/humanitarian/volunteer`), com paciente em `CALLED` / `IN_PROGRESS`:
-
-| Botão | Ação |
-|-------|------|
-| Entrar na consulta (Daily) | Fluxo atual — `/video/humanitarian/{entryId}` |
-| WhatsApp | Handoff existente — `POST .../whatsapp-contact` |
-| **Google Meet (legendas traduzidas)** | **Novo** — cria link Meet, notifica paciente |
-
-**Paciente** (fila / sala de vídeo):
-
-- Polling existente em `VideoConsultRoom` (hoje detecta `completionChannel === "WHATSAPP"`)
-- Nova tela **Meet handoff**: link da reunião + instruções PT/EN/ES para ativar legendas traduzidas
-- Paciente na fila (`/humanitarian/{slug}`) também mostra banner quando canal = Meet
-
-### Modelo de dados (migration aditiva)
-
-```prisma
-enum HumanitarianCompletionChannel {
-  VIDEO
-  WHATSAPP
-  GOOGLE_MEET   // novo
-}
-```
-
-- Reutilizar `meetingUrl` para URL do Meet quando canal = Meet
-
-### Backend
-
-- `handoffHumanitarianEntryViaGoogleMeet()` em `src/lib/humanitarian/dispatcher.ts`
-- `POST /api/humanitarian/queue/[entryId]/google-meet-contact`
-- Geração do link Meet (fase 1): Google Calendar API ou `meet.google.com/new` (MVP)
-- Notificação: `notifyHumanitarianMeetHandoff()` + chaves i18n `hum.notif.meetHandoff.*`, `hum.page.meetHandoff*`
-
-### Frontend
-
-- Botão no voluntário + loading state (como WhatsApp)
-- Componente handoff em `VideoConsultRoom.tsx` (como `whatsappHandoff`)
-- Instruções de legendas: Configurações → Legendas → Traduzir → PT (médico) / ES (paciente VE)
-
-### Variáveis de ambiente (fase API)
-
-```
-GOOGLE_MEET_ENABLED=1
-GOOGLE_SERVICE_ACCOUNT_JSON=...
-GOOGLE_CALENDAR_ID=primary
-```
-
-### Referências no código hoje
-
-- Handoff WhatsApp: `src/lib/humanitarian/dispatcher.ts` → `handoffHumanitarianEntryViaWhatsApp`
-- UI voluntário: `src/app/humanitarian/volunteer/page.tsx`
-- Tela paciente WhatsApp: `src/components/VideoConsultRoom.tsx` (`whatsappHandoff`)
-- Enum: `prisma/schema.prisma` → `HumanitarianCompletionChannel`
+| # | Item | Prioridade | O que falta |
+|---|------|------------|-------------|
+| M2 | WhatsApp Business API (templates Meta) | Média | Webhook OK; registrar número Business (+55…) e templates aprovados |
+| M3 | Sentry em produção | Baixa | Código pronto — definir `SENTRY_DSN` no Railway |
+| M4 | Gravação cloud Daily | Baixa | Off por padrão — `DAILY_CLOUD_RECORDING=1` + banner já no código |
+| M9 | Busca pública: banner + filtro voluntários AcuraBrasil | Média | Paciente logado já tem; falta espelhar em `PublicSearchClient` / landing |
+| M10 | Google Meet em produção (humanitário + agendamentos) | Média | Código OK — service account + `GOOGLE_MEET_ENABLED=1` no Railway (ver `.env.example`) |
+| M11 | Farmácia marketplace ativo | Baixa | Código OK — `PHARMACY_MARKETPLACE_ENABLED=true` (+ UTM/affiliate se quiser) |
 
 ---
 
-## Concluído (resumo)
+## Operação (sem deploy de feature)
+
+| Item | Notas |
+|------|--------|
+| Admins com login | Rodar `node scripts/fix-admin-users.mjs --promote` no Railway se ainda não feito |
+| Contas profissionais Acura | Promover/verificar e-mails via admin ou scripts one-off (ex. psicólogo `contato@acurabrasil.org`) |
+| Migration países Américas | Deve rodar no deploy (`registration_americas_regions`); conferir após push |
+
+---
+
+## Concluído recentemente (sessão Acura / admin)
+
+| Item | Status |
+|------|--------|
+| Horários voluntários (`volunteerOnly`) + UI verde | OK |
+| Agendamento gratuito em slot voluntário (sem Stripe) | OK |
+| Países América + EU no cadastro/conta | OK |
+| Select de países: acentos + código ISO (sem `????`) | OK |
+| Login ADMIN → `/admin` (fim do loop patient/professional) | OK |
+| Banner selo AcuraBrasil + botão **Configurar disponibilidade** | OK |
+| Script `scripts/fix-admin-users.mjs` | OK |
+
+---
+
+## Concluído (resumo histórico)
 
 | Área | Status |
 |------|--------|
 | Segurança OAuth, PHI, CSP, salas Daily privadas | OK |
-| Teleconsulta Daily + sidebar ficha | OK |
-| Humanitário: triagem, fila, WhatsApp handoff, anamnese, offline | OK |
-| PWA + service worker humanitário | OK |
-| Notificações i18n (titleKey/bodyKey) | OK |
+| Teleconsulta Daily + sidebar ficha + notas IA | OK |
+| Humanitário: triagem, fila, WhatsApp handoff, anamnese, offline, PWA | OK |
 | Encoding PT/ES/EN + `check:encoding` no CI | OK |
-| E2E: fila → vídeo (Daily mock), voluntário, smoke legal | OK |
+| E2E + CI GitHub Actions | OK |
 | SMART OAuth + admin clientes | OK |
-| QStash lembretes anamnese | OK |
-| Farmácia: só CMED informativo (sem checkout) | OK |
-| Convite paciente / PatientNoAccountPanel | OK |
-| Gravação Daily off + webhook opcional | OK |
-| Biblioteca recursos i18n (Lote 35) | OK |
-| `/settings` → redirect conta (Lote 36) | OK |
-| Admin loading i18n (Lote 36) | OK |
-| JIT pagamento + license docs i18n (Lote 37) | OK |
-| Share/room públicos i18n erros (Lote 37) | OK |
-| Share público i18n completo + admin clubes (Lote 38) | OK |
-| Magic link + mapa paciente + admin categorias (Lote 39) | OK |
-| Conta pro Doctor Connection + admin providers parcial (Lote 40) | OK |
-| Admin providers completo + pacientes admin (Lote 41) | OK |
-| Admin pagamentos + audit + JIT events (Lote 42) | OK |
-| Admin humanitário i18n (Lote 43) | OK |
-| Organization team/patients/ledger/convenios i18n (Lote 43) | OK |
-| Google Meet handoff humanitário MVP (M1) | OK — Calendar API + `GOOGLE_MEET_ENABLED=1` |
-| Google Meet opcional em consultas agendadas (M5) | OK — profissional escolhe na sala Daily |
+| Google Meet handoff humanitário + Meet em consulta agendada (M1, M5) | OK |
 | Footer/login: portal médico + psicólogo (M7) | OK |
-| Farmácia deeplink Consulta Remédios (M8) | OK — `PHARMACY_MARKETPLACE_ENABLED=true` |
-| Sentry client DSN fallback + docs (M3) | OK — ativar com `SENTRY_DSN` |
-| Banner gravação Daily na teleconsulta (M4) | OK — quando `DAILY_CLOUD_RECORDING=1` |
+| Farmácia deeplink Consulta Remédios (M8) | OK |
+| Sentry integrado (M3 código) + banner gravação Daily (M4 código) | OK |
+| `/settings` → redirect conta | OK |
+| Admin + organization i18n (lotes 36–43) | OK |
 
 ---
 
@@ -123,4 +64,4 @@ GOOGLE_CALENDAR_ID=primary
 
 - Migrations **aditivas** — OK em horário de uso
 - Trocar fluxo WhatsApp API ou auth = avisar antes
-- Meet (M1) = migration enum + novos endpoints; Daily continua padrão
+- Daily continua padrão de vídeo; Meet é opcional por env
