@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
 export async function GET() {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const responses = await db.organizationSurveyResponse.findMany({
     where: { organizationId: ctx.organizationId },
@@ -54,8 +54,8 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "RECEPTIONIST"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "RECEPTIONIST"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const parsed = createSchema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireOrganization, getOrganizationMembership } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import { getOrganizationMembership } from "@/lib/organization-auth";
+
 import { auth } from "@/lib/auth";
 import { formatCnpj } from "@/lib/cnpj";
 import { z } from "zod";
@@ -66,8 +68,8 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = patchSchema.safeParse(body);

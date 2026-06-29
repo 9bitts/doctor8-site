@@ -5,6 +5,7 @@ export type ProfessionalDashboardInsights = {
   chartsNeedingInvite: number;
   pendingInvites: number;
   unlinkedWithEmail: number;
+  completedWithoutNotes: number;
 };
 
 /** Actionable counts for the professional home dashboard. */
@@ -12,8 +13,9 @@ export async function getProfessionalDashboardInsights(
   professionalId: string,
 ): Promise<ProfessionalDashboardInsights> {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-  const [staleInvites, chartsNeedingInvite, pendingInvites, unlinkedWithEmail] =
+  const [staleInvites, chartsNeedingInvite, pendingInvites, unlinkedWithEmail, completedWithoutNotes] =
     await Promise.all([
       db.patientChartInvite.count({
         where: {
@@ -45,7 +47,21 @@ export async function getProfessionalDashboardInsights(
           email: { not: null },
         },
       }),
+      db.appointment.count({
+        where: {
+          professionalId,
+          status: "COMPLETED",
+          scheduledAt: { gte: twoDaysAgo },
+          notes: null,
+        },
+      }),
     ]);
 
-  return { staleInvites, chartsNeedingInvite, pendingInvites, unlinkedWithEmail };
+  return {
+    staleInvites,
+    chartsNeedingInvite,
+    pendingInvites,
+    unlinkedWithEmail,
+    completedWithoutNotes,
+  };
 }

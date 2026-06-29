@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization, canViewFinance } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import { canViewFinance } from "@/lib/organization-auth";
+
 import { db } from "@/lib/db";
 import { z } from "zod";
 
 export async function GET(req: NextRequest) {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
@@ -71,8 +73,8 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "FINANCE", "ACCOUNTANT"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE", "ACCOUNTANT"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -105,8 +107,8 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "FINANCE", "ACCOUNTANT"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE", "ACCOUNTANT"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = patchSchema.safeParse(body);

@@ -237,3 +237,78 @@ export async function findOrganizationByInviteCode(inviteCode: string) {
     select: { id: true, nomeFantasia: true },
   });
 }
+
+/** Prisma OR clauses for appointments scoped to linked providers. */
+export function buildAppointmentOrWhere(
+  scope: OrgProviderScopeIds,
+): Array<Record<string, unknown>> {
+  const or: Array<Record<string, unknown>> = [];
+  if (scope.professionalIds.length) {
+    or.push({ professionalId: { in: scope.professionalIds } });
+  }
+  if (scope.psychoanalystIds.length) {
+    or.push({ psychoanalystId: { in: scope.psychoanalystIds } });
+  }
+  if (scope.integrativeTherapistIds.length) {
+    or.push({ integrativeTherapistId: { in: scope.integrativeTherapistIds } });
+  }
+  return or;
+}
+
+export async function getOrganizationRepasseMap(
+  organizationId: string,
+): Promise<Map<string, number>> {
+  const [health, linked] = await Promise.all([
+    db.organizationProfessional.findMany({
+      where: { organizationId, status: "ACTIVE" },
+      select: { professionalId: true, repassePercent: true },
+    }),
+    db.organizationLinkedProvider.findMany({
+      where: { organizationId, status: "ACTIVE" },
+      select: { providerType: true, providerProfileId: true, repassePercent: true },
+    }),
+  ]);
+  const map = new Map<string, number>();
+  for (const l of health) {
+    map.set(buildProviderScopeKey("HEALTH", l.professionalId), l.repassePercent);
+  }
+  for (const l of linked) {
+    map.set(
+      buildProviderScopeKey(l.providerType, l.providerProfileId),
+      l.repassePercent,
+    );
+  }
+  return map;
+}
+
+export function resolveAppointmentProviderName(appt: {
+  professionalId: string | null;
+  professional?: { firstName: string; lastName: string; specialty?: string | null } | null;
+  psychoanalystId: string | null;
+  psychoanalyst?: { firstName: string; lastName: string } | null;
+  integrativeTherapistId: string | null;
+  integrativeTherapist?: { firstName: string; lastName: string } | null;
+}): { scopeKey: string; name: string; specialty: string } | null {
+  if (appt.professionalId && appt.professional) {
+    return {
+      scopeKey: buildProviderScopeKey("HEALTH", appt.professionalId),
+      name: `Dr. ${appt.professional.firstName} ${appt.professional.lastName}`,
+      specialty: appt.professional.specialty ?? "",
+    };
+  }
+  if (appt.psychoanalystId && appt.psychoanalyst) {
+    return {
+      scopeKey: buildProviderScopeKey("PSYCHOANALYST", appt.psychoanalystId),
+      name: `${appt.psychoanalyst.firstName} ${appt.psychoanalyst.lastName}`,
+      specialty: "Psican?lise",
+    };
+  }
+  if (appt.integrativeTherapistId && appt.integrativeTherapist) {
+    return {
+      scopeKey: buildProviderScopeKey("INTEGRATIVE_THERAPIST", appt.integrativeTherapistId),
+      name: `${appt.integrativeTherapist.firstName} ${appt.integrativeTherapist.lastName}`,
+      specialty: "Terapia integrativa",
+    };
+  }
+  return null;
+}

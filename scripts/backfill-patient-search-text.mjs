@@ -87,7 +87,7 @@ async function main() {
         console.error(`  error on ${r.id}:`, e.message || e);
       }
     }
-    process.stdout.write(`\r  processed? updated=${updated} skipped=${skipped} errors=${errors}`);
+    process.stdout.write(`\r  processed ? updated=${updated} skipped=${skipped} errors=${errors}`);
   }
 
   console.log(`\nDone. updated=${updated} skipped=${skipped} errors=${errors}`);

@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import {
+  getOrganizationProviderScopeIds,
+  buildAppointmentOrWhere,
+  resolveAppointmentProviderName,
+} from "@/lib/organization-providers";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import {
@@ -21,8 +26,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "RECEPTIONIST"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "RECEPTIONIST"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const appointmentId = params.id;
   const body = await req.json().catch(() => ({}));
@@ -36,30 +41,33 @@ export async function POST(
     return NextResponse.json({ error: "WHATSAPP_DISABLED" }, { status: 400 });
   }
 
-  const professionalIds = await db.organizationProfessional.findMany({
-    where: { organizationId: ctx.organizationId, status: "ACTIVE" },
-    select: { professionalId: true },
-  });
-  const profIds = professionalIds.map((p) => p.professionalId);
+  const scope = await getOrganizationProviderScopeIds(ctx.organizationId);
+  const orClauses = buildAppointmentOrWhere(scope);
+  if (orClauses.length === 0) {
+    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  }
 
   const appointment = await db.appointment.findFirst({
     where: {
       id: appointmentId,
-      professionalId: { in: profIds },
+      OR: orClauses,
       status: { in: ["CONFIRMED", "PENDING"] },
     },
     include: {
       patient: { select: { firstName: true, lastName: true, phone: true, userId: true } },
       professional: { select: { firstName: true, lastName: true } },
+      psychoanalyst: { select: { firstName: true, lastName: true } },
+      integrativeTherapist: { select: { firstName: true, lastName: true } },
     },
   });
 
-  if (!appointment || !appointment.professional) {
+  const provider = appointment ? resolveAppointmentProviderName(appointment) : null;
+  if (!appointment || !provider) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
 
   const patientName = `${appointment.patient.firstName} ${appointment.patient.lastName}`;
-  const doctorName = `${appointment.professional.firstName} ${appointment.professional.lastName}`;
+  const doctorName = provider.name;
   const phone = safeDecrypt(appointment.patient.phone);
 
   if (!phone) {
@@ -75,7 +83,7 @@ export async function POST(
   const waLang = resolveWhatsAppLang(patientUser?.language);
   const waMeText = buildAppointmentReminderWaMeMessage({
     patientName,
-    doctorName: `${org.nomeFantasia} — Dr. ${doctorName}`,
+    doctorName: `${org.nomeFantasia} — ${doctorName}`,
     scheduledAt: appointment.scheduledAt,
     meetingUrl: appointment.meetingUrl,
     lang: waLang,
@@ -85,7 +93,7 @@ export async function POST(
     const result = await sendAppointmentReminderWhatsApp({
       toPhone: phone,
       patientName,
-      doctorName: `${org.nomeFantasia} — Dr. ${doctorName}`,
+      doctorName: `${org.nomeFantasia} — ${doctorName}`,
       scheduledAt: appointment.scheduledAt,
       meetingUrl: appointment.meetingUrl,
       language: waLang,

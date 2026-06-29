@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization, canViewFinance } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import { canViewFinance } from "@/lib/organization-auth";
+
 import { db } from "@/lib/db";
 import { z } from "zod";
 
 export async function GET() {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const invoices = await db.organizationInvoice.findMany({
     where: { organizationId: ctx.organizationId },
@@ -37,8 +39,8 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "FINANCE"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const parsed = createSchema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });
@@ -57,8 +59,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "FINANCE"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const { id, status, number } = await req.json() as { id: string; status?: string; number?: string };
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });

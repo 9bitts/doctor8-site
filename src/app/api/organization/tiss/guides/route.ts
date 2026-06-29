@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import { getOrganizationProfessionalIds } from "@/lib/organization-auth";
+
 import { db } from "@/lib/db";
 import { z } from "zod";
 
 export async function GET(req: NextRequest) {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const status = req.nextUrl.searchParams.get("status");
   const orgPlanId = req.nextUrl.searchParams.get("orgHealthPlanId");
@@ -63,8 +65,8 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "FINANCE", "RECEPTIONIST"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE", "RECEPTIONIST"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const parsed = createSchema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
@@ -101,8 +103,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "FINANCE"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json() as { id: string; status?: string; glosaReason?: string; glosaAmountCents?: number };
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });

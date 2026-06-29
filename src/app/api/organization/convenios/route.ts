@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { listHealthPlans } from "@/lib/health-plans";
 
 export async function GET() {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const [plans, globalPlans] = await Promise.all([
     db.organizationHealthPlan.findMany({
@@ -42,8 +42,8 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "FINANCE"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -66,8 +66,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const ctx = await requireOrganization(["OWNER", "ADMIN", "FINANCE"]);
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE"]);
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const { id, ...data } = body as { id: string; active?: boolean };

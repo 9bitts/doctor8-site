@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import { getOrganizationProfessionalIds } from "@/lib/organization-auth";
+
 import { db } from "@/lib/db";
 
 function getPeriodDates(period: string): { from: Date; to: Date } {
@@ -20,8 +22,8 @@ function getPeriodDates(period: string): { from: Date; to: Date } {
 }
 
 export async function GET(req: NextRequest) {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const period = req.nextUrl.searchParams.get("period") || "this_month";
   const { from, to } = getPeriodDates(period);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Users, Clock, ChevronRight } from "lucide-react";
+import { Mail, Users, Clock, ChevronRight, FileText } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { ProfessionalDashboardInsights } from "@/lib/professional-dashboard-insights";
 
@@ -28,6 +28,14 @@ export default function ProfessionalInsightsBanner({
       count: insights.staleInvites,
       href: "/professional/patients",
       icon: <Clock size={18} className="text-amber-600" />,
+    });
+  }
+  if (insights.completedWithoutNotes > 0) {
+    items.push({
+      key: "postConsultNotes",
+      count: insights.completedWithoutNotes,
+      href: "/professional/appointments",
+      icon: <FileText size={18} className="text-violet-600" />,
     });
   }
   if (insights.unlinkedWithEmail > 0 && items.length === 0) {

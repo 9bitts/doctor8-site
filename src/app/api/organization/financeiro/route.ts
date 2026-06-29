@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import {
+  getOrganizationProviderScopeIds,
+  buildAppointmentOrWhere,
+  getOrganizationRepasseMap,
+  resolveAppointmentProviderName,
+  scopeHasProviders,
+} from "@/lib/organization-providers";
 import { db } from "@/lib/db";
+import { safeDecrypt } from "@/lib/sign-helpers";
 
 const COMMISSION_RATE = 0.15;
 
@@ -23,24 +31,16 @@ function getPeriodDates(period: string): { from: Date; to: Date } {
 }
 
 export async function GET(req: NextRequest) {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const { searchParams } = new URL(req.url);
   const period = searchParams.get("period") || "this_month";
   const { from, to } = getPeriodDates(period);
 
-  const links = await db.organizationProfessional.findMany({
-    where: { organizationId: ctx.organizationId, status: "ACTIVE" },
-    include: {
-      professional: {
-        select: { id: true, firstName: true, lastName: true, specialty: true },
-      },
-    },
-  });
-
-  const professionalIds = links.map((l) => l.professionalId);
-  if (professionalIds.length === 0) {
+  const scope = await getOrganizationProviderScopeIds(ctx.organizationId);
+  const orClauses = buildAppointmentOrWhere(scope);
+  if (!scopeHasProviders(scope) || orClauses.length === 0) {
     return NextResponse.json({
       period,
       currency: ctx.organization.currency,
@@ -52,26 +52,26 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const repasseMap = new Map(
-    links.map((l) => [l.professionalId, l.repassePercent]),
-  );
+  const repasseMap = await getOrganizationRepasseMap(ctx.organizationId);
 
   const appointments = await db.appointment.findMany({
     where: {
-      professionalId: { in: professionalIds },
+      OR: orClauses,
       status: "COMPLETED",
       paidAt: { not: null },
       scheduledAt: { gte: from, lte: to },
     },
     include: {
       patient: { select: { firstName: true, lastName: true } },
-      professional: { select: { id: true, firstName: true, lastName: true } },
+      professional: { select: { id: true, firstName: true, lastName: true, specialty: true } },
+      psychoanalyst: { select: { id: true, firstName: true, lastName: true } },
+      integrativeTherapist: { select: { id: true, firstName: true, lastName: true } },
     },
     orderBy: { scheduledAt: "desc" },
   });
 
   type ProfSummary = {
-    professionalId: string;
+    scopeKey: string;
     name: string;
     grossCents: number;
     professionalCents: number;
@@ -93,17 +93,18 @@ export async function GET(req: NextRequest) {
   }[] = [];
 
   for (const appt of appointments) {
-    if (!appt.professionalId || !appt.professional) continue;
+    const provider = resolveAppointmentProviderName(appt);
+    if (!provider) continue;
+
     const gross = appt.priceAmount || 0;
     const afterCommission = Math.round(gross * (1 - COMMISSION_RATE));
-    const repassePct = repasseMap.get(appt.professionalId) ?? 70;
+    const repassePct = repasseMap.get(provider.scopeKey) ?? 70;
     const professionalCents = Math.round(afterCommission * (repassePct / 100));
     const clinicCents = afterCommission - professionalCents;
 
-    const profId = appt.professionalId;
-    const existing = byProf.get(profId) || {
-      professionalId: profId,
-      name: `Dr. ${appt.professional.firstName} ${appt.professional.lastName}`,
+    const existing = byProf.get(provider.scopeKey) || {
+      scopeKey: provider.scopeKey,
+      name: provider.name,
       grossCents: 0,
       professionalCents: 0,
       clinicCents: 0,
@@ -114,14 +115,16 @@ export async function GET(req: NextRequest) {
     existing.professionalCents += professionalCents;
     existing.clinicCents += clinicCents;
     existing.count += 1;
-    byProf.set(profId, existing);
+    byProf.set(provider.scopeKey, existing);
 
     const p = appt.patient;
+    const first = p ? safeDecrypt(p.firstName) : "";
+    const last = p ? safeDecrypt(p.lastName) : "";
     transactions.push({
       id: appt.id,
       date: appt.scheduledAt.toISOString(),
-      professionalName: existing.name,
-      patientInitials: p ? `${p.firstName.charAt(0)}${p.lastName.charAt(0)}` : "??",
+      professionalName: provider.name,
+      patientInitials: p ? `${first.charAt(0)}${last.charAt(0)}` : "??",
       grossCents: gross,
       professionalCents,
       clinicCents,
@@ -143,7 +146,7 @@ export async function GET(req: NextRequest) {
     totalGrossCents,
     totalProfessionalCents,
     totalClinicCents,
-    byProfessional: summaries,
+    byProfessional: summaries.map(({ scopeKey: _s, ...rest }) => rest),
     transactions,
   });
 }

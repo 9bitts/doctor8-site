@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization, canViewFinance, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import { canViewFinance, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+
 import { db } from "@/lib/db";
 import { buildAccountingCsv } from "@/lib/tiss-export";
 
 export async function GET(req: NextRequest) {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   if (!canViewFinance(ctx.memberRole) && ctx.memberRole !== "ACCOUNTANT") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
