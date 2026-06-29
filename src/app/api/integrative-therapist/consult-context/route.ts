@@ -15,11 +15,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "appointmentId or clientId required" }, { status: 400 });
   }
 
-  let record = null as Awaited<ReturnType<typeof db.integrativeClientRecord.findFirst>>;
-  let appointment = null as Awaited<ReturnType<typeof db.appointment.findFirst>>;
+  let record: Awaited<ReturnType<typeof db.integrativeClientRecord.findFirst>> = null;
+  let appointmentMeta: IntegrativeConsultContext["appointment"] = null;
 
   if (appointmentId) {
-    appointment = await db.appointment.findFirst({
+    const appointment = await db.appointment.findFirst({
       where: {
         id: appointmentId,
         integrativeTherapistId: therapist.id,
@@ -32,6 +32,14 @@ export async function GET(req: NextRequest) {
     if (!appointment) {
       return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
     }
+
+    appointmentMeta = {
+      id: appointment.id,
+      scheduledAt: appointment.scheduledAt.toISOString(),
+      type: appointment.type,
+      durationMins: appointment.durationMins,
+      status: appointment.status,
+    };
 
     const { ensureIntegrativeClientForPatient } = await import("@/lib/providers");
     const patientUser = await db.user.findUnique({
@@ -80,15 +88,7 @@ export async function GET(req: NextRequest) {
     picsPractices: therapist.picsPractices,
     priorSessionCount,
     defaultVisitType: priorSessionCount === 0 ? "first" : "return",
-    appointment: appointment
-      ? {
-          id: appointment.id,
-          scheduledAt: appointment.scheduledAt.toISOString(),
-          type: appointment.type,
-          durationMins: appointment.durationMins,
-          status: appointment.status,
-        }
-      : null,
+    appointment: appointmentMeta,
   };
 
   return NextResponse.json({ context });
