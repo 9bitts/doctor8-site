@@ -19,13 +19,14 @@ const DISMISS_KEY = "doctor8-support-banner-dismissed";
 type Props = {
   subscribed: boolean;
   defaultRegion?: string;
+  accountHref?: string;
 };
 
 function formatPriceHint(priceHint: string, perMonth: string): string {
   return priceHint.replace("/mês", perMonth).replace("/mes", perMonth);
 }
 
-export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Props) {
+export default function DoctorConnectionBanner({ subscribed, defaultRegion, accountHref = "/professional/account" }: Props) {
   const { t } = useI18n();
   const profileRegion = parseBillingRegion(defaultRegion, "US");
 
@@ -155,7 +156,7 @@ export default function DoctorConnectionBanner({ subscribed, defaultRegion }: Pr
                 {t("proConn.banner.cta")}
               </button>
               <Link
-                href="/professional/account"
+                href={accountHref}
                 className="inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2.5"
               >
                 {t("club.banner.details")}

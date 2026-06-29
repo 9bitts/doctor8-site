@@ -71,6 +71,7 @@ const PROFESSIONAL_NAV: NavItem[] = [
 
 const PSYCHOLOGIST_NAV: NavItem[] = [
   { href: "/psychologist", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/doctor-connection", labelKey: "nav.doctorConnection", icon: <Sparkles size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/psychologist/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/psychologist/patients", labelKey: "nav.patients", icon: <Users size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/psychologist/sessions", labelKey: "psy.mod.sessions.title", icon: <ClipboardList size={18} />, roles: ["PROFESSIONAL"] },
@@ -80,6 +81,7 @@ const PSYCHOLOGIST_NAV: NavItem[] = [
   { href: "/psychologist/shared", labelKey: "nav.sharedWithMe", icon: <Inbox size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/psychologist/categories", labelKey: "nav.categories", icon: <Layers size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/psychologist/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
+  { href: "/psychologist/jit", labelKey: "nav.jit", icon: <Radio size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/psychologist/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["PROFESSIONAL"] },
   { href: "/psychologist/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["PROFESSIONAL"] },
@@ -201,7 +203,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
-      <JitSessionHeartbeat enabled={isProfessional} />
+      <JitSessionHeartbeat enabled={isProfessional || isPsychologist} />
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
@@ -215,8 +217,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         `}
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/50">
-          <Link href="/" className="text-2xl font-black text-white tracking-tight">
-            Doctor<span className={logoAccent}>8</span>
+          <Link href={isPsychologist ? "/psychologist" : "/"} className="text-2xl font-black text-white tracking-tight">
+            {isPsychologist ? (
+              <span className="uppercase">Psicologia</span>
+            ) : (
+              <>Doctor<span className={logoAccent}>8</span></>
+            )}
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
             <X size={20} />
@@ -280,8 +286,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           </button>
 
           <div className="lg:hidden flex-1 min-w-0 text-center">
-            <span className="text-lg font-bold text-slate-900">
-              Doctor<span className={logoAccentHeader}>8</span>
+            <span className="text-lg font-bold text-slate-900 uppercase">
+              {isPsychologist ? (
+                "Psicologia"
+              ) : (
+                <>Doctor<span className={logoAccentHeader}>8</span></>
+              )}
             </span>
           </div>
 

@@ -8,7 +8,7 @@ import { PSYCHOLOGIST_LOGIN } from "@/lib/psychologist-portal";
 import {
   Calendar, Users, ChevronRight, Video, Settings, FileText,
   ClipboardList, BarChart3, Shield, MessageSquare, BookOpen,
-  Inbox, TrendingUp, UserCog, Brain,
+  Inbox, TrendingUp, UserCog, Brain, Radio, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
@@ -33,6 +33,8 @@ const QUICK_LINKS = [
   { href: "/psychologist/resources", icon: BookOpen, labelKey: "nav.library" },
   { href: "/psychologist/shared", icon: Inbox, labelKey: "nav.sharedWithMe" },
   { href: "/psychologist/financeiro", icon: TrendingUp, labelKey: "nav.financeiro" },
+  { href: "/psychologist/jit", icon: Radio, labelKey: "nav.jit" },
+  { href: "/psychologist/doctor-connection", icon: Sparkles, labelKey: "nav.doctorConnection" },
   { href: "/psychologist/settings", icon: UserCog, labelKey: "nav.myProfile" },
   { href: "/psychologist/settings/availability", icon: Video, labelKey: "nav.availability" },
 ] as const;
@@ -120,6 +122,7 @@ export default async function PsychologistDashboard() {
       <DoctorConnectionBanner
         subscribed={hasActiveSubscription}
         defaultRegion={userRow?.region || session.user.region}
+        accountHref="/psychologist/account"
       />
 
       <div className="flex items-start gap-4">
