@@ -7,6 +7,11 @@ import { consumeAuthCallback } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
 import { PSYCHOLOGIST_HOME, isPsychologistSpecialty } from "@/lib/psychologist-portal";
+import {
+  useLoginLang,
+  LoginPageShell,
+  LoginSuspenseFallback,
+} from "@/components/auth/login-shared";
 
 async function resolveProfessionalHome(portal: string | null): Promise<string> {
   const profRes = await fetch("/api/professional/profile");
@@ -25,7 +30,7 @@ async function resolveProfessionalHome(portal: string | null): Promise<string> {
 
 export default function CallbackPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<LoginSuspenseFallback />}>
       <CallbackInner />
     </Suspense>
   );
@@ -35,6 +40,7 @@ function CallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const portal = searchParams.get("portal");
+  const { t } = useLoginLang();
 
   useEffect(() => {
     fetch("/api/auth/oauth-intent", { method: "DELETE" }).catch(() => undefined);
@@ -68,16 +74,18 @@ function CallbackInner() {
   }, [router, portal]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
-      <div className="text-center">
+    <LoginPageShell accent="emerald">
+      <div className="text-center py-16">
         <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" aria-hidden />
         </div>
         <h1 className="text-2xl font-black text-white mb-2">
           Doctor<span className="text-emerald-400">8</span>
         </h1>
-        <p className="text-slate-400 text-sm">Signing you in...</p>
+        <p className="text-slate-400 text-sm" role="status">
+          {t("login.callbackSigningIn")}
+        </p>
       </div>
-    </div>
+    </LoginPageShell>
   );
 }
