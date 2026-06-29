@@ -97,13 +97,14 @@ export default function ProfessionalAccountPage() {
       .catch(() => {});
 
     const params = new URLSearchParams(window.location.search);
+    const accountPath = mapProfessionalPathToPortal(pathname, "/professional/account");
     if (params.get("subscribed") === "true") {
       setSubMsgTone("success");
       setSubMsg(t("proConn.account.subSuccess"));
-      window.history.replaceState({}, "", "/professional/account");
+      window.history.replaceState({}, "", accountPath);
     } else if (params.get("subscribe") === "doctor-connection") {
       pendingCheckout.current = true;
-      window.history.replaceState({}, "", "/professional/account");
+      window.history.replaceState({}, "", accountPath);
     }
   }, []);
 

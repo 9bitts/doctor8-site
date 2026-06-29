@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { sendTransactionalEmail, emailShell, getAppUrl } from "@/lib/email-core";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import type { ProviderRole } from "@/lib/provider-license-docs";
+import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
 
 async function providerContact(userId: string, role: ProviderRole): Promise<{
   email: string | null;
@@ -16,12 +17,13 @@ async function providerContact(userId: string, role: ProviderRole): Promise<{
   if (role === "PROFESSIONAL") {
     const p = await db.professionalProfile.findUnique({
       where: { userId },
-      select: { firstName: true, lastName: true },
+      select: { firstName: true, lastName: true, specialty: true },
     });
+    const portalBase = isPsychologistSpecialty(p?.specialty) ? "/psychologist" : "/professional";
     return {
       email: user?.email ?? null,
       name: p ? `${p.firstName} ${p.lastName}`.trim() : user?.email || "Profissional",
-      settingsPath: "/professional/settings",
+      settingsPath: `${portalBase}/settings`,
     };
   }
 

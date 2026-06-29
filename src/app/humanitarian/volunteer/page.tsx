@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Heart, Loader2, Power, PowerOff, Phone, Users, Radio,
@@ -67,6 +67,7 @@ function poolLabel(pool: PoolRow, lang: Lang) {
 
 export default function HumanitarianVolunteerPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [lang, setLang] = useState<Lang>("pt");
@@ -132,11 +133,18 @@ export default function HumanitarianVolunteerPage() {
   }, [lang]);
 
   useEffect(() => {
+    const callbackUrl = encodeURIComponent("/humanitarian/volunteer");
+    const portal = searchParams.get("portal");
+    const loginPath =
+      portal === "psychologist"
+        ? `/login/psicologo?callbackUrl=${callbackUrl}`
+        : `/login?callbackUrl=${callbackUrl}`;
+
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((s) => {
         if (!s?.user) {
-          router.push(`/login?callbackUrl=/humanitarian/volunteer`);
+          router.push(loginPath);
           return;
         }
         if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(s.user.role)) {
@@ -148,7 +156,7 @@ export default function HumanitarianVolunteerPage() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [router, load]);
+  }, [router, load, searchParams]);
 
   async function togglePool(poolSlug: string, goOnline: boolean) {
     setToggling(poolSlug);

@@ -16,8 +16,11 @@ import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import ProfessionalChecklist from "@/components/ProfessionalChecklist";
+import ProfessionalInsightsBanner from "@/components/professional/ProfessionalInsightsBanner";
+import PsychologistTourWrapper from "./PsychologistTourWrapper";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
+import { getProfessionalDashboardInsights } from "@/lib/professional-dashboard-insights";
 import { getProfessionLabel } from "@/lib/professions";
 
 const PSY_MODULES = [
@@ -81,6 +84,7 @@ export default async function PsychologistDashboard() {
     humanitarianVolunteer,
     subscription,
     userRow,
+    dashboardInsights,
   ] = await Promise.all([
     db.appointment.count({
       where: {
@@ -100,6 +104,7 @@ export default async function PsychologistDashboard() {
       where: { id: userId },
       select: { region: true },
     }),
+    getProfessionalDashboardInsights(professional.id),
   ]);
 
   const hasActiveSubscription =
@@ -128,6 +133,8 @@ export default async function PsychologistDashboard() {
       />
 
       <ProfessionalChecklist />
+
+      <ProfessionalInsightsBanner insights={dashboardInsights} />
 
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
@@ -228,6 +235,8 @@ export default async function PsychologistDashboard() {
           </div>
         )}
       </div>
+
+      <PsychologistTourWrapper lang={lang} />
     </div>
   );
 }

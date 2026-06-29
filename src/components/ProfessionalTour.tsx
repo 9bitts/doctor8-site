@@ -1,49 +1,8 @@
 "use client";
 
-// src/components/ProfessionalTour.tsx
-// Guided tour for the professional dashboard.
-// 6 steps: welcome, profile, availability, patients, duty, prescriptions/library.
+// Guided tour for professional / psychologist dashboards.
 
 import TourGuide, { TourStep } from "./TourGuide";
-
-const STEPS: TourStep[] = [
-  {
-    target: null,
-    titleKey: "welcome.title",
-    bodyKey:  "welcome.body",
-    placement: "center",
-  },
-  {
-    target: 'a[href="/professional/account"]',
-    titleKey: "profile.title",
-    bodyKey:  "profile.body",
-    placement: "right",
-  },
-  {
-    target: 'a[href="/professional/settings"]',
-    titleKey: "availability.title",
-    bodyKey:  "availability.body",
-    placement: "right",
-  },
-  {
-    target: 'a[href="/professional/patients"]',
-    titleKey: "patients.title",
-    bodyKey:  "patients.body",
-    placement: "right",
-  },
-  {
-    target: 'a[href="/professional/jit"]',
-    titleKey: "duty.title",
-    bodyKey:  "duty.body",
-    placement: "right",
-  },
-  {
-    target: 'a[href="/professional/prescriptions"]',
-    titleKey: "prescriptions.title",
-    bodyKey:  "prescriptions.body",
-    placement: "right",
-  },
-];
 
 const TEXTS: Record<string, Record<string, string>> = {
   "welcome.title": {
@@ -86,6 +45,11 @@ const TEXTS: Record<string, Record<string, string>> = {
     en: "Create patient charts, add clinical records, prescribe medications and securely share documents.",
     es: "Crea fichas para tus pacientes, agrega registros clínicos, prescribe medicamentos y comparte documentos.",
   },
+  "patients.bodyPsych": {
+    pt: "Crie fichas para seus pacientes, registre sessões, aplique escalas e compartilhe documentos com segurança.",
+    en: "Create patient charts, record sessions, apply scales and securely share documents.",
+    es: "Crea fichas para tus pacientes, registra sesiones, aplica escalas y comparte documentos.",
+  },
   "duty.title": {
     pt: "Plantão Online — atenda agora 📡",
     en: "Online Duty — see patients now 📡",
@@ -106,19 +70,84 @@ const TEXTS: Record<string, Record<string, string>> = {
     en: "Issue legally valid digital prescriptions as PDF, with integrated Anvisa drug database. In the Library, save and share educational resources with your patients.",
     es: "Emite recetas digitales con validez legal en PDF, con base de datos Anvisa integrada. En la Biblioteca, guarda y comparte recursos educativos.",
   },
+  "sessions.title": {
+    pt: "Sessões e documentos 🧠",
+    en: "Sessions & documents 🧠",
+    es: "Sesiones y documentos 🧠",
+  },
+  "sessions.body": {
+    pt: "Registre notas de sessão, aplique escalas psicológicas e emita documentos clínicos no módulo de Psicologia.",
+    en: "Record session notes, apply psychological scales and issue clinical documents in the Psychology module.",
+    es: "Registra notas de sesión, aplica escalas psicológicas y emite documentos clínicos en el módulo de Psicología.",
+  },
 };
+
+function buildSteps(portal: "professional" | "psychologist"): TourStep[] {
+  const base = portal === "psychologist" ? "/psychologist" : "/professional";
+  const steps: TourStep[] = [
+    {
+      target: null,
+      titleKey: "welcome.title",
+      bodyKey: "welcome.body",
+      placement: "center",
+    },
+    {
+      target: `a[href="${base}/account"]`,
+      titleKey: "profile.title",
+      bodyKey: "profile.body",
+      placement: "right",
+    },
+    {
+      target: `a[href="${base}/settings/availability"]`,
+      titleKey: "availability.title",
+      bodyKey: "availability.body",
+      placement: "right",
+    },
+    {
+      target: `a[href="${base}/patients"]`,
+      titleKey: "patients.title",
+      bodyKey: portal === "psychologist" ? "patients.bodyPsych" : "patients.body",
+      placement: "right",
+    },
+    {
+      target: `a[href="${base}/jit"]`,
+      titleKey: "duty.title",
+      bodyKey: "duty.body",
+      placement: "right",
+    },
+  ];
+
+  if (portal === "psychologist") {
+    steps.push({
+      target: `a[href="${base}/sessions"]`,
+      titleKey: "sessions.title",
+      bodyKey: "sessions.body",
+      placement: "right",
+    });
+  } else {
+    steps.push({
+      target: `a[href="${base}/prescriptions"]`,
+      titleKey: "prescriptions.title",
+      bodyKey: "prescriptions.body",
+      placement: "right",
+    });
+  }
+
+  return steps;
+}
 
 interface ProfessionalTourProps {
   lang: string;
+  portal?: "professional" | "psychologist";
 }
 
-export default function ProfessionalTour({ lang }: ProfessionalTourProps) {
+export default function ProfessionalTour({ lang, portal = "professional" }: ProfessionalTourProps) {
   return (
     <TourGuide
-      steps={STEPS}
+      steps={buildSteps(portal)}
       texts={TEXTS}
       lang={lang}
-      storageKey="doctor8.tour.professional"
+      storageKey={portal === "psychologist" ? "doctor8.tour.psychologist" : "doctor8.tour.professional"}
     />
   );
 }
