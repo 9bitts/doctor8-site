@@ -123,13 +123,23 @@ export function buildAuthHref(
 
 /** Wait until Auth.js session cookie is readable on the client (avoids post-login redirect loops). */
 export async function waitForAuthenticatedSession(
-  maxAttempts = 20,
-  delayMs = 150,
+  maxAttempts = 50,
+  delayMs = 200,
 ): Promise<Awaited<ReturnType<typeof getSession>>> {
   for (let i = 0; i < maxAttempts; i++) {
-    const session = await getSession();
-    if (session?.user?.id && session.user.role) {
-      return session;
+    try {
+      const res = await fetch("/api/auth/session", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        const session = await res.json();
+        if (session?.user?.id && session.user.role) {
+          return session;
+        }
+      }
+    } catch {
+      /* retry */
     }
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
@@ -174,6 +184,8 @@ export function parseLoginError(err: string | null): LoginErrorCode {
   if (err === "AccountLocked") return "locked";
   if (err === "InvalidVerificationLink") return "invalidLink";
   if (err === "VerificationFailed") return "verificationFailed";
+  if (err === "WrongRole" || err === "AccessDenied") return "roleOnly";
+  if (err === "SessionTimeout") return "generic";
   return "invalid";
 }
 

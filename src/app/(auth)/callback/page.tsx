@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { consumeAuthCallback } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
-import { MAIN_LOGIN } from "@/lib/auth-portals";
+import { MAIN_LOGIN, PORTAL_LOGINS, PSYCHOLOGIST_LOGIN } from "@/lib/auth-portals";
 import { PSYCHOLOGIST_HOME, isPsychologistSpecialty } from "@/lib/psychologist-portal";
 import {
   useLoginLang,
@@ -18,6 +18,11 @@ import {
 import { AuthLogo } from "@/components/auth/auth-logo";
 
 async function resolveProfessionalHome(portal: string | null): Promise<string> {
+  // Main /login (doctor portal) — always /professional; psychologists use /login/psicologo.
+  if (!portal || portal === "doctor") {
+    return "/professional";
+  }
+
   const profRes = await fetch("/api/professional/profile");
   let specialty: string | null = null;
   if (profRes.ok) {
@@ -55,25 +60,43 @@ function CallbackInner() {
       if (cancelled) return;
 
       if (!session?.user?.role) {
-        navigateAfterAuth(MAIN_LOGIN);
+        navigateAfterAuth(`${MAIN_LOGIN}?error=SessionTimeout`);
+        return;
+      }
+
+      const portalConfig = portal
+        ? PORTAL_LOGINS.find((p) => p.oauthPortal === portal)
+        : undefined;
+      if (
+        portalConfig &&
+        !portalConfig.allowedRoles.includes(session.user.role)
+      ) {
+        navigateAfterAuth(`${portalConfig.loginPath}?error=WrongRole`);
         return;
       }
 
       const savedCallback = consumeAuthCallback();
       if (savedCallback) {
+        const specialty =
+          portal === "psychologist" ? session.user.professionalSpecialty : null;
         navigateAfterAuth(
           safePostLoginUrl(
             session.user.role,
             savedCallback,
             resolvePatientPostLoginUrl,
-            session.user.professionalSpecialty,
+            specialty,
           ),
         );
         return;
       }
 
       if (session.user.role === "PROFESSIONAL") {
-        navigateAfterAuth(await resolveProfessionalHome(portal));
+        const dest = await resolveProfessionalHome(portal);
+        if (portal === "psychologist" && dest === "/professional") {
+          navigateAfterAuth(`${PSYCHOLOGIST_LOGIN}?error=WrongRole`);
+          return;
+        }
+        navigateAfterAuth(dest);
         return;
       }
 
@@ -88,7 +111,7 @@ function CallbackInner() {
     }
 
     finishOAuthCallback().catch(() => {
-      if (!cancelled) navigateAfterAuth(MAIN_LOGIN);
+      if (!cancelled) navigateAfterAuth(`${MAIN_LOGIN}?error=SessionTimeout`);
     });
 
     return () => {

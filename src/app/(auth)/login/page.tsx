@@ -5,8 +5,6 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
-import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
-import { safePostLoginUrl } from "@/lib/role-home";
 import {
   PROFESSIONAL_REGISTER,
   PORTAL_LOGINS,
@@ -26,7 +24,6 @@ import {
   LoginDivider,
   LoginCredentialsForm,
   LoginSuspenseFallback,
-  waitForAuthenticatedSession,
   navigateAfterAuth,
   type LoginErrorCode,
 } from "@/components/auth/login-shared";
@@ -117,20 +114,8 @@ function LoginForm() {
         return;
       }
 
-      const session = await waitForAuthenticatedSession();
-      if (!session?.user?.role) {
-        setError("generic");
-        setLoading(false);
-        return;
-      }
-
-      const dest = safePostLoginUrl(
-        session.user.role,
-        callbackUrl || null,
-        resolvePatientPostLoginUrl,
-        session.user.professionalSpecialty,
-      );
-      navigateAfterAuth(dest);
+      persistAuthCallback(callbackUrl);
+      navigateAfterAuth("/callback?portal=doctor");
     } catch {
       setError("generic");
       setLoading(false);
@@ -147,7 +132,7 @@ function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: "PROFESSIONAL" }),
       });
-      await signIn("google", { callbackUrl: "/callback" });
+      await signIn("google", { callbackUrl: "/callback?portal=doctor" });
     } catch {
       setError("generic");
       setGoogleLoading(false);

@@ -11,13 +11,7 @@ import {
   PORTAL_BY_ID,
   buildForgotPasswordHref,
   type PortalId,
-  type PortalLoginConfig,
 } from "@/lib/auth-portals";
-import {
-  isPsychologistSpecialty,
-  PSYCHOLOGIST_HOME,
-} from "@/lib/psychologist-portal";
-import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
 import {
   useLoginLang,
   buildAuthHref,
@@ -31,52 +25,9 @@ import {
   LoginDivider,
   LoginCredentialsForm,
   LoginSuspenseFallback,
-  waitForAuthenticatedSession,
   navigateAfterAuth,
   type LoginErrorCode,
 } from "@/components/auth/login-shared";
-
-async function resolvePsychologistLoginDestination(
-  callbackUrl: string,
-): Promise<string> {
-  const profRes = await fetch("/api/professional/profile");
-  if (profRes.ok) {
-    const { profile } = await profRes.json();
-    const specialty = profile?.specialty ?? null;
-    if (callbackUrl) {
-      return safePostLoginUrl("PROFESSIONAL", callbackUrl, undefined, specialty);
-    }
-    if (!profile?.specialty?.trim()) {
-      return "/onboarding?portal=psychologist";
-    }
-    if (isPsychologistSpecialty(profile.specialty)) {
-      return PSYCHOLOGIST_HOME;
-    }
-  } else if (callbackUrl) {
-    return safePostLoginUrl("PROFESSIONAL", callbackUrl);
-  }
-  throw new Error("not_psychologist");
-}
-
-async function resolvePortalLoginDestination(
-  config: PortalLoginConfig,
-  session: { role?: string; professionalSpecialty?: string | null },
-  callbackUrl: string,
-): Promise<string> {
-  if (config.id === "psychologist") {
-    return resolvePsychologistLoginDestination(callbackUrl);
-  }
-  const role = session.role;
-  if (callbackUrl) {
-    return safePostLoginUrl(
-      role,
-      callbackUrl,
-      undefined,
-      session.professionalSpecialty,
-    );
-  }
-  return resolveRoleHome(role, session.professionalSpecialty) || config.homePath;
-}
 
 function PortalLoginForm({ portalId }: { portalId: PortalId }) {
   const config = PORTAL_BY_ID[portalId];
@@ -103,30 +54,11 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
     email: email.trim() || undefined,
     from: config.loginPath,
   });
+  const authCallbackPath = `/callback?portal=${encodeURIComponent(config.oauthPortal)}`;
 
   useEffect(() => {
     setError(parseLoginError(searchParams.get("error")));
   }, [searchParams]);
-
-  async function finishLogin(session: {
-    role?: string;
-    professionalSpecialty?: string | null;
-  }) {
-    const role = session.role;
-    if (!role || !config.allowedRoles.includes(role)) {
-      setError("roleOnly");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const dest = await resolvePortalLoginDestination(config, session, callbackUrl);
-      navigateAfterAuth(dest);
-    } catch {
-      setError("roleOnly");
-      setLoading(false);
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -178,13 +110,8 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
         return;
       }
 
-      const session = await waitForAuthenticatedSession();
-      if (!session?.user) {
-        setError("generic");
-        setLoading(false);
-        return;
-      }
-      await finishLogin(session.user);
+      persistAuthCallback(callbackUrl || config.homePath);
+      navigateAfterAuth(authCallbackPath);
     } catch {
       setError("generic");
       setLoading(false);
@@ -196,9 +123,7 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
     setError("");
     persistAuthCallback(callbackUrl || config.homePath);
     try {
-      await signIn("google", {
-        callbackUrl: `/callback?portal=${encodeURIComponent(config.oauthPortal)}`,
-      });
+      await signIn("google", { callbackUrl: authCallbackPath });
     } catch {
       setError("generic");
       setGoogleLoading(false);
