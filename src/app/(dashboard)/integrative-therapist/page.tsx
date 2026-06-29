@@ -6,7 +6,7 @@ import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations"
 import { getUserLang } from "@/lib/i18n/server-lang";
 import { decryptIntegrativeNameFields, safeDecrypt } from "@/lib/integrative-therapist-api";
 import { picBySlug, picLabel } from "@/lib/pics/practices";
-import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf } from "lucide-react";
+import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
@@ -116,6 +116,7 @@ export default async function IntegrativeTherapistDashboard() {
         {[
           { href: "/integrative-therapist/clients", icon: Users, label: t("it.nav.clients") },
           { href: "/integrative-therapist/appointments", icon: Calendar, label: t("nav.appointments") },
+          { href: "/integrative-therapist/financeiro", icon: TrendingUp, label: t("nav.financeiro") },
           { href: "/integrative-therapist/settings", icon: Settings, label: t("nav.myProfile") },
           { href: "/integrative-therapist/settings/availability", icon: Video, label: t("nav.availability") },
         ].map((item) => (

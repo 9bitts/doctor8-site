@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import {
   LayoutDashboard, UserCog, Users, Calendar, BookOpen, Heart, Video,
-  Settings, Sparkles, ChevronRight, CheckCircle2, Brain, FileText,
+  Settings, Sparkles, ChevronRight, CheckCircle2, Brain, FileText, TrendingUp,
 } from "lucide-react";
 
 type BenefitItem = {
@@ -38,6 +38,7 @@ const BENEFIT_SECTIONS: { titleKey: string; items: BenefitItem[] }[] = [
     items: [
       { href: "/psychoanalyst", icon: LayoutDashboard, titleKey: "nav.dashboard", descKey: "pa.doctorConnection.dashboard", color: "bg-violet-100 text-violet-600" },
       { href: "/psychoanalyst/settings", icon: UserCog, titleKey: "nav.myProfile", descKey: "pa.doctorConnection.profile", color: "bg-orange-100 text-orange-700" },
+      { href: "/psychoanalyst/financeiro", icon: TrendingUp, titleKey: "nav.financeiro", descKey: "pa.doctorConnection.financeiro", color: "bg-emerald-100 text-emerald-600" },
       { href: "/humanitarian/volunteer", icon: Heart, titleKey: "nav.humanitarianVolunteer", descKey: "pa.doctorConnection.humanitarian", color: "bg-rose-100 text-rose-600" },
       { href: "/psychoanalyst/account", icon: Settings, titleKey: "nav.account", descKey: "pa.doctorConnection.account", color: "bg-zinc-100 text-zinc-600" },
     ],

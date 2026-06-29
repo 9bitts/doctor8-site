@@ -178,7 +178,17 @@ function BarChart({
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function FinanceiroPage() {
+export type FinanceiroDashboardProps = {
+  apiPath?: string;
+  showPricingSettings?: boolean;
+  showRateio?: boolean;
+};
+
+export function FinanceiroDashboard({
+  apiPath = "/api/professional/financeiro",
+  showPricingSettings = true,
+  showRateio = true,
+}: FinanceiroDashboardProps = {}) {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
   const [period,  setPeriod]  = useState<Period>("this_month");
@@ -190,13 +200,13 @@ export default function FinanceiroPage() {
   const loadData = useCallback(async (p: Period) => {
     setLoading(true); setError("");
     try {
-      const res = await fetch(`/api/professional/financeiro?period=${p}`);
+      const res = await fetch(`${apiPath}?period=${p}`);
       if (!res.ok) { setError(t("common.loadError")); return; }
       const d = await res.json();
       setData(d);
     } catch { setError(t("common.loadError")); }
     setLoading(false);
-  }, [t]);
+  }, [t, apiPath]);
 
   useEffect(() => { loadData(period); }, [period, loadData]);
 
@@ -230,7 +240,7 @@ export default function FinanceiroPage() {
         </div>
       </div>
 
-      <ConsultPricingSettings />
+      {showPricingSettings && <ConsultPricingSettings />}
 
       {error && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl flex items-center gap-2 flex-wrap">
@@ -489,9 +499,11 @@ export default function FinanceiroPage() {
             )}
           </div>
           {/* ── Livro Aberto / Rateio ── */}
-          <RateioSection currency={currency} />
+          {showRateio && <RateioSection currency={currency} />}
         </>
       ) : null}
     </div>
   );
 }
+
+export default FinanceiroDashboard;

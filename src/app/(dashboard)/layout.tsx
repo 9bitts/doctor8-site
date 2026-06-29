@@ -98,6 +98,7 @@ const PSYCHOANALYST_NAV: NavItem[] = [
   { href: "/psychoanalyst/analysands", labelKey: "pa.nav.analysands", icon: <Users size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PSYCHOANALYST"] },
+  { href: "/psychoanalyst/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
   { href: "/psychoanalyst/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PSYCHOANALYST"] },
@@ -108,6 +109,7 @@ const INTEGRATIVE_THERAPIST_NAV: NavItem[] = [
   { href: "/integrative-therapist/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
   { href: "/integrative-therapist/clients", labelKey: "it.nav.clients", icon: <Users size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
   { href: "/integrative-therapist/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
+  { href: "/integrative-therapist/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
   { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
   { href: "/integrative-therapist/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
 ];
