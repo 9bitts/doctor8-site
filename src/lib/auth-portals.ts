@@ -1,8 +1,4 @@
-import {
-  isPsychologistSpecialty,
-  PSYCHOLOGIST_HOME,
-} from "@/lib/psychologist-portal";
-import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
+import { PSYCHOLOGIST_HOME } from "@/lib/psychologist-portal";
 
 export type LoginAccent = "emerald" | "violet" | "teal" | "indigo" | "rose";
 export type PortalHeaderIcon = "brain" | "leaf" | "building" | "heart";
@@ -44,32 +40,6 @@ export interface PortalLoginConfig {
   headerIcon: PortalHeaderIcon;
   footerLinkClass: string;
   footerLabelKey: string;
-  resolveDestination?: (
-    session: { role?: string; professionalSpecialty?: string | null },
-    callbackUrl: string,
-  ) => Promise<string>;
-}
-
-export async function resolvePsychologistLoginDestination(
-  callbackUrl: string,
-): Promise<string> {
-  const profRes = await fetch("/api/professional/profile");
-  if (profRes.ok) {
-    const { profile } = await profRes.json();
-    const specialty = profile?.specialty ?? null;
-    if (callbackUrl) {
-      return safePostLoginUrl("PROFESSIONAL", callbackUrl, undefined, specialty);
-    }
-    if (!profile?.specialty?.trim()) {
-      return "/onboarding?portal=psychologist";
-    }
-    if (isPsychologistSpecialty(profile.specialty)) {
-      return PSYCHOLOGIST_HOME;
-    }
-  } else if (callbackUrl) {
-    return safePostLoginUrl("PROFESSIONAL", callbackUrl);
-  }
-  throw new Error("not_psychologist");
 }
 
 export const PORTAL_LOGINS: PortalLoginConfig[] = [
@@ -86,8 +56,6 @@ export const PORTAL_LOGINS: PortalLoginConfig[] = [
     headerIcon: "brain",
     footerLinkClass: "text-violet-400/90 hover:text-violet-300",
     footerLabelKey: "login.proPsychologistPortal",
-    resolveDestination: async (_session, callbackUrl) =>
-      resolvePsychologistLoginDestination(callbackUrl),
   },
   {
     id: "psychoanalyst",
@@ -188,26 +156,6 @@ export function resolveLoginPathForSession(
     default:
       return MAIN_LOGIN;
   }
-}
-
-export async function resolvePortalLoginDestination(
-  config: PortalLoginConfig,
-  session: { role?: string; professionalSpecialty?: string | null },
-  callbackUrl: string,
-): Promise<string> {
-  if (config.resolveDestination) {
-    return config.resolveDestination(session, callbackUrl);
-  }
-  const role = session.role;
-  if (callbackUrl) {
-    return safePostLoginUrl(
-      role,
-      callbackUrl,
-      undefined,
-      session.professionalSpecialty,
-    );
-  }
-  return resolveRoleHome(role, session.professionalSpecialty) || config.homePath;
 }
 
 /** Accent + back link for forgot-password flow based on originating login portal. */

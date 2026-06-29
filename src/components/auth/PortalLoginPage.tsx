@@ -8,10 +8,16 @@ import { ArrowLeft } from "lucide-react";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import {
   MAIN_LOGIN,
+  PORTAL_BY_ID,
   buildForgotPasswordHref,
+  type PortalId,
   type PortalLoginConfig,
-  resolvePortalLoginDestination,
 } from "@/lib/auth-portals";
+import {
+  isPsychologistSpecialty,
+  PSYCHOLOGIST_HOME,
+} from "@/lib/psychologist-portal";
+import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
 import {
   useLoginLang,
   buildAuthHref,
@@ -28,7 +34,50 @@ import {
   type LoginErrorCode,
 } from "@/components/auth/login-shared";
 
-function PortalLoginForm({ config }: { config: PortalLoginConfig }) {
+async function resolvePsychologistLoginDestination(
+  callbackUrl: string,
+): Promise<string> {
+  const profRes = await fetch("/api/professional/profile");
+  if (profRes.ok) {
+    const { profile } = await profRes.json();
+    const specialty = profile?.specialty ?? null;
+    if (callbackUrl) {
+      return safePostLoginUrl("PROFESSIONAL", callbackUrl, undefined, specialty);
+    }
+    if (!profile?.specialty?.trim()) {
+      return "/onboarding?portal=psychologist";
+    }
+    if (isPsychologistSpecialty(profile.specialty)) {
+      return PSYCHOLOGIST_HOME;
+    }
+  } else if (callbackUrl) {
+    return safePostLoginUrl("PROFESSIONAL", callbackUrl);
+  }
+  throw new Error("not_psychologist");
+}
+
+async function resolvePortalLoginDestination(
+  config: PortalLoginConfig,
+  session: { role?: string; professionalSpecialty?: string | null },
+  callbackUrl: string,
+): Promise<string> {
+  if (config.id === "psychologist") {
+    return resolvePsychologistLoginDestination(callbackUrl);
+  }
+  const role = session.role;
+  if (callbackUrl) {
+    return safePostLoginUrl(
+      role,
+      callbackUrl,
+      undefined,
+      session.professionalSpecialty,
+    );
+  }
+  return resolveRoleHome(role, session.professionalSpecialty) || config.homePath;
+}
+
+function PortalLoginForm({ portalId }: { portalId: PortalId }) {
+  const config = PORTAL_BY_ID[portalId];
   const router = useRouter();
   const searchParams = useSearchParams();
   const { lang, changeLang, t } = useLoginLang();
@@ -216,10 +265,11 @@ function PortalLoginForm({ config }: { config: PortalLoginConfig }) {
   );
 }
 
-export default function PortalLoginPage({ config }: { config: PortalLoginConfig }) {
+export default function PortalLoginPage({ portalId }: { portalId: PortalId }) {
+  const accent = PORTAL_BY_ID[portalId].accent;
   return (
-    <Suspense fallback={<LoginSuspenseFallback accent={config.accent} />}>
-      <PortalLoginForm config={config} />
+    <Suspense fallback={<LoginSuspenseFallback accent={accent} />}>
+      <PortalLoginForm portalId={portalId} />
     </Suspense>
   );
 }
