@@ -10,6 +10,8 @@ import { safePostLoginUrl } from "@/lib/role-home";
 import {
   PROFESSIONAL_REGISTER,
   PORTAL_LOGINS,
+  MAIN_LOGIN,
+  buildForgotPasswordHref,
 } from "@/lib/auth-portals";
 import {
   useLoginLang,
@@ -48,9 +50,10 @@ function LoginForm() {
     searchParams.get("registerUrl"),
     callbackUrl || null,
   );
-  const forgotHref = email.trim()
-    ? `/forgot-password/method?email=${encodeURIComponent(email.trim().toLowerCase())}`
-    : "/forgot-password";
+  const forgotHref = buildForgotPasswordHref({
+    email: email.trim() || undefined,
+    from: MAIN_LOGIN,
+  });
 
   const portalLinks = PORTAL_LOGINS.map((portal) => ({
     href: buildAuthHref(portal.loginPath, { callbackUrl }),

@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import {
   MAIN_LOGIN,
+  buildForgotPasswordHref,
   type PortalLoginConfig,
   resolvePortalLoginDestination,
 } from "@/lib/auth-portals";
@@ -47,9 +48,10 @@ function PortalLoginForm({ config }: { config: PortalLoginConfig }) {
     callbackUrl || null,
   );
   const mainLoginHref = buildAuthHref(MAIN_LOGIN, { callbackUrl });
-  const forgotHref = email.trim()
-    ? `/forgot-password/method?email=${encodeURIComponent(email.trim().toLowerCase())}`
-    : "/forgot-password";
+  const forgotHref = buildForgotPasswordHref({
+    email: email.trim() || undefined,
+    from: config.loginPath,
+  });
 
   useEffect(() => {
     setError(parseLoginError(searchParams.get("error")));

@@ -4,15 +4,22 @@ import { useState } from "react";
 import Link from "next/link";
 import { Loader2, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Lang, translate } from "@/lib/i18n/translations";
+import type { LoginAccent } from "@/lib/auth-portals";
+import { getLoginAccentStyles } from "@/components/auth/login-shared";
 
 export function SendResetEmailButton({
   email,
   lang,
+  accent,
+  loginHref,
 }: {
   email: string;
   lang: Lang;
+  accent: LoginAccent;
+  loginHref: string;
 }) {
   const t = (key: string) => translate(lang, key);
+  const styles = getLoginAccentStyles(accent);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -37,20 +44,20 @@ export function SendResetEmailButton({
 
   if (sent) {
     return (
-      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+      <div className={`${styles.softBg} border rounded-xl p-4`}>
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          <CheckCircle2 className={`w-5 h-5 ${styles.softText} shrink-0 mt-0.5`} aria-hidden />
           <div>
-            <p className="text-emerald-300 text-sm font-medium">{t("forgot.emailSentTitle")}</p>
-            <p className="text-emerald-400/80 text-xs mt-1 leading-relaxed">
+            <p className={`${styles.softTextMuted} text-sm font-medium`}>{t("forgot.emailSentTitle")}</p>
+            <p className="text-slate-400/90 text-xs mt-1 leading-relaxed">
               {t("forgot.emailSentBody").replace("{{email}}", email)}
             </p>
             <p className="text-slate-400 text-xs mt-2 leading-relaxed">{t("forgot.spamHint")}</p>
           </div>
         </div>
         <Link
-          href="/login"
-          className="inline-block mt-4 text-emerald-400 hover:text-emerald-300 text-sm font-medium"
+          href={loginHref}
+          className={`inline-block mt-4 ${styles.link} text-sm font-medium`}
         >
           {t("forgot.backLogin")}
         </Link>
@@ -61,7 +68,7 @@ export function SendResetEmailButton({
   return (
     <div>
       {error && (
-        <p className="text-red-400 text-sm mb-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+        <p className="text-red-400 text-sm mb-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3" role="alert">
           {error}
         </p>
       )}
@@ -69,24 +76,33 @@ export function SendResetEmailButton({
         type="button"
         onClick={handleSend}
         disabled={loading}
-        className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
+        className={`w-full ${styles.btn} disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2`}
       >
-        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+        {loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}
         {loading ? t("forgot.sending") : t("forgot.sendEmailLink")}
       </button>
     </div>
   );
 }
 
-export function ForgotPasswordBackLink({ lang }: { lang: Lang }) {
+export function ForgotPasswordBackLink({
+  lang,
+  accent,
+  href,
+}: {
+  lang: Lang;
+  accent: LoginAccent;
+  href: string;
+}) {
   const t = (key: string) => translate(lang, key);
+  const styles = getLoginAccentStyles(accent);
   return (
     <Link
-      href="/forgot-password"
-      className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition mb-6"
+      href={href}
+      className={`inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition mb-6`}
     >
-      <ArrowLeft className="w-4 h-4" />
-      {t("forgot.back")}
+      <ArrowLeft className="w-4 h-4" aria-hidden />
+      <span className={styles.link}>{t("forgot.back")}</span>
     </Link>
   );
 }

@@ -1,5 +1,29 @@
 import type { Page } from "@playwright/test";
 
+export const MAIN_LOGIN = "/login";
+export const PSYCHOLOGIST_LOGIN = "/login/psicologo";
+export const PSYCHOANALYST_LOGIN = "/login/psicanalista";
+export const INTEGRATIVE_THERAPIST_LOGIN = "/login/terapeuta-integrativo";
+export const ORGANIZATION_LOGIN = "/login/organizacao";
+export const ANGEL_LOGIN = "/login/anjo";
+
+export const LOGIN_PORTALS = [
+  { path: MAIN_LOGIN, dashboardPattern: /\/(patient|professional|admin)/ },
+  { path: PSYCHOLOGIST_LOGIN, dashboardPattern: /\/(psychologist|onboarding)/ },
+  { path: PSYCHOANALYST_LOGIN, dashboardPattern: /\/psychoanalyst/ },
+  { path: INTEGRATIVE_THERAPIST_LOGIN, dashboardPattern: /\/integrative-therapist/ },
+  { path: ORGANIZATION_LOGIN, dashboardPattern: /\/organization/ },
+  { path: ANGEL_LOGIN, dashboardPattern: /\/humanitarian\/angel/ },
+] as const;
+
+export const PROTECTED_AREA_REDIRECTS = [
+  { area: "/psychoanalyst", loginPath: PSYCHOANALYST_LOGIN },
+  { area: "/integrative-therapist", loginPath: INTEGRATIVE_THERAPIST_LOGIN },
+  { area: "/organization", loginPath: ORGANIZATION_LOGIN },
+  { area: "/humanitarian/angel", loginPath: ANGEL_LOGIN },
+  { area: "/psychologist", loginPath: PSYCHOLOGIST_LOGIN },
+] as const;
+
 export function e2ePatientCredentials(): { email: string; password: string } | null {
   const email =
     process.env.E2E_PATIENT_EMAIL?.trim() ||
@@ -55,19 +79,35 @@ export function e2eAdminCredentials(): { email: string; password: string } | nul
   return { email, password };
 }
 
+export async function expectLoginForm(page: Page): Promise<void> {
+  await page.locator('input[type="email"]').waitFor({ state: "visible" });
+  await page.locator('input[type="password"]').waitFor({ state: "visible" });
+  await page.locator("form button[type='submit']").waitFor({ state: "visible" });
+}
+
+export async function loginAtPortal(
+  page: Page,
+  portalPath: string,
+  email: string,
+  password: string,
+  callbackUrl?: string,
+): Promise<void> {
+  const loginPath = callbackUrl
+    ? `${portalPath}?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : portalPath;
+  await page.goto(loginPath);
+  await page.locator('input[type="email"]').fill(email);
+  await page.locator('input[type="password"]').fill(password);
+  await page.locator("form button[type='submit']").click();
+}
+
 export async function loginWithCredentials(
   page: Page,
   email: string,
   password: string,
   callbackUrl?: string,
 ): Promise<void> {
-  const loginPath = callbackUrl
-    ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
-    : "/login";
-  await page.goto(loginPath);
-  await page.locator('input[type="email"]').fill(email);
-  await page.locator('input[type="password"]').fill(password);
-  await page.locator("form button[type='submit']").click();
+  await loginAtPortal(page, MAIN_LOGIN, email, password, callbackUrl);
 }
 
 export async function loginPsychologist(
@@ -76,13 +116,7 @@ export async function loginPsychologist(
   password: string,
   callbackUrl?: string,
 ): Promise<void> {
-  const loginPath = callbackUrl
-    ? `/login/psicologo?callbackUrl=${encodeURIComponent(callbackUrl)}`
-    : "/login/psicologo";
-  await page.goto(loginPath);
-  await page.locator('input[type="email"]').fill(email);
-  await page.locator('input[type="password"]').fill(password);
-  await page.locator("form button[type='submit']").click();
+  await loginAtPortal(page, PSYCHOLOGIST_LOGIN, email, password, callbackUrl);
 }
 
 export async function waitForAuthenticatedSession(page: Page): Promise<void> {

@@ -209,3 +209,25 @@ export async function resolvePortalLoginDestination(
   }
   return resolveRoleHome(role, session.professionalSpecialty) || config.homePath;
 }
+
+/** Accent + back link for forgot-password flow based on originating login portal. */
+export function resolveForgotPasswordContext(from: string | null | undefined): {
+  loginPath: string;
+  accent: LoginAccent;
+} {
+  const loginPath = from?.startsWith("/login") ? from : MAIN_LOGIN;
+  const portal = PORTAL_BY_PATH[loginPath];
+  return { loginPath, accent: portal?.accent ?? "emerald" };
+}
+
+export function buildForgotPasswordHref(opts?: {
+  email?: string;
+  from?: string;
+}): string {
+  const sp = new URLSearchParams();
+  if (opts?.email) sp.set("email", opts.email.trim().toLowerCase());
+  if (opts?.from) sp.set("from", opts.from);
+  const path = opts?.email ? "/forgot-password/method" : "/forgot-password";
+  const qs = sp.toString();
+  return qs ? `${path}?${qs}` : path;
+}

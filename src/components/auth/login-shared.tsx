@@ -118,6 +118,32 @@ export function buildAuthHref(
   return qs ? `${path}?${qs}` : path;
 }
 
+export function getLoginAccentStyles(accent: LoginAccent) {
+  return {
+    ring: ACCENT_RING[accent],
+    btn: ACCENT_BTN[accent],
+    link: ACCENT_LINK[accent],
+    brand: BRAND_ACCENT[accent],
+    iconWrap: HEADER_ICON_WRAP[accent],
+    iconColor: HEADER_ICON_COLOR[accent],
+    softBg: accent === "emerald" ? "bg-emerald-500/10 border-emerald-500/20"
+      : accent === "violet" ? "bg-violet-500/10 border-violet-500/20"
+      : accent === "teal" ? "bg-teal-500/10 border-teal-500/20"
+      : accent === "indigo" ? "bg-indigo-500/10 border-indigo-500/20"
+      : "bg-rose-500/10 border-rose-500/20",
+    softText: accent === "emerald" ? "text-emerald-400"
+      : accent === "violet" ? "text-violet-400"
+      : accent === "teal" ? "text-teal-400"
+      : accent === "indigo" ? "text-indigo-400"
+      : "text-rose-400",
+    softTextMuted: accent === "emerald" ? "text-emerald-300"
+      : accent === "violet" ? "text-violet-300"
+      : accent === "teal" ? "text-teal-300"
+      : accent === "indigo" ? "text-indigo-300"
+      : "text-rose-300",
+  };
+}
+
 export function parseLoginError(err: string | null): LoginErrorCode {
   if (!err) return "";
   if (err === "EmailNotVerified") return "unverified";
@@ -182,7 +208,7 @@ export function LoginHeader({
   accent,
   icon,
 }: {
-  tagline: string;
+  tagline?: string;
   accent: LoginAccent;
   icon?: PortalHeaderIcon;
 }) {
@@ -197,7 +223,7 @@ export function LoginHeader({
       <h1 className="text-4xl font-black text-white tracking-tight">
         Doctor<span className={BRAND_ACCENT[accent]}>8</span>
       </h1>
-      <p className="text-slate-400 mt-2 text-sm">{tagline}</p>
+      {tagline ? <p className="text-slate-400 mt-2 text-sm">{tagline}</p> : null}
     </div>
   );
 }
