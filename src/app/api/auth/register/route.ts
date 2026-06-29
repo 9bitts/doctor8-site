@@ -4,11 +4,8 @@
 // HIPAA: enforces password strength
 // Sends email verification after successful registration
 //
-// ETAPA 3a: when a PATIENT registers, automatically link any patient charts
-// (PatientRecord) that a doctor previously created with the same email — so the
-// prescriptions/documents are already attached to the new account.
-// (Access is still protected by email verification: the user can't log in until
-//  they verify their email, even though the link is established at signup.)
+// ETAPA 3a: when a PATIENT registers, automatically link any provider charts
+// (PatientRecord, AnalysandRecord, IntegrativeClientRecord) created with the same email.
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -19,6 +16,10 @@ import { UserRole, ConsentType } from "@prisma/client";
 import { REGISTRATION_REGION_CODES, requiresGdpr, requiresHipaa } from "@/lib/registration-regions";
 import { sendEmailVerification } from "@/lib/email";
 import { encrypt } from "@/lib/encryption";
+import {
+  attachLinkedDocumentsToPatientProfile,
+  linkChartsToPatientOnSignup,
+} from "@/lib/patient-chart-link";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -134,15 +135,8 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // ETAPA 3a: auto-link any patient charts created by a doctor with this email.
-        // This makes prescriptions/documents already attached to the new account.
-        await tx.patientRecord.updateMany({
-          where: {
-            email: email.toLowerCase(),
-            linkedUserId: null,
-          },
-          data: { linkedUserId: newUser.id },
-        });
+        // ETAPA 3a: auto-link provider charts by email.
+        await linkChartsToPatientOnSignup(tx, newUser.id, email);
       } else if (role === "PSYCHOANALYST") {
         await tx.psychoanalystProfile.create({
           data: {
@@ -202,31 +196,9 @@ export async function POST(req: NextRequest) {
       return newUser;
     });
 
-    // ETAPA 3a: after the account exists, attach the linked charts' documents
-    // (e.g. prescriptions) to the patient's profile so they show up in the app.
-    // Done outside the transaction; failures here must not break registration.
+    // ETAPA 3a: attach linked charts' documents to the patient profile.
     try {
-      const patientProfile = await db.patientProfile.findUnique({
-        where: { userId: user.id },
-        select: { id: true },
-      });
-      if (patientProfile) {
-        const linkedRecords = await db.patientRecord.findMany({
-          where: { linkedUserId: user.id },
-          select: { id: true },
-        });
-        const recordIds = linkedRecords.map((r) => r.id);
-        if (recordIds.length > 0) {
-          // Attach any documents of those charts that don't yet have a patientId.
-          await db.medicalDocument.updateMany({
-            where: {
-              patientRecordId: { in: recordIds },
-              patientId: null,
-            },
-            data: { patientId: patientProfile.id },
-          });
-        }
-      }
+      await attachLinkedDocumentsToPatientProfile(user.id);
     } catch (linkError) {
       console.error("[REGISTER LINK ERROR]", linkError);
     }

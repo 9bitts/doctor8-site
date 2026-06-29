@@ -8,7 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
-import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
+import { canEditChart, resolveChartAccess, auditChartView } from "@/lib/chart-access";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -47,6 +47,8 @@ export async function GET(
   if (!access) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   }
+
+  await auditChartView(session.user.id, params.id, access);
 
   const record = await db.patientRecord.findFirst({
     where: { id: params.id },

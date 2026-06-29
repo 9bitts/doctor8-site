@@ -30,7 +30,7 @@ export async function GET(
   const ctx = await requireProfessional();
   if ("error" in ctx) return ctx.error;
 
-  const found = await getRecordWithAccess(ctx.professional.id, params.id);
+  const found = await getRecordWithAccess(ctx.professional.id, params.id, false, ctx.session.user.id);
   if (!found) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
 
   const record = await db.patientOdontogram.findUnique({

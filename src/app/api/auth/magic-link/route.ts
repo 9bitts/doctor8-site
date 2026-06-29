@@ -13,6 +13,11 @@ import {
   RATE_LIMITS,
   rateLimitResponse,
 } from "@/lib/rate-limit";
+import {
+  attachLinkedDocumentsToPatientProfile,
+  linkChartsToPatientOnSignup,
+  linkChartsToPatientUser,
+} from "@/lib/patient-chart-link";
 
 const MAGIC_LINK_TTL_MS = 30 * 60 * 1000;
 
@@ -73,6 +78,11 @@ export async function POST(req: NextRequest) {
         displayName = parsed.data.firstName;
       }
     }
+    try {
+      await linkChartsToPatientUser(userId, email);
+    } catch (linkError) {
+      console.error("[MAGIC LINK LINK ERROR]", linkError);
+    }
   } else {
     const newUser = await db.$transaction(async (tx) => {
       const newUser = await tx.user.create({
@@ -92,10 +102,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      await tx.patientRecord.updateMany({
-        where: { email, linkedUserId: null },
-        data: { linkedUserId: newUser.id },
-      });
+      await linkChartsToPatientOnSignup(tx, newUser.id, email);
 
       await tx.consent.createMany({
         data: [
@@ -124,26 +131,7 @@ export async function POST(req: NextRequest) {
     userId = newUser.id;
 
     try {
-      const patientProfile = await db.patientProfile.findUnique({
-        where: { userId: newUser.id },
-        select: { id: true },
-      });
-      if (patientProfile) {
-        const linkedRecords = await db.patientRecord.findMany({
-          where: { linkedUserId: newUser.id },
-          select: { id: true },
-        });
-        const recordIds = linkedRecords.map((r) => r.id);
-        if (recordIds.length > 0) {
-          await db.medicalDocument.updateMany({
-            where: {
-              patientRecordId: { in: recordIds },
-              patientId: null,
-            },
-            data: { patientId: patientProfile.id },
-          });
-        }
-      }
+      await attachLinkedDocumentsToPatientProfile(newUser.id);
     } catch (linkError) {
       console.error("[MAGIC LINK LINK ERROR]", linkError);
     }

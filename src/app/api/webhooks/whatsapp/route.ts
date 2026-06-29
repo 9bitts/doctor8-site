@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logWhatsAppDelivery } from "@/lib/integration-logs";
+import { verifyWhatsAppWebhookSignature } from "@/lib/whatsapp-webhook";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +22,16 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const rawBody = await req.text();
+  const signature = req.headers.get("x-hub-signature-256");
+
+  if (!verifyWhatsAppWebhookSignature(rawBody, signature)) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+  }
+
   let body: unknown;
   try {
-    body = await req.json();
+    body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }

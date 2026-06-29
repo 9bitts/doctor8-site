@@ -78,12 +78,16 @@ export async function getRecordWithAccess(
   professionalId: string,
   recordId: string,
   requireEdit = false,
+  auditUserId?: string,
 ) {
   const access = await resolveChartAccess(professionalId, recordId);
   if (!access) return null;
   if (requireEdit && !canEditChart(access)) return null;
   const record = await db.patientRecord.findUnique({ where: { id: recordId } });
   if (!record) return null;
+  if (auditUserId) {
+    await auditChartView(auditUserId, recordId, access);
+  }
   return { record, access };
 }
 

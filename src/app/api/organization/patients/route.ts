@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireOrganization, getOrganizationProfessionalIds } from "@/lib/organization-auth";
 import { db } from "@/lib/db";
+import { safeDecrypt } from "@/lib/sign-helpers";
+import { filterPatientCharts } from "@/lib/patient-chart-search";
 
 export async function GET(req: NextRequest) {
   const ctx = await requireOrganization();
@@ -12,22 +14,11 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q")?.trim().toLowerCase() || "";
+  const q = searchParams.get("q")?.trim() || "";
   const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
 
-  const records = await db.patientRecord.findMany({
-    where: {
-      professionalId: { in: professionalIds },
-      ...(q
-        ? {
-            OR: [
-              { firstName: { contains: q, mode: "insensitive" } },
-              { lastName: { contains: q, mode: "insensitive" } },
-              { email: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
+  const recordsRaw = await db.patientRecord.findMany({
+    where: { professionalId: { in: professionalIds } },
     include: {
       professional: {
         select: { id: true, firstName: true, lastName: true, specialty: true },
@@ -35,23 +26,28 @@ export async function GET(req: NextRequest) {
       _count: { select: { medicalDocuments: true } },
     },
     orderBy: { updatedAt: "desc" },
-    take: limit,
   });
 
+  const decrypted = recordsRaw.map((r) => ({
+    id: r.id,
+    firstName: safeDecrypt(r.firstName),
+    lastName: safeDecrypt(r.lastName),
+    email: r.email,
+    professionalId: r.professionalId,
+    professionalName: r.professional
+      ? `Dr. ${r.professional.firstName} ${r.professional.lastName}`
+      : "?",
+    specialty: r.professional?.specialty ?? "",
+    appointmentCount: r._count.medicalDocuments,
+    updatedAt: r.updatedAt.toISOString(),
+  }));
+
+  const filtered = q
+    ? filterPatientCharts(decrypted, q, limit)
+    : decrypted.slice(0, limit);
+
   return NextResponse.json({
-    patients: records.map((r) => ({
-      id: r.id,
-      firstName: r.firstName,
-      lastName: r.lastName,
-      email: r.email,
-      professionalId: r.professionalId,
-      professionalName: r.professional
-        ? `Dr. ${r.professional.firstName} ${r.professional.lastName}`
-        : "?",
-      specialty: r.professional?.specialty ?? "",
-      appointmentCount: r._count.medicalDocuments,
-      updatedAt: r.updatedAt.toISOString(),
-    })),
-    total: records.length,
+    patients: filtered,
+    total: filtered.length,
   });
 }

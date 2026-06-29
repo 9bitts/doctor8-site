@@ -17,7 +17,7 @@ export async function GET(
   if ("error" in ctx) return ctx.error;
   const { professional } = ctx;
 
-  const found = await getRecordWithAccess(professional.id, params.id);
+  const found = await getRecordWithAccess(professional.id, params.id, false, ctx.session.user.id);
   if (!found) return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   const { record } = found;
 
