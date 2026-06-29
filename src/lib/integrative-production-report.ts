@@ -72,3 +72,42 @@ export async function buildIntegrativeProductionReport(
     range: { start: start.toISOString(), end: end.toISOString() },
   };
 }
+
+export type IntegrativeProductionReport = Awaited<
+  ReturnType<typeof buildIntegrativeProductionReport>
+>;
+
+export function productionPeriodLabel(
+  period: ProductionPeriod,
+  t: (key: string) => string,
+): string {
+  if (period === "this_month") return t("fin.periodThisMonth");
+  if (period === "last_month") return t("fin.periodLastMonth");
+  return t("fin.periodThisYear");
+}
+
+export function buildIntegrativeProductionCsv(
+  report: IntegrativeProductionReport,
+  labels: {
+    period: string;
+    periodValue: string;
+    totalSessions: string;
+    structuredSessions: string;
+    practice: string;
+    slug: string;
+    count: string;
+  },
+): string {
+  const cell = (v: string | number) => String(v).replace(/;/g, ",");
+  const lines = [
+    `${labels.period};${cell(labels.periodValue)}`,
+    `${labels.totalSessions};${report.totalSessions}`,
+    `${labels.structuredSessions};${report.structuredSessions}`,
+    "",
+    `${labels.practice};${labels.slug};${labels.count}`,
+    ...report.practices.map(
+      (p) => `${cell(p.label)};${cell(p.slug)};${p.count}`,
+    ),
+  ];
+  return `\uFEFF${lines.join("\n")}`;
+}

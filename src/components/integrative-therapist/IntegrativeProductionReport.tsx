@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { BarChart3, Loader2 } from "lucide-react";
+import { BarChart3, Download, Loader2 } from "lucide-react";
 
 type Period = "this_month" | "last_month" | "year";
 
@@ -32,6 +32,13 @@ export default function IntegrativeProductionReport() {
     void load(period);
   }, [period, load]);
 
+  function exportCsv() {
+    window.open(
+      `/api/integrative-therapist/reports/production?period=${period}&format=csv`,
+      "_blank",
+    );
+  }
+
   const maxCount = Math.max(1, ...(data?.practices.map((p) => p.count) ?? [1]));
 
   return (
@@ -41,15 +48,26 @@ export default function IntegrativeProductionReport() {
           <BarChart3 size={18} className="text-teal-600" />
           {t("it.report.title")}
         </h2>
-        <select
-          className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white"
-          value={period}
-          onChange={(e) => setPeriod(e.target.value as Period)}
-        >
-          <option value="this_month">{t("fin.periodThisMonth")}</option>
-          <option value="last_month">{t("fin.periodLastMonth")}</option>
-          <option value="year">{t("fin.periodThisYear")}</option>
-        </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white"
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as Period)}
+          >
+            <option value="this_month">{t("fin.periodThisMonth")}</option>
+            <option value="last_month">{t("fin.periodLastMonth")}</option>
+            <option value="year">{t("fin.periodThisYear")}</option>
+          </select>
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={loading || !data || data.totalSessions === 0}
+            className="flex items-center gap-1.5 border border-teal-200 text-teal-800 bg-teal-50 hover:bg-teal-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl px-3 py-2 text-sm font-medium transition-colors"
+          >
+            <Download size={15} />
+            {t("it.report.exportCsv")}
+          </button>
+        </div>
       </div>
 
       {loading ? (
