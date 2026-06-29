@@ -103,8 +103,6 @@ export default function AcuraVolunteerOptIn({
         </Link>
         <Link
           href={ACURA_VOLUNTEER_TERMS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
           className="text-xs text-sky-700 font-medium hover:underline sm:ml-1"
         >
           {t("acura.vol.optIn.terms")}

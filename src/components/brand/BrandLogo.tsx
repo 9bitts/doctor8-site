@@ -8,17 +8,15 @@ export { BRAND_LOGO_PATH };
 export type BrandLogoVariant = "on-dark" | "on-light";
 
 const HEIGHT_CLASS = {
-  sm: "h-7",
-  md: "h-9",
-  lg: "h-11",
+  sm: "h-6",
+  md: "h-7",
+  lg: "h-9",
 } as const;
 
 function LogoImg({
-  variant,
   size,
   className,
 }: {
-  variant: BrandLogoVariant;
   size: keyof typeof HEIGHT_CLASS;
   className: string;
 }) {
@@ -27,16 +25,16 @@ function LogoImg({
     <img
       src={BRAND_LOGO_PATH}
       alt="Doctor8"
-      width={200}
-      height={56}
+      width={500}
+      height={150}
       decoding="async"
-      className={`w-auto ${HEIGHT_CLASS[size]} ${variant === "on-light" ? "invert" : ""} ${className}`.trim()}
+      className={`w-auto ${HEIGHT_CLASS[size]} ${className}`.trim()}
     />
   );
 }
 
 export function BrandLogo({
-  variant = "on-dark",
+  variant: _variant = "on-dark",
   size = "md",
   className = "",
 }: {
@@ -45,15 +43,7 @@ export function BrandLogo({
   className?: string;
   priority?: boolean;
 }) {
-  if (variant === "on-dark") {
-    return (
-      <span className={`inline-flex items-center justify-center rounded-lg bg-black/60 px-3 py-1.5 ${className}`.trim()}>
-        <LogoImg variant={variant} size={size} className="" />
-      </span>
-    );
-  }
-
-  return <LogoImg variant={variant} size={size} className={className} />;
+  return <LogoImg size={size} className={className} />;
 }
 
 export function BrandLogoLink({

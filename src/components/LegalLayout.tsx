@@ -106,6 +106,10 @@ export default function LegalLayout({
             {lang === "pt" ? "TCLE Telemedicina" : lang === "en" ? "Telemedicine ICF" : "TCLE Telemedicina"}
           </Link>
           <span>·</span>
+          <Link href="/acura-voluntariado" className="hover:text-slate-800">
+            {lang === "pt" ? "Voluntariado AcuraBrasil" : lang === "en" ? "AcuraBrasil Volunteering" : "Voluntariado AcuraBrasil"}
+          </Link>
+          <span>·</span>
           <Link href="/hipaa" className="hover:text-slate-800">HIPAA Notice</Link>
           <span>·</span>
           <Link href="/cookies" className="hover:text-slate-800">

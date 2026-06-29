@@ -72,12 +72,6 @@ export default function ProfessionalDoctorConnectionClient({ subscribed, default
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <DoctorConnectionBanner
-        subscribed={subscribed}
-        defaultRegion={defaultRegion}
-        accountHref="/professional/account"
-      />
-
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center shrink-0">
           <Sparkles size={28} className="text-brand-500" />
@@ -110,6 +104,12 @@ export default function ProfessionalDoctorConnectionClient({ subscribed, default
           ))}
         </ul>
       </section>
+
+      <DoctorConnectionBanner
+        subscribed={subscribed}
+        defaultRegion={defaultRegion}
+        accountHref="/professional/account"
+      />
 
       <section>
         <h2 className="text-lg font-bold text-slate-900 mb-1">{t("pro.doctorConnection.guideTitle")}</h2>

@@ -75,7 +75,7 @@ function CallbackInner() {
         <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" aria-hidden />
         </div>
-        <AuthLogo className="h-10 w-auto mx-auto mix-blend-screen mb-4" />
+        <AuthLogo className="mx-auto mb-4" />
         <p className="text-slate-400 text-sm" role="status">
           {timedOut ? t("login.genericError") : t("login.callbackSigningIn")}
         </p>

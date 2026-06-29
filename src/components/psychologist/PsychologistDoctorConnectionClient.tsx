@@ -71,12 +71,6 @@ export default function PsychologistDoctorConnectionClient({ subscribed, default
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <DoctorConnectionBanner
-        subscribed={subscribed}
-        defaultRegion={defaultRegion}
-        accountHref="/psychologist/account"
-      />
-
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
           <Sparkles size={28} className="text-violet-600" />
@@ -109,6 +103,12 @@ export default function PsychologistDoctorConnectionClient({ subscribed, default
           ))}
         </ul>
       </section>
+
+      <DoctorConnectionBanner
+        subscribed={subscribed}
+        defaultRegion={defaultRegion}
+        accountHref="/psychologist/account"
+      />
 
       <section>
         <h2 className="text-lg font-bold text-slate-900 mb-1">{t("psy.doctorConnection.guideTitle")}</h2>

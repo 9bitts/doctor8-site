@@ -108,7 +108,7 @@ export default async function PublicSpecialistPage({
                 alt="Doctor8"
                 width={160}
                 height={44}
-                className="h-9 w-auto mix-blend-screen"
+                className="h-7 w-auto"
                 priority
               />
             </Link>

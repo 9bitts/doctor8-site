@@ -143,3 +143,39 @@ export function specialtyMatchesSearch(lang: Lang, specialty: string, query: str
 }
 
 export const ALL_PROFESSION_VALUES = PROFESSION_GROUPS.flatMap((g) => g.options);
+
+/** Legacy / free-text specialty values stored before canonical English keys. */
+const LEGACY_SPECIALTY_ALIASES: Record<string, string> = {
+  Psychology: "Psychologist",
+  Nutrition: "Nutritionist",
+  "Medicina Geral": "General Practice",
+  "Clínico Geral": "General Practice",
+  "Clinico Geral": "General Practice",
+  Psicologia: "Psychologist",
+  Nutrição: "Nutritionist",
+  Nutricao: "Nutritionist",
+  Fisioterapia: "Physiotherapist",
+  Dentist: "Dentist (General)",
+  "Dental Surgeon": "Dentist (General)",
+  Dentista: "Dentist (General)",
+  "Physical Therapist": "Physiotherapist",
+  Nursing: "Nurse",
+};
+
+/** Map a stored specialty (canonical, localized, or legacy) to a PROFESSION_GROUPS value. */
+export function canonicalProfessionValue(raw: string): string | null {
+  const s = raw.trim();
+  if (!s) return null;
+  if (ALL_PROFESSION_VALUES.includes(s)) return s;
+
+  const legacy = LEGACY_SPECIALTY_ALIASES[s];
+  if (legacy) return legacy;
+
+  for (const value of ALL_PROFESSION_VALUES) {
+    const labels = LABELS[value];
+    if (!labels) continue;
+    if (labels.en === s || labels.pt === s || labels.es === s) return value;
+  }
+
+  return null;
+}

@@ -1,7 +1,7 @@
 /** AcuraBrasil volunteer badge ? opt-in separate from humanitarian shift queue. */
 
 export const ACURA_VOLUNTEER_LOGO = "/branding/acurabrasil-logo.png";
-export const ACURA_VOLUNTEER_TERMS_URL = "https://acurabrasil.org/sos-venezuela.html";
+export const ACURA_VOLUNTEER_TERMS_URL = "/acura-voluntariado";
 
 export type ProviderRole = "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 

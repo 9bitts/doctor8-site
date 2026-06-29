@@ -5,8 +5,7 @@ import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { buildPublicProfileUrl } from "@/lib/public-profile";
 import {
-  isUncategorizedProfessional,
-  specialtiesForCategory,
+  resolveProfessionalCategory,
   type AdminProfessionalCategory,
 } from "@/lib/admin-provider-categories";
 
@@ -43,12 +42,8 @@ export async function GET(req: NextRequest) {
 
   let filtered = pros;
   if (category && VALID_CATEGORIES.has(category)) {
-    if (category === "outros") {
-      filtered = pros.filter((p) => isUncategorizedProfessional(p.specialty));
-    } else {
-      const allowed = new Set(specialtiesForCategory(category as AdminProfessionalCategory));
-      filtered = pros.filter((p) => allowed.has(p.specialty));
-    }
+    const bucket = category as AdminProfessionalCategory | "outros";
+    filtered = pros.filter((p) => resolveProfessionalCategory(p.specialty) === bucket);
   }
 
   const doctors = filtered.map((p) => ({

@@ -1,4 +1,4 @@
-import { PROFESSION_GROUPS } from "@/lib/professions";
+import { canonicalProfessionValue, PROFESSION_GROUPS } from "@/lib/professions";
 
 function optionsFor(groupKey: string): string[] {
   return PROFESSION_GROUPS.find((g) => g.groupKey === groupKey)?.options ?? [];
@@ -37,27 +37,25 @@ export const ADMIN_PROVIDER_TABS: { id: AdminProviderTab; labelPt: string }[] = 
   { id: "outros", labelPt: "Outros" },
 ];
 
-const ALL_CATEGORIZED = new Set<string>([
-  ...ADMIN_PROFESSIONAL_CATEGORIES.medicos,
-  ...ADMIN_PROFESSIONAL_CATEGORIES.psicologos,
-  ...ADMIN_PROFESSIONAL_CATEGORIES.nutricionistas,
-  ...ADMIN_PROFESSIONAL_CATEGORIES.fisioterapeutas,
-]);
-
 export function specialtiesForCategory(category: AdminProfessionalCategory): string[] {
   return [...ADMIN_PROFESSIONAL_CATEGORIES[category]];
 }
 
 export function resolveProfessionalCategory(specialty: string): AdminProfessionalCategory | "outros" {
+  const trimmed = specialty.trim();
+  // Doctors register with an empty specialty until they complete settings.
+  if (!trimmed) return "medicos";
+
+  const canonical = canonicalProfessionValue(trimmed) ?? trimmed;
   for (const [key, list] of Object.entries(ADMIN_PROFESSIONAL_CATEGORIES) as [
     AdminProfessionalCategory,
     string[],
   ][]) {
-    if (list.includes(specialty)) return key;
+    if (list.includes(canonical)) return key;
   }
   return "outros";
 }
 
 export function isUncategorizedProfessional(specialty: string): boolean {
-  return !ALL_CATEGORIZED.has(specialty);
+  return resolveProfessionalCategory(specialty) === "outros";
 }
