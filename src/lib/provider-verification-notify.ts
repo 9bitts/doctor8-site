@@ -95,3 +95,43 @@ export async function notifyProviderVerifiedApproved(
     tag: "provider-verified",
   });
 }
+
+/** Notifies provider when admin revokes verification. */
+export async function notifyProviderVerifiedRejected(
+  userId: string,
+  role: ProviderRole,
+): Promise<void> {
+  if (!process.env.RESEND_API_KEY) return;
+
+  const { email, name, settingsPath } = await providerContact(userId, role);
+  if (!email) return;
+
+  const appUrl = getAppUrl();
+  const dashboardUrl = `${appUrl}${settingsPath}`;
+
+  const html = emailShell(
+    "Verifica\u00e7\u00e3o pendente",
+    `
+      <p style="color:#334155;font-size:15px;line-height:1.6;">
+        Ol\u00e1, <strong>${name}</strong>!
+      </p>
+      <p style="color:#334155;font-size:15px;line-height:1.6;">
+        Sua verifica\u00e7\u00e3o na Doctor8 precisa ser <strong>revisada</strong>.
+        Envie novamente seus documentos ou entre em contato com o suporte se tiver d\u00favidas.
+      </p>
+      <p style="margin:24px 0;">
+        <a href="${dashboardUrl}" style="display:inline-block;background:#0d9488;color:#fff;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;">
+          Revisar meu perfil
+        </a>
+      </p>
+    `,
+    "pt",
+  );
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: "Doctor8 \u2014 verifica\u00e7\u00e3o do perfil",
+    html,
+    tag: "provider-unverified",
+  });
+}

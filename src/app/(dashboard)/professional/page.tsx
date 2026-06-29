@@ -21,8 +21,10 @@ import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBa
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
+import ProfessionalInsightsBanner from "@/components/professional/ProfessionalInsightsBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
+import { getProfessionalDashboardInsights } from "@/lib/professional-dashboard-insights";
 import { decrypt } from "@/lib/encryption";
 import { getProfessionLabel } from "@/lib/professions";
 import { resolveRoleHome } from "@/lib/role-home";
@@ -80,6 +82,7 @@ export default async function ProfessionalDashboard() {
     userRow,
     humanitarianCampaign,
     humanitarianVolunteer,
+    dashboardInsights,
   ] = await Promise.all([
     db.appointment.count({
       where: {
@@ -132,6 +135,7 @@ export default async function ProfessionalDashboard() {
     }),
     getActiveCampaignForRegion(null),
     getVolunteerDashboardState(userId),
+    getProfessionalDashboardInsights(professional.id),
   ]);
 
   const hasActiveSubscription =
@@ -269,6 +273,8 @@ export default async function ProfessionalDashboard() {
       {!professional.verified && (
         <ProviderVerificationBanner settingsHref="/professional/settings" />
       )}
+
+      <ProfessionalInsightsBanner insights={dashboardInsights} />
 
       <ProfessionalChecklistWrapper />
       <ProfessionalTourWrapper lang={lang} />

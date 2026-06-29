@@ -42,7 +42,7 @@ export async function GET() {
       where: { linkedUserId: userId },
       include: {
         integrativeTherapist: {
-          select: { id: true, firstName: true, lastName: true, mainPractice: true },
+          select: { id: true, firstName: true, lastName: true, picsPractices: true },
         },
       },
       orderBy: { updatedAt: "desc" },
@@ -84,7 +84,7 @@ export async function GET() {
       providerType: "INTEGRATIVE",
       providerId: p.id,
       name: `${safeDecrypt(p.firstName)} ${safeDecrypt(p.lastName)}`.trim(),
-      specialty: p.mainPractice || null,
+      specialty: r.mainPractice || p.picsPractices[0] || null,
       lastUpdated: r.updatedAt.toISOString(),
     });
   }

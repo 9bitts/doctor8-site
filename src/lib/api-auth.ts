@@ -1,6 +1,7 @@
 // Unified API route authentication helpers.
 
 import { NextResponse } from "next/server";
+import type { Session } from "next-auth";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import type { UserRole, OrganizationMemberRole } from "@prisma/client";
@@ -11,7 +12,7 @@ import {
 
 export type ApiError = { error: NextResponse };
 
-type AuthSession = NonNullable<Awaited<ReturnType<typeof auth>>>;
+type AuthSession = Session;
 
 export function isApiError(v: unknown): v is ApiError {
   return typeof v === "object" && v !== null && "error" in v;
@@ -32,7 +33,7 @@ export async function requireAuth(
   ) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
-  return { session, userId: session.user.id };
+  return { session: session as AuthSession, userId: session.user.id };
 }
 
 export async function requirePatient(): Promise<

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { notifyProviderVerifiedApproved } from "@/lib/provider-verification-notify";
+import { notifyProviderVerifiedApproved, notifyProviderVerifiedRejected } from "@/lib/provider-verification-notify";
 
 const patchSchema = z.object({
   verified: z.boolean(),
@@ -34,6 +34,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (parsed.data.verified && !existing.verified) {
     notifyProviderVerifiedApproved(existing.userId, "INTEGRATIVE_THERAPIST").catch((err) =>
       console.error("[verify] integrative therapist email failed:", err),
+    );
+  } else if (!parsed.data.verified && existing.verified) {
+    notifyProviderVerifiedRejected(existing.userId, "INTEGRATIVE_THERAPIST").catch((err) =>
+      console.error("[verify] integrative rejection email failed:", err),
     );
   }
 

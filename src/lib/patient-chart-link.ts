@@ -76,7 +76,7 @@ export async function attachLinkedDocumentsToPatientProfile(userId: string) {
   await markChartInvitesLinked(userId);
 }
 
-async function markChartInvitesLinked(userId: string) {
+export async function markChartInvitesLinked(userId: string) {
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { email: true },

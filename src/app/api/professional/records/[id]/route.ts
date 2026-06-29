@@ -10,6 +10,11 @@ import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
 import { buildPatientRecordSearchText } from "@/lib/patient-record-search";
 import { canEditChart, resolveChartAccess, auditChartView } from "@/lib/chart-access";
+import {
+  notifyPatientChartLinked,
+  patientDisplayName,
+} from "@/lib/chart-link-notify";
+import { markChartInvitesLinked } from "@/lib/patient-chart-link";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -184,6 +189,23 @@ export async function PATCH(
           where: { patientRecordId: record.id, patientId: null },
           data:  { patientId: profile.id },
         });
+      }
+      await markChartInvitesLinked(linkedUserId);
+
+      const patientUser = await db.user.findUnique({
+        where: { id: linkedUserId },
+        select: { email: true, language: true },
+      });
+      if (patientUser?.email) {
+        const patientName = await patientDisplayName(linkedUserId);
+        const doctorName = `Dr. ${professional.firstName} ${professional.lastName}`.trim();
+        notifyPatientChartLinked({
+          patientUserId: linkedUserId,
+          patientEmail: patientUser.email,
+          patientName,
+          doctorName,
+          language: patientUser.language,
+        }).catch((e) => console.error("[RECORD PATCH] chart link notify failed:", e));
       }
     } catch (e) {
       console.error("[RECORD PATCH] attach docs failed:", e);
