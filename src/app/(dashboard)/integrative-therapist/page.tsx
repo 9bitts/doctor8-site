@@ -10,7 +10,6 @@ import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf, Trendin
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
-import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getIntegrativeVisitMetaByPatientUserIds } from "@/lib/integrative-appointment-meta";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
@@ -99,10 +98,6 @@ export default async function IntegrativeTherapistDashboard() {
           {t("it.dash.subtitle")}
         </p>
       </div>
-
-      {!profile.verified && (
-        <ProviderVerificationBanner settingsHref="/integrative-therapist/settings" />
-      )}
 
       {needsPracticeSetup && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">

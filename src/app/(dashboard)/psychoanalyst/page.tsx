@@ -9,7 +9,6 @@ import { Calendar, Users, ChevronRight, Video, Settings, FileText, Sparkles, Bra
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
-import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
@@ -103,10 +102,6 @@ export default async function PsychoanalystDashboard() {
         </h1>
         <p className="text-violet-600 text-sm font-medium mt-1">{t("pa.dash.subtitle")}</p>
       </div>
-
-      {!profile.verified && (
-        <ProviderVerificationBanner settingsHref="/psychoanalyst/settings" />
-      )}
 
       <div className="grid sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">

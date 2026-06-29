@@ -13,7 +13,6 @@ import {
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
-import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import ProfessionalChecklist from "@/components/ProfessionalChecklist";
 import ProfessionalInsightsBanner from "@/components/professional/ProfessionalInsightsBanner";
@@ -148,10 +147,6 @@ export default async function PsychologistDashboard() {
           <p className="text-violet-600 text-sm font-medium mt-1">{professionLabel}</p>
         </div>
       </div>
-
-      {!professional.verified && (
-        <ProviderVerificationBanner settingsHref="/psychologist/settings" />
-      )}
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">

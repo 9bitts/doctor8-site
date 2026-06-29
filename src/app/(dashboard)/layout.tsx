@@ -17,6 +17,7 @@ import { resolveLoginPathForSession } from "@/lib/auth-portals";
 import { BrandLogo, BrandLogoLink } from "@/components/brand/BrandLogo";
 import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
 import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
+import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
 import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   User, Settings, LogOut, Menu, X, Bell, ChevronRight,
@@ -321,6 +322,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
           <PushSubscribe />
+          <ProviderDashboardAlerts role={role} />
           {children}
         </main>
       </div>
