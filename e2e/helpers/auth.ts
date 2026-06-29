@@ -33,6 +33,17 @@ export function e2eProfessionalCredentials(): { email: string; password: string 
   return { email, password };
 }
 
+export function e2ePsychologistCredentials(): { email: string; password: string } | null {
+  const email =
+    process.env.E2E_PSYCHOLOGIST_EMAIL?.trim() ||
+    (process.env.CI ? "e2e-psychologist@doctor8.test" : undefined);
+  const password =
+    process.env.E2E_PSYCHOLOGIST_PASSWORD?.trim() ||
+    (process.env.CI ? "TestPassword1!" : undefined);
+  if (!email || !password) return null;
+  return { email, password };
+}
+
 export function e2eAdminCredentials(): { email: string; password: string } | null {
   const email =
     process.env.E2E_ADMIN_EMAIL?.trim() ||
@@ -53,6 +64,21 @@ export async function loginWithCredentials(
   const loginPath = callbackUrl
     ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
     : "/login";
+  await page.goto(loginPath);
+  await page.locator('input[type="email"]').fill(email);
+  await page.locator('input[type="password"]').fill(password);
+  await page.locator("form button[type='submit']").click();
+}
+
+export async function loginPsychologist(
+  page: Page,
+  email: string,
+  password: string,
+  callbackUrl?: string,
+): Promise<void> {
+  const loginPath = callbackUrl
+    ? `/login/psicologo?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : "/login/psicologo";
   await page.goto(loginPath);
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);

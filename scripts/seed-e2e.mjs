@@ -41,6 +41,13 @@ const DEFAULT_PROFESSIONAL = {
   lastName: "Volunteer",
 };
 
+const DEFAULT_PSYCHOLOGIST = {
+  email: process.env.E2E_PSYCHOLOGIST_EMAIL || "e2e-psychologist@doctor8.test",
+  password: process.env.E2E_PSYCHOLOGIST_PASSWORD || "TestPassword1!",
+  firstName: "E2E",
+  lastName: "Psychologist",
+};
+
 const DEFAULT_ADMIN = {
   email: process.env.E2E_ADMIN_EMAIL || "e2e-admin@doctor8.test",
   password: process.env.E2E_ADMIN_PASSWORD || "TestPassword1!",
@@ -218,6 +225,75 @@ async function seedProfessional({ email, password, firstName, lastName }) {
   }
 
   console.log(`[seed-e2e] Professional ${normalized} ready (verified)`);
+}
+
+async function seedPsychologist({ email, password, firstName, lastName }) {
+  const passwordHash = await bcrypt.hash(password, 12);
+  const normalized = email.toLowerCase();
+
+  const user = await prisma.user.upsert({
+    where: { email: normalized },
+    create: {
+      email: normalized,
+      passwordHash,
+      role: UserRole.PROFESSIONAL,
+      region: "VE",
+      language: "pt",
+      emailVerified: new Date(),
+    },
+    update: {
+      passwordHash,
+      role: UserRole.PROFESSIONAL,
+      region: "VE",
+      emailVerified: new Date(),
+      deletedAt: null,
+      lockedUntil: null,
+      failedLoginAttempts: 0,
+    },
+  });
+
+  await prisma.professionalProfile.upsert({
+    where: { userId: user.id },
+    create: {
+      userId: user.id,
+      firstName,
+      lastName,
+      licenseNumber: "CRP-E2E-01",
+      licenseCountry: "BR",
+      specialty: "Psychologist",
+      verified: true,
+      verifiedAt: new Date(),
+      verifiedBy: "seed-e2e",
+    },
+    update: {
+      firstName,
+      lastName,
+      specialty: "Psychologist",
+      verified: true,
+      verifiedAt: new Date(),
+      verifiedBy: "seed-e2e",
+    },
+  });
+
+  for (const type of [ConsentType.TERMS_OF_SERVICE, ConsentType.PRIVACY_POLICY]) {
+    const existing = await prisma.consent.findFirst({
+      where: { userId: user.id, type },
+    });
+    if (!existing) {
+      await prisma.consent.create({
+        data: {
+          userId: user.id,
+          type,
+          version: "1.0",
+          granted: true,
+          ipAddress: "127.0.0.1",
+          userAgent: "seed-e2e",
+        },
+      });
+    }
+  }
+
+  console.log(`[seed-e2e] Psychologist ${normalized} ready (verified)`);
 }
 
 async function seedAdmin({ email, password, firstName, lastName }) {
@@ -573,6 +649,7 @@ async function main() {
   await seedCampaign();
   await seedPatient(DEFAULT_PATIENT);
   await seedProfessional(DEFAULT_PROFESSIONAL);
+  await seedPsychologist(DEFAULT_PSYCHOLOGIST);
   await seedAdmin(DEFAULT_ADMIN);
   await seedClinicalFixtures();
   await seedHumanitarianVideoFixtures();

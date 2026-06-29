@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
+import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
 import { safeDecrypt } from "@/lib/sign-helpers";
 import type { ProviderType } from "@prisma/client";
 
@@ -16,15 +17,16 @@ function resolveProvider(appointment: {
   professionalId: string | null;
   psychoanalystId: string | null;
   integrativeTherapistId: string | null;
-  professional?: { userId: string } | null;
+  professional?: { userId: string; specialty?: string | null } | null;
   psychoanalyst?: { userId: string } | null;
   integrativeTherapist?: { userId: string } | null;
 }): ProviderTarget | null {
   if (appointment.professionalId && appointment.professional) {
+    const psych = isPsychologistSpecialty(appointment.professional.specialty);
     return {
       userId: appointment.professional.userId,
       providerType: "HEALTH",
-      appointmentsUrl: "/professional/appointments",
+      appointmentsUrl: psych ? "/psychologist/appointments" : "/professional/appointments",
     };
   }
   if (appointment.psychoanalystId && appointment.psychoanalyst) {
@@ -45,11 +47,7 @@ function resolveProvider(appointment: {
 }
 
 function notesDeepLink(provider: ProviderTarget, appointmentId: string): string {
-  const base = `${provider.appointmentsUrl}#appt-${appointmentId}`;
-  if (provider.providerType === "HEALTH") {
-    return `/professional/appointments#appt-${appointmentId}`;
-  }
-  return base;
+  return `${provider.appointmentsUrl}#appt-${appointmentId}`;
 }
 
 function appointmentEnded(appointment: { scheduledAt: Date; durationMins: number }): boolean {
@@ -66,7 +64,7 @@ export async function processPostConsultNotesReminder(
     include: {
       patient: { select: { firstName: true, lastName: true } },
       professional: {
-        select: { id: true, userId: true, firstName: true, lastName: true },
+        select: { id: true, userId: true, firstName: true, lastName: true, specialty: true },
       },
       psychoanalyst: {
         select: { id: true, userId: true, firstName: true, lastName: true },

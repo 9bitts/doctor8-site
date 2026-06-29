@@ -40,6 +40,8 @@ jobs:
       E2E_PROFESSIONAL_PASSWORD: TestPassword1!
       E2E_QUEUE_PATIENT_EMAIL: e2e-queue-patient@doctor8.test
       E2E_QUEUE_PATIENT_PASSWORD: TestPassword1!
+      E2E_PSYCHOLOGIST_EMAIL: e2e-psychologist@doctor8.test
+      E2E_PSYCHOLOGIST_PASSWORD: TestPassword1!
       E2E_MOCK_DAILY: "1"
 
     steps:

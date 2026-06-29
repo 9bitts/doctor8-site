@@ -10,6 +10,7 @@ import {
   writeProScopeCookie,
   type ProScope,
 } from "@/lib/work-context";
+import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 
 type WorkContexts = {
   clinic: { id: string; name: string } | null;
@@ -62,9 +63,9 @@ export default function ProfessionalScopeSwitcher() {
         </div>
       )}
 
-      {scope === "clinic" && hasClinic && !pathname.startsWith("/professional/shared") && (
+      {scope === "clinic" && hasClinic && !pathname.includes("/shared") && (
         <Link
-          href="/professional/shared"
+          href={mapProfessionalPathToPortal(pathname, "/professional/shared")}
           className="text-xs font-medium text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-1.5 rounded-lg hover:bg-brand-100 transition whitespace-nowrap"
         >
           {t("pro.scope.openShared")}

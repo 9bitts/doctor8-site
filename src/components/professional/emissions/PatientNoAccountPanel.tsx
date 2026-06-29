@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { professionalPatientsHref } from "@/lib/psychologist-portal";
 import type { Chart } from "./types";
 
 export function PatientNoAccountPanel({ patient }: { patient: Chart }) {
   const { t, lang } = useI18n();
+  const pathname = usePathname();
   const [inviting, setInviting] = useState(false);
   const [feedback, setFeedback] = useState<"sent" | "error" | null>(null);
 
@@ -59,7 +62,7 @@ export function PatientNoAccountPanel({ patient }: { patient: Chart }) {
         </div>
       ) : (
         <Link
-          href={`/professional/patients/${patient.id}`}
+          href={professionalPatientsHref(pathname, patient.id)}
           className="text-xs font-medium text-brand-600 hover:underline inline-block"
         >
           {t("pat.openChartToAddEmail")} ?

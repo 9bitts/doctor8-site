@@ -10,6 +10,7 @@ import { isVolunteerOnEntry } from "@/lib/humanitarian/volunteer-eligibility";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { promoteHumanitarianEntryToInProgress } from "@/lib/humanitarian/dispatcher";
 import { ensureIntegrativeClientForPatient } from "@/lib/providers";
+import { providerPanelFromSpecialty } from "@/lib/video-chart-nav";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -38,7 +39,7 @@ export async function GET(
     include: {
       volunteer: {
         include: {
-          professional: { select: { id: true, userId: true, firstName: true, lastName: true } },
+          professional: { select: { id: true, userId: true, firstName: true, lastName: true, specialty: true } },
           psychoanalyst: { select: { id: true, userId: true, firstName: true, lastName: true } },
           integrativeTherapist: { select: { id: true, userId: true, firstName: true, lastName: true } },
         },
@@ -127,12 +128,13 @@ export async function GET(
   let patientRecordId: string | null = null;
   let analysandRecordId: string | null = null;
   let integrativeClientRecordId: string | null = null;
-  let providerPanel: "professional" | "psychoanalyst" | "integrative_therapist" = "professional";
+  let providerPanel: "professional" | "psychologist" | "psychoanalyst" | "integrative_therapist" = "professional";
 
   const vol = entry.volunteer;
 
   if (vol?.professional) {
     proName = `Dr. ${vol.professional.firstName} ${vol.professional.lastName}`;
+    providerPanel = providerPanelFromSpecialty(vol.professional.specialty);
     if (isVolunteer) {
       patientRecordId = await ensurePatientRecord(vol.professional.id, entry.patientUserId);
     }

@@ -16,7 +16,7 @@ import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianInt
 import DailyPrebuiltEmbed, { type DailyPrebuiltHandle } from "@/components/DailyPrebuiltEmbed";
 import { useConsultSessionKeepalive } from "@/hooks/useConsultSessionKeepalive";
 import { translate } from "@/lib/i18n/translations";
-import { buildVideoChartLinks, videoReturnPath } from "@/lib/video-chart-nav";
+import { buildVideoChartLinks, providerAppointmentsPath, providerJitPath, videoReturnPath } from "@/lib/video-chart-nav";
 import { navigateBack, videoBackFallback } from "@/lib/safe-nav";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
@@ -29,7 +29,7 @@ export interface VideoConsultData {
   patientRecordId: string | null;
   analysandRecordId?: string | null;
   integrativeClientRecordId?: string | null;
-  providerPanel?: "professional" | "psychoanalyst" | "integrative_therapist";
+  providerPanel?: "professional" | "psychologist" | "psychoanalyst" | "integrative_therapist";
   patientUserId: string;
   scheduledAt: string;
   durationMins: number;
@@ -117,26 +117,27 @@ const T: Record<string, Record<Lang, string>> = {
 
 function leaveDestination(data: VideoConsultData): string {
   const isPro = data.role === "professional";
+  const panel = data.providerPanel ?? "professional";
   switch (data.kind) {
     case "humanitarian":
       return isPro
-        ? (data.providerPanel === "psychoanalyst"
+        ? (panel === "psychoanalyst"
           ? "/psychoanalyst"
-          : data.providerPanel === "integrative_therapist"
+          : panel === "integrative_therapist"
             ? "/integrative-therapist"
             : "/humanitarian/volunteer")
         : `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
     case "jit":
-      return isPro ? "/professional/jit" : "/urgent";
+      return isPro ? providerJitPath(panel) : "/urgent";
     case "appointment":
     default:
-      if (isPro && data.providerPanel === "integrative_therapist") {
+      if (isPro && panel === "integrative_therapist") {
         return "/integrative-therapist/appointments";
       }
-      if (isPro && data.providerPanel === "psychoanalyst") {
+      if (isPro && panel === "psychoanalyst") {
         return "/psychoanalyst/appointments";
       }
-      return isPro ? "/professional/appointments" : "/patient/appointments";
+      return isPro ? providerAppointmentsPath(panel) : "/patient/appointments";
   }
 }
 
@@ -304,8 +305,9 @@ export default function VideoConsultRoom({
         const res = await fetch(`/api/appointments/${appointmentId}/video`);
         const d = await res.json();
         if (d.handoff === "google_meet" || d.error === "MEET_HANDOFF") {
+          const panel = data.providerPanel ?? "professional";
           const backHref = data.role === "professional"
-            ? "/professional/appointments"
+            ? providerAppointmentsPath(panel)
             : "/patient/appointments";
           setMeetHandoff({
             professionalName: d.professionalName || "",
@@ -337,8 +339,9 @@ export default function VideoConsultRoom({
         return;
       }
       if (d.meetUrl) {
+        const panel = data?.providerPanel ?? "professional";
         const backHref = data?.role === "professional"
-          ? "/professional/appointments"
+          ? providerAppointmentsPath(panel)
           : "/patient/appointments";
         setMeetHandoff({
           professionalName: d.providerName || "",

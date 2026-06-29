@@ -14,8 +14,9 @@ import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { appointmentJoinWindow } from "@/lib/appointment-join-window";
+import { providerPanelFromSpecialty } from "@/lib/video-chart-nav";
 
-type ProviderPanel = "professional" | "psychoanalyst" | "integrative_therapist";
+type ProviderPanel = "professional" | "psychologist" | "psychoanalyst" | "integrative_therapist";
 
 function providerUserIdFromAppointment(appointment: {
   professional?: { userId: string } | null;
@@ -62,7 +63,7 @@ export async function GET(
     where: { id: params.id },
     include: {
       patient: { select: { userId: true, firstName: true, lastName: true } },
-      professional: { select: { userId: true, firstName: true, lastName: true, id: true } },
+      professional: { select: { userId: true, firstName: true, lastName: true, id: true, specialty: true } },
       psychoanalyst: { select: { userId: true, firstName: true, lastName: true, id: true } },
       integrativeTherapist: { select: { userId: true, firstName: true, lastName: true, id: true } },
     },
@@ -177,6 +178,7 @@ export async function GET(
       appointment.professional.id,
       appointment.patient.userId,
     );
+    providerPanel = providerPanelFromSpecialty(appointment.professional.specialty);
   } else if (isProvider && appointment.psychoanalyst) {
     providerPanel = "psychoanalyst";
     const patientUser = await db.user.findUnique({

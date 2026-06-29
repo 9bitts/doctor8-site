@@ -1,28 +1,32 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import {
   Brain, Users, Calendar, Video, FileText, ClipboardList,
   BarChart3, Shield, ArrowRight, MessageSquare, BookOpen,
 } from "lucide-react";
 
 const MODULES = [
-  { href: "/professional/psychology/sessions", icon: ClipboardList, color: "bg-violet-100 text-violet-600", key: "psy.mod.sessions" },
-  { href: "/professional/psychology/scales", icon: BarChart3, color: "bg-indigo-100 text-indigo-600", key: "psy.mod.scales" },
-  { href: "/professional/psychology/documents", icon: FileText, color: "bg-sky-100 text-sky-600", key: "psy.mod.documents" },
-  { href: "/professional/psychology/compliance", icon: Shield, color: "bg-emerald-100 text-emerald-600", key: "psy.mod.compliance" },
+  { path: "/professional/psychology/sessions", icon: ClipboardList, color: "bg-violet-100 text-violet-600", key: "psy.mod.sessions" },
+  { path: "/professional/psychology/scales", icon: BarChart3, color: "bg-indigo-100 text-indigo-600", key: "psy.mod.scales" },
+  { path: "/professional/psychology/documents", icon: FileText, color: "bg-sky-100 text-sky-600", key: "psy.mod.documents" },
+  { path: "/professional/psychology/compliance", icon: Shield, color: "bg-emerald-100 text-emerald-600", key: "psy.mod.compliance" },
 ] as const;
 
 const INTEGRATIONS = [
-  { href: "/professional/patients", icon: Users, key: "psy.link.patients" },
-  { href: "/professional/appointments", icon: Calendar, key: "psy.link.appointments" },
-  { href: "/professional/messages", icon: MessageSquare, key: "psy.link.messages" },
-  { href: "/professional/resources", icon: BookOpen, key: "psy.link.resources" },
+  { path: "/professional/patients", icon: Users, key: "psy.link.patients" },
+  { path: "/professional/appointments", icon: Calendar, key: "psy.link.appointments" },
+  { path: "/professional/messages", icon: MessageSquare, key: "psy.link.messages" },
+  { path: "/professional/resources", icon: BookOpen, key: "psy.link.resources" },
 ] as const;
 
 export default function PsychologyHubPage() {
   const { t } = useI18n();
+  const pathname = usePathname();
+  const href = (path: string) => mapProfessionalPathToPortal(pathname, path);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -47,8 +51,8 @@ export default function PsychologyHubPage() {
         <div className="grid sm:grid-cols-2 gap-4">
           {MODULES.map((m) => (
             <Link
-              key={m.href}
-              href={m.href}
+              key={m.path}
+              href={href(m.path)}
               className="group bg-white rounded-2xl border border-slate-200 p-5 hover:border-violet-200 hover:shadow-sm transition flex items-start gap-4"
             >
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${m.color}`}>
@@ -74,8 +78,8 @@ export default function PsychologyHubPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {INTEGRATIONS.map((item) => (
             <Link
-              key={item.href}
-              href={item.href}
+              key={item.path}
+              href={href(item.path)}
               className="flex items-center gap-3 bg-white rounded-xl border border-slate-200 px-4 py-3 hover:border-brand-200 transition text-sm font-medium text-slate-700"
             >
               <item.icon size={18} className="text-brand-500 shrink-0" />

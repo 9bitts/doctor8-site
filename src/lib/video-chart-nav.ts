@@ -1,8 +1,50 @@
 // Deep links from an active video consult ? patient chart / emissions, with return URL.
 
+import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
+
 export type VideoConsultKind = "appointment" | "jit" | "humanitarian";
 
-export type ProviderChartPanel = "professional" | "psychoanalyst" | "integrative_therapist";
+export type ProviderChartPanel =
+  | "professional"
+  | "psychologist"
+  | "psychoanalyst"
+  | "integrative_therapist";
+
+export function providerPanelFromSpecialty(
+  specialty: string | null | undefined,
+): ProviderChartPanel {
+  return isPsychologistSpecialty(specialty) ? "psychologist" : "professional";
+}
+
+export function providerAppointmentsPath(panel: ProviderChartPanel): string {
+  switch (panel) {
+    case "psychologist":
+      return "/psychologist/appointments";
+    case "psychoanalyst":
+      return "/psychoanalyst/appointments";
+    case "integrative_therapist":
+      return "/integrative-therapist/appointments";
+    default:
+      return "/professional/appointments";
+  }
+}
+
+export function providerJitPath(panel: ProviderChartPanel): string {
+  return panel === "psychologist" ? "/psychologist/jit" : "/professional/jit";
+}
+
+export function providerPatientsPath(panel: ProviderChartPanel, chartId: string): string {
+  switch (panel) {
+    case "psychologist":
+      return `/psychologist/patients/${chartId}`;
+    case "psychoanalyst":
+      return `/psychoanalyst/analysands/${chartId}`;
+    case "integrative_therapist":
+      return `/integrative-therapist/clients/${chartId}`;
+    default:
+      return `/professional/patients/${chartId}`;
+  }
+}
 
 export interface VideoConsultContext {
   kind?: VideoConsultKind;
@@ -84,12 +126,22 @@ export type ChartTab =
   | "dental"
   | "audio";
 
-export function chartRecordUrl(chartId: string, returnUrl: string, recordId: string): string {
-  return withReturn(`/professional/patients/${chartId}`, returnUrl, { recordId });
+export function chartRecordUrl(
+  chartId: string,
+  returnUrl: string,
+  recordId: string,
+  panel: ProviderChartPanel = "professional",
+): string {
+  return withReturn(providerPatientsPath(panel, chartId), returnUrl, { recordId });
 }
 
-export function chartTabUrl(chartId: string, returnUrl: string, tab: ChartTab): string {
-  return withReturn(`/professional/patients/${chartId}`, returnUrl, { tab });
+export function chartTabUrl(
+  chartId: string,
+  returnUrl: string,
+  tab: ChartTab,
+  panel: ProviderChartPanel = "professional",
+): string {
+  return withReturn(providerPatientsPath(panel, chartId), returnUrl, { tab });
 }
 
 export function buildVideoChartLinks(
@@ -97,6 +149,25 @@ export function buildVideoChartLinks(
   returnUrl: string,
   panel: ProviderChartPanel = "professional",
 ) {
+  if (panel === "psychologist") {
+    const base = providerPatientsPath(panel, chartId);
+    return {
+      fullChart: withReturn(base, returnUrl),
+      addRecord: withReturn(base, returnUrl, { newRecord: "1" }),
+      recordUrl: (recordId: string) => chartRecordUrl(chartId, returnUrl, recordId, panel),
+      vaccines: null as string | null,
+      dental: null as string | null,
+      evolution: chartTabUrl(chartId, returnUrl, "evolution", panel),
+      diagnoses: null as string | null,
+      prescribe: null as string | null,
+      exam: null as string | null,
+      document: null as string | null,
+      psychSession: chartActionUrl("/psychologist/sessions", chartId, { view: "create", returnUrl }),
+      psychScale: chartActionUrl("/psychologist/scales", chartId, { view: "apply", returnUrl }),
+      psychDocument: chartActionUrl("/psychologist/documents", chartId, { returnUrl }),
+    };
+  }
+
   if (panel === "psychoanalyst") {
     const base = `/psychoanalyst/analysands/${chartId}`;
     return {
@@ -136,13 +207,13 @@ export function buildVideoChartLinks(
   }
 
   return {
-    fullChart: withReturn(`/professional/patients/${chartId}`, returnUrl),
-    addRecord: withReturn(`/professional/patients/${chartId}`, returnUrl, { newRecord: "1" }),
-    recordUrl: (recordId: string) => chartRecordUrl(chartId, returnUrl, recordId),
-    vaccines: chartTabUrl(chartId, returnUrl, "vaccines"),
-    dental: chartTabUrl(chartId, returnUrl, "dental"),
-    evolution: chartTabUrl(chartId, returnUrl, "evolution"),
-    diagnoses: chartTabUrl(chartId, returnUrl, "diagnoses"),
+    fullChart: withReturn(providerPatientsPath(panel, chartId), returnUrl),
+    addRecord: withReturn(providerPatientsPath(panel, chartId), returnUrl, { newRecord: "1" }),
+    recordUrl: (recordId: string) => chartRecordUrl(chartId, returnUrl, recordId, panel),
+    vaccines: chartTabUrl(chartId, returnUrl, "vaccines", panel),
+    dental: chartTabUrl(chartId, returnUrl, "dental", panel),
+    evolution: chartTabUrl(chartId, returnUrl, "evolution", panel),
+    diagnoses: chartTabUrl(chartId, returnUrl, "diagnoses", panel),
     prescribe: chartActionUrl("/professional/prescriptions", chartId, { view: "prescription", returnUrl }),
     exam: chartActionUrl("/professional/prescriptions", chartId, { view: "exam", returnUrl }),
     document: chartActionUrl("/professional/prescriptions", chartId, { view: "document", returnUrl }),

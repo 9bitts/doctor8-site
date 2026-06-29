@@ -8,6 +8,37 @@ export const PSYCHOLOGIST_REGISTER =
 
 export type ProfessionalPortalBase = "/psychologist" | "/professional";
 
+/** Longest-prefix map from /professional/* to /psychologist/* (order matters). */
+export const PROFESSIONAL_TO_PSYCHOLOGIST_PATHS: [string, string][] = [
+  ["/professional/psychology/compliance", "/psychologist/compliance"],
+  ["/professional/psychology/documents", "/psychologist/documents"],
+  ["/professional/psychology/scales", "/psychologist/scales"],
+  ["/professional/psychology/sessions", "/psychologist/sessions"],
+  ["/professional/psychology", "/psychologist"],
+  ["/professional/settings/availability", "/psychologist/settings/availability"],
+  ["/professional/settings", "/psychologist/settings"],
+  ["/professional/patients", "/psychologist/patients"],
+  ["/professional/shared", "/psychologist/shared"],
+  ["/professional/categories", "/psychologist/categories"],
+  ["/professional/appointments", "/psychologist/appointments"],
+  ["/professional/resources", "/psychologist/resources"],
+  ["/professional/financeiro", "/psychologist/financeiro"],
+  ["/professional/messages", "/psychologist/messages"],
+  ["/professional/account", "/psychologist/account"],
+  ["/professional/doctor-connection", "/psychologist/doctor-connection"],
+  ["/professional/jit", "/psychologist/jit"],
+  ["/professional", "/psychologist"],
+];
+
+function mapProfessionalPathToPsychologist(professionalPath: string): string {
+  for (const [from, to] of PROFESSIONAL_TO_PSYCHOLOGIST_PATHS) {
+    if (professionalPath === from || professionalPath.startsWith(`${from}/`)) {
+      return professionalPath.replace(from, to);
+    }
+  }
+  return "/psychologist";
+}
+
 /** True when specialty is a psychology profession (includes onboarding value "Psychology"). */
 export function isPsychologistSpecialty(
   specialty: string | null | undefined,
@@ -32,7 +63,10 @@ export function mapProfessionalPathToPortal(
   professionalPath: string,
 ): string {
   if (!professionalPath.startsWith("/professional")) return professionalPath;
-  return professionalPath.replace("/professional", professionalPortalBase(pathname));
+  if (professionalPortalBase(pathname) === "/psychologist") {
+    return mapProfessionalPathToPsychologist(professionalPath);
+  }
+  return professionalPath;
 }
 
 export async function resolveProfessionalPortalBaseForUser(
@@ -58,11 +92,9 @@ export function mapProfessionalPathForSpecialty(
   specialty: string | null | undefined,
   professionalPath: string,
 ): string {
-  const base = professionalPortalBaseFromSpecialty(specialty);
-  if (base === "/professional" || !professionalPath.startsWith("/professional")) {
-    return professionalPath;
-  }
-  return professionalPath.replace("/professional", base);
+  if (!professionalPath.startsWith("/professional")) return professionalPath;
+  if (!isPsychologistSpecialty(specialty)) return professionalPath;
+  return mapProfessionalPathToPsychologist(professionalPath);
 }
 
 export function psychologistHubHref(pathname: string): string {
