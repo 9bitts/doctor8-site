@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
@@ -26,13 +26,14 @@ import {
   LoginDivider,
   LoginCredentialsForm,
   LoginSuspenseFallback,
+  waitForAuthenticatedSession,
+  navigateAfterAuth,
   type LoginErrorCode,
 } from "@/components/auth/login-shared";
 
 const PRO_REGISTER = PROFESSIONAL_REGISTER;
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { lang, changeLang, t } = useLoginLang();
 
@@ -97,16 +98,16 @@ function LoginForm() {
         redirect: false,
       });
 
-      if (result?.error) {
+      if (!result?.ok || result?.error) {
         if (
-          result.error === "EmailNotVerified" ||
-          result.error.includes("EmailNotVerified")
+          result?.error === "EmailNotVerified" ||
+          result?.error?.includes("EmailNotVerified")
         ) {
           setError("unverified");
           setUnverifiedEmail(trimmedEmail);
         } else if (
-          result.error === "AccountLocked" ||
-          result.error.includes("AccountLocked")
+          result?.error === "AccountLocked" ||
+          result?.error?.includes("AccountLocked")
         ) {
           setError("locked");
         } else {
@@ -116,19 +117,20 @@ function LoginForm() {
         return;
       }
 
-      const sessionRes = await fetch("/api/auth/session");
-      const session = await sessionRes.json();
-      const role = session?.user?.role;
+      const session = await waitForAuthenticatedSession();
+      if (!session?.user?.role) {
+        setError("generic");
+        setLoading(false);
+        return;
+      }
 
-      router.push(
-        safePostLoginUrl(
-          role,
-          callbackUrl || null,
-          resolvePatientPostLoginUrl,
-          session?.user?.professionalSpecialty,
-        ),
+      const dest = safePostLoginUrl(
+        session.user.role,
+        callbackUrl || null,
+        resolvePatientPostLoginUrl,
+        session.user.professionalSpecialty,
       );
-      router.refresh();
+      navigateAfterAuth(dest);
     } catch {
       setError("generic");
       setLoading(false);
@@ -140,6 +142,11 @@ function LoginForm() {
     setError("");
     persistAuthCallback(callbackUrl);
     try {
+      await fetch("/api/auth/oauth-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "PROFESSIONAL" }),
+      });
       await signIn("google", { callbackUrl: "/callback" });
     } catch {
       setError("generic");

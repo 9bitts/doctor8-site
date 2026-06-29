@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { consumeAuthCallback } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
@@ -12,6 +12,8 @@ import {
   useLoginLang,
   LoginPageShell,
   LoginSuspenseFallback,
+  waitForAuthenticatedSession,
+  navigateAfterAuth,
 } from "@/components/auth/login-shared";
 import { AuthLogo } from "@/components/auth/auth-logo";
 
@@ -39,41 +41,60 @@ export default function CallbackPage() {
 }
 
 function CallbackInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const portal = searchParams.get("portal");
   const { t } = useLoginLang();
 
   useEffect(() => {
-    fetch("/api/auth/oauth-intent", { method: "DELETE" }).catch(() => undefined);
+    let cancelled = false;
 
-    fetch("/api/auth/session")
-      .then((r) => r.json())
-      .then(async (session) => {
-        const savedCallback = consumeAuthCallback();
-        if (savedCallback) {
-          router.replace(
-            safePostLoginUrl(
-              session?.user?.role,
-              savedCallback,
-              resolvePatientPostLoginUrl,
-              session?.user?.professionalSpecialty,
-            ),
-          );
-          return;
-        }
-        if (session?.user?.role === "PROFESSIONAL") {
-          router.replace(await resolveProfessionalHome(portal));
-        } else if (session?.user?.role === "ADMIN") {
-          router.replace("/admin");
-        } else {
-          router.replace(
-            resolveRoleHome(session?.user?.role, session?.user?.professionalSpecialty),
-          );
-        }
-      })
-      .catch(() => router.replace(MAIN_LOGIN));
-  }, [router, portal]);
+    async function finishOAuthCallback() {
+      await fetch("/api/auth/oauth-intent", { method: "DELETE" }).catch(() => undefined);
+
+      const session = await waitForAuthenticatedSession();
+      if (cancelled) return;
+
+      if (!session?.user?.role) {
+        navigateAfterAuth(MAIN_LOGIN);
+        return;
+      }
+
+      const savedCallback = consumeAuthCallback();
+      if (savedCallback) {
+        navigateAfterAuth(
+          safePostLoginUrl(
+            session.user.role,
+            savedCallback,
+            resolvePatientPostLoginUrl,
+            session.user.professionalSpecialty,
+          ),
+        );
+        return;
+      }
+
+      if (session.user.role === "PROFESSIONAL") {
+        navigateAfterAuth(await resolveProfessionalHome(portal));
+        return;
+      }
+
+      if (session.user.role === "ADMIN") {
+        navigateAfterAuth("/admin");
+        return;
+      }
+
+      navigateAfterAuth(
+        resolveRoleHome(session.user.role, session.user.professionalSpecialty),
+      );
+    }
+
+    finishOAuthCallback().catch(() => {
+      if (!cancelled) navigateAfterAuth(MAIN_LOGIN);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [portal]);
 
   return (
     <LoginPageShell accent="emerald">

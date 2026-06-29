@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
@@ -31,6 +31,8 @@ import {
   LoginDivider,
   LoginCredentialsForm,
   LoginSuspenseFallback,
+  waitForAuthenticatedSession,
+  navigateAfterAuth,
   type LoginErrorCode,
 } from "@/components/auth/login-shared";
 
@@ -78,7 +80,6 @@ async function resolvePortalLoginDestination(
 
 function PortalLoginForm({ portalId }: { portalId: PortalId }) {
   const config = PORTAL_BY_ID[portalId];
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { lang, changeLang, t } = useLoginLang();
 
@@ -120,8 +121,7 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
 
     try {
       const dest = await resolvePortalLoginDestination(config, session, callbackUrl);
-      router.push(dest);
-      router.refresh();
+      navigateAfterAuth(dest);
     } catch {
       setError("roleOnly");
       setLoading(false);
@@ -159,16 +159,16 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
         redirect: false,
       });
 
-      if (result?.error) {
+      if (!result?.ok || result?.error) {
         if (
-          result.error === "EmailNotVerified" ||
-          result.error.includes("EmailNotVerified")
+          result?.error === "EmailNotVerified" ||
+          result?.error?.includes("EmailNotVerified")
         ) {
           setError("unverified");
           setUnverifiedEmail(trimmedEmail);
         } else if (
-          result.error === "AccountLocked" ||
-          result.error.includes("AccountLocked")
+          result?.error === "AccountLocked" ||
+          result?.error?.includes("AccountLocked")
         ) {
           setError("locked");
         } else {
@@ -178,9 +178,13 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
         return;
       }
 
-      const sessionRes = await fetch("/api/auth/session");
-      const session = await sessionRes.json();
-      await finishLogin(session?.user ?? {});
+      const session = await waitForAuthenticatedSession();
+      if (!session?.user) {
+        setError("generic");
+        setLoading(false);
+        return;
+      }
+      await finishLogin(session.user);
     } catch {
       setError("generic");
       setLoading(false);

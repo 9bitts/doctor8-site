@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useId } from "react";
 import Link from "next/link";
+import { getSession } from "next-auth/react";
 import { translate, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { detectInitialLang, LANG_KEY } from "@/components/auth/register-shared";
 import {
@@ -118,6 +119,26 @@ export function buildAuthHref(
   if (params?.registerUrl) sp.set("registerUrl", params.registerUrl);
   const qs = sp.toString();
   return qs ? `${path}?${qs}` : path;
+}
+
+/** Wait until Auth.js session cookie is readable on the client (avoids post-login redirect loops). */
+export async function waitForAuthenticatedSession(
+  maxAttempts = 20,
+  delayMs = 150,
+): Promise<Awaited<ReturnType<typeof getSession>>> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const session = await getSession();
+    if (session?.user?.id && session.user.role) {
+      return session;
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return null;
+}
+
+/** Full navigation so middleware sees the fresh session cookie. */
+export function navigateAfterAuth(destination: string) {
+  window.location.assign(destination);
 }
 
 export function getLoginAccentStyles(accent: LoginAccent) {
