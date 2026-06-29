@@ -5,12 +5,17 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { isPathAllowedForRole, resolveRoleHome } from "@/lib/role-home";
+import { resolveLoginPathForPathname } from "@/lib/auth-portals";
 
 // Public routes — no login required
 const PUBLIC_ROUTES = [
   "/",
   "/login",
   "/login/psicologo",
+  "/login/psicanalista",
+  "/login/terapeuta-integrativo",
+  "/login/organizacao",
+  "/login/anjo",
   "/register",
   "/register/angel",
   "/register/professional",
@@ -129,7 +134,7 @@ export default auth((req) => {
       return NextResponse.redirect(new URL(`/club/join?drug=${drugId}`, req.url));
     }
 
-    const loginPath = pathname.startsWith("/psychologist") ? "/login/psicologo" : "/login";
+    const loginPath = resolveLoginPathForPathname(pathname);
     const loginUrl = new URL(loginPath, req.url);
     const callbackUrl = pathname + req.nextUrl.search;
     loginUrl.searchParams.set("callbackUrl", callbackUrl);

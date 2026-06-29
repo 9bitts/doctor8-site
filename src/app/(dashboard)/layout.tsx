@@ -13,6 +13,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import OrganizationScopeSwitcher from "@/components/organization/OrganizationScopeSwitcher";
 import ProfessionalScopeSwitcher from "@/components/professional/ProfessionalScopeSwitcher";
+import { resolveLoginPathForSession } from "@/lib/auth-portals";
 import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
 import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
 import {
@@ -206,7 +207,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const avatarBg = isOrganization ? "bg-indigo-500/20" : isPsychologist ? "bg-violet-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
   const avatarIcon = isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
   const headerAvatar = isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
-  const signOutHref = isPsychologistPortal ? "/login/psicologo" : "/login";
+  const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal);
 
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">

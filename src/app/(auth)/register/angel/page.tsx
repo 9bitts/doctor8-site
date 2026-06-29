@@ -17,6 +17,8 @@ import {
   RegisterLogo,
 } from "@/components/auth/register-shared";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import { ANGEL_LOGIN } from "@/lib/auth-portals";
+import { buildAuthHref } from "@/components/auth/login-shared";
 
 const PASSWORD_RULES = [
   { key: "reg.rule8", test: (p: string) => p.length >= 8 },
@@ -72,7 +74,9 @@ export default function RegisterAngelPage() {
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
   const canSubmit = isPasswordValid && acceptedTerms && acceptedPrivacy && languages.length > 0 && phone.length >= 8;
 
-  const loginHref = `/login?callbackUrl=${encodeURIComponent("/humanitarian/angel")}`;
+  const loginHref = buildAuthHref(ANGEL_LOGIN, {
+    callbackUrl: "/humanitarian/angel",
+  });
 
   function toggleLanguage(code: string) {
     setLanguages((prev) =>

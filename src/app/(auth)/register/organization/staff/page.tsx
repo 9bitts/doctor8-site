@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, AlertCircle, Building2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { translate, normalizeLang, type Lang } from "@/lib/i18n/translations";
+import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
+import { buildAuthHref } from "@/components/auth/login-shared";
 
 const LANG_KEY = "doctor8.lang";
 
@@ -27,6 +29,9 @@ export default function RegisterOrganizationStaffPage() {
 
   const [lang, setLang] = useState<Lang>("pt");
   const t = (key: string) => translate(lang, key);
+  const orgLoginHref = buildAuthHref(ORGANIZATION_LOGIN, {
+    callbackUrl: "/organization",
+  });
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -85,7 +90,7 @@ export default function RegisterOrganizationStaffPage() {
         setError(data.error?.general?.[0] || data.error?.email?.[0] || t("orgStaff.errCreate"));
         return;
       }
-      router.push("/login?callbackUrl=/organization");
+      router.push(orgLoginHref);
     } catch {
       setError(t("orgStaff.errConnection"));
     } finally {
@@ -107,7 +112,7 @@ export default function RegisterOrganizationStaffPage() {
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center max-w-md">
           <AlertCircle className="mx-auto text-red-400 mb-4" size={40} />
           <p className="text-white font-semibold mb-2">{t("orgStaff.invalidInvite")}</p>
-          <Link href="/login" className="text-indigo-400 text-sm hover:underline">{t("orgStaff.goLogin")}</Link>
+          <Link href={orgLoginHref} className="text-indigo-400 text-sm hover:underline">{t("orgStaff.goLogin")}</Link>
         </div>
       </div>
     );
@@ -116,7 +121,7 @@ export default function RegisterOrganizationStaffPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-2xl p-8">
-        <Link href="/login" className="flex items-center gap-1 text-slate-400 text-sm mb-6 hover:text-white">
+        <Link href={orgLoginHref} className="flex items-center gap-1 text-slate-400 text-sm mb-6 hover:text-white">
           <ArrowLeft size={16} /> {t("orgStaff.back")}
         </Link>
         <div className="flex items-center gap-3 mb-6">

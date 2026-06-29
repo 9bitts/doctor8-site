@@ -4,12 +4,12 @@ import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
-import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
-import { safePostLoginUrl } from "@/lib/role-home";
 import {
-  PROFESSIONAL_REGISTER,
-  PORTAL_LOGINS,
+  MAIN_LOGIN,
+  type PortalLoginConfig,
+  resolvePortalLoginDestination,
 } from "@/lib/auth-portals";
 import {
   useLoginLang,
@@ -27,9 +27,7 @@ import {
   type LoginErrorCode,
 } from "@/components/auth/login-shared";
 
-const PRO_REGISTER = PROFESSIONAL_REGISTER;
-
-function LoginForm() {
+function PortalLoginForm({ config }: { config: PortalLoginConfig }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { lang, changeLang, t } = useLoginLang();
@@ -45,22 +43,38 @@ function LoginForm() {
   const verified = searchParams.get("verified") === "true";
   const callbackUrl = searchParams.get("callbackUrl") || "";
   const registerHref = resolveRegisterHref(
-    searchParams.get("registerUrl"),
+    searchParams.get("registerUrl") || config.defaultRegisterPath,
     callbackUrl || null,
   );
+  const mainLoginHref = buildAuthHref(MAIN_LOGIN, { callbackUrl });
   const forgotHref = email.trim()
     ? `/forgot-password/method?email=${encodeURIComponent(email.trim().toLowerCase())}`
     : "/forgot-password";
 
-  const portalLinks = PORTAL_LOGINS.map((portal) => ({
-    href: buildAuthHref(portal.loginPath, { callbackUrl }),
-    labelKey: portal.footerLabelKey,
-    className: portal.footerLinkClass,
-  }));
-
   useEffect(() => {
     setError(parseLoginError(searchParams.get("error")));
   }, [searchParams]);
+
+  async function finishLogin(session: {
+    role?: string;
+    professionalSpecialty?: string | null;
+  }) {
+    const role = session.role;
+    if (!role || !config.allowedRoles.includes(role)) {
+      setError("roleOnly");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const dest = await resolvePortalLoginDestination(config, session, callbackUrl);
+      router.push(dest);
+      router.refresh();
+    } catch {
+      setError("roleOnly");
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,17 +128,7 @@ function LoginForm() {
 
       const sessionRes = await fetch("/api/auth/session");
       const session = await sessionRes.json();
-      const role = session?.user?.role;
-
-      router.push(
-        safePostLoginUrl(
-          role,
-          callbackUrl || null,
-          resolvePatientPostLoginUrl,
-          session?.user?.professionalSpecialty,
-        ),
-      );
-      router.refresh();
+      await finishLogin(session?.user ?? {});
     } catch {
       setError("generic");
       setLoading(false);
@@ -134,19 +138,27 @@ function LoginForm() {
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
     setError("");
-    persistAuthCallback(callbackUrl);
+    persistAuthCallback(callbackUrl || config.homePath);
     try {
-      await signIn("google", { callbackUrl: "/callback" });
+      await signIn("google", {
+        callbackUrl: `/callback?portal=${encodeURIComponent(config.oauthPortal)}`,
+      });
     } catch {
       setError("generic");
       setGoogleLoading(false);
     }
   }
 
+  const linkClass = config.footerLinkClass;
+
   return (
-    <LoginPageShell accent="emerald">
-      <LoginLanguageSelector lang={lang} onChange={changeLang} accent="emerald" />
-      <LoginHeader tagline={t("login.tagline")} accent="emerald" />
+    <LoginPageShell accent={config.accent}>
+      <LoginLanguageSelector lang={lang} onChange={changeLang} accent={config.accent} />
+      <LoginHeader
+        tagline={t(config.taglineKey)}
+        accent={config.accent}
+        icon={config.headerIcon}
+      />
 
       <LoginCard>
         <LoginAlerts
@@ -154,6 +166,7 @@ function LoginForm() {
           verified={verified}
           unverifiedEmail={unverifiedEmail}
           t={t}
+          roleOnlyKey={config.roleOnlyKey}
         />
 
         <GoogleSignInButton
@@ -171,53 +184,40 @@ function LoginForm() {
           showPassword={showPassword}
           loading={loading}
           googleLoading={googleLoading}
-          accent="emerald"
+          accent={config.accent}
           forgotHref={forgotHref}
           t={t}
           onEmailChange={setEmail}
           onPasswordChange={setPassword}
-          onTogglePassword={() => setShowPassword((v) => !v)}
+          onTogglePassword={() => setShowPassword(!showPassword)}
           onSubmit={handleSubmit}
           onClearError={() => { if (error && error !== "unverified") setError(""); }}
         />
 
-        <div className="border-t border-white/10 mt-6 pt-6 text-center">
+        <div className="border-t border-white/10 mt-6 pt-6 text-center space-y-3">
           <p className="text-slate-400 text-sm">
             {t("login.noAccount")}{" "}
-            <Link
-              href={registerHref}
-              className="text-emerald-400 hover:text-emerald-300 font-medium transition"
-            >
+            <Link href={registerHref} className={`${linkClass} font-medium transition`}>
               {t("login.createAccount")}
             </Link>
           </p>
-          <p className="text-slate-500 text-xs mt-4">{t("login.proPortalHint")}</p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
-            <Link
-              href={buildAuthHref("/login", { callbackUrl, registerUrl: PRO_REGISTER })}
-              className="text-emerald-400/90 hover:text-emerald-300 font-medium transition"
-            >
-              {t("login.proDoctorPortal")}
-            </Link>
-            {portalLinks.map((portal) => (
-              <span key={portal.labelKey} className="contents">
-                <span className="text-slate-600" aria-hidden="true">·</span>
-                <Link href={portal.href} className={`${portal.className} font-medium transition`}>
-                  {t(portal.labelKey)}
-                </Link>
-              </span>
-            ))}
-          </div>
+          <Link
+            href={mainLoginHref}
+            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition"
+          >
+            <ArrowLeft size={12} aria-hidden />
+            {t("login.backToMain")}
+          </Link>
         </div>
       </LoginCard>
     </LoginPageShell>
   );
 }
 
-export default function LoginPage() {
+export default function PortalLoginPage({ config }: { config: PortalLoginConfig }) {
   return (
-    <Suspense fallback={<LoginSuspenseFallback accent="emerald" />}>
-      <LoginForm />
+    <Suspense fallback={<LoginSuspenseFallback accent={config.accent} />}>
+      <PortalLoginForm config={config} />
     </Suspense>
   );
 }

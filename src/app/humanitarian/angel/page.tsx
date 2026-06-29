@@ -6,6 +6,8 @@ import {
   Heart, Loader2, Phone, MessageCircle, ChevronRight, AlertCircle, Clock, User,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import { ANGEL_LOGIN } from "@/lib/auth-portals";
+import { buildAuthHref } from "@/components/auth/login-shared";
 import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
@@ -59,7 +61,7 @@ export default function HumanitarianAngelPage() {
         `/api/humanitarian/angel?campaignSlug=${VENEZUELA_CAMPAIGN_SLUG}&lang=${lang}`,
       );
       if (res.status === 401) {
-        router.push(`/login?callbackUrl=${encodeURIComponent("/humanitarian/angel")}`);
+        router.push(buildAuthHref(ANGEL_LOGIN, { callbackUrl: "/humanitarian/angel" }));
         return;
       }
       const data = await res.json();

@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
+import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
+import { buildAuthHref } from "@/components/auth/login-shared";
 import {
-  Eye, EyeOff, Loader2, AlertCircle, Building2, ArrowLeft, Search,
+  Eye, EyeOff, Loader2, AlertCircle, Building2, ArrowLeft, Search, LogIn,
 } from "lucide-react";
 
 const LANG_KEY = "doctor8.lang";
@@ -121,6 +123,10 @@ export default function RegisterOrganizationPage() {
     setCnpj(formatCnpj(digits));
   }
 
+  const loginHref = buildAuthHref(ORGANIZATION_LOGIN, {
+    callbackUrl: "/organization",
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
@@ -144,6 +150,19 @@ export default function RegisterOrganizationPage() {
             <Building2 className="w-5 h-5 text-indigo-400 shrink-0" />
             <p className="text-sm font-medium text-indigo-300">{t("org.accountType")}</p>
           </div>
+
+          <Link
+            href={loginHref}
+            className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-indigo-500 hover:bg-indigo-500/10 transition text-left group mb-6"
+          >
+            <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover:bg-indigo-500/20 transition">
+              <LogIn className="w-6 h-6 text-indigo-400" />
+            </div>
+            <p className="text-white font-semibold text-sm">
+              {t("reg.haveAccount")}{" "}
+              <span className="text-indigo-400 group-hover:text-indigo-300">{t("reg.signIn")}</span>
+            </p>
+          </Link>
 
           {errors.general && (
             <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">

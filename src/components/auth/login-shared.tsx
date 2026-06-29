@@ -5,10 +5,11 @@ import Link from "next/link";
 import { translate, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { detectInitialLang, LANG_KEY } from "@/components/auth/register-shared";
 import {
-  Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail, Brain,
+  Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail, Brain, Leaf, Building2, Heart,
 } from "lucide-react";
+import type { LoginAccent, PortalHeaderIcon } from "@/lib/auth-portals";
 
-export type LoginAccent = "emerald" | "violet";
+export type { LoginAccent };
 
 export type LoginErrorCode =
   | ""
@@ -18,31 +19,78 @@ export type LoginErrorCode =
   | "invalidLink"
   | "verificationFailed"
   | "generic"
-  | "psychologistOnly";
+  | "psychologistOnly"
+  | "roleOnly";
 
 const ACCENT_RING: Record<LoginAccent, string> = {
   emerald: "focus:ring-emerald-500/50",
   violet: "focus:ring-violet-500/50",
+  teal: "focus:ring-teal-500/50",
+  indigo: "focus:ring-indigo-500/50",
+  rose: "focus:ring-rose-500/50",
 };
 
 const ACCENT_BTN: Record<LoginAccent, string> = {
   emerald: "bg-emerald-500 hover:bg-emerald-400",
   violet: "bg-violet-500 hover:bg-violet-400",
+  teal: "bg-teal-500 hover:bg-teal-400",
+  indigo: "bg-indigo-600 hover:bg-indigo-500",
+  rose: "bg-rose-500 hover:bg-rose-400",
 };
 
 const ACCENT_LINK: Record<LoginAccent, string> = {
   emerald: "text-emerald-400 hover:text-emerald-300",
   violet: "text-violet-400 hover:text-violet-300",
+  teal: "text-teal-400 hover:text-teal-300",
+  indigo: "text-indigo-400 hover:text-indigo-300",
+  rose: "text-rose-400 hover:text-rose-300",
 };
 
 const ACCENT_LANG: Record<LoginAccent, string> = {
   emerald: "bg-emerald-500 text-white",
   violet: "bg-violet-500 text-white",
+  teal: "bg-teal-500 text-white",
+  indigo: "bg-indigo-600 text-white",
+  rose: "bg-rose-500 text-white",
 };
 
 const GRADIENT: Record<LoginAccent, string> = {
   emerald: "from-slate-900 via-blue-950 to-slate-900",
   violet: "from-slate-900 via-violet-950 to-slate-900",
+  teal: "from-slate-900 via-teal-950 to-slate-900",
+  indigo: "from-slate-900 via-indigo-950 to-slate-900",
+  rose: "from-slate-900 via-rose-950 to-slate-900",
+};
+
+const BRAND_ACCENT: Record<LoginAccent, string> = {
+  emerald: "text-emerald-400",
+  violet: "text-violet-400",
+  teal: "text-teal-400",
+  indigo: "text-indigo-400",
+  rose: "text-rose-400",
+};
+
+const HEADER_ICON_WRAP: Record<LoginAccent, string> = {
+  emerald: "bg-emerald-500/15 border-emerald-500/25",
+  violet: "bg-violet-500/15 border-violet-500/25",
+  teal: "bg-teal-500/15 border-teal-500/25",
+  indigo: "bg-indigo-500/15 border-indigo-500/25",
+  rose: "bg-rose-500/15 border-rose-500/25",
+};
+
+const HEADER_ICONS: Record<PortalHeaderIcon, typeof Brain> = {
+  brain: Brain,
+  leaf: Leaf,
+  building: Building2,
+  heart: Heart,
+};
+
+const HEADER_ICON_COLOR: Record<LoginAccent, string> = {
+  emerald: "text-emerald-400",
+  violet: "text-violet-400",
+  teal: "text-teal-400",
+  indigo: "text-indigo-400",
+  rose: "text-rose-400",
 };
 
 export function useLoginLang() {
@@ -132,22 +180,22 @@ export function LoginLanguageSelector({
 export function LoginHeader({
   tagline,
   accent,
-  variant = "default",
+  icon,
 }: {
   tagline: string;
   accent: LoginAccent;
-  variant?: "default" | "psychologist";
+  icon?: PortalHeaderIcon;
 }) {
-  const brandAccent = accent === "violet" ? "text-violet-400" : "text-emerald-400";
+  const Icon = icon ? HEADER_ICONS[icon] : null;
   return (
     <div className="text-center mb-8">
-      {variant === "psychologist" && (
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-violet-500/15 border border-violet-500/25 mb-4">
-          <Brain className="w-7 h-7 text-violet-400" aria-hidden />
+      {Icon && (
+        <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl border mb-4 ${HEADER_ICON_WRAP[accent]}`}>
+          <Icon className={`w-7 h-7 ${HEADER_ICON_COLOR[accent]}`} aria-hidden />
         </div>
       )}
       <h1 className="text-4xl font-black text-white tracking-tight">
-        Doctor<span className={brandAccent}>8</span>
+        Doctor<span className={BRAND_ACCENT[accent]}>8</span>
       </h1>
       <p className="text-slate-400 mt-2 text-sm">{tagline}</p>
     </div>
@@ -167,11 +215,13 @@ export function LoginAlerts({
   verified,
   unverifiedEmail,
   t,
+  roleOnlyKey,
 }: {
   error: LoginErrorCode;
   verified: boolean;
   unverifiedEmail: string;
   t: (key: string) => string;
+  roleOnlyKey?: string;
 }) {
   return (
     <>
@@ -185,10 +235,12 @@ export function LoginAlerts({
         </div>
       )}
 
-      {error === "psychologistOnly" && (
+      {(error === "roleOnly" || error === "psychologistOnly") && (
         <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6" role="alert">
           <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" aria-hidden />
-          <p className="text-amber-300 text-sm">{t("login.psychologistOnly")}</p>
+          <p className="text-amber-300 text-sm">
+            {t(roleOnlyKey || "login.psychologistOnly")}
+          </p>
         </div>
       )}
 

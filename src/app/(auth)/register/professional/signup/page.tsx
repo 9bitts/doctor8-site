@@ -8,6 +8,15 @@ import {
 } from "lucide-react";
 import { parseRegistrationRegion } from "@/lib/registration-regions";
 import {
+  PORTAL_BY_ID,
+  PROFESSIONAL_REGISTER,
+  PSYCHOLOGIST_REGISTER,
+  PSYCHOANALYST_REGISTER,
+  INTEGRATIVE_REGISTER,
+  ORGANIZATION_REGISTER,
+} from "@/lib/auth-portals";
+import { buildAuthHref } from "@/components/auth/login-shared";
+import {
   detectInitialLang,
   LANG_KEY,
   Region,
@@ -69,26 +78,35 @@ export default function RegisterProfessionalSignupPage() {
   }
 
   const loginHref = (() => {
-    const registerUrl = encodeURIComponent("/register/professional/signup");
-    if (role === "PSYCHOLOGIST" && step === 2) {
-      const base = callbackUrl
-        ? `/login/psicologo?registerUrl=${encodeURIComponent("/register/professional/signup?portal=psychologist")}&callbackUrl=${encodeURIComponent(callbackUrl)}`
-        : `/login/psicologo?registerUrl=${encodeURIComponent("/register/professional/signup?portal=psychologist")}`;
-      return base;
+    if (step === 2 && role === "PSYCHOLOGIST") {
+      return buildAuthHref(PORTAL_BY_ID.psychologist.loginPath, {
+        registerUrl: PSYCHOLOGIST_REGISTER,
+        callbackUrl,
+      });
     }
-    if (callbackUrl) {
-      return `/login?registerUrl=${registerUrl}&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+    if (step === 2 && role === "PSYCHOANALYST") {
+      return buildAuthHref(PORTAL_BY_ID.psychoanalyst.loginPath, {
+        registerUrl: PSYCHOANALYST_REGISTER,
+        callbackUrl,
+      });
     }
-    return `/login?registerUrl=${registerUrl}`;
+    if (step === 2 && role === "INTEGRATIVE_THERAPIST") {
+      return buildAuthHref(PORTAL_BY_ID["integrative-therapist"].loginPath, {
+        registerUrl: INTEGRATIVE_REGISTER,
+        callbackUrl,
+      });
+    }
+    return buildAuthHref("/login", {
+      registerUrl: PROFESSIONAL_REGISTER,
+      callbackUrl,
+    });
   })();
+
+  const orgHref = buildAuthHref(ORGANIZATION_REGISTER, { callbackUrl });
 
   const patientHref = callbackUrl
     ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
     : "/register";
-
-  const orgHref = callbackUrl
-    ? `/register/organization?callbackUrl=${encodeURIComponent(callbackUrl)}`
-    : "/register/organization";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">

@@ -1,6 +1,6 @@
 import PortalLoginPage from "@/components/auth/PortalLoginPage";
 import { PORTAL_BY_ID } from "@/lib/auth-portals";
 
-export default function PsychologistLoginPage() {
-  return <PortalLoginPage config={PORTAL_BY_ID.psychologist} />;
+export default function AngelLoginPage() {
+  return <PortalLoginPage config={PORTAL_BY_ID.angel} />;
 }
