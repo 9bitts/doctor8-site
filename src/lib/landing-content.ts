@@ -24,6 +24,8 @@ export type LandingContent = {
     desc: string; services: string; professionals: string; legal: string;
     serviceLinks: string[]; proLinks: string[]; legalLinks: string[];
     proDoctorLogin: string; proPsychologistLogin: string;
+    proPsychoanalystLogin: string; proIntegrativeLogin: string;
+    proOrganizationLogin: string; proAngelLogin: string;
     copyright: string;
   };
   cookie: { text: string; accept: string; decline: string };
@@ -100,6 +102,10 @@ const pt: LandingContent = {
     proLinks: ["Cadastre-se como profissional", "Entrar como médico"],
     proDoctorLogin: "Entrar como médico",
     proPsychologistLogin: "Entrar como psicólogo",
+    proPsychoanalystLogin: "Entrar como psicanalista",
+    proIntegrativeLogin: "Terapeuta integrativo",
+    proOrganizationLogin: "Clínica / CNPJ",
+    proAngelLogin: "Anjo voluntário",
     legalLinks: ["Pol\u00edtica de Privacidade", "Termos de Uso", "LGPD", "DPO"],
     copyright: "\u00a9 2026 Doctor8. Todos os direitos reservados.",
   },
@@ -198,6 +204,10 @@ const en: LandingContent = {
     proLinks: ["Register as professional", "Sign in as doctor"],
     proDoctorLogin: "Sign in as doctor",
     proPsychologistLogin: "Sign in as psychologist",
+    proPsychoanalystLogin: "Sign in as psychoanalyst",
+    proIntegrativeLogin: "Integrative therapist",
+    proOrganizationLogin: "Clinic / organization",
+    proAngelLogin: "Angel volunteer",
     legalLinks: ["Privacy Policy", "Terms of Service", "LGPD", "DPO"],
     copyright: "\u00a9 2026 Doctor8. All rights reserved.",
   },
@@ -278,8 +288,12 @@ const es: LandingContent = {
   footer: {
     ...en.footer,
     desc: "Plataforma de salud digital para pacientes y profesionales. Conforme LGPD y HIPAA. Brasil, EE.UU., Europa y Venezuela.",
-    proDoctorLogin: "Entrar como médico",
-    proPsychologistLogin: "Entrar como psicólogo",
+    proDoctorLogin: "Iniciar sesión como médico",
+    proPsychologistLogin: "Iniciar sesión como psicólogo",
+    proPsychoanalystLogin: "Iniciar sesión como psicanalista",
+    proIntegrativeLogin: "Terapeuta integrativo",
+    proOrganizationLogin: "Clínica / CNPJ",
+    proAngelLogin: "Voluntario anjo",
     copyright: "\u00a9 2026 Doctor8. Todos los derechos reservados.",
   },
   cookie: { text: "Usamos cookies para mejorar tu experiencia. Al continuar, aceptas nuestra", accept: "Aceptar", decline: "Rechazar" },

@@ -22,12 +22,14 @@ type ErrorCode = "invalid" | "failed";
 export default function VerifyEmailConfirmedPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: { error?: string; from?: string };
 }) {
   const lang = detectLang();
   const t = (key: string) => translate(lang, key);
   const error = searchParams.error as ErrorCode | undefined;
   const isSuccess = !error;
+  const loginHref =
+    searchParams.from?.startsWith("/login") ? searchParams.from : "/login";
 
   const title = isSuccess
     ? t("verifyConfirmed.title")
@@ -69,7 +71,7 @@ export default function VerifyEmailConfirmedPage({
           <p className="text-slate-400 text-sm leading-relaxed mb-8">{body}</p>
 
           <Link
-            href="/login"
+            href={loginHref}
             className="inline-flex items-center justify-center gap-2 w-full bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3 rounded-xl transition"
           >
             <LogIn className="w-4 h-4" aria-hidden />

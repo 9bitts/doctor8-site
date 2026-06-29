@@ -91,6 +91,7 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
   const verified = searchParams.get("verified") === "true";
+  const passwordReset = searchParams.get("reset") === "success";
   const callbackUrl = searchParams.get("callbackUrl") || "";
   const registerHref = resolveRegisterHref(
     searchParams.get("registerUrl") || config.defaultRegisterPath,
@@ -215,6 +216,7 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
         <LoginAlerts
           error={error}
           verified={verified}
+          passwordReset={passwordReset}
           unverifiedEmail={unverifiedEmail}
           t={t}
           roleOnlyKey={config.roleOnlyKey}

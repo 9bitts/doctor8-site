@@ -1,17 +1,28 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react";
 import { Lang, translate } from "@/lib/i18n/translations";
+import {
+  MAIN_LOGIN,
+  buildForgotPasswordHref,
+  buildLoginHref,
+  type LoginAccent,
+} from "@/lib/auth-portals";
+import { ForgotPasswordLayout } from "@/components/auth/forgot-password-shared";
 
 export default function ResetPasswordForm({
   token,
   lang,
+  loginPath = MAIN_LOGIN,
+  accent = "emerald",
 }: {
   token: string;
   lang: Lang;
+  loginPath?: string;
+  accent?: LoginAccent;
 }) {
   const router = useRouter();
   const t = (key: string) => translate(lang, key);
@@ -49,7 +60,10 @@ export default function ResetPasswordForm({
         return;
       }
       setDone(true);
-      setTimeout(() => router.push("/login"), 3000);
+      setTimeout(
+        () => router.push(buildLoginHref(loginPath, { resetSuccess: true })),
+        3000,
+      );
     } catch {
       setError(t("reset.errorGeneric"));
     } finally {
@@ -59,22 +73,24 @@ export default function ResetPasswordForm({
 
   if (done) {
     return (
-      <div className="text-center py-4">
-        <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 size={32} className="text-emerald-400" />
+      <ForgotPasswordLayout accent={accent}>
+        <div className="text-center py-4">
+          <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 size={32} className="text-emerald-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">{t("reset.doneTitle")}</h2>
+          <p className="text-slate-400 text-sm">{t("reset.doneSubtitle")}</p>
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">{t("reset.doneTitle")}</h2>
-        <p className="text-slate-400 text-sm">{t("reset.doneSubtitle")}</p>
-      </div>
+      </ForgotPasswordLayout>
     );
   }
 
   return (
-    <>
+    <ForgotPasswordLayout accent={accent}>
       <h2 className="text-xl font-bold text-white mb-2">{t("reset.title")}</h2>
       <p className="text-slate-400 text-sm mb-6">{t("reset.subtitle")}</p>
       {error && (
-        <p className="text-red-400 text-sm mb-4 bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+        <p className="text-red-400 text-sm mb-4 bg-red-500/10 border border-red-500/20 rounded-xl p-3" role="alert">
           {error}
         </p>
       )}
@@ -136,39 +152,20 @@ export default function ResetPasswordForm({
           {loading ? t("reset.updating") : t("reset.submit")}
         </button>
       </form>
-    </>
-  );
-}
-
-export function ResetPasswordShell({
-  lang,
-  children,
-}: {
-  lang: Lang;
-  children: ReactNode;
-}) {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-white">
-            Doctor<span className="text-emerald-400">8</span>
-          </h1>
-        </div>
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
-          {children}
-        </div>
-      </div>
-    </div>
+    </ForgotPasswordLayout>
   );
 }
 
 export function ResetPasswordMessage({
   lang,
   variant,
+  accent = "emerald",
+  loginPath = MAIN_LOGIN,
 }: {
   lang: Lang;
   variant: "missing" | "invalid" | "expired";
+  accent?: LoginAccent;
+  loginPath?: string;
 }) {
   const t = (key: string) => translate(lang, key);
   const title =
@@ -177,17 +174,17 @@ export function ResetPasswordMessage({
     variant === "expired" ? t("reset.expiredBody") : t("reset.invalidBody");
 
   return (
-    <ResetPasswordShell lang={lang}>
+    <ForgotPasswordLayout accent={accent}>
       <div className="text-center">
         <h2 className="text-xl font-bold text-white mb-3">{title}</h2>
         <p className="text-slate-400 text-sm mb-6 leading-relaxed">{body}</p>
         <Link
-          href="/forgot-password"
+          href={buildForgotPasswordHref({ from: loginPath })}
           className="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition"
         >
           {t("reset.requestNew")}
         </Link>
       </div>
-    </ResetPasswordShell>
+    </ForgotPasswordLayout>
   );
 }

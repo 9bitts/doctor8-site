@@ -179,3 +179,14 @@ export function buildForgotPasswordHref(opts?: {
   const qs = sp.toString();
   return qs ? `${path}?${qs}` : path;
 }
+
+export function buildLoginHref(
+  loginPath: string,
+  opts?: { resetSuccess?: boolean; callbackUrl?: string },
+): string {
+  const sp = new URLSearchParams();
+  if (opts?.resetSuccess) sp.set("reset", "success");
+  if (opts?.callbackUrl) sp.set("callbackUrl", opts.callbackUrl);
+  const qs = sp.toString();
+  return qs ? `${loginPath}?${qs}` : loginPath;
+}

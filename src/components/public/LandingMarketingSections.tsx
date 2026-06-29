@@ -268,6 +268,10 @@ export default function LandingMarketingSections() {
                 <li><Link href="/register/professional/signup" className="transition hover:text-white">{c.footer.proLinks[0]}</Link></li>
                 <li><Link href="/login" className="transition hover:text-white">{c.footer.proDoctorLogin}</Link></li>
                 <li><Link href="/login/psicologo" className="transition hover:text-white">{c.footer.proPsychologistLogin}</Link></li>
+                <li><Link href="/login/psicanalista" className="transition hover:text-white">{c.footer.proPsychoanalystLogin}</Link></li>
+                <li><Link href="/login/terapeuta-integrativo" className="transition hover:text-white">{c.footer.proIntegrativeLogin}</Link></li>
+                <li><Link href="/login/organizacao" className="transition hover:text-white">{c.footer.proOrganizationLogin}</Link></li>
+                <li><Link href="/login/anjo" className="transition hover:text-white">{c.footer.proAngelLogin}</Link></li>
               </ul>
             </div>
             <div>
@@ -280,7 +284,7 @@ export default function LandingMarketingSections() {
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6">
-            <p className="text-xs">{c.footer.copyright} ? <a href="#lgpd" className="text-accent-500">LGPD</a></p>
+            <p className="text-xs">{c.footer.copyright} · <a href="#lgpd" className="text-accent-500">LGPD</a></p>
             <div className="flex flex-wrap gap-2">
               {["LGPD", "HIPAA", "CFM", "SSL 256-bit"].map((b) => (
                 <span key={b} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/50">{b}</span>

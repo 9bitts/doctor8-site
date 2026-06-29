@@ -239,18 +239,30 @@ export function LoginCard({ children }: { children: React.ReactNode }) {
 export function LoginAlerts({
   error,
   verified,
+  passwordReset,
   unverifiedEmail,
   t,
   roleOnlyKey,
 }: {
   error: LoginErrorCode;
   verified: boolean;
+  passwordReset?: boolean;
   unverifiedEmail: string;
   t: (key: string) => string;
   roleOnlyKey?: string;
 }) {
   return (
     <>
+      {passwordReset && (
+        <div
+          className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 mb-6"
+          role="status"
+        >
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" aria-hidden />
+          <p className="text-emerald-300 text-sm">{t("login.passwordResetSuccess")}</p>
+        </div>
+      )}
+
       {verified && (
         <div
           className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 mb-6"
@@ -284,7 +296,7 @@ export function LoginAlerts({
               href={`/verify-account?email=${encodeURIComponent(unverifiedEmail)}`}
               className="text-xs text-amber-300 hover:text-amber-200 underline"
             >
-              {t("login.resend")} ?
+              {t("login.resend")}
             </Link>
           )}
         </div>

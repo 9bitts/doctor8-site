@@ -3,10 +3,8 @@
 import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
 import { Lang, normalizeLang } from "@/lib/i18n/translations";
-import ResetPasswordForm, {
-  ResetPasswordMessage,
-  ResetPasswordShell,
-} from "./ResetPasswordForm";
+import { resolveForgotPasswordContext } from "@/lib/auth-portals";
+import ResetPasswordForm, { ResetPasswordMessage } from "./ResetPasswordForm";
 
 export const dynamic = "force-dynamic";
 
@@ -30,23 +28,41 @@ async function tokenStatus(token: string): Promise<"ok" | "invalid" | "expired">
 export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: { token?: string };
+  searchParams: { token?: string; from?: string };
 }) {
   const lang = detectLang();
   const token = searchParams.token?.trim() || "";
+  const { loginPath, accent } = resolveForgotPasswordContext(searchParams.from);
 
   if (!token) {
-    return <ResetPasswordMessage lang={lang} variant="missing" />;
+    return (
+      <ResetPasswordMessage
+        lang={lang}
+        variant="missing"
+        accent={accent}
+        loginPath={loginPath}
+      />
+    );
   }
 
   const status = await tokenStatus(token);
   if (status !== "ok") {
-    return <ResetPasswordMessage lang={lang} variant={status} />;
+    return (
+      <ResetPasswordMessage
+        lang={lang}
+        variant={status}
+        accent={accent}
+        loginPath={loginPath}
+      />
+    );
   }
 
   return (
-    <ResetPasswordShell lang={lang}>
-      <ResetPasswordForm token={token} lang={lang} />
-    </ResetPasswordShell>
+    <ResetPasswordForm
+      token={token}
+      lang={lang}
+      loginPath={loginPath}
+      accent={accent}
+    />
   );
 }

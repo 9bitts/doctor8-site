@@ -45,6 +45,7 @@ function LoginForm() {
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
   const verified = searchParams.get("verified") === "true";
+  const passwordReset = searchParams.get("reset") === "success";
   const callbackUrl = searchParams.get("callbackUrl") || "";
   const registerHref = resolveRegisterHref(
     searchParams.get("registerUrl"),
@@ -155,6 +156,7 @@ function LoginForm() {
         <LoginAlerts
           error={error}
           verified={verified}
+          passwordReset={passwordReset}
           unverifiedEmail={unverifiedEmail}
           t={t}
         />
