@@ -43,6 +43,14 @@ export async function GET(req: NextRequest) {
     },
   });
 
+  const sharedRows = docs.length
+    ? await db.sharedRecord.findMany({
+        where: { documentId: { in: docs.map((d) => d.id) } },
+        select: { documentId: true },
+      })
+    : [];
+  const sharedIds = new Set(sharedRows.map((r) => r.documentId));
+
   const notes = docs.map((d) => {
     const parsed = parseIntegrativeNoteContent(safeDecrypt(d.content));
     return {
@@ -57,6 +65,7 @@ export async function GET(req: NextRequest) {
       clientName: d.integrativeClientRecord
         ? `${safeDecrypt(d.integrativeClientRecord.firstName)} ${safeDecrypt(d.integrativeClientRecord.lastName)}`.trim()
         : "?",
+      shared: sharedIds.has(d.id),
     };
   });
 

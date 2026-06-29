@@ -13,7 +13,7 @@ import {
 } from "@/lib/pics/consult-templates";
 import IntegrativeStructuredForm from "@/components/integrative-therapist/IntegrativeStructuredForm";
 import IntegrativeReferenceLibrary from "@/components/integrative-therapist/IntegrativeReferenceLibrary";
-import { Loader2, ArrowLeft, User, FileText } from "lucide-react";
+import { Loader2, ArrowLeft, User, FileText, Share2 } from "lucide-react";
 
 interface ClientData {
   id: string;
@@ -37,6 +37,7 @@ interface Note {
   practiceSlug: string | null;
   format?: "FREE" | "STRUCTURED";
   createdAt: string;
+  shared?: boolean;
 }
 
 type Tab = "summary" | "sessions";
@@ -62,6 +63,7 @@ export default function IntegrativeClientDetailPage() {
   const [practiceSlug, setPracticeSlug] = useState("");
   const [structuredValues, setStructuredValues] = useState<StructuredValues>({});
   const [noteSaving, setNoteSaving] = useState(false);
+  const [sharingId, setSharingId] = useState<string | null>(null);
 
   const langCode = lang.startsWith("pt") ? "pt" : lang.startsWith("es") ? "es" : "en";
   const usesStructured = hasStructuredTemplate(practiceSlug);
@@ -123,6 +125,25 @@ export default function IntegrativeClientDetailPage() {
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function shareNote(noteId: string) {
+    setSharingId(noteId);
+    try {
+      const res = await fetch(`/api/integrative-therapist/session-notes/${noteId}/share`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.shared) {
+        await loadNotes();
+      } else if (data.needsInvite && data.hasEmail) {
+        await fetch(`/api/integrative-therapist/session-notes/${noteId}/share`, {
+          method: "PUT",
+        });
+      }
+    } finally {
+      setSharingId(null);
     }
   }
 
@@ -356,11 +377,28 @@ export default function IntegrativeClientDetailPage() {
               <div className="divide-y divide-slate-100">
                 {notes.map((n) => (
                   <div key={n.id} className="px-5 py-4">
-                    <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-start justify-between gap-2 mb-2">
                       <p className="font-semibold text-slate-800 text-sm">{n.title}</p>
-                      <span className="text-[10px] text-slate-400">
-                        {new Date(n.createdAt).toLocaleString()}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(n.createdAt).toLocaleString()}
+                        </span>
+                        {n.shared ? (
+                          <span className="text-[10px] font-bold text-teal-700">
+                            {t("it.sessions.shared")}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={sharingId === n.id}
+                            onClick={() => void shareNote(n.id)}
+                            className="inline-flex items-center gap-1 text-[10px] font-semibold text-teal-700 hover:text-teal-900 disabled:opacity-50"
+                          >
+                            <Share2 size={12} />
+                            {sharingId === n.id ? "…" : t("it.sessions.share")}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {n.practiceSlug && (
                       <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 mb-2 mr-1">

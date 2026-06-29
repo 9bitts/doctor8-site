@@ -41,6 +41,7 @@ const PATIENT_NAV: NavItem[] = [
   { href: "/patient/exam-requests", labelKey: "nav.myExamRequests", icon: <FlaskConical size={18} />, roles: ["PATIENT"] },
   { href: "/patient/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PATIENT"] },
   { href: "/patient/providers", labelKey: "nav.myProviders", icon: <Users size={18} />, roles: ["PATIENT"] },
+  { href: "/patient/integrative-care", labelKey: "nav.integrativeCare", icon: <Leaf size={18} />, roles: ["PATIENT"] },
   { href: "/patient/documents", labelKey: "nav.documents", icon: <ClipboardList size={18} />, roles: ["PATIENT"] },
   { href: "/patient/resources", labelKey: "nav.doctorResources", icon: <BookOpen size={18} />, roles: ["PATIENT"] },
   { href: "/patient/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PATIENT"] },
