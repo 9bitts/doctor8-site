@@ -70,9 +70,19 @@ export async function expireHumanitarianNoShows(poolId: string): Promise<number>
   return expired.length;
 }
 
-export async function assignNextInPool(poolId: string): Promise<HumanitarianQueueEntry | null> {
+export async function assignNextInPool(poolId: string): Promise<number> {
   await expireHumanitarianNoShows(poolId);
-  return tryAssignOnce(poolId);
+  let assigned = 0;
+  while (await tryAssignOnce(poolId)) assigned++;
+  return assigned;
+}
+
+export async function promoteHumanitarianEntryToInProgress(entryId: string): Promise<void> {
+  const now = new Date();
+  await db.humanitarianQueueEntry.updateMany({
+    where: { id: entryId, status: "CALLED" },
+    data: { status: "IN_PROGRESS", startedAt: now },
+  });
 }
 
 async function findNextWaitingEntry(poolId: string) {
@@ -103,6 +113,11 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
   if (!volunteer) return null;
 
   const room = await createHumanitarianDailyRoom();
+  if (!room.url || !room.name) {
+    console.error("[humanitarian] Daily room creation failed", { poolId });
+    return null;
+  }
+
   const now = new Date();
   const expiresAt = new Date(
     now.getTime() + pool.campaign.noShowTimeoutSeconds * 1000,
@@ -188,6 +203,7 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
       entryId: full.id,
       campaignSlug: full.pool.campaign.slug,
       professionalName,
+      noShowTimeoutSeconds: pool.campaign.noShowTimeoutSeconds,
     });
 
     await notifyVolunteerAssigned({
@@ -200,7 +216,8 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
     });
 
     return full;
-  } catch {
+  } catch (e) {
+    console.error("[humanitarian] assign failed", { poolId, entryId: entry.id, error: e });
     return null;
   }
 }

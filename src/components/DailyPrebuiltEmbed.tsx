@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { DailyCall } from "@daily-co/daily-js";
 
 export type DailyPrebuiltHandle = {
@@ -11,14 +11,16 @@ type Props = {
   url: string;
   token: string;
   className?: string;
+  onError?: (message: string) => void;
 };
 
 const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function DailyPrebuiltEmbed(
-  { url, token, className = "flex-1 w-full h-full min-h-[200px]" },
+  { url, token, className = "flex-1 w-full h-full min-h-[200px]", onError },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const callRef = useRef<DailyCall | null>(null);
+  const [joining, setJoining] = useState(true);
 
   useImperativeHandle(ref, () => ({
     leave: async () => {
@@ -40,21 +42,30 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
 
     async function mount() {
       if (!containerRef.current) return;
-      const DailyIframe = (await import("@daily-co/daily-js")).default;
-      if (destroyed || !containerRef.current) return;
+      setJoining(true);
+      try {
+        const DailyIframe = (await import("@daily-co/daily-js")).default;
+        if (destroyed || !containerRef.current) return;
 
-      call = DailyIframe.createFrame(containerRef.current, {
-        iframeStyle: {
-          width: "100%",
-          height: "100%",
-          border: "0",
-          position: "absolute",
-          inset: "0",
-        },
-        showLeaveButton: false,
-      });
-      callRef.current = call;
-      await call.join({ url: `${url}?t=${token}` });
+        call = DailyIframe.createFrame(containerRef.current, {
+          iframeStyle: {
+            width: "100%",
+            height: "100%",
+            border: "0",
+            position: "absolute",
+            inset: "0",
+          },
+          showLeaveButton: false,
+        });
+        callRef.current = call;
+        await call.join({ url: `${url}?t=${token}` });
+        if (!destroyed) setJoining(false);
+      } catch (e) {
+        if (!destroyed) {
+          setJoining(false);
+          onError?.(e instanceof Error ? e.message : "Could not join video room");
+        }
+      }
     }
 
     mount();
@@ -64,7 +75,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       callRef.current = null;
       call?.destroy();
     };
-  }, [url, token]);
+  }, [url, token, onError]);
 
   useEffect(() => {
     function onPageHide() {
@@ -74,7 +85,15 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
     return () => window.removeEventListener("pagehide", onPageHide);
   }, []);
 
-  return <div ref={containerRef} className={`relative ${className}`} />;
+  return (
+    <div ref={containerRef} className={`relative ${className}`}>
+      {joining && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 z-10 text-white text-sm">
+          Connecting…
+        </div>
+      )}
+    </div>
+  );
 });
 
 export default DailyPrebuiltEmbed;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -67,7 +67,7 @@ function poolLabel(pool: PoolRow, lang: Lang) {
 
 export default function HumanitarianVolunteerPage() {
   const router = useRouter();
-  const pollRef = { current: null as NodeJS.Timeout | null };
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [lang, setLang] = useState<Lang>("pt");
   const [loading, setLoading] = useState(true);

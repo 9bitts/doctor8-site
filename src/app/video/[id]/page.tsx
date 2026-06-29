@@ -8,21 +8,21 @@ export default function AppointmentVideoPage() {
   const appointmentId = params.id as string;
 
   async function fetchSession(): Promise<VideoConsultFetchResult> {
-    const res = await fetch(`/api/appointments/${appointmentId}/video`);
+    const res  = await fetch(`/api/appointments/${appointmentId}/video`);
     const d = await res.json();
+    if (d.handoff === "google_meet" || d.error === "MEET_HANDOFF") {
+      return {
+        meetHandoff: {
+          professionalName: d.professionalName || "",
+          meetUrl: d.meetUrl,
+          backHref: d.role === "professional" ? "/professional/appointments" : "/patient/appointments",
+          backLabelKey: "appt.page.meetHandoffBack",
+        },
+      };
+    }
     if (!res.ok) {
       if (d.error === "TOO_EARLY") {
         return { error: d.message, opensAt: d.opensAt };
-      }
-      if (d.error === "MEET_HANDOFF") {
-        return {
-          meetHandoff: {
-            professionalName: d.professionalName || "",
-            meetUrl: d.meetUrl,
-            backHref: d.role === "professional" ? "/professional/appointments" : "/patient/appointments",
-            backLabelKey: "appt.page.meetHandoffBack",
-          },
-        };
       }
       if (d.error === "TCLE_REQUIRED") {
         window.location.href = `/patient/tcle?returnUrl=${encodeURIComponent(`/video/${appointmentId}`)}`;

@@ -27,7 +27,8 @@ export interface VideoConsultData {
   otherParty: string;
   patientRecordId: string | null;
   analysandRecordId?: string | null;
-  providerPanel?: "professional" | "psychoanalyst";
+  integrativeClientRecordId?: string | null;
+  providerPanel?: "professional" | "psychoanalyst" | "integrative_therapist";
   patientUserId: string;
   scheduledAt: string;
   durationMins: number;
@@ -118,7 +119,11 @@ function leaveDestination(data: VideoConsultData): string {
   switch (data.kind) {
     case "humanitarian":
       return isPro
-        ? (data.providerPanel === "psychoanalyst" ? "/psychoanalyst" : "/humanitarian/volunteer")
+        ? (data.providerPanel === "psychoanalyst"
+          ? "/psychoanalyst"
+          : data.providerPanel === "integrative_therapist"
+            ? "/integrative-therapist"
+            : "/humanitarian/volunteer")
         : `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
     case "jit":
       return isPro ? "/professional/jit" : "/urgent";
@@ -173,6 +178,7 @@ export default function VideoConsultRoom({
     backLabelKey?: string;
   } | null>(null);
   const [meetLoading, setMeetLoading] = useState(false);
+  const [videoEmbedError, setVideoEmbedError] = useState<string | null>(null);
   const [humanitarianIntake, setHumanitarianIntake] = useState<{
     summary: Parameters<typeof HumanitarianIntakeSummary>[0]["summary"];
     chiefComplaint: string | null;
@@ -275,7 +281,7 @@ export default function VideoConsultRoom({
   }, [data, lang]);
 
   useEffect(() => {
-    if (!data || data.kind !== "appointment" || data.role !== "patient" || !data.appointmentId) {
+    if (!data || data.kind !== "appointment" || !data.appointmentId) {
       return;
     }
     const appointmentId = data.appointmentId;
@@ -283,14 +289,18 @@ export default function VideoConsultRoom({
       try {
         const res = await fetch(`/api/appointments/${appointmentId}/video`);
         const d = await res.json();
-        if (res.status === 410 && d.error === "MEET_HANDOFF") {
+        if (d.handoff === "google_meet" || d.error === "MEET_HANDOFF") {
+          const backHref = data.role === "professional"
+            ? "/professional/appointments"
+            : "/patient/appointments";
           setMeetHandoff({
             professionalName: d.professionalName || "",
             meetUrl: d.meetUrl,
-            backHref: "/patient/appointments",
+            backHref,
             backLabelKey: "appt.page.meetHandoffBack",
           });
           setData(null);
+          void dailyRef.current?.leave();
         }
       } catch { /* ignore */ }
     }, 3000);
@@ -313,7 +323,17 @@ export default function VideoConsultRoom({
         return;
       }
       if (d.meetUrl) {
-        window.open(d.meetUrl, "_blank", "noopener,noreferrer");
+        const backHref = data?.role === "professional"
+          ? "/professional/appointments"
+          : "/patient/appointments";
+        setMeetHandoff({
+          professionalName: d.providerName || "",
+          meetUrl: d.meetUrl,
+          backHref,
+          backLabelKey: "appt.page.meetHandoffBack",
+        });
+        setData(null);
+        await dailyRef.current?.leave();
       }
     } catch {
       window.alert(translate(lang, "hum.page.networkError"));
@@ -326,6 +346,18 @@ export default function VideoConsultRoom({
     try {
       if (providerPanel === "psychoanalyst") {
         const res = await fetch(`/api/psychoanalyst/session-notes?analysandId=${recordId}`);
+        const d = await res.json();
+        setRecords(
+          (d.notes || []).slice(0, 5).map((n: { id: string; title: string; body: string }) => ({
+            id: n.id,
+            title: n.title,
+            content: n.body,
+            createdAt: "",
+            categoryName: null,
+          })),
+        );
+      } else if (providerPanel === "integrative_therapist") {
+        const res = await fetch(`/api/integrative-therapist/session-notes?clientId=${recordId}`);
         const d = await res.json();
         setRecords(
           (d.notes || []).slice(0, 5).map((n: { id: string; title: string; body: string }) => ({
@@ -538,10 +570,12 @@ export default function VideoConsultRoom({
 
   const isPro = data.role === "professional";
   const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
-  const chartId = data.analysandRecordId || data.patientRecordId;
-  const isPsychoanalyst = data.providerPanel === "psychoanalyst";
+  const chartId = data.integrativeClientRecordId || data.analysandRecordId || data.patientRecordId;
+  const panel = data.providerPanel ?? "professional";
+  const isPsychoanalyst = panel === "psychoanalyst";
+  const isIntegrative = panel === "integrative_therapist";
   const returnUrl = videoReturnPath(data);
-  const chartLinks = chartId ? buildVideoChartLinks(chartId, returnUrl, isPsychoanalyst) : null;
+  const chartLinks = chartId ? buildVideoChartLinks(chartId, returnUrl, panel) : null;
 
   const roomData = data;
 
@@ -655,7 +689,7 @@ export default function VideoConsultRoom({
       <div className="flex flex-1 overflow-hidden relative flex-col lg:flex-row min-h-0">
         {/* Video — always visible; on mobile stays above the chart drawer */}
         <div
-          className={`flex flex-col min-h-0 shrink-0 transition-all duration-300 ${
+          className={`relative flex flex-col min-h-0 shrink-0 transition-all duration-300 ${
             isPro && sidebarOpen
               ? "h-[52vh] lg:h-auto lg:flex-1 lg:w-[65%]"
               : "flex-1 w-full"
@@ -666,7 +700,21 @@ export default function VideoConsultRoom({
             url={data.url}
             token={data.token}
             className="flex-1 w-full h-full min-h-[200px]"
+            onError={(msg) => setVideoEmbedError(msg)}
           />
+          {videoEmbedError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 z-20 p-6 text-center">
+              <AlertCircle size={32} className="text-amber-400 mb-3" />
+              <p className="text-white text-sm mb-4">{videoEmbedError}</p>
+              <button
+                type="button"
+                onClick={() => { setVideoEmbedError(null); void loadRoom(); }}
+                className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-xl"
+              >
+                {translate(lang, "common.retry") || "Retry"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Chart sidebar — bottom drawer on mobile, side panel on desktop */}
@@ -714,7 +762,7 @@ export default function VideoConsultRoom({
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl transition"
                       >
-                        <Plus size={14} /> {isPsychoanalyst ? t("addSessionNote") : t("addRecord")}
+                        <Plus size={14} /> {isPsychoanalyst || isIntegrative ? t("addSessionNote") : t("addRecord")}
                       </a>
                       {chartLinks.prescribe && (
                         <a
@@ -898,7 +946,7 @@ export default function VideoConsultRoom({
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-slate-700 hover:bg-slate-600 py-2.5 rounded-lg transition w-full"
                 >
-                  <FileText size={13} /> {isPsychoanalyst ? t("openAnalysand") : t("openChart")}
+                  <FileText size={13} /> {isPsychoanalyst ? t("openAnalysand") : isIntegrative ? t("openChart") : t("openChart")}
                 </a>
               </div>
             )}

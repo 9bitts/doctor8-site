@@ -55,6 +55,7 @@ export function resolveNotificationHref(
   }
 
   if (typeof d.meetingUrl === "string" && d.meetingUrl.startsWith("http")) {
+    if (typeof d.appointmentId === "string") return `/video/${d.appointmentId}`;
     return d.meetingUrl;
   }
 

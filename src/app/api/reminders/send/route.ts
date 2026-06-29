@@ -20,6 +20,7 @@ import {
   resolveWhatsAppLang,
 } from "@/lib/whatsapp-i18n";
 import { z } from "zod";
+import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
 
 const schema = z.object({
   appointmentId: z.string(),
@@ -230,6 +231,9 @@ export async function POST(req: NextRequest) {
   const scheduledAt = new Date(appointment.scheduledAt);
   const hoursUntil = Math.round((scheduledAt.getTime() - Date.now()) / 3600000);
   const waLang = resolveWhatsAppLang(patientUser.language);
+  const joinUrl = appointment.type === "TELECONSULT"
+    ? teleconsultJoinUrl(appointmentId, appointment.meetingUrl)
+    : appointment.meetingUrl ?? undefined;
 
   // ── 24h EMAIL ──────────────────────────────────────────────────────────────
   if (type === "24h_email") {
@@ -240,7 +244,7 @@ export async function POST(req: NextRequest) {
         patientName,
         doctorName,
         scheduledAt,
-        meetingUrl: appointment.meetingUrl ?? undefined,
+        meetingUrl: joinUrl,
         hoursUntil: 24,
         language: patientUser.language,
       });
@@ -264,7 +268,7 @@ export async function POST(req: NextRequest) {
           patientName,
           doctorName,
           scheduledAt,
-          meetingUrl: appointment.meetingUrl,
+          meetingUrl: joinUrl,
           lang: waLang,
         });
         whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
@@ -276,7 +280,7 @@ export async function POST(req: NextRequest) {
         patientName,
         doctorName,
         scheduledAt,
-        meetingUrl: appointment.meetingUrl ?? undefined,
+        meetingUrl: joinUrl,
         hoursUntil: 3,
         language: patientUser.language,
         whatsappUrl,
@@ -296,7 +300,7 @@ export async function POST(req: NextRequest) {
         patientName,
         doctorName,
         scheduledAt,
-        meetingUrl: appointment.meetingUrl,
+        meetingUrl: joinUrl,
         lang: waLang,
       });
       const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
@@ -308,7 +312,7 @@ export async function POST(req: NextRequest) {
           patientName,
           doctorName,
           scheduledAt,
-          meetingUrl: appointment.meetingUrl,
+          meetingUrl: joinUrl,
           language: waLang,
         });
         if (result.ok) {
@@ -363,7 +367,7 @@ export async function POST(req: NextRequest) {
       data: {
         appointmentId,
         link: `/patient/appointments?id=${appointmentId}`,
-        meetingUrl: appointment.meetingUrl,
+        meetingUrl: joinUrl,
         titleKey: "notif.apptReminder.titleHours",
         bodyKey: hoursUntil >= 24 ? "notif.apptReminder.bodyTomorrow" : "notif.apptReminder.bodySoon",
         bodyParams: { doctor: doctorName, hours: hoursUntil },

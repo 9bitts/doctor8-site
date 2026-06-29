@@ -28,6 +28,7 @@ import { getProfessionalDashboardInsights } from "@/lib/professional-dashboard-i
 import { decrypt } from "@/lib/encryption";
 import { getProfessionLabel } from "@/lib/professions";
 import { resolveRoleHome } from "@/lib/role-home";
+import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -334,6 +335,10 @@ export default async function ProfessionalDashboard() {
               {professional.appointments.map((apt) => {
                 const firstName = safeDecrypt(apt.patient.firstName);
                 const lastName = safeDecrypt(apt.patient.lastName);
+                const canJoinVideo =
+                  apt.type === "TELECONSULT" &&
+                  apt.status === "CONFIRMED" &&
+                  isWithinAppointmentJoinWindow(apt.scheduledAt, apt.durationMins);
                 return (
                 <div
                   key={apt.id}
@@ -362,7 +367,7 @@ export default async function ProfessionalDashboard() {
                         {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
-                    {apt.type === "TELECONSULT" && (
+                    {canJoinVideo && (
                       <a
                         href={`/video/${apt.id}`}
                         className="shrink-0 bg-brand-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center justify-center gap-1 hover:bg-brand-400 transition min-h-[44px] min-w-[44px]"

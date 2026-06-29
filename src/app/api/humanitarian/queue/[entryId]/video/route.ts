@@ -8,6 +8,8 @@ import { ensureAnalysandForPatient } from "@/lib/providers";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { isVolunteerOnEntry } from "@/lib/humanitarian/volunteer-eligibility";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
+import { promoteHumanitarianEntryToInProgress } from "@/lib/humanitarian/dispatcher";
+import { ensureIntegrativeClientForPatient } from "@/lib/providers";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -110,6 +112,8 @@ export async function GET(
     return NextResponse.json({ error: "Video room not ready." }, { status: 503 });
   }
 
+  await promoteHumanitarianEntryToInProgress(params.entryId);
+
   const patientProfile = await db.patientProfile.findUnique({
     where: { userId: entry.patientUserId },
     select: { firstName: true, lastName: true },
@@ -122,7 +126,8 @@ export async function GET(
   let proName = "Profesional";
   let patientRecordId: string | null = null;
   let analysandRecordId: string | null = null;
-  let providerPanel: "professional" | "psychoanalyst" = "professional";
+  let integrativeClientRecordId: string | null = null;
+  let providerPanel: "professional" | "psychoanalyst" | "integrative_therapist" = "professional";
 
   const vol = entry.volunteer;
 
@@ -158,6 +163,29 @@ export async function GET(
     }
   } else if (vol?.integrativeTherapist) {
     proName = `${vol.integrativeTherapist.firstName} ${vol.integrativeTherapist.lastName}`;
+    providerPanel = "integrative_therapist";
+    if (isVolunteer) {
+      const patientUser = await db.user.findUnique({
+        where: { id: entry.patientUserId },
+        select: { email: true },
+      });
+      const profile = await db.patientProfile.findUnique({
+        where: { userId: entry.patientUserId },
+        select: { firstName: true, lastName: true },
+      });
+      if (patientUser && profile) {
+        const client = await ensureIntegrativeClientForPatient({
+          integrativeTherapistId: vol.integrativeTherapist.id,
+          patientUserId: entry.patientUserId,
+          patientProfile: {
+            firstName: safeDecrypt(profile.firstName),
+            lastName: safeDecrypt(profile.lastName),
+          },
+          patientEmail: patientUser.email,
+        });
+        integrativeClientRecordId = client.id;
+      }
+    }
   }
 
   const userName = isPatient ? patientName : proName;
@@ -171,6 +199,7 @@ export async function GET(
     role: isPatient ? "patient" : "professional",
     patientRecordId,
     analysandRecordId,
+    integrativeClientRecordId,
     providerPanel,
     patientUserId: entry.patientUserId,
     otherParty: isPatient ? proName : patientName,

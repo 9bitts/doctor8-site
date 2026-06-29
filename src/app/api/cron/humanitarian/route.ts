@@ -24,8 +24,7 @@ export async function POST(req: NextRequest) {
   for (const campaign of campaigns) {
     for (const pool of campaign.pools) {
       expired += await expireHumanitarianNoShows(pool.id);
-      const entry = await assignNextInPool(pool.id);
-      if (entry) assigned += 1;
+      assigned += await assignNextInPool(pool.id);
     }
   }
 

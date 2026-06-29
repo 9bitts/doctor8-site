@@ -202,6 +202,7 @@ export async function notifyHumanitarianYourTurn(opts: {
   entryId: string;
   campaignSlug: string;
   professionalName?: string | null;
+  noShowTimeoutSeconds?: number;
 }) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.org";
   const entryUrl = `${appUrl}/humanitarian/${opts.campaignSlug}`;
@@ -218,9 +219,10 @@ export async function notifyHumanitarianYourTurn(opts: {
   });
   const firstName = profile ? safeDecrypt(profile.firstName) : "paciente";
   const pro = opts.professionalName || "un profesional voluntario";
+  const waitMins = Math.max(1, Math.ceil((opts.noShowTimeoutSeconds ?? 180) / 60));
   const waMessage =
     `Hola ${firstName}, es tu turno en Doctor8 (atención humanitaria). ` +
-    `${pro} está listo para atenderte. Entra aquí: ${entryUrl} — Tienes 3 minutos.`;
+    `${pro} está listo para atenderte. Entra aquí: ${entryUrl} — Tienes ${waitMins} minutos.`;
   let whatsappUrl = phone ? buildClinicalDocumentWaMeUrl(phone, waMessage) : null;
 
   if (phone) {

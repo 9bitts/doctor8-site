@@ -7,6 +7,7 @@ import { onAppointmentBooked } from "@/lib/post-booking";
 import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { Prisma } from "@prisma/client";
+import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
 
 export type ConsultationPaymentMeta = {
   userId: string;
@@ -239,6 +240,9 @@ export async function fulfillConsultationPayment(params: {
         type: type || "TELECONSULT",
         appointmentId: appointment.id,
         language: user.language,
+        meetingUrl: (type || "TELECONSULT") === "TELECONSULT"
+          ? teleconsultJoinUrl(appointment.id)
+          : undefined,
       });
     } catch (e) {
       console.error("[APPOINTMENT EMAIL ERROR]", e);

@@ -20,6 +20,7 @@ import PatientChecklistWrapper from "./PatientChecklistWrapper";
 import PatientTourWrapper from "./PatientTourWrapper";
 import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 import { activeOnlineJitSessionWhere } from "@/lib/jit-session-lifecycle";
+import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 import ChartLinkNoticeBanner from "@/components/patient/ChartLinkNoticeBanner";
 import PatientUpcomingConsultBanner from "@/components/patient/PatientUpcomingConsultBanner";
@@ -485,10 +486,14 @@ export default async function PatientDashboard() {
           ) : (
             <div className="space-y-3">
               {patient.appointments.map((apt) => {
-                const pro = apt.professional ?? apt.psychoanalyst;
-                const specialty = apt.professional?.specialty ?? "Psychoanalysis";
+                const pro = apt.professional ?? apt.psychoanalyst ?? apt.integrativeTherapist;
+                const specialty = apt.professional?.specialty ?? (apt.psychoanalyst ? "Psychoanalysis" : "Integrative therapy");
                 const prefix = apt.professional ? "Dr. " : "";
                 if (!pro) return null;
+                const canJoinVideo =
+                  apt.type === "TELECONSULT" &&
+                  apt.status === "CONFIRMED" &&
+                  isWithinAppointmentJoinWindow(apt.scheduledAt, apt.durationMins);
                 return (
                 <div
                   key={apt.id}
@@ -515,7 +520,7 @@ export default async function PatientDashboard() {
                         {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
-                    {apt.type === "TELECONSULT" && (
+                    {canJoinVideo && (
                       <a
                         href={`/video/${apt.id}`}
                         className="shrink-0 bg-emerald-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center justify-center gap-1 hover:bg-emerald-400 transition min-h-[44px] min-w-[44px]"

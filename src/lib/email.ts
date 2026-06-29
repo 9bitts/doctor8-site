@@ -186,8 +186,8 @@ export async function sendAppointmentConfirmation({
     </div>
     <p style="color:#6b7280;font-size:13px;text-align:center;">
       ${c.reminderNote}<br>
-      <a href="${appUrl}/patient/appointments/${appointmentId}" style="color:#0a4d6e;">${c.view}</a> &middot;
-      <a href="${appUrl}/patient/appointments/${appointmentId}/cancel" style="color:#dc2626;">${c.cancel}</a>
+      <a href="${appUrl}/patient/appointments?id=${appointmentId}" style="color:#0a4d6e;">${c.view}</a> &middot;
+      <a href="${appUrl}/patient/appointments?id=${appointmentId}" style="color:#dc2626;">${c.cancel}</a>
     </p>`;
 
   await sendTransactionalEmail({

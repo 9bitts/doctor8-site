@@ -103,9 +103,17 @@ export async function GET(req: NextRequest) {
 
   let currentEntry = null;
   const activeVol = campaign.volunteers.find((v) => v.status !== "OFFLINE");
+  if (activeVol?.status === "ONLINE") {
+    await expireHumanitarianNoShows(activeVol.poolId);
+    await assignNextInPool(activeVol.poolId);
+  }
   if (activeVol?.currentEntryId) {
+    const refreshedVol = await db.humanitarianVolunteer.findUnique({
+      where: { id: activeVol.id },
+    });
+    const entryId = refreshedVol?.currentEntryId ?? activeVol.currentEntryId;
     const entry = await db.humanitarianQueueEntry.findUnique({
-      where: { id: activeVol.currentEntryId },
+      where: { id: entryId },
       include: {
         patientUser: {
           select: {

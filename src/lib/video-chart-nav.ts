@@ -2,6 +2,8 @@
 
 export type VideoConsultKind = "appointment" | "jit" | "humanitarian";
 
+export type ProviderChartPanel = "professional" | "psychoanalyst" | "integrative_therapist";
+
 export interface VideoConsultContext {
   kind?: VideoConsultKind;
   appointmentId?: string | null;
@@ -93,13 +95,32 @@ export function chartTabUrl(chartId: string, returnUrl: string, tab: ChartTab): 
 export function buildVideoChartLinks(
   chartId: string,
   returnUrl: string,
-  isPsychoanalyst: boolean,
+  panel: ProviderChartPanel = "professional",
 ) {
-  if (isPsychoanalyst) {
+  if (panel === "psychoanalyst") {
     const base = `/psychoanalyst/analysands/${chartId}`;
     return {
       fullChart: withReturn(base, returnUrl),
       addRecord: withReturn(base, returnUrl, { newRecord: "1" }),
+      recordUrl: (_recordId: string) => withReturn(base, returnUrl),
+      vaccines: null as string | null,
+      dental: null as string | null,
+      evolution: null as string | null,
+      diagnoses: null as string | null,
+      prescribe: null as string | null,
+      exam: null as string | null,
+      document: null as string | null,
+      psychSession: null as string | null,
+      psychScale: null as string | null,
+      psychDocument: null as string | null,
+    };
+  }
+
+  if (panel === "integrative_therapist") {
+    const base = `/integrative-therapist/clients/${chartId}`;
+    return {
+      fullChart: withReturn(base, returnUrl),
+      addRecord: withReturn(base, returnUrl, { newNote: "1" }),
       recordUrl: (_recordId: string) => withReturn(base, returnUrl),
       vaccines: null as string | null,
       dental: null as string | null,

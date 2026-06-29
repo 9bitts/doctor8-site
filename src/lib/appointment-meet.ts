@@ -3,16 +3,7 @@ import { createAppointmentMeetLink } from "@/lib/google-meet";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
-
-function appointmentJoinWindow(scheduledAt: Date, durationMins: number) {
-  const start = scheduledAt.getTime();
-  const now = Date.now();
-  return {
-    joinOpensAt: start - 10 * 60 * 1000,
-    joinClosesAt: start + (durationMins + 30) * 60 * 1000,
-    now,
-  };
-}
+import { appointmentJoinWindow } from "@/lib/appointment-join-window";
 
 export async function handoffAppointmentViaGoogleMeet(
   appointmentId: string,
@@ -24,13 +15,16 @@ export async function handoffAppointmentViaGoogleMeet(
       patient: { select: { userId: true, firstName: true, lastName: true } },
       professional: { select: { userId: true, firstName: true, lastName: true } },
       psychoanalyst: { select: { userId: true, firstName: true, lastName: true } },
+      integrativeTherapist: { select: { userId: true, firstName: true, lastName: true } },
     },
   });
 
   if (!appointment) throw new Error("NOT_FOUND");
 
   const providerUserIdFromAppt =
-    appointment.professional?.userId ?? appointment.psychoanalyst?.userId;
+    appointment.professional?.userId ??
+    appointment.psychoanalyst?.userId ??
+    appointment.integrativeTherapist?.userId;
   if (providerUserIdFromAppt !== providerUserId) throw new Error("Forbidden");
 
   if (appointment.status === "CANCELLED") throw new Error("CANCELLED");
@@ -45,12 +39,14 @@ export async function handoffAppointmentViaGoogleMeet(
   if (now < joinOpensAt) throw new Error("TOO_EARLY");
   if (now > joinClosesAt) throw new Error("EXPIRED");
 
-  const patientName = `${appointment.patient.firstName} ${appointment.patient.lastName}`.trim();
+  const patientName = `${safeDecrypt(appointment.patient.firstName)} ${safeDecrypt(appointment.patient.lastName)}`.trim();
   let providerName = "Profissional Doctor8";
   if (appointment.professional) {
     providerName = `Dr. ${appointment.professional.firstName} ${appointment.professional.lastName}`;
   } else if (appointment.psychoanalyst) {
     providerName = `${safeDecrypt(appointment.psychoanalyst.firstName)} ${safeDecrypt(appointment.psychoanalyst.lastName)}`.trim();
+  } else if (appointment.integrativeTherapist) {
+    providerName = `${appointment.integrativeTherapist.firstName} ${appointment.integrativeTherapist.lastName}`.trim();
   }
 
   const [providerUser, patientUser] = await Promise.all([

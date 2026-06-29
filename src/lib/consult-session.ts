@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { isVolunteerOnEntry } from "@/lib/humanitarian/volunteer-eligibility";
+import { appointmentJoinWindow } from "@/lib/appointment-join-window";
 
 export type ConsultKind = "appointment" | "jit" | "humanitarian";
 
@@ -17,22 +18,26 @@ export async function verifyActiveConsult(
         patient: { select: { userId: true } },
         professional: { select: { userId: true } },
         psychoanalyst: { select: { userId: true } },
+        integrativeTherapist: { select: { userId: true } },
       },
     });
     if (!appointment || appointment.status === "CANCELLED") return false;
+    if (appointment.status !== "CONFIRMED") return false;
     if (appointment.type !== "TELECONSULT") return false;
 
     const providerUserId =
-      appointment.professional?.userId ?? appointment.psychoanalyst?.userId;
+      appointment.professional?.userId ??
+      appointment.psychoanalyst?.userId ??
+      appointment.integrativeTherapist?.userId;
     const isParticipant =
       appointment.patient.userId === userId || providerUserId === userId;
     if (!isParticipant) return false;
 
     const duration = appointment.durationMins || 30;
-    const start = appointment.scheduledAt.getTime();
-    const now = Date.now();
-    const joinOpensAt = start - 10 * 60 * 1000;
-    const joinClosesAt = start + (duration + 30) * 60 * 1000;
+    const { joinOpensAt, joinClosesAt, now } = appointmentJoinWindow(
+      appointment.scheduledAt,
+      duration,
+    );
     return now >= joinOpensAt && now <= joinClosesAt;
   }
 
