@@ -68,18 +68,15 @@ interface Appointment {
   professional: { firstName: string; lastName: string; specialty: string };
 }
 
-// ── Inline onboarding texts ──────────────────────────────────────────────────
-const TIPS: Record<string, { pt: string; en: string; es: string }> = {
-  browse:   { pt: "Escolha um médico pela especialidade ou nome. Você pode filtrar por tipo de consulta.", en: "Choose a doctor by specialty or name. You can filter by consultation type.", es: "Elige un médico por especialidad o nombre." },
-  slots:    { pt: "Selecione o dia e horário que preferir. Horários em cinza já estão ocupados.", en: "Select your preferred day and time. Grey slots are already taken.", es: "Selecciona el día y horario que prefieras." },
-  payment:  { pt: "Seu pagamento é seguro e processado pelo Stripe. Você pode cancelar em até 24h antes com reembolso total.", en: "Your payment is secure via Stripe. You can cancel up to 24h before for a full refund.", es: "Tu pago es seguro vía Stripe. Puedes cancelar hasta 24h antes para un reembolso total." },
-  cancel:   { pt: "Cancelamentos com mais de 24h de antecedência recebem reembolso total. Com menos de 24h, o valor não é reembolsado conforme nossa política.", en: "Cancellations more than 24h before get a full refund. Less than 24h — no refund per our policy.", es: "Cancelaciones con más de 24h de anticipación reciben reembolso total." },
+const APPT_TIP_KEYS: Partial<Record<Step, string>> = {
+  browse: "appt.tip.browse",
+  slots: "appt.tip.slots",
+  payment: "appt.tip.payment",
 };
 
 export default function AppointmentsPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
-  const l = (lang === "pt" || lang === "es") ? lang : "en";
 
   const SPECIALTIES = ["All", "General Practice", "Cardiology", "Psychology", PSYCHOANALYSIS_SPECIALTY, "Nutrition", "Cannabis Medicine", "Dermatology"] as const;
 
@@ -606,7 +603,8 @@ export default function AppointmentsPage() {
   const canPay = acceptedPolicy && (usesHostedCheckout || (stripeLoaded && cardComplete));
 
   // Tips per step
-  const tipText = TIPS[step === "payment" ? "payment" : step]?.[l] ?? TIPS[step]?.["en"];
+  const tipKey = step === "payment" ? APPT_TIP_KEYS.payment : APPT_TIP_KEYS[step];
+  const tipText = tipKey ? t(tipKey) : "";
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
