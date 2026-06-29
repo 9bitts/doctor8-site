@@ -4,11 +4,29 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, AlertCircle, Building2, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { translate, normalizeLang, type Lang } from "@/lib/i18n/translations";
+
+const LANG_KEY = "doctor8.lang";
+
+function detectLang(): Lang {
+  if (typeof window === "undefined") return "pt";
+  try {
+    const saved = window.localStorage.getItem(LANG_KEY);
+    if (saved) return normalizeLang(saved);
+  } catch { /* ignore */ }
+  const nav = (navigator.language || "pt").toLowerCase();
+  if (nav.startsWith("pt")) return "pt";
+  if (nav.startsWith("es")) return "es";
+  return "en";
+}
 
 export default function RegisterOrganizationStaffPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
+
+  const [lang, setLang] = useState<Lang>("pt");
+  const t = (key: string) => translate(lang, key);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,6 +43,10 @@ export default function RegisterOrganizationStaffPage() {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [acceptedGdpr, setAcceptedGdpr] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setLang(detectLang());
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -60,12 +82,12 @@ export default function RegisterOrganizationStaffPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error?.general?.[0] || data.error?.email?.[0] || "Erro ao criar conta");
+        setError(data.error?.general?.[0] || data.error?.email?.[0] || t("orgStaff.errCreate"));
         return;
       }
       router.push("/login?callbackUrl=/organization");
     } catch {
-      setError("Erro de conexão");
+      setError(t("orgStaff.errConnection"));
     } finally {
       setSaving(false);
     }
@@ -84,8 +106,8 @@ export default function RegisterOrganizationStaffPage() {
       <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center max-w-md">
           <AlertCircle className="mx-auto text-red-400 mb-4" size={40} />
-          <p className="text-white font-semibold mb-2">Convite inválido ou expirado</p>
-          <Link href="/login" className="text-indigo-400 text-sm hover:underline">Ir para login</Link>
+          <p className="text-white font-semibold mb-2">{t("orgStaff.invalidInvite")}</p>
+          <Link href="/login" className="text-indigo-400 text-sm hover:underline">{t("orgStaff.goLogin")}</Link>
         </div>
       </div>
     );
@@ -95,13 +117,13 @@ export default function RegisterOrganizationStaffPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-2xl p-8">
         <Link href="/login" className="flex items-center gap-1 text-slate-400 text-sm mb-6 hover:text-white">
-          <ArrowLeft size={16} /> Voltar
+          <ArrowLeft size={16} /> {t("orgStaff.back")}
         </Link>
         <div className="flex items-center gap-3 mb-6">
           <Building2 className="text-indigo-400" size={24} />
           <div>
             <p className="text-white font-bold">{invite.organizationName}</p>
-            <p className="text-slate-400 text-xs">Papel: {invite.role}</p>
+            <p className="text-slate-400 text-xs">{t("orgStaff.role").replace("{{role}}", invite.role)}</p>
           </div>
         </div>
         {error && (
@@ -109,23 +131,23 @@ export default function RegisterOrganizationStaffPage() {
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm text-slate-300 block mb-1">E-mail</label>
+            <label className="text-sm text-slate-300 block mb-1">{t("orgStaff.email")}</label>
             <input disabled value={invite.email} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-slate-400 text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm text-slate-300 block mb-1">Nome</label>
+              <label className="text-sm text-slate-300 block mb-1">{t("orgStaff.firstName")}</label>
               <input required value={firstName} onChange={(e) => setFirstName(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm" />
             </div>
             <div>
-              <label className="text-sm text-slate-300 block mb-1">Sobrenome</label>
+              <label className="text-sm text-slate-300 block mb-1">{t("orgStaff.lastName")}</label>
               <input required value={lastName} onChange={(e) => setLastName(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm" />
             </div>
           </div>
           <div className="relative">
-            <label className="text-sm text-slate-300 block mb-1">Senha</label>
+            <label className="text-sm text-slate-300 block mb-1">{t("orgStaff.password")}</label>
             <input required type={showPassword ? "text" : "password"} value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 pr-10 text-white text-sm" />
@@ -135,14 +157,14 @@ export default function RegisterOrganizationStaffPage() {
             </button>
           </div>
           <div className="space-y-2 text-sm text-slate-300">
-            <label className="flex gap-2"><input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} /> Aceito os Termos</label>
-            <label className="flex gap-2"><input type="checkbox" checked={acceptedPrivacy} onChange={(e) => setAcceptedPrivacy(e.target.checked)} /> Aceito a Política de Privacidade</label>
-            <label className="flex gap-2"><input type="checkbox" checked={acceptedGdpr} onChange={(e) => setAcceptedGdpr(e.target.checked)} /> Aceito LGPD</label>
+            <label className="flex gap-2"><input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} /> {t("orgStaff.acceptTerms")}</label>
+            <label className="flex gap-2"><input type="checkbox" checked={acceptedPrivacy} onChange={(e) => setAcceptedPrivacy(e.target.checked)} /> {t("orgStaff.acceptPrivacy")}</label>
+            <label className="flex gap-2"><input type="checkbox" checked={acceptedGdpr} onChange={(e) => setAcceptedGdpr(e.target.checked)} /> {t("orgStaff.acceptGdpr")}</label>
           </div>
           <button type="submit" disabled={saving || !acceptedTerms || !acceptedPrivacy || !acceptedGdpr}
             className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-500 disabled:opacity-50 flex items-center justify-center gap-2">
             {saving && <Loader2 className="animate-spin" size={18} />}
-            Criar conta e entrar
+            {t("orgStaff.submit")}
           </button>
         </form>
       </div>

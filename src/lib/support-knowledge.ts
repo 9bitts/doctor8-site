@@ -11,11 +11,11 @@ PATIENT AREAS (after login at /login):
 - Urgent care (paid immediate queue): /urgent
 - Humanitarian SOS Venezuela (free): /humanitarian/${VENEZUELA_CAMPAIGN_SLUG} ? triage ? TCLE consent ? phone ? join queue ? video call
 - Medical history: /patient/medical-history ? health questionnaire; share with doctors
-- Medications: /patient/medications ? clinical list + purchase list; export PDF via "Export PDF" button
+- Medications: /patient/medications ? clinical list + purchase list; export PDF via "Export PDF" button; optional "Compare and buy" opens partner pharmacy search (Consulta Rem?dios) when PHARMACY_MARKETPLACE_ENABLED=true
 - My prescriptions: /patient/prescriptions ? prescriptions issued by doctors; download signed PDF
 - Exam requests: /patient/exam-requests ? lab/imaging orders from doctors
 - Documents: /patient/documents
-- Shared with me: /patient/resources ? materials/links/files shared by doctors
+- Shared with me: /patient/resources ? materials/links/files shared by doctors (menu label: "Compartilhado comigo" in PT)
 - Messages: /patient/messages ? encrypted chat with professionals
 - Connected apps: /patient/connected-apps
 - Account settings: /patient/settings
@@ -24,7 +24,7 @@ PRESCRIPTIONS FLOW (patient):
 1. Doctor creates prescription during/after consultation in professional dashboard
 2. Doctor may digitally sign it (ICP-Brasil); signed PDF stored securely
 3. Patient receives in-app notification and email when available
-4. Patient opens Minhas receitas (/patient/prescriptions) and clicks Baixar PDF
+4. Patient opens Minhas receitas (/patient/prescriptions) and clicks Baixar PDF / Download PDF
 5. WhatsApp notification may be sent if patient has phone on file
 
 HUMANITARIAN SOS VENEZUELA FLOW:
@@ -34,9 +34,10 @@ HUMANITARIAN SOS VENEZUELA FLOW:
 4. Phone verification gate on main page /humanitarian/${VENEZUELA_CAMPAIGN_SLUG}
 5. Choose care type pool (medical, psychology, etc.) and join queue
 6. When called, enter video room within 3 minutes at /video/humanitarian/{entryId}
-7. To leave consultation: red "Leave" button ? ends session and frees queue for next patient
-8. Optional full anamnesis at /humanitarian/${VENEZUELA_CAMPAIGN_SLUG}/anamnese
-9. Volunteers: /humanitarian/volunteer ? go online, accept patients from queue
+7. Volunteer may choose Daily video, WhatsApp handoff, or Google Meet (translated captions) ? patient sees handoff screen with link and instructions
+8. To leave consultation: red "Leave" / "Sair" button ? ends session and frees queue for next patient
+9. Optional full anamnesis at /humanitarian/${VENEZUELA_CAMPAIGN_SLUG}/anamnese (includes own vs borrowed phone question)
+10. Volunteers: /humanitarian/volunteer ? go online, accept patients from queue
 
 PROFESSIONAL AREAS:
 - Dashboard: /professional
@@ -52,15 +53,25 @@ REGISTRATION:
 - Google login available at /login
 
 PAYMENTS:
-- Consultations paid online via Stripe (credit card)
+- Consultations paid online via Stripe (credit card, PIX, boleto in Brazil)
 - Humanitarian Venezuela campaign is FREE
+- Urgent care (/urgent): paid immediate queue; can cancel from queue before match
+- Appointment cancellation: >24h before = full refund; <24h = no refund; CDC 7-day rule may apply
+
+GOOGLE MEET (when GOOGLE_MEET_ENABLED=1):
+- Humanitarian volunteers can hand off to Google Meet for translated captions (PT/ES)
+- Scheduled appointments: professional may choose Meet instead of Daily in video room
+- Patient sees Meet link + caption instructions on handoff screen
 
 COMMON ISSUES:
-- Cannot see prescription: check Minhas receitas; doctor must create and optionally sign it first
+- Cannot see prescription: check Minhas receitas (/patient/prescriptions); doctor must create and optionally sign it first
 - PDF export medications: use Export PDF on Medications page (needs login)
-- Stuck in humanitarian queue after leaving: click Leave in video room; if problem persists, refresh and rejoin queue
-- Back button: use in-app navigation links; browser back may exit the app on mobile
+- Pharmacy compare blocked: link opens via Doctor8 redirect; if partner site blocks, try again later or search medication name manually
+- Stuck in humanitarian queue after leaving: click Leave/Sair in video room; if problem persists, refresh and rejoin queue
+- Back button: use in-app Voltar/back links; browser back may exit the app on mobile
 - Phone input blank on humanitarian: update browser; fields should show dark text on white background
+- Email verification: check spam; resend at /verify-email; link expires in 24h
+- Appointment cancel/reschedule: buttons on /patient/appointments upcoming list; reschedule only if >24h before
 
 CONTACT:
 - Email support@doctor8.org for issues the assistant cannot resolve
