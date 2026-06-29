@@ -8,6 +8,7 @@ import {
 
 const roleSchema = z.object({
   role: z.enum(["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"]),
+  professionalKind: z.enum(["psychologist"]).optional(),
 });
 
 function cookieOptions(maxAge: number) {
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   }
 
-  const token = createSignupRoleToken(parsed.data.role);
+  const token = createSignupRoleToken(parsed.data.role, parsed.data.professionalKind ?? null);
   const res = NextResponse.json({ ok: true });
   res.cookies.set(OAUTH_SIGNUP_ROLE_COOKIE, token, cookieOptions(OAUTH_SIGNUP_ROLE_MAX_AGE_SECONDS));
   return res;

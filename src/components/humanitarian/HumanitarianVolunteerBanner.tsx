@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, ChevronRight, Radio, Phone, AlertTriangle, Stethoscope } from "lucide-react";
+import { Heart, ChevronRight, Radio, Phone, AlertTriangle, Stethoscope, Brain } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
 import { poolLabel } from "@/lib/humanitarian/constants";
 
@@ -13,9 +13,11 @@ type Props = {
   lang: Lang;
   campaignActive: boolean;
   volunteer?: VolunteerBannerState | null;
+  /** Use brain icon instead of stethoscope for psychology portal. */
+  psychologyPortal?: boolean;
 };
 
-export default function HumanitarianVolunteerBanner({ lang, campaignActive, volunteer }: Props) {
+export default function HumanitarianVolunteerBanner({ lang, campaignActive, volunteer, psychologyPortal }: Props) {
   if (!campaignActive) return null;
 
   const t = (key: string) => translate(lang, key);
@@ -76,7 +78,11 @@ export default function HumanitarianVolunteerBanner({ lang, campaignActive, volu
     >
       <div className="p-5 sm:p-6 flex items-center gap-4">
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-rose-100">
-          <Stethoscope size={28} className="text-rose-600" />
+          {psychologyPortal ? (
+            <Brain size={28} className="text-violet-600" />
+          ) : (
+            <Stethoscope size={28} className="text-rose-600" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-rose-700 uppercase tracking-wide flex items-center gap-1">

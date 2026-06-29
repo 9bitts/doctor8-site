@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { getScale, scoreScale, type ScaleId } from "@/lib/psychology-scales";
 import { buildScalePayload } from "@/lib/psychology-templates";
-import { parsePsychologyContent, requireProfessional, safeDecrypt } from "@/lib/psychology-api";
+import { parsePsychologyContent, requirePsychologist, safeDecrypt } from "@/lib/psychology-api";
 
 const createSchema = z.object({
   patientRecordId: z.string(),
@@ -13,7 +13,7 @@ const createSchema = z.object({
 });
 
 export async function GET() {
-  const ctx = await requireProfessional();
+  const ctx = await requirePsychologist();
   if ("error" in ctx && ctx.error) return ctx.error;
   const { professional } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
 
@@ -52,7 +52,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireProfessional();
+  const ctx = await requirePsychologist();
   if ("error" in ctx && ctx.error) return ctx.error;
   const { professional } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
 

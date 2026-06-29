@@ -129,7 +129,8 @@ export default auth((req) => {
       return NextResponse.redirect(new URL(`/club/join?drug=${drugId}`, req.url));
     }
 
-    const loginUrl = new URL("/login", req.url);
+    const loginPath = pathname.startsWith("/psychologist") ? "/login/psicologo" : "/login";
+    const loginUrl = new URL(loginPath, req.url);
     const callbackUrl = pathname + req.nextUrl.search;
     loginUrl.searchParams.set("callbackUrl", callbackUrl);
     return NextResponse.redirect(loginUrl);

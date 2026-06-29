@@ -112,6 +112,7 @@ export default async function PsychologistDashboard() {
         lang={lang}
         campaignActive={!!humanitarianCampaign?.active}
         volunteer={humanitarianVolunteer}
+        psychologyPortal
       />
 
       <AcuraVolunteerOptIn

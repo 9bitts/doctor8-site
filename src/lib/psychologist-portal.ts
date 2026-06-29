@@ -1,9 +1,12 @@
 import { isPsychologist } from "@/lib/profession-label";
+import { db } from "@/lib/db";
 
 export const PSYCHOLOGIST_LOGIN = "/login/psicologo";
 export const PSYCHOLOGIST_HOME = "/psychologist";
 export const PSYCHOLOGIST_REGISTER =
   "/register/professional/signup?portal=psychologist";
+
+export type ProfessionalPortalBase = "/psychologist" | "/professional";
 
 /** True when specialty is a psychology profession (includes onboarding value "Psychology"). */
 export function isPsychologistSpecialty(
@@ -13,6 +16,35 @@ export function isPsychologistSpecialty(
   const s = specialty.trim();
   if (s === "Psychology") return true;
   return isPsychologist(s);
+}
+
+export function professionalPortalBase(pathname: string): ProfessionalPortalBase {
+  return pathname.startsWith("/psychologist") ? "/psychologist" : "/professional";
+}
+
+export function professionalPatientsHref(pathname: string, chartId: string): string {
+  return `${professionalPortalBase(pathname)}/patients/${chartId}`;
+}
+
+/** Rewrites a /professional/... path to the portal matching the current URL. */
+export function mapProfessionalPathToPortal(
+  pathname: string,
+  professionalPath: string,
+): string {
+  if (!professionalPath.startsWith("/professional")) return professionalPath;
+  return professionalPath.replace("/professional", professionalPortalBase(pathname));
+}
+
+export async function resolveProfessionalPortalBaseForUser(
+  userId: string,
+): Promise<ProfessionalPortalBase> {
+  const profile = await db.professionalProfile.findUnique({
+    where: { userId },
+    select: { specialty: true },
+  });
+  return profile && isPsychologistSpecialty(profile.specialty)
+    ? "/psychologist"
+    : "/professional";
 }
 
 export function psychologistHubHref(pathname: string): string {

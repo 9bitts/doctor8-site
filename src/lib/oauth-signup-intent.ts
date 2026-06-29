@@ -9,12 +9,16 @@ export type SignupRole =
   | "PSYCHOANALYST"
   | "INTEGRATIVE_THERAPIST";
 
+export type SignupProfessionalKind = "psychologist" | null;
+
 const VALID_ROLES = new Set<string>([
   "PATIENT",
   "PROFESSIONAL",
   "PSYCHOANALYST",
   "INTEGRATIVE_THERAPIST",
 ]);
+
+const VALID_KINDS = new Set<string>(["", "psychologist"]);
 
 function signingSecret(): string {
   const secret = process.env.AUTH_SECRET;
@@ -26,13 +30,22 @@ function signPayload(payload: string): string {
   return createHmac("sha256", signingSecret()).update(payload).digest("base64url");
 }
 
-export function createSignupRoleToken(role: SignupRole): string {
+export function createSignupRoleToken(
+  role: SignupRole,
+  professionalKind: SignupProfessionalKind = null,
+): string {
   const exp = Math.floor(Date.now() / 1000) + OAUTH_SIGNUP_ROLE_MAX_AGE_SECONDS;
-  const payload = `${role}:${exp}`;
+  const kind = professionalKind ?? "";
+  const payload = `${role}:${kind}:${exp}`;
   return `${payload}.${signPayload(payload)}`;
 }
 
-export function parseSignupRoleToken(token: string | undefined): SignupRole | null {
+export type ParsedSignupIntent = {
+  role: SignupRole;
+  professionalKind: SignupProfessionalKind;
+};
+
+export function parseSignupRoleToken(token: string | undefined): ParsedSignupIntent | null {
   if (!token) return null;
 
   const dot = token.lastIndexOf(".");
@@ -52,10 +65,27 @@ export function parseSignupRoleToken(token: string | undefined): SignupRole | nu
     return null;
   }
 
-  const [role, expStr] = payload.split(":");
+  const parts = payload.split(":");
+  if (parts.length < 2) return null;
+
+  let role: string;
+  let kind: string;
+  let expStr: string;
+
+  if (parts.length === 2) {
+    [role, expStr] = parts;
+    kind = "";
+  } else {
+    [role, kind, expStr] = parts;
+  }
+
   const exp = Number.parseInt(expStr, 10);
   if (!Number.isFinite(exp) || exp < Math.floor(Date.now() / 1000)) return null;
   if (!VALID_ROLES.has(role)) return null;
+  if (!VALID_KINDS.has(kind)) return null;
 
-  return role as SignupRole;
+  return {
+    role: role as SignupRole,
+    professionalKind: kind === "psychologist" ? "psychologist" : null,
+  };
 }

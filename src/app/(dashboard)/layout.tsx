@@ -226,7 +226,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/50">
           <Link href={isPsychologist ? "/psychologist" : isPsychoanalyst ? "/psychoanalyst" : "/"} className="text-2xl font-black text-white tracking-tight">
             {isPsychologist ? (
-              <span className="uppercase">Psicologia</span>
+              <span className="uppercase">{t("portal.psychologyBrand")}</span>
             ) : isPsychoanalyst ? (
               <span className="uppercase">Psicanálise</span>
             ) : (
@@ -297,7 +297,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           <div className="lg:hidden flex-1 min-w-0 text-center">
             <span className="text-lg font-bold text-slate-900 uppercase">
               {isPsychologist ? (
-                "Psicologia"
+                t("portal.psychologyBrand")
               ) : isPsychoanalyst ? (
                 "Psicanálise"
               ) : (

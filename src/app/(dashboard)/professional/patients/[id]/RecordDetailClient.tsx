@@ -8,7 +8,7 @@
 // P2: "Diagnóstico / Título" label (trilíngue) + botão WhatsApp no cabeçalho da ficha.
 
 import { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
@@ -39,6 +39,10 @@ import {
   RecordTimelineDot,
 } from "@/components/professional/PatientRecordTimeline";
 import { RecordFileThumbnail } from "@/components/professional/RecordFileThumbnail";
+import {
+  mapProfessionalPathToPortal,
+  professionalPatientsHref,
+} from "@/lib/psychologist-portal";
 import { hasAnyMetric, type ClinicalMetricsInput } from "@/lib/clinical-metrics";
 import {
   RECORD_KIND_OPTIONS,
@@ -227,6 +231,8 @@ export default function RecordDetailClient({
 }) {
   const isOwner = chartAccess === "owner";
   const canEdit = !readOnly && chartAccess !== "view";
+  const pathname = usePathname();
+  const portalBase = mapProfessionalPathToPortal(pathname, "/professional");
   const { lang, t } = useI18n();
   const searchParams = useSearchParams();
   const consultReturnUrl = searchParams.get("returnUrl");
@@ -786,7 +792,7 @@ export default function RecordDetailClient({
         lang={lang}
       />
       <Link
-        href="/professional/patients"
+        href={`${portalBase}/patients`}
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
       >
         <ArrowLeft size={16} /> {t("rec.backToPatients")}
@@ -849,14 +855,14 @@ export default function RecordDetailClient({
             {chart.linkedUserId && (
               <div className="mt-3 flex gap-2 flex-wrap">
                 <a
-                  href={`/professional/messages?with=${chart.linkedUserId}`}
+                  href={`${portalBase}/messages?with=${chart.linkedUserId}`}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg transition"
                 >
                   <MessageCircle size={13} /> {t("rec.sendMessage")}
                 </a>
                 {hasConversation && (
                   <a
-                    href={`/professional/messages?with=${chart.linkedUserId}`}
+                    href={`${portalBase}/messages?with=${chart.linkedUserId}`}
                     className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition"
                   >
                     <ExternalLink size={13} /> {t("rec.verConv")}
@@ -867,7 +873,7 @@ export default function RecordDetailClient({
             {canEdit && isOwner && (
               <ChartClinicalActions
                 chartId={chart.id}
-                returnUrl={`/professional/patients/${chart.id}`}
+                returnUrl={professionalPatientsHref(pathname, chart.id)}
               />
             )}
           </div>

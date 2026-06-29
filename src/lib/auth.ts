@@ -25,16 +25,20 @@ const SESSION_MAX_AGE = parseInt(
 );
 
 // Reads the signed OAuth signup intent cookie set before the Google redirect.
-async function readSignupRole(): Promise<"PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST"> {
+async function readSignupIntent(): Promise<{
+  role: "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
+  professionalKind: "psychologist" | null;
+}> {
   try {
     const { cookies } = await import("next/headers");
     const { parseSignupRoleToken, OAUTH_SIGNUP_ROLE_COOKIE } = await import(
       "@/lib/oauth-signup-intent"
     );
     const token = cookies().get(OAUTH_SIGNUP_ROLE_COOKIE)?.value;
-    return parseSignupRoleToken(token) ?? "PATIENT";
+    const parsed = parseSignupRoleToken(token);
+    return parsed ?? { role: "PATIENT", professionalKind: null };
   } catch {
-    return "PATIENT";
+    return { role: "PATIENT", professionalKind: null };
   }
 }
 
@@ -179,7 +183,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           if (!dbUser) {
             // New Google user — use the role chosen on the registration screen
-            const signupRole = await readSignupRole();
+            const { role: signupRole, professionalKind } = await readSignupIntent();
 
             const nameParts = (user.name || "").split(" ");
             const firstName = nameParts[0] || "";
@@ -202,7 +206,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   lastName,
                   avatarUrl: user.image || null,
                   licenseNumber: "",
-                  specialty: "",
+                  specialty: professionalKind === "psychologist" ? "Psychologist" : "",
                   consultPrice: 0,
                 },
               });

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
+import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
 
 export async function requireProfessional() {
   const session = await auth();
@@ -16,6 +17,15 @@ export async function requireProfessional() {
   if (!professional) return { error: NextResponse.json({ error: "No profile" }, { status: 404 }) };
 
   return { session, professional };
+}
+
+export async function requirePsychologist() {
+  const result = await requireProfessional();
+  if ("error" in result) return result;
+  if (!isPsychologistSpecialty(result.professional.specialty)) {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+  return result;
 }
 
 export function safeDecrypt(v: string | null): string {

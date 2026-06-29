@@ -10,6 +10,7 @@ import Link from "next/link";
 import { chartActionUrl } from "@/lib/video-chart-nav";
 import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import { decrypt } from "@/lib/encryption";
+import { resolveProfessionalPortalBaseForUser } from "@/lib/psychologist-portal";
 import AppointmentsAnchorClient from "@/components/professional/AppointmentsAnchorClient";
 
 function safeDecrypt(v: string | null): string {
@@ -38,6 +39,9 @@ export default async function ProfessionalAppointments() {
     where: { userId: session.user.id },
   });
   if (!professional) redirect("/onboarding");
+
+  const portalBase = await resolveProfessionalPortalBaseForUser(session.user.id);
+  const isPsychologistPortal = portalBase === "/psychologist";
 
   const appointments = await db.appointment.findMany({
     where: { professionalId: professional.id },
@@ -148,38 +152,42 @@ export default async function ProfessionalAppointments() {
           {chartId && (
             <div className="mt-2 flex flex-wrap gap-2">
               <Link
-                href={`/professional/patients/${chartId}`}
+                href={`${portalBase}/patients/${chartId}`}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
               >
                 <FileText size={11} /> {t("proappt.viewChart")}
               </Link>
-              <Link
-                href={chartActionUrl("/professional/prescriptions", chartId, {
-                  view: "prescription",
-                  returnUrl: "/professional/appointments",
-                })}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
-              >
-                <Pill size={11} /> {t("chartAct.prescribe")}
-              </Link>
-              <Link
-                href={chartActionUrl("/professional/prescriptions", chartId, {
-                  view: "exam",
-                  returnUrl: "/professional/appointments",
-                })}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
-              >
-                <FlaskConical size={11} /> {t("chartAct.exam")}
-              </Link>
-              <Link
-                href={chartActionUrl("/professional/prescriptions", chartId, {
-                  view: "document",
-                  returnUrl: "/professional/appointments",
-                })}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
-              >
-                <ScrollText size={11} /> {t("chartAct.document")}
-              </Link>
+              {!isPsychologistPortal && (
+                <>
+                  <Link
+                    href={chartActionUrl("/professional/prescriptions", chartId, {
+                      view: "prescription",
+                      returnUrl: `${portalBase}/appointments`,
+                    })}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
+                  >
+                    <Pill size={11} /> {t("chartAct.prescribe")}
+                  </Link>
+                  <Link
+                    href={chartActionUrl("/professional/prescriptions", chartId, {
+                      view: "exam",
+                      returnUrl: `${portalBase}/appointments`,
+                    })}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
+                  >
+                    <FlaskConical size={11} /> {t("chartAct.exam")}
+                  </Link>
+                  <Link
+                    href={chartActionUrl("/professional/prescriptions", chartId, {
+                      view: "document",
+                      returnUrl: `${portalBase}/appointments`,
+                    })}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
+                  >
+                    <ScrollText size={11} /> {t("chartAct.document")}
+                  </Link>
+                </>
+              )}
             </div>
           )}
         </div>

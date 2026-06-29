@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { consumeAuthCallback } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
-import { PSYCHOLOGIST_HOME } from "@/lib/psychologist-portal";
+import { PSYCHOLOGIST_HOME, isPsychologistSpecialty } from "@/lib/psychologist-portal";
 
 async function resolveProfessionalHome(portal: string | null): Promise<string> {
   if (portal !== "psychologist") return "/professional";
@@ -14,6 +14,7 @@ async function resolveProfessionalHome(portal: string | null): Promise<string> {
   if (profRes.ok) {
     const { profile } = await profRes.json();
     if (!profile?.specialty?.trim()) return "/onboarding?portal=psychologist";
+    if (!isPsychologistSpecialty(profile.specialty)) return "/professional";
   }
   return PSYCHOLOGIST_HOME;
 }

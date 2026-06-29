@@ -7,6 +7,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { professionalPatientsHref } from "@/lib/psychologist-portal";
 import { useT, useI18n } from "@/lib/i18n/I18nProvider";
 import { Users, Plus, X, ChevronRight, CheckCircle2, AlertCircle, Search, Send, Loader2 } from "lucide-react";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
@@ -29,6 +31,7 @@ type DuplicateMatch = {
 };
 
 export default function PatientsClient({ initialCharts }: { initialCharts: Chart[] }) {
+  const pathname = usePathname();
   const t = useT();
   const { lang } = useI18n();
   const [charts, setCharts] = useState<Chart[]>(initialCharts);
@@ -194,7 +197,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
             {filteredCharts.map((c) => (
               <Link
                 key={c.id}
-                href={`/professional/patients/${c.id}`}
+                href={professionalPatientsHref(pathname, c.id)}
                 className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition"
               >
                 <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
@@ -444,7 +447,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
               {duplicateMatches.map((m) => (
                 <li key={m.id}>
                   <Link
-                    href={`/professional/patients/${m.id}`}
+                    href={professionalPatientsHref(pathname, m.id)}
                     className="block rounded-xl border border-slate-200 px-3 py-2 hover:border-brand-200 hover:bg-brand-50/50 transition text-sm"
                     onClick={() => setDuplicateMatches(null)}
                   >

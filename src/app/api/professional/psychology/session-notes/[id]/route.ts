@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { buildSessionNotePayload, type SessionFormat } from "@/lib/psychology-templates";
-import { parsePsychologyContent, requireProfessional, safeDecrypt } from "@/lib/psychology-api";
+import { parsePsychologyContent, requirePsychologist, safeDecrypt } from "@/lib/psychology-api";
 
 const patchSchema = z.object({
   format: z.enum(["DAP", "BIRP", "SOAP", "FREE"]),
@@ -15,7 +15,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const ctx = await requireProfessional();
+  const ctx = await requirePsychologist();
   if ("error" in ctx && ctx.error) return ctx.error;
   const { professional } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
 

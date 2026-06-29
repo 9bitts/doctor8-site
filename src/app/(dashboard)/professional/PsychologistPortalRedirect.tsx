@@ -46,7 +46,7 @@ export default function PsychologistPortalRedirect() {
 
   return (
     <div className="flex items-center justify-center min-h-[40vh] text-slate-400 text-sm">
-      ?
+      <span className="inline-block w-5 h-5 border-2 border-slate-300 border-t-violet-500 rounded-full animate-spin" />
     </div>
   );
 }

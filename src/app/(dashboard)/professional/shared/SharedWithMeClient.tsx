@@ -4,10 +4,11 @@
 // Documents patients shared with this professional + chart actions. i18n via useT().
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { professionalPatientsHref } from "@/lib/psychologist-portal";
 import { getCategoryLabel } from "@/lib/category-i18n";
 import {
   FileText, Download, Loader2, Tag, User, FolderPlus, FolderOpen, FilePlus2, CheckCircle2,
@@ -56,6 +57,7 @@ const LEGACY_KEYS: Record<string, string> = {
 export default function SharedWithMeClient({ initialItems }: { initialItems: Item[] }) {
   const { lang, t } = useI18n();
   const router = useRouter();
+  const pathname = usePathname();
   const [items, setItems] = useState<Item[]>(initialItems);
   const [teamCharts, setTeamCharts] = useState<TeamChart[]>([]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -116,7 +118,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
       });
       const data = await res.json();
       if (res.ok && data.id) {
-        router.push(`/professional/patients/${data.id}`);
+        router.push(professionalPatientsHref(pathname, data.id));
       }
     } catch { /* ignore */ }
     setBusyId(null);
@@ -172,7 +174,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                   </p>
                 </div>
                 <Link
-                  href={`/professional/patients/${c.recordId}`}
+                  href={professionalPatientsHref(pathname, c.recordId)}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-3 py-2 rounded-lg shrink-0"
                 >
                   {c.permission === "EDIT" ? <Pencil size={14} /> : <Eye size={14} />}
@@ -232,7 +234,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
                   {it.existingChartId ? (
                     <>
                       <Link
-                        href={`/professional/patients/${it.existingChartId}`}
+                        href={professionalPatientsHref(pathname, it.existingChartId)}
                         className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 hover:text-brand-600 border border-brand-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
                       >
                         <FolderOpen size={14} /> {t("shared.openChart")}

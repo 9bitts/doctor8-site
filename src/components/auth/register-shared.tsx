@@ -153,7 +153,10 @@ export function RegisterAccountForm({
       const intentRes = await fetch("/api/auth/oauth-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role }),
+        body: JSON.stringify({
+          role,
+          professionalKind: isPsychologistSignup ? "psychologist" : undefined,
+        }),
       });
       if (!intentRes.ok) {
         setErrors({ form: ["Could not start Google sign-up. Please try again."] });
@@ -161,7 +164,10 @@ export function RegisterAccountForm({
         return;
       }
       persistAuthCallback(callbackUrl);
-      await signIn("google", { callbackUrl: "/callback" });
+      const oauthCallback = isPsychologistSignup
+        ? "/callback?portal=psychologist"
+        : "/callback";
+      await signIn("google", { callbackUrl: oauthCallback });
     } catch {
       setErrors({ form: ["Could not start Google sign-up. Please try again."] });
       setGoogleLoading(false);

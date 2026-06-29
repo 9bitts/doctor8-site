@@ -34,7 +34,9 @@ export default function ProfessionalProfessionClient({ slug }: { slug: Humanitar
   const signup = slug === "psicologo"
     ? "/register/professional/signup?portal=psychologist"
     : `/register/professional/signup?role=${signupRole}`;
-  const volSignup = `/register/professional/signup?region=VE&role=${signupRole}&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
+  const volSignup = slug === "psicologo"
+    ? `/register/professional/signup?region=VE&portal=psychologist&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`
+    : `/register/professional/signup?region=VE&role=${signupRole}&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
 
   return (
     <div className="min-h-screen bg-white font-sans text-d8-text antialiased">
