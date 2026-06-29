@@ -107,7 +107,7 @@ export default auth((req) => {
   if (pathname.startsWith("/api/payments/webhook")) return NextResponse.next();
   if (pathname.startsWith("/api/webhooks/")) return NextResponse.next();
   if (pathname.startsWith("/api/cron/")) return NextResponse.next();
-  if (pathname.startsWith("/api/reminders/send")) return NextResponse.next();
+  if (pathname.startsWith("/api/reminders/")) return NextResponse.next();
 
   // Token-based shared records (no session)
   if (pathname.startsWith("/api/shared/")) return NextResponse.next();

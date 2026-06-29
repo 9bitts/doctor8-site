@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
-import { scheduleAppointmentReminders } from "@/lib/qstash";
+import { scheduleAppointmentReminders, schedulePostConsultNotesReminder, scheduleReviewRequest } from "@/lib/qstash";
 import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { z } from "zod";
@@ -82,6 +82,12 @@ export async function POST(
 
   // Reschedule QStash reminders for new time
   scheduleAppointmentReminders(params.id, new Date(newScheduledAt)).catch(() => {});
+  scheduleReviewRequest(params.id, new Date(newScheduledAt), appointment.durationMins).catch(() => {});
+  schedulePostConsultNotesReminder(
+    params.id,
+    new Date(newScheduledAt),
+    appointment.durationMins,
+  ).catch(() => {});
 
   notifySlotAlerts({
     professionalId: appointment.professionalId,

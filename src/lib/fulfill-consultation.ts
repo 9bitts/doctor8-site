@@ -1,7 +1,7 @@
 // Create a paid appointment from Stripe payment metadata (card, PIX, boleto).
 
 import { db } from "@/lib/db";
-import { scheduleAppointmentReminders, scheduleReviewRequest } from "@/lib/qstash";
+import { scheduleAppointmentReminders, scheduleReviewRequest, schedulePostConsultNotesReminder } from "@/lib/qstash";
 import { buildAppointmentIntakePayload } from "@/lib/appointment-intake";
 import { onAppointmentBooked } from "@/lib/post-booking";
 import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
@@ -251,6 +251,10 @@ export async function fulfillConsultationPayment(params: {
 
   scheduleReviewRequest(appointment.id, new Date(scheduledAt), durationMins).catch((e) => {
     console.error("[QSTASH SCHEDULE ERROR]", e);
+  });
+
+  schedulePostConsultNotesReminder(appointment.id, new Date(scheduledAt), durationMins).catch((e) => {
+    console.error("[QSTASH POST-CONSULT SCHEDULE ERROR]", e);
   });
 
   return { appointmentId: appointment.id, created: true };

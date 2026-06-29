@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { scheduleAppointmentReminders } from "@/lib/qstash";
+import {
+  scheduleAppointmentReminders,
+  schedulePostConsultNotesReminder,
+  scheduleReviewRequest,
+} from "@/lib/qstash";
 
 function authorized(req: NextRequest): boolean {
   const secret = req.headers.get("x-cron-secret");
@@ -21,13 +25,15 @@ export async function POST(req: NextRequest) {
       status: { in: ["CONFIRMED", "PENDING"] },
       scheduledAt: { gte: now, lte: in7d },
     },
-    select: { id: true, scheduledAt: true },
+    select: { id: true, scheduledAt: true, durationMins: true },
     take: 200,
   });
 
   let scheduled = 0;
   for (const appt of appointments) {
     await scheduleAppointmentReminders(appt.id, appt.scheduledAt);
+    await schedulePostConsultNotesReminder(appt.id, appt.scheduledAt, appt.durationMins);
+    await scheduleReviewRequest(appt.id, appt.scheduledAt, appt.durationMins);
     scheduled += 1;
   }
 

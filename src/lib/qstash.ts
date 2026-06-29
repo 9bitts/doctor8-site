@@ -16,6 +16,38 @@ interface ScheduleReminderParams {
   remindersEpoch: number;
 }
 
+async function publishDelayedEndpoint(opts: {
+  endpoint: string;
+  body: Record<string, unknown>;
+  delaySeconds: number;
+  dedupeId: string;
+  retries?: string;
+}): Promise<boolean> {
+  if (!QSTASH_TOKEN) {
+    console.warn("[QSTASH] No token set — skipping delayed job");
+    return false;
+  }
+  if (opts.delaySeconds < 60) return false;
+
+  const res = await fetch(`${QSTASH_URL}/v2/publish/${opts.endpoint}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${QSTASH_TOKEN}`,
+      "Content-Type": "application/json",
+      "Upstash-Delay": `${opts.delaySeconds}s`,
+      "Upstash-Retries": opts.retries ?? "3",
+      "Upstash-Deduplication-Id": opts.dedupeId,
+    },
+    body: JSON.stringify(opts.body),
+  });
+
+  if (!res.ok) {
+    console.error("[QSTASH] Publish failed:", await res.text());
+    return false;
+  }
+  return true;
+}
+
 // Schedule a single reminder via QStash
 export async function scheduleReminder({
   appointmentId,
@@ -30,22 +62,14 @@ export async function scheduleReminder({
 
   const endpoint = `${APP_URL}/api/reminders/send`;
 
-  const res = await fetch(`${QSTASH_URL}/v2/publish/${endpoint}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${QSTASH_TOKEN}`,
-      "Content-Type": "application/json",
-      "Upstash-Delay": `${delaySeconds}s`,
-      "Upstash-Retries": "3",
-      "Upstash-Deduplication-Id": `${appointmentId}:${type}:${remindersEpoch}`,
-    },
-    body: JSON.stringify({ appointmentId, type, remindersEpoch }),
+  const ok = await publishDelayedEndpoint({
+    endpoint,
+    body: { appointmentId, type, remindersEpoch },
+    delaySeconds,
+    dedupeId: `${appointmentId}:${type}:${remindersEpoch}`,
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    console.error(`[QSTASH] Failed to schedule ${type} reminder:`, err);
-  } else {
+  if (ok) {
     console.log(`[QSTASH] Scheduled ${type} reminder for appointment ${appointmentId} in ${delaySeconds}s`);
   }
 }
@@ -84,6 +108,31 @@ export async function scheduleAppointmentReminders(
   }
 
   await Promise.allSettled(promises);
+}
+
+/** Nudge provider to record consultation notes ~45 min after visit ends. */
+export async function schedulePostConsultNotesReminder(
+  appointmentId: string,
+  scheduledAt: Date,
+  durationMins: number,
+): Promise<void> {
+  const appt = await db.appointment.findUnique({
+    where: { id: appointmentId },
+    select: { remindersEpoch: true },
+  });
+  const remindersEpoch = appt?.remindersEpoch ?? 0;
+
+  const endTime = scheduledAt.getTime() + durationMins * 60 * 1000;
+  const delaySeconds = Math.floor((endTime + 45 * 60 * 1000 - Date.now()) / 1000);
+
+  const endpoint = `${APP_URL}/api/reminders/post-consult-notes`;
+  await publishDelayedEndpoint({
+    endpoint,
+    body: { appointmentId, remindersEpoch },
+    delaySeconds,
+    dedupeId: `${appointmentId}:post_consult_notes:${remindersEpoch}`,
+    retries: "2",
+  });
 }
 
 /** Schedule review request email ~2h after appointment ends. */
@@ -125,21 +174,13 @@ export async function scheduleHumanitarianAnamneseReminder({
 
   const endpoint = `${APP_URL}/api/reminders/humanitarian-anamnese`;
 
-  const res = await fetch(`${QSTASH_URL}/v2/publish/${endpoint}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${QSTASH_TOKEN}`,
-      "Content-Type": "application/json",
-      "Upstash-Delay": `${delaySeconds}s`,
-      "Upstash-Retries": "2",
-      "Upstash-Deduplication-Id": `hum-anamnese:${intakeId}`,
-    },
-    body: JSON.stringify({ patientUserId, campaignSlug, intakeId }),
+  await publishDelayedEndpoint({
+    endpoint,
+    body: { patientUserId, campaignSlug, intakeId },
+    delaySeconds,
+    dedupeId: `hum-anamnese:${intakeId}`,
+    retries: "2",
   });
-
-  if (!res.ok) {
-    console.error("[QSTASH] Failed to schedule humanitarian anamnese reminder:", await res.text());
-  }
 }
 
 let qstashReceiver: Receiver | null = null;
