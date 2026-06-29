@@ -54,7 +54,7 @@ export const PORTAL_LOGINS: PortalLoginConfig[] = [
     allowedRoles: ["PROFESSIONAL"],
     oauthPortal: "psychologist",
     headerIcon: "brain",
-    footerLinkClass: "text-violet-400/90 hover:text-violet-300",
+    footerLinkClass: "text-violet-300 hover:text-violet-200",
     footerLabelKey: "login.proPsychologistPortal",
   },
   {
@@ -68,7 +68,7 @@ export const PORTAL_LOGINS: PortalLoginConfig[] = [
     allowedRoles: ["PSYCHOANALYST"],
     oauthPortal: "psychoanalyst",
     headerIcon: "brain",
-    footerLinkClass: "text-violet-400/90 hover:text-violet-300",
+    footerLinkClass: "text-violet-300 hover:text-violet-200",
     footerLabelKey: "login.proPsychoanalystPortal",
   },
   {
@@ -82,7 +82,7 @@ export const PORTAL_LOGINS: PortalLoginConfig[] = [
     allowedRoles: ["INTEGRATIVE_THERAPIST"],
     oauthPortal: "integrative-therapist",
     headerIcon: "leaf",
-    footerLinkClass: "text-teal-400/90 hover:text-teal-300",
+    footerLinkClass: "text-teal-300 hover:text-teal-200",
     footerLabelKey: "login.proIntegrativePortal",
   },
   {
@@ -96,7 +96,7 @@ export const PORTAL_LOGINS: PortalLoginConfig[] = [
     allowedRoles: ["ORGANIZATION"],
     oauthPortal: "organization",
     headerIcon: "building",
-    footerLinkClass: "text-indigo-400/90 hover:text-indigo-300",
+    footerLinkClass: "text-indigo-300 hover:text-indigo-200",
     footerLabelKey: "login.proOrganizationPortal",
   },
   {
@@ -110,7 +110,7 @@ export const PORTAL_LOGINS: PortalLoginConfig[] = [
     allowedRoles: ["ANGEL"],
     oauthPortal: "angel",
     headerIcon: "heart",
-    footerLinkClass: "text-rose-400/90 hover:text-rose-300",
+    footerLinkClass: "text-rose-300 hover:text-rose-200",
     footerLabelKey: "login.proAngelPortal",
   },
 ];

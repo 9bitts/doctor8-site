@@ -167,6 +167,7 @@ function LoginForm() {
           disabled={googleLoading || loading}
           onClick={handleGoogleSignIn}
           t={t}
+          labelKey="login.googleDoctor"
         />
 
         <LoginDivider t={t} />
@@ -197,11 +198,11 @@ function LoginForm() {
               {t("login.createAccount")}
             </Link>
           </p>
-          <p className="text-slate-500 text-xs mt-4">{t("login.proPortalHint")}</p>
+          <p className="text-slate-400 text-xs mt-4">{t("login.proPortalHint")}</p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
             <Link
               href={buildAuthHref("/login", { callbackUrl, registerUrl: PRO_REGISTER })}
-              className="text-emerald-400/90 hover:text-emerald-300 font-medium transition"
+              className="text-emerald-300 hover:text-emerald-200 font-medium transition"
             >
               {t("login.proDoctorPortal")}
             </Link>

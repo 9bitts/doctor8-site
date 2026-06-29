@@ -97,7 +97,7 @@ export function RegisterAlternateLink({
 }) {
   return (
     <p className="text-center mt-4">
-      <Link href={href} className="text-xs text-slate-500 hover:text-slate-300 transition">
+      <Link href={href} className="text-xs text-slate-400 hover:text-slate-200 transition">
         {children}
       </Link>
     </p>

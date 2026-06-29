@@ -228,6 +228,7 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
           disabled={googleLoading || loading}
           onClick={handleGoogleSignIn}
           t={t}
+          labelKey={portalId === "psychologist" ? "login.googlePsychologist" : "login.continueGoogle"}
         />
 
         <LoginDivider t={t} />
@@ -257,7 +258,7 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
           </p>
           <Link
             href={mainLoginHref}
-            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition"
           >
             <ArrowLeft size={12} aria-hidden />
             {t("login.backToMain")}

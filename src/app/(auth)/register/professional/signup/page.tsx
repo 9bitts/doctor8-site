@@ -15,6 +15,7 @@ import {
   INTEGRATIVE_REGISTER,
   ORGANIZATION_REGISTER,
 } from "@/lib/auth-portals";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import {
   detectInitialLang,
@@ -114,7 +115,7 @@ export default function RegisterProfessionalSignupPage() {
         <div className="mb-4">
           <Link href="/register/professional" className="inline-flex items-center gap-1.5 text-sm text-slate-400 transition hover:text-white">
             <ArrowLeft size={14} />
-            Doctor8
+            <BrandLogo variant="on-dark" size="sm" />
           </Link>
         </div>
         <RegisterLanguageSelector lang={lang} onChange={changeLang} />
@@ -151,7 +152,7 @@ export default function RegisterProfessionalSignupPage() {
                 </div>
                 <div>
                   <p className="text-white font-semibold text-base">{t("reg.imPro")}</p>
-                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imProDesc")}</p>
+                  <p className="text-slate-300 text-sm mt-0.5">{t("reg.imProDesc")}</p>
                 </div>
               </button>
 
@@ -164,7 +165,7 @@ export default function RegisterProfessionalSignupPage() {
                 </div>
                 <div>
                   <p className="text-white font-semibold text-base">{t("reg.imPsychologist")}</p>
-                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imPsychologistDesc")}</p>
+                  <p className="text-slate-300 text-sm mt-0.5">{t("reg.imPsychologistDesc")}</p>
                 </div>
               </button>
 
@@ -177,7 +178,7 @@ export default function RegisterProfessionalSignupPage() {
                 </div>
                 <div>
                   <p className="text-white font-semibold text-base">{t("reg.imPsychoanalyst")}</p>
-                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imPsychoanalystDesc")}</p>
+                  <p className="text-slate-300 text-sm mt-0.5">{t("reg.imPsychoanalystDesc")}</p>
                 </div>
               </button>
 
@@ -190,7 +191,7 @@ export default function RegisterProfessionalSignupPage() {
                 </div>
                 <div>
                   <p className="text-white font-semibold text-base">{t("reg.imIntegrative")}</p>
-                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imIntegrativeDesc")}</p>
+                  <p className="text-slate-300 text-sm mt-0.5">{t("reg.imIntegrativeDesc")}</p>
                 </div>
               </button>
 
@@ -203,7 +204,7 @@ export default function RegisterProfessionalSignupPage() {
                 </div>
                 <div>
                   <p className="text-white font-semibold text-base">{t("reg.imOrganization")}</p>
-                  <p className="text-slate-400 text-sm mt-0.5">{t("reg.imOrganizationDesc")}</p>
+                  <p className="text-slate-300 text-sm mt-0.5">{t("reg.imOrganizationDesc")}</p>
                 </div>
               </Link>
             </div>
