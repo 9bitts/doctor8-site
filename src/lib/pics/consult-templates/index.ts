@@ -14,6 +14,20 @@ import { MUSICOTERAPIA_TEMPLATE } from "./musicoterapia";
 import { TERAPIA_FLORAIS_TEMPLATE } from "./terapia_florais";
 import { AYURVEDA_TEMPLATE } from "./ayurveda";
 import { HIPNOTERAPIA_TEMPLATE } from "./hipnoterapia";
+import { ANTROPOSOFIA_TEMPLATE } from "./antroposofia";
+import { APITERAPIA_TEMPLATE } from "./apiterapia";
+import { BIOENERGETICA_TEMPLATE } from "./bioenergetica";
+import { CONSTELACAO_FAMILIAR_TEMPLATE } from "./constelacao_familiar";
+import { CROMOTERAPIA_TEMPLATE } from "./cromoterapia";
+import { DANCA_CIRCULAR_TEMPLATE } from "./danca_circular";
+import { GEOTERAPIA_TEMPLATE } from "./geoterapia";
+import { IMPOSICAO_MAOS_TEMPLATE } from "./imposicao_maos";
+import { NATUROPATIA_TEMPLATE } from "./naturopatia";
+import { OSTEOPATIA_TEMPLATE } from "./osteopatia";
+import { OZONIOTERAPIA_TEMPLATE } from "./ozonioterapia";
+import { QUIROPRAXIA_TEMPLATE } from "./quiropraxia";
+import { TERAPIA_COMUNITARIA_TEMPLATE } from "./terapia_comunitaria";
+import { TERMALISMO_TEMPLATE } from "./termalismo";
 import type { ConsultTemplate, StructuredValues } from "./types";
 export type { ConsultTemplate, StructuredField, StructuredValues } from "./types";
 
@@ -33,6 +47,20 @@ const TEMPLATES: Record<string, ConsultTemplate> = {
   terapia_florais: TERAPIA_FLORAIS_TEMPLATE,
   ayurveda: AYURVEDA_TEMPLATE,
   hipnoterapia: HIPNOTERAPIA_TEMPLATE,
+  antroposofia: ANTROPOSOFIA_TEMPLATE,
+  apiterapia: APITERAPIA_TEMPLATE,
+  bioenergetica: BIOENERGETICA_TEMPLATE,
+  constelacao_familiar: CONSTELACAO_FAMILIAR_TEMPLATE,
+  cromoterapia: CROMOTERAPIA_TEMPLATE,
+  danca_circular: DANCA_CIRCULAR_TEMPLATE,
+  geoterapia: GEOTERAPIA_TEMPLATE,
+  imposicao_maos: IMPOSICAO_MAOS_TEMPLATE,
+  naturopatia: NATUROPATIA_TEMPLATE,
+  osteopatia: OSTEOPATIA_TEMPLATE,
+  ozonioterapia: OZONIOTERAPIA_TEMPLATE,
+  quiropraxia: QUIROPRAXIA_TEMPLATE,
+  terapia_comunitaria: TERAPIA_COMUNITARIA_TEMPLATE,
+  termalismo: TERMALISMO_TEMPLATE,
 };
 
 export function hasStructuredTemplate(slug: string): boolean {

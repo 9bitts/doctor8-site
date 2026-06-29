@@ -19,7 +19,21 @@ export type ReferenceSectionId =
   | "music_care"
   | "florais_care"
   | "ayur_care"
-  | "hypno_care";
+  | "hypno_care"
+  | "antro_care"
+  | "api_care"
+  | "bioen_care"
+  | "constel_care"
+  | "cromo_care"
+  | "dcircular_care"
+  | "geo_care"
+  | "impos_care"
+  | "naturo_care"
+  | "osteo_care"
+  | "ozonio_care"
+  | "quiro_care"
+  | "tcom_care"
+  | "termal_care";
 
 export interface ReferenceSection {
   id: ReferenceSectionId;
@@ -47,6 +61,20 @@ const SECTIONS_BY_PRACTICE: Record<string, ReferenceSectionId[]> = {
   terapia_florais: ["florais_care"],
   ayurveda: ["ayur_care"],
   hipnoterapia: ["hypno_care"],
+  antroposofia: ["antro_care"],
+  apiterapia: ["api_care"],
+  bioenergetica: ["bioen_care"],
+  constelacao_familiar: ["constel_care"],
+  cromoterapia: ["cromo_care"],
+  danca_circular: ["dcircular_care"],
+  geoterapia: ["geo_care"],
+  imposicao_maos: ["impos_care"],
+  naturopatia: ["naturo_care"],
+  osteopatia: ["osteo_care"],
+  ozonioterapia: ["ozonio_care"],
+  quiropraxia: ["quiro_care"],
+  terapia_comunitaria: ["tcom_care"],
+  termalismo: ["termal_care"],
 };
 
 const SECTION_DEFS: Record<ReferenceSectionId, Omit<ReferenceSection, "id">> = {
@@ -138,6 +166,62 @@ const SECTION_DEFS: Record<ReferenceSectionId, Omit<ReferenceSection, "id">> = {
   hypno_care: {
     titleKey: "it.ref.hypnoCare",
     bodyKeys: ["it.ref.hypno.1", "it.ref.hypno.2"],
+  },
+  antro_care: {
+    titleKey: "it.ref.antroCare",
+    bodyKeys: ["it.ref.antro.1", "it.ref.antro.2", "it.ref.antro.3"],
+  },
+  api_care: {
+    titleKey: "it.ref.apiCare",
+    bodyKeys: ["it.ref.api.1", "it.ref.api.2", "it.ref.api.3"],
+  },
+  bioen_care: {
+    titleKey: "it.ref.bioenCare",
+    bodyKeys: ["it.ref.bioen.1", "it.ref.bioen.2"],
+  },
+  constel_care: {
+    titleKey: "it.ref.constelCare",
+    bodyKeys: ["it.ref.constel.1", "it.ref.constel.2"],
+  },
+  cromo_care: {
+    titleKey: "it.ref.cromoCare",
+    bodyKeys: ["it.ref.cromo.1", "it.ref.cromo.2"],
+  },
+  dcircular_care: {
+    titleKey: "it.ref.dcircularCare",
+    bodyKeys: ["it.ref.dcircular.1", "it.ref.dcircular.2"],
+  },
+  geo_care: {
+    titleKey: "it.ref.geoCare",
+    bodyKeys: ["it.ref.geo.1", "it.ref.geo.2"],
+  },
+  impos_care: {
+    titleKey: "it.ref.imposCare",
+    bodyKeys: ["it.ref.impos.1", "it.ref.impos.2"],
+  },
+  naturo_care: {
+    titleKey: "it.ref.naturoCare",
+    bodyKeys: ["it.ref.naturo.1", "it.ref.naturo.2"],
+  },
+  osteo_care: {
+    titleKey: "it.ref.osteoCare",
+    bodyKeys: ["it.ref.osteo.1", "it.ref.osteo.2"],
+  },
+  ozonio_care: {
+    titleKey: "it.ref.ozonioCare",
+    bodyKeys: ["it.ref.ozonio.1", "it.ref.ozonio.2"],
+  },
+  quiro_care: {
+    titleKey: "it.ref.quiroCare",
+    bodyKeys: ["it.ref.quiro.1", "it.ref.quiro.2"],
+  },
+  tcom_care: {
+    titleKey: "it.ref.tcomCare",
+    bodyKeys: ["it.ref.tcom.1", "it.ref.tcom.2"],
+  },
+  termal_care: {
+    titleKey: "it.ref.termalCare",
+    bodyKeys: ["it.ref.termal.1", "it.ref.termal.2"],
   },
 };
 

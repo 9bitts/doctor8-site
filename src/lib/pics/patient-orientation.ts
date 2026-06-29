@@ -1,6 +1,7 @@
 import { translate, type Lang } from "@/lib/i18n/translations";
 import type { IntegrativeVisitType } from "@/lib/integrative-consult-context";
 import { getConsultTemplate, type StructuredValues } from "@/lib/pics/consult-templates";
+import { HANDOUT_FIELD_MAP, handoutFieldsHaveContent } from "@/lib/pics/handout-fields";
 import { picBySlug, picLabel } from "@/lib/pics/practices";
 
 function line(label: string, value: string | undefined | null): string | null {
@@ -187,6 +188,11 @@ export function generatePatientHandout(opts: {
         line(t("it.tpl.hypno.homePractice"), String(structured.homePractice ?? "")),
       ].filter(Boolean) as string[]),
     );
+  } else if (HANDOUT_FIELD_MAP[practiceSlug]) {
+    const block = HANDOUT_FIELD_MAP[practiceSlug]
+      .map((f) => line(t(f.labelKey), String(structured[f.fieldKey] ?? "")))
+      .filter(Boolean) as string[];
+    lines.push(...block);
   }
 
   const extra = String(structured.additionalNotes ?? freeTextNote ?? "").trim();
@@ -252,5 +258,5 @@ export function handoutHasContent(opts: {
   if (practiceSlug === "hipnoterapia") {
     return !!(structured.reinforcementPlan || structured.homePractice);
   }
-  return false;
+  return handoutFieldsHaveContent(practiceSlug, structured);
 }
