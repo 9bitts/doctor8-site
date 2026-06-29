@@ -7,12 +7,9 @@ import {
   applyHealthPlanSlotFilter,
   getHealthPlanSchedulingRule,
 } from "@/lib/health-plan-rules";
+import type { DaySlots } from "@/lib/appointment-slots";
 
-export type DaySlots = {
-  date: string;
-  label: string;
-  slots: { time: string; datetime: string; available: boolean }[];
-};
+export type { DaySlots, BookableSlot } from "@/lib/appointment-slots";
 
 export async function getProviderAvailableDays(
   providerId: string,
@@ -120,6 +117,7 @@ function buildDaysFromBlocks(
     endTime: string;
     slotDurationMins: number;
     slotGapMins?: number;
+    volunteerOnly?: boolean;
   }[],
   bookedTimes: Set<string>,
   now: Date,

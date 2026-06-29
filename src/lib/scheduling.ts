@@ -67,6 +67,7 @@ interface AvailabilityBlock {
   endTime: string;
   slotDurationMins: number;
   slotGapMins?: number;
+  volunteerOnly?: boolean;
 }
 
 export function generateTimeSlots(
@@ -74,8 +75,8 @@ export function generateTimeSlots(
   blocks: AvailabilityBlock[],
   bookedTimes: Set<string>,
   now: Date
-): { time: string; datetime: string; available: boolean }[] {
-  const slots: { time: string; datetime: string; available: boolean }[] = [];
+): { time: string; datetime: string; available: boolean; volunteerOnly: boolean }[] {
+  const slots: { time: string; datetime: string; available: boolean; volunteerOnly: boolean }[] = [];
 
   for (const block of blocks) {
     const gap = block.slotGapMins ?? 0;
@@ -98,6 +99,7 @@ export function generateTimeSlots(
         time: slot.startTime,
         datetime: slotDate.toISOString(),
         available: !isPast && !isBooked,
+        volunteerOnly: !!block.volunteerOnly,
       });
     }
   }

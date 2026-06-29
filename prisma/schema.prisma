@@ -653,6 +653,7 @@ model PsychoanalystAvailabilitySlot {
   endTime          String
   slotDurationMins Int    @default(50)
   slotGapMins      Int    @default(0)
+  volunteerOnly    Boolean @default(false)
   isActive         Boolean @default(true)
 
   @@index([psychoanalystId])
@@ -776,6 +777,7 @@ model AvailabilitySlot {
   endTime          String // "17:00"
   slotDurationMins Int    @default(30)
   slotGapMins      Int    @default(0)
+  volunteerOnly    Boolean @default(false)
   isActive         Boolean @default(true)
 
   @@index([professionalId])

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { patientSlotButtonClass, dayHasVolunteerSlots } from "@/lib/appointment-slots";
 import { Calendar, ChevronRight, Loader2 } from "lucide-react";
 import type { PublicProfileData } from "@/lib/public-profile";
 import type { PublicAnalyticsSource } from "@/lib/public-analytics";
@@ -14,7 +15,7 @@ import { trackPublicBookClick } from "@/components/public/PublicProfileTracker";
 type DaySlots = {
   date: string;
   label: string;
-  slots: { time: string; datetime: string; available: boolean }[];
+  slots: { time: string; datetime: string; available: boolean; volunteerOnly?: boolean }[];
 };
 
 const SERVICE_EVENT = "doctor8:select-service";
@@ -210,20 +211,22 @@ export default function PublicBookingPanel({
             ))}
           </div>
 
+          {dayHasVolunteerSlots(days) && (
+            <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              {t("appt.volunteerSlotLegend")}
+            </p>
+          )}
+
           <div className="flex flex-wrap gap-2 min-h-[36px]">
             {availableSlots.length === 0 ? (
-              <span className="text-sm text-slate-400">?</span>
+              <span className="text-sm text-slate-400">—</span>
             ) : (
               availableSlots.map((slot) => (
                 <button
                   key={slot.datetime}
                   type="button"
                   onClick={() => setSelectedSlot(slot.datetime)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
-                    selectedSlot === slot.datetime
-                      ? "bg-brand-500 text-white"
-                      : "bg-brand-50 text-brand-600 hover:bg-brand-100"
-                  }`}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border-2 transition ${patientSlotButtonClass(slot, selectedSlot === slot.datetime)}`}
                 >
                   {slot.time}
                 </button>

@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, formatSlotCount } from "@/lib/i18n/translations";
 import { countSlotsInRange, generateSlotsInRange } from "@/lib/scheduling";
+import { validateAvailabilityBlocks } from "@/lib/availability-validation";
 import { Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
 
 interface TimeBlock {
@@ -13,6 +14,7 @@ interface TimeBlock {
   endTime: string;
   slotDuration: number;
   slotGap: number;
+  volunteerOnly: boolean;
 }
 
 interface DaySchedule {
@@ -40,13 +42,14 @@ const GAP_LABEL_KEYS: Record<number, string> = {
   30: "avail.min30",
 };
 
-function newBlock(): TimeBlock {
+function newBlock(volunteerOnly = false): TimeBlock {
   return {
     id: crypto.randomUUID(),
     startTime: "09:00",
     endTime: "12:00",
     slotDuration: 50,
     slotGap: 0,
+    volunteerOnly,
   };
 }
 
@@ -85,6 +88,8 @@ export default function AvailabilityPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [badgeVisible, setBadgeVisible] = useState(false);
 
   useEffect(() => { fetchAvailability(); }, []);
 
@@ -93,6 +98,7 @@ export default function AvailabilityPage() {
       const res = await fetch("/api/psychoanalyst/availability");
       if (res.ok) {
         const d = await res.json();
+        setBadgeVisible(!!d.badgeVisible);
         if (d.slots?.length) {
           setSchedules(defaultSchedules().map((def) => {
             const daySlots = d.slots.filter(
@@ -110,12 +116,14 @@ export default function AvailabilityPage() {
                 slotDurationMins?: number;
                 slotGap?: number;
                 slotGapMins?: number;
+                volunteerOnly?: boolean;
               }) => ({
                 id: crypto.randomUUID(),
                 startTime: s.startTime,
                 endTime: s.endTime,
                 slotDuration: s.slotDuration ?? s.slotDurationMins ?? 50,
                 slotGap: s.slotGap ?? s.slotGapMins ?? 0,
+                volunteerOnly: !!s.volunteerOnly,
               })),
             };
           }));
@@ -152,13 +160,17 @@ export default function AvailabilityPage() {
   function getDaySlots(schedule: DaySchedule) {
     return schedule.blocks
       .flatMap((b) =>
-        generateSlotsInRange(b.startTime, b.endTime, b.slotDuration, b.slotGap)
+        generateSlotsInRange(b.startTime, b.endTime, b.slotDuration, b.slotGap).map((slot) => ({
+          ...slot,
+          volunteerOnly: b.volunteerOnly,
+        }))
       )
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
   }
 
   async function handleSave() {
     setSaving(true);
+    setSaveError("");
     try {
       const slots = schedules
         .filter((s) => s.enabled)
@@ -169,14 +181,27 @@ export default function AvailabilityPage() {
             endTime: b.endTime,
             slotDuration: b.slotDuration,
             slotGap: b.slotGap,
+            volunteerOnly: b.volunteerOnly,
           }))
         );
 
-      await fetch("/api/psychoanalyst/availability", {
+      const overlapKey = validateAvailabilityBlocks(slots);
+      if (overlapKey) {
+        setSaveError(t(overlapKey));
+        return;
+      }
+
+      const res = await fetch("/api/psychoanalyst/availability", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slots }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const key = typeof data.error === "string" ? data.error : "avail.overlapError";
+        setSaveError(t(key));
+        return;
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } finally { setSaving(false); }
@@ -283,6 +308,19 @@ export default function AvailabilityPage() {
                           </select>
                         </div>
 
+                        {badgeVisible ? (
+                          <label className="flex items-center gap-2 text-xs text-green-800 bg-green-50 border border-green-200 rounded-lg px-2 py-1.5 w-full sm:w-auto">
+                            <input
+                              type="checkbox"
+                              checked={block.volunteerOnly}
+                              onChange={(e) => updateBlock(schedule.dayOfWeek, block.id, "volunteerOnly", e.target.checked)}
+                            />
+                            <span>{t("avail.volunteerBlock")}</span>
+                          </label>
+                        ) : (
+                          <p className="text-xs text-slate-400 w-full">{t("avail.volunteerBlockDisabled")}</p>
+                        )}
+
                         <p className="text-xs text-slate-500 font-medium ml-auto shrink-0">
                           {count > 0 ? formatSlotCount(lang, count) : t("avail.invalidRange")}
                         </p>
@@ -318,7 +356,11 @@ export default function AvailabilityPage() {
                         {daySlots.map((slot, i) => (
                           <span
                             key={`${slot.startTime}-${i}`}
-                            className="text-xs bg-white border border-brand-200 text-brand-700 px-2 py-1 rounded-lg tabular-nums"
+                            className={`text-xs px-2 py-1 rounded-lg tabular-nums border ${
+                              slot.volunteerOnly
+                                ? "bg-green-50 border-green-300 text-green-800"
+                                : "bg-white border-brand-200 text-brand-700"
+                            }`}
                           >
                             {formatTimeLabel(slot.startTime, locale)} – {formatTimeLabel(slot.endTime, locale)}
                           </span>
@@ -335,14 +377,19 @@ export default function AvailabilityPage() {
         })}
       </div>
 
+      {saveError && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">{saveError}</p>
+      )}
+
       <button onClick={handleSave} disabled={saving}
         className="w-full flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-50">
         {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <CheckCircle2 size={18} /> : <Save size={18} />}
         {saving ? t("avail.saving") : saved ? t("avail.saved") : t("avail.save")}
       </button>
 
-      <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-600">
-        <strong>{t("avail.noteBold")}</strong> {t("avail.noteText")}
+      <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-600 space-y-2">
+        <p><strong>{t("avail.noteBold")}</strong> {t("avail.noteText")}</p>
+        {badgeVisible && <p className="text-green-700">{t("avail.volunteerBlockHint")}</p>}
       </div>
     </div>
   );

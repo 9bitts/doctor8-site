@@ -8,8 +8,15 @@
 // - Onboarding tooltips on first use
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, formatSlotCount, Lang } from "@/lib/i18n/translations";
+import {
+  filterDaysForPatientBooking,
+  patientSlotButtonClass,
+  dayHasVolunteerSlots,
+  type BookableSlot,
+} from "@/lib/appointment-slots";
 import { getProfessionLabel, specialtyMatchesSearch, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { getProfessionInfo } from "@/lib/profession-label";
 import { parseLocalDate } from "@/lib/scheduling";
@@ -20,7 +27,7 @@ import { isAcuraVolunteerProvider, compareVolunteerFirst } from "@/lib/acura-vol
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
   CreditCard, Loader2, CheckCircle2, AlertCircle, Star, MapPin, Lock,
-  X, RefreshCw, AlertTriangle, Info, HelpCircle, QrCode, FileText,
+  X, RefreshCw, AlertTriangle, Info, HelpCircle, QrCode, FileText, Heart,
 } from "lucide-react";
 
 type PaymentMethodChoice = "card" | "pix" | "boleto" | "all";
@@ -52,7 +59,7 @@ interface Professional {
 interface SlotDay {
   date: string;
   label: string;
-  slots: { time: string; datetime: string; available: boolean }[];
+  slots: BookableSlot[];
 }
 
 interface Appointment {
@@ -328,6 +335,13 @@ export default function AppointmentsPage() {
     }
   }
 
+  useEffect(() => {
+    if (selectedPro && step === "slots") {
+      loadSlots(selectedPro, selectedSlot || undefined, healthPlanSlug);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [volunteersOnly]);
+
   async function loadSlots(
     pro: Professional,
     preselectSlot?: string,
@@ -344,9 +358,8 @@ export default function AppointmentsPage() {
         `/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${providerType}${planParam}`
       );
       const d = await slotsRes.json();
-      const days = (d.days || []).filter((day: SlotDay) =>
-        day.slots.some((s) => s.available)
-      );
+      const rawDays = (d.days || []) as SlotDay[];
+      const days = filterDaysForPatientBooking(rawDays, { volunteersOnly });
       setSlots(days);
       if (days.length > 0) {
         const dayWithSlot = preselectSlot
@@ -590,6 +603,12 @@ export default function AppointmentsPage() {
     return matchSearch && matchSpec && matchVolunteer;
   }).sort(compareVolunteerFirst);
 
+  const volunteerPros = filtered.filter((p) => isAcuraVolunteerProvider(!!p.verified, !!p.acuraVolunteer));
+  const otherPros = filtered.filter((p) => !isAcuraVolunteerProvider(!!p.verified, !!p.acuraVolunteer));
+  const showVolunteerSection = volunteerPros.length > 0 && step === "browse" && !volunteersOnly;
+  const needsHistoryNotice = selectedPro?.providerType !== "psychoanalyst";
+  const slotsShowVolunteerLegend = dayHasVolunteerSlots(slots);
+
   const selectedService = providerServices.find((s) => s.id === selectedServiceId);
   const checkoutPriceCents = selectedService?.priceCents ?? selectedPro?.consultPrice ?? 0;
   const checkoutCurrency = selectedService?.currency || selectedPro?.currency || "USD";
@@ -629,6 +648,29 @@ export default function AppointmentsPage() {
           <p className="text-sm text-blue-700 flex-1">{tipText}</p>
           <button onClick={() => setShowTip(false)} className="text-blue-400 hover:text-blue-600 shrink-0">
             <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {step === "browse" && (
+        <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-sky-900">{t("acura.vol.bookingBannerTitle")}</p>
+            <p className="text-xs text-sky-800 mt-1 leading-relaxed">{t("acura.vol.bookingBannerText")}</p>
+            {volunteersOnly && (
+              <p className="text-xs font-medium text-green-800 mt-2">{t("acura.vol.filterActiveHint")}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setVolunteersOnly((v) => !v)}
+            className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition border ${
+              volunteersOnly
+                ? "bg-sky-600 text-white border-sky-600"
+                : "bg-white text-sky-800 border-sky-300 hover:bg-sky-100"
+            }`}
+          >
+            {t("acura.vol.filter")}
           </button>
         </div>
       )}
@@ -764,11 +806,39 @@ export default function AppointmentsPage() {
               <p className="text-slate-500 mb-2">{t("appt.noDoctors")}</p>
               <p className="text-xs text-slate-400">{t("appt.noDoctorsHint")}</p>
             </div>
-          ) : (
+          ) : volunteersOnly ? (
             <div className="grid sm:grid-cols-2 gap-4">
               {filtered.map((pro) => (
                 <DoctorCard key={`${pro.providerType || "health"}-${pro.id}`} pro={pro} onSelect={() => selectProfessional(pro)} locale={locale} lang={lang} t={t} />
               ))}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {showVolunteerSection && (
+                <div className="space-y-3">
+                  <p className="text-sm font-bold text-sky-800 flex items-center gap-2">
+                    <Heart size={16} className="text-sky-600" />
+                    {t("acura.vol.volunteersSectionTitle")}
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {volunteerPros.map((pro) => (
+                      <DoctorCard key={`${pro.providerType || "health"}-${pro.id}`} pro={pro} onSelect={() => selectProfessional(pro)} locale={locale} lang={lang} t={t} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {otherPros.length > 0 && (
+                <div className="space-y-3">
+                  {showVolunteerSection && (
+                    <p className="text-sm font-semibold text-slate-700">{t("acura.vol.otherProfessionalsTitle")}</p>
+                  )}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {otherPros.map((pro) => (
+                      <DoctorCard key={`${pro.providerType || "health"}-${pro.id}`} pro={pro} onSelect={() => selectProfessional(pro)} locale={locale} lang={lang} t={t} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </>
@@ -791,6 +861,11 @@ export default function AppointmentsPage() {
                 {selectedPro.firstName} {selectedPro.lastName}
               </h2>
               <p className="text-slate-400 text-sm">{getProfessionLabel(lang, selectedPro.specialty)}</p>
+              {isAcuraVolunteerProvider(!!selectedPro.verified, !!selectedPro.acuraVolunteer) && (
+                <div className="mt-2">
+                  <AcuraVolunteerBadge />
+                </div>
+              )}
               <p className="text-emerald-400 font-semibold text-sm mt-1">{priceDisplay} {t("appt.perConsult")}</p>
             </div>
           </div>
@@ -840,15 +915,27 @@ export default function AppointmentsPage() {
                 {selectedDay && (
                   <div key={selectedDay.date}>
                     <p className="text-sm font-semibold text-slate-700 mb-3">{selectedDay.label} — {t("appt.availableTimes")}</p>
+                    {slotsShowVolunteerLegend && (
+                      <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-3">
+                        {t("appt.volunteerSlotLegend")}
+                      </p>
+                    )}
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                       {selectedDay.slots.map((slot) => (
-                        <button key={slot.datetime} disabled={!slot.available} onClick={() => setSelectedSlot(slot.datetime)}
-                          className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition ${!slot.available ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed" : selectedSlot === slot.datetime ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 text-slate-700 hover:border-emerald-400"}`}>
+                        <button
+                          key={slot.datetime}
+                          disabled={!slot.available}
+                          onClick={() => setSelectedSlot(slot.datetime)}
+                          className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition ${patientSlotButtonClass(slot, selectedSlot === slot.datetime)}`}
+                        >
                           {slot.time}
                         </button>
                       ))}
                     </div>
                   </div>
+                )}
+                {selectedSlot && needsHistoryNotice && (
+                  <BookingHistoryNotice t={t} />
                 )}
                 {selectedSlot && (
                   <button type="button" onClick={goToPayment} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-4 rounded-xl transition text-base">
@@ -876,6 +963,10 @@ export default function AppointmentsPage() {
             <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-sm">
               <AlertTriangle size={16} className="shrink-0" /> {checkoutPending}
             </div>
+          )}
+
+          {needsHistoryNotice && (
+            <BookingHistoryNotice t={t} />
           )}
 
           <div className="bg-slate-50 rounded-xl p-4 space-y-2">
@@ -1090,10 +1181,12 @@ export default function AppointmentsPage() {
               <span className="font-semibold text-emerald-600">{priceDisplay}</span>
             </div>
           </div>
-          <ShareHistoryPrompt
-            professionalId={selectedPro.id}
-            professionalName={`Dr. ${selectedPro.firstName} ${selectedPro.lastName}`}
-          />
+          {selectedPro.providerType !== "psychoanalyst" && (
+            <ShareHistoryPrompt
+              professionalId={selectedPro.id}
+              professionalName={`Dr. ${selectedPro.firstName} ${selectedPro.lastName}`}
+            />
+          )}
           {confirmedId && (
             <a
               href={`/api/appointments/${confirmedId}/calendar`}
@@ -1216,6 +1309,26 @@ export default function AppointmentsPage() {
           onClose={() => setReviewModal(null)}
         />
       )}
+    </div>
+  );
+}
+
+function BookingHistoryNotice({ t }: { t: (k: string) => string }) {
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <AlertCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-amber-900">{t("appt.bookingHistoryTitle")}</p>
+          <p className="text-xs text-amber-800 mt-1 leading-relaxed">{t("appt.bookingHistoryText")}</p>
+        </div>
+      </div>
+      <Link
+        href="/patient/history"
+        className="flex w-full items-center justify-center gap-2 text-sm font-semibold text-amber-950 bg-amber-200 hover:bg-amber-300 border border-amber-400 px-4 py-2.5 rounded-xl transition"
+      >
+        <FileText size={16} /> {t("appt.bookingHistoryAction")}
+      </Link>
     </div>
   );
 }
