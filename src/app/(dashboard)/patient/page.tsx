@@ -20,6 +20,7 @@ import PatientChecklistWrapper from "./PatientChecklistWrapper";
 import PatientTourWrapper from "./PatientTourWrapper";
 import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
+import ChartLinkNoticeBanner from "@/components/patient/ChartLinkNoticeBanner";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
 import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
@@ -29,6 +30,7 @@ import {
 } from "@/lib/humanitarian/notify";
 import { getPatientIntakeStatusBySlug } from "@/lib/humanitarian/intake";
 import { resolveRoleHome } from "@/lib/role-home";
+import { getPendingChartLinkNotices } from "@/lib/chart-link-notices";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -102,6 +104,7 @@ export default async function PatientDashboard() {
     humanitarianCampaign,
     humanitarianEntry,
     humanitarianIntake,
+    chartLinkNotices,
   ] = await Promise.all([
     db.prescription.count({
       where: { document: { patientId: patient.id } },
@@ -136,6 +139,7 @@ export default async function PatientDashboard() {
     getActiveCampaignForRegion(session.user.region),
     getPatientActiveHumanitarianEntry(userId),
     getPatientIntakeStatusBySlug(VENEZUELA_CAMPAIGN_SLUG, userId),
+    getPendingChartLinkNotices(userId),
   ]);
 
   const hasActiveClub =
@@ -275,6 +279,8 @@ export default async function PatientDashboard() {
         subscribed={hasActiveClub}
         defaultRegion={userRow?.region || session.user.region}
       />
+
+      <ChartLinkNoticeBanner notices={chartLinkNotices} />
 
       {/* Header */}
       <div>

@@ -59,6 +59,8 @@ export async function notifyPatientChartLinked(opts: {
   patientEmail: string;
   patientName: string;
   doctorName: string;
+  patientRecordId?: string;
+  professionalId?: string;
   language?: string | null;
 }): Promise<void> {
   const lang = normEmailLang(opts.language ?? undefined);
@@ -83,7 +85,14 @@ export async function notifyPatientChartLinked(opts: {
     title,
     body,
     type: "system",
-    data: { url: "/patient/providers" },
+    data: {
+      kind: "chart_linked",
+      doctorName: opts.doctorName,
+      url: "/patient/providers",
+      patientRecordId: opts.patientRecordId,
+      professionalId: opts.professionalId,
+      requiresAck: true,
+    },
   });
 
   if (!process.env.RESEND_API_KEY) return;

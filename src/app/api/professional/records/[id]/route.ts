@@ -204,6 +204,8 @@ export async function PATCH(
           patientEmail: patientUser.email,
           patientName,
           doctorName,
+          patientRecordId: record.id,
+          professionalId: professional.id,
           language: patientUser.language,
         }).catch((e) => console.error("[RECORD PATCH] chart link notify failed:", e));
       }
