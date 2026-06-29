@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "node scripts/railway-start.mjs",
