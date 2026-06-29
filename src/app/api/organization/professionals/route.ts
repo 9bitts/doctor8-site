@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
-import { requireOrganization } from "@/lib/organization-auth";
 
 export async function GET() {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const professionals = await db.organizationProfessional.findMany({
     where: { organizationId: ctx.organizationId },

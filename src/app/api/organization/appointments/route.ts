@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import { getOrganizationProfessionalIds } from "@/lib/organization-auth";
 import { db } from "@/lib/db";
+import { resolveOrgProfessionalFilter } from "@/lib/work-context";
 
 export async function GET(req: NextRequest) {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professionalIds = await getOrganizationProfessionalIds(ctx.organizationId);
-  if (professionalIds.length === 0) {
+  const allProfessionalIds = await getOrganizationProfessionalIds(ctx.organizationId);
+  if (allProfessionalIds.length === 0) {
     return NextResponse.json({ appointments: [], total: 0 });
   }
 
   const { searchParams } = new URL(req.url);
+  const scopeProfessionalId = searchParams.get("professionalId")?.trim() || undefined;
+  const professionalIds = resolveOrgProfessionalFilter(
+    allProfessionalIds,
+    scopeProfessionalId,
+  );
   const fromParam = searchParams.get("from");
   const toParam = searchParams.get("to");
 

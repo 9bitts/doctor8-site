@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Loader2, Calendar, MessageCircle } from "lucide-react";
+import { readOrgProfessionalCookie } from "@/lib/work-context";
 
 type Appt = {
   id: string;
@@ -18,22 +19,30 @@ export default function OrganizationAppointmentsPage() {
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [waResult, setWaResult] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      const from = new Date();
-      from.setHours(0, 0, 0, 0);
-      const to = new Date(from);
-      to.setDate(to.getDate() + 14);
-      const res = await fetch(
-        `/api/organization/appointments?from=${from.toISOString()}&to=${to.toISOString()}`,
-      );
-      const data = await res.json();
-      if (res.ok) setAppointments(data.appointments || []);
-      setLoading(false);
-    }
-    load();
+  const load = useCallback(async () => {
+    setLoading(true);
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 14);
+    const params = new URLSearchParams({
+      from: from.toISOString(),
+      to: to.toISOString(),
+    });
+    const scopeId = readOrgProfessionalCookie();
+    if (scopeId) params.set("professionalId", scopeId);
+    const res = await fetch(`/api/organization/appointments?${params}`);
+    const data = await res.json();
+    if (res.ok) setAppointments(data.appointments || []);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    load();
+    const onScope = () => load();
+    window.addEventListener("doctor8-org-scope-change", onScope);
+    return () => window.removeEventListener("doctor8-org-scope-change", onScope);
+  }, [load]);
 
   async function sendWhatsApp(id: string) {
     setSendingId(id);

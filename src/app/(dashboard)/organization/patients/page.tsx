@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Search, Users } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { readOrgProfessionalCookie } from "@/lib/work-context";
 
 type Patient = {
   id: string;
@@ -22,14 +23,26 @@ export default function OrganizationPatientsPage() {
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
-    const params = q ? `?q=${encodeURIComponent(q)}` : "";
-    const res = await fetch(`/api/organization/patients${params}`);
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    const scopeId = readOrgProfessionalCookie();
+    if (scopeId) params.set("professionalId", scopeId);
+    const qs = params.toString();
+    const res = await fetch(`/api/organization/patients${qs ? `?${qs}` : ""}`);
     const data = await res.json();
     if (res.ok) setPatients(data.patients || []);
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(""); }, [load]);
+  useEffect(() => {
+    load("");
+  }, [load]);
+
+  useEffect(() => {
+    const onScope = () => load(query);
+    window.addEventListener("doctor8-org-scope-change", onScope);
+    return () => window.removeEventListener("doctor8-org-scope-change", onScope);
+  }, [load, query]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();

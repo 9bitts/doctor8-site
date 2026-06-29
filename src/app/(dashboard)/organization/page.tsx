@@ -1,7 +1,13 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getOrganizationMembership, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import {
+  ORG_PROFESSIONAL_COOKIE,
+  orgProfessionalIdFromCookie,
+  resolveOrgProfessionalFilter,
+} from "@/lib/work-context";
 import Link from "next/link";
 import {
   Building2, Users, Calendar, TrendingUp, ChevronRight, Stethoscope,
@@ -23,7 +29,11 @@ export default async function OrganizationDashboard() {
   if (!membership) redirect("/login");
 
   const org = membership.organization;
-  const professionalIds = await getOrganizationProfessionalIds(org.id);
+  const allProfessionalIds = await getOrganizationProfessionalIds(org.id);
+  const scopeId = orgProfessionalIdFromCookie(
+    cookies().get(ORG_PROFESSIONAL_COOKIE)?.value,
+  );
+  const professionalIds = resolveOrgProfessionalFilter(allProfessionalIds, scopeId);
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
