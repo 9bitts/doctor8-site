@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Calendar, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { ACURA_VOLUNTEER_TERMS_URL } from "@/lib/acura-volunteer";
 import AcuraVolunteerBadge from "./AcuraVolunteerBadge";
@@ -10,10 +11,25 @@ import AcuraVolunteerBadge from "./AcuraVolunteerBadge";
 type Props = {
   initialChecked: boolean;
   verified: boolean;
+  /** Override auto-detected availability settings path for the current portal. */
+  availabilityHref?: string;
 };
 
-export default function AcuraVolunteerOptIn({ initialChecked, verified }: Props) {
+function resolveAvailabilityHref(pathname: string): string {
+  if (pathname.startsWith("/psychologist")) return "/psychologist/settings/availability";
+  if (pathname.startsWith("/psychoanalyst")) return "/psychoanalyst/settings/availability";
+  if (pathname.startsWith("/integrative-therapist")) return "/integrative-therapist/settings/availability";
+  return "/professional/settings/availability";
+}
+
+export default function AcuraVolunteerOptIn({
+  initialChecked,
+  verified,
+  availabilityHref,
+}: Props) {
   const { t } = useI18n();
+  const pathname = usePathname();
+  const availabilityUrl = availabilityHref ?? resolveAvailabilityHref(pathname);
   const [checked, setChecked] = useState(initialChecked);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -77,16 +93,23 @@ export default function AcuraVolunteerOptIn({ initialChecked, verified }: Props)
         </p>
       )}
 
-      <p className="text-xs text-slate-500">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
+        <Link
+          href={availabilityUrl}
+          className="inline-flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition shrink-0"
+        >
+          <Calendar size={16} />
+          {t("acura.vol.optIn.availabilityBtn")}
+        </Link>
         <Link
           href={ACURA_VOLUNTEER_TERMS_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sky-700 font-medium hover:underline"
+          className="text-xs text-sky-700 font-medium hover:underline sm:ml-1"
         >
           {t("acura.vol.optIn.terms")}
         </Link>
-      </p>
+      </div>
 
       {error && (
         <p className="text-xs text-rose-600">{error}</p>
