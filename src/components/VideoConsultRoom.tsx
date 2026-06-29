@@ -13,6 +13,7 @@ import {
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
 import DailyPrebuiltEmbed, { type DailyPrebuiltHandle } from "@/components/DailyPrebuiltEmbed";
+import { useConsultSessionKeepalive } from "@/hooks/useConsultSessionKeepalive";
 import { translate } from "@/lib/i18n/translations";
 import { buildVideoChartLinks, videoReturnPath } from "@/lib/video-chart-nav";
 import { navigateBack, videoBackFallback } from "@/lib/safe-nav";
@@ -178,6 +179,8 @@ export default function VideoConsultRoom({
   } | null>(null);
   const notesAssistantRef = useRef<ConsultNotesAssistantHandle>(null);
   const dailyRef = useRef<DailyPrebuiltHandle>(null);
+
+  useConsultSessionKeepalive(data);
 
   const t = (k: string) => T[k]?.[lang] ?? T[k]?.["en"] ?? k;
 

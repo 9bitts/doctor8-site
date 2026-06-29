@@ -282,7 +282,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.role = (user as { role: string }).role;
@@ -300,6 +300,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.role = dbUser.role;
           token.region = dbUser.region;
         }
+      }
+
+      // Extend session during active teleconsult (video room keepalive)
+      if (trigger === "update" && (session as { consultActive?: boolean })?.consultActive) {
+        const consultMaxAge = parseInt(
+          process.env.SESSION_CONSULT_MAX_AGE_SECONDS || "7200",
+          10,
+        );
+        token.exp = Math.floor(Date.now() / 1000) + consultMaxAge;
       }
 
       return token;

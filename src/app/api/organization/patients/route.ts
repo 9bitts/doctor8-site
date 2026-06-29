@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrganization, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
+import { getOrganizationProfessionalIds } from "@/lib/organization-auth";
 import { db } from "@/lib/db";
 import { safeDecrypt } from "@/lib/sign-helpers";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
+import { normalizeSearchQuery } from "@/lib/patient-record-search";
 
 export async function GET(req: NextRequest) {
-  const ctx = await requireOrganization();
-  if ("error" in ctx) return ctx.error;
+  const ctx = await requireOrganizationApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const professionalIds = await getOrganizationProfessionalIds(ctx.organizationId);
   if (professionalIds.length === 0) {
@@ -18,7 +20,17 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
 
   const recordsRaw = await db.patientRecord.findMany({
-    where: { professionalId: { in: professionalIds } },
+    where: {
+      professionalId: { in: professionalIds },
+      ...(q
+        ? {
+            OR: [
+              { searchText: { contains: normalizeSearchQuery(q) } },
+              { searchText: null },
+            ],
+          }
+        : {}),
+    },
     include: {
       professional: {
         select: { id: true, firstName: true, lastName: true, specialty: true },
@@ -26,6 +38,7 @@ export async function GET(req: NextRequest) {
       _count: { select: { medicalDocuments: true } },
     },
     orderBy: { updatedAt: "desc" },
+    ...(q ? {} : { take: limit }),
   });
 
   const decrypted = recordsRaw.map((r) => ({
@@ -44,10 +57,10 @@ export async function GET(req: NextRequest) {
 
   const filtered = q
     ? filterPatientCharts(decrypted, q, limit)
-    : decrypted.slice(0, limit);
+    : decrypted;
 
   return NextResponse.json({
-    patients: filtered,
+    patients: filtered.slice(0, limit),
     total: filtered.length,
   });
 }

@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
+import { buildPatientRecordSearchText } from "@/lib/patient-record-search";
 import { canEditChart, resolveChartAccess, auditChartView } from "@/lib/chart-access";
 
 function safeDecrypt(v: string | null): string {
@@ -130,6 +131,11 @@ export async function PATCH(
     }
     const newEmail = d.email ? d.email.toLowerCase() : null;
     data.email = newEmail;
+    data.searchText = buildPatientRecordSearchText(
+      safeDecrypt(record.firstName),
+      safeDecrypt(record.lastName),
+      newEmail,
+    );
     if (newEmail) {
       const existing = await db.user.findUnique({ where: { email: newEmail } });
       if (existing && existing.role === "PATIENT") {

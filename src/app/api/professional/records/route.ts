@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
+import { buildPatientRecordSearchText } from "@/lib/patient-record-search";
 
 const createSchema = z.object({
   firstName:        z.string().min(1).max(100),
@@ -129,6 +130,7 @@ export async function POST(req: NextRequest) {
       firstName:      encrypt(d.firstName),
       lastName:       encrypt(d.lastName),
       email:          d.email ? d.email.toLowerCase() : null,
+      searchText:     buildPatientRecordSearchText(d.firstName, d.lastName, d.email),
       phone:          d.phone ? encrypt(d.phone) : null,
       // dateOfBirth: store as encrypted ISO string (YYYY-MM-DD)
       dateOfBirth:    d.dateOfBirth ? encrypt(d.dateOfBirth) : null,

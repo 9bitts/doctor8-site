@@ -37,6 +37,12 @@ enum ProviderType {
   INTEGRATIVE_THERAPIST
 }
 
+enum PatientChartInviteStatus {
+  SENT
+  LINKED
+  FAILED
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -551,6 +557,7 @@ model ProfessionalProfile {
   organizationRepasseRules OrganizationRepasseRule[]
   chartSharesCreated    PatientRecordShare[] @relation("ChartSharesCreated")
   chartSharesReceived   PatientRecordShare[] @relation("ChartSharesReceived")
+  chartInvitesSent      PatientChartInvite[]
   vaccinationsRecorded  PatientVaccination[]
   odontogramsRecorded   PatientOdontogram[]
   audiogramsRecorded    PatientAudiogram[]
@@ -1333,6 +1340,8 @@ model PatientRecord {
 
   // Link to a real account, once the patient has one
   linkedUserId    String?
+  // Normalized plaintext for search (first + last + email, accent-stripped)
+  searchText      String?
   // Clinical records attached to this chart
   medicalDocuments MedicalDocument[]
   resourceShares   ResourceShare[]
@@ -1343,6 +1352,7 @@ model PatientRecord {
   odontogram         PatientOdontogram?
   audiograms         PatientAudiogram[]
   colleagueShares  PatientRecordShare[]
+  chartInvites     PatientChartInvite[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1350,8 +1360,24 @@ model PatientRecord {
   @@index([professionalId])
   @@index([email])
   @@index([linkedUserId])
+  @@index([searchText])
 
 }
+
+model PatientChartInvite {
+  id                   String                   @id @default(cuid())
+  patientRecordId      String
+  patientRecord        PatientRecord            @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  sentByProfessionalId String
+  sentBy               ProfessionalProfile      @relation(fields: [sentByProfessionalId], references: [id], onDelete: Cascade)
+  email                String
+  status               PatientChartInviteStatus @default(SENT)
+  sentAt               DateTime                 @default(now())
+  linkedAt             DateTime?
+
+  @@index([patientRecordId])
+  @@index([email])
+  @@index([sentByProfessionalId])
 
 // ────────────────────────────────────────────
 // ORGANIZATION — CNPJ clinic / consultório management (Phase 1)

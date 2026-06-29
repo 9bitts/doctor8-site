@@ -72,4 +72,24 @@ export async function attachLinkedDocumentsToPatientProfile(userId: string) {
     },
     data: { patientId: patientProfile.id },
   });
+
+  await markChartInvitesLinked(userId);
+}
+
+async function markChartInvitesLinked(userId: string) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+  if (!user?.email) return;
+  const inviteEmail = user.email.toLowerCase();
+
+  await db.patientChartInvite.updateMany({
+    where: {
+      email: inviteEmail,
+      status: "SENT",
+      patientRecord: { linkedUserId: userId },
+    },
+    data: { status: "LINKED", linkedAt: new Date() },
+  });
 }

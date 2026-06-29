@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import SupportWidget from "@/components/SupportWidget";
 import PwaRegister from "@/components/PwaRegister";
+import AuthSessionProvider from "@/components/AuthSessionProvider";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
 import { normalizeLang } from "@/lib/i18n/translations";
 
@@ -34,7 +35,9 @@ export default function RootLayout({
     <html lang={htmlLang}>
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
         <I18nProvider initialLang={lang}>
-          {children}
+          <AuthSessionProvider>
+            {children}
+          </AuthSessionProvider>
           <SupportWidget />
           <PwaRegister />
         </I18nProvider>
