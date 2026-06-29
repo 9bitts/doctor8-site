@@ -832,12 +832,39 @@ export async function resolveVolunteerProfile(userId: string, role: string): Pro
   return null;
 }
 
+/** Maps a PROFESSIONAL's specialty to the single humanitarian pool they may join. */
+export function resolveProfessionalPoolSlug(specialty: string): string {
+  const s = specialty.toLowerCase();
+  let best: { slug: string; hintLen: number } | null = null;
+
+  for (const pool of DEFAULT_VENEZUELA_POOLS) {
+    if (!pool.volunteerRoles.includes("PROFESSIONAL") || !pool.specialtyHints) continue;
+    for (const hint of pool.specialtyHints) {
+      const h = hint.toLowerCase();
+      if (!s.includes(h)) continue;
+      if (!best || h.length > best.hintLen) {
+        best = { slug: pool.slug, hintLen: h.length };
+      }
+    }
+  }
+
+  return best?.slug ?? "medico";
+}
+
 export function poolMatchesVolunteer(
   poolSlug: string,
-  _profile: VolunteerProfile,
+  profile: VolunteerProfile,
   role: string,
 ): boolean {
   const def = DEFAULT_VENEZUELA_POOLS.find((p) => p.slug === poolSlug);
   if (!def) return true;
-  return def.volunteerRoles.includes(role as "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST");
+  if (!def.volunteerRoles.includes(role as "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST")) {
+    return false;
+  }
+
+  if (role === "PROFESSIONAL") {
+    return poolSlug === resolveProfessionalPoolSlug(profile.specialty ?? "");
+  }
+
+  return true;
 }
