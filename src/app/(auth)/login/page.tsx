@@ -5,7 +5,9 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Stethoscope, Heart } from "lucide-react";
-import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
+import { persistAuthCallback, consumeAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
+import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
+import { safePostLoginUrl } from "@/lib/role-home";
 import {
   PATIENT_LOGIN,
   PROFESSIONAL_REGISTER,
@@ -25,6 +27,7 @@ import {
   LoginCredentialsForm,
   LoginSuspenseFallback,
   navigateAfterAuth,
+  waitForAuthenticatedSession,
   type LoginErrorCode,
 } from "@/components/auth/login-shared";
 
@@ -106,6 +109,21 @@ function UnifiedLoginForm() {
       }
 
       persistAuthCallback(callbackUrl);
+      const session = await waitForAuthenticatedSession();
+      if (session?.user?.role) {
+        const savedCallback = consumeAuthCallback();
+        navigateAfterAuth(
+          safePostLoginUrl(
+            session.user.role,
+            savedCallback || callbackUrl || null,
+            resolvePatientPostLoginUrl,
+            session.user.professionalSpecialty,
+          ),
+        );
+        return;
+      }
+
+      // Session cookie not ready yet — fall back to /callback (OAuth-style recovery).
       navigateAfterAuth(POST_LOGIN_CALLBACK);
     } catch {
       setError("generic");

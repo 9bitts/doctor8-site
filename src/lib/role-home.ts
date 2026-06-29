@@ -61,6 +61,16 @@ export function isPathAllowedForRole(
   return true;
 }
 
+/** Auth bootstrap routes — never use as a post-login destination (avoids /callback loops). */
+function isAuthBootstrapPath(pathname: string): boolean {
+  return (
+    pathname === "/callback" ||
+    pathname.startsWith("/callback/") ||
+    pathname === "/login" ||
+    pathname.startsWith("/login/")
+  );
+}
+
 /** Post-login destination: honor deep links only when the role may access them. */
 export function safePostLoginUrl(
   role: string | undefined | null,
@@ -81,6 +91,9 @@ export function safePostLoginUrl(
     path = raw;
   }
 
+  const pathname = path.split("?")[0];
+  if (isAuthBootstrapPath(pathname)) return home;
+
   if (role === "PATIENT" && resolvePatientUrl) {
     const patientPath = resolvePatientUrl(path);
     const patientPathname = patientPath.split("?")[0];
@@ -88,7 +101,6 @@ export function safePostLoginUrl(
     return home;
   }
 
-  const pathname = path.split("?")[0];
   if (isPathAllowedForRole(pathname, role)) {
     if (role === "PROFESSIONAL" && isPsychologistSpecialty(specialty)) {
       return mapProfessionalPathForSpecialty(specialty, path.startsWith("/") ? path : `/${path}`);

@@ -121,22 +121,40 @@ export function buildAuthHref(
   return qs ? `${path}?${qs}` : path;
 }
 
+function sessionHasRole(
+  session: Awaited<ReturnType<typeof getSession>> | null | undefined,
+): session is NonNullable<Awaited<ReturnType<typeof getSession>>> & {
+  user: { id: string; role: string };
+} {
+  return Boolean(session?.user?.id && session.user.role);
+}
+
 /** Wait until Auth.js session cookie is readable on the client (avoids post-login redirect loops). */
 export async function waitForAuthenticatedSession(
-  maxAttempts = 50,
+  maxAttempts = 75,
   delayMs = 200,
 ): Promise<Awaited<ReturnType<typeof getSession>>> {
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      const res = await fetch("/api/auth/session", {
-        cache: "no-store",
-        credentials: "same-origin",
-      });
-      if (res.ok) {
-        const session = await res.json();
-        if (session?.user?.id && session.user.role) {
-          return session;
+      const fromClient = await getSession();
+      if (sessionHasRole(fromClient)) return fromClient;
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8_000);
+      try {
+        const res = await fetch("/api/auth/session", {
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: controller.signal,
+        });
+        if (res.ok) {
+          const session = await res.json();
+          if (session?.user?.id && session.user.role) {
+            return session;
+          }
         }
+      } finally {
+        clearTimeout(timer);
       }
     } catch {
       /* retry */

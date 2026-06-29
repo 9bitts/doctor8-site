@@ -306,13 +306,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      if (token.role === "PROFESSIONAL" && token.id) {
+      // Load specialty on sign-in or when legacy tokens lack it — not on every session poll.
+      const shouldLoadSpecialty =
+        token.role === "PROFESSIONAL" &&
+        token.id &&
+        (user || account || token.professionalSpecialty === undefined);
+
+      if (shouldLoadSpecialty) {
         const profile = await db.professionalProfile.findUnique({
           where: { userId: token.id as string },
           select: { specialty: true },
         });
         token.professionalSpecialty = profile?.specialty ?? null;
-      } else {
+      } else if (token.role !== "PROFESSIONAL") {
         token.professionalSpecialty = null;
       }
 
