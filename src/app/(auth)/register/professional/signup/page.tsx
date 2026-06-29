@@ -97,7 +97,7 @@ export default function RegisterProfessionalSignupPage() {
         callbackUrl,
       });
     }
-    return buildAuthHref("/login", {
+    return buildAuthHref("/login/medico", {
       registerUrl: PROFESSIONAL_REGISTER,
       callbackUrl,
     });

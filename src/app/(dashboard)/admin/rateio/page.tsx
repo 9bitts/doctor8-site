@@ -6,6 +6,6 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminRateioPage() {
   const session = await getAdminSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/login/medico");
   return <AdminRateioClient />;
 }

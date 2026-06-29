@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import {
-  MAIN_LOGIN,
+  PATIENT_LOGIN,
   PORTAL_BY_ID,
   buildForgotPasswordHref,
   type PortalId,
@@ -49,7 +49,7 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
     searchParams.get("registerUrl") || config.defaultRegisterPath,
     callbackUrl || null,
   );
-  const mainLoginHref = buildAuthHref(MAIN_LOGIN, { callbackUrl });
+  const patientLoginHref = buildAuthHref(PATIENT_LOGIN, { callbackUrl });
   const forgotHref = buildForgotPasswordHref({
     email: email.trim() || undefined,
     from: config.loginPath,
@@ -186,11 +186,11 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
             </Link>
           </p>
           <Link
-            href={mainLoginHref}
+            href={patientLoginHref}
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition"
           >
             <ArrowLeft size={12} aria-hidden />
-            {t("login.backToMain")}
+            {t("login.backToPatient")}
           </Link>
         </div>
       </LoginCard>

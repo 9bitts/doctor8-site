@@ -6,7 +6,7 @@ import ProfessionalDoctorConnectionClient from "@/components/professional/Profes
 
 export default async function ProfessionalDoctorConnectionPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/login/medico");
   if (session.user.role !== "PROFESSIONAL") redirect(resolveRoleHome(session.user.role));
 
   const [subscription, userRow] = await Promise.all([

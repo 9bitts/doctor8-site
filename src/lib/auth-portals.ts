@@ -3,7 +3,10 @@ import { PSYCHOLOGIST_HOME } from "@/lib/psychologist-portal";
 export type LoginAccent = "emerald" | "violet" | "teal" | "indigo" | "rose";
 export type PortalHeaderIcon = "brain" | "leaf" | "building" | "heart";
 
-export const MAIN_LOGIN = "/login";
+/** @deprecated Use PATIENT_LOGIN — kept for legacy imports during migration */
+export const MAIN_LOGIN = "/login/paciente";
+export const PATIENT_LOGIN = "/login/paciente";
+export const DOCTOR_LOGIN = "/login/medico";
 export const PSYCHOLOGIST_LOGIN = "/login/psicologo";
 export const PSYCHOANALYST_LOGIN = "/login/psicanalista";
 export const INTEGRATIVE_THERAPIST_LOGIN = "/login/terapeuta-integrativo";
@@ -130,7 +133,9 @@ export function resolveLoginPathForPathname(pathname: string): string {
   if (pathname.startsWith("/integrative-therapist")) return INTEGRATIVE_THERAPIST_LOGIN;
   if (pathname.startsWith("/organization")) return ORGANIZATION_LOGIN;
   if (pathname.startsWith("/humanitarian/angel")) return ANGEL_LOGIN;
-  return MAIN_LOGIN;
+  if (pathname.startsWith("/professional") || pathname.startsWith("/admin")) return DOCTOR_LOGIN;
+  if (pathname.startsWith("/patient")) return PATIENT_LOGIN;
+  return PATIENT_LOGIN;
 }
 
 /** Sign-out destination for the active dashboard role / URL. */
@@ -152,9 +157,11 @@ export function resolveLoginPathForSession(
     case "ANGEL":
       return ANGEL_LOGIN;
     case "PROFESSIONAL":
-      return MAIN_LOGIN;
+      return DOCTOR_LOGIN;
+    case "PATIENT":
+      return PATIENT_LOGIN;
     default:
-      return MAIN_LOGIN;
+      return PATIENT_LOGIN;
   }
 }
 
@@ -163,7 +170,7 @@ export function resolveForgotPasswordContext(from: string | null | undefined): {
   loginPath: string;
   accent: LoginAccent;
 } {
-  const loginPath = from?.startsWith("/login") ? from : MAIN_LOGIN;
+  const loginPath = from?.startsWith("/login") ? from : PATIENT_LOGIN;
   const portal = PORTAL_BY_PATH[loginPath];
   return { loginPath, accent: portal?.accent ?? "emerald" };
 }
@@ -199,13 +206,13 @@ export function sanitizeLoginFrom(from: string | null | undefined): string | und
 
 /** Derive portal login from a post-auth dashboard path. */
 export function resolveLoginPathFromCallback(callbackUrl: string | null | undefined): string {
-  if (!callbackUrl?.trim()) return MAIN_LOGIN;
+  if (!callbackUrl?.trim()) return PATIENT_LOGIN;
   try {
     const raw = callbackUrl.trim();
     const path = raw.startsWith("/") ? raw.split("?")[0] : new URL(raw).pathname;
     return resolveLoginPathForPathname(path);
   } catch {
-    return MAIN_LOGIN;
+    return PATIENT_LOGIN;
   }
 }
 
@@ -269,6 +276,8 @@ export function resolveLoginPathForRegistration(
 ): string {
   if (professionalKind === "psychologist") return PSYCHOLOGIST_LOGIN;
   switch (role) {
+    case "PROFESSIONAL":
+      return DOCTOR_LOGIN;
     case "PSYCHOANALYST":
       return PSYCHOANALYST_LOGIN;
     case "INTEGRATIVE_THERAPIST":
@@ -278,7 +287,7 @@ export function resolveLoginPathForRegistration(
     case "ANGEL":
       return ANGEL_LOGIN;
     default:
-      return MAIN_LOGIN;
+      return PATIENT_LOGIN;
   }
 }
 

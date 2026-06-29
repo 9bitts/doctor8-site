@@ -16,7 +16,7 @@ import { DEFAULT_VENEZUELA_POOLS } from "@/lib/humanitarian/constants";
 import { detectInitialLang, LANG_KEY } from "@/components/auth/register-shared";
 import ProPlanCta from "@/components/professional/ProPlanCta";
 
-const PRO_LOGIN_HREF = `/login?registerUrl=${encodeURIComponent("/register/professional/signup")}`;
+const PRO_LOGIN_HREF = `/login/medico?registerUrl=${encodeURIComponent("/register/professional/signup")}`;
 
 const FEAT_ICONS: Record<string, LucideIcon> = {
   calendar: Calendar,

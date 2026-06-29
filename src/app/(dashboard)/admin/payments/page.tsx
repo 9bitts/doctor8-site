@@ -7,6 +7,6 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPaymentsPage() {
   const session = await getAdminSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/login/medico");
   return <PaymentsAdminClient />;
 }

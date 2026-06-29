@@ -89,9 +89,9 @@ export default function SosVenezuelaPage() {
 
   const campaignPath = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
   const patientRegister = `/register?region=VE&role=PATIENT&callbackUrl=${encodeURIComponent(campaignPath)}`;
-  const patientLogin = `/login?callbackUrl=${encodeURIComponent(campaignPath)}`;
+  const patientLogin = `/login/paciente?callbackUrl=${encodeURIComponent(campaignPath)}`;
   const volRegister = `/register/professional/signup?region=VE&role=PROFESSIONAL&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
-  const volLogin = `/login?callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
+  const volLogin = `/login/paciente?callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
   const psychVolRegister = `/register/professional/signup?region=VE&portal=psychologist&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
   const psychoVolRegister = `/register/professional/signup?region=VE&role=PSYCHOANALYST&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
 

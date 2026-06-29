@@ -18,7 +18,7 @@ import {
 export default function UnauthorizedPage() {
   const pathname = usePathname();
   const { lang, changeLang, t } = useLoginLang();
-  const [home, setHome] = useState("/login");
+  const [home, setHome] = useState("/login/paciente");
   const [sessionRole, setSessionRole] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
 

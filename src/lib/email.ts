@@ -415,7 +415,7 @@ export async function sendColleagueResourceInvite({
   const lang = normEmailLang(language);
   const c = EMAIL_COLLEAGUE_INVITE[lang];
   const appUrl = getAppUrl();
-  const actionUrl = loginUrl ? `${appUrl}/login` : `${appUrl}/register`;
+  const actionUrl = loginUrl ? `${appUrl}/login/paciente` : `${appUrl}/register`;
   const actionLabel = loginUrl ? c.ctaLogin : c.ctaRegister;
 
   const resourceBlock = resourceUrl

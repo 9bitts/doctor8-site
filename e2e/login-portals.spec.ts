@@ -3,6 +3,8 @@ import {
   LOGIN_PORTALS,
   PROTECTED_AREA_REDIRECTS,
   PSYCHOLOGIST_LOGIN,
+  PATIENT_LOGIN,
+  DOCTOR_LOGIN,
   e2ePsychologistCredentials,
   expectLoginForm,
   loginPsychologist,
@@ -27,8 +29,13 @@ test.describe("login portals", () => {
     });
   }
 
-  test("main login lists all professional portal links", async ({ page }) => {
-    await page.goto("/login");
+  test("patient login lists doctor portal link", async ({ page }) => {
+    await page.goto(PATIENT_LOGIN);
+    await expect(page.getByRole("link", { name: /médico|doctor/i })).toBeVisible();
+  });
+
+  test("doctor login lists professional portal links", async ({ page }) => {
+    await page.goto(DOCTOR_LOGIN);
     await expect(page.getByRole("link", { name: /psychologist|psicologo/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /psychoanalyst|psicanalista/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /integrative|integrativ/i })).toBeVisible();
@@ -51,6 +58,11 @@ test.describe("login portals", () => {
     await expect(page).toHaveURL(/\/forgot-password\/method/);
     await expect(page).toHaveURL(/email=test(%40|@)example\.com/i);
     await expect(page).toHaveURL(/from=%2Flogin%2Forganizacao|from=.*organizacao/);
+  });
+
+  test("legacy /login redirects to patient login", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page).toHaveURL(/\/login\/paciente/);
   });
 });
 

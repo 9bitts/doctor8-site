@@ -16,7 +16,7 @@ function redirectAccount(req: NextRequest, signTest: string) {
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.redirect(new URL(`${getPublicBase(req)}/login`));
+    return NextResponse.redirect(new URL(`${getPublicBase(req)}/login/medico`));
   }
 
   const signatureSessionId = req.nextUrl.searchParams.get("signatureSessionId") || "";

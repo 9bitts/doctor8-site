@@ -11,7 +11,7 @@ import { Users, Stethoscope, Brain, Leaf, Calendar, MessageSquare } from "lucide
 
 export default async function PatientProvidersPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/login/paciente");
   if (session.user.role !== "PATIENT") redirect(resolveRoleHome(session.user.role));
 
   const userId = session.user.id;

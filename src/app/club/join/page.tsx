@@ -96,7 +96,7 @@ function ClubJoinContent({ lang }: { lang: Lang }) {
       <div className="text-center py-8">
         <AlertCircle className="mx-auto text-amber-500 mb-3" size={40} />
         <p className="text-slate-600">{t("buyClub.invite.invalidLink")}</p>
-        <Link href="/login" className="inline-block mt-4 text-emerald-600 font-medium hover:underline">
+        <Link href="/login/paciente" className="inline-block mt-4 text-emerald-600 font-medium hover:underline">
           {t("buyClub.invite.login")}
         </Link>
       </div>
@@ -161,7 +161,7 @@ function ClubJoinContent({ lang }: { lang: Lang }) {
           {t("buyClub.invite.register")}
         </Link>
         <Link
-          href={`/login?callbackUrl=${callbackUrl}`}
+          href={`/login/paciente?callbackUrl=${callbackUrl}`}
           className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-700 font-semibold py-3 rounded-xl transition"
         >
           <LogIn size={18} />

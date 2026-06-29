@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { consumeAuthCallback } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
-import { MAIN_LOGIN, PORTAL_LOGINS, PSYCHOLOGIST_LOGIN } from "@/lib/auth-portals";
+import { DOCTOR_LOGIN, PATIENT_LOGIN, PORTAL_LOGINS, PSYCHOLOGIST_LOGIN } from "@/lib/auth-portals";
 import { PSYCHOLOGIST_HOME, isPsychologistSpecialty } from "@/lib/psychologist-portal";
 import {
   useLoginLang,
@@ -60,7 +60,27 @@ function CallbackInner() {
       if (cancelled) return;
 
       if (!session?.user?.role) {
-        navigateAfterAuth(`${MAIN_LOGIN}?error=SessionTimeout`);
+        const fallback =
+          portal === "doctor" ? DOCTOR_LOGIN : PATIENT_LOGIN;
+        navigateAfterAuth(`${fallback}?error=SessionTimeout`);
+        return;
+      }
+
+      if (
+        portal === "patient" &&
+        session.user.role !== "PATIENT" &&
+        session.user.role !== "ADMIN"
+      ) {
+        navigateAfterAuth(`${PATIENT_LOGIN}?error=WrongRole`);
+        return;
+      }
+
+      if (
+        portal === "doctor" &&
+        session.user.role !== "PROFESSIONAL" &&
+        session.user.role !== "ADMIN"
+      ) {
+        navigateAfterAuth(`${DOCTOR_LOGIN}?error=WrongRole`);
         return;
       }
 
@@ -111,7 +131,11 @@ function CallbackInner() {
     }
 
     finishOAuthCallback().catch(() => {
-      if (!cancelled) navigateAfterAuth(`${MAIN_LOGIN}?error=SessionTimeout`);
+      if (!cancelled) {
+        const fallback =
+          portal === "doctor" ? DOCTOR_LOGIN : PATIENT_LOGIN;
+        navigateAfterAuth(`${fallback}?error=SessionTimeout`);
+      }
     });
 
     return () => {

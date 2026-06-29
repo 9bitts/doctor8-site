@@ -11,6 +11,8 @@ import { resolveLoginPathForPathname } from "@/lib/auth-portals";
 const PUBLIC_ROUTES = [
   "/",
   "/login",
+  "/login/medico",
+  "/login/paciente",
   "/login/psicologo",
   "/login/psicanalista",
   "/login/terapeuta-integrativo",
@@ -88,6 +90,12 @@ export default auth((req) => {
       url.pathname = "/register/professional/signup";
       return NextResponse.redirect(url);
     }
+  }
+
+  if (pathname === "/login") {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login/paciente";
+    return NextResponse.redirect(url);
   }
 
   if (isPublicRoute(pathname)) return NextResponse.next();

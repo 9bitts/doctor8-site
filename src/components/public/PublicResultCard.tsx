@@ -181,7 +181,7 @@ export default function PublicResultCard({
                       day.slots.map((slot) => (
                         <Link
                           key={slot.datetime}
-                          href={`/login?callbackUrl=${encodeURIComponent(
+                          href={`/login/paciente?callbackUrl=${encodeURIComponent(
                             `/patient/appointments?pro=${pro.providerId}&providerType=${pro.providerType}&slot=${slot.datetime}&from=public_search`
                           )}`}
                           onClick={() => trackPublicBookClick(pro.slug, "public_search")}

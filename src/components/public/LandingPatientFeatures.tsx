@@ -71,7 +71,7 @@ export default function LandingPatientFeatures() {
 
         <p className="mt-8 text-center text-sm text-d8-muted">
           {c.platform.footerNote}{" "}
-          <Link href="/login" className="font-semibold text-accent-500 hover:text-accent-600">
+          <Link href="/login/paciente" className="font-semibold text-accent-500 hover:text-accent-600">
             {c.platform.loginLink}
           </Link>
         </p>

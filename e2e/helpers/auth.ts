@@ -1,6 +1,9 @@
 import type { Page } from "@playwright/test";
 
-export const MAIN_LOGIN = "/login";
+export const PATIENT_LOGIN = "/login/paciente";
+export const DOCTOR_LOGIN = "/login/medico";
+/** @deprecated Use PATIENT_LOGIN */
+export const MAIN_LOGIN = PATIENT_LOGIN;
 export const PSYCHOLOGIST_LOGIN = "/login/psicologo";
 export const PSYCHOANALYST_LOGIN = "/login/psicanalista";
 export const INTEGRATIVE_THERAPIST_LOGIN = "/login/terapeuta-integrativo";
@@ -8,7 +11,8 @@ export const ORGANIZATION_LOGIN = "/login/organizacao";
 export const ANGEL_LOGIN = "/login/anjo";
 
 export const LOGIN_PORTALS = [
-  { path: MAIN_LOGIN, dashboardPattern: /\/(patient|professional|admin)/ },
+  { path: PATIENT_LOGIN, dashboardPattern: /\/(patient|humanitarian)/ },
+  { path: DOCTOR_LOGIN, dashboardPattern: /\/(professional|admin)/ },
   { path: PSYCHOLOGIST_LOGIN, dashboardPattern: /\/(psychologist|onboarding)/ },
   { path: PSYCHOANALYST_LOGIN, dashboardPattern: /\/psychoanalyst/ },
   { path: INTEGRATIVE_THERAPIST_LOGIN, dashboardPattern: /\/integrative-therapist/ },
@@ -22,6 +26,8 @@ export const PROTECTED_AREA_REDIRECTS = [
   { area: "/organization", loginPath: ORGANIZATION_LOGIN },
   { area: "/humanitarian/angel", loginPath: ANGEL_LOGIN },
   { area: "/psychologist", loginPath: PSYCHOLOGIST_LOGIN },
+  { area: "/professional", loginPath: DOCTOR_LOGIN },
+  { area: "/patient", loginPath: PATIENT_LOGIN },
 ] as const;
 
 export function e2ePatientCredentials(): { email: string; password: string } | null {
@@ -107,7 +113,16 @@ export async function loginWithCredentials(
   password: string,
   callbackUrl?: string,
 ): Promise<void> {
-  await loginAtPortal(page, MAIN_LOGIN, email, password, callbackUrl);
+  await loginAtPortal(page, PATIENT_LOGIN, email, password, callbackUrl);
+}
+
+export async function loginDoctor(
+  page: Page,
+  email: string,
+  password: string,
+  callbackUrl?: string,
+): Promise<void> {
+  await loginAtPortal(page, DOCTOR_LOGIN, email, password, callbackUrl);
 }
 
 export async function loginPsychologist(

@@ -265,7 +265,7 @@ export default function LandingMarketingSections() {
               <h4 className="mb-3 text-sm font-bold text-white">{c.footer.professionals}</h4>
               <ul className="flex flex-col gap-2 text-sm">
                 <li><Link href="/register/professional/signup" className="transition hover:text-white">{c.footer.proLinks[0]}</Link></li>
-                <li><Link href="/login" className="transition hover:text-white">{c.footer.proDoctorLogin}</Link></li>
+                <li><Link href="/login/medico" className="transition hover:text-white">{c.footer.proDoctorLogin}</Link></li>
                 <li><Link href="/login/psicologo" className="transition hover:text-white">{c.footer.proPsychologistLogin}</Link></li>
                 <li><Link href="/login/psicanalista" className="transition hover:text-white">{c.footer.proPsychoanalystLogin}</Link></li>
                 <li><Link href="/login/terapeuta-integrativo" className="transition hover:text-white">{c.footer.proIntegrativeLogin}</Link></li>

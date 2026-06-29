@@ -164,7 +164,7 @@ export default function SupportWidget() {
   }
 
   const hideOnPaths = [
-    "/login", "/register", "/verify-email", "/verify-account", "/verify-sms",
+    "/login", "/login/medico", "/login/paciente", "/register", "/verify-email", "/verify-account", "/verify-sms",
     "/forgot-password", "/reset-password",
     "/club/join", "/callback", "/embed",
     "/video", "/room",

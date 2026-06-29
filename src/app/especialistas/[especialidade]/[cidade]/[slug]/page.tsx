@@ -113,7 +113,7 @@ export default async function PublicSpecialistPage({
               />
             </Link>
             <div className="flex items-center gap-3 text-sm">
-              <Link href="/login" className="hover:underline opacity-90">
+              <Link href="/login/paciente" className="hover:underline opacity-90">
                 {t("pub.headerLogin")}
               </Link>
               <Link

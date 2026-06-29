@@ -41,7 +41,7 @@ export default function PatientTclePage() {
       .then((r) => r.json())
       .then(async (s) => {
         if (!s?.user) {
-          router.push(`/login?callbackUrl=${encodeURIComponent(`/patient/tcle?returnUrl=${returnUrl}`)}`);
+          router.push(`/login/paciente?callbackUrl=${encodeURIComponent(`/patient/tcle?returnUrl=${returnUrl}`)}`);
           return;
         }
         if (s.user.role !== "PATIENT") {

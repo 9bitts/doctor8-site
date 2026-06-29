@@ -27,11 +27,11 @@ function fmt(cents: number, currency: string) {
 
 export default async function OrganizationDashboard() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/login/organizacao");
   if (session.user.role !== "ORGANIZATION") redirect(resolveRoleHome(session.user.role));
 
   const membership = await getOrganizationMembership(session.user.id);
-  if (!membership) redirect("/login");
+  if (!membership) redirect("/login/organizacao");
 
   const org = membership.organization;
   const allScope = await getOrganizationProviderScopeIds(org.id);

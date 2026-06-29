@@ -13,7 +13,7 @@ function safeDecrypt(v: string | null): string {
 
 export default async function PsychoanalystAppointmentsPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/login/psicanalista");
   if (session.user.role !== "PSYCHOANALYST") redirect("/patient");
 
   const userRow = await db.user.findUnique({ where: { id: session.user.id }, select: { language: true } });

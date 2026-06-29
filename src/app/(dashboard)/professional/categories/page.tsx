@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfessionalCategoriesPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/login/medico");
   if (session.user.role !== "PROFESSIONAL") redirect("/patient");
   return <CategoriesClient />;
 }

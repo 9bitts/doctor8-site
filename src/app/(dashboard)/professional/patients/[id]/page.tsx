@@ -23,7 +23,7 @@ export default async function PatientChartDetail({
   params: { id: string };
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/login/medico");
   if (session.user.role !== "PROFESSIONAL") redirect("/patient");
 
   const professional = await db.professionalProfile.findUnique({

@@ -56,7 +56,7 @@ function redirectTo(req: NextRequest, status: string, opts?: { flow?: string; ki
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.redirect(new URL(`${publicBase(req)}/login`));
+    return NextResponse.redirect(new URL(`${publicBase(req)}/login/medico`));
   }
 
   const signatureSessionId = req.nextUrl.searchParams.get("signatureSessionId") || "";

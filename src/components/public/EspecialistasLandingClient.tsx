@@ -181,7 +181,7 @@ export default function EspecialistasLandingClient() {
             >
               {langLabel(lang)}
             </button>
-            <Link href="/login" className="hidden rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/85 transition hover:border-white/40 hover:text-white sm:inline-block">
+            <Link href="/login/paciente" className="hidden rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/85 transition hover:border-white/40 hover:text-white sm:inline-block">
               {lc.nav.signIn}
             </Link>
             <Link href="/register" className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-600">
