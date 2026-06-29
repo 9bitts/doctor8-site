@@ -79,7 +79,11 @@ function resolveCalendarSubject(params: MeetLinkParams): string | null {
   return concierge;
 }
 
-function buildJwt(subject: string, scopes: string[]) {
+type MeetJwtAuth = {
+  getAccessToken(): Promise<string | { token?: string | null } | null | undefined>;
+};
+
+function buildJwt(subject: string, scopes: string[]): MeetJwtAuth | null {
   const sa = parseServiceAccountJson();
   if (!sa?.client_email || !sa?.private_key) return null;
   return new google.auth.JWT({
@@ -90,7 +94,7 @@ function buildJwt(subject: string, scopes: string[]) {
   });
 }
 
-async function getAccessToken(auth: NonNullable<ReturnType<typeof buildJwt>>): Promise<string | null> {
+async function getAccessToken(auth: MeetJwtAuth): Promise<string | null> {
   const res = await auth.getAccessToken();
   const token = typeof res === "string" ? res : res?.token;
   return token ?? null;
@@ -163,7 +167,10 @@ async function createMeetViaCalendarApi(params: MeetLinkParams): Promise<string 
   const auth = buildJwt(subject, [CALENDAR_SCOPE]);
   if (!auth) return null;
 
-  const calendar = google.calendar({ version: "v3", auth });
+  const calendar = google.calendar({
+    version: "v3",
+    auth: auth as Parameters<typeof google.calendar>[0]["auth"],
+  });
   const isAppointment = params.kind === "appointment" && params.scheduledAt;
   const start = isAppointment ? params.scheduledAt! : new Date();
   const end = isAppointment

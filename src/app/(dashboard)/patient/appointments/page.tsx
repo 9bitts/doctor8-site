@@ -665,17 +665,17 @@ export default function AppointmentsPage() {
                   <div className="flex gap-2 shrink-0">
                     {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
                       <a href={`/video/${apt.id}`} className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
-                        <Video size={13} /> Entrar
+                        <Video size={13} /> {t("appt.join")}
                       </a>
                     )}
                     {canReschedule && (
                       <button onClick={() => openReschedule(apt)} className="flex items-center gap-1 text-xs text-blue-600 border border-blue-200 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition">
-                        <RefreshCw size={12} /> Remarcar
+                        <RefreshCw size={12} /> {t("appt.rescheduleBtn")}
                       </button>
                     )}
                     {canCancel && (
                       <button onClick={() => { setCancelModal(apt); setCancelResult(null); setCancelReason(""); }} className="flex items-center gap-1 text-xs text-rose-600 border border-rose-200 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition">
-                        <X size={12} /> Cancelar
+                        <X size={12} /> {t("appt.cancelBtn")}
                       </button>
                     )}
                   </div>
@@ -960,13 +960,13 @@ export default function AppointmentsPage() {
           {/* Cancellation policy info */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
             <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
-              <AlertTriangle size={14} /> Política de cancelamento
+              <AlertTriangle size={14} /> {t("appt.cancelPolicyTitle")}
             </p>
             <ul className="text-xs text-amber-700 space-y-1 ml-5 list-disc">
-              <li>Cancelamento com mais de 24h de antecedência → reembolso 100%</li>
-              <li>Cancelamento com menos de 24h → sem reembolso</li>
-              <li>Dentro de 7 dias da compra (CDC) → reembolso 100% se antes da consulta</li>
-              <li>Ausência do médico → reembolso 100% automático</li>
+              <li>{t("appt.refundOver24")}</li>
+              <li>{t("appt.refundUnder24")}</li>
+              <li>{t("appt.cancelPolicyCdc")}</li>
+              <li>{t("appt.cancelPolicyDoctorNoShow")}</li>
             </ul>
           </div>
 
@@ -1028,14 +1028,15 @@ export default function AppointmentsPage() {
               className="mt-0.5 w-4 h-4 rounded accent-emerald-500"
             />
             <span className="text-xs text-slate-600 leading-relaxed">
-              <strong className="text-slate-800">Aceito a política de cancelamento.</strong> Compreendo que cancelamentos realizados com menos de 24 horas de antecedência não serão reembolsados, conforme os{" "}
-              <a href="/terms" target="_blank" className="text-emerald-600 underline">Termos de Uso</a>.
+              <strong className="text-slate-800">{t("appt.acceptCancelPolicyBold")}</strong>{" "}
+              {t("appt.acceptCancelPolicyText")}{" "}
+              <a href="/terms" target="_blank" className="text-emerald-600 underline">{t("appt.termsOfUse")}</a>.
             </span>
           </label>
 
           {!acceptedPolicy && (
             <p className="text-xs text-amber-600 flex items-center gap-1.5">
-              <HelpCircle size={13} /> Aceite a política de cancelamento para continuar.
+              <HelpCircle size={13} /> {t("appt.acceptPolicyRequired")}
             </p>
           )}
 
@@ -1065,12 +1066,12 @@ export default function AppointmentsPage() {
             <p className="text-slate-500 mt-2">{t("appt.confirmedSub")}</p>
           </div>
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700 text-left space-y-1">
-            <p className="font-semibold flex items-center gap-2"><Info size={14} /> O que acontece agora?</p>
+            <p className="font-semibold flex items-center gap-2"><Info size={14} /> {t("appt.whatHappensNow")}</p>
             <ul className="ml-5 list-disc space-y-1 text-xs mt-2">
-              <li>Você receberá um email de confirmação com os detalhes</li>
-              <li>24 horas antes da consulta, enviaremos um lembrete por email</li>
-              <li>3 horas antes, enviaremos outro lembrete com o link da videochamada</li>
-              <li>No horário marcado, acesse pelo botão "Entrar" nas suas consultas</li>
+              <li>{t("appt.confirmedStep1")}</li>
+              <li>{t("appt.confirmedStep2")}</li>
+              <li>{t("appt.confirmedStep3")}</li>
+              <li>{t("appt.confirmedStep4")}</li>
             </ul>
           </div>
           <div className="bg-slate-50 rounded-xl p-5 text-sm space-y-2 text-left">
@@ -1120,37 +1121,37 @@ export default function AppointmentsPage() {
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto ${cancelResult.refunded ? "bg-emerald-100" : "bg-amber-100"}`}>
                   {cancelResult.refunded ? <CheckCircle2 size={28} className="text-emerald-500" /> : <AlertTriangle size={28} className="text-amber-500" />}
                 </div>
-                <h3 className="font-bold text-slate-900 text-center text-lg">Consulta cancelada</h3>
+                <h3 className="font-bold text-slate-900 text-center text-lg">{t("appt.cancelDoneTitle")}</h3>
                 {cancelResult.refunded ? (
                   <p className="text-sm text-emerald-700 text-center bg-emerald-50 rounded-xl p-3">
-                    ✅ Reembolso aprovado! O valor será estornado em até 5 dias úteis.
+                    ✅ {t("appt.cancelRefundOk")}
                   </p>
                 ) : (
                   <p className="text-sm text-amber-700 text-center bg-amber-50 rounded-xl p-3">
-                    ⚠️ Cancelamento feito com menos de 24h — sem reembolso conforme a política aceita.
+                    ⚠️ {t("appt.cancelNoRefund")}
                   </p>
                 )}
-                <button onClick={() => { setCancelModal(null); setCancelResult(null); }} className="w-full py-3 rounded-xl bg-slate-900 text-white font-semibold">Fechar</button>
+                <button onClick={() => { setCancelModal(null); setCancelResult(null); }} className="w-full py-3 rounded-xl bg-slate-900 text-white font-semibold">{t("appt.close")}</button>
               </>
             ) : (
               <>
                 <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                  <AlertTriangle size={20} className="text-rose-500" /> Cancelar consulta
+                  <AlertTriangle size={20} className="text-rose-500" /> {t("appt.cancelTitle")}
                 </h3>
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 space-y-1">
-                  <p className="font-semibold">Política de reembolso:</p>
-                  <p>• Mais de 24h antes → reembolso 100%</p>
-                  <p>• Menos de 24h antes → sem reembolso</p>
+                  <p className="font-semibold">{t("appt.refundPolicyTitle")}</p>
+                  <p>• {t("appt.refundOver24")}</p>
+                  <p>• {t("appt.refundUnder24")}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-600 mb-1 block">Motivo (opcional)</label>
-                  <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} placeholder="Ex.: Conflito de agenda, emergência..." className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-500/30" />
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">{t("appt.cancelReasonLabel")}</label>
+                  <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} placeholder={t("appt.cancelReasonPlaceholder")} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-500/30" />
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setCancelModal(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm">Voltar</button>
+                  <button onClick={() => setCancelModal(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm">{t("appt.back")}</button>
                   <button onClick={handleCancel} disabled={cancelLoading} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2">
                     {cancelLoading ? <Loader2 size={14} className="animate-spin" /> : null}
-                    Confirmar cancelamento
+                    {t("appt.confirmCancel")}
                   </button>
                 </div>
               </>
@@ -1164,10 +1165,10 @@ export default function AppointmentsPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2"><RefreshCw size={18} className="text-blue-500" /> Remarcar consulta</h3>
+              <h3 className="font-bold text-slate-900 flex items-center gap-2"><RefreshCw size={18} className="text-blue-500" /> {t("appt.rescheduleTitle")}</h3>
               <button onClick={() => setRescheduleModal(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
             </div>
-            <p className="text-xs text-slate-500">Escolha um novo horário com o mesmo médico. Sem custo adicional.</p>
+            <p className="text-xs text-slate-500">{t("appt.rescheduleHint")}</p>
             {rescheduleSlots.length === 0 ? (
               <div className="flex justify-center py-6"><Loader2 size={20} className="animate-spin text-slate-400" /></div>
             ) : (
@@ -1197,10 +1198,10 @@ export default function AppointmentsPage() {
                   </div>
                 )}
                 <div className="flex gap-3 pt-2">
-                  <button onClick={() => setRescheduleModal(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm">Cancelar</button>
+                  <button onClick={() => setRescheduleModal(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm">{t("appt.cancelBtn")}</button>
                   <button onClick={handleReschedule} disabled={!rescheduleSlot || rescheduleLoading} className="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2">
                     {rescheduleLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                    Confirmar reagendamento
+                    {t("appt.confirmReschedule")}
                   </button>
                 </div>
               </>
