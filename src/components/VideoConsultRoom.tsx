@@ -11,6 +11,7 @@ import {
   ScrollText, BarChart3, ExternalLink, MessageCircle, Syringe, Activity,
 } from "lucide-react";
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
+import IntegrativeConsultPanel from "@/components/integrative-therapist/IntegrativeConsultPanel";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
 import DailyPrebuiltEmbed, { type DailyPrebuiltHandle } from "@/components/DailyPrebuiltEmbed";
 import { useConsultSessionKeepalive } from "@/hooks/useConsultSessionKeepalive";
@@ -129,6 +130,12 @@ function leaveDestination(data: VideoConsultData): string {
       return isPro ? "/professional/jit" : "/urgent";
     case "appointment":
     default:
+      if (isPro && data.providerPanel === "integrative_therapist") {
+        return "/integrative-therapist/appointments";
+      }
+      if (isPro && data.providerPanel === "psychoanalyst") {
+        return "/psychoanalyst/appointments";
+      }
       return isPro ? "/professional/appointments" : "/patient/appointments";
   }
 }
@@ -183,6 +190,7 @@ export default function VideoConsultRoom({
     summary: Parameters<typeof HumanitarianIntakeSummary>[0]["summary"];
     chiefComplaint: string | null;
   } | null>(null);
+  const [integrativePracticeSlug, setIntegrativePracticeSlug] = useState("");
   const notesAssistantRef = useRef<ConsultNotesAssistantHandle>(null);
   const dailyRef = useRef<DailyPrebuiltHandle>(null);
 
@@ -214,9 +222,15 @@ export default function VideoConsultRoom({
         return;
       }
       setData(result.data);
-      const chartId = result.data.analysandRecordId || result.data.patientRecordId;
+      const chartId =
+        result.data.integrativeClientRecordId
+        || result.data.analysandRecordId
+        || result.data.patientRecordId;
       if (result.data.role === "professional" && chartId) {
         loadRecords(chartId, result.data.providerPanel);
+        if (result.data.providerPanel === "integrative_therapist") {
+          setSidebarOpen(true);
+        }
       }
       if (
         result.data.role === "professional" &&
@@ -391,11 +405,22 @@ export default function VideoConsultRoom({
   }
 
   async function saveNote() {
-    const chartId = data?.analysandRecordId || data?.patientRecordId;
+    const chartId = data?.integrativeClientRecordId || data?.analysandRecordId || data?.patientRecordId;
     if (!noteText.trim() || !chartId || !data) return;
     setNoteSaving(true);
     try {
-      if (data.providerPanel === "psychoanalyst") {
+      if (data.providerPanel === "integrative_therapist") {
+        await fetch("/api/integrative-therapist/session-notes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            integrativeClientRecordId: chartId,
+            content: noteText.trim(),
+            practiceSlug: integrativePracticeSlug || undefined,
+            appointmentId: data.appointmentId || undefined,
+          }),
+        });
+      } else if (data.providerPanel === "psychoanalyst") {
         await fetch("/api/psychoanalyst/session-notes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -870,8 +895,10 @@ export default function VideoConsultRoom({
                   <ConsultNotesAssistant
                     ref={notesAssistantRef}
                     lang={lang}
-                    patientRecordId={isPsychoanalyst ? null : chartId}
+                    patientRecordId={isIntegrative || isPsychoanalyst ? null : chartId}
                     analysandRecordId={isPsychoanalyst ? chartId : null}
+                    integrativeClientRecordId={isIntegrative ? chartId : null}
+                    practiceSlug={isIntegrative ? integrativePracticeSlug : null}
                     appointmentId={data.appointmentId}
                     patientName={data.otherParty}
                     onSaved={() => {
@@ -879,6 +906,16 @@ export default function VideoConsultRoom({
                     }}
                   />
 
+                  {isIntegrative && chartId ? (
+                    <IntegrativeConsultPanel
+                      lang={lang}
+                      clientId={chartId}
+                      appointmentId={data.appointmentId}
+                      dark
+                      onPracticeChange={setIntegrativePracticeSlug}
+                      onNoteSaved={() => loadRecords(chartId, data.providerPanel)}
+                    />
+                  ) : (
                   <div className="bg-slate-800 rounded-xl p-3 space-y-2">
                     <p className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                       <FileText size={13} className="text-emerald-400" /> {t("quickNote")}
@@ -905,6 +942,7 @@ export default function VideoConsultRoom({
                       }
                     </button>
                   </div>
+                  )}
 
                   <div>
                     <p className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5">

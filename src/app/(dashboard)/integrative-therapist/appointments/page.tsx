@@ -83,12 +83,20 @@ export default async function IntegrativeTherapistAppointmentsPage() {
                 >
                   {apt.status}
                 </span>
-                {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
+                {apt.status === "CONFIRMED" && (
                   <a
-                    href={`/video/${apt.id}`}
-                    className="text-xs font-bold bg-teal-500 text-white px-3 py-2 rounded-xl hover:bg-teal-600"
+                    href={
+                      apt.type === "TELECONSULT"
+                        ? `/video/${apt.id}`
+                        : `/integrative-therapist/consult/${apt.id}`
+                    }
+                    className={`text-xs font-bold text-white px-3 py-2 rounded-xl ${
+                      apt.type === "TELECONSULT"
+                        ? "bg-teal-500 hover:bg-teal-600"
+                        : "bg-slate-800 hover:bg-slate-700"
+                    }`}
                   >
-                    {t("proappt.join")}
+                    {apt.type === "TELECONSULT" ? t("proappt.join") : t("it.consult.start")}
                   </a>
                 )}
               </div>

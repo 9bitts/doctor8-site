@@ -66,24 +66,34 @@ type Props = {
   lang: Lang;
   patientRecordId: string | null;
   analysandRecordId?: string | null;
+  integrativeClientRecordId?: string | null;
+  practiceSlug?: string | null;
   appointmentId?: string | null;
   patientName?: string;
   onSaved?: () => void;
 };
 
 const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(function ConsultNotesAssistant(
-  { lang, patientRecordId, analysandRecordId, appointmentId, onSaved },
+  { lang, patientRecordId, analysandRecordId, integrativeClientRecordId, practiceSlug, appointmentId, onSaved },
   ref,
 ) {
   const t = (k: string) => T[k]?.[lang] ?? T[k]?.["en"] ?? k;
-  const isAnalysandChart = !!analysandRecordId;
-  const chartId = analysandRecordId || patientRecordId;
-  const aiNotesApi = isAnalysandChart
-    ? "/api/psychoanalyst/ai-consult-notes"
-    : "/api/professional/ai-consult-notes";
+  const isIntegrativeChart = !!integrativeClientRecordId;
+  const isAnalysandChart = !!analysandRecordId && !isIntegrativeChart;
+  const chartId = integrativeClientRecordId || analysandRecordId || patientRecordId;
+  const aiNotesApi = isIntegrativeChart
+    ? "/api/integrative-therapist/ai-consult-notes"
+    : isAnalysandChart
+      ? "/api/psychoanalyst/ai-consult-notes"
+      : "/api/professional/ai-consult-notes";
 
   function chartFields(): Record<string, string> {
     if (!chartId) return {};
+    if (isIntegrativeChart) {
+      const fields: Record<string, string> = { integrativeClientRecordId: chartId };
+      if (practiceSlug) fields.practiceSlug = practiceSlug;
+      return fields;
+    }
     return isAnalysandChart
       ? { analysandRecordId: chartId }
       : { patientRecordId: chartId };
@@ -290,27 +300,38 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
         : lang === "es"
           ? "Evoluci\u00f3n \u2014 teleconsulta"
           : "Evolution \u2014 teleconsult";
-      const res = isAnalysandChart
-        ? await fetch("/api/psychoanalyst/session-notes", {
+      const res = isIntegrativeChart
+        ? await fetch("/api/integrative-therapist/session-notes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            analysandRecordId: chartId,
+            integrativeClientRecordId: chartId,
             content: summary.trim(),
+            practiceSlug: practiceSlug || undefined,
             appointmentId: appointmentId || undefined,
           }),
         })
-        : await fetch("/api/professional/documents", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            patientRecordId: chartId,
-            title,
-            content: summary.trim(),
-            recordKind: "EVOLUTION",
-            type: "CLINICAL_NOTE",
-          }),
-        });
+        : isAnalysandChart
+          ? await fetch("/api/psychoanalyst/session-notes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              analysandRecordId: chartId,
+              content: summary.trim(),
+              appointmentId: appointmentId || undefined,
+            }),
+          })
+          : await fetch("/api/professional/documents", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              patientRecordId: chartId,
+              title,
+              content: summary.trim(),
+              recordKind: "EVOLUTION",
+              type: "CLINICAL_NOTE",
+            }),
+          });
       if (!res.ok) {
         setError(t("genericError"));
         return;

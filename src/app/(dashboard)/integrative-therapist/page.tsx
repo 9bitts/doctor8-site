@@ -164,6 +164,14 @@ export default async function IntegrativeTherapistDashboard() {
                     {t("proappt.join")}
                   </a>
                 )}
+                {apt.type === "IN_PERSON" && apt.status === "CONFIRMED" && (
+                  <a
+                    href={`/integrative-therapist/consult/${apt.id}`}
+                    className="w-full sm:w-auto text-center text-xs font-bold bg-slate-800 text-white px-3 py-2.5 rounded-xl hover:bg-slate-700 min-h-[44px] inline-flex items-center justify-center shrink-0"
+                  >
+                    {t("it.consult.start")}
+                  </a>
+                )}
               </div>
             ))}
           </div>
