@@ -7,14 +7,7 @@ import {
   Stethoscope, LogIn, Brain, Building2, ArrowLeft, Leaf,
 } from "lucide-react";
 import { parseRegistrationRegion } from "@/lib/registration-regions";
-import {
-  PORTAL_BY_ID,
-  PROFESSIONAL_REGISTER,
-  PSYCHOLOGIST_REGISTER,
-  PSYCHOANALYST_REGISTER,
-  INTEGRATIVE_REGISTER,
-  ORGANIZATION_REGISTER,
-} from "@/lib/auth-portals";
+import { LOGIN, ORGANIZATION_REGISTER } from "@/lib/auth-portals";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import {
@@ -78,30 +71,7 @@ export default function RegisterProfessionalSignupPage() {
     setStep(2);
   }
 
-  const loginHref = (() => {
-    if (step === 2 && role === "PSYCHOLOGIST") {
-      return buildAuthHref(PORTAL_BY_ID.psychologist.loginPath, {
-        registerUrl: PSYCHOLOGIST_REGISTER,
-        callbackUrl,
-      });
-    }
-    if (step === 2 && role === "PSYCHOANALYST") {
-      return buildAuthHref(PORTAL_BY_ID.psychoanalyst.loginPath, {
-        registerUrl: PSYCHOANALYST_REGISTER,
-        callbackUrl,
-      });
-    }
-    if (step === 2 && role === "INTEGRATIVE_THERAPIST") {
-      return buildAuthHref(PORTAL_BY_ID["integrative-therapist"].loginPath, {
-        registerUrl: INTEGRATIVE_REGISTER,
-        callbackUrl,
-      });
-    }
-    return buildAuthHref("/login/medico", {
-      registerUrl: PROFESSIONAL_REGISTER,
-      callbackUrl,
-    });
-  })();
+  const loginHref = buildAuthHref(LOGIN, { callbackUrl });
 
   const orgHref = buildAuthHref(ORGANIZATION_REGISTER, { callbackUrl });
 

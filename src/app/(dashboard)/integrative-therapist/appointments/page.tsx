@@ -18,7 +18,7 @@ function safeDecrypt(v: string | null): string {
 
 export default async function IntegrativeTherapistAppointmentsPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login/terapeuta-integrativo");
+  if (!session?.user) redirect("/login");
   if (session.user.role !== "INTEGRATIVE_THERAPIST") redirect("/patient");
 
   const userRow = await db.user.findUnique({

@@ -137,8 +137,8 @@ export default function HumanitarianVolunteerPage() {
     const portal = searchParams.get("portal");
     const loginPath =
       portal === "psychologist"
-        ? `/login/psicologo?callbackUrl=${callbackUrl}`
-        : `/login/paciente?callbackUrl=${callbackUrl}`;
+        ? `/login?callbackUrl=${callbackUrl}`
+        : `/login?callbackUrl=${callbackUrl}`;
 
     fetch("/api/auth/session")
       .then((r) => r.json())

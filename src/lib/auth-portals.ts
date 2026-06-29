@@ -1,17 +1,19 @@
-import { PSYCHOLOGIST_HOME } from "@/lib/psychologist-portal";
-
 export type LoginAccent = "emerald" | "violet" | "teal" | "indigo" | "rose";
 export type PortalHeaderIcon = "brain" | "leaf" | "building" | "heart";
 
-/** @deprecated Use PATIENT_LOGIN — kept for legacy imports during migration */
-export const MAIN_LOGIN = "/login/paciente";
-export const PATIENT_LOGIN = "/login/paciente";
-export const DOCTOR_LOGIN = "/login/medico";
-export const PSYCHOLOGIST_LOGIN = "/login/psicologo";
-export const PSYCHOANALYST_LOGIN = "/login/psicanalista";
-export const INTEGRATIVE_THERAPIST_LOGIN = "/login/terapeuta-integrativo";
-export const ORGANIZATION_LOGIN = "/login/organizacao";
-export const ANGEL_LOGIN = "/login/anjo";
+// Login is unified into a single screen. All former per-role portal URLs now
+// resolve to /login; legacy /login/<portal> paths are redirected by middleware.
+export const LOGIN = "/login";
+
+/** @deprecated Use LOGIN — kept so existing imports keep resolving to /login. */
+export const MAIN_LOGIN = LOGIN;
+export const PATIENT_LOGIN = LOGIN;
+export const DOCTOR_LOGIN = LOGIN;
+export const PSYCHOLOGIST_LOGIN = LOGIN;
+export const PSYCHOANALYST_LOGIN = LOGIN;
+export const INTEGRATIVE_THERAPIST_LOGIN = LOGIN;
+export const ORGANIZATION_LOGIN = LOGIN;
+export const ANGEL_LOGIN = LOGIN;
 
 export const PROFESSIONAL_REGISTER = "/register/professional/signup";
 export const PSYCHOLOGIST_REGISTER =
@@ -23,156 +25,26 @@ export const INTEGRATIVE_REGISTER =
 export const ORGANIZATION_REGISTER = "/register/organization";
 export const ANGEL_REGISTER = "/register/angel";
 
-export type PortalId =
-  | "psychologist"
-  | "psychoanalyst"
-  | "integrative-therapist"
-  | "organization"
-  | "angel";
-
-export interface PortalLoginConfig {
-  id: PortalId;
-  loginPath: string;
-  accent: LoginAccent;
-  homePath: string;
-  defaultRegisterPath: string;
-  taglineKey: string;
-  roleOnlyKey: string;
-  allowedRoles: string[];
-  oauthPortal: string;
-  headerIcon: PortalHeaderIcon;
-  footerLinkClass: string;
-  footerLabelKey: string;
+/** Unauthenticated redirect target — always the unified login. */
+export function resolveLoginPathForPathname(_pathname: string): string {
+  return LOGIN;
 }
 
-export const PORTAL_LOGINS: PortalLoginConfig[] = [
-  {
-    id: "psychologist",
-    loginPath: PSYCHOLOGIST_LOGIN,
-    accent: "violet",
-    homePath: PSYCHOLOGIST_HOME,
-    defaultRegisterPath: PSYCHOLOGIST_REGISTER,
-    taglineKey: "login.psychologistTagline",
-    roleOnlyKey: "login.psychologistOnly",
-    allowedRoles: ["PROFESSIONAL"],
-    oauthPortal: "psychologist",
-    headerIcon: "brain",
-    footerLinkClass: "text-violet-300 hover:text-violet-200",
-    footerLabelKey: "login.proPsychologistPortal",
-  },
-  {
-    id: "psychoanalyst",
-    loginPath: PSYCHOANALYST_LOGIN,
-    accent: "violet",
-    homePath: "/psychoanalyst",
-    defaultRegisterPath: PSYCHOANALYST_REGISTER,
-    taglineKey: "login.psychoanalystTagline",
-    roleOnlyKey: "login.psychoanalystOnly",
-    allowedRoles: ["PSYCHOANALYST"],
-    oauthPortal: "psychoanalyst",
-    headerIcon: "brain",
-    footerLinkClass: "text-violet-300 hover:text-violet-200",
-    footerLabelKey: "login.proPsychoanalystPortal",
-  },
-  {
-    id: "integrative-therapist",
-    loginPath: INTEGRATIVE_THERAPIST_LOGIN,
-    accent: "teal",
-    homePath: "/integrative-therapist",
-    defaultRegisterPath: INTEGRATIVE_REGISTER,
-    taglineKey: "login.integrativeTagline",
-    roleOnlyKey: "login.integrativeOnly",
-    allowedRoles: ["INTEGRATIVE_THERAPIST"],
-    oauthPortal: "integrative-therapist",
-    headerIcon: "leaf",
-    footerLinkClass: "text-teal-300 hover:text-teal-200",
-    footerLabelKey: "login.proIntegrativePortal",
-  },
-  {
-    id: "organization",
-    loginPath: ORGANIZATION_LOGIN,
-    accent: "indigo",
-    homePath: "/organization",
-    defaultRegisterPath: ORGANIZATION_REGISTER,
-    taglineKey: "login.organizationTagline",
-    roleOnlyKey: "login.organizationOnly",
-    allowedRoles: ["ORGANIZATION"],
-    oauthPortal: "organization",
-    headerIcon: "building",
-    footerLinkClass: "text-indigo-300 hover:text-indigo-200",
-    footerLabelKey: "login.proOrganizationPortal",
-  },
-  {
-    id: "angel",
-    loginPath: ANGEL_LOGIN,
-    accent: "rose",
-    homePath: "/humanitarian/angel",
-    defaultRegisterPath: ANGEL_REGISTER,
-    taglineKey: "login.angelTagline",
-    roleOnlyKey: "login.angelOnly",
-    allowedRoles: ["ANGEL"],
-    oauthPortal: "angel",
-    headerIcon: "heart",
-    footerLinkClass: "text-rose-300 hover:text-rose-200",
-    footerLabelKey: "login.proAngelPortal",
-  },
-];
-
-export const PORTAL_BY_ID = Object.fromEntries(
-  PORTAL_LOGINS.map((p) => [p.id, p]),
-) as Record<PortalId, PortalLoginConfig>;
-
-export const PORTAL_BY_PATH = Object.fromEntries(
-  PORTAL_LOGINS.map((p) => [p.loginPath, p]),
-) as Record<string, PortalLoginConfig>;
-
-/** Unauthenticated redirect: pick the portal login matching the protected area. */
-export function resolveLoginPathForPathname(pathname: string): string {
-  if (pathname.startsWith("/psychologist")) return PSYCHOLOGIST_LOGIN;
-  if (pathname.startsWith("/psychoanalyst")) return PSYCHOANALYST_LOGIN;
-  if (pathname.startsWith("/integrative-therapist")) return INTEGRATIVE_THERAPIST_LOGIN;
-  if (pathname.startsWith("/organization")) return ORGANIZATION_LOGIN;
-  if (pathname.startsWith("/humanitarian/angel")) return ANGEL_LOGIN;
-  if (pathname.startsWith("/professional") || pathname.startsWith("/admin")) return DOCTOR_LOGIN;
-  if (pathname.startsWith("/patient")) return PATIENT_LOGIN;
-  return PATIENT_LOGIN;
-}
-
-/** Sign-out destination for the active dashboard role / URL. */
+/** Sign-out destination — always the unified login. */
 export function resolveLoginPathForSession(
-  role: string | undefined | null,
-  pathname: string,
-  isPsychologistPortal?: boolean,
+  _role?: string | null,
+  _pathname?: string,
+  _isPsychologistPortal?: boolean,
 ): string {
-  if (isPsychologistPortal || pathname.startsWith("/psychologist")) {
-    return PSYCHOLOGIST_LOGIN;
-  }
-  switch (role) {
-    case "PSYCHOANALYST":
-      return PSYCHOANALYST_LOGIN;
-    case "INTEGRATIVE_THERAPIST":
-      return INTEGRATIVE_THERAPIST_LOGIN;
-    case "ORGANIZATION":
-      return ORGANIZATION_LOGIN;
-    case "ANGEL":
-      return ANGEL_LOGIN;
-    case "PROFESSIONAL":
-      return DOCTOR_LOGIN;
-    case "PATIENT":
-      return PATIENT_LOGIN;
-    default:
-      return PATIENT_LOGIN;
-  }
+  return LOGIN;
 }
 
-/** Accent + back link for forgot-password flow based on originating login portal. */
-export function resolveForgotPasswordContext(from: string | null | undefined): {
+/** Accent + back link for forgot-password flow (single login → emerald). */
+export function resolveForgotPasswordContext(_from: string | null | undefined): {
   loginPath: string;
   accent: LoginAccent;
 } {
-  const loginPath = from?.startsWith("/login") ? from : PATIENT_LOGIN;
-  const portal = PORTAL_BY_PATH[loginPath];
-  return { loginPath, accent: portal?.accent ?? "emerald" };
+  return { loginPath: LOGIN, accent: "emerald" };
 }
 
 export function buildForgotPasswordHref(opts?: {
@@ -198,22 +70,15 @@ export function buildLoginHref(
   return qs ? `${loginPath}?${qs}` : loginPath;
 }
 
-/** Only allow internal login portal paths in email links and redirects. */
+/** Only allow internal login paths in email links and redirects. */
 export function sanitizeLoginFrom(from: string | null | undefined): string | undefined {
   if (!from?.startsWith("/login")) return undefined;
   return from;
 }
 
-/** Derive portal login from a post-auth dashboard path. */
-export function resolveLoginPathFromCallback(callbackUrl: string | null | undefined): string {
-  if (!callbackUrl?.trim()) return PATIENT_LOGIN;
-  try {
-    const raw = callbackUrl.trim();
-    const path = raw.startsWith("/") ? raw.split("?")[0] : new URL(raw).pathname;
-    return resolveLoginPathForPathname(path);
-  } catch {
-    return PATIENT_LOGIN;
-  }
+/** Post-auth login path from a dashboard callback (single login → /login). */
+export function resolveLoginPathFromCallback(_callbackUrl: string | null | undefined): string {
+  return LOGIN;
 }
 
 export function resolveVerifyFrom(opts: {
@@ -222,7 +87,7 @@ export function resolveVerifyFrom(opts: {
 }): string {
   const safeFrom = sanitizeLoginFrom(opts.from ?? undefined);
   if (safeFrom) return safeFrom;
-  return resolveLoginPathFromCallback(opts.callbackUrl);
+  return LOGIN;
 }
 
 export function buildVerifyQueryString(opts: {
@@ -270,25 +135,12 @@ export function buildVerifyConfirmedHref(from?: string | null): string {
     : "/verify-email/confirmed";
 }
 
+/** Registration return-to login path — single login. */
 export function resolveLoginPathForRegistration(
-  role: string,
-  professionalKind?: string | null,
+  _role: string,
+  _professionalKind?: string | null,
 ): string {
-  if (professionalKind === "psychologist") return PSYCHOLOGIST_LOGIN;
-  switch (role) {
-    case "PROFESSIONAL":
-      return DOCTOR_LOGIN;
-    case "PSYCHOANALYST":
-      return PSYCHOANALYST_LOGIN;
-    case "INTEGRATIVE_THERAPIST":
-      return INTEGRATIVE_THERAPIST_LOGIN;
-    case "ORGANIZATION":
-      return ORGANIZATION_LOGIN;
-    case "ANGEL":
-      return ANGEL_LOGIN;
-    default:
-      return PATIENT_LOGIN;
-  }
+  return LOGIN;
 }
 
 export function appendEmailQueryParam(url: string, key: string, value: string): string {

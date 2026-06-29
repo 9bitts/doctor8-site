@@ -37,7 +37,7 @@ export default function HumanitarianTclePage() {
       .then((r) => r.json())
       .then(async (s) => {
         if (!s?.user) {
-          router.push(`/login/paciente?callbackUrl=/humanitarian/${slug}/tcle`);
+          router.push(`/login?callbackUrl=/humanitarian/${slug}/tcle`);
           return;
         }
         if (s.user.role !== "PATIENT") {
@@ -65,7 +65,7 @@ export default function HumanitarianTclePage() {
 
         setLoading(false);
       })
-      .catch(() => router.push(`/login/paciente?callbackUrl=/humanitarian/${slug}/tcle`));
+      .catch(() => router.push(`/login?callbackUrl=/humanitarian/${slug}/tcle`));
   }, [router, slug, returnTo]);
 
   async function submit() {

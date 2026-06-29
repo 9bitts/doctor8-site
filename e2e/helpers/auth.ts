@@ -1,33 +1,41 @@
 import type { Page } from "@playwright/test";
 
-export const PATIENT_LOGIN = "/login/paciente";
-export const DOCTOR_LOGIN = "/login/medico";
-/** @deprecated Use PATIENT_LOGIN */
-export const MAIN_LOGIN = PATIENT_LOGIN;
-export const PSYCHOLOGIST_LOGIN = "/login/psicologo";
-export const PSYCHOANALYST_LOGIN = "/login/psicanalista";
-export const INTEGRATIVE_THERAPIST_LOGIN = "/login/terapeuta-integrativo";
-export const ORGANIZATION_LOGIN = "/login/organizacao";
-export const ANGEL_LOGIN = "/login/anjo";
+// Login is unified into a single /login screen. All former per-role portal
+// constants now point to /login so existing specs keep compiling.
+export const LOGIN = "/login";
+export const PATIENT_LOGIN = LOGIN;
+export const DOCTOR_LOGIN = LOGIN;
+/** @deprecated Use LOGIN */
+export const MAIN_LOGIN = LOGIN;
+export const PSYCHOLOGIST_LOGIN = LOGIN;
+export const PSYCHOANALYST_LOGIN = LOGIN;
+export const INTEGRATIVE_THERAPIST_LOGIN = LOGIN;
+export const ORGANIZATION_LOGIN = LOGIN;
+export const ANGEL_LOGIN = LOGIN;
 
 export const LOGIN_PORTALS = [
-  { path: PATIENT_LOGIN, dashboardPattern: /\/(patient|humanitarian)/ },
-  { path: DOCTOR_LOGIN, dashboardPattern: /\/(professional|admin)/ },
-  { path: PSYCHOLOGIST_LOGIN, dashboardPattern: /\/(psychologist|onboarding)/ },
-  { path: PSYCHOANALYST_LOGIN, dashboardPattern: /\/psychoanalyst/ },
-  { path: INTEGRATIVE_THERAPIST_LOGIN, dashboardPattern: /\/integrative-therapist/ },
-  { path: ORGANIZATION_LOGIN, dashboardPattern: /\/organization/ },
-  { path: ANGEL_LOGIN, dashboardPattern: /\/humanitarian\/angel/ },
+  { path: LOGIN, dashboardPattern: /\/(patient|humanitarian|professional|psychologist|psychoanalyst|integrative-therapist|organization|admin)/ },
+] as const;
+
+// Legacy per-role login URLs that must redirect to the unified login.
+export const LEGACY_LOGIN_PATHS = [
+  "/login/paciente",
+  "/login/medico",
+  "/login/psicologo",
+  "/login/psicanalista",
+  "/login/terapeuta-integrativo",
+  "/login/organizacao",
+  "/login/anjo",
 ] as const;
 
 export const PROTECTED_AREA_REDIRECTS = [
-  { area: "/psychoanalyst", loginPath: PSYCHOANALYST_LOGIN },
-  { area: "/integrative-therapist", loginPath: INTEGRATIVE_THERAPIST_LOGIN },
-  { area: "/organization", loginPath: ORGANIZATION_LOGIN },
-  { area: "/humanitarian/angel", loginPath: ANGEL_LOGIN },
-  { area: "/psychologist", loginPath: PSYCHOLOGIST_LOGIN },
-  { area: "/professional", loginPath: DOCTOR_LOGIN },
-  { area: "/patient", loginPath: PATIENT_LOGIN },
+  { area: "/psychoanalyst", loginPath: LOGIN },
+  { area: "/integrative-therapist", loginPath: LOGIN },
+  { area: "/organization", loginPath: LOGIN },
+  { area: "/humanitarian/angel", loginPath: LOGIN },
+  { area: "/psychologist", loginPath: LOGIN },
+  { area: "/professional", loginPath: LOGIN },
+  { area: "/patient", loginPath: LOGIN },
 ] as const;
 
 export function e2ePatientCredentials(): { email: string; password: string } | null {

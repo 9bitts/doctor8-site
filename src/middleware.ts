@@ -7,10 +7,9 @@ import { NextResponse } from "next/server";
 import { isPathAllowedForRole, resolveRoleHome } from "@/lib/role-home";
 import { resolveLoginPathForPathname } from "@/lib/auth-portals";
 
-// Public routes — no login required
-const PUBLIC_ROUTES = [
-  "/",
-  "/login",
+// Legacy per-role login URLs — unified into a single /login (kept working
+// because these links were publicly shared and bookmarked).
+const LEGACY_LOGIN_PATHS = [
   "/login/medico",
   "/login/paciente",
   "/login/psicologo",
@@ -18,6 +17,12 @@ const PUBLIC_ROUTES = [
   "/login/terapeuta-integrativo",
   "/login/organizacao",
   "/login/anjo",
+];
+
+// Public routes — no login required
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
   "/register",
   "/register/angel",
   "/register/professional",
@@ -92,9 +97,10 @@ export default auth((req) => {
     }
   }
 
-  if (pathname === "/login") {
+  // Redirect legacy per-role login URLs to the unified login (preserve query).
+  if (LEGACY_LOGIN_PATHS.includes(pathname)) {
     const url = req.nextUrl.clone();
-    url.pathname = "/login/paciente";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 

@@ -25,6 +25,6 @@ export default async function SettingsRedirectPage() {
     case "ADMIN":
       redirect("/admin");
     default:
-      redirect("/login/paciente");
+      redirect("/login");
   }
 }

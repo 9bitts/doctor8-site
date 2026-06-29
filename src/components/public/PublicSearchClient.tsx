@@ -208,7 +208,7 @@ export default function PublicSearchClient({
           <div className="flex items-center justify-between gap-4">
             <BrandLogoLink href="/" variant="on-dark" size="md" />
             <div className="flex items-center gap-3 text-sm shrink-0">
-              <Link href="/login/paciente" className="hover:underline opacity-90">{t("pub.headerLogin")}</Link>
+              <Link href="/login" className="hover:underline opacity-90">{t("pub.headerLogin")}</Link>
               <Link href="/register" className="bg-white text-brand-600 font-semibold px-4 py-2 rounded-full">
                 {t("pub.headerRegister")}
               </Link>

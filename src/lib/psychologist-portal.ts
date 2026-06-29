@@ -1,7 +1,7 @@
 import { isPsychologist } from "@/lib/profession-label";
 import { db } from "@/lib/db";
 
-export const PSYCHOLOGIST_LOGIN = "/login/psicologo";
+export const PSYCHOLOGIST_LOGIN = "/login";
 export const PSYCHOLOGIST_HOME = "/psychologist";
 export const PSYCHOLOGIST_REGISTER =
   "/register/professional/signup?portal=psychologist";

@@ -7,6 +7,6 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminCategoriesPage() {
   const session = await getAdminSession();
-  if (!session) redirect("/login/medico");
+  if (!session) redirect("/login");
   return <CategoriesAdminClient />;
 }

@@ -14,7 +14,7 @@ function safeDecrypt(v: string): string {
 
 export default async function ProfessionalPatients() {
   const session = await auth();
-  if (!session?.user) redirect("/login/medico");
+  if (!session?.user) redirect("/login");
   if (session.user.role !== "PROFESSIONAL") redirect("/patient");
 
   const professional = await db.professionalProfile.findUnique({

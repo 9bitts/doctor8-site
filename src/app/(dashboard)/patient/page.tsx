@@ -43,7 +43,7 @@ function safeDecrypt(v: string | null): string {
 
 export default async function PatientDashboard() {
   const session = await auth();
-  if (!session?.user) redirect("/login/paciente");
+  if (!session?.user) redirect("/login");
   if (session.user.role !== "PATIENT") redirect(resolveRoleHome(session.user.role));
 
   const userId = session.user.id;

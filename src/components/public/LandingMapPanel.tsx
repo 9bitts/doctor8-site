@@ -346,7 +346,7 @@ export default function LandingMapPanel({ defaultQuery = "Rio de Janeiro" }: Pro
                   {t("landingMap.bookCta")}
                 </Link>
                 <Link
-                  href="/login/paciente"
+                  href="/login"
                   className="flex items-center justify-center rounded-xl border border-slate-200 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                   onClick={() => setSelected(null)}
                 >

@@ -10,7 +10,7 @@ const VENEZUELA_SLUG = "venezuela-terremoto-2026";
 test.describe("authentication", () => {
   test("patient dashboard redirects to login when unauthenticated", async ({ page }) => {
     await page.goto("/patient");
-    await expect(page).toHaveURL(/\/login\/paciente/);
+    await expect(page).toHaveURL(/\/login/);
   });
 
   test("video API returns 401 without session", async ({ request }) => {

@@ -122,12 +122,12 @@ export default function UrgentPage() {
 
   useEffect(() => {
     fetch("/api/auth/session").then(r => r.json()).then(s => {
-      if (!s?.user) { router.push(`/login/paciente?callbackUrl=/urgent`); return; }
+      if (!s?.user) { router.push(`/login?callbackUrl=/urgent`); return; }
       if (s.user.role !== "PATIENT") { router.push("/professional"); return; }
       setUserId(s.user.id);
       setCheckingAuth(false);
       loadAvailable();
-    }).catch(() => { router.push("/login/paciente?callbackUrl=/urgent"); });
+    }).catch(() => { router.push("/login?callbackUrl=/urgent"); });
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 

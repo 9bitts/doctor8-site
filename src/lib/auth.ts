@@ -49,8 +49,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     maxAge: SESSION_MAX_AGE,
   },
   pages: {
-    signIn: "/login/paciente",
-    error: "/login/paciente",
+    signIn: "/login",
+    error: "/login",
   },
   providers: [
     Google({

@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     const resumeUrl = `/api/fhir/smart/authorize?${sp.toString()}`;
-    const login = new URL("/login/paciente", appUrl);
+    const login = new URL("/login", appUrl);
     login.searchParams.set("callbackUrl", resumeUrl);
     return NextResponse.redirect(login);
   }

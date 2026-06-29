@@ -31,7 +31,7 @@ export default function HumanitarianTriagePage() {
       .then((r) => r.json())
       .then(async (s) => {
         if (!s?.user) {
-          router.push(`/login/paciente?callbackUrl=/humanitarian/${slug}/triage`);
+          router.push(`/login?callbackUrl=/humanitarian/${slug}/triage`);
           return;
         }
         if (s.user.role !== "PATIENT") {
@@ -51,7 +51,7 @@ export default function HumanitarianTriagePage() {
         }
         setLoading(false);
       })
-      .catch(() => router.push(`/login/paciente?callbackUrl=/humanitarian/${slug}/triage`));
+      .catch(() => router.push(`/login?callbackUrl=/humanitarian/${slug}/triage`));
   }, [router, slug, retake]);
 
   if (loading) {

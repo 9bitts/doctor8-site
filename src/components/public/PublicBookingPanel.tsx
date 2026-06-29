@@ -138,7 +138,7 @@ export default function PublicBookingPanel({
     ...(selectedSlot ? { slot: selectedSlot } : {}),
     ...(selectedServiceId ? { service: selectedServiceId } : {}),
   });
-  const loginUrl = `/login/paciente?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
+  const loginUrl = `/login?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
   const registerUrl = `/register?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
 
   const shellClass = embed

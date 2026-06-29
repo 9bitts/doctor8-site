@@ -4,15 +4,16 @@ import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Stethoscope, Heart } from "lucide-react";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import {
-  DOCTOR_LOGIN,
   PATIENT_LOGIN,
+  PROFESSIONAL_REGISTER,
+  ANGEL_REGISTER,
   buildForgotPasswordHref,
 } from "@/lib/auth-portals";
 import {
   useLoginLang,
-  buildAuthHref,
   parseLoginError,
   LoginPageShell,
   LoginLanguageSelector,
@@ -27,7 +28,9 @@ import {
   type LoginErrorCode,
 } from "@/components/auth/login-shared";
 
-function PatientLoginForm() {
+const POST_LOGIN_CALLBACK = "/callback";
+
+function UnifiedLoginForm() {
   const searchParams = useSearchParams();
   const { lang, changeLang, t } = useLoginLang();
 
@@ -47,7 +50,6 @@ function PatientLoginForm() {
     email: email.trim() || undefined,
     from: PATIENT_LOGIN,
   });
-  const doctorLoginHref = buildAuthHref(DOCTOR_LOGIN, { callbackUrl });
 
   useEffect(() => {
     setError(parseLoginError(searchParams.get("error")));
@@ -104,7 +106,7 @@ function PatientLoginForm() {
       }
 
       persistAuthCallback(callbackUrl);
-      navigateAfterAuth("/callback?portal=patient");
+      navigateAfterAuth(POST_LOGIN_CALLBACK);
     } catch {
       setError("generic");
       setLoading(false);
@@ -116,12 +118,7 @@ function PatientLoginForm() {
     setError("");
     persistAuthCallback(callbackUrl);
     try {
-      await fetch("/api/auth/oauth-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: "PATIENT" }),
-      });
-      await signIn("google", { callbackUrl: "/callback?portal=patient" });
+      await signIn("google", { callbackUrl: POST_LOGIN_CALLBACK });
     } catch {
       setError("generic");
       setGoogleLoading(false);
@@ -131,7 +128,7 @@ function PatientLoginForm() {
   return (
     <LoginPageShell accent="emerald">
       <LoginLanguageSelector lang={lang} onChange={changeLang} accent="emerald" />
-      <LoginHeader tagline={t("login.patientTagline")} accent="emerald" />
+      <LoginHeader tagline={t("login.unifiedTagline")} accent="emerald" />
 
       <LoginCard>
         <LoginAlerts
@@ -141,7 +138,7 @@ function PatientLoginForm() {
           unverifiedEmail={unverifiedEmail}
           t={t}
           verifyFrom={PATIENT_LOGIN}
-          roleOnlyKey="login.patientOnly"
+          roleOnlyKey="login.invalid"
         />
 
         <GoogleSignInButton
@@ -170,7 +167,7 @@ function PatientLoginForm() {
           onClearError={() => { if (error && error !== "unverified") setError(""); }}
         />
 
-        <div className="border-t border-white/10 mt-6 pt-6 text-center space-y-3">
+        <div className="border-t border-white/10 mt-6 pt-6 text-center space-y-4">
           <p className="text-slate-400 text-sm">
             {t("login.noAccount")}{" "}
             <Link
@@ -180,22 +177,32 @@ function PatientLoginForm() {
               {t("login.createAccount")}
             </Link>
           </p>
-          <Link
-            href={doctorLoginHref}
-            className="inline-block text-sm text-emerald-300 hover:text-emerald-200 font-medium transition"
-          >
-            {t("login.proDoctorPortal")}
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs">
+            <Link
+              href={PROFESSIONAL_REGISTER}
+              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition"
+            >
+              <Stethoscope size={14} aria-hidden />
+              {t("login.professionalSignup")}
+            </Link>
+            <Link
+              href={ANGEL_REGISTER}
+              className="inline-flex items-center gap-1.5 text-rose-300 hover:text-rose-200 transition"
+            >
+              <Heart size={14} aria-hidden />
+              {t("login.volunteerSignup")}
+            </Link>
+          </div>
         </div>
       </LoginCard>
     </LoginPageShell>
   );
 }
 
-export default function PatientLoginPage() {
+export default function LoginPage() {
   return (
     <Suspense fallback={<LoginSuspenseFallback accent="emerald" />}>
-      <PatientLoginForm />
+      <UnifiedLoginForm />
     </Suspense>
   );
 }

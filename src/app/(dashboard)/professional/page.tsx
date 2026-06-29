@@ -36,7 +36,7 @@ function safeDecrypt(v: string | null): string {
 
 export default async function ProfessionalDashboard() {
   const session = await auth();
-  if (!session?.user) redirect("/login/medico");
+  if (!session?.user) redirect("/login");
   if (session.user.role !== "PROFESSIONAL") redirect(resolveRoleHome(session.user.role));
 
   const userId = session.user.id;

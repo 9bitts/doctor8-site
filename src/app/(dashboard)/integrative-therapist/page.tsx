@@ -16,7 +16,7 @@ import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboa
 
 export default async function IntegrativeTherapistDashboard() {
   const session = await auth();
-  if (!session?.user) redirect("/login/terapeuta-integrativo");
+  if (!session?.user) redirect("/login");
   if (session.user.role !== "INTEGRATIVE_THERAPIST") redirect("/patient");
 
   const userId = session.user.id;

@@ -15,7 +15,7 @@ import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboa
 
 export default async function PsychoanalystDashboard() {
   const session = await auth();
-  if (!session?.user) redirect("/login/psicanalista");
+  if (!session?.user) redirect("/login");
   if (session.user.role !== "PSYCHOANALYST") redirect("/patient");
 
   const userId = session.user.id;

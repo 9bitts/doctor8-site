@@ -5,7 +5,7 @@ import PsychoanalystDoctorConnectionClient from "@/components/psychoanalyst/Psyc
 
 export default async function PsychoanalystDoctorConnectionPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login/psicanalista");
+  if (!session?.user) redirect("/login");
   if (session.user.role !== "PSYCHOANALYST") redirect("/patient");
 
   const [subscription, userRow] = await Promise.all([

@@ -29,7 +29,7 @@ export default function HumanitarianAnamnesePage() {
       .then((r) => r.json())
       .then(async (s) => {
         if (!s?.user) {
-          router.push(`/login/paciente?callbackUrl=/humanitarian/${slug}/anamnese`);
+          router.push(`/login?callbackUrl=/humanitarian/${slug}/anamnese`);
           return;
         }
         if (s.user.role !== "PATIENT") {
@@ -50,7 +50,7 @@ export default function HumanitarianAnamnesePage() {
 
         setLoading(false);
       })
-      .catch(() => router.push(`/login/paciente?callbackUrl=/humanitarian/${slug}/anamnese`));
+      .catch(() => router.push(`/login?callbackUrl=/humanitarian/${slug}/anamnese`));
   }, [router, slug]);
 
   if (loading) {
