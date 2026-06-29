@@ -7,6 +7,7 @@ import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translatio
 import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
 import { ORGANIZATION_LOGIN, buildVerifyAccountHref } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
+import { RegisterLogo } from "@/components/auth/register-shared";
 import {
   Eye, EyeOff, Loader2, AlertCircle, Building2, ArrowLeft, Search, LogIn,
 } from "lucide-react";
@@ -136,12 +137,8 @@ export default function RegisterOrganizationPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-white tracking-tight">
-            Doctor<span className="text-indigo-400">8</span>
-          </h1>
-          <p className="text-slate-400 mt-2 text-sm">{t("org.registerSubtitle")}</p>
-        </div>
+        <RegisterLogo />
+        <p className="text-slate-400 -mt-4 mb-8 text-sm text-center">{t("org.registerSubtitle")}</p>
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
           <Link

@@ -13,6 +13,7 @@ import {
   LoginPageShell,
   LoginSuspenseFallback,
 } from "@/components/auth/login-shared";
+import { AuthLogo } from "@/components/auth/auth-logo";
 
 async function resolveProfessionalHome(portal: string | null): Promise<string> {
   const profRes = await fetch("/api/professional/profile");
@@ -80,9 +81,7 @@ function CallbackInner() {
         <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" aria-hidden />
         </div>
-        <h1 className="text-2xl font-black text-white mb-2">
-          Doctor<span className="text-emerald-400">8</span>
-        </h1>
+        <AuthLogo className="h-10 w-auto mx-auto mix-blend-screen mb-4" />
         <p className="text-slate-400 text-sm" role="status">
           {t("login.callbackSigningIn")}
         </p>
