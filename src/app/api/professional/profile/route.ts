@@ -4,26 +4,24 @@
 // Stores photo (avatarUrl), areas of expertise (subspecialties) and full clinic address.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const profile = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
   });
 
   return NextResponse.json({ profile });
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const {
@@ -33,7 +31,7 @@ export async function POST(req: NextRequest) {
   } = body;
 
   const existing = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
   });
 
   const resolvedConsultPrice =
@@ -95,18 +93,18 @@ export async function POST(req: NextRequest) {
 
   let profile;
   if (existing) {
-    profile = await db.professionalProfile.update({ where: { userId: session.user.id }, data });
-    await audit.updateRecord(session.user.id, "ProfessionalProfile", profile.id);
+    profile = await db.professionalProfile.update({ where: { userId: ctx.userId }, data });
+    await audit.updateRecord(ctx.userId, "ProfessionalProfile", profile.id);
   } else {
     profile = await db.professionalProfile.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         licenseCountry: clinicCountry || "US",
         verified: false,
         ...data,
       },
     });
-    await audit.createRecord(session.user.id, "ProfessionalProfile", profile.id);
+    await audit.createRecord(ctx.userId, "ProfessionalProfile", profile.id);
   }
 
   const { ensureVirtualCard } = await import("@/lib/public-profile");

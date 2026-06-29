@@ -21,6 +21,7 @@ import PatientTourWrapper from "./PatientTourWrapper";
 import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 import ChartLinkNoticeBanner from "@/components/patient/ChartLinkNoticeBanner";
+import PatientUpcomingConsultBanner from "@/components/patient/PatientUpcomingConsultBanner";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
 import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
@@ -31,6 +32,7 @@ import {
 import { getPatientIntakeStatusBySlug } from "@/lib/humanitarian/intake";
 import { resolveRoleHome } from "@/lib/role-home";
 import { getPendingChartLinkNotices } from "@/lib/chart-link-notices";
+import { parseAppointmentIntake } from "@/lib/appointment-intake";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -68,6 +70,9 @@ export default async function PatientDashboard() {
             select: { firstName: true, lastName: true, specialty: true },
           },
           psychoanalyst: {
+            select: { firstName: true, lastName: true },
+          },
+          integrativeTherapist: {
             select: { firstName: true, lastName: true },
           },
         },
@@ -148,6 +153,31 @@ export default async function PatientDashboard() {
   const upcomingCount = patient.appointments.length;
   const medicationCount = patient.medications.length;
   const documentCount = patient.medicalDocuments.length;
+
+  const soonAppointment = patient.appointments.find((apt) => {
+    const ms = new Date(apt.scheduledAt).getTime() - Date.now();
+    return ms > 0 && ms <= 48 * 60 * 60 * 1000;
+  });
+
+  const soonConsultProps = soonAppointment
+    ? (() => {
+        const providerName = soonAppointment.professional
+          ? `Dr. ${safeDecrypt(soonAppointment.professional.firstName)} ${safeDecrypt(soonAppointment.professional.lastName)}`.trim()
+          : soonAppointment.psychoanalyst
+            ? `${safeDecrypt(soonAppointment.psychoanalyst.firstName)} ${safeDecrypt(soonAppointment.psychoanalyst.lastName)}`.trim()
+            : soonAppointment.integrativeTherapist
+              ? `${safeDecrypt(soonAppointment.integrativeTherapist.firstName)} ${safeDecrypt(soonAppointment.integrativeTherapist.lastName)}`.trim()
+              : t("chartLink.unknownDoctor");
+        const intake = parseAppointmentIntake(soonAppointment.chiefComplaint);
+        return {
+          appointmentId: soonAppointment.id,
+          scheduledAt: soonAppointment.scheduledAt.toISOString(),
+          type: soonAppointment.type,
+          providerName,
+          hasPreConsult: Boolean(intake?.visitReason),
+        };
+      })()
+    : null;
 
   const queueActive = !!activeQueue;
   const queueCalled = activeQueue?.status === "CALLED";
@@ -281,6 +311,10 @@ export default async function PatientDashboard() {
       />
 
       <ChartLinkNoticeBanner notices={chartLinkNotices} />
+
+      {soonConsultProps && (
+        <PatientUpcomingConsultBanner appointment={soonConsultProps} />
+      )}
 
       {/* Header */}
       <div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
 import { canManageTeam } from "@/lib/organization-auth";
-import { listOrganizationProviders } from "@/lib/organization-providers";
+import { listOrganizationProviders, parseProviderScopeKey } from "@/lib/organization-providers";
 import { db } from "@/lib/db";
 import { randomBytes } from "crypto";
 import { z } from "zod";
@@ -119,9 +119,14 @@ export async function POST(req: NextRequest) {
 }
 
 const repasseSchema = z.object({
-  professionalId: z.string(),
+  professionalId: z.string().optional(),
+  scopeKey: z.string().optional(),
+  providerType: z.enum(["HEALTH", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"]).optional(),
   repassePercent: z.number().min(0).max(100),
-});
+}).refine(
+  (d) => Boolean(d.scopeKey || d.professionalId),
+  { message: "scopeKey or professionalId required" },
+);
 
 export async function PATCH(req: NextRequest) {
   const ctx = await requireOrganizationApi(["OWNER", "ADMIN", "FINANCE"]);
@@ -133,22 +138,53 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const link = await db.organizationProfessional.findUnique({
-    where: {
-      organizationId_professionalId: {
-        organizationId: ctx.organizationId,
-        professionalId: parsed.data.professionalId,
-      },
-    },
-  });
-  if (!link) {
-    return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+  const parsedScope = parsed.data.scopeKey
+    ? parseProviderScopeKey(parsed.data.scopeKey)
+    : parsed.data.professionalId
+      ? {
+          providerType: parsed.data.providerType ?? ("HEALTH" as const),
+          providerProfileId: parsed.data.professionalId,
+        }
+      : null;
+
+  if (!parsedScope) {
+    return NextResponse.json({ error: "Invalid scope" }, { status: 400 });
   }
 
-  await db.organizationProfessional.update({
-    where: { id: link.id },
-    data: { repassePercent: parsed.data.repassePercent },
-  });
+  if (parsedScope.providerType === "HEALTH") {
+    const link = await db.organizationProfessional.findUnique({
+      where: {
+        organizationId_professionalId: {
+          organizationId: ctx.organizationId,
+          professionalId: parsedScope.providerProfileId,
+        },
+      },
+    });
+    if (!link) {
+      return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+    }
+    await db.organizationProfessional.update({
+      where: { id: link.id },
+      data: { repassePercent: parsed.data.repassePercent },
+    });
+  } else {
+    const link = await db.organizationLinkedProvider.findUnique({
+      where: {
+        organizationId_providerType_providerProfileId: {
+          organizationId: ctx.organizationId,
+          providerType: parsedScope.providerType,
+          providerProfileId: parsedScope.providerProfileId,
+        },
+      },
+    });
+    if (!link) {
+      return NextResponse.json({ error: "Provider not found" }, { status: 404 });
+    }
+    await db.organizationLinkedProvider.update({
+      where: { id: link.id },
+      data: { repassePercent: parsed.data.repassePercent },
+    });
+  }
 
   return NextResponse.json({ success: true });
 }

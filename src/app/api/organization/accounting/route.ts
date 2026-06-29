@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
-import { canViewFinance, getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import { canViewFinance } from "@/lib/organization-auth";
+import {
+  getOrganizationProviderScopeIds,
+  buildAppointmentOrWhere,
+  scopeHasProviders,
+} from "@/lib/organization-providers";
 
 import { db } from "@/lib/db";
 import { buildAccountingCsv } from "@/lib/tiss-export";
@@ -32,11 +37,12 @@ export async function GET(req: NextRequest) {
       where: { organizationId: ctx.organizationId, status: "PAID", serviceDate: { gte: from, lte: to } },
     }),
     (async () => {
-      const profIds = await getOrganizationProfessionalIds(ctx.organizationId);
-      if (profIds.length === 0) return [];
+      const scope = await getOrganizationProviderScopeIds(ctx.organizationId);
+      const orClauses = buildAppointmentOrWhere(scope);
+      if (!scopeHasProviders(scope) || orClauses.length === 0) return [];
       return db.appointment.findMany({
         where: {
-          professionalId: { in: profIds },
+          OR: orClauses,
           status: "COMPLETED",
           paidAt: { not: null },
           scheduledAt: { gte: from, lte: to },

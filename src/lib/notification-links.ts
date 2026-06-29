@@ -106,6 +106,15 @@ export function resolveNotificationHref(
       return "/patient/find";
 
     case "system": {
+      if (d.kind === "post_consult_notes") {
+        if (typeof d.link === "string" && d.link.startsWith("/")) return d.link;
+        if (typeof d.url === "string" && d.url.startsWith("/")) return d.url;
+        if (typeof d.appointmentId === "string") {
+          return isPro
+            ? `/professional/appointments#appt-${d.appointmentId}`
+            : `${appointmentsPath(role)}?id=${d.appointmentId}`;
+        }
+      }
       if (d.kind === "favorite_online" && typeof d.professionalId === "string") {
         return `/patient/find?pro=${d.professionalId}`;
       }

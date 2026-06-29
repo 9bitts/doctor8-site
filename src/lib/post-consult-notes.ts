@@ -44,6 +44,14 @@ function resolveProvider(appointment: {
   return null;
 }
 
+function notesDeepLink(provider: ProviderTarget, appointmentId: string): string {
+  const base = `${provider.appointmentsUrl}#appt-${appointmentId}`;
+  if (provider.providerType === "HEALTH") {
+    return `/professional/appointments#appt-${appointmentId}`;
+  }
+  return base;
+}
+
 function appointmentEnded(appointment: { scheduledAt: Date; durationMins: number }): boolean {
   const endMs =
     appointment.scheduledAt.getTime() + appointment.durationMins * 60 * 1000;
@@ -114,7 +122,8 @@ export async function processPostConsultNotesReminder(
       data: {
         kind: "post_consult_notes",
         appointmentId,
-        url: provider.appointmentsUrl,
+        url: notesDeepLink(provider, appointmentId),
+        link: notesDeepLink(provider, appointmentId),
         titleKey: "notif.postConsultNotes.title",
         bodyKey: "notif.postConsultNotes.body",
         bodyParams: { patient: patientName },

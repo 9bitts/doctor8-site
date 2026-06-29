@@ -100,9 +100,10 @@ export default async function ProfessionalAppointments() {
     return (
       <div
         key={apt.id}
-        className={`flex items-start gap-4 px-5 py-4 hover:bg-slate-50 transition ${
+        id={`appt-${apt.id}`}
+        className={`flex items-start gap-4 px-5 py-4 hover:bg-slate-50 transition scroll-mt-24 ${
           highlightIntake && intake?.visitReason ? "bg-amber-50/40" : ""
-        }`}
+        } ${!apt.notes && apt.status === "COMPLETED" ? "ring-1 ring-inset ring-violet-100" : ""}`}
       >
         <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
           {firstName[0]}

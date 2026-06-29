@@ -8,6 +8,7 @@ type Staff = { id: string; email: string; role: string; status: string };
 type Prof = {
   id: string;
   professionalId: string;
+  providerType?: string;
   name: string;
   specialty: string;
   email: string;
@@ -69,13 +70,13 @@ export default function OrganizationTeamPage() {
     }
   }
 
-  async function saveRepasse(professionalId: string) {
-    const repassePercent = repasseEdits[professionalId];
+  async function saveRepasse(scopeKey: string) {
+    const repassePercent = repasseEdits[scopeKey];
     if (repassePercent === undefined) return;
     await fetch("/api/organization/members", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ professionalId, repassePercent }),
+      body: JSON.stringify({ scopeKey, repassePercent }),
     });
     await load();
   }
@@ -126,8 +127,8 @@ export default function OrganizationTeamPage() {
             {professionals.map((p) => (
               <div key={p.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0 gap-4">
                 <div>
-                  <p className="font-medium text-slate-900">Dr. {p.name}</p>
-                  <p className="text-xs text-slate-500">{p.specialty} · {p.email}</p>
+                  <p className="font-medium text-slate-900">{p.name}</p>
+                  <p className="text-xs text-slate-500">{p.specialty}{p.email ? ` · ${p.email}` : ""}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="text-xs text-slate-500">{t("org.team.repasse")}</label>
@@ -139,13 +140,13 @@ export default function OrganizationTeamPage() {
                     onChange={(e) =>
                       setRepasseEdits((prev) => ({
                         ...prev,
-                        [p.professionalId]: parseFloat(e.target.value),
+                        [p.id]: parseFloat(e.target.value),
                       }))
                     }
                     className="w-16 border border-slate-200 rounded-lg px-2 py-1 text-sm text-center"
                   />
                   <button
-                    onClick={() => saveRepasse(p.professionalId)}
+                    onClick={() => saveRepasse(p.id)}
                     className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
                   >
                     {t("common.save")}

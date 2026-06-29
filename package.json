@@ -12,6 +12,8 @@
     "postinstall": "prisma generate",
     "start": "node scripts/railway-start.mjs",
     "migrate:recover": "node scripts/migrate-recover.mjs",
+    "migrate:org-api-auth": "node scripts/migrate-org-api-auth.mjs",
+    "migrate:professional-api-auth": "node scripts/migrate-professional-api-auth.mjs",
     "lint": "next lint",
     "check:i18n": "node scripts/check-i18n-keys.mjs",
     "check:encoding": "node scripts/scan-encoding.mjs",

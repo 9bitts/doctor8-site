@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
-import { getOrganizationProfessionalIds } from "@/lib/organization-auth";
+import {
+  getOrganizationProviderScopeIds,
+} from "@/lib/organization-providers";
 
 import { db } from "@/lib/db";
 import { z } from "zod";
@@ -76,8 +78,8 @@ export async function POST(req: NextRequest) {
   });
   if (!plan) return NextResponse.json({ error: "Plan not found" }, { status: 404 });
 
-  const profIds = await getOrganizationProfessionalIds(ctx.organizationId);
-  if (!profIds.includes(parsed.data.professionalId)) {
+  const scope = await getOrganizationProviderScopeIds(ctx.organizationId);
+  if (!scope.professionalIds.includes(parsed.data.professionalId)) {
     return NextResponse.json({ error: "Professional not in organization" }, { status: 400 });
   }
 

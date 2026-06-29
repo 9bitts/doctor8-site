@@ -11,7 +11,7 @@ Lista viva de melhorias **pendentes**. Lotes pequenos, baixo risco ao fluxo huma
 | M2 | WhatsApp Business API (templates Meta) | Média | Webhook OK; registrar número Business (+55…) e templates aprovados |
 | M3 | Sentry em produção | Baixa | Código pronto — definir `SENTRY_DSN` no Railway |
 | M4 | Gravação cloud Daily | Baixa | Off por padrão — `DAILY_CLOUD_RECORDING=1` + banner já no código |
-| M9 | Busca pública: banner + filtro voluntários AcuraBrasil | Média | Paciente logado já tem; falta espelhar em `PublicSearchClient` / landing |
+| M9 | Busca pública: banner + filtro voluntários AcuraBrasil | Média | OK — `PublicSearchClient`, landing e filtro `acuraVolunteers=1` |
 | M10 | Google Meet em produção (humanitário + agendamentos) | Média | Código OK — service account + `GOOGLE_MEET_ENABLED=1` no Railway (ver `.env.example`) |
 | M11 | Farmácia marketplace ativo | Baixa | Código OK — `PHARMACY_MARKETPLACE_ENABLED=true` (+ UTM/affiliate se quiser) |
 

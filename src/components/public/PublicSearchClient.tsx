@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { PublicSearchResult, PublicSearchSort } from "@/lib/public-search";
 import PublicResultCard from "@/components/public/PublicResultCard";
+import AcuraVolunteerSearchBanner from "@/components/acura/AcuraVolunteerSearchBanner";
 import {
   seoSlugToSpecialtyLabel,
   citySlugToLabel,
@@ -345,7 +346,13 @@ export default function PublicSearchClient({
       )}
 
       <main className="max-w-6xl mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-[1fr_300px] gap-6">
+        <AcuraVolunteerSearchBanner
+          volunteersOnly={filters.acuraVolunteersOnly}
+          onToggleVolunteers={() =>
+            patchFilters({ acuraVolunteersOnly: !filters.acuraVolunteersOnly })
+          }
+        />
+        <div className="grid lg:grid-cols-[1fr_300px] gap-6 mt-4">
           <div className="space-y-4">
             {loading ? (
               <div className="flex items-center justify-center py-20 text-slate-400 gap-2">

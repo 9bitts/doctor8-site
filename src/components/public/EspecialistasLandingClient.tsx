@@ -11,6 +11,7 @@ import { Search, MapPin, Stethoscope, Loader2, Menu, X, CreditCard, Map as MapIc
 import { cityToSeoSlug, buildPublicSearchConvenioPath } from "@/lib/public-slugs";
 import { matchSymptomQuery } from "@/lib/symptom-search";
 import LandingMarketingSections from "@/components/public/LandingMarketingSections";
+import AcuraVolunteerSearchBanner from "@/components/acura/AcuraVolunteerSearchBanner";
 import CookieBanner from "@/components/public/CookieBanner";
 import LandingOptionPicker from "@/components/public/LandingOptionPicker";
 import type { Lang } from "@/lib/i18n/translations";
@@ -64,6 +65,7 @@ export default function EspecialistasLandingClient() {
   const [convenio, setConvenio] = useState("");
   const [healthPlans, setHealthPlans] = useState<{ slug: string; name: string }[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [acuraVolunteersOnly, setAcuraVolunteersOnly] = useState(false);
 
   useEffect(() => {
     fetch("/api/public/health-plans")
@@ -82,7 +84,8 @@ export default function EspecialistasLandingClient() {
     const esp = specialty.trim();
     const citySlug = cityToSeoSlug(city);
     if (!esp || !citySlug) return;
-    router.push(`/especialistas/${esp}/${citySlug}`);
+    const qs = acuraVolunteersOnly ? "?acuraVolunteers=1" : "";
+    router.push(`/especialistas/${esp}/${citySlug}${qs}`);
   }
 
   function handleConvenioSearch(e: React.FormEvent) {
@@ -359,6 +362,14 @@ export default function EspecialistasLandingClient() {
               </button>
             </form>
           )}
+
+          <div className="mt-4">
+            <AcuraVolunteerSearchBanner
+              compact
+              volunteersOnly={acuraVolunteersOnly}
+              onToggleVolunteers={() => setAcuraVolunteersOnly((v) => !v)}
+            />
+          </div>
 
           <p className="mt-4 text-center text-xs text-white/40">* {disclaimer}</p>
         </div>
