@@ -1,4 +1,4 @@
-// PICS — Práticas Integrativas e Complementares em Saúde (PNPIC / SUS)
+// PICS — Práticas Integrativas e Complementares em Saúde (PNPIC)
 // 29 práticas institucionalizadas (Portaria GM/MS nº 971/2006; atualizações 2017–2018)
 
 export type PicCategory =
@@ -48,7 +48,7 @@ export const PIC_CATEGORIES: Record<
   },
 };
 
-/** All 29 PICS recognized by Brazil's Ministry of Health (SUS/PNPIC). */
+/** All 29 PICS recognized by Brazil's Ministry of Health (PNPIC). */
 export const PICS_PRACTICES: PicPractice[] = [
   {
     slug: "acupuntura",

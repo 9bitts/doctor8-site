@@ -12,6 +12,7 @@ import {
   type StructuredValues,
 } from "@/lib/pics/consult-templates";
 import IntegrativeStructuredForm from "@/components/integrative-therapist/IntegrativeStructuredForm";
+import IntegrativeReferenceLibrary from "@/components/integrative-therapist/IntegrativeReferenceLibrary";
 import { Loader2, ArrowLeft } from "lucide-react";
 
 interface Note {
@@ -138,6 +139,9 @@ export default function IntegrativeClientDetailPage() {
             ))}
           </select>
         </div>
+        {practiceSlug && (
+          <IntegrativeReferenceLibrary lang={langCode} practiceSlug={practiceSlug} />
+        )}
         {usesStructured ? (
           <IntegrativeStructuredForm
             lang={langCode}

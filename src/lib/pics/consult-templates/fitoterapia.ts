@@ -1,21 +1,5 @@
 import type { ConsultTemplate } from "./types";
-
-const SUS_PHYTOTHERAPEUTICS = [
-  { value: "alcachofra", labelKey: "it.tpl.phyto.alcachofra" },
-  { value: "aroeira", labelKey: "it.tpl.phyto.aroeira" },
-  { value: "babosa", labelKey: "it.tpl.phyto.babosa" },
-  { value: "cascara_sagrada", labelKey: "it.tpl.phyto.cascara" },
-  { value: "espinheira_santa", labelKey: "it.tpl.phyto.espinheira" },
-  { value: "guaco", labelKey: "it.tpl.phyto.guaco" },
-  { value: "garra_diabo", labelKey: "it.tpl.phyto.garra" },
-  { value: "hortela", labelKey: "it.tpl.phyto.hortela" },
-  { value: "isoflavona_soja", labelKey: "it.tpl.phyto.soja" },
-  { value: "plantago", labelKey: "it.tpl.phyto.plantago" },
-  { value: "salgueiro", labelKey: "it.tpl.phyto.salgueiro" },
-  { value: "unha_gato", labelKey: "it.tpl.phyto.unha" },
-  { value: "planta_medicinal", labelKey: "it.tpl.phyto.medicinalPlant" },
-  { value: "other", labelKey: "it.tpl.phyto.other" },
-] as const;
+import { PHYTOTHERAPY_FORM_OPTIONS } from "../reference-library/phytotherapy-products";
 
 const PRESENTATIONS = [
   { value: "capsula", labelKey: "it.tpl.phyto.pres.capsula" },
@@ -48,7 +32,7 @@ export const FITOTERAPIA_TEMPLATE: ConsultTemplate = {
       labelKey: "it.tpl.phyto.product",
       type: "select",
       sectionKey: "it.tpl.section.prescription",
-      options: [...SUS_PHYTOTHERAPEUTICS],
+      options: [...PHYTOTHERAPY_FORM_OPTIONS],
     },
     { key: "productOther", labelKey: "it.tpl.phyto.productOther", type: "text", sectionKey: "it.tpl.section.prescription" },
     {

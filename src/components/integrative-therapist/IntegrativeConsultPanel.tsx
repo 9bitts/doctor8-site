@@ -16,6 +16,8 @@ import {
   type StructuredValues,
 } from "@/lib/pics/consult-templates";
 import IntegrativeStructuredForm from "@/components/integrative-therapist/IntegrativeStructuredForm";
+import IntegrativeReferenceLibrary from "@/components/integrative-therapist/IntegrativeReferenceLibrary";
+import PatientOrientationHandout from "@/components/integrative-therapist/PatientOrientationHandout";
 
 type Lang = "pt" | "en" | "es";
 
@@ -289,6 +291,10 @@ export default function IntegrativeConsultPanel({
         </select>
       </div>
 
+      {practiceSlug && (
+        <IntegrativeReferenceLibrary lang={lang} practiceSlug={practiceSlug} dark={dark} />
+      )}
+
       {usesStructured ? (
         <IntegrativeStructuredForm
           lang={lang}
@@ -311,6 +317,17 @@ export default function IntegrativeConsultPanel({
             }}
           />
         </div>
+      )}
+
+      {usesStructured && context && (
+        <PatientOrientationHandout
+          lang={lang}
+          practiceSlug={practiceSlug}
+          structuredValues={structuredValues}
+          visitType={visitType}
+          clientName={`${context.clientFirstName} ${context.clientLastName}`.trim()}
+          dark={dark}
+        />
       )}
 
       <button
