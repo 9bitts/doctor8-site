@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import {
   buildForgotPasswordHref,
+  buildLoginHref,
   resolveForgotPasswordContext,
 } from "@/lib/auth-portals";
 import {
@@ -97,7 +98,7 @@ function ForgotPasswordSmsContent() {
       });
       const data = await res.json();
       if (res.ok) {
-        router.push(`${loginPath}?reset=success`);
+        router.push(buildLoginHref(loginPath, { resetSuccess: true }));
         return;
       }
       if (data.error === "EXPIRED") setError("expired");

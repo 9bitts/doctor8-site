@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { consumeAuthCallback } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
+import { MAIN_LOGIN } from "@/lib/auth-portals";
 import { PSYCHOLOGIST_HOME, isPsychologistSpecialty } from "@/lib/psychologist-portal";
 import {
   useLoginLang,
@@ -70,7 +71,7 @@ function CallbackInner() {
           );
         }
       })
-      .catch(() => router.replace("/login"));
+      .catch(() => router.replace(MAIN_LOGIN));
   }, [router, portal]);
 
   return (

@@ -159,6 +159,7 @@ function LoginForm() {
           passwordReset={passwordReset}
           unverifiedEmail={unverifiedEmail}
           t={t}
+          verifyFrom={MAIN_LOGIN}
         />
 
         <GoogleSignInButton

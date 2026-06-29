@@ -15,6 +15,7 @@ import { randomBytes } from "crypto";
 import { UserRole, ConsentType } from "@prisma/client";
 import { REGISTRATION_REGION_CODES, requiresGdpr, requiresHipaa } from "@/lib/registration-regions";
 import { sendEmailVerification } from "@/lib/email";
+import { resolveLoginPathForRegistration } from "@/lib/auth-portals";
 import { encrypt } from "@/lib/encryption";
 import {
   attachLinkedDocumentsToPatientProfile,
@@ -226,6 +227,7 @@ export async function POST(req: NextRequest) {
         name: firstName,
         token,
         language: normalizedLanguage || language,
+        from: resolveLoginPathForRegistration(role, professionalKind),
       });
     } catch (emailError) {
       console.error("[EMAIL VERIFICATION SEND ERROR]", emailError);

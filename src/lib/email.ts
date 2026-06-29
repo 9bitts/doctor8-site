@@ -24,6 +24,7 @@ import {
   EMAIL_REVIEW_REQUEST,
   EMAIL_MAGIC_LINK,
 } from "./email-i18n";
+import { appendEmailQueryParam } from "./auth-portals";
 
 // ─── EMAIL VERIFICATION ──────────────────────────────────────────────────────
 export async function sendEmailVerification({
@@ -31,15 +32,21 @@ export async function sendEmailVerification({
   name,
   token,
   language,
+  from,
 }: {
   email: string;
   name: string;
   token: string;
   language?: string;
+  from?: string;
 }) {
   const lang = normEmailLang(language);
   const c = EMAIL_VERIFICATION[lang];
-  const verifyUrl = `${getAppUrl()}/api/auth/verify-email?token=${token}`;
+  let verifyUrl = `${getAppUrl()}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
+  const safeFrom = from?.startsWith("/login") ? from : undefined;
+  if (safeFrom) {
+    verifyUrl = appendEmailQueryParam(verifyUrl, "from", safeFrom);
+  }
 
   const body = `
     <p style="color:#1a2a3a;font-size:16px;">${c.hi(name)}</p>
@@ -261,15 +268,21 @@ export async function sendPasswordReset({
   name,
   token,
   language,
+  from,
 }: {
   email: string;
   name: string;
   token: string;
   language?: string;
+  from?: string;
 }) {
   const lang = normEmailLang(language);
   const c = EMAIL_PASSWORD_RESET[lang];
-  const resetUrl = `${getAppUrl()}/reset-password?token=${token}`;
+  let resetUrl = `${getAppUrl()}/reset-password?token=${encodeURIComponent(token)}`;
+  const safeFrom = from?.startsWith("/login") ? from : undefined;
+  if (safeFrom) {
+    resetUrl = appendEmailQueryParam(resetUrl, "from", safeFrom);
+  }
 
   const body = `
     <p style="color:#4a6070;font-size:15px;line-height:1.6;">${c.hi(name)}</p>

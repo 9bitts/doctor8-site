@@ -78,7 +78,7 @@ export default function ForgotPasswordMethodPage({
             email={email}
             lang={lang}
             accent={accent}
-            loginHref={loginPath}
+            loginPath={loginPath}
           />
         </div>
 

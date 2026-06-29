@@ -7,13 +7,14 @@ export const dynamic = "force-dynamic";
 export default function VerifyEmailPage({
   searchParams,
 }: {
-  searchParams: { email?: string; error?: string; callbackUrl?: string };
+  searchParams: { email?: string; error?: string; callbackUrl?: string; from?: string };
 }) {
   return (
     <VerifyEmailClient
       email={searchParams.email ?? ""}
       error={searchParams.error}
       callbackUrl={searchParams.callbackUrl}
+      from={searchParams.from}
     />
   );
 }

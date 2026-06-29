@@ -152,7 +152,8 @@ export default auth((req) => {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     if (!role) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      const loginPath = resolveLoginPathForPathname(pathname);
+      return NextResponse.redirect(new URL(loginPath, req.url));
     }
     const home = resolveRoleHome(role, professionalSpecialty);
     if (pathname === home || pathname.startsWith(`${home}/`)) {

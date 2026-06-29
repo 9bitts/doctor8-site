@@ -190,3 +190,99 @@ export function buildLoginHref(
   const qs = sp.toString();
   return qs ? `${loginPath}?${qs}` : loginPath;
 }
+
+/** Only allow internal login portal paths in email links and redirects. */
+export function sanitizeLoginFrom(from: string | null | undefined): string | undefined {
+  if (!from?.startsWith("/login")) return undefined;
+  return from;
+}
+
+/** Derive portal login from a post-auth dashboard path. */
+export function resolveLoginPathFromCallback(callbackUrl: string | null | undefined): string {
+  if (!callbackUrl?.trim()) return MAIN_LOGIN;
+  try {
+    const raw = callbackUrl.trim();
+    const path = raw.startsWith("/") ? raw.split("?")[0] : new URL(raw).pathname;
+    return resolveLoginPathForPathname(path);
+  } catch {
+    return MAIN_LOGIN;
+  }
+}
+
+export function resolveVerifyFrom(opts: {
+  from?: string | null;
+  callbackUrl?: string | null;
+}): string {
+  const safeFrom = sanitizeLoginFrom(opts.from ?? undefined);
+  if (safeFrom) return safeFrom;
+  return resolveLoginPathFromCallback(opts.callbackUrl);
+}
+
+export function buildVerifyQueryString(opts: {
+  email?: string;
+  callbackUrl?: string;
+  from?: string;
+}): string {
+  const sp = new URLSearchParams();
+  if (opts.email) sp.set("email", opts.email.trim().toLowerCase());
+  if (opts.callbackUrl) sp.set("callbackUrl", opts.callbackUrl);
+  const safeFrom = sanitizeLoginFrom(opts.from);
+  if (safeFrom) sp.set("from", safeFrom);
+  const qs = sp.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export function buildVerifyAccountHref(opts: {
+  email: string;
+  callbackUrl?: string;
+  from?: string;
+}): string {
+  return `/verify-account${buildVerifyQueryString(opts)}`;
+}
+
+export function buildVerifyEmailHref(opts: {
+  email?: string;
+  callbackUrl?: string;
+  from?: string;
+  error?: string;
+}): string {
+  const sp = new URLSearchParams();
+  if (opts.email) sp.set("email", opts.email.trim().toLowerCase());
+  if (opts.callbackUrl) sp.set("callbackUrl", opts.callbackUrl);
+  const safeFrom = sanitizeLoginFrom(opts.from);
+  if (safeFrom) sp.set("from", safeFrom);
+  if (opts.error) sp.set("error", opts.error);
+  const qs = sp.toString();
+  return qs ? `/verify-email?${qs}` : "/verify-email";
+}
+
+export function buildVerifyConfirmedHref(from?: string | null): string {
+  const safeFrom = sanitizeLoginFrom(from);
+  return safeFrom
+    ? `/verify-email/confirmed?from=${encodeURIComponent(safeFrom)}`
+    : "/verify-email/confirmed";
+}
+
+export function resolveLoginPathForRegistration(
+  role: string,
+  professionalKind?: string | null,
+): string {
+  if (professionalKind === "psychologist") return PSYCHOLOGIST_LOGIN;
+  switch (role) {
+    case "PSYCHOANALYST":
+      return PSYCHOANALYST_LOGIN;
+    case "INTEGRATIVE_THERAPIST":
+      return INTEGRATIVE_THERAPIST_LOGIN;
+    case "ORGANIZATION":
+      return ORGANIZATION_LOGIN;
+    case "ANGEL":
+      return ANGEL_LOGIN;
+    default:
+      return MAIN_LOGIN;
+  }
+}
+
+export function appendEmailQueryParam(url: string, key: string, value: string): string {
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+}

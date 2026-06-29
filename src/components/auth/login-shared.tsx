@@ -8,6 +8,7 @@ import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail, Brain, Leaf, Building2, Heart,
 } from "lucide-react";
 import type { LoginAccent, PortalHeaderIcon } from "@/lib/auth-portals";
+import { buildVerifyAccountHref, MAIN_LOGIN } from "@/lib/auth-portals";
 
 export type { LoginAccent };
 
@@ -120,6 +121,7 @@ export function buildAuthHref(
 
 export function getLoginAccentStyles(accent: LoginAccent) {
   return {
+    langActive: ACCENT_LANG[accent],
     ring: ACCENT_RING[accent],
     btn: ACCENT_BTN[accent],
     link: ACCENT_LINK[accent],
@@ -243,6 +245,7 @@ export function LoginAlerts({
   unverifiedEmail,
   t,
   roleOnlyKey,
+  verifyFrom,
 }: {
   error: LoginErrorCode;
   verified: boolean;
@@ -250,6 +253,7 @@ export function LoginAlerts({
   unverifiedEmail: string;
   t: (key: string) => string;
   roleOnlyKey?: string;
+  verifyFrom?: string;
 }) {
   return (
     <>
@@ -293,7 +297,10 @@ export function LoginAlerts({
           </div>
           {unverifiedEmail && (
             <Link
-              href={`/verify-account?email=${encodeURIComponent(unverifiedEmail)}`}
+              href={buildVerifyAccountHref({
+                email: unverifiedEmail,
+                from: verifyFrom || MAIN_LOGIN,
+              })}
               className="text-xs text-amber-300 hover:text-amber-200 underline"
             >
               {t("login.resend")}

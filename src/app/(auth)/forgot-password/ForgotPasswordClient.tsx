@@ -11,12 +11,12 @@ export function SendResetEmailButton({
   email,
   lang,
   accent,
-  loginHref,
+  loginPath,
 }: {
   email: string;
   lang: Lang;
   accent: LoginAccent;
-  loginHref: string;
+  loginPath: string;
 }) {
   const t = (key: string) => translate(lang, key);
   const styles = getLoginAccentStyles(accent);
@@ -31,7 +31,7 @@ export function SendResetEmailButton({
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, from: loginPath }),
       });
       if (res.ok) setSent(true);
       else setError(t("forgot.error"));
@@ -56,7 +56,7 @@ export function SendResetEmailButton({
           </div>
         </div>
         <Link
-          href={loginHref}
+          href={loginPath}
           className={`inline-block mt-4 ${styles.link} text-sm font-medium`}
         >
           {t("forgot.backLogin")}

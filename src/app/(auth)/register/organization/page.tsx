@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
-import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
+import { ORGANIZATION_LOGIN, buildVerifyAccountHref } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import {
   Eye, EyeOff, Loader2, AlertCircle, Building2, ArrowLeft, Search, LogIn,
@@ -110,7 +110,13 @@ export default function RegisterOrganizationPage() {
         setErrors(data.error || { general: [t("reg.regFailed")] });
         return;
       }
-      router.push(`/verify-account?email=${encodeURIComponent(email)}`);
+      router.push(
+        buildVerifyAccountHref({
+          email,
+          callbackUrl: "/organization",
+          from: ORGANIZATION_LOGIN,
+        }),
+      );
     } catch {
       setErrors({ general: [t("reg.genericError")] });
     } finally {

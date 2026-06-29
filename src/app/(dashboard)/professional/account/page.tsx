@@ -4,10 +4,11 @@
 // Account settings for professionals (credentials, billing, digital signature).
 
 import { useState, useEffect, useRef } from "react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { resolveLoginPathForSession } from "@/lib/auth-portals";
 import { localeOf } from "@/lib/i18n/translations";
 import DigitalSignSettings from "@/components/professional/DigitalSignSettings";
 import PushNotificationSettings from "@/components/PushNotificationSettings";
@@ -37,6 +38,12 @@ function formatPriceHint(priceHint: string, perMonth: string): string {
 export default function ProfessionalAccountPage() {
   const { lang, t } = useI18n();
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const signOutHref = resolveLoginPathForSession(
+    session?.user?.role,
+    pathname,
+    pathname.startsWith("/psychologist"),
+  );
   const settingsProfilePath = mapProfessionalPathToPortal(pathname, SETTINGS_PROFILE_PATH);
   const locale = localeOf(lang);
 
@@ -448,7 +455,7 @@ export default function ProfessionalAccountPage() {
           <p className="text-sm font-semibold text-slate-800">{t("acct.signOut")}</p>
           <p className="text-xs text-slate-400 mt-0.5">{t("acct.signOutDesc")}</p>
         </div>
-        <button onClick={() => signOut({ callbackUrl: "/login" })}
+        <button onClick={() => signOut({ callbackUrl: signOutHref })}
           className="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-xl transition min-h-[44px] shrink-0">
           <LogOut size={15} /> {t("acct.signOut")}
         </button>

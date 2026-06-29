@@ -6,6 +6,7 @@ import { randomBytes } from "crypto";
 import { UserRole, ConsentType } from "@prisma/client";
 import { REGISTRATION_REGION_CODES, requiresGdpr } from "@/lib/registration-regions";
 import { sendEmailVerification } from "@/lib/email";
+import { ANGEL_LOGIN } from "@/lib/auth-portals";
 import { encrypt } from "@/lib/encryption";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
@@ -142,6 +143,7 @@ export async function POST(req: NextRequest) {
         name: firstName,
         token,
         language: normalizedLanguage,
+        from: ANGEL_LOGIN,
       });
     } catch (emailError) {
       console.error("[ANGEL REGISTER EMAIL]", emailError);

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import { LogIn } from "lucide-react";
+import { buildAuthHref } from "@/components/auth/login-shared";
+import { MAIN_LOGIN } from "@/lib/auth-portals";
 import {
   detectInitialLang,
   LANG_KEY,
@@ -44,9 +46,7 @@ export default function RegisterPage() {
     try { window.localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
   }
 
-  const loginHref = callbackUrl
-    ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
-    : "/login";
+  const loginHref = buildAuthHref(MAIN_LOGIN, { callbackUrl });
 
   const proHref = callbackUrl
     ? `/register/professional?callbackUrl=${encodeURIComponent(callbackUrl)}`

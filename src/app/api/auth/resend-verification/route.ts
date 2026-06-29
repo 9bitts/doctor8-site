@@ -6,9 +6,10 @@ import { db } from "@/lib/db";
 import { randomBytes } from "crypto";
 import { sendEmailVerification } from "@/lib/email";
 import { isAccountVerified } from "@/lib/account-verified";
+import { sanitizeLoginFrom } from "@/lib/auth-portals";
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
+    const { email, from } = await req.json();
 
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
       name: firstName,
       token,
       language: user.language,
+      from: sanitizeLoginFrom(from),
     });
 
     return NextResponse.json({ success: true });

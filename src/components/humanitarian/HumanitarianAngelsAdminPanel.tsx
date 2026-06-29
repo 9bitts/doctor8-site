@@ -83,7 +83,7 @@ export default function HumanitarianAngelsAdminPanel() {
                     <Mail className="w-3.5 h-3.5" />
                     {a.email}
                     {!a.emailVerified && (
-                      <span className="text-amber-600 text-xs font-medium">(e-mail n?o verificado)</span>
+                      <span className="text-amber-600 text-xs font-medium">(e-mail não verificado)</span>
                     )}
                   </p>
                   <p className="text-xs text-slate-400 mt-1">

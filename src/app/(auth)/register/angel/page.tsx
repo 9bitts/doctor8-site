@@ -17,7 +17,7 @@ import {
   RegisterLogo,
 } from "@/components/auth/register-shared";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
-import { ANGEL_LOGIN } from "@/lib/auth-portals";
+import { ANGEL_LOGIN, buildVerifyAccountHref } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
 
 const PASSWORD_RULES = [
@@ -115,7 +115,11 @@ export default function RegisterAngelPage() {
         return;
       }
       router.push(
-        `/verify-account?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent("/humanitarian/angel")}`,
+        buildVerifyAccountHref({
+          email,
+          callbackUrl: "/humanitarian/angel",
+          from: ANGEL_LOGIN,
+        }),
       );
     } catch {
       setErrors({ general: [t("reg.genericError")] });
@@ -127,14 +131,9 @@ export default function RegisterAngelPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-rose-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        <RegisterLanguageSelector lang={lang} onChange={changeLang} />
-
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-white tracking-tight">
-            Doctor<span className="text-rose-400">8</span>
-          </h1>
-          <p className="text-rose-200/80 text-sm mt-2 font-medium">{t("angel.register.subtitle")}</p>
-        </div>
+        <RegisterLanguageSelector lang={lang} onChange={changeLang} accent="rose" />
+        <RegisterLogo accent="rose" />
+        <p className="text-rose-200/80 text-sm -mt-4 mb-8 text-center font-medium">{t("angel.register.subtitle")}</p>
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
           <Link

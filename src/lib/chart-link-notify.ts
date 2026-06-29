@@ -35,19 +35,19 @@ const COPY: Record<
   pt: {
     subject: (d) => `Dr. ${d} vinculou sua ficha no Doctor8`,
     heading: "Sua ficha foi vinculada",
-    hi: (n) => `Ol? <strong>${n}</strong>,`,
+    hi: (n) => `Olá <strong>${n}</strong>,`,
     body: (d) =>
-      `O Dr. ${d} vinculou sua ficha m?dica ? sua conta Doctor8. Voc? pode ver documentos compartilhados e acompanhar seu cuidado em um s? lugar.`,
+      `O Dr. ${d} vinculou sua ficha médica à sua conta Doctor8. Você pode ver documentos compartilhados e acompanhar seu cuidado em um só lugar.`,
     cta: "Ver meus profissionais",
     footnote:
-      "Se voc? n?o reconhece este profissional, entre em contato com support@doctor8.org imediatamente.",
+      "Se você não reconhece este profissional, entre em contato com support@doctor8.org imediatamente.",
   },
   es: {
-    subject: (d) => `El Dr. ${d} vincul? su ficha en Doctor8`,
+    subject: (d) => `El Dr. ${d} vinculó su ficha en Doctor8`,
     heading: "Su ficha fue vinculada",
     hi: (n) => `Hola <strong>${n}</strong>,`,
     body: (d) =>
-      `El Dr. ${d} vincul? su ficha m?dica a su cuenta Doctor8. Puede ver documentos compartidos y gestionar su atenci?n en un solo lugar.`,
+      `El Dr. ${d} vinculó su ficha médica a su cuenta Doctor8. Puede ver documentos compartidos y gestionar su atención en un solo lugar.`,
     cta: "Ver mis profesionales",
     footnote:
       "Si no reconoce a este profesional, contacte support@doctor8.org de inmediato.",
@@ -75,9 +75,9 @@ export async function notifyPatientChartLinked(opts: {
         : "Chart linked";
   const body =
     lang === "pt"
-      ? `${opts.doctorName} vinculou sua ficha ? sua conta.`
+      ? `${opts.doctorName} vinculou sua ficha à sua conta.`
       : lang === "es"
-        ? `${opts.doctorName} vincul? su ficha a su cuenta.`
+        ? `${opts.doctorName} vinculó su ficha a su cuenta.`
         : `${opts.doctorName} linked your chart to your account.`;
 
   await createNotification({

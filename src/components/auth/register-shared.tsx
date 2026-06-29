@@ -12,6 +12,12 @@ import {
 } from "lucide-react";
 
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
+import { getLoginAccentStyles } from "@/components/auth/login-shared";
+import type { LoginAccent } from "@/lib/auth-portals";
+import {
+  buildVerifyAccountHref,
+  resolveLoginPathForRegistration,
+} from "@/lib/auth-portals";
 import {
   type RegistrationRegionCode,
   requiresGdpr,
@@ -45,10 +51,13 @@ const PASSWORD_RULES = [
 export function RegisterLanguageSelector({
   lang,
   onChange,
+  accent = "emerald",
 }: {
   lang: Lang;
   onChange: (l: Lang) => void;
+  accent?: LoginAccent;
 }) {
+  const styles = getLoginAccentStyles(accent);
   return (
     <div className="flex justify-end mb-4">
       <div className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
@@ -57,7 +66,7 @@ export function RegisterLanguageSelector({
             key={l.code}
             onClick={() => onChange(l.code)}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 ${
-              lang === l.code ? "bg-emerald-500 text-white" : "text-slate-300 hover:text-white hover:bg-white/10"
+              lang === l.code ? styles.langActive : "text-slate-300 hover:text-white hover:bg-white/10"
             }`}
             aria-label={l.label}
           >
@@ -70,8 +79,8 @@ export function RegisterLanguageSelector({
   );
 }
 
-export function RegisterLogo({ accent = "emerald" }: { accent?: "emerald" | "indigo" }) {
-  const accentClass = accent === "indigo" ? "text-indigo-400" : "text-emerald-400";
+export function RegisterLogo({ accent = "emerald" }: { accent?: LoginAccent }) {
+  const accentClass = getLoginAccentStyles(accent).brand;
   return (
     <div className="text-center mb-8">
       <h1 className="text-4xl font-black text-white tracking-tight">
@@ -209,9 +218,11 @@ export function RegisterAccountForm({
       }
 
       router.push(
-        callbackUrl
-          ? `/verify-account?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`
-          : `/verify-account?email=${encodeURIComponent(email)}`
+        buildVerifyAccountHref({
+          email,
+          callbackUrl: callbackUrl || undefined,
+          from: resolveLoginPathForRegistration(role, professionalKind),
+        }),
       );
     } catch {
       setErrors({ general: [t("reg.genericError")] });

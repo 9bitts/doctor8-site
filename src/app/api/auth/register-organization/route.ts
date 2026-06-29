@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { UserRole, ConsentType } from "@prisma/client";
 import { sendEmailVerification } from "@/lib/email";
+import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
 
 const passwordSchema = z
@@ -161,6 +162,7 @@ export async function POST(req: NextRequest) {
         name: parsed.responsibleFirstName,
         token,
         language: normalizedLanguage,
+        from: ORGANIZATION_LOGIN,
       });
     } catch (emailError) {
       console.error("[ORG REGISTER EMAIL ERROR]", emailError);

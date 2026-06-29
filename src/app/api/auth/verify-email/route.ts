@@ -1,19 +1,26 @@
-// src/app/api/auth/verify-email/route.ts
 // Validates email verification token and marks email as verified
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getAppUrl } from "@/lib/email-core";
+import { buildVerifyConfirmedHref, sanitizeLoginFrom } from "@/lib/auth-portals";
 
 function redirect(pathWithQuery: string) {
   return NextResponse.redirect(new URL(pathWithQuery, getAppUrl()));
 }
 
+function redirectConfirmedError(from: string | undefined, code: string) {
+  const base = buildVerifyConfirmedHref(from);
+  const sep = base.includes("?") ? "&" : "?";
+  return redirect(`${base}${sep}error=${code}`);
+}
+
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
+  const from = sanitizeLoginFrom(req.nextUrl.searchParams.get("from"));
 
   if (!token) {
-    return redirect("/verify-email/confirmed?error=invalid");
+    return redirectConfirmedError(from, "invalid");
   }
 
   try {
@@ -22,14 +29,17 @@ export async function GET(req: NextRequest) {
     });
 
     if (!verificationToken) {
-      return redirect("/verify-email/confirmed?error=invalid");
+      return redirectConfirmedError(from, "invalid");
     }
 
     if (verificationToken.expires < new Date()) {
       await db.verificationToken.delete({ where: { token } });
-      return redirect(
-        `/verify-email?error=expired&email=${encodeURIComponent(verificationToken.identifier)}`,
-      );
+      const emailQs = new URLSearchParams({
+        error: "expired",
+        email: verificationToken.identifier,
+      });
+      if (from) emailQs.set("from", from);
+      return redirect(`/verify-email?${emailQs.toString()}`);
     }
 
     await db.user.update({
@@ -39,9 +49,9 @@ export async function GET(req: NextRequest) {
 
     await db.verificationToken.delete({ where: { token } });
 
-    return redirect("/verify-email/confirmed");
+    return redirect(buildVerifyConfirmedHref(from));
   } catch (error) {
     console.error("[VERIFY EMAIL ERROR]", error);
-    return redirect("/verify-email/confirmed?error=failed");
+    return redirectConfirmedError(from, "failed");
   }
 }

@@ -35,10 +35,12 @@ function resolveFirstName(user: {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
+    const { email, from } = await req.json();
     if (!email) {
       return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
+
+    const safeFrom = typeof from === "string" && from.startsWith("/login") ? from : undefined;
 
     const normalizedEmail = email.toLowerCase();
     const ip = clientIp(req);
@@ -77,6 +79,7 @@ export async function POST(req: NextRequest) {
           name: resolveFirstName(user),
           token,
           language: user.language,
+          from: safeFrom,
         });
       } catch (emailError) {
         console.error("[FORGOT PASSWORD EMAIL]", emailError);

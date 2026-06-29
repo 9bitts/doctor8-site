@@ -7,8 +7,10 @@
 // prescription (CFM) needs. Encryption is handled server-side by the profile API.
 
 import { useState, useEffect } from "react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import { useT, useI18n } from "@/lib/i18n/I18nProvider";
+import { resolveLoginPathForSession } from "@/lib/auth-portals";
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
 import {
   parseRegistrationRegion,
@@ -47,6 +49,9 @@ const EMPTY_PROFILE: ProfileData = {
 export default function AccountPage() {
   const t = useT();
   const { lang } = useI18n();
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const signOutHref = resolveLoginPathForSession(session?.user?.role, pathname);
 
   const PASSWORD_RULES = [
     { key: "acct.rule8", test: (p: string) => p.length >= 8 },
@@ -640,7 +645,7 @@ export default function AccountPage() {
           <p className="text-xs text-slate-400 mt-0.5">{t("acct.signOutDesc")}</p>
         </div>
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => signOut({ callbackUrl: signOutHref })}
           className="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded-xl transition min-h-[44px] shrink-0"
         >
           <LogOut size={15} /> {t("acct.signOut")}

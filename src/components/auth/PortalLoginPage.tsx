@@ -220,6 +220,7 @@ function PortalLoginForm({ portalId }: { portalId: PortalId }) {
           unverifiedEmail={unverifiedEmail}
           t={t}
           roleOnlyKey={config.roleOnlyKey}
+          verifyFrom={config.loginPath}
         />
 
         <GoogleSignInButton
