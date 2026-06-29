@@ -5,6 +5,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { PICS_PRACTICES } from "@/lib/pics/practices";
+import {
+  hasStructuredTemplate,
+  emptyStructuredValues,
+  structuredValuesHaveContent,
+  type StructuredValues,
+} from "@/lib/pics/consult-templates";
+import IntegrativeStructuredForm from "@/components/integrative-therapist/IntegrativeStructuredForm";
 import { Loader2, ArrowLeft } from "lucide-react";
 
 interface Note {
@@ -12,6 +19,7 @@ interface Note {
   title: string;
   body: string;
   practiceSlug: string | null;
+  format?: "FREE" | "STRUCTURED";
   createdAt: string;
 }
 
@@ -23,7 +31,17 @@ export default function IntegrativeClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState("");
   const [practiceSlug, setPracticeSlug] = useState("");
+  const [structuredValues, setStructuredValues] = useState<StructuredValues>({});
   const [saving, setSaving] = useState(false);
+
+  const langCode = lang.startsWith("pt") ? "pt" : lang.startsWith("es") ? "es" : "en";
+  const usesStructured = hasStructuredTemplate(practiceSlug);
+
+  useEffect(() => {
+    if (usesStructured) {
+      setStructuredValues(emptyStructuredValues(practiceSlug));
+    }
+  }, [practiceSlug, usesStructured]);
 
   async function loadNotes() {
     setLoading(true);
@@ -42,20 +60,30 @@ export default function IntegrativeClientDetailPage() {
 
   async function saveNote(e: React.FormEvent) {
     e.preventDefault();
-    if (!content.trim()) return;
+    const canSave = usesStructured
+      ? structuredValuesHaveContent(structuredValues)
+      : content.trim().length > 0;
+    if (!canSave) return;
     setSaving(true);
     try {
+      const payload: Record<string, unknown> = {
+        integrativeClientRecordId: clientId,
+        practiceSlug: practiceSlug || undefined,
+        lang: langCode,
+      };
+      if (usesStructured) {
+        payload.structured = structuredValues;
+      } else {
+        payload.content = content;
+      }
       const res = await fetch("/api/integrative-therapist/session-notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          integrativeClientRecordId: clientId,
-          content,
-          practiceSlug: practiceSlug || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         setContent("");
+        if (usesStructured) setStructuredValues(emptyStructuredValues(practiceSlug));
         loadNotes();
       }
     } finally {
@@ -110,6 +138,14 @@ export default function IntegrativeClientDetailPage() {
             ))}
           </select>
         </div>
+        {usesStructured ? (
+          <IntegrativeStructuredForm
+            lang={langCode}
+            practiceSlug={practiceSlug}
+            values={structuredValues}
+            onChange={setStructuredValues}
+          />
+        ) : (
         <div>
           <label className="text-xs font-medium text-slate-600">{t("it.sessions.note")}</label>
           <textarea
@@ -119,9 +155,13 @@ export default function IntegrativeClientDetailPage() {
             placeholder={t("it.sessions.placeholder")}
           />
         </div>
+        )}
         <button
           type="submit"
-          disabled={saving || !content.trim()}
+          disabled={
+            saving
+            || (usesStructured ? !structuredValuesHaveContent(structuredValues) : !content.trim())
+          }
           className="bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl disabled:opacity-50"
         >
           {saving ? <Loader2 size={14} className="animate-spin inline" /> : t("it.sessions.save")}
@@ -146,8 +186,13 @@ export default function IntegrativeClientDetailPage() {
                   </span>
                 </div>
                 {n.practiceSlug && (
-                  <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 mb-2">
+                  <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 mb-2 mr-1">
                     {practiceLabel(n.practiceSlug)}
+                  </span>
+                )}
+                {n.format === "STRUCTURED" && (
+                  <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 mb-2">
+                    {t("it.tpl.structuredTitle")}
                   </span>
                 )}
                 <p className="text-sm text-slate-600 whitespace-pre-wrap">{n.body}</p>

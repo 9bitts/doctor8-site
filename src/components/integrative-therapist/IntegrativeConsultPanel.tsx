@@ -9,6 +9,13 @@ import {
   type IntegrativeVisitType,
   visitDurationMins,
 } from "@/lib/integrative-consult-context";
+import {
+  hasStructuredTemplate,
+  emptyStructuredValues,
+  structuredValuesHaveContent,
+  type StructuredValues,
+} from "@/lib/pics/consult-templates";
+import IntegrativeStructuredForm from "@/components/integrative-therapist/IntegrativeStructuredForm";
 
 type Lang = "pt" | "en" | "es";
 
@@ -53,11 +60,14 @@ export default function IntegrativeConsultPanel({
   const [loading, setLoading] = useState(!initialContext);
   const [visitType, setVisitType] = useState<IntegrativeVisitType>("return");
   const [practiceSlug, setPracticeSlug] = useState("");
+  const [structuredValues, setStructuredValues] = useState<StructuredValues>({});
   const [elapsed, setElapsed] = useState(0);
   const [noteText, setNoteText] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const usesStructured = hasStructuredTemplate(practiceSlug);
 
   const targetMins = visitDurationMins(visitType);
   const targetSecs = targetMins * 60;
@@ -105,6 +115,12 @@ export default function IntegrativeConsultPanel({
   }, [initialContext, loadContext]);
 
   useEffect(() => {
+    if (hasStructuredTemplate(practiceSlug)) {
+      setStructuredValues(emptyStructuredValues(practiceSlug));
+    }
+  }, [practiceSlug]);
+
+  useEffect(() => {
     timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -121,22 +137,38 @@ export default function IntegrativeConsultPanel({
     onPracticeChange?.(slug);
   }
 
+  const canSave = usesStructured
+    ? structuredValuesHaveContent(structuredValues)
+    : noteText.trim().length > 0;
+
   async function saveNote() {
-    if (!noteText.trim() || !clientId) return;
+    if (!canSave || !clientId) return;
     setNoteSaving(true);
     try {
+      const payload: Record<string, unknown> = {
+        integrativeClientRecordId: clientId,
+        practiceSlug: practiceSlug || undefined,
+        appointmentId: appointmentId || undefined,
+        visitType,
+        lang,
+      };
+      if (usesStructured) {
+        payload.structured = structuredValues;
+      } else {
+        payload.content = noteText.trim();
+      }
+
       const res = await fetch("/api/integrative-therapist/session-notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          integrativeClientRecordId: clientId,
-          content: noteText.trim(),
-          practiceSlug: practiceSlug || undefined,
-          appointmentId: appointmentId || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        setNoteText("");
+        if (usesStructured) {
+          setStructuredValues(emptyStructuredValues(practiceSlug));
+        } else {
+          setNoteText("");
+        }
         setNoteSaved(true);
         setTimeout(() => setNoteSaved(false), 2500);
         onNoteSaved?.();
@@ -257,43 +289,54 @@ export default function IntegrativeConsultPanel({
         </select>
       </div>
 
-      <div>
-        <label className={`${label} mb-1.5 block`}>{t("it.sessions.note")}</label>
-        <textarea
-          className={textarea}
-          value={noteText}
-          onChange={(e) => setNoteText(e.target.value)}
-          placeholder={t("it.sessions.placeholder")}
-          rows={4}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && e.ctrlKey) void saveNote();
-          }}
+      {usesStructured ? (
+        <IntegrativeStructuredForm
+          lang={lang}
+          practiceSlug={practiceSlug}
+          values={structuredValues}
+          onChange={setStructuredValues}
+          dark={dark}
         />
-        <button
-          type="button"
-          onClick={() => void saveNote()}
-          disabled={!noteText.trim() || noteSaving}
-          className={`mt-2 w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-lg transition disabled:opacity-40 ${
-            dark
-              ? "text-white bg-teal-600 hover:bg-teal-500"
-              : "text-white bg-teal-600 hover:bg-teal-700"
-          }`}
-        >
-          {noteSaved ? (
-            <>
-              <CheckCircle2 size={13} /> {t("it.consult.saved")}
-            </>
-          ) : noteSaving ? (
-            <>
-              <Loader2 size={13} className="animate-spin" /> {t("it.consult.saving")}
-            </>
-          ) : (
-            <>
-              <Send size={13} /> {t("it.sessions.save")}
-            </>
-          )}
-        </button>
-      </div>
+      ) : (
+        <div>
+          <label className={`${label} mb-1.5 block`}>{t("it.sessions.note")}</label>
+          <textarea
+            className={textarea}
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            placeholder={t("it.sessions.placeholder")}
+            rows={4}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && e.ctrlKey) void saveNote();
+            }}
+          />
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => void saveNote()}
+        disabled={!canSave || noteSaving}
+        className={`w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-lg transition disabled:opacity-40 ${
+          dark
+            ? "text-white bg-teal-600 hover:bg-teal-500"
+            : "text-white bg-teal-600 hover:bg-teal-700"
+        }`}
+      >
+        {noteSaved ? (
+          <>
+            <CheckCircle2 size={13} /> {t("it.consult.saved")}
+          </>
+        ) : noteSaving ? (
+          <>
+            <Loader2 size={13} className="animate-spin" /> {t("it.consult.saving")}
+          </>
+        ) : (
+          <>
+            <Send size={13} /> {t("it.sessions.save")}
+          </>
+        )}
+      </button>
     </div>
   );
 }
