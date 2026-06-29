@@ -20,6 +20,14 @@ interface Chart {
   updatedAt: string;
 }
 
+type DuplicateMatch = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  reason: "email" | "name";
+};
+
 export default function PatientsClient({ initialCharts }: { initialCharts: Chart[] }) {
   const t = useT();
   const { lang } = useI18n();
@@ -30,6 +38,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
   const [error, setError] = useState<string | null>(null);
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [inviteFeedback, setInviteFeedback] = useState<Record<string, "sent" | "error">>({});
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[] | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -54,7 +63,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
     setError(null);
   }
 
-  async function handleCreate() {
+  async function handleCreate(forceDuplicate = false) {
     if (!firstName.trim() || !lastName.trim()) {
       setError(t("pat.errNameRequired"));
       return;
@@ -73,14 +82,21 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
           firstName, lastName, email, phone, notes,
           dateOfBirth, sex, cpf,
           addressLine1, city, state: stateField, country, zipCode,
+          forceDuplicate,
         }),
       });
       const data = await res.json();
+      if (res.status === 409 && data.code === "POSSIBLE_DUPLICATE") {
+        setDuplicateMatches(data.matches || []);
+        setSaving(false);
+        return;
+      }
       if (!res.ok) {
         setError(typeof data.error === "string" ? data.error : t("pat.errCreate"));
         setSaving(false);
         return;
       }
+      setDuplicateMatches(null);
       setCharts((prev) => [
         {
           id: data.id,
@@ -402,13 +418,65 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                   {t("common.cancel")}
                 </button>
                 <button
-                  onClick={handleCreate}
+                  onClick={() => handleCreate(false)}
                   disabled={saving}
                   className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50"
                 >
                   {saving ? t("pat.creating") : t("pat.create")}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {duplicateMatches && duplicateMatches.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={22} />
+              <div>
+                <h3 className="font-bold text-slate-900">{t("pat.duplicateTitle")}</h3>
+                <p className="text-sm text-slate-600 mt-1">{t("pat.duplicateMessage")}</p>
+              </div>
+            </div>
+            <ul className="space-y-2 max-h-48 overflow-y-auto">
+              {duplicateMatches.map((m) => (
+                <li key={m.id}>
+                  <Link
+                    href={`/professional/patients/${m.id}`}
+                    className="block rounded-xl border border-slate-200 px-3 py-2 hover:border-brand-200 hover:bg-brand-50/50 transition text-sm"
+                    onClick={() => setDuplicateMatches(null)}
+                  >
+                    <span className="font-medium text-slate-900">
+                      {m.firstName} {m.lastName}
+                    </span>
+                    {m.email && (
+                      <span className="text-slate-500 block text-xs">{m.email}</span>
+                    )}
+                    <span className="text-xs text-brand-600 mt-1 inline-block">
+                      {t("pat.duplicateOpenExisting")} →
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDuplicateMatches(null)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCreate(true)}
+                disabled={saving}
+                className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm disabled:opacity-50"
+              >
+                {t("pat.duplicateCreateAnyway")}
+              </button>
             </div>
           </div>
         </div>

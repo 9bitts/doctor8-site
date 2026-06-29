@@ -6,11 +6,12 @@
 // dateOfBirth is now stored as encrypted string (ISO YYYY-MM-DD) — PHI/HIPAA.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
 import { buildPatientRecordSearchText } from "@/lib/patient-record-search";
+import { findPossibleDuplicateCharts } from "@/lib/patient-record-dedup";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 
 const createSchema = z.object({
   firstName:        z.string().min(1).max(100),
@@ -27,11 +28,8 @@ const createSchema = z.object({
   country:          z.string().max(60).optional().or(z.literal("")),
   zipCode:          z.string().max(30).optional().or(z.literal("")),
   attachDocumentId: z.string().optional().or(z.literal("")),
+  forceDuplicate:   z.boolean().optional(),
 });
-
-async function getProfessional(userId: string) {
-  return db.professionalProfile.findUnique({ where: { userId } });
-}
 
 function safeDecrypt(v: string): string {
   try { return decrypt(v); } catch { return v; }
@@ -62,13 +60,9 @@ function computeMissingForRx(r: {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const professional = await getProfessional(session.user.id);
-  if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
+  const { professional } = ctx;
 
   const records = await db.patientRecord.findMany({
     where: { professionalId: professional.id },
@@ -103,13 +97,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const professional = await getProfessional(session.user.id);
-  if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
+  const { professional } = ctx;
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -117,6 +107,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const d = parsed.data;
+
+  if (!d.forceDuplicate) {
+    const duplicates = await findPossibleDuplicateCharts(
+      professional.id,
+      d.firstName,
+      d.lastName,
+      d.email || null,
+    );
+    if (duplicates.length > 0) {
+      return NextResponse.json(
+        { code: "POSSIBLE_DUPLICATE", matches: duplicates },
+        { status: 409 },
+      );
+    }
+  }
 
   let linkedUserId: string | null = null;
   if (d.email) {

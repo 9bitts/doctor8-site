@@ -1378,6 +1378,7 @@ model PatientChartInvite {
   @@index([patientRecordId])
   @@index([email])
   @@index([sentByProfessionalId])
+}
 
 // ────────────────────────────────────────────
 // ORGANIZATION — CNPJ clinic / consultório management (Phase 1)

@@ -253,6 +253,12 @@ export default function RecordDetailClient({
   const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  const [inviteStatus, setInviteStatus] = useState<{
+    status: string;
+    sentAt: string;
+    linkedAt: string | null;
+    email: string;
+  } | null>(null);
 
   // P1-b: registration data state
   const [reg, setReg] = useState({
@@ -311,6 +317,14 @@ export default function RecordDetailClient({
           const res = await fetch(`/api/messages?with=${chart.linkedUserId}`);
           const data = await res.json();
           if (active && data.messages?.length > 0) setHasConversation(true);
+        } catch { /* ignore */ }
+      }
+
+      if (!chart.hasAccount) {
+        try {
+          const res = await fetch(`/api/professional/records/${chart.id}/invite`);
+          const data = await res.json();
+          if (active && data.invite) setInviteStatus(data.invite);
         } catch { /* ignore */ }
       }
     })();
@@ -556,6 +570,14 @@ export default function RecordDetailClient({
         setInviteMsg("error:" + (typeof data.error === "string" ? data.error : t("rx3.inviteError")));
       } else {
         setInviteMsg("sent");
+        if (data.invite) {
+          setInviteStatus({
+            status: data.invite.status,
+            sentAt: data.invite.sentAt,
+            linkedAt: null,
+            email: data.sentTo || chartEmail || "",
+          });
+        }
       }
     } catch {
       setInviteMsg("error:" + t("rec.networkError"));
@@ -1063,6 +1085,30 @@ export default function RecordDetailClient({
                   </button>
                 )}
               </div>
+            )}
+
+            {inviteStatus && (
+              <p className="text-xs mt-2 inline-flex items-center gap-1.5">
+                {inviteStatus.status === "LINKED" ? (
+                  <span className="text-brand-600 font-medium">
+                    <CheckCircle2 size={12} className="inline mr-1" />
+                    {t("rec.inviteStatusLinked")}
+                  </span>
+                ) : inviteStatus.status === "FAILED" ? (
+                  <span className="text-rose-600">
+                    <AlertCircle size={12} className="inline mr-1" />
+                    {t("rec.inviteStatusFailed")}
+                  </span>
+                ) : (
+                  <span className="text-slate-500">
+                    <Mail size={12} className="inline mr-1" />
+                    {t("rec.inviteLastSent").replace(
+                      "{{date}}",
+                      new Date(inviteStatus.sentAt).toLocaleDateString(localeFull),
+                    )}
+                  </span>
+                )}
+              </p>
             )}
 
             {/* messages */}
