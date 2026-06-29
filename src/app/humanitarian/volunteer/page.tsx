@@ -134,11 +134,7 @@ export default function HumanitarianVolunteerPage() {
 
   useEffect(() => {
     const callbackUrl = encodeURIComponent("/humanitarian/volunteer");
-    const portal = searchParams.get("portal");
-    const loginPath =
-      portal === "psychologist"
-        ? `/login?callbackUrl=${callbackUrl}`
-        : `/login?callbackUrl=${callbackUrl}`;
+    const loginPath = `/login?callbackUrl=${callbackUrl}`;
 
     fetch("/api/auth/session")
       .then((r) => r.json())

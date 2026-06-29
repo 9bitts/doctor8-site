@@ -104,6 +104,18 @@ export default auth((req) => {
     return NextResponse.redirect(url);
   }
 
+  // Already-authenticated users shouldn't see the login screen — send them to
+  // their dashboard so they don't get stuck on a form they don't need.
+  if (pathname === "/login" && session?.user) {
+    const { role, professionalSpecialty } = session.user as {
+      role: string;
+      professionalSpecialty?: string | null;
+    };
+    return NextResponse.redirect(
+      new URL(resolveRoleHome(role, professionalSpecialty), req.url),
+    );
+  }
+
   if (isPublicRoute(pathname)) return NextResponse.next();
 
   // Allow API auth routes
