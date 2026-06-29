@@ -7,7 +7,7 @@
  */
 import { createCipheriv, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { PrismaClient, UserRole, UserRegion, ConsentType, ProviderType } from "@prisma/client";
+import { PrismaClient, UserRole, ConsentType, ProviderType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -101,14 +101,14 @@ async function seedPatient({ email, password, firstName, lastName, phone }) {
       email: normalized,
       passwordHash,
       role: UserRole.PATIENT,
-      region: UserRegion.VE,
+      region: "VE",
       language: "es",
       emailVerified: new Date(),
     },
     update: {
       passwordHash,
       role: UserRole.PATIENT,
-      region: UserRegion.VE,
+      region: "VE",
       emailVerified: new Date(),
       deletedAt: null,
       lockedUntil: null,
@@ -162,14 +162,14 @@ async function seedProfessional({ email, password, firstName, lastName }) {
       email: normalized,
       passwordHash,
       role: UserRole.PROFESSIONAL,
-      region: UserRegion.VE,
+      region: "VE",
       language: "es",
       emailVerified: new Date(),
     },
     update: {
       passwordHash,
       role: UserRole.PROFESSIONAL,
-      region: UserRegion.VE,
+      region: "VE",
       emailVerified: new Date(),
       deletedAt: null,
       lockedUntil: null,
@@ -230,7 +230,7 @@ async function seedAdmin({ email, password, firstName, lastName }) {
       email: normalized,
       passwordHash,
       role: UserRole.ADMIN,
-      region: UserRegion.BR,
+      region: "BR",
       language: "pt",
       emailVerified: new Date(),
     },

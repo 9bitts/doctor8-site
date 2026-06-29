@@ -1,5 +1,7 @@
 // Billing region / currency options for checkout.
 
+import { isValidRegistrationRegion, toBillingRegion } from "@/lib/registration-regions";
+
 export type BillingRegion = "BR" | "US" | "EU" | "VE";
 
 export const USER_REGIONS: BillingRegion[] = ["BR", "US", "EU", "VE"];
@@ -28,6 +30,7 @@ export const ACCOUNT_REGION_OPTIONS: {
 
 export function parseBillingRegion(value: unknown, fallback: BillingRegion = "US"): BillingRegion {
   if (value === "BR" || value === "US" || value === "EU" || value === "VE") return value;
+  if (typeof value === "string" && isValidRegistrationRegion(value)) return toBillingRegion(value);
   return fallback;
 }
 

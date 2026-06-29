@@ -1,4 +1,4 @@
-import type { BillingRegion } from "@/lib/billing-regions";
+import { parseBillingRegion, type BillingRegion } from "@/lib/billing-regions";
 
 export type DataResidencyInfo = {
   accountRegion: BillingRegion;
@@ -12,20 +12,22 @@ function deployRegion(): string {
 }
 
 function storageForAccountRegion(region: BillingRegion): string {
-  if (region === "BR" || region === "VE") {
+  const billing = parseBillingRegion(region, "US");
+  if (billing === "BR" || billing === "VE") {
     return process.env.AWS_REGION_US || "us-east-1";
   }
-  if (region === "EU") {
+  if (billing === "EU") {
     return process.env.AWS_REGION_EU || "eu-central-1";
   }
   return process.env.AWS_REGION_US || "us-east-1";
 }
 
-export function getDataResidencyInfo(accountRegion: BillingRegion): DataResidencyInfo {
+export function getDataResidencyInfo(accountRegion: string): DataResidencyInfo {
+  const billing = parseBillingRegion(accountRegion, "US");
   return {
-    accountRegion,
+    accountRegion: billing,
     deployRegion: deployRegion(),
-    storageRegion: storageForAccountRegion(accountRegion),
+    storageRegion: storageForAccountRegion(billing),
     storageProvider: "AWS S3",
   };
 }

@@ -11,8 +11,15 @@ import {
   User, Stethoscope, ArrowLeft, Brain, Leaf,
 } from "lucide-react";
 
+import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
+import {
+  type RegistrationRegionCode,
+  requiresGdpr,
+  requiresHipaa,
+} from "@/lib/registration-regions";
+
 export type RegisterRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
-export type Region = "US" | "EU" | "BR" | "VE";
+export type Region = RegistrationRegionCode;
 
 export const LANG_KEY = "doctor8.lang";
 
@@ -132,8 +139,8 @@ export function RegisterAccountForm({
     isPasswordValid &&
     acceptedTerms &&
     acceptedPrivacy &&
-    (region !== "US" || acceptedHipaa) &&
-    (region !== "EU" || acceptedGdpr);
+    (!requiresHipaa(region) || acceptedHipaa) &&
+    (!requiresGdpr(region) || acceptedGdpr);
 
   const isProfessional = role === "PROFESSIONAL";
   const isPsychologistSignup = isProfessional && professionalKind === "psychologist";
@@ -183,8 +190,8 @@ export function RegisterAccountForm({
           professionalKind: isPsychologistSignup ? "psychologist" : undefined,
           acceptedTerms,
           acceptedPrivacy,
-          acceptedHipaa: region === "US" ? acceptedHipaa : undefined,
-          acceptedGdpr: region === "EU" ? acceptedGdpr : undefined,
+          acceptedHipaa: requiresHipaa(region) ? acceptedHipaa : undefined,
+          acceptedGdpr: requiresGdpr(region) ? acceptedGdpr : undefined,
         }),
       });
 
@@ -292,16 +299,13 @@ export function RegisterAccountForm({
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.region")}</label>
-          <select
+          <RegistrationRegionSelect
             value={region}
-            onChange={(e) => setRegion(e.target.value as Region)}
+            onChange={setRegion}
+            lang={lang}
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
-          >
-            <option value="US" className="bg-slate-800">{t("reg.regionUS")}</option>
-            <option value="EU" className="bg-slate-800">{t("reg.regionEU")}</option>
-            <option value="BR" className="bg-slate-800">{t("reg.regionBR")}</option>
-            <option value="VE" className="bg-slate-800">{t("reg.regionVE")}</option>
-          </select>
+            optionClassName="bg-slate-800"
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -399,14 +403,14 @@ export function RegisterAccountForm({
             onChange={setAcceptedPrivacy}
             label={<>{t("reg.acceptPrivacy")} <Link href="/privacy" className="text-emerald-400 hover:underline" target="_blank">{t("reg.privacyPolicy")}</Link></>}
           />
-          {region === "US" && (
+          {requiresHipaa(region) && (
             <RegisterCheckbox
               checked={acceptedHipaa}
               onChange={setAcceptedHipaa}
               label={<>{t("reg.acceptHipaaPre")} <Link href="/hipaa" className="text-emerald-400 hover:underline" target="_blank">{t("reg.hipaaAuth")}</Link> {t("reg.acceptHipaaPost")}</>}
             />
           )}
-          {region === "EU" && (
+          {requiresGdpr(region) && (
             <RegisterCheckbox
               checked={acceptedGdpr}
               onChange={setAcceptedGdpr}

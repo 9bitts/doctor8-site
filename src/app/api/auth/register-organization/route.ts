@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { UserRole, UserRegion, ConsentType } from "@prisma/client";
+import { UserRole, ConsentType } from "@prisma/client";
 import { sendEmailVerification } from "@/lib/email";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
 
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
           email,
           passwordHash,
           role: UserRole.ORGANIZATION,
-          region: UserRegion.BR,
+          region: "BR",
           language: normalizedLanguage,
         },
       });

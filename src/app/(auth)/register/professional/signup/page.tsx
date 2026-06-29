@@ -6,6 +6,7 @@ import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import {
   Stethoscope, LogIn, Brain, Building2, ArrowLeft, Leaf,
 } from "lucide-react";
+import { parseRegistrationRegion } from "@/lib/registration-regions";
 import {
   detectInitialLang,
   LANG_KEY,
@@ -31,9 +32,7 @@ export default function RegisterProfessionalSignupPage() {
     setCallbackUrl(params.get("callbackUrl") || "");
 
     const r = params.get("region");
-    if (r === "VE" || r === "US" || r === "EU" || r === "BR") {
-      setInitialRegion(r as Region);
-    }
+    if (r) setInitialRegion(parseRegistrationRegion(r, "US"));
 
     const portalParam = params.get("portal");
     if (portalParam === "psychologist") {

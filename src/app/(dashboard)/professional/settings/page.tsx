@@ -11,11 +11,11 @@ import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
+import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
 import {
-  ACCOUNT_REGION_OPTIONS,
-  parseBillingRegion,
-  type BillingRegion,
-} from "@/lib/billing-regions";
+  parseRegistrationRegion,
+  type RegistrationRegionCode,
+} from "@/lib/registration-regions";
 import {
   Loader2, CheckCircle2, User, Award, Camera, X, Plus,
   LayoutTemplate, Globe, Building2,
@@ -47,7 +47,7 @@ export default function ProfessionalSettings() {
   const [clinicState, setClinicState] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
   const [clinicZip, setClinicZip] = useState("");
-  const [accountRegion, setAccountRegion] = useState<BillingRegion>("US");
+  const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("US");
   const [regionSaving, setRegionSaving] = useState(false);
   const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");
@@ -62,13 +62,13 @@ export default function ProfessionalSettings() {
         if (sessionRes.ok) {
           const session = await sessionRes.json();
           const r = session?.user?.region;
-          if (r) setAccountRegion(parseBillingRegion(r, accountRegion));
+          if (r) setAccountRegion(parseRegistrationRegion(r, accountRegion));
         }
         const regionRes = await fetch("/api/user/region");
         if (regionRes.ok) {
           const regionData = await regionRes.json();
           const r = regionData?.region;
-          if (r) setAccountRegion(parseBillingRegion(r, accountRegion));
+          if (r) setAccountRegion(parseRegistrationRegion(r, accountRegion));
         }
         if (profileRes.ok) {
           const d = await profileRes.json();
@@ -228,15 +228,12 @@ export default function ProfessionalSettings() {
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
           <div className="flex-1">
             <label className="block text-xs font-medium text-slate-500 mb-1.5">País / região</label>
-            <select
+            <RegistrationRegionSelect
               value={accountRegion}
-              onChange={(e) => setAccountRegion(parseBillingRegion(e.target.value, accountRegion))}
+              onChange={setAccountRegion}
+              lang={lang}
               className={inputClass}
-            >
-              {ACCOUNT_REGION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+            />
           </div>
           <button
             type="button"

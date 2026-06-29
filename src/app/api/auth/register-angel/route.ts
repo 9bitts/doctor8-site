@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { UserRole, UserRegion, ConsentType } from "@prisma/client";
+import { UserRole, ConsentType } from "@prisma/client";
+import { REGISTRATION_REGION_CODES, requiresGdpr } from "@/lib/registration-regions";
 import { sendEmailVerification } from "@/lib/email";
 import { encrypt } from "@/lib/encryption";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
@@ -18,7 +19,7 @@ const passwordSchema = z
 const registerAngelSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: passwordSchema,
-  region: z.enum(["US", "EU", "BR", "VE"]).default("BR"),
+  region: z.enum(REGISTRATION_REGION_CODES as [typeof REGISTRATION_REGION_CODES[number], ...typeof REGISTRATION_REGION_CODES[number][]]).default("BR"),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
   phone: z.string().min(8).max(30),
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
       acceptedGdpr,
     } = data.data;
 
-    if (region === "EU" && !acceptedGdpr) {
+    if (requiresGdpr(region) && !acceptedGdpr) {
       return NextResponse.json(
         { error: { acceptedGdpr: ["GDPR consent required for EU users"] } },
         { status: 400 },
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
           email: email.toLowerCase(),
           passwordHash,
           role: UserRole.ANGEL,
-          region: region as UserRegion,
+          region,
           language: normalizedLanguage,
         },
       });

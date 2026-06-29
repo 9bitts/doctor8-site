@@ -8,12 +8,12 @@
 
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useT, useI18n } from "@/lib/i18n/I18nProvider";
+import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
 import {
-  ACCOUNT_REGION_OPTIONS,
-  parseBillingRegion,
-  type BillingRegion,
-} from "@/lib/billing-regions";
+  parseRegistrationRegion,
+  type RegistrationRegionCode,
+} from "@/lib/registration-regions";
 import {
   Lock, Mail, CheckCircle2, AlertCircle, Loader2,
   Eye, EyeOff, LogOut, Shield, User, Globe,
@@ -46,6 +46,7 @@ const EMPTY_PROFILE: ProfileData = {
 
 export default function AccountPage() {
   const t = useT();
+  const { lang } = useI18n();
 
   const PASSWORD_RULES = [
     { key: "acct.rule8", test: (p: string) => p.length >= 8 },
@@ -78,7 +79,7 @@ export default function AccountPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const [accountRegion, setAccountRegion] = useState<BillingRegion>("US");
+  const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("US");
   const [regionSaving, setRegionSaving] = useState(false);
   const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");
@@ -97,7 +98,7 @@ export default function AccountPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d?.region) {
-          setAccountRegion(parseBillingRegion(d.region, accountRegion));
+          setAccountRegion(parseRegistrationRegion(d.region, accountRegion));
         }
         if (d?.dataResidency) {
           setDataResidency(d.dataResidency);
@@ -247,7 +248,7 @@ export default function AccountPage() {
       if (!res.ok) throw new Error(data.error || t("acct.regionErr"));
       setRegionSaved(true);
       if (data.region) {
-        setAccountRegion(parseBillingRegion(data.region, accountRegion));
+        setAccountRegion(parseRegistrationRegion(data.region, accountRegion));
       }
       fetch("/api/user/region")
         .then((r) => r.json())
@@ -290,15 +291,12 @@ export default function AccountPage() {
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
           <div className="flex-1">
             <label className="block text-xs font-medium text-slate-500 mb-1.5">{t("acct.regionLabel")}</label>
-            <select
+            <RegistrationRegionSelect
               value={accountRegion}
-              onChange={(e) => setAccountRegion(parseBillingRegion(e.target.value, accountRegion))}
+              onChange={setAccountRegion}
+              lang={lang}
               className={inputClass}
-            >
-              {ACCOUNT_REGION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+            />
           </div>
           <button
             type="button"

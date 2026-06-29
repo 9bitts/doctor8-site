@@ -7,6 +7,8 @@ import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, LogIn, Heart,
 } from "lucide-react";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
+import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
+import { parseRegistrationRegion } from "@/lib/registration-regions";
 import {
   detectInitialLang,
   LANG_KEY,
@@ -49,7 +51,7 @@ export default function RegisterAngelPage() {
     const c = params.get("campaign");
     if (c) setCampaignSlug(c);
     const r = params.get("region");
-    if (r === "VE" || r === "US" || r === "EU" || r === "BR") setRegion(r as Region);
+    if (r) setRegion(parseRegistrationRegion(r, "BR"));
     const langParam = params.get("lang");
     if (langParam) {
       const l = normalizeLang(langParam);
@@ -201,13 +203,13 @@ export default function RegisterAngelPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.region")}</label>
-              <select value={region} onChange={(e) => setRegion(e.target.value as Region)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50">
-                <option value="BR" className="bg-slate-800">{t("reg.regionBR")}</option>
-                <option value="VE" className="bg-slate-800">{t("reg.regionVE")}</option>
-                <option value="US" className="bg-slate-800">{t("reg.regionUS")}</option>
-                <option value="EU" className="bg-slate-800">{t("reg.regionEU")}</option>
-              </select>
+              <RegistrationRegionSelect
+                value={region}
+                onChange={setRegion}
+                lang={lang}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                optionClassName="bg-slate-800"
+              />
             </div>
 
             <div>

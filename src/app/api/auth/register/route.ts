@@ -15,7 +15,8 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { UserRole, UserRegion, ConsentType } from "@prisma/client";
+import { UserRole, ConsentType } from "@prisma/client";
+import { REGISTRATION_REGION_CODES, requiresGdpr, requiresHipaa } from "@/lib/registration-regions";
 import { sendEmailVerification } from "@/lib/email";
 import { encrypt } from "@/lib/encryption";
 
@@ -31,7 +32,7 @@ const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: passwordSchema,
   role: z.enum(["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"]),
-  region: z.enum(["US", "EU", "BR", "VE"]).default("US"),
+  region: z.enum(REGISTRATION_REGION_CODES as [typeof REGISTRATION_REGION_CODES[number], ...typeof REGISTRATION_REGION_CODES[number][]]).default("US"),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
   // Optional language preference coming from the registration screen
@@ -76,14 +77,14 @@ export async function POST(req: NextRequest) {
       professionalKind,
     } = data.data;
 
-    if (region === "US" && !acceptedHipaa) {
+    if (requiresHipaa(region) && !acceptedHipaa) {
       return NextResponse.json(
         { error: { acceptedHipaa: ["HIPAA Authorization required for US users"] } },
         { status: 400 }
       );
     }
 
-    if (region === "EU" && !acceptedGdpr) {
+    if (requiresGdpr(region) && !acceptedGdpr) {
       return NextResponse.json(
         { error: { acceptedGdpr: ["GDPR consent required for EU users"] } },
         { status: 400 }
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
           email: email.toLowerCase(),
           passwordHash,
           role: role as UserRole,
-          region: region as UserRegion,
+          region,
           ...(normalizedLanguage ? { language: normalizedLanguage } : {}),
           // emailVerified is null — set after email confirmation
         },

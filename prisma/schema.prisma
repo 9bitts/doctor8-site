@@ -37,13 +37,6 @@ enum ProviderType {
   INTEGRATIVE_THERAPIST
 }
 
-enum UserRegion {
-  US
-  EU
-  BR
-  VE
-}
-
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -309,7 +302,7 @@ model User {
   phoneVerified   DateTime?
   passwordHash    String?    // null for OAuth users
   role            UserRole
-  region          UserRegion @default(US)
+  region          String     @default("US") @db.VarChar(2)
   language        String     @default("en")
   jitQueueEntries   JitQueue[]  @relation("JitQueuePatient")
   humanitarianQueueEntries HumanitarianQueueEntry[] @relation("HumanitarianQueuePatient")
@@ -2297,7 +2290,7 @@ model HumanitarianCampaign {
   slug                     String    @unique
   name                     String
   description              String?
-  region                   UserRegion?
+  region                   String?   @db.VarChar(2)
   active                   Boolean   @default(true)
   startAt                  DateTime  @default(now())
   endAt                    DateTime?

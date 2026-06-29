@@ -1,14 +1,13 @@
-// PATCH ? update account region (BR / US / EU / VE)
+// PATCH — update account country/region (Americas + EU)
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getDataResidencyInfo } from "@/lib/data-residency";
-import type { BillingRegion } from "@/lib/billing-regions";
+import { REGISTRATION_REGION_CODES } from "@/lib/registration-regions";
 import { z } from "zod";
-
 const schema = z.object({
-  region: z.enum(["BR", "US", "EU", "VE"]),
+  region: z.enum(REGISTRATION_REGION_CODES as [typeof REGISTRATION_REGION_CODES[number], ...typeof REGISTRATION_REGION_CODES[number][]]),
 });
 
 export async function GET() {
@@ -23,7 +22,7 @@ export async function GET() {
 
   return NextResponse.json({
     region: user.region,
-    dataResidency: getDataResidencyInfo(user.region as BillingRegion),
+    dataResidency: getDataResidencyInfo(user.region),
   });
 }
 

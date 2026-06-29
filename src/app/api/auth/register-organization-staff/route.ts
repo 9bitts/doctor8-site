@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { UserRole, UserRegion, ConsentType } from "@prisma/client";
+import { UserRole, ConsentType } from "@prisma/client";
 
 const passwordSchema = z
   .string()
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
           email,
           passwordHash,
           role: UserRole.ORGANIZATION,
-          region: UserRegion.BR,
+          region: "BR",
           language: "pt",
           emailVerified: new Date(),
         },

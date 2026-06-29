@@ -7,12 +7,13 @@ import { LogIn } from "lucide-react";
 import {
   detectInitialLang,
   LANG_KEY,
-  Region,
   RegisterAccountForm,
   RegisterAlternateLink,
   RegisterLanguageSelector,
   RegisterLogo,
+  type Region,
 } from "@/components/auth/register-shared";
+import { parseRegistrationRegion } from "@/lib/registration-regions";
 
 export default function RegisterPage() {
   const [callbackUrl, setCallbackUrl] = useState("");
@@ -24,9 +25,7 @@ export default function RegisterPage() {
     setCallbackUrl(params.get("callbackUrl") || "");
 
     const r = params.get("region");
-    if (r === "VE" || r === "US" || r === "EU" || r === "BR") {
-      setInitialRegion(r as Region);
-    }
+    if (r) setInitialRegion(parseRegistrationRegion(r, "US"));
 
     const langParam = params.get("lang");
     if (langParam) {
