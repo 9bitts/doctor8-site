@@ -12,6 +12,7 @@ import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { persistAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
+import { resolveRoleHome } from "@/lib/role-home";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail,
 } from "lucide-react";
@@ -131,20 +132,12 @@ function LoginForm() {
         router.push(
           role === "PATIENT"
             ? resolvePatientPostLoginUrl(callbackUrl)
-            : callbackUrl,
+            : role === "ADMIN"
+              ? "/admin"
+              : callbackUrl,
         );
-      } else if (role === "PROFESSIONAL") {
-        router.push("/professional");
-      } else if (role === "ORGANIZATION") {
-        router.push("/organization");
-      } else if (role === "PSYCHOANALYST") {
-        router.push("/psychoanalyst");
-      } else if (role === "INTEGRATIVE_THERAPIST") {
-        router.push("/integrative-therapist");
-      } else if (role === "ANGEL") {
-        router.push("/humanitarian/angel");
       } else {
-        router.push("/patient");
+        router.push(resolveRoleHome(role));
       }
       router.refresh();
     } catch {

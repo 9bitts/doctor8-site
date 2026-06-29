@@ -25,6 +25,7 @@ import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 import { decrypt } from "@/lib/encryption";
 import { getProfessionLabel } from "@/lib/professions";
+import { resolveRoleHome } from "@/lib/role-home";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -34,7 +35,7 @@ function safeDecrypt(v: string | null): string {
 export default async function ProfessionalDashboard() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "PROFESSIONAL") redirect("/patient");
+  if (session.user.role !== "PROFESSIONAL") redirect(resolveRoleHome(session.user.role));
 
   const userId = session.user.id;
   const lang: Lang = await getUserLang(userId);

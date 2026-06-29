@@ -7,6 +7,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { resolveRoleHome } from "@/lib/role-home";
 import { audit } from "@/lib/audit";
 import { decrypt } from "@/lib/encryption";
 import DocumentsClient from "./DocumentsClient";
@@ -21,7 +22,7 @@ function safeDecrypt(v: string | null): string {
 export default async function PatientDocuments() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "PATIENT") redirect("/professional");
+  if (session.user.role !== "PATIENT") redirect(resolveRoleHome(session.user.role));
 
   const patient = await db.patientProfile.findUnique({
     where: { userId: session.user.id },

@@ -28,6 +28,7 @@ import {
   getPatientActiveHumanitarianEntry,
 } from "@/lib/humanitarian/notify";
 import { getPatientIntakeStatusBySlug } from "@/lib/humanitarian/intake";
+import { resolveRoleHome } from "@/lib/role-home";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -37,7 +38,7 @@ function safeDecrypt(v: string | null): string {
 export default async function PatientDashboard() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "PATIENT") redirect("/professional");
+  if (session.user.role !== "PATIENT") redirect(resolveRoleHome(session.user.role));
 
   const userId = session.user.id;
 
