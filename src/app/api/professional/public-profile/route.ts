@@ -1,7 +1,7 @@
 // GET/PATCH ? public listing settings for the logged-in professional.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import {
   buildPublicProfileUrl,
@@ -26,13 +26,11 @@ function parseGoogleBusinessUrl(raw: unknown): string | null | false {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const profile = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
     include: { virtualCard: true },
   });
   if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
@@ -69,15 +67,13 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
 
   const profile = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
     include: { virtualCard: true },
   });
   if (!profile?.virtualCard)

@@ -4,7 +4,7 @@
 // O CPF é armazenado criptografado (PHI).
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
@@ -26,13 +26,11 @@ function safeDecrypt(v: string | null): string {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const profile = await db.professionalProfile.findUnique({
-    where:  { userId: session.user.id },
+    where:  { userId: ctx.userId },
     select: { digitalSignProvider: true, digitalSignCpf: true } as any,
   });
 
@@ -49,10 +47,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const body   = await req.json();
   const parsed = schema.safeParse(body);
@@ -65,7 +61,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "CPF inválido" }, { status: 400 });
 
   await db.professionalProfile.update({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
     data:  {
       digitalSignProvider: provider,
       digitalSignCpf:      encrypt(cpfDigits),

@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createAuditLog } from "@/lib/audit";
@@ -54,20 +54,11 @@ async function verifyAppointment(professionalUserId: string, appointmentId: stri
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (session.user.role !== "PROFESSIONAL") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const professional = await db.professionalProfile.findUnique({
-      where: { userId: session.user.id },
-      select: { id: true },
-    });
-    if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
+    const ctx = await requireProfessionalApi();
+    if (isApiError(ctx)) return ctx.error;
 
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: ctx.userId },
       select: { language: true },
     });
 
@@ -128,20 +119,20 @@ export async function POST(req: NextRequest) {
     }
 
     if (patientRecordId) {
-      const record = await verifyPatientRecord(professional.id, patientRecordId);
+      const record = await verifyPatientRecord(ctx.professional.id, patientRecordId);
       if (!record) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (appointmentId) {
-      const appt = await verifyAppointment(session.user.id, appointmentId);
+      const appt = await verifyAppointment(ctx.userId, appointmentId);
       if (!appt) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await createAuditLog({
-      userId: session.user.id,
+      userId: ctx.userId,
       action: AuditAction.CREATE_RECORD,
       resource: "ConsultNotesConsent",
-      resourceId: patientRecordId || appointmentId || professional.id,
+      resourceId: patientRecordId || appointmentId || ctx.professional.id,
       details: {
         appointmentId,
         hasAudio: !!audioBuffer,
@@ -183,7 +174,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "NO_PATIENT_RECORD" }, { status: 400 });
       }
       const doc = await saveChartEvolution({
-        professionalId: professional.id,
+        professionalId: ctx.professional.id,
         patientRecordId,
         title: evolutionTitle(lang),
         content: summary,

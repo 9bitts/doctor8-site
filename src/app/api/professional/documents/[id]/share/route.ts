@@ -5,7 +5,7 @@
 //
 // PUT — send the email invite (when the patient has no account yet).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
@@ -39,15 +39,13 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const authCtx = await requireProfessionalApi();
+  if (isApiError(authCtx)) return authCtx.error;
 
-  const ctx = await loadContext(session.user.id, params.id);
-  if ("error" in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  const loaded = await loadContext(authCtx.userId, params.id);
+  if ("error" in loaded) return NextResponse.json({ error: loaded.error }, { status: loaded.status });
 
-  const { doc, record, professional } = ctx;
+  const { doc, record, professional } = loaded;
 
   // Does the patient have an account?
   let linkedUserId = record.linkedUserId;
@@ -122,15 +120,13 @@ export async function PUT(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const authCtx = await requireProfessionalApi();
+  if (isApiError(authCtx)) return authCtx.error;
 
-  const ctx = await loadContext(session.user.id, params.id);
-  if ("error" in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  const loaded = await loadContext(authCtx.userId, params.id);
+  if ("error" in loaded) return NextResponse.json({ error: loaded.error }, { status: loaded.status });
 
-  const { record, professional } = ctx;
+  const { record, professional } = loaded;
 
   if (!record.email) {
     return NextResponse.json({ error: "This chart has no email to invite." }, { status: 400 });
@@ -138,7 +134,7 @@ export async function PUT(
 
   try {
     const sender = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authCtx.userId },
       select: { language: true },
     });
 

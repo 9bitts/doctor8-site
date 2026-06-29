@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { generateClinicalSummary } from "@/lib/ai-summarize";
@@ -47,24 +47,17 @@ async function canAccessDocument(professionalId: string, documentId: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (session.user.role !== "PROFESSIONAL")
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-    const professional = await db.professionalProfile.findUnique({
-      where: { userId: session.user.id },
-      select: { id: true },
-    });
-    if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
-
+    
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success)
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: ctx.userId },
       select: { language: true },
     });
     const lang: Lang = normalizeLang(parsed.data.lang || user?.language);
@@ -77,7 +70,7 @@ export async function POST(req: NextRequest) {
     let fileKey: string | null = null;
 
     if (parsed.data.documentId) {
-      const doc = await canAccessDocument(professional.id, parsed.data.documentId);
+      const doc = await canAccessDocument(ctx.professional.id, parsed.data.documentId);
       if (!doc) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
       title = safeDecrypt(doc.title);
@@ -92,7 +85,7 @@ export async function POST(req: NextRequest) {
       if (doc.fileUrl) fileKey = safeDecrypt(doc.fileUrl);
     } else if (parsed.data.resourceId) {
       const resource = await db.resource.findFirst({
-        where: { id: parsed.data.resourceId, professionalId: professional.id, active: true },
+        where: { id: parsed.data.resourceId, professionalId: ctx.professional.id, active: true },
       });
       if (!resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

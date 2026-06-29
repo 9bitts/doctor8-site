@@ -1,7 +1,8 @@
 // Read-only integration health for admin dashboards (no secrets exposed).
 
 import { getWhatsAppReadiness } from "@/lib/whatsapp";
-import { isWebPushEnabled } from "@/lib/web-push";
+import { isWebPushEnabled, getVapidPublicKey } from "@/lib/web-push";
+import { isSmsConfigured, usesTwilioVerify } from "@/lib/sms";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { isSentryEnabled } from "../../sentry.shared.config";
 
@@ -22,6 +23,10 @@ export function getIntegrationStatuses(): IntegrationRow[] {
   const wa = getWhatsAppReadiness();
   const stripeOk = has(process.env.STRIPE_SECRET_KEY);
   const stripeWebhook = has(process.env.STRIPE_WEBHOOK_SECRET);
+  const smsOk = isSmsConfigured();
+  const twilioVerify = usesTwilioVerify();
+  const vapidPublic = getVapidPublicKey();
+  const vapidClient = has(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
   const dailyOk = has(process.env.DAILY_API_KEY) || process.env.E2E_MOCK_DAILY === "1";
   const lacunaOk = has(process.env.LACUNA_API_KEY);
   const resendOk = has(process.env.RESEND_API_KEY);
@@ -33,9 +38,19 @@ export function getIntegrationStatuses(): IntegrationRow[] {
   return [
     {
       id: "whatsapp",
-      health: wa.configured ? "partial" : "fallback",
+      health: wa.productionReady ? "ok" : wa.configured ? "partial" : "fallback",
       configured: wa.configured,
       detail: wa.note,
+    },
+    {
+      id: "twilio",
+      health: smsOk ? "ok" : "missing",
+      configured: smsOk,
+      detail: smsOk
+        ? twilioVerify
+          ? "Twilio Verify OTP (TWILIO_VERIFY_SERVICE_SID) + SMS fallback."
+          : "Twilio SMS (TWILIO_SMS_FROM) for verification codes."
+        : "SMS OTP needs TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN (+ Verify or SMS_FROM).",
     },
     {
       id: "stripe",
@@ -107,10 +122,12 @@ export function getIntegrationStatuses(): IntegrationRow[] {
     },
     {
       id: "webpush",
-      health: isWebPushEnabled() ? "ok" : "missing",
+      health: isWebPushEnabled() ? (vapidClient ? "ok" : "partial") : "missing",
       configured: isWebPushEnabled(),
       detail: isWebPushEnabled()
-        ? "Browser push via VAPID keys (in-app + push)."
+        ? vapidClient
+          ? "Browser push active (VAPID keys + NEXT_PUBLIC_VAPID_PUBLIC_KEY)."
+          : `VAPID server keys set. Add NEXT_PUBLIC_VAPID_PUBLIC_KEY=${vapidPublic ? "(same as VAPID_PUBLIC_KEY)" : ""} for client subscription.`
         : "Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY to enable browser push.",
     },
     {

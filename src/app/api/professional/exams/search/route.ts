@@ -1,14 +1,12 @@
 // GET — search CISMIV lab exams for exam requests (professional only).
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { searchCismivLabExams } from "@/lib/cismiv-lab-exams";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const q = (new URL(req.url).searchParams.get("q") || "").trim();
   if (q.length < 2) {

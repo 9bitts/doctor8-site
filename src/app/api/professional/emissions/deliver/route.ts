@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { deliverEmissionToPatient, type EmissionDeliverKind } from "@/lib/emission-deliver";
 import { z } from "zod";
 
@@ -12,10 +12,8 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
@@ -27,7 +25,7 @@ export async function POST(req: NextRequest) {
   const deliverKind: EmissionDeliverKind =
     kind === "exam" ? "exam" : kind === "document" ? "document" : "prescription";
 
-  const result = await deliverEmissionToPatient(session.user.id, deliverKind, id, {
+  const result = await deliverEmissionToPatient(ctx.userId, deliverKind, id, {
     sendWhatsApp,
     whatsappMessage,
     forceWhatsapp,

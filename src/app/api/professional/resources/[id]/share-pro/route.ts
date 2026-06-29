@@ -5,7 +5,7 @@
 //   B) professional has no account       → send invite email (like patient invite)
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { sendColleagueResourceInvite } from "@/lib/email";
@@ -19,19 +19,17 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
     select: { id: true, firstName: true, lastName: true },
   });
   if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
 
   const resource = await db.resource.findUnique({ where: { id: params.id } });
-  if (!resource || resource.professionalId !== professional.id) {
+  if (!resource || resource.professionalId !== ctx.professional.id) {
     return NextResponse.json({ error: "Resource not found" }, { status: 404 });
   }
 
@@ -39,7 +37,7 @@ export async function POST(
   const { professionalId, email, name, phone } = body;
 
   const sender = await db.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: ctx.userId },
     select: { language: true },
   });
   const senderLanguage = sender?.language;

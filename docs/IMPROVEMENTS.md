@@ -8,7 +8,7 @@ Lista viva de melhorias **pendentes**. Lotes pequenos, baixo risco ao fluxo huma
 
 | # | Item | Prioridade | O que falta |
 |---|------|------------|-------------|
-| M2 | WhatsApp Business API (templates Meta) | Média | Webhook OK; registrar número Business (+55…) e templates aprovados |
+| M2 | WhatsApp Business API (templates Meta) | Média | Railway: token + phone ID + webhook + app secret OK — confirmar template `WHATSAPP_REMINDER_TEMPLATE` aprovado na Meta |
 | M3 | Sentry em produção | Baixa | Código pronto — definir `SENTRY_DSN` no Railway |
 | M4 | Gravação cloud Daily | Baixa | Off por padrão — `DAILY_CLOUD_RECORDING=1` + banner já no código |
 | M9 | Busca pública: banner + filtro voluntários AcuraBrasil | Média | OK — `PublicSearchClient`, landing e filtro `acuraVolunteers=1` |

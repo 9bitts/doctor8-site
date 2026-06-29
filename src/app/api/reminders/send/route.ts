@@ -331,6 +331,7 @@ export async function POST(req: NextRequest) {
         type: "appointment_reminder",
         data: {
           appointmentId,
+          link: `/patient/appointments?id=${appointmentId}`,
           whatsappUrl: apiSent ? undefined : waUrl,
           whatsappSent: apiSent,
           titleKey: "notif.apptReminder.title",
@@ -361,6 +362,7 @@ export async function POST(req: NextRequest) {
       type: "appointment_reminder",
       data: {
         appointmentId,
+        link: `/patient/appointments?id=${appointmentId}`,
         meetingUrl: appointment.meetingUrl,
         titleKey: "notif.apptReminder.titleHours",
         bodyKey: hoursUntil >= 24 ? "notif.apptReminder.bodyTomorrow" : "notif.apptReminder.bodySoon",

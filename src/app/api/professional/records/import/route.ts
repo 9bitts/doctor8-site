@@ -1,6 +1,6 @@
 // POST ? create a PatientRecord chart from an existing PatientProfile (Doctor8 account).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
@@ -32,16 +32,8 @@ function computeMissingForRx(r: {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-  if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
@@ -71,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   const existing = await db.patientRecord.findFirst({
     where: {
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       OR: [
         { linkedUserId: resolvedProfile.userId },
         ...(email ? [{ email }] : []),
@@ -98,11 +90,11 @@ export async function POST(req: NextRequest) {
   }
 
   const allowedByAppointment = await db.appointment.findFirst({
-    where: { professionalId: professional.id, patientId: resolvedProfile.id },
+    where: { professionalId: ctx.professional.id, patientId: resolvedProfile.id },
     select: { id: true },
   });
   const allowedByShare = await db.sharedRecord.findFirst({
-    where: { sharedWithProfessionalId: professional.id, patientId: resolvedProfile.id },
+    where: { sharedWithProfessionalId: ctx.professional.id, patientId: resolvedProfile.id },
     select: { id: true },
   });
   const allowedByEmail = !!parsed.data.email;
@@ -126,7 +118,7 @@ export async function POST(req: NextRequest) {
 
   const record = await db.patientRecord.create({
     data: {
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       firstName: encrypt(firstName),
       lastName: encrypt(lastName),
       email,

@@ -4,7 +4,7 @@
 //   - registration data (P1-b): dateOfBirth now stored encrypted, sex, cpf, address.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
@@ -37,24 +37,15 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-  if (!professional) {
-    return NextResponse.json({ error: "No profile" }, { status: 404 });
-  }
-
-  const access = await resolveChartAccess(professional.id, params.id);
+  const access = await resolveChartAccess(ctx.professional.id, params.id);
   if (!access) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   }
 
-  await auditChartView(session.user.id, params.id, access);
+  await auditChartView(ctx.userId, params.id, access);
 
   const record = await db.patientRecord.findFirst({
     where: { id: params.id },
@@ -88,19 +79,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-  if (!professional) {
-    return NextResponse.json({ error: "No profile" }, { status: 404 });
-  }
-
-  const access = await resolveChartAccess(professional.id, params.id);
+  const access = await resolveChartAccess(ctx.professional.id, params.id);
   if (!canEditChart(access)) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   }
@@ -198,14 +180,14 @@ export async function PATCH(
       });
       if (patientUser?.email) {
         const patientName = await patientDisplayName(linkedUserId);
-        const doctorName = `Dr. ${professional.firstName} ${professional.lastName}`.trim();
+        const doctorName = `Dr. ${ctx.professional.firstName} ${ctx.professional.lastName}`.trim();
         notifyPatientChartLinked({
           patientUserId: linkedUserId,
           patientEmail: patientUser.email,
           patientName,
           doctorName,
           patientRecordId: record.id,
-          professionalId: professional.id,
+          professionalId: ctx.professional.id,
           language: patientUser.language,
         }).catch((e) => console.error("[RECORD PATCH] chart link notify failed:", e));
       }

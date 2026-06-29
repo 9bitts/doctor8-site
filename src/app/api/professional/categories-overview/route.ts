@@ -3,25 +3,18 @@
 // and category, with counts. Used by the "Categories" navigation (levels).
 // Only counts MedicalDocuments that belong to a PatientRecord of this professional.
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
-
+  
   // All chart records of this professional that HAVE a category.
   const docs = await db.medicalDocument.findMany({
     where: {
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       patientRecordId: { not: null },
       categoryId: { not: null },
     },

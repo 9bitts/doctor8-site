@@ -42,7 +42,9 @@ export async function createNotification(params: {
           : params.type === "message"
             ? "/patient/messages"
             : params.type === "appointment_reminder" || params.type === "appointment_confirmed"
-              ? "/patient/appointments"
+              ? typeof params.data?.appointmentId === "string"
+                ? `/patient/appointments?id=${params.data.appointmentId}`
+                : "/patient/appointments"
               : "/patient";
 
     sendWebPushToUser(params.userId, {

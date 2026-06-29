@@ -23,6 +23,8 @@ export type WhatsAppReadiness = {
   documentTemplate: string;
   readyToSend: boolean;
   webhookConfigured: boolean;
+  appSecretConfigured: boolean;
+  productionReady: boolean;
   fallbackMode: "wa_me_links";
   note: string;
 };
@@ -34,19 +36,34 @@ export function getWhatsAppReadiness(): WhatsAppReadiness {
     process.env.WHATSAPP_REMINDER_TEMPLATE?.trim() || "doctor8_appointment_reminder";
   const documentTemplate =
     process.env.WHATSAPP_DOCUMENT_TEMPLATE?.trim() || "doctor8_clinical_document";
+  const webhookConfigured = Boolean(process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim());
+  const appSecretConfigured = Boolean(process.env.WHATSAPP_APP_SECRET?.trim());
+  const productionReady = configured && webhookConfigured && appSecretConfigured;
+
+  let note: string;
+  if (!configured) {
+    note =
+      "Meta API not configured — app uses wa.me link fallbacks until WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID are set.";
+  } else if (productionReady) {
+    note = `Production stack ready (token, phone ID, webhook verify, app secret). Template "${reminderTemplate}" must be approved in Meta Business Manager.`;
+  } else if (!webhookConfigured) {
+    note = "Credentials set. Add WHATSAPP_WEBHOOK_VERIFY_TOKEN and subscribe webhook at POST /api/webhooks/whatsapp.";
+  } else if (!appSecretConfigured) {
+    note = "Credentials + webhook set. Add WHATSAPP_APP_SECRET for signed webhook verification.";
+  } else {
+    note = "Credentials set. Complete webhook + app secret for production delivery status.";
+  }
 
   return {
     configured,
     reminderTemplate,
     documentTemplate,
     readyToSend: configured,
-    webhookConfigured: Boolean(process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim()),
+    webhookConfigured,
+    appSecretConfigured,
+    productionReady,
     fallbackMode: "wa_me_links",
-    note: configured
-      ? process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim()
-        ? "Credentials + webhook verify token set. Templates must be approved in Meta Business Manager."
-        : "Credentials set. Add WHATSAPP_WEBHOOK_VERIFY_TOKEN and subscribe webhook for delivery status."
-      : "Meta API not configured — app uses wa.me link fallbacks until WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID are set.",
+    note,
   };
 }
 

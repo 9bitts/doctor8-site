@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { createSignatureSession } from "@/lib/lacuna";
 import { buildDigitalSignTestPdf } from "@/lib/digital-sign-test-pdf";
@@ -15,14 +15,11 @@ function maskCpf(cpf: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const pro = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
     select: { firstName: true, lastName: true, digitalSignCpf: true },
   });
   if (!pro?.digitalSignCpf) {

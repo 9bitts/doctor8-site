@@ -1,7 +1,7 @@
 // PATCH — update a clinical record created by this professional (not shared copies).
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
@@ -39,16 +39,8 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-  if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const document = await db.medicalDocument.findUnique({
     where: { id: params.id },
@@ -64,7 +56,7 @@ export async function PATCH(
   }
   const recordId = document.patientRecord?.id;
   if (!recordId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const access = await resolveChartAccess(professional.id, recordId);
+  const access = await resolveChartAccess(ctx.professional.id, recordId);
   if (!canEditChart(access)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

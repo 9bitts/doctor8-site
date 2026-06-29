@@ -5,7 +5,7 @@
 // Query params: period = "this_month" | "last_month" | "3_months" | "6_months" | "this_year" | "all"
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 
 const COMMISSION_RATE = 0.15; // 15% Doctor8
@@ -59,18 +59,15 @@ function groupByMonth(items: { date: Date; net: number; gross: number }[]) {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const { searchParams } = new URL(req.url);
   const period = searchParams.get("period") || "this_month";
   const { from, to } = getPeriodDates(period);
 
   const professional = await db.professionalProfile.findUnique({
-    where:  { userId: session.user.id },
+    where:  { userId: ctx.userId },
     select: { id: true, firstName: true, lastName: true, currency: true },
   });
   if (!professional)
@@ -79,7 +76,7 @@ export async function GET(req: NextRequest) {
   // ── 1. Consultas agendadas pagas ──────────────────────────────────────────
   const appointments = await db.appointment.findMany({
     where: {
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       status:         "COMPLETED",
       paidAt:         { not: null },
       scheduledAt:    { gte: from, lte: to },
@@ -100,7 +97,7 @@ export async function GET(req: NextRequest) {
   // ── 2. Plantão Online pago ────────────────────────────────────────────────
   const jitPayments = await db.jitPayment.findMany({
     where: {
-      queueEntry: { session: { professionalId: professional.id } },
+      queueEntry: { session: { professionalId: ctx.professional.id } },
       status:     "paid",
       createdAt:  { gte: from, lte: to },
     },

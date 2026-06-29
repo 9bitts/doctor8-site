@@ -4,7 +4,7 @@
 //                   the document was already attached to that chart.
 // GET (?documentId=...) — return a signed URL to download that shared file.
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { getSignedReadUrl } from "@/lib/s3";
@@ -15,24 +15,17 @@ function safeDecrypt(v: string | null): string {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
-
+  
   const { searchParams } = new URL(req.url);
   const documentId = searchParams.get("documentId");
 
   // --- Single document: signed URL for download ---
   if (documentId) {
     const share = await db.sharedRecord.findFirst({
-      where: { documentId, sharedWithProfessionalId: professional.id },
+      where: { documentId, sharedWithProfessionalId: ctx.professional.id },
       select: { id: true },
     });
     if (!share) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -49,7 +42,7 @@ export async function GET(req: NextRequest) {
 
   // --- List of documents shared with this professional ---
   const shares = await db.sharedRecord.findMany({
-    where: { sharedWithProfessionalId: professional.id },
+    where: { sharedWithProfessionalId: ctx.professional.id },
     orderBy: { createdAt: "desc" },
     take: 200,
     include: {
@@ -61,7 +54,7 @@ export async function GET(req: NextRequest) {
   });
 
   const charts = await db.patientRecord.findMany({
-    where: { professionalId: professional.id },
+    where: { professionalId: ctx.professional.id },
     select: { id: true, linkedUserId: true, email: true },
   });
 
@@ -86,7 +79,7 @@ export async function GET(req: NextRequest) {
   const sharedDocIds = shares.map((s) => s.documentId);
   const attachedCopies = await db.medicalDocument.findMany({
     where: {
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       sourceDocumentId: { in: sharedDocIds },
     },
     select: { sourceDocumentId: true },

@@ -1,7 +1,7 @@
 // GET — list clinical documents issued by the professional (exams, atestados, etc.)
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { isExamType, parseExamContent, safeDecrypt } from "@/lib/sign-helpers";
@@ -16,19 +16,17 @@ function safeDec(v: string | null | undefined): string {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
   });
   if (!professional) return NextResponse.json({ documents: [] });
 
   const docs = await db.medicalDocument.findMany({
     where: {
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       type: { in: [...CLINICAL_TYPES] },
     },
     include: {

@@ -12,7 +12,7 @@
 // so no schema change is needed.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { encrypt, decrypt } from "@/lib/encryption";
@@ -51,10 +51,8 @@ function safeDecrypt(v: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = prescriptionSchema.safeParse(body);
@@ -62,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   const { patientRecordId, patientUserId, appointmentId, medications, instructions, validDays } = parsed.data;
 
-  const professional = await db.professionalProfile.findUnique({ where: { userId: session.user.id } });
+  const professional = await db.professionalProfile.findUnique({ where: { userId: ctx.userId } });
   if (!professional) {
     return NextResponse.json({ error: "Professional not found" }, { status: 404 });
   }
@@ -75,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   if (patientRecordId) {
     const record = await db.patientRecord.findFirst({
-      where: { id: patientRecordId, professionalId: professional.id },
+      where: { id: patientRecordId, professionalId: ctx.professional.id },
     });
     if (!record) {
       return NextResponse.json({ error: "Patient chart not found" }, { status: 404 });
@@ -100,7 +98,7 @@ export async function POST(req: NextRequest) {
     data: {
       patientId: documentPatientId,
       patientRecordId: documentPatientRecordId,
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       appointmentId: appointmentId || null,
       type: "PRESCRIPTION",
       title: encrypt(`Prescription — ${new Date().toLocaleDateString("en-US")}`),
@@ -111,14 +109,14 @@ export async function POST(req: NextRequest) {
   const prescription = await db.prescription.create({
     data: {
       documentId: document.id,
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       medications: medications as any,
       instructions: instructions ? encrypt(instructions) : null,
       validUntil,
     },
   });
 
-  await audit.createRecord(session.user.id, "Prescription", prescription.id);
+  await audit.createRecord(ctx.userId, "Prescription", prescription.id);
 
   return NextResponse.json(
     { success: true, prescriptionId: prescription.id, documentId: document.id },
@@ -127,16 +125,14 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({ where: { userId: session.user.id } });
+  const professional = await db.professionalProfile.findUnique({ where: { userId: ctx.userId } });
   if (!professional) return NextResponse.json({ prescriptions: [] });
 
   const prescriptions = await db.prescription.findMany({
-    where: { professionalId: professional.id },
+    where: { professionalId: ctx.professional.id },
     include: {
       document: {
         include: {

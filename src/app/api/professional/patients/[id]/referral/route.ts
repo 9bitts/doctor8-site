@@ -1,7 +1,7 @@
 // POST ? create a referral booking link for a colleague + optional chart note.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
@@ -24,10 +24,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
@@ -36,7 +34,7 @@ export async function POST(
   }
 
   const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
     select: { id: true, firstName: true, lastName: true },
   });
   if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
@@ -45,7 +43,7 @@ export async function POST(
     where: { id: params.id },
     select: { id: true, professionalId: true, firstName: true, lastName: true },
   });
-  if (!chart || chart.professionalId !== professional.id) {
+  if (!chart || chart.professionalId !== ctx.professional.id) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   }
 
@@ -77,7 +75,7 @@ export async function POST(
   await db.medicalDocument.create({
     data: {
       patientRecordId: chart.id,
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       type: "REFERRAL",
       title: encrypt(`Encaminhamento — ${target.specialty}`),
       content: encrypt(content),

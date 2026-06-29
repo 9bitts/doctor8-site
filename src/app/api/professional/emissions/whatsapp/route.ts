@@ -1,7 +1,7 @@
 // POST ? send or resend WhatsApp notification for a signed emission.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { sendEmissionWhatsApp } from "@/lib/emission-whatsapp";
 import type { EmissionDeliverKind } from "@/lib/emission-deliver";
@@ -15,13 +15,11 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
     select: { id: true, firstName: true, lastName: true },
   });
   if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
@@ -41,7 +39,7 @@ export async function POST(req: NextRequest) {
       where: { id },
       select: { professionalId: true, signatureStatus: true },
     });
-    if (!rx || rx.professionalId !== professional.id) {
+    if (!rx || rx.professionalId !== ctx.professional.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
   } else {
@@ -49,7 +47,7 @@ export async function POST(req: NextRequest) {
       where: { id },
       select: { professionalId: true, signatureStatus: true },
     });
-    if (!doc || doc.professionalId !== professional.id) {
+    if (!doc || doc.professionalId !== ctx.professional.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
   }

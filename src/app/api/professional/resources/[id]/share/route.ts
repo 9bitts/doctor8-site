@@ -1,6 +1,6 @@
 // src/app/api/professional/resources/[id]/share/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 
@@ -13,18 +13,12 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-  if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
-
+  
   const resource = await db.resource.findUnique({ where: { id: params.id } });
-  if (!resource || resource.professionalId !== professional.id) {
+  if (!resource || resource.professionalId !== ctx.professional.id) {
     return NextResponse.json({ error: "Resource not found" }, { status: 404 });
   }
 
@@ -35,7 +29,7 @@ export async function POST(
   }
 
   const chart = await db.patientRecord.findUnique({ where: { id: patientRecordId } });
-  if (!chart || chart.professionalId !== professional.id) {
+  if (!chart || chart.professionalId !== ctx.professional.id) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   }
 
@@ -54,7 +48,7 @@ export async function POST(
   const doc = await db.medicalDocument.create({
     data: {
       patientRecordId,
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       type: "OTHER",
       title:   encrypt(title),
       content: docContent ? encrypt(docContent) : null,

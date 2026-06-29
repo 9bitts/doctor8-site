@@ -6,7 +6,7 @@
 // categoryId AND derive the legacy `type` enum from the category's legacyType,
 // so older screens that still read `type` keep working (Option 1: coexist).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { z } from "zod";
@@ -51,16 +51,10 @@ function normalizeType(v: string | null | undefined): DocType {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-  if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
-
+  
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success)
@@ -69,7 +63,7 @@ export async function POST(req: NextRequest) {
   const d = parsed.data;
 
   // Verify chart access (owner or colleague with EDIT)
-  const access = await resolveChartAccess(professional.id, d.patientRecordId);
+  const access = await resolveChartAccess(ctx.professional.id, d.patientRecordId);
   if (!canEditChart(access)) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   }

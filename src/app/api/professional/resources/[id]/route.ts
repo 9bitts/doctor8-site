@@ -3,7 +3,7 @@
 // DELETE — soft-delete a resource (sets active=false)
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { z } from "zod";
@@ -31,13 +31,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const authCtx = await requireProfessionalApi();
+  if (isApiError(authCtx)) return authCtx.error;
 
-  const ctx = await getOwnedResource(session.user.id, params.id);
-  if (!ctx) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const owned = await getOwnedResource(authCtx.userId, params.id);
+  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
@@ -71,13 +69,11 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const authCtx = await requireProfessionalApi();
+  if (isApiError(authCtx)) return authCtx.error;
 
-  const ctx = await getOwnedResource(session.user.id, params.id);
-  if (!ctx) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const owned = await getOwnedResource(authCtx.userId, params.id);
+  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await db.resource.update({
     where: { id: params.id },

@@ -65,9 +65,10 @@ export async function GET() {
 
   const integrations = getIntegrationStatuses().map((row) => {
     if (row.id === "whatsapp" && whatsappProbe) {
+      const health = whatsappProbe.ok && wa.productionReady ? "ok" : row.health;
       return {
         ...row,
-        health: whatsappProbe.ok ? row.health : "partial",
+        health,
         detail: whatsappProbe.ok
           ? `${wa.note} Live: ${whatsappProbe.detail}`
           : `${wa.note} Graph probe: ${whatsappProbe.detail}`,

@@ -1,6 +1,6 @@
 // GET ? search patient charts + patients who can be imported (appointments, shares, e-mail).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
@@ -67,21 +67,18 @@ function toImportable(
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
   });
   if (!professional) return NextResponse.json({ records: [], importable: [] });
 
   const q = (req.nextUrl.searchParams.get("q") || "").trim();
 
   const recordsRaw = await db.patientRecord.findMany({
-    where: { professionalId: professional.id },
+    where: { professionalId: ctx.professional.id },
     orderBy: { updatedAt: "desc" },
   });
 
@@ -124,7 +121,7 @@ export async function GET(req: NextRequest) {
   const importableMap = new Map<string, Importable>();
 
   const appointments = await db.appointment.findMany({
-    where: { professionalId: professional.id },
+    where: { professionalId: ctx.professional.id },
     select: { patientId: true },
     distinct: ["patientId"],
   });
@@ -142,7 +139,7 @@ export async function GET(req: NextRequest) {
   }
 
   const shares = await db.sharedRecord.findMany({
-    where: { sharedWithProfessionalId: professional.id },
+    where: { sharedWithProfessionalId: ctx.professional.id },
     select: { patientId: true },
     distinct: ["patientId"],
   });

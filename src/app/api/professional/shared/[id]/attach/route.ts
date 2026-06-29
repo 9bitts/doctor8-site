@@ -3,7 +3,7 @@
 // EXISTING chart of this professional. Copies the document into the chart and
 // records sourceDocumentId to prevent duplicates.
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -15,17 +15,10 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
-
+  
   const documentId = params.id;
   const body = await req.json();
   const parsed = schema.safeParse(body);
@@ -34,7 +27,7 @@ export async function POST(
 
   // 1) The document must have been shared with THIS professional.
   const share = await db.sharedRecord.findFirst({
-    where: { documentId, sharedWithProfessionalId: professional.id },
+    where: { documentId, sharedWithProfessionalId: ctx.professional.id },
     select: { id: true },
   });
   if (!share) return NextResponse.json({ error: "Not shared with you" }, { status: 403 });
@@ -44,7 +37,7 @@ export async function POST(
     where: { id: chartId },
     select: { id: true, professionalId: true },
   });
-  if (!chart || chart.professionalId !== professional.id) {
+  if (!chart || chart.professionalId !== ctx.professional.id) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   }
 
@@ -67,7 +60,7 @@ export async function POST(
   const copy = await db.medicalDocument.create({
     data: {
       patientRecordId: chartId,
-      professionalId: professional.id,
+      professionalId: ctx.professional.id,
       type: original.type,
       categoryId: original.categoryId,
       title: original.title,     // already encrypted

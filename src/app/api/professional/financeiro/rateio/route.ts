@@ -4,18 +4,17 @@
 // Nenhum PHI: so valores agregados, contagens e a fatia do proprio profissional.
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PROFESSIONAL") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
     select: { id: true, currency: true },
   });
   if (!professional) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
@@ -57,7 +56,7 @@ export async function GET() {
   });
 
   const mineRow = await db.poolContribution.findUnique({
-    where: { poolPeriodId_professionalId: { poolPeriodId: latestPeriod.id, professionalId: professional.id } },
+    where: { poolPeriodId_professionalId: { poolPeriodId: latestPeriod.id, professionalId: ctx.professional.id } },
     select: {
       validConsults: true, qualified: true, disqualReason: true, qualityMult: true,
       score: true, baseCents: true, meritCents: true, totalCents: true, payoutStatus: true,
@@ -65,7 +64,7 @@ export async function GET() {
   });
 
   const myContribs = await db.poolContribution.findMany({
-    where: { professionalId: professional.id },
+    where: { professionalId: ctx.professional.id },
     select: {
       totalCents: true, qualified: true,
       poolPeriod: { select: { month: true, currency: true, poolCents: true, status: true } },

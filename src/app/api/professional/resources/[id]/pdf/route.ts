@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { auth } from "@/lib/auth";
+import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { normLang } from "@/lib/sign-helpers";
@@ -24,23 +24,21 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
-  if (session.user.role !== "PROFESSIONAL")
-    return new NextResponse("Forbidden", { status: 403 });
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
 
   const professional = await db.professionalProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
   });
   if (!professional) return new NextResponse("Not found", { status: 404 });
 
   const resource = await db.resource.findUnique({ where: { id: params.id } });
-  if (!resource || resource.professionalId !== professional.id || !resource.active) {
+  if (!resource || resource.professionalId !== ctx.professional.id || !resource.active) {
     return new NextResponse("Not found", { status: 404 });
   }
 
   const user = await db.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: ctx.userId },
     select: { language: true },
   });
   const lang = normLang(user?.language);
