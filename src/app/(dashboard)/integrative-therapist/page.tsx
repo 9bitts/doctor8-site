@@ -6,7 +6,7 @@ import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations"
 import { getUserLang } from "@/lib/i18n/server-lang";
 import { decryptIntegrativeNameFields, safeDecrypt } from "@/lib/integrative-therapist-api";
 import { picBySlug, picLabel } from "@/lib/pics/practices";
-import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf, TrendingUp } from "lucide-react";
+import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf, TrendingUp, Clock, BookOpen, ClipboardList, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
@@ -67,6 +67,9 @@ export default async function IntegrativeTherapistDashboard() {
     })
     .join(", ");
 
+  const needsPracticeSetup = profile.picsPractices.length === 0;
+  const canStartConsult = clientCount > 0;
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <HumanitarianVolunteerBanner
@@ -94,6 +97,65 @@ export default async function IntegrativeTherapistDashboard() {
       {!profile.verified && (
         <ProviderVerificationBanner settingsHref="/integrative-therapist/settings" />
       )}
+
+      {needsPracticeSetup && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <AlertCircle size={20} className="text-amber-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-900 text-sm">{t("it.dash.setupPractices.title")}</p>
+              <p className="text-amber-800/80 text-xs mt-1 leading-relaxed">{t("it.dash.setupPractices.desc")}</p>
+            </div>
+          </div>
+          <Link
+            href="/integrative-therapist/settings"
+            className="shrink-0 text-center text-sm font-bold bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-xl"
+          >
+            {t("it.dash.setupPractices.action")}
+          </Link>
+        </div>
+      )}
+
+      <div className="bg-gradient-to-br from-teal-600 to-teal-800 rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-5">
+          <div className="flex-1 min-w-0">
+            <p className="text-teal-100 text-xs font-bold uppercase tracking-wide mb-1">
+              {t("it.dash.consultMode.badge")}
+            </p>
+            <h2 className="text-lg sm:text-xl font-bold">{t("it.dash.consultMode.title")}</h2>
+            <p className="text-teal-50/90 text-sm mt-2 leading-relaxed">{t("it.dash.consultMode.desc")}</p>
+            <ul className="mt-4 grid sm:grid-cols-2 gap-2 text-xs text-teal-50/95">
+              {[
+                { icon: Clock, key: "it.dash.consultMode.f1" },
+                { icon: ClipboardList, key: "it.dash.consultMode.f2" },
+                { icon: BookOpen, key: "it.dash.consultMode.f3" },
+                { icon: FileText, key: "it.dash.consultMode.f4" },
+              ].map(({ icon: Icon, key }) => (
+                <li key={key} className="flex items-center gap-2">
+                  <Icon size={14} className="text-teal-200 shrink-0" />
+                  {t(key)}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 w-full sm:w-auto">
+            <Link
+              href="/integrative-therapist/clients"
+              className="text-center text-sm font-bold bg-white text-teal-800 hover:bg-teal-50 px-4 py-3 rounded-xl"
+            >
+              {canStartConsult ? t("it.dash.consultMode.ctaConsult") : t("it.dash.consultMode.ctaClients")}
+            </Link>
+            <Link
+              href="/integrative-therapist/appointments"
+              className="text-center text-sm font-semibold border border-white/40 text-white hover:bg-white/10 px-4 py-3 rounded-xl"
+            >
+              {t("it.dash.consultMode.ctaAppointments")}
+            </Link>
+          </div>
+        </div>
+      </div>
 
       <div className="grid sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
@@ -140,7 +202,18 @@ export default async function IntegrativeTherapistDashboard() {
           <h2 className="font-semibold text-slate-800">{t("it.dash.upcoming")}</h2>
         </div>
         {upcoming.length === 0 ? (
-          <p className="text-center text-slate-400 text-sm py-10">{t("proappt.empty")}</p>
+          <div className="text-center py-10 px-5 space-y-3">
+            <p className="text-slate-400 text-sm">{t("proappt.empty")}</p>
+            <p className="text-slate-500 text-xs max-w-md mx-auto leading-relaxed">
+              {t("it.dash.consultMode.emptyHint")}
+            </p>
+            <Link
+              href="/integrative-therapist/clients"
+              className="inline-flex text-xs font-bold text-teal-600 hover:text-teal-800"
+            >
+              {t("it.dash.consultMode.ctaClients")} →
+            </Link>
+          </div>
         ) : (
           <div className="divide-y divide-slate-100">
             {upcoming.map((apt) => (
