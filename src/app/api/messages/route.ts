@@ -119,8 +119,19 @@ export async function POST(req: NextRequest) {
 
   const { receiverId, content } = parsed.data;
 
-  const receiver = await db.user.findUnique({ where: { id: receiverId } });
+  if (receiverId === session.user.id) {
+    return NextResponse.json({ error: "Cannot message yourself" }, { status: 400 });
+  }
+
+  const receiver = await db.user.findUnique({
+    where: { id: receiverId },
+    select: { id: true, role: true },
+  });
   if (!receiver) return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
+
+  if (session.user.role === "PATIENT" && receiver.role === "PATIENT") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const message = await db.message.create({
     data: {
