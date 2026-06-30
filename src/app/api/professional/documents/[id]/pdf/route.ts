@@ -45,6 +45,7 @@ export async function GET(
     where: { id: params.id },
     include: {
       professional: true,
+      sharedRecords: { select: { sharedWithUserId: true } },
       patientRecord: {
         select: {
           professionalId: true,
@@ -67,15 +68,28 @@ export async function GET(
     ? await db.professionalProfile.findUnique({ where: { userId: session.user.id } })
     : null;
 
+  const viewerPatient = session.user.role === "PATIENT"
+    ? await db.patientProfile.findUnique({ where: { userId: session.user.id } })
+    : null;
+
   const isDocOwner = document.professional?.userId === session.user.id;
   const isChartOwner = !!(
     viewerProfessional &&
     document.patientRecord?.professionalId === viewerProfessional.id
   );
+  const isPatientOwner = !!(
+    viewerPatient &&
+    document.patientId &&
+    document.patientId === viewerPatient.id
+  );
+  const isPatientShared = document.sharedRecords.some(
+    (s) => s.sharedWithUserId === session.user.id,
+  );
   const canAccess =
     isDocOwner ||
     isChartOwner ||
-    session.user.role === "PATIENT";
+    isPatientOwner ||
+    isPatientShared;
 
   if (!canAccess) return new NextResponse("Forbidden", { status: 403 });
 
