@@ -11,6 +11,7 @@ import type { HumanitarianPoolSlug } from "@/lib/humanitarian/constants";
 import { getProLandingContent } from "@/lib/professional-landing-content";
 import { detectInitialLang } from "@/components/auth/register-shared";
 import { ProNav, ProFooter } from "@/components/professional/ProfessionalLandingClient";
+import { buildProfessionalSignupHref } from "@/lib/profession-signup";
 
 const ICONS: Record<string, LucideIcon> = {
   stethoscope: Stethoscope,
@@ -29,14 +30,11 @@ export default function ProfessionalProfessionClient({ slug }: { slug: Humanitar
   const c = getProLandingContent(lang);
   const prof = c.professionPages[slug];
   const Icon = ICONS[prof.icon] ?? Stethoscope;
-  const isPsycho = slug === "psicanalista";
-  const signupRole = isPsycho ? "PSYCHOANALYST" : "PROFESSIONAL";
-  const signup = slug === "psicologo"
-    ? "/register/professional/signup?portal=psychologist"
-    : `/register/professional/signup?role=${signupRole}`;
-  const volSignup = slug === "psicologo"
-    ? `/register/professional/signup?region=VE&portal=psychologist&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`
-    : `/register/professional/signup?region=VE&role=${signupRole}&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
+  const signup = buildProfessionalSignupHref(slug);
+  const volSignup = buildProfessionalSignupHref(slug, {
+    region: "VE",
+    callbackUrl: "/humanitarian/volunteer",
+  });
 
   return (
     <div className="min-h-screen bg-white font-sans text-d8-text antialiased">

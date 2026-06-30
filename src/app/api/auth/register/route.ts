@@ -23,6 +23,7 @@ import {
 } from "@/lib/patient-chart-link";
 import { parseRegistrationPhone } from "@/lib/international-phone";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
+import { PROFESSION_SIGNUP, isProfessionSignupSlug } from "@/lib/profession-signup";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -54,6 +55,13 @@ const registerSchema = z.object({
   acceptedHipaa: z.boolean().optional(),
   acceptedGdpr: z.boolean().optional(),
   professionalKind: z.enum(["psychologist"]).optional(),
+  profession: z.enum([
+    "medico",
+    "psicologo",
+    "fisioterapeuta",
+    "nutricionista",
+    "cuidados_paliativos",
+  ] as const).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -83,6 +91,7 @@ export async function POST(req: NextRequest) {
       acceptedHipaa,
       acceptedGdpr,
       professionalKind,
+      profession,
     } = data.data;
 
     if (requiresHipaa(region) && !acceptedHipaa) {
@@ -173,13 +182,19 @@ export async function POST(req: NextRequest) {
           },
         });
       } else {
+        let specialty = "";
+        if (professionalKind === "psychologist") {
+          specialty = "Psychologist";
+        } else if (profession && isProfessionSignupSlug(profession)) {
+          specialty = PROFESSION_SIGNUP[profession].specialty ?? "";
+        }
         await tx.professionalProfile.create({
           data: {
             userId: newUser.id,
             firstName,
             lastName,
             licenseNumber: "",
-            specialty: professionalKind === "psychologist" ? "Psychologist" : "",
+            specialty,
             consultPrice: 0,
           },
         });

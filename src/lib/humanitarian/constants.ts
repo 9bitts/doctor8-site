@@ -37,6 +37,8 @@ export const DEFAULT_VENEZUELA_POOLS: {
     specialtyHints: [
       "general", "clínica", "clinica", "medicina", "médico", "medico", "family",
       "enferm", "nurse", "doula", "parteira", "midwife", "obstet", "médic",
+      "gestante", "gestantes", "grávida", "gravida", "acompanhante", "parto",
+      "matern", "obstetr",
     ],
   },
   {

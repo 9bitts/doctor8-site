@@ -21,6 +21,7 @@ export const ADMIN_PROFESSIONAL_CATEGORIES = {
 export type AdminProfessionalCategory = keyof typeof ADMIN_PROFESSIONAL_CATEGORIES;
 
 export type AdminProviderTab =
+  | "pendentes"
   | AdminProfessionalCategory
   | "psicanalistas"
   | "terapeutas"
@@ -28,6 +29,7 @@ export type AdminProviderTab =
   | "outros";
 
 export const ADMIN_PROVIDER_TABS: { id: AdminProviderTab; labelPt: string }[] = [
+  { id: "pendentes", labelPt: "Aguardando aprovação" },
   { id: "medicos", labelPt: "Médicos" },
   { id: "psicologos", labelPt: "Psicólogos" },
   { id: "nutricionistas", labelPt: "Nutricionistas" },
@@ -89,12 +91,26 @@ export function resolveAdminTabFromProfessionText(text: string): AdminProviderTa
   return POOL_SLUG_TO_ADMIN_TAB[poolSlug] ?? "outros";
 }
 
+export function angelProfessionText(angel: {
+  profession?: string | null;
+  volunteerHelp?: string | null;
+  motivation?: string | null;
+}): string {
+  return [angel.profession, angel.volunteerHelp, angel.motivation].filter(Boolean).join(" ");
+}
+
 export function angelMatchesAdminTab(
-  angel: { profession?: string | null; volunteerHelp?: string | null },
+  angel: {
+    profession?: string | null;
+    volunteerHelp?: string | null;
+    motivation?: string | null;
+    approvalStatus?: string;
+  },
   tab: AdminProviderTab,
 ): boolean {
   if (tab === "anjos") return true;
-  const text = [angel.profession, angel.volunteerHelp].filter(Boolean).join(" ");
-  if (!text.trim()) return tab === "outros";
+  if (tab === "pendentes") return angel.approvalStatus === "PENDING";
+  const text = angelProfessionText(angel);
+  if (!text.trim()) return tab === "outros" || tab === "medicos";
   return resolveAdminTabFromProfessionText(text) === tab;
 }

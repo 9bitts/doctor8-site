@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import {
-  Stethoscope, LogIn, Brain, Building2, ArrowLeft, Leaf,
+  Stethoscope, LogIn, Brain, Building2, ArrowLeft, Leaf, Heart,
 } from "lucide-react";
 import { parseRegistrationRegion } from "@/lib/registration-regions";
-import { LOGIN, ORGANIZATION_REGISTER } from "@/lib/auth-portals";
+import { ANGEL_REGISTER, LOGIN, ORGANIZATION_REGISTER } from "@/lib/auth-portals";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import {
@@ -20,6 +20,7 @@ import {
   RegisterLanguageSelector,
   RegisterLogo,
 } from "@/components/auth/register-shared";
+import { isProfessionSignupSlug, PROFESSION_SIGNUP } from "@/lib/profession-signup";
 
 type ProRole = "PROFESSIONAL" | "PSYCHOLOGIST" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 
@@ -29,6 +30,9 @@ export default function RegisterProfessionalSignupPage() {
   const [lang, setLang] = useState<Lang>("en");
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<ProRole>("PROFESSIONAL");
+  const [professionSlug, setProfessionSlug] = useState<
+    "medico" | "fisioterapeuta" | "nutricionista" | "cuidados_paliativos" | undefined
+  >(undefined);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -44,9 +48,29 @@ export default function RegisterProfessionalSignupPage() {
     }
 
     const roleParam = params.get("role");
-    if (roleParam === "PROFESSIONAL" || roleParam === "PSYCHOANALYST" || roleParam === "INTEGRATIVE_THERAPIST") {
-      setRole(roleParam);
+    if (roleParam === "PSYCHOANALYST") {
+      setRole("PSYCHOANALYST");
       setStep(2);
+    } else if (roleParam === "INTEGRATIVE_THERAPIST") {
+      setRole("INTEGRATIVE_THERAPIST");
+      setStep(2);
+    } else if (roleParam === "PROFESSIONAL") {
+      setRole("PROFESSIONAL");
+      setStep(2);
+    }
+
+    const professionParam = params.get("profession");
+    if (professionParam && isProfessionSignupSlug(professionParam)) {
+      const cfg = PROFESSION_SIGNUP[professionParam];
+      if (cfg.role === "PROFESSIONAL") {
+        setRole("PROFESSIONAL");
+        if (professionParam !== "psicologo") {
+          setProfessionSlug(
+            professionParam as "medico" | "fisioterapeuta" | "nutricionista" | "cuidados_paliativos",
+          );
+        }
+        setStep(2);
+      }
     }
 
     const langParam = params.get("lang");
@@ -74,6 +98,14 @@ export default function RegisterProfessionalSignupPage() {
   const loginHref = buildAuthHref(LOGIN, { callbackUrl });
 
   const orgHref = buildAuthHref(ORGANIZATION_REGISTER, { callbackUrl });
+
+  const angelHref = (() => {
+    const params = new URLSearchParams();
+    if (callbackUrl) params.set("callbackUrl", callbackUrl);
+    if (initialRegion !== "US") params.set("region", initialRegion);
+    const qs = params.toString();
+    return qs ? `${ANGEL_REGISTER}?${qs}` : ANGEL_REGISTER;
+  })();
 
   const patientHref = callbackUrl
     ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
@@ -105,6 +137,19 @@ export default function RegisterProfessionalSignupPage() {
                   {t("reg.haveAccount")}{" "}
                   <span className="text-emerald-400 group-hover:text-emerald-300">{t("reg.signIn")}</span>
                 </p>
+              </div>
+            </Link>
+
+            <Link
+              href={angelHref}
+              className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-rose-500 hover:bg-rose-500/10 transition text-left group mb-6"
+            >
+              <div className="w-14 h-14 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0 group-hover:bg-rose-500/20 transition">
+                <Heart className="w-7 h-7 text-rose-400" />
+              </div>
+              <div>
+                <p className="text-white font-semibold text-base">{t("reg.imAngel")}</p>
+                <p className="text-slate-300 text-sm mt-0.5">{t("reg.imAngelDesc")}</p>
               </div>
             </Link>
 
@@ -186,6 +231,7 @@ export default function RegisterProfessionalSignupPage() {
             <RegisterAccountForm
               role={role === "PSYCHOLOGIST" ? "PROFESSIONAL" : role as RegisterRole}
               professionalKind={role === "PSYCHOLOGIST" ? "psychologist" : undefined}
+              professionSlug={professionSlug}
               lang={lang}
               callbackUrl={callbackUrl}
               initialRegion={initialRegion}

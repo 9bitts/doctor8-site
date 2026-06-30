@@ -111,6 +111,7 @@ export function RegisterAlternateLink({
 export function RegisterAccountForm({
   role,
   professionalKind,
+  professionSlug,
   lang,
   callbackUrl,
   initialRegion = "US",
@@ -118,6 +119,7 @@ export function RegisterAccountForm({
 }: {
   role: RegisterRole;
   professionalKind?: "psychologist";
+  professionSlug?: "medico" | "fisioterapeuta" | "nutricionista" | "cuidados_paliativos";
   lang: Lang;
   callbackUrl: string;
   initialRegion?: Region;
@@ -220,6 +222,7 @@ export function RegisterAccountForm({
           phoneNational: phone.nationalNumber,
           language: lang,
           professionalKind: isPsychologistSignup ? "psychologist" : undefined,
+          profession: professionSlug,
           acceptedTerms,
           acceptedPrivacy,
           acceptedHipaa: requiresHipaa(region) ? acceptedHipaa : undefined,

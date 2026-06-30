@@ -18,6 +18,7 @@ import {
   Heart,
   Users,
   Mail,
+  Clock,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -25,7 +26,6 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import {
   ADMIN_PROVIDER_TABS,
-  angelMatchesAdminTab,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
@@ -81,6 +81,7 @@ interface AngelRow {
 }
 
 const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
+  pendentes: <Clock size={14} />,
   medicos: <Stethoscope size={14} />,
   psicologos: <Brain size={14} />,
   nutricionistas: <Apple size={14} />,
@@ -102,9 +103,10 @@ export default function ProvidersAdminClient() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab") as AdminProviderTab | null;
   const activeTab: AdminProviderTab =
-    tabParam && ADMIN_PROVIDER_TABS.some((t) => t.id === tabParam) ? tabParam : "medicos";
+    tabParam && ADMIN_PROVIDER_TABS.some((t) => t.id === tabParam) ? tabParam : "pendentes";
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [docsBusyId, setDocsBusyId] = useState<string | null>(null);
   const [actingAngel, setActingAngel] = useState<string | null>(null);
@@ -112,8 +114,10 @@ export default function ProvidersAdminClient() {
   const [q, setQ] = useState("");
 
   const [professionals, setProfessionals] = useState<ProfessionalRow[]>([]);
-  const [providers, setProviders] = useState<ProviderRow[]>([]);
+  const [psychoanalysts, setPsychoanalysts] = useState<ProviderRow[]>([]);
+  const [integrativeTherapists, setIntegrativeTherapists] = useState<ProviderRow[]>([]);
   const [angels, setAngels] = useState<AngelRow[]>([]);
+  const [tabCounts, setTabCounts] = useState<Partial<Record<AdminProviderTab, number>>>({});
 
   const setTab = (tab: AdminProviderTab) => {
     router.replace(`/admin/doctors?tab=${tab}`, { scroll: false });
@@ -121,47 +125,29 @@ export default function ProvidersAdminClient() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      const angelsRes = await fetch("/api/admin/humanitarian/angels");
-      const angelsData = await angelsRes.json();
-      const allAngels: AngelRow[] = angelsRes.ok ? angelsData.angels || [] : [];
-
-      if (activeTab === "anjos") {
-        setAngels(allAngels);
+      const res = await fetch(`/api/admin/providers?tab=${activeTab}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setLoadError(data.error || t("admin.providers.loadFail"));
+        setAngels([]);
         setProfessionals([]);
-        setProviders([]);
-      } else if (activeTab === "psicanalistas") {
-        const [res, doctorsRes] = await Promise.all([
-          fetch("/api/admin/psychoanalysts"),
-          fetch("/api/admin/doctors?category=psicanalistas"),
-        ]);
-        const data = await res.json();
-        const doctorsData = await doctorsRes.json();
-        if (res.ok) setProviders(data.providers || []);
-        if (doctorsRes.ok) setProfessionals(doctorsData.doctors || []);
-        setAngels(allAngels.filter((a) => angelMatchesAdminTab(a, activeTab)));
-      } else if (activeTab === "terapeutas") {
-        const [res, doctorsRes] = await Promise.all([
-          fetch("/api/admin/integrative-therapists"),
-          fetch("/api/admin/doctors?category=terapeutas"),
-        ]);
-        const data = await res.json();
-        const doctorsData = await doctorsRes.json();
-        if (res.ok) setProviders(data.providers || []);
-        if (doctorsRes.ok) setProfessionals(doctorsData.doctors || []);
-        setAngels(allAngels.filter((a) => angelMatchesAdminTab(a, activeTab)));
-      } else {
-        const res = await fetch(`/api/admin/doctors?category=${activeTab}`);
-        const data = await res.json();
-        if (res.ok) setProfessionals(data.doctors || []);
-        setProviders([]);
-        setAngels(allAngels.filter((a) => angelMatchesAdminTab(a, activeTab)));
+        setPsychoanalysts([]);
+        setIntegrativeTherapists([]);
+        setLoading(false);
+        return;
       }
+      setAngels(data.angels || []);
+      setProfessionals(data.doctors || []);
+      setPsychoanalysts(data.psychoanalysts || []);
+      setIntegrativeTherapists(data.integrativeTherapists || []);
+      setTabCounts(data.pendingCounts || {});
     } catch {
-      /* ignore */
+      setLoadError(t("admin.providers.loadFail"));
     }
     setLoading(false);
-  }, [activeTab]);
+  }, [activeTab, t]);
 
   useEffect(() => {
     load();
@@ -259,7 +245,15 @@ export default function ProvidersAdminClient() {
       specialtyMatchesSearch(lang, d.specialty, q),
   );
 
-  const filteredProviders = providers.filter(
+  const filteredPsychoanalysts = psychoanalysts.filter(
+    (p) =>
+      !q ||
+      p.name.toLowerCase().includes(q.toLowerCase()) ||
+      (p.email || "").toLowerCase().includes(q.toLowerCase()) ||
+      p.subtitle.toLowerCase().includes(q.toLowerCase()),
+  );
+
+  const filteredIntegrativeTherapists = integrativeTherapists.filter(
     (p) =>
       !q ||
       p.name.toLowerCase().includes(q.toLowerCase()) ||
@@ -272,28 +266,31 @@ export default function ProvidersAdminClient() {
       !q ||
       `${a.firstName} ${a.lastName}`.toLowerCase().includes(q.toLowerCase()) ||
       a.email.toLowerCase().includes(q.toLowerCase()) ||
-      (a.profession || "").toLowerCase().includes(q.toLowerCase()),
+      (a.profession || "").toLowerCase().includes(q.toLowerCase()) ||
+      (a.volunteerHelp || "").toLowerCase().includes(q.toLowerCase()) ||
+      (a.motivation || "").toLowerCase().includes(q.toLowerCase()),
   );
 
   const tabMeta = ADMIN_PROVIDER_TABS.find((t) => t.id === activeTab)!;
   const listCount =
-    activeTab === "anjos"
-      ? filteredAngels.length
-      : activeTab === "psicanalistas" || activeTab === "terapeutas"
-        ? filteredProviders.length + filteredProfessionals.length + filteredAngels.length
-        : filteredProfessionals.length + filteredAngels.length;
+    filteredAngels.length +
+    filteredProfessionals.length +
+    filteredPsychoanalysts.length +
+    filteredIntegrativeTherapists.length;
 
   const emptyLabel =
-    activeTab === "anjos"
-      ? t("admin.providers.emptyAngels")
-      : activeTab === "psicanalistas"
-        ? t("admin.providers.emptyPsychoanalysts")
-        : activeTab === "terapeutas"
-          ? t("admin.providers.emptyTherapists")
-          : t("admin.providers.emptyCategory").replace(
-              "{{category}}",
-              providerTabLabel(tabMeta.id, t).toLowerCase(),
-            );
+    activeTab === "pendentes"
+      ? t("admin.providers.emptyPending")
+      : activeTab === "anjos"
+        ? t("admin.providers.emptyAngels")
+        : activeTab === "psicanalistas"
+          ? t("admin.providers.emptyPsychoanalysts")
+          : activeTab === "terapeutas"
+            ? t("admin.providers.emptyTherapists")
+            : t("admin.providers.emptyCategory").replace(
+                "{{category}}",
+                providerTabLabel(tabMeta.id, t).toLowerCase(),
+              );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -316,6 +313,11 @@ export default function ProvidersAdminClient() {
           >
             {TAB_ICONS[tab.id]}
             {providerTabLabel(tab.id, t)}
+            {tabCounts[tab.id] != null && tabCounts[tab.id]! > 0 && tab.id !== activeTab && (
+              <span className="ml-0.5 min-w-[1.1rem] rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {tabCounts[tab.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -329,6 +331,12 @@ export default function ProvidersAdminClient() {
           className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
         />
       </div>
+
+      {loadError && (
+        <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
+          {loadError}
+        </p>
+      )}
 
       <p className="text-xs text-slate-400">
         {t("admin.providers.listCount")
@@ -355,44 +363,6 @@ export default function ProvidersAdminClient() {
           onViewDocs={viewLicenseDocs}
           onVerifyEmail={verifyUserEmail}
         />
-      ) : activeTab === "psicanalistas" || activeTab === "terapeutas" ? (
-        <div className="space-y-4">
-          {filteredAngels.length > 0 && (
-            <AngelList
-              rows={filteredAngels}
-              actingAngel={actingAngel}
-              docsBusyId={docsBusyId}
-              verifyingEmailUserId={verifyingEmailUserId}
-              onAct={actAngel}
-              onViewDocs={viewLicenseDocs}
-              onVerifyEmail={verifyUserEmail}
-            />
-          )}
-          {filteredProviders.length > 0 && (
-            <ProviderList
-              rows={filteredProviders}
-              busyId={busyId}
-              docsBusyId={docsBusyId}
-              verifyingEmailUserId={verifyingEmailUserId}
-              kind={activeTab === "psicanalistas" ? "psychoanalyst" : "integrative"}
-              onToggle={toggleProviderVerified}
-              onViewDocs={viewLicenseDocs}
-              onVerifyEmail={verifyUserEmail}
-            />
-          )}
-          {filteredProfessionals.length > 0 && (
-            <ProfessionalList
-              rows={filteredProfessionals}
-              lang={lang}
-              busyId={busyId}
-              docsBusyId={docsBusyId}
-              verifyingEmailUserId={verifyingEmailUserId}
-              onToggle={toggleProfessionalVerified}
-              onViewDocs={viewLicenseDocs}
-              onVerifyEmail={verifyUserEmail}
-            />
-          )}
-        </div>
       ) : (
         <div className="space-y-4">
           {filteredAngels.length > 0 && (
@@ -414,6 +384,30 @@ export default function ProvidersAdminClient() {
               docsBusyId={docsBusyId}
               verifyingEmailUserId={verifyingEmailUserId}
               onToggle={toggleProfessionalVerified}
+              onViewDocs={viewLicenseDocs}
+              onVerifyEmail={verifyUserEmail}
+            />
+          )}
+          {filteredPsychoanalysts.length > 0 && (
+            <ProviderList
+              rows={filteredPsychoanalysts}
+              busyId={busyId}
+              docsBusyId={docsBusyId}
+              verifyingEmailUserId={verifyingEmailUserId}
+              kind="psychoanalyst"
+              onToggle={toggleProviderVerified}
+              onViewDocs={viewLicenseDocs}
+              onVerifyEmail={verifyUserEmail}
+            />
+          )}
+          {filteredIntegrativeTherapists.length > 0 && (
+            <ProviderList
+              rows={filteredIntegrativeTherapists}
+              busyId={busyId}
+              docsBusyId={docsBusyId}
+              verifyingEmailUserId={verifyingEmailUserId}
+              kind="integrative"
+              onToggle={toggleProviderVerified}
               onViewDocs={viewLicenseDocs}
               onVerifyEmail={verifyUserEmail}
             />
