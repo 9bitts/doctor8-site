@@ -16,6 +16,7 @@ import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOff
 import { cacheAngelDashboard, loadCachedAngelDashboard } from "@/lib/humanitarian/offline-draft";
 import { buildWhatsAppUrl } from "@/lib/humanitarian/angel";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
+import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
 
 interface PatientRow {
   patientUserId: string;
@@ -141,18 +142,20 @@ export default function HumanitarianAngelPage() {
   if (status === "PENDING" || status === "EMAIL_UNVERIFIED") {
     return (
       <HumanitarianShell lang={lang} onLangChange={setLang} dark>
-        <div className="max-w-lg mx-auto text-center py-16 px-4">
-          <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-4">
-            <Clock className="w-8 h-8 text-amber-400" />
-          </div>
-          <h1 className="text-xl font-bold text-white mb-2">{t(lang, "angel.portal.pendingTitle")}</h1>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            {status === "EMAIL_UNVERIFIED"
-              ? t(lang, "angel.portal.verifyEmail")
-              : t(lang, "angel.portal.pendingDesc")}
-          </p>
+        <div className="max-w-2xl mx-auto px-4 py-6">
+          <ProviderDashboardAlerts role="ANGEL" />
+          {status === "EMAIL_UNVERIFIED" && (
+            <div className="max-w-lg mx-auto text-center py-8">
+              <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-4">
+                <Clock className="w-8 h-8 text-amber-400" />
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                {t(lang, "angel.portal.verifyEmail")}
+              </p>
+            </div>
+          )}
           {status === "PENDING" && (
-            <div className="mt-8 text-left">
+            <div className="mt-2 text-left">
               <p className="text-sm text-slate-400 mb-3">{t(lang, "angel.portal.pendingCertificate")}</p>
               <div className="bg-white rounded-2xl p-4">
                 <LicenseDocumentsUpload />
@@ -179,6 +182,7 @@ export default function HumanitarianAngelPage() {
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
       <div className="max-w-4xl mx-auto px-4 py-6">
+        <ProviderDashboardAlerts role="ANGEL" />
         <HumanitarianOfflineBanner lang={lang} />
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center">

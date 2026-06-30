@@ -13,6 +13,14 @@ export async function GET(req: NextRequest) {
   const tab: AdminProviderTab =
     tabParam && VALID_TABS.has(tabParam) ? (tabParam as AdminProviderTab) : "pendentes";
 
-  const payload = await listAdminProviders(tab);
-  return NextResponse.json(payload);
+  try {
+    const payload = await listAdminProviders(tab);
+    return NextResponse.json(payload);
+  } catch (error) {
+    console.error("[GET /api/admin/providers]", error);
+    return NextResponse.json(
+      { error: "Failed to load providers" },
+      { status: 500 },
+    );
+  }
 }

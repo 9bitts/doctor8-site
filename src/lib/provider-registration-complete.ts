@@ -58,6 +58,33 @@ export function isIntegrativeTherapistRegistrationComplete(profile: {
   );
 }
 
+export function isAngelRegistrationComplete(profile: {
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  profession: string | null;
+  volunteerHelp: string | null;
+  languages: string[];
+}): boolean {
+  return Boolean(
+    profile.firstName?.trim() &&
+      profile.lastName?.trim() &&
+      profile.phone?.trim() &&
+      profile.profession?.trim() &&
+      profile.volunteerHelp?.trim() &&
+      profile.languages.length > 0,
+  );
+}
+
+export function isProviderDashboardAlertRole(role: string | undefined): boolean {
+  return (
+    role === "PROFESSIONAL" ||
+    role === "PSYCHOANALYST" ||
+    role === "INTEGRATIVE_THERAPIST" ||
+    role === "ANGEL"
+  );
+}
+
 export async function getProviderRegistrationStatus(
   userId: string,
   role: UserRole | string,
@@ -121,6 +148,26 @@ export async function getProviderRegistrationStatus(
     };
   }
 
+  if (role === "ANGEL") {
+    const profile = await db.angelProfile.findUnique({
+      where: { userId },
+      select: {
+        firstName: true,
+        lastName: true,
+        phone: true,
+        profession: true,
+        volunteerHelp: true,
+        languages: true,
+        approvalStatus: true,
+      },
+    });
+    if (!profile) return null;
+    return {
+      complete: isAngelRegistrationComplete(profile),
+      verified: profile.approvalStatus === "APPROVED",
+    };
+  }
+
   return null;
 }
 
@@ -128,13 +175,15 @@ export function resolveProviderSettingsHref(
   role: string,
   pathname: string,
 ): string {
+  if (role === "ANGEL") return "/humanitarian/angel";
   if (role === "PSYCHOANALYST") return "/psychoanalyst/settings";
   if (role === "INTEGRATIVE_THERAPIST") return "/integrative-therapist/settings";
   if (pathname.startsWith("/psychologist")) return "/psychologist/settings";
   return "/professional/settings";
 }
 
-export function isProviderSettingsPath(pathname: string): boolean {
+export function isProviderSettingsPath(pathname: string, role?: string): boolean {
+  if (role === "ANGEL") return false;
   return (
     pathname.startsWith("/professional/settings") ||
     pathname.startsWith("/psychologist/settings") ||

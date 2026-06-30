@@ -26,6 +26,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import {
   ADMIN_PROVIDER_TABS,
+  resolveAdminTabFromProfessionText,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
@@ -96,6 +97,96 @@ function providerTabLabel(tab: AdminProviderTab, t: (key: TranslationKey | strin
   return t(`admin.providers.tab.${tab}`);
 }
 
+async function parseJsonResponse(res: Response): Promise<Record<string, unknown> | null> {
+  if (!res.ok) return null;
+  try {
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function matchesDoctorTab(tab: AdminProviderTab, specialty: string): boolean {
+  if (tab === "pendentes" || tab === "anjos") return false;
+  return resolveAdminTabFromProfessionText(specialty) === tab;
+}
+
+function computeLegacyTabCounts(
+  angels: AngelRow[],
+  doctors: ProfessionalRow[],
+  psychoanalysts: ProviderRow[],
+  integrativeTherapists: ProviderRow[],
+): Partial<Record<AdminProviderTab, number>> {
+  const pending =
+    angels.filter((a) => a.approvalStatus === "PENDING").length +
+    doctors.filter((d) => !d.verified).length +
+    psychoanalysts.filter((p) => !p.verified).length +
+    integrativeTherapists.filter((p) => !p.verified).length;
+
+  return {
+    pendentes: pending,
+    anjos: angels.length,
+    medicos: doctors.filter((d) => matchesDoctorTab("medicos", d.specialty)).length,
+    psicologos: doctors.filter((d) => matchesDoctorTab("psicologos", d.specialty)).length,
+    nutricionistas: doctors.filter((d) => matchesDoctorTab("nutricionistas", d.specialty)).length,
+    fisioterapeutas: doctors.filter((d) => matchesDoctorTab("fisioterapeutas", d.specialty)).length,
+    psicanalistas:
+      doctors.filter((d) => matchesDoctorTab("psicanalistas", d.specialty)).length +
+      psychoanalysts.length,
+    terapeutas:
+      doctors.filter((d) => matchesDoctorTab("terapeutas", d.specialty)).length +
+      integrativeTherapists.length,
+    outros: doctors.filter((d) => matchesDoctorTab("outros", d.specialty)).length,
+  };
+}
+
+function applyLegacyTabFilter(
+  tab: AdminProviderTab,
+  allAngels: AngelRow[],
+  allDoctors: ProfessionalRow[],
+  allPsychoanalysts: ProviderRow[],
+  allIntegrative: ProviderRow[],
+): {
+  angels: AngelRow[];
+  doctors: ProfessionalRow[];
+  psychoanalysts: ProviderRow[];
+  integrativeTherapists: ProviderRow[];
+} {
+  if (tab === "anjos") {
+    return { angels: allAngels, doctors: [], psychoanalysts: [], integrativeTherapists: [] };
+  }
+  if (tab === "pendentes") {
+    return {
+      angels: allAngels.filter((a) => a.approvalStatus === "PENDING"),
+      doctors: allDoctors.filter((d) => !d.verified),
+      psychoanalysts: allPsychoanalysts.filter((p) => !p.verified),
+      integrativeTherapists: allIntegrative.filter((p) => !p.verified),
+    };
+  }
+  if (tab === "psicanalistas") {
+    return {
+      angels: [],
+      doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty)),
+      psychoanalysts: allPsychoanalysts,
+      integrativeTherapists: [],
+    };
+  }
+  if (tab === "terapeutas") {
+    return {
+      angels: [],
+      doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty)),
+      psychoanalysts: [],
+      integrativeTherapists: allIntegrative,
+    };
+  }
+  return {
+    angels: [],
+    doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty)),
+    psychoanalysts: [],
+    integrativeTherapists: [],
+  };
+}
+
 export default function ProvidersAdminClient() {
   const { lang, t } = useI18n();
   const locale = localeOf(lang);
@@ -128,9 +219,41 @@ export default function ProvidersAdminClient() {
     setLoadError(null);
     try {
       const res = await fetch(`/api/admin/providers?tab=${activeTab}`);
-      const data = await res.json();
-      if (!res.ok) {
-        setLoadError(data.error || t("admin.providers.loadFail"));
+      const data = await parseJsonResponse(res);
+      if (res.ok && data) {
+        setAngels((data.angels as AngelRow[]) || []);
+        setProfessionals((data.doctors as ProfessionalRow[]) || []);
+        setPsychoanalysts((data.psychoanalysts as ProviderRow[]) || []);
+        setIntegrativeTherapists((data.integrativeTherapists as ProviderRow[]) || []);
+        setTabCounts((data.pendingCounts as Partial<Record<AdminProviderTab, number>>) || {});
+        setLoading(false);
+        return;
+      }
+    } catch {
+      /* try legacy endpoints below */
+    }
+
+    try {
+      const [angelsRes, doctorsRes, psychoRes, integrativeRes] = await Promise.all([
+        fetch("/api/admin/humanitarian/angels"),
+        fetch("/api/admin/doctors"),
+        fetch("/api/admin/psychoanalysts"),
+        fetch("/api/admin/integrative-therapists"),
+      ]);
+
+      const angelsData = await parseJsonResponse(angelsRes);
+      const doctorsData = await parseJsonResponse(doctorsRes);
+      const psychoData = await parseJsonResponse(psychoRes);
+      const integrativeData = await parseJsonResponse(integrativeRes);
+
+      const allAngels = (angelsData?.angels as AngelRow[]) || [];
+      const allDoctors = (doctorsData?.doctors as ProfessionalRow[]) || [];
+      const allPsychoanalysts = (psychoData?.providers as ProviderRow[]) || [];
+      const allIntegrative = (integrativeData?.providers as ProviderRow[]) || [];
+
+      const anyOk = angelsRes.ok || doctorsRes.ok || psychoRes.ok || integrativeRes.ok;
+      if (!anyOk) {
+        setLoadError(t("admin.providers.loadFail"));
         setAngels([]);
         setProfessionals([]);
         setPsychoanalysts([]);
@@ -138,11 +261,21 @@ export default function ProvidersAdminClient() {
         setLoading(false);
         return;
       }
-      setAngels(data.angels || []);
-      setProfessionals(data.doctors || []);
-      setPsychoanalysts(data.psychoanalysts || []);
-      setIntegrativeTherapists(data.integrativeTherapists || []);
-      setTabCounts(data.pendingCounts || {});
+
+      const filtered = applyLegacyTabFilter(
+        activeTab,
+        allAngels,
+        allDoctors,
+        allPsychoanalysts,
+        allIntegrative,
+      );
+      setAngels(filtered.angels);
+      setProfessionals(filtered.doctors);
+      setPsychoanalysts(filtered.psychoanalysts);
+      setIntegrativeTherapists(filtered.integrativeTherapists);
+      setTabCounts(
+        computeLegacyTabCounts(allAngels, allDoctors, allPsychoanalysts, allIntegrative),
+      );
     } catch {
       setLoadError(t("admin.providers.loadFail"));
     }

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { buildPublicProfileUrl } from "@/lib/public-profile";
+import { buildPublicProfileUrl } from "@/lib/public-slugs";
 import {
   resolveAdminTabFromProfessionText,
   type AdminProviderTab,
@@ -80,9 +80,18 @@ function matchesTab(tab: AdminProviderTab, specialty: string): boolean {
   return resolveAdminTabFromProfessionText(specialty) === tab;
 }
 
+async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error(`[listAdminProviders] ${label} failed:`, error);
+    return fallback;
+  }
+}
+
 export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminProvidersPayload> {
   const [angelRows, healthPros, analysts, therapists] = await Promise.all([
-    db.angelProfile.findMany({
+    safeQuery("angelProfile", () => db.angelProfile.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         user: {
@@ -93,8 +102,8 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
           },
         },
       },
-    }),
-    db.professionalProfile.findMany({
+    }), []),
+    safeQuery("professionalProfile", () => db.professionalProfile.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         user: {
@@ -108,8 +117,8 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
         virtualCard: true,
         _count: { select: { appointments: true, patientRecords: true } },
       },
-    }),
-    db.psychoanalystProfile.findMany({
+    }), []),
+    safeQuery("psychoanalystProfile", () => db.psychoanalystProfile.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         user: {
@@ -123,8 +132,8 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
         virtualCard: true,
         _count: { select: { appointments: true, analysandRecords: true } },
       },
-    }),
-    db.integrativeTherapistProfile.findMany({
+    }), []),
+    safeQuery("integrativeTherapistProfile", () => db.integrativeTherapistProfile.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         virtualCard: { select: { isPublic: true, slug: true } },
@@ -138,7 +147,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
         },
         _count: { select: { appointments: true, clientRecords: true } },
       },
-    }),
+    }), []),
   ]);
 
   const allAngels: AdminAngelRow[] = angelRows.map((a) => ({
@@ -204,7 +213,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
     email: p.user?.email ?? null,
     region: p.user?.region ?? null,
     subtitle: p.picsPractices.length
-      ? `${p.picsPractices.length} pratica(s) PICS ? ${p.trainingInstitution}`
+      ? `${p.picsPractices.length} pr?tica(s) PICS ? ${p.trainingInstitution}`
       : p.trainingInstitution,
     verified: p.verified,
     emailVerified: !!p.user?.emailVerified,

@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import ProviderIncompleteRegistrationCard from "@/components/ProviderIncompleteRegistrationCard";
 import ProviderVerificationBanner from "@/components/ProviderVerificationBanner";
 import {
+  isProviderDashboardAlertRole,
   isProviderSettingsPath,
   resolveProviderSettingsHref,
 } from "@/lib/provider-registration-complete";
-import { isVolunteerRole } from "@/lib/humanitarian/volunteer-eligibility";
 
 type RegistrationStatus = {
   applicable: boolean;
@@ -21,7 +21,7 @@ export default function ProviderDashboardAlerts({ role }: { role: string }) {
   const [status, setStatus] = useState<RegistrationStatus | null>(null);
 
   useEffect(() => {
-    if (!isVolunteerRole(role)) {
+    if (!isProviderDashboardAlertRole(role)) {
       setStatus(null);
       return;
     }
@@ -45,7 +45,7 @@ export default function ProviderDashboardAlerts({ role }: { role: string }) {
     };
   }, [role, pathname]);
 
-  if (!status?.applicable || isProviderSettingsPath(pathname)) return null;
+  if (!status?.applicable || isProviderSettingsPath(pathname, role)) return null;
 
   const settingsHref = resolveProviderSettingsHref(role, pathname);
 

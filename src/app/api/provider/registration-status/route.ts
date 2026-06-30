@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getProviderRegistrationStatus } from "@/lib/provider-registration-complete";
-import { isVolunteerRole } from "@/lib/humanitarian/volunteer-eligibility";
+import { getProviderRegistrationStatus, isProviderDashboardAlertRole } from "@/lib/provider-registration-complete";
 
 export async function GET() {
   const session = await auth();
@@ -9,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!isVolunteerRole(session.user.role)) {
+  if (!isProviderDashboardAlertRole(session.user.role)) {
     return NextResponse.json({ applicable: false });
   }
 
