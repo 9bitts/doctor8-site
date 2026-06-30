@@ -4,11 +4,15 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import {
   assignNextInPool,
+  expireAllHumanitarianNoShows,
   expireHumanitarianNoShows,
+  expireStaleVolunteers,
   poolMatchesVolunteer,
+  reconcileStuckBusyVolunteers,
   releaseVolunteer,
   resolveVolunteerProfile,
 } from "@/lib/humanitarian/dispatcher";
+import { presenceCutoff } from "@/lib/humanitarian/volunteer-presence";
 import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
 import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
 import {
@@ -94,6 +98,10 @@ export async function GET(req: NextRequest) {
 
   if (!campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
 
+  await expireAllHumanitarianNoShows();
+  await expireStaleVolunteers();
+  await reconcileStuckBusyVolunteers();
+
   const profile = await resolveVolunteerProfile(session.user.id, session.user.role);
   if (!profile) return NextResponse.json({ error: "Profile required" }, { status: 404 });
 
@@ -103,6 +111,12 @@ export async function GET(req: NextRequest) {
 
   let currentEntry = null;
   const activeVol = campaign.volunteers.find((v) => v.status !== "OFFLINE");
+  if (activeVol) {
+    await db.humanitarianVolunteer.update({
+      where: { id: activeVol.id },
+      data: { lastSeenAt: new Date() },
+    });
+  }
   if (activeVol?.status === "ONLINE") {
     await expireHumanitarianNoShows(activeVol.poolId);
     await assignNextInPool(activeVol.poolId);
@@ -134,7 +148,11 @@ export async function GET(req: NextRequest) {
         where: { poolId: pool.id, status: "WAITING" },
       });
       const volunteersOnline = await db.humanitarianVolunteer.count({
-        where: { poolId: pool.id, status: { in: ["ONLINE", "BUSY"] } },
+        where: {
+          poolId: pool.id,
+          status: { in: ["ONLINE", "BUSY"] },
+          lastSeenAt: { gte: presenceCutoff() },
+        },
       });
       const myVol = campaign.volunteers.find((v) => v.poolId === pool.id);
       return {
@@ -275,9 +293,11 @@ export async function POST(req: NextRequest) {
       psychoanalystId: profile.psychoanalystId ?? null,
       integrativeTherapistId: profile.integrativeTherapistId ?? null,
       status: "ONLINE",
+      lastSeenAt: new Date(),
     },
     update: {
       status: "ONLINE",
+      lastSeenAt: new Date(),
     },
   });
 
@@ -335,7 +355,15 @@ export async function PATCH(req: NextRequest) {
 
   if (!vol) return NextResponse.json({ ok: true });
 
-  await expireHumanitarianNoShows(vol.poolId);
+  await expireAllHumanitarianNoShows();
+  await expireStaleVolunteers();
+  await reconcileStuckBusyVolunteers();
+
+  await db.humanitarianVolunteer.update({
+    where: { id: vol.id },
+    data: { lastSeenAt: new Date() },
+  });
+
   if (vol.status === "ONLINE") {
     await assignNextInPool(vol.poolId);
   }

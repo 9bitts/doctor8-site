@@ -44,6 +44,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
   useEffect(() => {
     let destroyed = false;
     let call: DailyCall | null = null;
+    let connectTimeout: ReturnType<typeof setTimeout> | null = null;
 
     async function mount() {
       if (!containerRef.current) return;
@@ -51,6 +52,15 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       try {
         const DailyIframe = (await import("@daily-co/daily-js")).default;
         if (destroyed || !containerRef.current) return;
+
+        const existing = DailyIframe.getCallInstance?.();
+        if (existing) {
+          try {
+            await existing.destroy();
+          } catch {
+            /* already destroyed */
+          }
+        }
 
         call = DailyIframe.createFrame(containerRef.current, {
           iframeStyle: {
@@ -63,10 +73,42 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
           showLeaveButton: false,
         });
         callRef.current = call;
-        await call.join({ url: `${url}?t=${token}` });
-        if (!destroyed) setJoining(false);
+
+        const clearConnectTimeout = () => {
+          if (connectTimeout) {
+            clearTimeout(connectTimeout);
+            connectTimeout = null;
+          }
+        };
+
+        call.on("joined-meeting", () => {
+          if (!destroyed) {
+            clearConnectTimeout();
+            setJoining(false);
+          }
+        });
+
+        call.on("error", (ev: { errorMsg?: string; error?: { msg?: string } }) => {
+          if (!destroyed) {
+            clearConnectTimeout();
+            setJoining(false);
+            const msg =
+              ev?.errorMsg || ev?.error?.msg || "Could not join video room";
+            onErrorRef.current?.(msg);
+          }
+        });
+
+        connectTimeout = setTimeout(() => {
+          if (!destroyed) {
+            setJoining(false);
+            onErrorRef.current?.("Connection timed out. Please retry.");
+          }
+        }, 45_000);
+
+        await call.join({ url, token });
       } catch (e) {
         if (!destroyed) {
+          if (connectTimeout) clearTimeout(connectTimeout);
           setJoining(false);
           onErrorRef.current?.(e instanceof Error ? e.message : "Could not join video room");
         }
@@ -77,6 +119,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
 
     return () => {
       destroyed = true;
+      if (connectTimeout) clearTimeout(connectTimeout);
       callRef.current = null;
       try {
         call?.destroy();

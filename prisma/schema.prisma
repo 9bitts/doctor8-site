@@ -2464,6 +2464,7 @@ model HumanitarianVolunteer {
   integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
 
   status          HumanitarianVolunteerStatus @default(OFFLINE)
+  lastSeenAt      DateTime?
   lastAssignedAt  DateTime?
   currentEntryId  String?                     @unique
 

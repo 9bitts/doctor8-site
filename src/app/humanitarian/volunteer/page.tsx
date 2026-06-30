@@ -154,6 +154,26 @@ export default function HumanitarianVolunteerPage() {
     };
   }, [router, load, searchParams]);
 
+  useEffect(() => {
+    if (!activePoolSlug) return;
+
+    function goOfflineOnLeave() {
+      fetch("/api/humanitarian/volunteer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "OFFLINE",
+          campaignSlug: VENEZUELA_CAMPAIGN_SLUG,
+          poolSlug: activePoolSlug,
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+
+    window.addEventListener("pagehide", goOfflineOnLeave);
+    return () => window.removeEventListener("pagehide", goOfflineOnLeave);
+  }, [activePoolSlug]);
+
   async function togglePool(poolSlug: string, goOnline: boolean) {
     setToggling(poolSlug);
     setError(null);

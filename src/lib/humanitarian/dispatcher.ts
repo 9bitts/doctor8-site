@@ -13,6 +13,7 @@ import {
   notifyVolunteerAssigned,
 } from "@/lib/humanitarian/notify";
 import { WAITING_ENTRY_STATUSES } from "@/lib/humanitarian/types";
+import { presenceCutoff } from "@/lib/humanitarian/volunteer-presence";
 import {
   buildVolunteerWhatsAppMessage,
   resolvePatientHumanitarianPhone,
@@ -29,12 +30,6 @@ function safeDecrypt(v: string | null | undefined): string {
 const PRIORITY_SORT: HumanitarianPriority[] = ["CRISIS", "URGENT", "ROUTINE"];
 
 export async function expireHumanitarianNoShows(poolId: string): Promise<number> {
-  const pool = await db.humanitarianPool.findUnique({
-    where: { id: poolId },
-    include: { campaign: true },
-  });
-  if (!pool) return 0;
-
   const now = new Date();
   const expired = await db.humanitarianQueueEntry.findMany({
     where: {
@@ -42,10 +37,39 @@ export async function expireHumanitarianNoShows(poolId: string): Promise<number>
       status: "CALLED",
       expiresAt: { lt: now },
     },
-    select: { id: true, patientUserId: true, volunteerId: true },
+    select: { id: true, patientUserId: true, volunteerId: true, poolId: true },
   });
 
+  return processExpiredCalledEntries(expired, now);
+}
+
+/** Expire all overdue CALLED entries across every pool (clears queue zombies). */
+export async function expireAllHumanitarianNoShows(): Promise<number> {
+  const now = new Date();
+  const expired = await db.humanitarianQueueEntry.findMany({
+    where: {
+      status: "CALLED",
+      expiresAt: { lt: now },
+    },
+    select: { id: true, patientUserId: true, volunteerId: true, poolId: true },
+  });
+
+  return processExpiredCalledEntries(expired, now);
+}
+
+async function processExpiredCalledEntries(
+  expired: { id: string; patientUserId: string; volunteerId: string | null; poolId: string }[],
+  now: Date,
+): Promise<number> {
+  const poolsToReassign = new Set<string>();
+
   for (const e of expired) {
+    const pool = await db.humanitarianPool.findUnique({
+      where: { id: e.poolId },
+      include: { campaign: true },
+    });
+    if (!pool) continue;
+
     await db.$transaction([
       db.humanitarianQueueEntry.update({
         where: { id: e.id },
@@ -64,15 +88,75 @@ export async function expireHumanitarianNoShows(poolId: string): Promise<number>
     await notifyHumanitarianMissedTurn(e.patientUserId, pool.campaign.slug);
 
     if (e.volunteerId) {
-      await assignNextInPool(poolId);
+      poolsToReassign.add(e.poolId);
     }
+  }
+
+  for (const poolId of poolsToReassign) {
+    await assignNextInPool(poolId);
   }
 
   return expired.length;
 }
 
+/** Mark ONLINE volunteers without a recent heartbeat as OFFLINE. */
+export async function expireStaleVolunteers(): Promise<number> {
+  const cutoff = presenceCutoff();
+  const stale = await db.humanitarianVolunteer.findMany({
+    where: {
+      status: "ONLINE",
+      OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: cutoff } }],
+    },
+    select: { id: true },
+  });
+
+  if (stale.length === 0) return 0;
+
+  await db.humanitarianVolunteer.updateMany({
+    where: { id: { in: stale.map((v) => v.id) } },
+    data: { status: "OFFLINE", currentEntryId: null },
+  });
+
+  return stale.length;
+}
+
+/** Free volunteers stuck BUSY with finished or expired entries. */
+export async function reconcileStuckBusyVolunteers(): Promise<number> {
+  const now = new Date();
+  const busy = await db.humanitarianVolunteer.findMany({
+    where: { status: "BUSY", currentEntryId: { not: null } },
+    select: { id: true, currentEntryId: true },
+  });
+
+  let fixed = 0;
+  for (const vol of busy) {
+    if (!vol.currentEntryId) continue;
+    const entry = await db.humanitarianQueueEntry.findUnique({
+      where: { id: vol.currentEntryId },
+      select: { status: true, expiresAt: true },
+    });
+
+    const stillActive =
+      entry &&
+      (entry.status === "IN_PROGRESS" ||
+        (entry.status === "CALLED" && entry.expiresAt && entry.expiresAt >= now));
+
+    if (stillActive) continue;
+
+    await db.humanitarianVolunteer.update({
+      where: { id: vol.id },
+      data: { status: "OFFLINE", currentEntryId: null },
+    });
+    fixed++;
+  }
+
+  return fixed;
+}
+
 export async function assignNextInPool(poolId: string): Promise<number> {
-  await expireHumanitarianNoShows(poolId);
+  await expireAllHumanitarianNoShows();
+  await expireStaleVolunteers();
+  await reconcileStuckBusyVolunteers();
   let assigned = 0;
   while (await tryAssignOnce(poolId)) assigned++;
   return assigned;
@@ -108,7 +192,11 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
   if (!entry) return null;
 
   const volunteer = await db.humanitarianVolunteer.findFirst({
-    where: { poolId, status: "ONLINE" },
+    where: {
+      poolId,
+      status: "ONLINE",
+      lastSeenAt: { gte: presenceCutoff() },
+    },
     orderBy: [{ lastAssignedAt: "asc" }, { id: "asc" }],
   });
   if (!volunteer) return null;
@@ -607,6 +695,8 @@ export async function getEntryStatus(entryId: string, patientUserId: string, lan
 
   if (!entry || entry.patientUserId !== patientUserId) return null;
 
+  await expireAllHumanitarianNoShows();
+  await expireStaleVolunteers();
   await expireHumanitarianNoShows(entry.poolId);
 
   const refreshed = await db.humanitarianQueueEntry.findUnique({
@@ -639,7 +729,11 @@ export async function getEntryStatus(entryId: string, patientUserId: string, lan
   });
 
   const onlineVolunteers = await db.humanitarianVolunteer.count({
-    where: { poolId: refreshed.poolId, status: { in: ["ONLINE", "BUSY"] } },
+    where: {
+      poolId: refreshed.poolId,
+      status: { in: ["ONLINE", "BUSY"] },
+      lastSeenAt: { gte: presenceCutoff() },
+    },
   });
 
   const estMins = refreshed.pool.campaign.estimatedMinutesPerPatient;
@@ -754,7 +848,11 @@ export async function getCampaignStats(campaignId: string) {
           where: { poolId: pool.id, status: { in: ["WAITING", "CALLED"] } },
         }),
         db.humanitarianVolunteer.count({
-          where: { poolId: pool.id, status: "ONLINE" },
+          where: {
+            poolId: pool.id,
+            status: "ONLINE",
+            lastSeenAt: { gte: presenceCutoff() },
+          },
         }),
         db.humanitarianVolunteer.count({
           where: { poolId: pool.id, status: "BUSY" },
