@@ -1,4 +1,4 @@
-export const PROVIDER_ROLES = ["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"] as const;
+export const PROVIDER_ROLES = ["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST", "ANGEL"] as const;
 
 export type ProviderRole = (typeof PROVIDER_ROLES)[number];
 

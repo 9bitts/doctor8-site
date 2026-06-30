@@ -39,6 +39,9 @@ export default function RegisterAngelPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [profession, setProfession] = useState("");
+  const [volunteerHelp, setVolunteerHelp] = useState("");
+  const [certificate, setCertificate] = useState<File | null>(null);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [motivation, setMotivation] = useState("");
@@ -72,7 +75,15 @@ export default function RegisterAngelPage() {
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
-  const canSubmit = isPasswordValid && acceptedTerms && acceptedPrivacy && languages.length > 0 && phone.length >= 8;
+  const canSubmit =
+    isPasswordValid &&
+    acceptedTerms &&
+    acceptedPrivacy &&
+    languages.length > 0 &&
+    phone.length >= 8 &&
+    profession.trim().length > 0 &&
+    volunteerHelp.trim().length > 0 &&
+    !!certificate;
 
   const loginHref = buildAuthHref(ANGEL_LOGIN, {
     callbackUrl: "/humanitarian/angel",
@@ -91,23 +102,26 @@ export default function RegisterAngelPage() {
     setErrors({});
 
     try {
+      const form = new FormData();
+      form.append("email", email);
+      form.append("password", password);
+      form.append("region", region);
+      form.append("firstName", firstName);
+      form.append("lastName", lastName);
+      form.append("phone", phone);
+      form.append("profession", profession.trim());
+      form.append("volunteerHelp", volunteerHelp.trim());
+      form.append("languages", JSON.stringify(languages));
+      if (motivation) form.append("motivation", motivation);
+      form.append("campaignSlug", campaignSlug);
+      form.append("language", lang);
+      form.append("acceptedTerms", "true");
+      form.append("acceptedPrivacy", "true");
+      if (certificate) form.append("certificate", certificate);
+
       const res = await fetch("/api/auth/register-angel", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          region,
-          firstName,
-          lastName,
-          phone,
-          languages,
-          motivation: motivation || undefined,
-          campaignSlug,
-          language: lang,
-          acceptedTerms,
-          acceptedPrivacy,
-        }),
+        body: form,
       });
       const data = await res.json();
       if (!res.ok) {
@@ -186,6 +200,33 @@ export default function RegisterAngelPage() {
               <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.phone")}</label>
               <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.profession")}</label>
+              <input type="text" value={profession} onChange={(e) => setProfession(e.target.value)} required
+                placeholder={t("angel.register.professionPlaceholder")}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.volunteerHelp")}</label>
+              <textarea value={volunteerHelp} onChange={(e) => setVolunteerHelp(e.target.value)} rows={3} required
+                placeholder={t("angel.register.volunteerHelpPlaceholder")}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white resize-none focus:outline-none focus:ring-2 focus:ring-rose-500/50" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.certificate")}</label>
+              <input
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp,image/heic"
+                required
+                onChange={(e) => setCertificate(e.target.files?.[0] ?? null)}
+                className="w-full text-sm text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-rose-500/20 file:text-rose-200 file:font-medium"
+              />
+              <p className="text-xs text-slate-500 mt-1">{t("angel.register.certificateHint")}</p>
+              {errors.certificate && <p className="text-red-400 text-xs mt-1">{errors.certificate[0]}</p>}
             </div>
 
             <div>

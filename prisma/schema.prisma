@@ -2524,6 +2524,8 @@ model AngelProfile {
   firstName       String
   lastName        String
   phone           String?             // @encrypted
+  profession      String?
+  volunteerHelp   String?
   languages       String[]            @default([])
   motivation      String?
   preferredCampaignSlug String?

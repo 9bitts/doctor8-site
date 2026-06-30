@@ -25,6 +25,7 @@ export async function GET() {
 
   const patients = profiles.map((p) => ({
     id: p.id,
+    userId: p.userId,
     name: `${safeDecrypt(p.firstName)} ${safeDecrypt(p.lastName)}`.trim() || "—",
     email: p.user?.email ?? null,
     region: p.user?.region ?? null,

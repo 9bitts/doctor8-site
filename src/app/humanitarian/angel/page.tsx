@@ -15,6 +15,7 @@ import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianInt
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 import { cacheAngelDashboard, loadCachedAngelDashboard } from "@/lib/humanitarian/offline-draft";
 import { buildWhatsAppUrl } from "@/lib/humanitarian/angel";
+import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 
 interface PatientRow {
   patientUserId: string;
@@ -150,6 +151,14 @@ export default function HumanitarianAngelPage() {
               ? t(lang, "angel.portal.verifyEmail")
               : t(lang, "angel.portal.pendingDesc")}
           </p>
+          {status === "PENDING" && (
+            <div className="mt-8 text-left">
+              <p className="text-sm text-slate-400 mb-3">{t(lang, "angel.portal.pendingCertificate")}</p>
+              <div className="bg-white rounded-2xl p-4">
+                <LicenseDocumentsUpload />
+              </div>
+            </div>
+          )}
         </div>
       </HumanitarianShell>
     );

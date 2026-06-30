@@ -27,6 +27,7 @@ import {
   ADMIN_PROVIDER_TABS,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
+import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
 
 interface ProfessionalRow {
   id: string;
@@ -68,9 +69,13 @@ interface AngelRow {
   lastName: string;
   email: string;
   emailVerified: boolean;
+  profession: string | null;
+  volunteerHelp: string | null;
   languages: string[];
   motivation: string | null;
   approvalStatus: string;
+  licenseDocCount: number;
+  hasPhone: boolean;
   createdAt: string;
 }
 
@@ -255,7 +260,8 @@ export default function ProvidersAdminClient() {
     (a) =>
       !q ||
       `${a.firstName} ${a.lastName}`.toLowerCase().includes(q.toLowerCase()) ||
-      a.email.toLowerCase().includes(q.toLowerCase()),
+      a.email.toLowerCase().includes(q.toLowerCase()) ||
+      (a.profession || "").toLowerCase().includes(q.toLowerCase()),
   );
 
   const tabMeta = ADMIN_PROVIDER_TABS.find((t) => t.id === activeTab)!;
@@ -365,11 +371,51 @@ export default function ProvidersAdminClient() {
                     {t("admin.providers.languages")} {a.languages.join(", ").toUpperCase()} ·{" "}
                     {new Date(a.createdAt).toLocaleDateString(locale)}
                   </p>
+                  {a.profession && (
+                    <p className="text-xs text-slate-600 mt-1">
+                      <span className="font-medium text-slate-500">{t("admin.providers.angelProfession")}</span>{" "}
+                      {a.profession}
+                    </p>
+                  )}
+                  {a.volunteerHelp && (
+                    <p className="text-xs text-slate-600 mt-1 bg-slate-50 rounded-lg p-2">
+                      <span className="font-medium text-slate-500 block mb-0.5">
+                        {t("admin.providers.angelVolunteerHelp")}
+                      </span>
+                      {a.volunteerHelp}
+                    </p>
+                  )}
                   {a.motivation && (
-                    <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">{a.motivation}</p>
+                    <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">
+                      <span className="font-medium text-slate-500 block mb-0.5">
+                        {t("admin.providers.angelMotivation")}
+                      </span>
+                      {a.motivation}
+                    </p>
                   )}
                 </div>
                 <div className="flex flex-col gap-2 shrink-0">
+                  <AdminViewPhoneButton userId={a.userId} />
+                  {a.licenseDocCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => viewLicenseDocs(a.userId)}
+                      disabled={docsBusyId === a.userId}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                    >
+                      {docsBusyId === a.userId ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <FileText size={14} />
+                      )}
+                      {t("admin.providers.viewDocs").replace("{{n}}", String(a.licenseDocCount))}
+                    </button>
+                  )}
+                  {!a.licenseDocCount && (
+                    <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg text-center">
+                      {t("admin.providers.angelNoCertificate")}
+                    </span>
+                  )}
                   {!a.emailVerified && (
                     <button
                       type="button"
@@ -484,6 +530,7 @@ function ActionButtons({
   const emailOk = emailVerified !== false;
   return (
     <div className="flex flex-col gap-2 shrink-0">
+      <AdminViewPhoneButton userId={userId} />
       {onVerifyEmail && !emailOk && (
         <button
           type="button"

@@ -4,9 +4,11 @@
 import { useState, useEffect } from "react";
 import { Users, Loader2, Search } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
 
 interface Patient {
   id: string;
+  userId: string;
   name: string;
   email: string | null;
   region: string | null;
@@ -78,13 +80,16 @@ export default function PatientsAdminClient() {
                   {p.email || t("admin.patients.noEmail")} · {p.region || "—"}
                 </p>
               </div>
-              <div className="text-right shrink-0">
-                <p className="text-xs text-slate-400">
-                  {t("admin.patients.appointments").replace("{{n}}", String(p.appointments))}
-                </p>
-                <p className="text-xs text-slate-400">
-                  {t("admin.patients.documents").replace("{{n}}", String(p.documents))}
-                </p>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <AdminViewPhoneButton userId={p.userId} />
+                <div className="text-right">
+                  <p className="text-xs text-slate-400">
+                    {t("admin.patients.appointments").replace("{{n}}", String(p.appointments))}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {t("admin.patients.documents").replace("{{n}}", String(p.documents))}
+                  </p>
+                </div>
               </div>
             </div>
           ))}

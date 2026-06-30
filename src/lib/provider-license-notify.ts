@@ -38,6 +38,13 @@ async function providerDisplayName(userId: string, role: ProviderRole): Promise<
     });
     if (p) return `${p.firstName} ${p.lastName}`.trim();
   }
+  if (role === "ANGEL") {
+    const p = await db.angelProfile.findUnique({
+      where: { userId },
+      select: { firstName: true, lastName: true },
+    });
+    if (p) return `${p.firstName} ${p.lastName}`.trim();
+  }
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { email: true },
@@ -49,6 +56,7 @@ const ROLE_LABEL: Record<ProviderRole, string> = {
   PROFESSIONAL: "Profissional de sa\u00fade",
   PSYCHOANALYST: "Psicanalista",
   INTEGRATIVE_THERAPIST: "Terapeuta integrativo",
+  ANGEL: "Anjo volunt\u00e1rio",
 };
 
 /** Fire-and-forget: alerts ops when a provider uploads registration documents. */

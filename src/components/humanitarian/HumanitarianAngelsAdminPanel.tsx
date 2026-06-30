@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Heart, Loader2, CheckCircle2, XCircle, Mail } from "lucide-react";
+import { Heart, Loader2, CheckCircle2, XCircle, Mail, FileText } from "lucide-react";
+import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 
 interface AngelRow {
   userId: string;
@@ -9,17 +12,23 @@ interface AngelRow {
   lastName: string;
   email: string;
   emailVerified: boolean;
+  profession: string | null;
+  volunteerHelp: string | null;
   languages: string[];
   motivation: string | null;
   preferredCampaignSlug: string | null;
   approvalStatus: string;
+  licenseDocCount: number;
   createdAt: string;
 }
 
 export default function HumanitarianAngelsAdminPanel() {
+  const { lang, t } = useI18n();
+  const locale = localeOf(lang);
   const [angels, setAngels] = useState<AngelRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
+  const [docsBusyId, setDocsBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +55,29 @@ export default function HumanitarianAngelsAdminPanel() {
     setActing(null);
   }
 
+  async function viewLicenseDocs(userId: string) {
+    setDocsBusyId(userId);
+    try {
+      const res = await fetch(`/api/admin/providers/${userId}/license-documents`);
+      const data = await res.json();
+      if (!res.ok) {
+        alert(t("admin.providers.docsLoadFail"));
+        return;
+      }
+      const docs = data.documents || [];
+      if (!docs.length) {
+        alert(t("admin.providers.docsEmpty"));
+        return;
+      }
+      for (const doc of docs) {
+        if (doc.viewUrl) window.open(doc.viewUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      alert(t("admin.providers.docsLoadFail"));
+    }
+    setDocsBusyId(null);
+  }
+
   const pending = angels.filter((a) => a.approvalStatus === "PENDING");
 
   if (loading) {
@@ -60,22 +92,22 @@ export default function HumanitarianAngelsAdminPanel() {
     <div className="mt-8 border-t border-slate-200 pt-8">
       <div className="flex items-center gap-2 mb-4">
         <Heart className="w-5 h-5 text-rose-500" />
-        <h2 className="text-lg font-bold text-slate-900">Anjos ? Volunt?rios de Acompanhamento</h2>
+        <h2 className="text-lg font-bold text-slate-900">{t("admin.providers.tab.anjos")} — {t("admin.providers.angelSectionSubtitle")}</h2>
         {pending.length > 0 && (
           <span className="text-xs font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-            {pending.length} pendente(s)
+            {pending.length} {t("admin.providers.angelPending").toLowerCase()}
           </span>
         )}
       </div>
 
       {angels.length === 0 ? (
-        <p className="text-sm text-slate-500">Nenhum cadastro de Anjo ainda.</p>
+        <p className="text-sm text-slate-500">{t("admin.providers.emptyAngels")}</p>
       ) : (
         <div className="space-y-3">
           {angels.map((a) => (
             <div key={a.userId} className="border border-slate-200 rounded-xl p-4 bg-white">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold text-slate-900">
                     {a.firstName} {a.lastName}
                   </p>
@@ -83,42 +115,85 @@ export default function HumanitarianAngelsAdminPanel() {
                     <Mail className="w-3.5 h-3.5" />
                     {a.email}
                     {!a.emailVerified && (
-                      <span className="text-amber-600 text-xs font-medium">(e-mail não verificado)</span>
+                      <span className="text-amber-600 text-xs font-medium">{t("admin.providers.emailUnverified")}</span>
                     )}
                   </p>
                   <p className="text-xs text-slate-400 mt-1">
-                    Idiomas: {a.languages.join(", ").toUpperCase()} ?{" "}
-                    {new Date(a.createdAt).toLocaleDateString("pt-BR")}
+                    {t("admin.providers.languages")} {a.languages.join(", ").toUpperCase()} ·{" "}
+                    {new Date(a.createdAt).toLocaleDateString(locale)}
                   </p>
+                  {a.profession && (
+                    <p className="text-xs text-slate-600 mt-1">
+                      <span className="font-medium text-slate-500">{t("admin.providers.angelProfession")}</span>{" "}
+                      {a.profession}
+                    </p>
+                  )}
+                  {a.volunteerHelp && (
+                    <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">
+                      <span className="font-medium text-slate-500 block mb-0.5">
+                        {t("admin.providers.angelVolunteerHelp")}
+                      </span>
+                      {a.volunteerHelp}
+                    </p>
+                  )}
                   {a.motivation && (
-                    <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">{a.motivation}</p>
+                    <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">
+                      <span className="font-medium text-slate-500 block mb-0.5">
+                        {t("admin.providers.angelMotivation")}
+                      </span>
+                      {a.motivation}
+                    </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2 shrink-0">
+                  <AdminViewPhoneButton userId={a.userId} />
+                  {a.licenseDocCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => viewLicenseDocs(a.userId)}
+                      disabled={docsBusyId === a.userId}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                    >
+                      {docsBusyId === a.userId ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <FileText size={14} />
+                      )}
+                      {t("admin.providers.viewDocs").replace("{{n}}", String(a.licenseDocCount))}
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg text-center">
+                      {t("admin.providers.angelNoCertificate")}
+                    </span>
+                  )}
                   {a.approvalStatus === "PENDING" && (
-                    <>
+                    <div className="flex gap-2">
                       <button
                         disabled={acting === a.userId || !a.emailVerified}
                         onClick={() => act(a.userId, "approve")}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold disabled:opacity-40"
                       >
                         {acting === a.userId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                        Aprovar
+                        {t("admin.providers.approve")}
                       </button>
                       <button
                         disabled={acting === a.userId}
                         onClick={() => act(a.userId, "reject")}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-semibold"
                       >
-                        <XCircle className="w-3.5 h-3.5" /> Rejeitar
+                        <XCircle className="w-3.5 h-3.5" /> {t("admin.providers.reject")}
                       </button>
-                    </>
+                    </div>
                   )}
                   {a.approvalStatus === "APPROVED" && (
-                    <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Aprovado</span>
+                    <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full text-center">
+                      {t("admin.providers.angelApproved")}
+                    </span>
                   )}
                   {a.approvalStatus === "REJECTED" && (
-                    <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full">Rejeitado</span>
+                    <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full text-center">
+                      {t("admin.providers.angelRejected")}
+                    </span>
                   )}
                 </div>
               </div>
