@@ -681,11 +681,17 @@ export default function RecordDetailClient({
     setSharingId(null);
   }
 
-  async function handleCreate() {
-    if (!cidSelection) {
-      setError(t("rec.errCid"));
-      return;
+  function resolveRecordTitle(fallbackTitle = ""): string {
+    if (cidSelection) {
+      return title.trim()
+        ? `${cidSelection.code} — ${title.trim()}`
+        : `${cidSelection.code} — ${cidSelection.description}`;
     }
+    if (title.trim()) return title.trim();
+    return fallbackTitle;
+  }
+
+  async function handleCreate() {
     if (!categoryId) {
       setError(t("rec.errCategory"));
       return;
@@ -693,9 +699,20 @@ export default function RecordDetailClient({
     setSaving(true);
     setError(null);
 
-    const baseTitle = title.trim()
-      ? `${cidSelection.code} — ${title.trim()}`
-      : `${cidSelection.code} — ${cidSelection.description}`;
+    let categoryLabel = "";
+    for (const g of groups) {
+      const cat = g.items.find((c) => c.id === categoryId);
+      if (cat) {
+        categoryLabel = getCategoryLabel(lang, { slug: cat.slug, name: cat.name });
+        break;
+      }
+    }
+    const baseTitle = resolveRecordTitle(categoryLabel);
+    if (!baseTitle) {
+      setError(t("rec.errTitle"));
+      setSaving(false);
+      return;
+    }
 
     try {
       const fileKeys: string[] = [];
@@ -716,8 +733,8 @@ export default function RecordDetailClient({
           categoryId,
           title: baseTitle,
           content,
-          cid: cidSelection.code,
-          cidLabel: cidSelection.description,
+          cid: cidSelection?.code || "",
+          cidLabel: cidSelection?.description || "",
           addToDiagnoses,
           recordKind,
           ...(hasAnyMetric(metrics) ? { metrics } : {}),
@@ -759,18 +776,10 @@ export default function RecordDetailClient({
 
   async function handleUpdate() {
     if (!editingDoc) return;
-    if (!cidSelection && !title.trim()) {
-      setError(t("rec.errCid"));
-      return;
-    }
     setSaving(true);
     setError(null);
 
-    const recordTitle = cidSelection
-      ? (title.trim()
-        ? `${cidSelection.code} — ${title.trim()}`
-        : `${cidSelection.code} — ${cidSelection.description}`)
-      : title.trim();
+    const recordTitle = resolveRecordTitle(editingDoc.title);
 
     try {
       const appendFileKeys: string[] = [];
@@ -1565,7 +1574,7 @@ export default function RecordDetailClient({
               <CidSearchInput
                 value={cidSelection}
                 onChange={setCidSelection}
-                required={!editingDoc}
+                required={false}
               />
               {!editingDoc && cidSelection && (
                 <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
@@ -1580,7 +1589,7 @@ export default function RecordDetailClient({
               )}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  {cidSelection ? t("rec.titleLabel") : `${t("rec.titleLabel")} *`}
+                  {t("rec.titleLabel")}
                 </label>
                 <input
                   value={title}

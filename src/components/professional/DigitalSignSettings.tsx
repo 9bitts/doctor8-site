@@ -161,7 +161,7 @@ export default function DigitalSignSettings() {
               <div>
                 <p className="font-medium">{t("digSign.configured")}</p>
                 <p className="text-xs mt-0.5">
-                  {config.provider} ? CPF {config.cpfMasked}
+                  {config.provider} · CPF {config.cpfMasked}
                 </p>
               </div>
             </div>

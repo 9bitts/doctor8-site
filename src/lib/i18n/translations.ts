@@ -3730,7 +3730,7 @@ const en = {
   "lib.proNotified": "Notified!",
   "lib.proErrEmail": "Enter colleague's email.",
   // Patient chart / clinical record detail
-  "rec.titleLabel": "Diagnosis / Title",
+  "rec.titleLabel": "Write the ICD code manually",
   "rec.titlePlaceholder": "e.g. Hypertension – or the subject of this record",
   "rec.whatsapp": "Open WhatsApp",
 
@@ -7678,7 +7678,7 @@ const pt: LocaleDict = {
   "lib.proInvited": "Convite enviado!",
   "lib.proNotified": "Notificado!",
   "lib.proErrEmail": "Informe o email do colega.",
-  "rec.titleLabel": "Diagnóstico / Título",
+  "rec.titleLabel": "Escreva o CID manualmente",
   "rec.titlePlaceholder": "ex.: Hipertensão arterial – ou o assunto do registro",
   "rec.whatsapp": "Abrir WhatsApp",
 
@@ -11621,7 +11621,7 @@ const es: LocaleDict = {
   "lib.proInvited": "¡Invitación enviada!",
   "lib.proNotified": "¡Notificado!",
   "lib.proErrEmail": "Ingresa el email del colega.",
-  "rec.titleLabel": "Diagnóstico / Título",
+  "rec.titleLabel": "Escriba el CIE manualmente",
   "rec.titlePlaceholder": "ej.: Hipertensión arterial – o el asunto del registro",
   "rec.whatsapp": "Abrir WhatsApp",
 
