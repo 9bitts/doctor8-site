@@ -27,7 +27,7 @@ import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import {
   ADMIN_PROVIDER_TABS,
   angelMatchesAdminTab,
-  resolveAdminTabFromProfessionText,
+  resolveAdminTabForProfessional,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
@@ -107,9 +107,9 @@ async function parseJsonResponse(res: Response): Promise<Record<string, unknown>
   }
 }
 
-function matchesDoctorTab(tab: AdminProviderTab, specialty: string): boolean {
+function matchesDoctorTab(tab: AdminProviderTab, specialty: string, licenseNumber?: string): boolean {
   if (tab === "pendentes" || tab === "anjos") return false;
-  return resolveAdminTabFromProfessionText(specialty) === tab;
+  return resolveAdminTabForProfessional(specialty, licenseNumber) === tab;
 }
 
 function computeLegacyTabCounts(
@@ -129,27 +129,27 @@ function computeLegacyTabCounts(
     anjos: angels.length,
     medicos:
       angels.filter((a) => angelMatchesAdminTab(a, "medicos")).length +
-      doctors.filter((d) => matchesDoctorTab("medicos", d.specialty)).length,
+      doctors.filter((d) => matchesDoctorTab("medicos", d.specialty, d.licenseNumber)).length,
     psicologos:
       angels.filter((a) => angelMatchesAdminTab(a, "psicologos")).length +
-      doctors.filter((d) => matchesDoctorTab("psicologos", d.specialty)).length,
+      doctors.filter((d) => matchesDoctorTab("psicologos", d.specialty, d.licenseNumber)).length,
     nutricionistas:
       angels.filter((a) => angelMatchesAdminTab(a, "nutricionistas")).length +
-      doctors.filter((d) => matchesDoctorTab("nutricionistas", d.specialty)).length,
+      doctors.filter((d) => matchesDoctorTab("nutricionistas", d.specialty, d.licenseNumber)).length,
     fisioterapeutas:
       angels.filter((a) => angelMatchesAdminTab(a, "fisioterapeutas")).length +
-      doctors.filter((d) => matchesDoctorTab("fisioterapeutas", d.specialty)).length,
+      doctors.filter((d) => matchesDoctorTab("fisioterapeutas", d.specialty, d.licenseNumber)).length,
     psicanalistas:
       angels.filter((a) => angelMatchesAdminTab(a, "psicanalistas")).length +
-      doctors.filter((d) => matchesDoctorTab("psicanalistas", d.specialty)).length +
+      doctors.filter((d) => matchesDoctorTab("psicanalistas", d.specialty, d.licenseNumber)).length +
       psychoanalysts.length,
     terapeutas:
       angels.filter((a) => angelMatchesAdminTab(a, "terapeutas")).length +
-      doctors.filter((d) => matchesDoctorTab("terapeutas", d.specialty)).length +
+      doctors.filter((d) => matchesDoctorTab("terapeutas", d.specialty, d.licenseNumber)).length +
       integrativeTherapists.length,
     outros:
       angels.filter((a) => angelMatchesAdminTab(a, "outros")).length +
-      doctors.filter((d) => matchesDoctorTab("outros", d.specialty)).length,
+      doctors.filter((d) => matchesDoctorTab("outros", d.specialty, d.licenseNumber)).length,
   };
 }
 
@@ -179,7 +179,7 @@ function applyLegacyTabFilter(
   if (tab === "psicanalistas") {
     return {
       angels: allAngels.filter((a) => angelMatchesAdminTab(a, tab)),
-      doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty)),
+      doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty, d.licenseNumber)),
       psychoanalysts: allPsychoanalysts,
       integrativeTherapists: [],
     };
@@ -187,14 +187,14 @@ function applyLegacyTabFilter(
   if (tab === "terapeutas") {
     return {
       angels: allAngels.filter((a) => angelMatchesAdminTab(a, tab)),
-      doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty)),
+      doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty, d.licenseNumber)),
       psychoanalysts: [],
       integrativeTherapists: allIntegrative,
     };
   }
   return {
     angels: allAngels.filter((a) => angelMatchesAdminTab(a, tab)),
-    doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty)),
+    doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty, d.licenseNumber)),
     psychoanalysts: [],
     integrativeTherapists: [],
   };

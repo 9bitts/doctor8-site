@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { buildPublicProfileUrl } from "@/lib/public-slugs";
 import {
-  resolveAdminTabFromProfessionText,
+  resolveAdminTabForProfessional,
   angelMatchesAdminTab,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
@@ -84,9 +84,9 @@ function angelsForTab(allAngels: AdminAngelRow[], tab: AdminProviderTab): AdminA
   return allAngels.filter((a) => angelMatchesAdminTab(a, tab));
 }
 
-function matchesTab(tab: AdminProviderTab, specialty: string): boolean {
+function matchesTab(tab: AdminProviderTab, specialty: string, licenseNumber?: string): boolean {
   if (tab === "pendentes" || tab === "anjos") return false;
-  return resolveAdminTabFromProfessionText(specialty) === tab;
+  return resolveAdminTabForProfessional(specialty, licenseNumber) === tab;
 }
 
 async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> {
@@ -265,7 +265,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
   if (tab === "psicanalistas") {
     return {
       angels: angelsForTab(allAngels, tab),
-      doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty)),
+      doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty, d.licenseNumber)),
       psychoanalysts: allAnalysts,
       integrativeTherapists: [],
       pendingCounts,
@@ -275,7 +275,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
   if (tab === "terapeutas") {
     return {
       angels: angelsForTab(allAngels, tab),
-      doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty)),
+      doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty, d.licenseNumber)),
       psychoanalysts: [],
       integrativeTherapists: allTherapists,
       pendingCounts,
@@ -284,7 +284,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
 
   return {
     angels: angelsForTab(allAngels, tab),
-    doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty)),
+    doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty, d.licenseNumber)),
     psychoanalysts: [],
     integrativeTherapists: [],
     pendingCounts,
@@ -310,19 +310,19 @@ function countForTab(
   if (tab === "psicanalistas") {
     return (
       angels.filter((a) => angelMatchesAdminTab(a, tab)).length +
-      doctors.filter((d) => matchesTab(tab, d.specialty)).length +
+      doctors.filter((d) => matchesTab(tab, d.specialty, d.licenseNumber)).length +
       analysts.length
     );
   }
   if (tab === "terapeutas") {
     return (
       angels.filter((a) => angelMatchesAdminTab(a, tab)).length +
-      doctors.filter((d) => matchesTab(tab, d.specialty)).length +
+      doctors.filter((d) => matchesTab(tab, d.specialty, d.licenseNumber)).length +
       therapists.length
     );
   }
   return (
     angels.filter((a) => angelMatchesAdminTab(a, tab)).length +
-    doctors.filter((d) => matchesTab(tab, d.specialty)).length
+    doctors.filter((d) => matchesTab(tab, d.specialty, d.licenseNumber)).length
   );
 }

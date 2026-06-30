@@ -5,7 +5,7 @@ import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { buildPublicProfileUrl } from "@/lib/public-profile";
 import {
-  resolveAdminTabFromProfessionText,
+  resolveAdminTabForProfessional,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
 
@@ -45,7 +45,9 @@ export async function GET(req: NextRequest) {
   let filtered = pros;
   if (category && VALID_CATEGORIES.has(category)) {
     const bucket = category as AdminProviderTab;
-    filtered = pros.filter((p) => resolveAdminTabFromProfessionText(p.specialty) === bucket);
+    filtered = pros.filter(
+      (p) => resolveAdminTabForProfessional(p.specialty, p.licenseNumber) === bucket,
+    );
   }
 
   const doctors = filtered.map((p) => ({

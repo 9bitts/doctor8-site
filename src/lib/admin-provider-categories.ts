@@ -1,5 +1,6 @@
 import { canonicalProfessionValue, PROFESSION_GROUPS, normalizeProfessionSearchText } from "@/lib/professions";
 import { resolveProfessionalPoolSlug } from "@/lib/humanitarian/pool-slugs";
+import { getProfessionInfo } from "@/lib/profession-label";
 
 function optionsFor(groupKey: string): string[] {
   return PROFESSION_GROUPS.find((g) => g.groupKey === groupKey)?.options ?? [];
@@ -73,6 +74,44 @@ const POOL_SLUG_TO_ADMIN_TAB: Record<string, AdminProviderTab> = {
   cuidados_paliativos: "medicos",
 };
 
+function isPsychologistSpecialtyValue(specialty: string): boolean {
+  const s = specialty.trim();
+  if (!s) return false;
+  if (s === "Psychology") return true;
+  const canonical = canonicalProfessionValue(s) ?? s;
+  if (/psicanal|psychoanal|psicoanal/.test(normalizeProfessionSearchText(canonical))) return false;
+  return getProfessionInfo(canonical).typeKey === "psychologist";
+}
+
+function inferAdminTabFromLicense(licenseNumber?: string | null): AdminProviderTab | null {
+  const license = normalizeProfessionSearchText(licenseNumber ?? "");
+  if (!license) return null;
+  if (/crp/.test(license)) return "psicologos";
+  if (/crefito/.test(license)) return "fisioterapeutas";
+  if (/crn/.test(license)) return "nutricionistas";
+  return null;
+}
+
+/** Map a professional profile (specialty + council registration) to an admin providers tab. */
+export function resolveAdminTabForProfessional(
+  specialty: string,
+  licenseNumber?: string | null,
+): AdminProviderTab {
+  if (isPsychologistSpecialtyValue(specialty)) {
+    return "psicologos";
+  }
+
+  const fromSpecialty = specialty.trim()
+    ? resolveAdminTabFromProfessionText(specialty)
+    : null;
+  const fromLicense = inferAdminTabFromLicense(licenseNumber);
+
+  if (fromLicense && (!fromSpecialty || fromSpecialty === "medicos" || fromSpecialty === "outros")) {
+    return fromLicense;
+  }
+  return fromSpecialty ?? fromLicense ?? "medicos";
+}
+
 /** Map a specialty or free-text profession (PT/EN/ES) to an admin providers tab. */
 export function resolveAdminTabFromProfessionText(text: string): AdminProviderTab {
   const trimmed = text.trim();
@@ -83,7 +122,7 @@ export function resolveAdminTabFromProfessionText(text: string): AdminProviderTa
   if (/nutric|dietet|dietitian|dietista/.test(lower)) return "nutricionistas";
   // Before generic "terapeuta" — "fisioterapeuta" contains that substring.
   if (/fisioter|physiother|physical therap|rehabilit/.test(lower)) return "fisioterapeutas";
-  if (/psicolog|psycholog|mental health|saude mental|crp\b/.test(lower)) return "psicologos";
+  if (/psicolog|psycholog|psychoter|mental health|saude mental|crp\b/.test(lower)) return "psicologos";
   if (/integrativ|holistic|\bpics\b|naturop|reiki|aromaterap|fitoterap|(?<!fisio)terapeuta/.test(lower)) {
     return "terapeutas";
   }
@@ -94,6 +133,16 @@ export function resolveAdminTabFromProfessionText(text: string): AdminProviderTa
   ) {
     return "medicos";
   }
+
+  const canonical = canonicalProfessionValue(trimmed) ?? trimmed;
+  const canonLower = normalizeProfessionSearchText(canonical);
+  if (/psicanal|psychoanal|psicoanal/.test(canonLower)) return "psicanalistas";
+
+  const professionType = getProfessionInfo(canonical).typeKey;
+  if (professionType === "psychologist") return "psicologos";
+  if (professionType === "nutritionist") return "nutricionistas";
+  if (professionType === "physiotherapist") return "fisioterapeutas";
+  if (professionType === "dentist") return "medicos";
 
   const healthCategory = resolveProfessionalCategory(trimmed);
   if (healthCategory !== "outros") return healthCategory;
