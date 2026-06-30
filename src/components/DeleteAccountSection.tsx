@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, X } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { AlertTriangle, Loader2, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { resolveLoginPathForSession } from "@/lib/auth-portals";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-400 transition";
@@ -20,9 +22,15 @@ function DeleteAccountConfirmModal({
 }: DeleteAccountConfirmModalProps) {
   const { t } = useI18n();
   const [typed, setTyped] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (open) setTyped("");
+    if (open) {
+      setTyped("");
+      setError("");
+      setLoading(false);
+    }
   }, [open]);
 
   if (!open) return null;
@@ -30,14 +38,37 @@ function DeleteAccountConfirmModal({
   const canConfirm = typed.trim().toUpperCase() === confirmWord.toUpperCase();
 
   function handleClose() {
+    if (loading) return;
     setTyped("");
+    setError("");
     onClose();
   }
 
-  function handleConfirm() {
-    if (!canConfirm) return;
-    // TODO: chamar a rota de exclus?o de conta (implementa??o no pr?ximo passo)
-    handleClose();
+  async function handleConfirm() {
+    if (!canConfirm || loading) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/account/delete", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+
+      if (!res.ok) {
+        setError(
+          typeof data.error === "string"
+            ? data.error
+            : t("acct.deleteAccount.errGeneric"),
+        );
+        return;
+      }
+
+      await signOut({ callbackUrl: resolveLoginPathForSession() });
+    } catch {
+      setError(t("acct.deleteAccount.errGeneric"));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -56,7 +87,8 @@ function DeleteAccountConfirmModal({
         <button
           type="button"
           onClick={handleClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+          disabled={loading}
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 disabled:opacity-40"
           aria-label={t("acct.deleteAccount.cancel")}
         >
           <X size={20} />
@@ -92,25 +124,34 @@ function DeleteAccountConfirmModal({
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             autoComplete="off"
-            className={inputClass}
+            disabled={loading}
+            className={inputClass + (loading ? " opacity-60" : "")}
           />
         </div>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+            {error}
+          </p>
+        )}
 
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
           <button
             type="button"
             onClick={handleClose}
-            className="w-full sm:w-auto text-sm font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl transition min-h-[44px]"
+            disabled={loading}
+            className="w-full sm:w-auto text-sm font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-xl transition min-h-[44px]"
           >
             {t("acct.deleteAccount.cancel")}
           </button>
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={!canConfirm}
-            className="w-full sm:w-auto text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-xl transition min-h-[44px]"
+            disabled={!canConfirm || loading}
+            className="w-full sm:w-auto text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-xl transition min-h-[44px] flex items-center justify-center gap-2"
           >
-            {t("acct.deleteAccount.confirm")}
+            {loading && <Loader2 size={15} className="animate-spin" />}
+            {loading ? t("acct.deleteAccount.deleting") : t("acct.deleteAccount.confirm")}
           </button>
         </div>
       </div>

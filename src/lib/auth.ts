@@ -14,6 +14,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { encrypt } from "@/lib/encryption";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
+import { resolveDeletedAccountOnLogin } from "@/lib/account-deletion";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -86,7 +87,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const userId = record.identifier.slice("magic:".length);
         const user = await db.user.findUnique({ where: { id: userId } });
-        if (!user || user.deletedAt || user.role !== "PATIENT") return null;
+        if (!user || user.role !== "PATIENT") return null;
+
+        const deletion = await resolveDeletedAccountOnLogin(user);
+        if (deletion.blocked) return null;
 
         await db.verificationToken.delete({ where: { token } });
 
@@ -132,7 +136,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         if (!user || !user.passwordHash) return null;
-        if (user.deletedAt) return null;
 
         // Block login until email or SMS verification
         if (!isAccountVerified(user)) {
@@ -159,6 +162,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
           return null;
         }
+
+        const deletion = await resolveDeletedAccountOnLogin(user);
+        if (deletion.blocked) return null;
 
         await db.user.update({
           where: { id: user.id },
@@ -188,6 +194,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           let dbUser = await db.user.findUnique({
             where: { email: user.email! },
           });
+
+          if (dbUser) {
+            const deletion = await resolveDeletedAccountOnLogin(dbUser);
+            if (deletion.blocked) return false;
+          }
 
           if (!dbUser) {
             // New Google user — use the role chosen on the registration screen

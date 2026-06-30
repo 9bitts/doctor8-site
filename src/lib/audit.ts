@@ -71,4 +71,21 @@ export const audit = {
 
   emailChange: (userId: string) =>
     createAuditLog({ userId, action: AuditAction.EMAIL_CHANGE, resource: "User" }),
+
+  deletionRequest: (userId: string) =>
+    createAuditLog({
+      userId,
+      action: AuditAction.DATA_DELETION_REQUEST,
+      resource: "User",
+      resourceId: userId,
+    }),
+
+  accountReactivated: (userId: string) =>
+    createAuditLog({
+      userId,
+      action: AuditAction.UPDATE_RECORD,
+      resource: "User",
+      resourceId: userId,
+      details: { event: "account_reactivated_on_login" },
+    }),
 };
