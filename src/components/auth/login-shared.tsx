@@ -129,15 +129,28 @@ function sessionHasRole(
   return Boolean(session?.user?.id && session.user.role);
 }
 
-/** Wait until Auth.js session cookie is readable on the client (avoids post-login redirect loops). */
+/** Wait until Auth.js session cookie matches the account that just signed in. */
 export async function waitForAuthenticatedSession(
-  maxAttempts = 75,
-  delayMs = 200,
+  opts?: {
+    expectedEmail?: string;
+    maxAttempts?: number;
+    delayMs?: number;
+  },
 ): Promise<Awaited<ReturnType<typeof getSession>>> {
+  const expectedEmail = opts?.expectedEmail?.trim().toLowerCase();
+  const maxAttempts = opts?.maxAttempts ?? 75;
+  const delayMs = opts?.delayMs ?? 200;
+
+  function matchesExpected(session: Awaited<ReturnType<typeof getSession>>): boolean {
+    if (!sessionHasRole(session)) return false;
+    if (!expectedEmail) return true;
+    return (session.user.email ?? "").trim().toLowerCase() === expectedEmail;
+  }
+
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const fromClient = await getSession();
-      if (sessionHasRole(fromClient)) return fromClient;
+      if (matchesExpected(fromClient)) return fromClient;
 
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8_000);
@@ -149,7 +162,7 @@ export async function waitForAuthenticatedSession(
         });
         if (res.ok) {
           const session = await res.json();
-          if (session?.user?.id && session.user.role) {
+          if (matchesExpected(session)) {
             return session;
           }
         }

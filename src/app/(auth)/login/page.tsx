@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Stethoscope, Heart } from "lucide-react";
@@ -83,6 +83,9 @@ function UnifiedLoginForm() {
         }
       }
 
+      // Clear any previous session so shared computers don't keep the last account.
+      await signOut({ redirect: false });
+
       const result = await signIn("credentials", {
         email: trimmedEmail,
         password,
@@ -109,7 +112,7 @@ function UnifiedLoginForm() {
       }
 
       persistAuthCallback(callbackUrl);
-      const session = await waitForAuthenticatedSession();
+      const session = await waitForAuthenticatedSession({ expectedEmail: trimmedEmail });
       if (session?.user?.role) {
         const savedCallback = consumeAuthCallback();
         navigateAfterAuth(
@@ -136,6 +139,7 @@ function UnifiedLoginForm() {
     setError("");
     persistAuthCallback(callbackUrl);
     try {
+      await signOut({ redirect: false });
       await signIn("google", { callbackUrl: POST_LOGIN_CALLBACK });
     } catch {
       setError("generic");

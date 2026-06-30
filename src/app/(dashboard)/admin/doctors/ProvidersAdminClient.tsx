@@ -227,11 +227,16 @@ export default function ProvidersAdminClient() {
     router.replace(`/admin/doctors?tab=${tab}`, { scroll: false });
   };
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (searchTerm = "") => {
     setLoading(true);
     setLoadError(null);
+    const term = searchTerm.trim();
+    const providersUrl = term
+      ? `/api/admin/providers?q=${encodeURIComponent(term)}`
+      : `/api/admin/providers?tab=${activeTab}`;
+
     try {
-      const res = await fetch(`/api/admin/providers?tab=${activeTab}`);
+      const res = await fetch(providersUrl);
       const data = await parseJsonResponse(res);
       if (res.ok && data) {
         const angels = (data.angels as AngelRow[]) || [];
@@ -242,10 +247,9 @@ export default function ProvidersAdminClient() {
           (data.pendingCounts as Partial<Record<AdminProviderTab, number>>) || {};
         const actualCount =
           angels.length + doctors.length + psychoanalystRows.length + integrativeRows.length;
-        const expectedCount = pendingCounts[activeTab] ?? 0;
+        const expectedCount = term ? actualCount : (pendingCounts[activeTab] ?? 0);
 
-        // Count/list mismatch usually means a partial API failure — retry via legacy routes.
-        if (expectedCount > 0 && actualCount === 0) {
+        if (!term && expectedCount > 0 && actualCount === 0) {
           /* fall through to legacy endpoints below */
         } else {
           setAngels(angels);
@@ -290,17 +294,38 @@ export default function ProvidersAdminClient() {
         return;
       }
 
-      const filtered = applyLegacyTabFilter(
-        activeTab,
-        allAngels,
-        allDoctors,
-        allPsychoanalysts,
-        allIntegrative,
-      );
-      setAngels(filtered.angels);
-      setProfessionals(filtered.doctors);
-      setPsychoanalysts(filtered.psychoanalysts);
-      setIntegrativeTherapists(filtered.integrativeTherapists);
+      if (term) {
+        const qLower = term.toLowerCase();
+        const matches = (parts: (string | null | undefined)[]) =>
+          parts.some((p) => (p ?? "").toLowerCase().includes(qLower));
+
+        setAngels(
+          allAngels.filter((a) =>
+            matches([a.firstName, a.lastName, a.email, a.profession, a.volunteerHelp, a.motivation]),
+          ),
+        );
+        setProfessionals(
+          allDoctors.filter((d) => matches([d.name, d.email, d.specialty, d.licenseNumber])),
+        );
+        setPsychoanalysts(
+          allPsychoanalysts.filter((p) => matches([p.name, p.email, p.subtitle])),
+        );
+        setIntegrativeTherapists(
+          allIntegrative.filter((p) => matches([p.name, p.email, p.subtitle])),
+        );
+      } else {
+        const filtered = applyLegacyTabFilter(
+          activeTab,
+          allAngels,
+          allDoctors,
+          allPsychoanalysts,
+          allIntegrative,
+        );
+        setAngels(filtered.angels);
+        setProfessionals(filtered.doctors);
+        setPsychoanalysts(filtered.psychoanalysts);
+        setIntegrativeTherapists(filtered.integrativeTherapists);
+      }
       setTabCounts(
         computeLegacyTabCounts(allAngels, allDoctors, allPsychoanalysts, allIntegrative),
       );
@@ -311,8 +336,9 @@ export default function ProvidersAdminClient() {
   }, [activeTab, t]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const timer = setTimeout(() => load(q.trim()), q.trim() ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [q, activeTab, load]);
 
   async function toggleProfessionalVerified(row: ProfessionalRow) {
     setBusyId(row.id);
@@ -398,39 +424,43 @@ export default function ProvidersAdminClient() {
     setActingAngel(null);
   }
 
-  const filteredProfessionals = professionals.filter(
-    (d) =>
-      !q ||
-      d.name.toLowerCase().includes(q.toLowerCase()) ||
-      (d.email || "").toLowerCase().includes(q.toLowerCase()) ||
-      specialtyMatchesSearch(lang, d.specialty, q),
-  );
+  const filteredProfessionals = q.trim()
+    ? professionals
+    : professionals.filter(
+        (d) =>
+          d.name.toLowerCase().includes(q.toLowerCase()) ||
+          (d.email || "").toLowerCase().includes(q.toLowerCase()) ||
+          specialtyMatchesSearch(lang, d.specialty, q),
+      );
 
-  const filteredPsychoanalysts = psychoanalysts.filter(
-    (p) =>
-      !q ||
-      p.name.toLowerCase().includes(q.toLowerCase()) ||
-      (p.email || "").toLowerCase().includes(q.toLowerCase()) ||
-      p.subtitle.toLowerCase().includes(q.toLowerCase()),
-  );
+  const filteredPsychoanalysts = q.trim()
+    ? psychoanalysts
+    : psychoanalysts.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q.toLowerCase()) ||
+          (p.email || "").toLowerCase().includes(q.toLowerCase()) ||
+          p.subtitle.toLowerCase().includes(q.toLowerCase()),
+      );
 
-  const filteredIntegrativeTherapists = integrativeTherapists.filter(
-    (p) =>
-      !q ||
-      p.name.toLowerCase().includes(q.toLowerCase()) ||
-      (p.email || "").toLowerCase().includes(q.toLowerCase()) ||
-      p.subtitle.toLowerCase().includes(q.toLowerCase()),
-  );
+  const filteredIntegrativeTherapists = q.trim()
+    ? integrativeTherapists
+    : integrativeTherapists.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q.toLowerCase()) ||
+          (p.email || "").toLowerCase().includes(q.toLowerCase()) ||
+          p.subtitle.toLowerCase().includes(q.toLowerCase()),
+      );
 
-  const filteredAngels = angels.filter(
-    (a) =>
-      !q ||
-      `${a.firstName} ${a.lastName}`.toLowerCase().includes(q.toLowerCase()) ||
-      a.email.toLowerCase().includes(q.toLowerCase()) ||
-      (a.profession || "").toLowerCase().includes(q.toLowerCase()) ||
-      (a.volunteerHelp || "").toLowerCase().includes(q.toLowerCase()) ||
-      (a.motivation || "").toLowerCase().includes(q.toLowerCase()),
-  );
+  const filteredAngels = q.trim()
+    ? angels
+    : angels.filter(
+        (a) =>
+          `${a.firstName} ${a.lastName}`.toLowerCase().includes(q.toLowerCase()) ||
+          a.email.toLowerCase().includes(q.toLowerCase()) ||
+          (a.profession || "").toLowerCase().includes(q.toLowerCase()) ||
+          (a.volunteerHelp || "").toLowerCase().includes(q.toLowerCase()) ||
+          (a.motivation || "").toLowerCase().includes(q.toLowerCase()),
+      );
 
   const tabMeta = ADMIN_PROVIDER_TABS.find((t) => t.id === activeTab)!;
   const listCount =
@@ -511,6 +541,12 @@ export default function ProvidersAdminClient() {
           className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
         />
       </div>
+
+      {q.trim() && (
+        <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+          {t("admin.providers.searchGlobalHint")}
+        </p>
+      )}
 
       {loadError && (
         <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">

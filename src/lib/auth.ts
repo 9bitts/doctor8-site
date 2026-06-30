@@ -58,6 +58,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          // Always show Google account picker (avoids silent login as wrong account).
+          prompt: "select_account",
+        },
+      },
     }),
     Credentials({
       id: "magic-link",
@@ -297,6 +303,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.role = (user as { role: string }).role;
         token.region = (user as { region: string }).region;
+        if (user.email) token.email = user.email;
       }
 
       // For Google sign-in, fetch role/region from DB
@@ -326,6 +333,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.professionalSpecialty = profile?.specialty ?? null;
       } else if (token.role !== "PROFESSIONAL") {
         token.professionalSpecialty = null;
+      }
+
+      // Refresh specialty after profile update (settings) without forcing re-login.
+      if (
+        trigger === "update" &&
+        token.role === "PROFESSIONAL" &&
+        token.id &&
+        (session as { refreshSpecialty?: boolean })?.refreshSpecialty
+      ) {
+        const profile = await db.professionalProfile.findUnique({
+          where: { userId: token.id as string },
+          select: { specialty: true },
+        });
+        token.professionalSpecialty = profile?.specialty ?? null;
       }
 
       // Extend session during active teleconsult (video room keepalive)

@@ -76,6 +76,15 @@ const ADMIN_PROVIDER_TAB_IDS: AdminProviderTab[] = [
   "outros",
 ];
 
+const ACTIVE_USER = { deletedAt: null } as const;
+
+type RawAdminRows = {
+  allAngels: AdminAngelRow[];
+  allDoctors: AdminProfessionalRow[];
+  allAnalysts: AdminProviderRow[];
+  allTherapists: AdminProviderRow[];
+};
+
 function angelsForTab(allAngels: AdminAngelRow[], tab: AdminProviderTab): AdminAngelRow[] {
   if (tab === "anjos") return allAngels;
   if (tab === "pendentes") {
@@ -98,9 +107,10 @@ async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): P
   }
 }
 
-export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminProvidersPayload> {
+async function loadRawAdminRows(): Promise<RawAdminRows> {
   const [angelRows, healthPros, analysts, therapists] = await Promise.all([
     safeQuery("angelProfile", () => db.angelProfile.findMany({
+      where: { user: ACTIVE_USER },
       orderBy: { createdAt: "desc" },
       include: {
         user: {
@@ -113,6 +123,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
       },
     }), []),
     safeQuery("professionalProfile", () => db.professionalProfile.findMany({
+      where: { user: ACTIVE_USER },
       orderBy: { createdAt: "desc" },
       include: {
         user: {
@@ -128,6 +139,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
       },
     }), []),
     safeQuery("psychoanalystProfile", () => db.psychoanalystProfile.findMany({
+      where: { user: ACTIVE_USER },
       orderBy: { createdAt: "desc" },
       include: {
         user: {
@@ -143,6 +155,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
       },
     }), []),
     safeQuery("integrativeTherapistProfile", () => db.integrativeTherapistProfile.findMany({
+      where: { user: ACTIVE_USER },
       orderBy: { createdAt: "desc" },
       include: {
         virtualCard: { select: { isPublic: true, slug: true } },
@@ -234,6 +247,55 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
       ? `${process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app"}/dr/${p.virtualCard.slug}`
       : null,
   }));
+
+  return { allAngels, allDoctors, allAnalysts, allTherapists };
+}
+
+function matchesProviderSearch(
+  query: string,
+  parts: (string | null | undefined)[],
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return parts.some((part) => (part ?? "").toLowerCase().includes(q));
+}
+
+/** Global search across all provider types (ignores active tab filter). */
+export async function searchAdminProviders(query: string): Promise<AdminProvidersPayload> {
+  const { allAngels, allDoctors, allAnalysts, allTherapists } = await loadRawAdminRows();
+  const pendingCounts = Object.fromEntries(
+    ADMIN_PROVIDER_TAB_IDS.map((id) => [
+      id,
+      countForTab(id, allAngels, allDoctors, allAnalysts, allTherapists),
+    ]),
+  ) as Record<AdminProviderTab, number>;
+
+  return {
+    angels: allAngels.filter((a) =>
+      matchesProviderSearch(query, [
+        a.firstName,
+        a.lastName,
+        a.email,
+        a.profession,
+        a.volunteerHelp,
+        a.motivation,
+      ]),
+    ),
+    doctors: allDoctors.filter((d) =>
+      matchesProviderSearch(query, [d.name, d.email, d.specialty, d.licenseNumber]),
+    ),
+    psychoanalysts: allAnalysts.filter((p) =>
+      matchesProviderSearch(query, [p.name, p.email, p.subtitle]),
+    ),
+    integrativeTherapists: allTherapists.filter((p) =>
+      matchesProviderSearch(query, [p.name, p.email, p.subtitle]),
+    ),
+    pendingCounts,
+  };
+}
+
+export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminProvidersPayload> {
+  const { allAngels, allDoctors, allAnalysts, allTherapists } = await loadRawAdminRows();
 
   const pendingCounts = Object.fromEntries(
     ADMIN_PROVIDER_TAB_IDS.map((id) => [

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { persistAuthCallback } from "@/lib/auth-callback";
@@ -193,6 +193,7 @@ export function RegisterAccountForm({
       const oauthCallback = isPsychologistSignup
         ? "/callback?portal=psychologist"
         : "/callback";
+      await signOut({ redirect: false });
       await signIn("google", { callbackUrl: oauthCallback });
     } catch {
       setErrors({ form: ["Could not start Google sign-up. Please try again."] });
