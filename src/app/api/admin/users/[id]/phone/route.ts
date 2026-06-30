@@ -19,13 +19,13 @@ function displayPhone(raw: string): string {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { userId: string } },
+  { params }: { params: { id: string } },
 ) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const user = await db.user.findUnique({
-    where: { id: params.userId },
+    where: { id: params.id },
     select: {
       id: true,
       role: true,
