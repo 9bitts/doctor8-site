@@ -40,7 +40,7 @@ export function dailyRoomBaseProperties(extra: Record<string, unknown> = {}): Re
   const base: Record<string, unknown> = {
     enable_chat: true,
     enable_screenshare: true,
-    enable_prejoin_ui: true,
+    enable_prejoin_ui: false,
     enable_knocking: false,
     eject_at_room_exp: true,
     ...extra,

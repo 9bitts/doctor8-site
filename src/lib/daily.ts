@@ -71,6 +71,22 @@ export async function getOrCreateRoom(
   throw new Error("Could not create video room");
 }
 
+/** Disable prejoin UI on existing rooms so embed auto-joins (Doctor8 already has consent). */
+async function ensureRoomDirectJoin(roomName: string): Promise<void> {
+  if (process.env.E2E_MOCK_DAILY === "1") return;
+  try {
+    await fetch(`${DAILY_API}/rooms/${encodeURIComponent(roomName)}`, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({
+        properties: { enable_prejoin_ui: false },
+      }),
+    });
+  } catch {
+    /* non-fatal */
+  }
+}
+
 // Creates a meeting token so only authorized users join the private room.
 export async function createMeetingToken(
   roomName: string,
@@ -81,6 +97,8 @@ export async function createMeetingToken(
   if (process.env.E2E_MOCK_DAILY === "1") {
     return "e2e-mock-token";
   }
+
+  await ensureRoomDirectJoin(roomName);
 
   const res = await fetch(`${DAILY_API}/meeting-tokens`, {
     method: "POST",

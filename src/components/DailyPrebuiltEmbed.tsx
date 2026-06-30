@@ -81,6 +81,13 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
           }
         };
 
+        call.on("loaded", () => {
+          if (!destroyed) {
+            clearConnectTimeout();
+            setJoining(false);
+          }
+        });
+
         call.on("joined-meeting", () => {
           if (!destroyed) {
             clearConnectTimeout();
