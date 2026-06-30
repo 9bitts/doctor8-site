@@ -132,7 +132,7 @@ async function anonymizeUser(userId: string, role: UserRole): Promise<void> {
         email: `deleted_${userId}@deleted.invalid`,
         phone: null,
         anonymizedAt: now,
-      } as Prisma.UserUpdateInput,
+      },
     });
     await anonymizeProfileInTransaction(tx, userId, role);
   });
