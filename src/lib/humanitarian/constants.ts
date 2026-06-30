@@ -34,7 +34,10 @@ export const DEFAULT_VENEZUELA_POOLS: {
     maxWaiting: 500,
     sortOrder: 1,
     volunteerRoles: ["PROFESSIONAL"],
-    specialtyHints: ["general", "clínica", "clinica", "medicina", "médico", "medico", "family"],
+    specialtyHints: [
+      "general", "clínica", "clinica", "medicina", "médico", "medico", "family",
+      "enferm", "nurse", "doula", "parteira", "midwife", "obstet", "médic",
+    ],
   },
   {
     slug: "psicologo",

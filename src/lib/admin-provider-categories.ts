@@ -1,4 +1,5 @@
 import { canonicalProfessionValue, PROFESSION_GROUPS } from "@/lib/professions";
+import { resolveProfessionalPoolSlug } from "@/lib/humanitarian/dispatcher";
 
 function optionsFor(groupKey: string): string[] {
   return PROFESSION_GROUPS.find((g) => g.groupKey === groupKey)?.options ?? [];
@@ -58,4 +59,42 @@ export function resolveProfessionalCategory(specialty: string): AdminProfessiona
 
 export function isUncategorizedProfessional(specialty: string): boolean {
   return resolveProfessionalCategory(specialty) === "outros";
+}
+
+const POOL_SLUG_TO_ADMIN_TAB: Record<string, AdminProviderTab> = {
+  medico: "medicos",
+  psicologo: "psicologos",
+  psicanalista: "psicanalistas",
+  terapeuta_integrativo: "terapeutas",
+  fisioterapeuta: "fisioterapeutas",
+  nutricionista: "nutricionistas",
+  cuidados_paliativos: "medicos",
+};
+
+/** Map a specialty or free-text profession (PT/EN/ES) to an admin providers tab. */
+export function resolveAdminTabFromProfessionText(text: string): AdminProviderTab {
+  const trimmed = text.trim();
+  if (!trimmed) return "medicos";
+
+  const lower = trimmed.toLowerCase();
+  if (/psicanal|psychoanal|psicoanal/.test(lower)) return "psicanalistas";
+  if (/integrativ|hol[ií]stic|\bpics\b|naturop|reiki|aromaterap|fitoterap/.test(lower)) {
+    return "terapeutas";
+  }
+
+  const healthCategory = resolveProfessionalCategory(trimmed);
+  if (healthCategory !== "outros") return healthCategory;
+
+  const poolSlug = resolveProfessionalPoolSlug(trimmed);
+  return POOL_SLUG_TO_ADMIN_TAB[poolSlug] ?? "outros";
+}
+
+export function angelMatchesAdminTab(
+  angel: { profession?: string | null; volunteerHelp?: string | null },
+  tab: AdminProviderTab,
+): boolean {
+  if (tab === "anjos") return true;
+  const text = [angel.profession, angel.volunteerHelp].filter(Boolean).join(" ");
+  if (!text.trim()) return tab === "outros";
+  return resolveAdminTabFromProfessionText(text) === tab;
 }

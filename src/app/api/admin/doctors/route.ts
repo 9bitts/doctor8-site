@@ -5,8 +5,8 @@ import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { buildPublicProfileUrl } from "@/lib/public-profile";
 import {
-  resolveProfessionalCategory,
-  type AdminProfessionalCategory,
+  resolveAdminTabFromProfessionText,
+  type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
 
 const VALID_CATEGORIES = new Set<string>([
@@ -14,6 +14,8 @@ const VALID_CATEGORIES = new Set<string>([
   "psicologos",
   "nutricionistas",
   "fisioterapeutas",
+  "psicanalistas",
+  "terapeutas",
   "outros",
 ]);
 
@@ -42,8 +44,8 @@ export async function GET(req: NextRequest) {
 
   let filtered = pros;
   if (category && VALID_CATEGORIES.has(category)) {
-    const bucket = category as AdminProfessionalCategory | "outros";
-    filtered = pros.filter((p) => resolveProfessionalCategory(p.specialty) === bucket);
+    const bucket = category as AdminProviderTab;
+    filtered = pros.filter((p) => resolveAdminTabFromProfessionText(p.specialty) === bucket);
   }
 
   const doctors = filtered.map((p) => ({

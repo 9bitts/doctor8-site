@@ -152,14 +152,23 @@ const LEGACY_SPECIALTY_ALIASES: Record<string, string> = {
   "Clínico Geral": "General Practice",
   "Clinico Geral": "General Practice",
   Psicologia: "Psychologist",
+  Psicólogo: "Psychologist",
+  Psicologo: "Psychologist",
   Nutrição: "Nutritionist",
   Nutricao: "Nutritionist",
+  Nutricionista: "Nutritionist",
   Fisioterapia: "Physiotherapist",
+  Fisioterapeuta: "Physiotherapist",
   Dentist: "Dentist (General)",
   "Dental Surgeon": "Dentist (General)",
   Dentista: "Dentist (General)",
   "Physical Therapist": "Physiotherapist",
   Nursing: "Nurse",
+  Enfermeiro: "Nurse",
+  Enfermeira: "Nurse",
+  "Enfermeiro Obstétrico": "Obstetric Nurse",
+  "Enfermeira Obstétrica": "Obstetric Nurse",
+  Doula: "Midwife",
 };
 
 /** Map a stored specialty (canonical, localized, or legacy) to a PROFESSION_GROUPS value. */

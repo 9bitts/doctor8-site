@@ -25,6 +25,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import {
   ADMIN_PROVIDER_TABS,
+  angelMatchesAdminTab,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
@@ -121,30 +122,40 @@ export default function ProvidersAdminClient() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const angelsRes = await fetch("/api/admin/humanitarian/angels");
+      const angelsData = await angelsRes.json();
+      const allAngels: AngelRow[] = angelsRes.ok ? angelsData.angels || [] : [];
+
       if (activeTab === "anjos") {
-        const res = await fetch("/api/admin/humanitarian/angels");
-        const data = await res.json();
-        if (res.ok) setAngels(data.angels || []);
+        setAngels(allAngels);
         setProfessionals([]);
         setProviders([]);
       } else if (activeTab === "psicanalistas") {
-        const res = await fetch("/api/admin/psychoanalysts");
+        const [res, doctorsRes] = await Promise.all([
+          fetch("/api/admin/psychoanalysts"),
+          fetch("/api/admin/doctors?category=psicanalistas"),
+        ]);
         const data = await res.json();
+        const doctorsData = await doctorsRes.json();
         if (res.ok) setProviders(data.providers || []);
-        setProfessionals([]);
-        setAngels([]);
+        if (doctorsRes.ok) setProfessionals(doctorsData.doctors || []);
+        setAngels(allAngels.filter((a) => angelMatchesAdminTab(a, activeTab)));
       } else if (activeTab === "terapeutas") {
-        const res = await fetch("/api/admin/integrative-therapists");
+        const [res, doctorsRes] = await Promise.all([
+          fetch("/api/admin/integrative-therapists"),
+          fetch("/api/admin/doctors?category=terapeutas"),
+        ]);
         const data = await res.json();
+        const doctorsData = await doctorsRes.json();
         if (res.ok) setProviders(data.providers || []);
-        setProfessionals([]);
-        setAngels([]);
+        if (doctorsRes.ok) setProfessionals(doctorsData.doctors || []);
+        setAngels(allAngels.filter((a) => angelMatchesAdminTab(a, activeTab)));
       } else {
         const res = await fetch(`/api/admin/doctors?category=${activeTab}`);
         const data = await res.json();
         if (res.ok) setProfessionals(data.doctors || []);
         setProviders([]);
-        setAngels([]);
+        setAngels(allAngels.filter((a) => angelMatchesAdminTab(a, activeTab)));
       }
     } catch {
       /* ignore */
@@ -269,8 +280,8 @@ export default function ProvidersAdminClient() {
     activeTab === "anjos"
       ? filteredAngels.length
       : activeTab === "psicanalistas" || activeTab === "terapeutas"
-        ? filteredProviders.length
-        : filteredProfessionals.length;
+        ? filteredProviders.length + filteredProfessionals.length + filteredAngels.length
+        : filteredProfessionals.length + filteredAngels.length;
 
   const emptyLabel =
     activeTab === "anjos"
@@ -335,155 +346,230 @@ export default function ProvidersAdminClient() {
           <p className="text-slate-400 text-sm">{emptyLabel}</p>
         </div>
       ) : activeTab === "anjos" ? (
-        <div className="space-y-3">
-          {filteredAngels.map((a) => (
-            <div key={a.userId} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-slate-800 text-sm">
-                      {a.firstName} {a.lastName}
-                    </p>
-                    {a.approvalStatus === "APPROVED" && (
-                      <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                        {t("admin.providers.angelApproved")}
-                      </span>
-                    )}
-                    {a.approvalStatus === "PENDING" && (
-                      <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-                        {t("admin.providers.angelPending")}
-                      </span>
-                    )}
-                    {a.approvalStatus === "REJECTED" && (
-                      <span className="text-[11px] font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">
-                        {t("admin.providers.angelRejected")}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                    <Mail size={11} />
-                    {a.email}
-                    {!a.emailVerified && (
-                      <span className="text-amber-600 font-medium">{t("admin.providers.emailUnverified")}</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {t("admin.providers.languages")} {a.languages.join(", ").toUpperCase()} ·{" "}
-                    {new Date(a.createdAt).toLocaleDateString(locale)}
-                  </p>
-                  {a.profession && (
-                    <p className="text-xs text-slate-600 mt-1">
-                      <span className="font-medium text-slate-500">{t("admin.providers.angelProfession")}</span>{" "}
-                      {a.profession}
-                    </p>
-                  )}
-                  {a.volunteerHelp && (
-                    <p className="text-xs text-slate-600 mt-1 bg-slate-50 rounded-lg p-2">
-                      <span className="font-medium text-slate-500 block mb-0.5">
-                        {t("admin.providers.angelVolunteerHelp")}
-                      </span>
-                      {a.volunteerHelp}
-                    </p>
-                  )}
-                  {a.motivation && (
-                    <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">
-                      <span className="font-medium text-slate-500 block mb-0.5">
-                        {t("admin.providers.angelMotivation")}
-                      </span>
-                      {a.motivation}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2 shrink-0">
-                  <AdminViewPhoneButton userId={a.userId} />
-                  {a.licenseDocCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => viewLicenseDocs(a.userId)}
-                      disabled={docsBusyId === a.userId}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
-                    >
-                      {docsBusyId === a.userId ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <FileText size={14} />
-                      )}
-                      {t("admin.providers.viewDocs").replace("{{n}}", String(a.licenseDocCount))}
-                    </button>
-                  )}
-                  {!a.licenseDocCount && (
-                    <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg text-center">
-                      {t("admin.providers.angelNoCertificate")}
-                    </span>
-                  )}
-                  {!a.emailVerified && (
-                    <button
-                      type="button"
-                      onClick={() => verifyUserEmail(a.userId)}
-                      disabled={verifyingEmailUserId === a.userId}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 transition disabled:opacity-50"
-                    >
-                      {verifyingEmailUserId === a.userId ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Mail size={14} />
-                      )}
-                      {t("admin.providers.verifyEmail")}
-                    </button>
-                  )}
-                {a.approvalStatus === "PENDING" && (
-                  <div className="flex gap-2 shrink-0">
-                    <button
-                      type="button"
-                      disabled={actingAngel === a.userId || !a.emailVerified}
-                      onClick={() => actAngel(a.userId, "approve")}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold disabled:opacity-40"
-                    >
-                      {actingAngel === a.userId ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <CheckCircle2 size={14} />
-                      )}
-                      {t("admin.providers.approve")}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={actingAngel === a.userId}
-                      onClick={() => actAngel(a.userId, "reject")}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 text-xs font-semibold"
-                    >
-                      <XCircle size={14} /> {t("admin.providers.reject")}
-                    </button>
-                  </div>
-                )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <AngelList
+          rows={filteredAngels}
+          actingAngel={actingAngel}
+          docsBusyId={docsBusyId}
+          verifyingEmailUserId={verifyingEmailUserId}
+          onAct={actAngel}
+          onViewDocs={viewLicenseDocs}
+          onVerifyEmail={verifyUserEmail}
+        />
       ) : activeTab === "psicanalistas" || activeTab === "terapeutas" ? (
-        <ProviderList
-          rows={filteredProviders}
-          busyId={busyId}
-          docsBusyId={docsBusyId}
-          verifyingEmailUserId={verifyingEmailUserId}
-          kind={activeTab === "psicanalistas" ? "psychoanalyst" : "integrative"}
-          onToggle={toggleProviderVerified}
-          onViewDocs={viewLicenseDocs}
-          onVerifyEmail={verifyUserEmail}
-        />
+        <div className="space-y-4">
+          {filteredAngels.length > 0 && (
+            <AngelList
+              rows={filteredAngels}
+              actingAngel={actingAngel}
+              docsBusyId={docsBusyId}
+              verifyingEmailUserId={verifyingEmailUserId}
+              onAct={actAngel}
+              onViewDocs={viewLicenseDocs}
+              onVerifyEmail={verifyUserEmail}
+            />
+          )}
+          {filteredProviders.length > 0 && (
+            <ProviderList
+              rows={filteredProviders}
+              busyId={busyId}
+              docsBusyId={docsBusyId}
+              verifyingEmailUserId={verifyingEmailUserId}
+              kind={activeTab === "psicanalistas" ? "psychoanalyst" : "integrative"}
+              onToggle={toggleProviderVerified}
+              onViewDocs={viewLicenseDocs}
+              onVerifyEmail={verifyUserEmail}
+            />
+          )}
+          {filteredProfessionals.length > 0 && (
+            <ProfessionalList
+              rows={filteredProfessionals}
+              lang={lang}
+              busyId={busyId}
+              docsBusyId={docsBusyId}
+              verifyingEmailUserId={verifyingEmailUserId}
+              onToggle={toggleProfessionalVerified}
+              onViewDocs={viewLicenseDocs}
+              onVerifyEmail={verifyUserEmail}
+            />
+          )}
+        </div>
       ) : (
-        <ProfessionalList
-          rows={filteredProfessionals}
-          lang={lang}
-          busyId={busyId}
-          docsBusyId={docsBusyId}
-          verifyingEmailUserId={verifyingEmailUserId}
-          onToggle={toggleProfessionalVerified}
-          onViewDocs={viewLicenseDocs}
-          onVerifyEmail={verifyUserEmail}
-        />
+        <div className="space-y-4">
+          {filteredAngels.length > 0 && (
+            <AngelList
+              rows={filteredAngels}
+              actingAngel={actingAngel}
+              docsBusyId={docsBusyId}
+              verifyingEmailUserId={verifyingEmailUserId}
+              onAct={actAngel}
+              onViewDocs={viewLicenseDocs}
+              onVerifyEmail={verifyUserEmail}
+            />
+          )}
+          {filteredProfessionals.length > 0 && (
+            <ProfessionalList
+              rows={filteredProfessionals}
+              lang={lang}
+              busyId={busyId}
+              docsBusyId={docsBusyId}
+              verifyingEmailUserId={verifyingEmailUserId}
+              onToggle={toggleProfessionalVerified}
+              onViewDocs={viewLicenseDocs}
+              onVerifyEmail={verifyUserEmail}
+            />
+          )}
+        </div>
       )}
+    </div>
+  );
+}
+
+function AngelList({
+  rows,
+  actingAngel,
+  docsBusyId,
+  verifyingEmailUserId,
+  onAct,
+  onViewDocs,
+  onVerifyEmail,
+}: {
+  rows: AngelRow[];
+  actingAngel: string | null;
+  docsBusyId: string | null;
+  verifyingEmailUserId: string | null;
+  onAct: (userId: string, action: "approve" | "reject") => void;
+  onViewDocs: (userId: string) => void;
+  onVerifyEmail: (userId: string) => void;
+}) {
+  const { lang, t } = useI18n();
+  const locale = localeOf(lang);
+
+  return (
+    <div className="space-y-3">
+      {rows.map((a) => (
+        <div key={a.userId} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-semibold text-slate-800 text-sm">
+                  {a.firstName} {a.lastName}
+                </p>
+                {a.approvalStatus === "APPROVED" && (
+                  <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    {t("admin.providers.angelApproved")}
+                  </span>
+                )}
+                {a.approvalStatus === "PENDING" && (
+                  <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                    {t("admin.providers.angelPending")}
+                  </span>
+                )}
+                {a.approvalStatus === "REJECTED" && (
+                  <span className="text-[11px] font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">
+                    {t("admin.providers.angelRejected")}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                <Mail size={11} />
+                {a.email}
+                {!a.emailVerified && (
+                  <span className="text-amber-600 font-medium">{t("admin.providers.emailUnverified")}</span>
+                )}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {t("admin.providers.languages")} {a.languages.join(", ").toUpperCase()} ·{" "}
+                {new Date(a.createdAt).toLocaleDateString(locale)}
+              </p>
+              {a.profession && (
+                <p className="text-xs text-slate-600 mt-1">
+                  <span className="font-medium text-slate-500">{t("admin.providers.angelProfession")}</span>{" "}
+                  {a.profession}
+                </p>
+              )}
+              {a.volunteerHelp && (
+                <p className="text-xs text-slate-600 mt-1 bg-slate-50 rounded-lg p-2">
+                  <span className="font-medium text-slate-500 block mb-0.5">
+                    {t("admin.providers.angelVolunteerHelp")}
+                  </span>
+                  {a.volunteerHelp}
+                </p>
+              )}
+              {a.motivation && (
+                <p className="text-xs text-slate-600 mt-2 bg-slate-50 rounded-lg p-2">
+                  <span className="font-medium text-slate-500 block mb-0.5">
+                    {t("admin.providers.angelMotivation")}
+                  </span>
+                  {a.motivation}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2 shrink-0">
+              <AdminViewPhoneButton userId={a.userId} />
+              {a.licenseDocCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onViewDocs(a.userId)}
+                  disabled={docsBusyId === a.userId}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                >
+                  {docsBusyId === a.userId ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <FileText size={14} />
+                  )}
+                  {t("admin.providers.viewDocs").replace("{{n}}", String(a.licenseDocCount))}
+                </button>
+              )}
+              {!a.licenseDocCount && (
+                <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg text-center">
+                  {t("admin.providers.angelNoCertificate")}
+                </span>
+              )}
+              {!a.emailVerified && (
+                <button
+                  type="button"
+                  onClick={() => onVerifyEmail(a.userId)}
+                  disabled={verifyingEmailUserId === a.userId}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 transition disabled:opacity-50"
+                >
+                  {verifyingEmailUserId === a.userId ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Mail size={14} />
+                  )}
+                  {t("admin.providers.verifyEmail")}
+                </button>
+              )}
+              {a.approvalStatus === "PENDING" && (
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={actingAngel === a.userId || !a.emailVerified}
+                    onClick={() => onAct(a.userId, "approve")}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold disabled:opacity-40"
+                  >
+                    {actingAngel === a.userId ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <CheckCircle2 size={14} />
+                    )}
+                    {t("admin.providers.approve")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actingAngel === a.userId}
+                    onClick={() => onAct(a.userId, "reject")}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 text-xs font-semibold"
+                  >
+                    <XCircle size={14} /> {t("admin.providers.reject")}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
