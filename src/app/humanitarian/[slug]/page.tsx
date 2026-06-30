@@ -444,17 +444,6 @@ export default function HumanitarianCampaignPage() {
               })}
             </p>
 
-            <div>
-              <label className="block text-xs text-slate-500 mb-1.5">{t(lang, "hum.page.complaintLabel")}</label>
-              <textarea
-                value={complaint}
-                onChange={(e) => setComplaint(e.target.value)}
-                rows={3}
-                placeholder={t(lang, "hum.page.complaintPlaceholder")}
-                className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-              />
-            </div>
-
             <button
               type="button"
               onClick={() => joinPool(selectedPool)}
@@ -467,6 +456,17 @@ export default function HumanitarianCampaignPage() {
                 t(lang, "hum.page.joinBtn")
               )}
             </button>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1.5">{t(lang, "hum.page.complaintLabel")}</label>
+              <textarea
+                value={complaint}
+                onChange={(e) => setComplaint(e.target.value)}
+                rows={3}
+                placeholder={t(lang, "hum.page.complaintPlaceholder")}
+                className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
+            </div>
             <button
               type="button"
               onClick={() => setSelectedPool(null)}
