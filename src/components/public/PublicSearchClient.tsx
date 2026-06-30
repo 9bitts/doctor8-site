@@ -12,6 +12,7 @@ import {
   SlidersHorizontal, Star, Clock,
 } from "lucide-react";
 import type { PublicSearchResult, PublicSearchSort } from "@/lib/public-search";
+import { dedupeHealthPlanList } from "@/lib/health-plan-display";
 import PublicResultCard from "@/components/public/PublicResultCard";
 import AcuraVolunteerSearchBanner from "@/components/acura/AcuraVolunteerSearchBanner";
 import {
@@ -139,7 +140,7 @@ export default function PublicSearchClient({
       }
       if (plansRes.ok) {
         const data = await plansRes.json();
-        setPlans(data.plans || []);
+        setPlans(dedupeHealthPlanList(data.plans || []));
       }
     } catch { /* ignore */ }
     setLoading(false);
@@ -327,7 +328,7 @@ export default function PublicSearchClient({
             <div className="flex flex-wrap gap-2">
               {plans.slice(0, 8).map((p) => (
                 <button
-                  key={p.slug}
+                  key={p.id}
                   type="button"
                   onClick={() => applyConvenio(p.slug)}
                   className={`text-xs font-medium px-3 py-1.5 rounded-full transition ${

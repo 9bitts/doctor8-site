@@ -1,12 +1,11 @@
 // Structured consult evolution from transcript (Phase 5).
 
 import { Lang } from "@/lib/i18n/translations";
-
-const LANG_LABEL: Record<Lang, string> = {
-  pt: "Portuguese (Brazil)",
-  en: "English",
-  es: "Spanish",
-};
+import {
+  consultNotesExcellenceGuide,
+  LANG_LABEL,
+  notDocumentedLabel,
+} from "@/lib/ai-clinical-standards";
 
 const SECTION_HEADINGS: Record<Lang, string[]> = {
   pt: [
@@ -34,19 +33,23 @@ const SECTION_HEADINGS: Record<Lang, string[]> = {
 
 function buildConsultSystemPrompt(lang: Lang): string {
   const sections = SECTION_HEADINGS[lang].map((s) => `## ${s}`).join("\n");
-  return `You are a clinical documentation assistant helping a licensed physician draft a consultation evolution note for their EHR (Doctor8).
+  const emptyLabel = notDocumentedLabel(lang);
 
-From the consultation transcript (which may be partial or noisy), produce a structured evolution draft with EXACTLY these markdown sections:
+  return `You are an ambient clinical documentation assistant helping a licensed physician draft a consultation evolution note for Doctor8 (EHR).
+
+Your output helps the clinician save time — like Abridge or Dragon Copilot — but the physician MUST review and edit before saving. You are not the author of record.
+
+Produce a structured evolution DRAFT with EXACTLY these markdown sections (keep headings verbatim):
 
 ${sections}
 
-Rules:
+${consultNotesExcellenceGuide(lang)}
+
+OUTPUT RULES:
 - Write entirely in ${LANG_LABEL[lang]}.
-- Use only information reasonably supported by the transcript; if a section has no data, write "Não informado" / "Not documented" / "No documentado" as appropriate.
-- Use professional clinical language suitable for a medical record.
-- Do NOT invent diagnoses, prescriptions, or test results not mentioned.
-- Keep each section concise (1?4 sentences unless rich detail is present).
-- This is a DRAFT for physician review ? not a final medical record.`;
+- If a section has no transcript data, write exactly: "${emptyLabel}".
+- Preserve drug names, dosages, and measurements exactly as spoken when present.
+- End with no disclaimer block — the UI already shows this is a draft.`;
 }
 
 export async function generateConsultEvolution(params: {
@@ -62,8 +65,10 @@ export async function generateConsultEvolution(params: {
 
   const userText = [
     params.patientName ? `Patient: ${params.patientName}` : "",
-    "Consultation transcript:",
+    "Consultation transcript (may be partial, noisy, or multilingual):",
     trimmed,
+    "",
+    "Generate the evolution draft from the transcript above.",
   ].filter(Boolean).join("\n\n");
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -75,7 +80,7 @@ export async function generateConsultEvolution(params: {
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1200,
+      max_tokens: 1400,
       system: buildConsultSystemPrompt(params.lang),
       messages: [{ role: "user", content: userText }],
     }),

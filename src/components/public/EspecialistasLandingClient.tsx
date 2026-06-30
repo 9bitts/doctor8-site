@@ -7,6 +7,7 @@ import Link from "next/link";
 import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import { Sora } from "next/font/google";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { dedupeHealthPlanList } from "@/lib/health-plan-display";
 import { getLandingContent } from "@/lib/landing-content";
 import { Search, MapPin, Stethoscope, Loader2, Menu, X, CreditCard, Map as MapIcon } from "lucide-react";
 import { cityToSeoSlug, buildPublicSearchConvenioPath } from "@/lib/public-slugs";
@@ -72,7 +73,7 @@ export default function EspecialistasLandingClient() {
     fetch("/api/public/health-plans")
       .then((r) => r.json())
       .then((d) => {
-        const plans = d.plans || [];
+        const plans = dedupeHealthPlanList(d.plans || []);
         setHealthPlans(plans);
         if (plans.length > 0 && !convenio) setConvenio(plans[0].slug);
       })

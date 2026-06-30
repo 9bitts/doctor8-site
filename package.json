@@ -17,6 +17,7 @@
     "migrate:professional-api-auth": "node scripts/migrate-professional-api-auth.mjs",
     "lint": "next lint",
     "check:i18n": "node scripts/check-i18n-keys.mjs",
+    "check:support": "node scripts/check-support-knowledge.mjs",
     "check:encoding": "node scripts/scan-encoding.mjs",
     "test:e2e": "playwright test",
     "seed:e2e": "node scripts/seed-e2e.mjs",

@@ -1,12 +1,11 @@
 // Clinical AI summary helper — Anthropic Claude for doctor-facing document aids.
 
 import { Lang } from "@/lib/i18n/translations";
-
-const LANG_LABEL: Record<Lang, string> = {
-  pt: "Portuguese (Brazil)",
-  en: "English",
-  es: "Spanish",
-};
+import {
+  clinicalSummaryExcellenceGuide,
+  LANG_LABEL,
+  summarySectionHeadings,
+} from "@/lib/ai-clinical-standards";
 
 type ContentBlock =
   | { type: "text"; text: string }
@@ -14,23 +13,17 @@ type ContentBlock =
   | { type: "image"; source: { type: "base64"; media_type: string; data: string } };
 
 function buildSystemPrompt(lang: Lang): string {
-  return `You are a clinical documentation assistant for licensed healthcare professionals using Doctor8.
+  const sections = summarySectionHeadings(lang);
 
-Your job is to produce a concise, structured summary of medical or health-related material so the doctor can review it faster.
+  return `You are a clinical document intelligence assistant for licensed healthcare professionals using Doctor8.
 
-Format your response with these sections (use markdown headings):
-## Visão geral / Overview
-## Pontos principais / Key points
-## Relevância clínica / Clinical relevance
-## Itens para revisar / Suggested review
+You help clinicians review labs, imaging reports, referral letters, and shared resources faster — like a pre-visit chart prep tool. You do not replace clinical judgment.
 
-Rules:
-- Write the entire response in ${LANG_LABEL[lang]}.
-- Be factual; only use information present in the material.
-- Do NOT provide definitive diagnoses, prescriptions, or treatment plans.
-- If content is sparse, say what is available and what is missing.
-- Keep the summary practical (roughly 150–350 words unless the source is very rich).
-- This is a clinical aid only — the physician retains full responsibility.`;
+Format your response with EXACTLY these markdown sections (keep headings verbatim):
+
+${sections}
+
+${clinicalSummaryExcellenceGuide(lang)}`;
 }
 
 export async function generateClinicalSummary(params: {
@@ -52,10 +45,21 @@ export async function generateClinicalSummary(params: {
     params.patientName ? `Patient: ${params.patientName}` : "",
     params.url ? `Link: ${params.url}` : "",
     params.content ? `Description / notes:\n${params.content}` : "",
-    params.hasFile && !params.file ? "Note: an attachment exists but could not be read automatically. Summarize based on the metadata above." : "",
+    params.hasFile && !params.file
+      ? "Note: an attachment exists but could not be read automatically. Summarize based on the metadata above and list what could not be verified."
+      : "",
   ].filter(Boolean);
 
-  const userContent: ContentBlock[] = [{ type: "text", text: parts.join("\n\n") }];
+  const userContent: ContentBlock[] = [
+    {
+      type: "text",
+      text: [
+        parts.join("\n\n"),
+        "",
+        `Analyze the material and produce the structured summary in ${LANG_LABEL[params.lang]}.`,
+      ].join("\n"),
+    },
+  ];
 
   if (params.file) {
     const ct = (params.file.contentType || "").toLowerCase();
@@ -85,7 +89,7 @@ export async function generateClinicalSummary(params: {
     } else {
       const first = userContent[0];
       if (first.type === "text") {
-        first.text += "\n\nNote: attachment present but not processed (unsupported type or too large).";
+        first.text += "\n\nNote: attachment present but not processed (unsupported type or too large). State this in Suggested review.";
       }
     }
   }
@@ -99,7 +103,7 @@ export async function generateClinicalSummary(params: {
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 900,
+      max_tokens: 1100,
       system: buildSystemPrompt(params.lang),
       messages: [{ role: "user", content: userContent }],
     }),

@@ -19,136 +19,20 @@ import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
 import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
 import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
 import {
-  LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
-  User, Settings, LogOut, Menu, X, Bell, ChevronRight,
-  Stethoscope, ClipboardList, Users, UserCog, Inbox, Layers, CreditCard,
-  Building2,
-  BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain, BarChart3,
-  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart, Leaf, FlaskConical, Plug, ScrollText, PieChart,
+  ADMIN_NAV,
+  INTEGRATIVE_THERAPIST_NAV,
+  ORGANIZATION_NAV,
+  PATIENT_NAV,
+  PROFESSIONAL_NAV,
+  PSYCHOANALYST_NAV,
+  PSYCHOLOGIST_NAV,
+} from "@/lib/platform-nav-registry";
+import { withNavIcons, type DashboardNavItem } from "@/lib/dashboard-nav-icons";
+import {
+  User, Settings, LogOut, Menu, X, ChevronRight,
 } from "lucide-react";
 
-interface NavItem {
-  href: string;
-  labelKey: string;   // i18n key
-  icon: React.ReactNode;
-  roles: string[];
-}
-
-const PATIENT_NAV: NavItem[] = [
-  { href: "/patient", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/history", labelKey: "nav.medicalHistory", icon: <FileText size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/medications", labelKey: "nav.medications", icon: <Pill size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/buying-club", labelKey: "nav.buyingClub", icon: <ShoppingBag size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/club-doctor", labelKey: "nav.clubDoctor", icon: <Sparkles size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/prescriptions", labelKey: "nav.myPrescriptions", icon: <Stethoscope size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/exam-requests", labelKey: "nav.myExamRequests", icon: <FlaskConical size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/providers", labelKey: "nav.myProviders", icon: <Users size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/integrative-care", labelKey: "nav.integrativeCare", icon: <Leaf size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/documents", labelKey: "nav.documents", icon: <ClipboardList size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/resources", labelKey: "nav.doctorResources", icon: <BookOpen size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PATIENT"] },
-  { href: "/urgent", labelKey: "nav.urgent", icon: <Radio size={18} />, roles: ["PATIENT"] },
-  { href: "/humanitarian/venezuela-terremoto-2026", labelKey: "nav.humanitarian", icon: <Heart size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/find", labelKey: "nav.find", icon: <MapPin size={18} />, roles: ["PATIENT"] },
-  { href: "/patient/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PATIENT"] },
-];
-
-const PROFESSIONAL_NAV: NavItem[] = [
-  { href: "/professional", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/doctor-connection", labelKey: "nav.doctorConnection", icon: <Sparkles size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/patients", labelKey: "nav.patients", icon: <Users size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/psychology", labelKey: "nav.psychologyArea", icon: <Brain size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/shared", labelKey: "nav.sharedWithMe", icon: <Inbox size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/categories", labelKey: "nav.categories", icon: <Layers size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/prescriptions", labelKey: "nav.prescriptions", icon: <Stethoscope size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/buying-club", labelKey: "nav.buyingClub", icon: <ShoppingBag size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/jit", labelKey: "nav.jit", icon: <Radio size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/professional/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PROFESSIONAL"] },
-];
-
-const PSYCHOLOGIST_NAV: NavItem[] = [
-  { href: "/psychologist", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/doctor-connection", labelKey: "nav.doctorConnection", icon: <Sparkles size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/patients", labelKey: "nav.patients", icon: <Users size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/sessions", labelKey: "psy.mod.sessions.title", icon: <ClipboardList size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/scales", labelKey: "psy.mod.scales.title", icon: <BarChart3 size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/documents", labelKey: "psy.mod.documents.title", icon: <FileText size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/compliance", labelKey: "psy.mod.compliance.title", icon: <Shield size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/shared", labelKey: "nav.sharedWithMe", icon: <Inbox size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/categories", labelKey: "nav.categories", icon: <Layers size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/jit", labelKey: "nav.jit", icon: <Radio size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/messages", labelKey: "nav.messages", icon: <MessageSquare size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PROFESSIONAL"] },
-  { href: "/psychologist/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PROFESSIONAL"] },
-];
-
-const PSYCHOANALYST_NAV: NavItem[] = [
-  { href: "/psychoanalyst", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/psychoanalyst/doctor-connection", labelKey: "nav.doctorConnection", icon: <Sparkles size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/psychoanalyst/freud", labelKey: "pa.freud.nav", icon: <Brain size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/psychoanalyst/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/psychoanalyst/analysands", labelKey: "pa.nav.analysands", icon: <Users size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/psychoanalyst/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/psychoanalyst/resources", labelKey: "nav.library", icon: <BookOpen size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/psychoanalyst/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["PSYCHOANALYST"] },
-  { href: "/psychoanalyst/account", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["PSYCHOANALYST"] },
-];
-
-const INTEGRATIVE_THERAPIST_NAV: NavItem[] = [
-  { href: "/integrative-therapist", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
-  { href: "/integrative-therapist/settings", labelKey: "nav.myProfile", icon: <UserCog size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
-  { href: "/integrative-therapist/clients", labelKey: "it.nav.clients", icon: <Users size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
-  { href: "/integrative-therapist/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
-  { href: "/integrative-therapist/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
-  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", icon: <Heart size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
-  { href: "/integrative-therapist/settings/availability", labelKey: "nav.availability", icon: <Calendar size={18} />, roles: ["INTEGRATIVE_THERAPIST"] },
-];
-
-const ORGANIZATION_NAV: NavItem[] = [
-  { href: "/organization", labelKey: "nav.dashboard", icon: <LayoutDashboard size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/appointments", labelKey: "nav.appointments", icon: <Calendar size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/patients", labelKey: "nav.patients", icon: <Users size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/ledger", labelKey: "org.nav.ledger", icon: <ClipboardList size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/reports", labelKey: "org.nav.reports", icon: <BarChart3 size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/convenios", labelKey: "org.nav.convenios", icon: <Shield size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/hr", labelKey: "org.nav.hr", icon: <Briefcase size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/accounting", labelKey: "org.nav.accounting", icon: <FileSpreadsheet size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/invoices", labelKey: "org.nav.invoices", icon: <Receipt size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/purchases", labelKey: "org.nav.purchases", icon: <Package size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/marketing", labelKey: "org.nav.marketing", icon: <Megaphone size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/team", labelKey: "org.nav.team", icon: <Building2 size={18} />, roles: ["ORGANIZATION"] },
-  { href: "/organization/settings", labelKey: "nav.account", icon: <Settings size={18} />, roles: ["ORGANIZATION"] },
-];
-
-const ADMIN_NAV: NavItem[] = [
-  { href: "/admin", labelKey: "admin.home.title", icon: <Shield size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/categories", labelKey: "nav.adminCategories", icon: <Layers size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/doctors", labelKey: "nav.adminDoctors", icon: <Stethoscope size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/patients", labelKey: "nav.adminPatients", icon: <Users size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/payments", labelKey: "nav.adminPayments", icon: <CreditCard size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", icon: <Radio size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", icon: <Heart size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", icon: <ShoppingBag size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/integrations", labelKey: "nav.adminIntegrations", icon: <Plug size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/audit", labelKey: "nav.adminAudit", icon: <ScrollText size={18} />, roles: ["ADMIN"] },
-  { href: "/admin/rateio", labelKey: "nav.adminRateio", icon: <PieChart size={18} />, roles: ["ADMIN"] },
-];
+interface NavItem extends DashboardNavItem {}
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -172,14 +56,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
   const isPsychologistPortal = pathname.startsWith("/psychologist");
 
-  const navItems =
-    role === "ADMIN" ? ADMIN_NAV
-    : role === "ORGANIZATION" ? ORGANIZATION_NAV
-    : isPsychologistPortal ? PSYCHOLOGIST_NAV
-    : role === "PROFESSIONAL" ? PROFESSIONAL_NAV
-    : role === "PSYCHOANALYST" ? PSYCHOANALYST_NAV
-    : role === "INTEGRATIVE_THERAPIST" ? INTEGRATIVE_THERAPIST_NAV
-    : PATIENT_NAV;
+  const navItems: NavItem[] =
+    role === "ADMIN" ? withNavIcons(ADMIN_NAV)
+    : role === "ORGANIZATION" ? withNavIcons(ORGANIZATION_NAV)
+    : isPsychologistPortal ? withNavIcons(PSYCHOLOGIST_NAV)
+    : role === "PROFESSIONAL" ? withNavIcons(PROFESSIONAL_NAV)
+    : role === "PSYCHOANALYST" ? withNavIcons(PSYCHOANALYST_NAV)
+    : role === "INTEGRATIVE_THERAPIST" ? withNavIcons(INTEGRATIVE_THERAPIST_NAV)
+    : withNavIcons(PATIENT_NAV);
   const roleLabel =
     role === "ORGANIZATION" ? t("role.organization")
     : isPsychologistPortal ? t("role.psychologist")

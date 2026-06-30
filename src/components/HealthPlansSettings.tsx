@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { dedupeHealthPlanList } from "@/lib/health-plan-display";
 import { Loader2, Shield, Check } from "lucide-react";
 
 type Plan = {
@@ -26,7 +27,7 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
   useEffect(() => {
     fetch(apiPath)
       .then((r) => r.json())
-      .then((d) => setPlans(d.plans || []))
+      .then((d) => setPlans(dedupeHealthPlanList(d.plans || [])))
       .finally(() => setLoading(false));
   }, [apiPath]);
 

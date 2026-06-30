@@ -9,6 +9,12 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle, X, Send, Loader2, Bot, User, Minimize2 } from "lucide-react";
 import SupportMessageContent from "@/components/SupportMessageContent";
+import {
+  getSuggestedQuestions,
+  normalizeSupportRole,
+  type SupportContext,
+  type SupportUserRole,
+} from "@/lib/support-context";
 
 interface Message {
   role: "user" | "assistant";
@@ -22,9 +28,19 @@ const LANG_KEY = "doctor8.lang";
 const SW: Record<string, Record<Lang, string>> = {
   title:       { pt: "Suporte Doctor8",          en: "Doctor8 Support",          es: "Soporte Doctor8" },
   subtitle:    { pt: "Assistente IA · Sempre disponível", en: "AI assistant · Always available", es: "Asistente IA · Siempre disponible" },
-  greeting:    { pt: "Olá! Sou o assistente Doctor8. Como posso ajudar você hoje?",
-                 en: "Hi! I am the Doctor8 assistant. How can I help you today?",
-                 es: "¡Hola! Soy el asistente Doctor8. ¿En qué puedo ayudarte hoy?" },
+  greeting:    { pt: "Olá! Sou o assistente Doctor8 — posso guiar você passo a passo na plataforma. O que você precisa fazer?",
+                 en: "Hi! I'm the Doctor8 assistant — I can guide you step by step on the platform. What do you need to do?",
+                 es: "¡Hola! Soy el asistente Doctor8 — puedo guiarte paso a paso en la plataforma. ¿Qué necesitas hacer?" },
+  greetingPatient: {
+    pt: "Olá! Vejo que você está na área do paciente. Posso ajudar com consultas, receitas, histórico ou qualquer dúvida sobre o Doctor8.",
+    en: "Hi! You're in the patient area. I can help with appointments, prescriptions, medical history, or any Doctor8 question.",
+    es: "¡Hola! Estás en el área del paciente. Puedo ayudarte con citas, recetas, historial o cualquier duda sobre Doctor8.",
+  },
+  greetingProfessional: {
+    pt: "Olá! Vejo que você está na área profissional. Posso ajudar com prontuário, receitas, plantão, assistente de notas com IA e mais.",
+    en: "Hi! You're in the professional area. I can help with charts, prescriptions, on-call, AI notes assistant, and more.",
+    es: "¡Hola! Estás en el área profesional. Puedo ayudar con fichas, recetas, guardia, asistente de notas con IA y más.",
+  },
   placeholder: { pt: "Digite sua pergunta...",   en: "Type your question...",     es: "Escribe tu pregunta..." },
   suggested:   { pt: "Perguntas sugeridas:",     en: "Suggested questions:",      es: "Preguntas sugeridas:" },
   errorMsg:    { pt: "Desculpe, algo deu errado. Tente novamente.",
@@ -33,27 +49,18 @@ const SW: Record<string, Record<Lang, string>> = {
   openLabel:   { pt: "Abrir chat de suporte",    en: "Open support chat",         es: "Abrir chat de soporte" },
 };
 
-// Suggested questions per language
-const SUGGESTED: Record<Lang, string[]> = {
-  pt: [
-    "Como agendar uma consulta?",
-    "Como funciona o Doctor8?",
-    "Como compartilho meu histórico médico?",
-    "Como me cadastro como profissional?",
-  ],
-  en: [
-    "How do I book a consultation?",
-    "How does Doctor8 work?",
-    "How do I share my medical history?",
-    "How do I register as a professional?",
-  ],
-  es: [
-    "¿Cómo reservo una consulta?",
-    "¿Cómo funciona Doctor8?",
-    "¿Cómo comparto mi historial médico?",
-    "¿Cómo me registro como profesional?",
-  ],
-};
+function greetingForContext(ctx: SupportContext, lang: Lang, fallback: string): string {
+  if (ctx.role === "PATIENT" && ctx.isLoggedIn) {
+    return SW.greetingPatient[lang] ?? fallback;
+  }
+  if (
+    ctx.isLoggedIn &&
+    (ctx.role === "PROFESSIONAL" || ctx.role === "PSYCHOANALYST" || ctx.role === "INTEGRATIVE_THERAPIST")
+  ) {
+    return SW.greetingProfessional[lang] ?? fallback;
+  }
+  return fallback;
+}
 
 function detectLang(): Lang {
   if (typeof window === "undefined") return "en";
@@ -79,10 +86,40 @@ export default function SupportWidget() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [userRole, setUserRole] = useState<SupportUserRole | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const t = (k: string) => SW[k]?.[lang] ?? SW[k]?.["en"] ?? k;
+
+  const supportContext: SupportContext = {
+    pathname: pathname ?? "/",
+    role: userRole ?? "GUEST",
+    isLoggedIn: !!userRole,
+  };
+
+  const suggestedQuestions = getSuggestedQuestions(supportContext, lang);
+
+  // Safe server context (role enum + feature flags only — no PII)
+  useEffect(() => {
+    let cancelled = false;
+    const path = encodeURIComponent(pathname ?? "/");
+    fetch(`/api/support/context?pathname=${path}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const role = data?.session?.role as string | undefined;
+        setUserRole(
+          data?.session?.isLoggedIn && role
+            ? normalizeSupportRole(role, pathname ?? "/")
+            : null,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setUserRole(null);
+      });
+    return () => { cancelled = true; };
+  }, [pathname]);
 
   // Detect language on mount and when localStorage changes
   useEffect(() => {
@@ -109,18 +146,20 @@ export default function SupportWidget() {
     return () => clearInterval(interval);
   }, []);
 
-  // Reset greeting when language changes and chat is not yet started
+  // Reset greeting when language or context changes and chat is not yet started
   useEffect(() => {
     if (messages.length <= 1) {
-      setMessages([{ role: "assistant", content: t("greeting") }]);
+      const greeting = greetingForContext(supportContext, lang, t("greeting"));
+      setMessages([{ role: "assistant", content: greeting }]);
     }
-  }, [lang]);
+  }, [lang, supportContext.role, supportContext.isLoggedIn, supportContext.pathname]);
 
   useEffect(() => {
     if (open && messages.length === 0) {
-      setMessages([{ role: "assistant", content: t("greeting") }]);
+      const greeting = greetingForContext(supportContext, lang, t("greeting"));
+      setMessages([{ role: "assistant", content: greeting }]);
     }
-  }, [open]);
+  }, [open, lang, supportContext.role, supportContext.isLoggedIn, supportContext.pathname, messages.length]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -142,7 +181,11 @@ export default function SupportWidget() {
       const res = await fetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages, lang }),
+        body: JSON.stringify({
+          messages: newMessages,
+          lang,
+          context: { pathname: supportContext.pathname },
+        }),
       });
       const data = await res.json();
       setMessages((prev) => [...prev, {
@@ -235,7 +278,7 @@ export default function SupportWidget() {
             <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 shrink-0">
               <p className="text-xs text-slate-400 mb-2 font-medium">{t("suggested")}</p>
               <div className="flex flex-wrap gap-1.5">
-                {SUGGESTED[lang].map((q) => (
+                {suggestedQuestions.map((q) => (
                   <button
                     key={q}
                     onClick={() => sendMessage(q)}

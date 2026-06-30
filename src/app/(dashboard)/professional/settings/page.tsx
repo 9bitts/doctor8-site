@@ -212,6 +212,17 @@ export default function ProfessionalSettings() {
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-4"><p className="text-rose-700 text-sm">{error}</p></div>
       )}
 
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sticky top-4 z-10 bg-white/80 backdrop-blur rounded-2xl border border-slate-100 shadow-lg p-3">
+        <p className="text-xs text-slate-400 sm:pl-2">
+          {t("set.availabilityNote")} <a href="/professional/settings/availability" className="text-brand-500 underline">{t("set.availabilityLink")}</a>.
+        </p>
+        <button onClick={handleSave} disabled={saving}
+          className="w-full sm:w-auto bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 shrink-0 min-h-[44px]">
+          {saving && <Loader2 className="animate-spin" size={16} />}
+          {saving ? t("set.saving") : t("set.saveProfile")}
+        </button>
+      </div>
+
       {/* Photo + Identity */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2"><User size={18} className="text-brand-500" /> {t("set.photoIdentity")}</h2>
@@ -336,18 +347,6 @@ export default function ProfessionalSettings() {
             <input className={inputClass} value={clinicZip} onChange={(e) => setClinicZip(e.target.value)} />
           </div>
         </div>
-      </div>
-
-      {/* Save bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sticky bottom-4 bg-white/80 backdrop-blur rounded-2xl border border-slate-100 shadow-lg p-3">
-        <p className="text-xs text-slate-400 sm:pl-2">
-          {t("set.availabilityNote")} <a href="/professional/settings/availability" className="text-brand-500 underline">{t("set.availabilityLink")}</a>.
-        </p>
-        <button onClick={handleSave} disabled={saving}
-          className="w-full sm:w-auto bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 shrink-0 min-h-[44px]">
-          {saving && <Loader2 className="animate-spin" size={16} />}
-          {saving ? t("set.saving") : t("set.saveProfile")}
-        </button>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">

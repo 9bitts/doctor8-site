@@ -9,26 +9,85 @@ import {
   RATE_LIMITS,
   rateLimitResponse,
 } from "@/lib/rate-limit";
-import { SUPPORT_SYSTEM_KNOWLEDGE } from "@/lib/support-knowledge";
+import {
+  buildSupportSystemPrompt,
+  prepareSupportMessages,
+  type SupportChatMessage,
+} from "@/lib/support-prompt";
+import {
+  normalizeSupportRole,
+  type SupportContext,
+} from "@/lib/support-context";
+import { auth } from "@/lib/auth";
+import { getSupportPlatformCapabilities } from "@/lib/support-platform-capabilities";
 
-const LANG_INSTRUCTION: Record<string, string> = {
-  pt: "Responda sempre em português do Brasil.",
-  en: "Always respond in English.",
-  es: "Responde siempre en español.",
+const ERROR_MSG: Record<string, Record<string, string>> = {
+  pt: {
+    unavailable: "O suporte está temporariamente indisponível. Tente novamente em instantes.",
+    generic: "Algo deu errado. Tente novamente.",
+    invalid: "Requisição inválida.",
+  },
+  en: {
+    unavailable: "Support is temporarily unavailable. Please try again shortly.",
+    generic: "Something went wrong. Please try again.",
+    invalid: "Invalid request.",
+  },
+  es: {
+    unavailable: "El soporte no está disponible temporalmente. Inténtalo de nuevo en un momento.",
+    generic: "Algo salió mal. Inténtalo de nuevo.",
+    invalid: "Solicitud inválida.",
+  },
 };
 
-const SYSTEM_PROMPT_BASE = `You are the Doctor8 support assistant — friendly, precise, and focused on helping users navigate the platform.
+function resolveLang(lang: unknown): "pt" | "en" | "es" {
+  if (typeof lang === "string" && lang.startsWith("pt")) return "pt";
+  if (typeof lang === "string" && lang.startsWith("es")) return "es";
+  return "en";
+}
 
-${SUPPORT_SYSTEM_KNOWLEDGE}
+const ALLOWED_ROLES = new Set([
+  "PATIENT",
+  "PROFESSIONAL",
+  "PSYCHOANALYST",
+  "INTEGRATIVE_THERAPIST",
+  "ORGANIZATION",
+  "ADMIN",
+]);
 
-FORMATTING RULES:
-- Use Markdown for readability
-- Put each numbered step on its own line (never multiple steps on one line)
-- Use **bold** for menu names, buttons, and key actions
-- Use short paragraphs and bullet or numbered lists for steps
-- Keep answers concise and scannable`;
+function parseContext(body: Record<string, unknown>, sessionRole: string | null): SupportContext {
+  const ctx = body.context;
+  const raw = ctx && typeof ctx === "object" ? (ctx as Record<string, unknown>) : {};
+  const pathname = typeof raw.pathname === "string" ? raw.pathname.slice(0, 256) : "/";
+
+  const safeRole =
+    sessionRole && ALLOWED_ROLES.has(sessionRole) ? sessionRole : null;
+  const isLoggedIn = !!safeRole;
+  const role = normalizeSupportRole(safeRole, pathname);
+
+  return { pathname, role, isLoggedIn };
+}
+
+function sanitizeMessages(raw: unknown): SupportChatMessage[] | null {
+  if (!Array.isArray(raw)) return null;
+
+  const out: SupportChatMessage[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const msg = item as Record<string, unknown>;
+    const role = msg.role;
+    const content = msg.content;
+    if ((role !== "user" && role !== "assistant") || typeof content !== "string") continue;
+    const trimmed = content.trim();
+    if (!trimmed) continue;
+    out.push({ role, content: trimmed.slice(0, 4000) });
+  }
+
+  return out.length > 0 ? out : null;
+}
 
 export async function POST(req: NextRequest) {
+  const langKey = resolveLang(undefined);
+
   try {
     const ip = clientIp(req);
     const rate = await checkRateLimit({
@@ -38,15 +97,26 @@ export async function POST(req: NextRequest) {
     });
     if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
 
-    const { messages, lang } = await req.json();
+    const body = await req.json();
+    const lang = resolveLang(body.lang);
+    const err = ERROR_MSG[lang];
 
-    if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    const messages = sanitizeMessages(body.messages);
+    if (!messages) {
+      return NextResponse.json({ error: err.invalid }, { status: 400 });
     }
 
-    const langKey = typeof lang === "string" && lang.startsWith("pt") ? "pt"
-      : typeof lang === "string" && lang.startsWith("es") ? "es" : "en";
-    const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\n${LANG_INSTRUCTION[langKey]}`;
+    const session = await auth();
+    const sessionRole = session?.user?.role ?? null;
+
+    const context = parseContext(body, sessionRole);
+    const apiMessages = prepareSupportMessages(messages);
+    if (apiMessages.length === 0) {
+      return NextResponse.json({ error: err.invalid }, { status: 400 });
+    }
+
+    const capabilities = getSupportPlatformCapabilities();
+    const systemPrompt = buildSupportSystemPrompt(lang, context, capabilities);
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -57,29 +127,29 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
+        max_tokens: 900,
         system: systemPrompt,
-        messages: messages.slice(-6),
+        messages: apiMessages,
       }),
     });
 
     if (!response.ok) {
       console.error("[SUPPORT API ERROR]", await response.text());
-      return NextResponse.json(
-        { error: "Support is temporarily unavailable. Please try again." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: err.unavailable }, { status: 500 });
     }
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || "I could not process your message. Please try again.";
+    const text = data.content?.[0]?.text?.trim();
+    if (!text) {
+      return NextResponse.json({ error: err.generic }, { status: 500 });
+    }
 
     return NextResponse.json({ message: text });
   } catch (error) {
     console.error("[SUPPORT ERROR]", error);
     return NextResponse.json(
-      { error: "Something went wrong. Please try again." },
-      { status: 500 }
+      { error: ERROR_MSG[langKey].generic },
+      { status: 500 },
     );
   }
 }

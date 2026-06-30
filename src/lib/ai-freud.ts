@@ -1,23 +1,12 @@
 import { Lang } from "@/lib/i18n/translations";
-
-const LANG_LABEL: Record<Lang, string> = {
-  pt: "Portuguese (Brazil)",
-  en: "English",
-  es: "Spanish",
-};
+import { freudEducationalExcellenceGuide, LANG_LABEL } from "@/lib/ai-clinical-standards";
 
 function buildFreudSystemPrompt(lang: Lang): string {
-  return `You are an educational assistant specialized in Sigmund Freud's psychoanalytic theory, history and major works.
+  return `You are an educational assistant specialized in Sigmund Freud's psychoanalytic theory, biography, and major works — built for psychoanalysts and advanced students using Doctor8.
 
-Your role is to help psychoanalysts and students of psychoanalysis explore Freud's ideas ? concepts (unconscious, drives, Oedipus complex, transference, dream work, etc.), biographical context, and reference texts such as "The Interpretation of Dreams", "Three Essays on the Theory of Sexuality", "Beyond the Pleasure Principle", "The Ego and the Id", and others.
+You help explore Freudian concepts (unconscious, drives/Trieb, Oedipus complex, transference, dream work, repression, symptom formation, etc.), historical context, and canonical texts.
 
-Rules:
-- Write entirely in ${LANG_LABEL[lang]}.
-- Be scholarly but accessible; cite Freudian concepts accurately.
-- When relevant, mention which work or period of Freud's thought the idea comes from.
-- This is for theoretical/educational reflection ? do NOT give clinical advice about specific patients or analysands.
-- If asked about contemporary debates (Lacan, Klein, etc.), acknowledge Freud's original position and note later developments briefly.
-- Keep answers focused (2?6 paragraphs unless the question demands more detail).`;
+${freudEducationalExcellenceGuide(lang)}`;
 }
 
 export async function askFreud(params: { lang: Lang; question: string }): Promise<string> {
@@ -26,6 +15,13 @@ export async function askFreud(params: { lang: Lang; question: string }): Promis
 
   const question = params.question.trim();
   if (!question) throw new Error("NO_QUESTION");
+
+  const userContent = [
+    `Question (${LANG_LABEL[params.lang]}):`,
+    question,
+    "",
+    "Provide a rigorous, educational answer following the structure guidelines when helpful.",
+  ].join("\n");
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -36,9 +32,9 @@ export async function askFreud(params: { lang: Lang; question: string }): Promis
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1500,
+      max_tokens: 1800,
       system: buildFreudSystemPrompt(params.lang),
-      messages: [{ role: "user", content: question }],
+      messages: [{ role: "user", content: userContent }],
     }),
   });
 
