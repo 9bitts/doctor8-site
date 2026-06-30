@@ -98,6 +98,7 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
       <div>
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
           <Shield size={18} className="text-brand-500" /> {t("pubSearch.healthPlansTitle")}
+          <span className="text-slate-400 text-sm font-normal">{t("set.optional")}</span>
         </h2>
         <p className="text-sm text-slate-500 mt-1">{t("pubSearch.healthPlansSubtitle")}</p>
       </div>

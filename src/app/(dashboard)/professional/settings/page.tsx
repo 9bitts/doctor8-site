@@ -212,84 +212,6 @@ export default function ProfessionalSettings() {
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-4"><p className="text-rose-700 text-sm">{error}</p></div>
       )}
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Globe size={18} className="text-brand-500" /> Região da conta
-        </h2>
-        <p className="text-sm text-slate-500">
-          Define a moeda da mensalidade Doctor Connection e de outros pagamentos na plataforma.
-          Para pagar em reais (PIX/boleto), selecione Brasil.
-        </p>
-        {regionError && (
-          <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
-            {regionError}
-          </p>
-        )}
-        {regionSaved && (
-          <p className="text-sm text-brand-700 bg-brand-50 border border-brand-200 rounded-xl px-3 py-2">
-            Região atualizada. Você já pode assinar na moeda escolhida em Conta.
-          </p>
-        )}
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">País / região</label>
-            <RegistrationRegionSelect
-              value={accountRegion}
-              onChange={setAccountRegion}
-              lang={lang}
-              className={inputClass}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={saveAccountRegion}
-            disabled={regionSaving}
-            className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0"
-          >
-            {regionSaving && <Loader2 size={14} className="animate-spin" />}
-            Salvar região
-          </button>
-        </div>
-      </div>
-
-      <PublicListingSettings apiPath="/api/professional/public-profile" />
-      <HealthPlansSettings apiPath="/api/professional/health-plans" />
-      <PracticeSettings apiPath="/api/professional/practice" />
-
-      <a
-        href="/professional/settings/clinic"
-        className="block bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:border-brand-200 transition group"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-              <Building2 size={18} className="text-brand-500 shrink-0" /> {t("clinic.settingsCardTitle")}
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">{t("clinic.settingsCardDesc")}</p>
-          </div>
-          <span className="text-brand-500 text-sm font-semibold group-hover:underline shrink-0">
-            {t("clinic.manage")} →
-          </span>
-        </div>
-      </a>
-
-      <a
-        href="/professional/settings/templates"
-        className="block bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:border-brand-200 transition group"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-              <LayoutTemplate size={18} className="text-brand-500 shrink-0" /> {t("tmpl.settingsCardTitle")}
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">{t("tmpl.settingsCardDesc")}</p>
-          </div>
-          <span className="text-brand-500 text-sm font-semibold group-hover:underline shrink-0">
-            {t("tmpl.manage")} →
-          </span>
-        </div>
-      </a>
-
       {/* Photo + Identity */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2"><User size={18} className="text-brand-500" /> {t("set.photoIdentity")}</h2>
@@ -427,6 +349,84 @@ export default function ProfessionalSettings() {
           {saving ? t("set.saving") : t("set.saveProfile")}
         </button>
       </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Globe size={18} className="text-brand-500" /> Região da conta
+        </h2>
+        <p className="text-sm text-slate-500">
+          Define a moeda da mensalidade Doctor Connection e de outros pagamentos na plataforma.
+          Para pagar em reais (PIX/boleto), selecione Brasil.
+        </p>
+        {regionError && (
+          <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+            {regionError}
+          </p>
+        )}
+        {regionSaved && (
+          <p className="text-sm text-brand-700 bg-brand-50 border border-brand-200 rounded-xl px-3 py-2">
+            Região atualizada. Você já pode assinar na moeda escolhida em Conta.
+          </p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">País / região</label>
+            <RegistrationRegionSelect
+              value={accountRegion}
+              onChange={setAccountRegion}
+              lang={lang}
+              className={inputClass}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={saveAccountRegion}
+            disabled={regionSaving}
+            className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0"
+          >
+            {regionSaving && <Loader2 size={14} className="animate-spin" />}
+            Salvar região
+          </button>
+        </div>
+      </div>
+
+      <PublicListingSettings apiPath="/api/professional/public-profile" />
+      <HealthPlansSettings apiPath="/api/professional/health-plans" />
+      <PracticeSettings apiPath="/api/professional/practice" />
+
+      <a
+        href="/professional/settings/clinic"
+        className="block bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:border-brand-200 transition group"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <Building2 size={18} className="text-brand-500 shrink-0" /> {t("clinic.settingsCardTitle")}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">{t("clinic.settingsCardDesc")}</p>
+          </div>
+          <span className="text-brand-500 text-sm font-semibold group-hover:underline shrink-0">
+            {t("clinic.manage")} →
+          </span>
+        </div>
+      </a>
+
+      <a
+        href="/professional/settings/templates"
+        className="block bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:border-brand-200 transition group"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <LayoutTemplate size={18} className="text-brand-500 shrink-0" /> {t("tmpl.settingsCardTitle")}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">{t("tmpl.settingsCardDesc")}</p>
+          </div>
+          <span className="text-brand-500 text-sm font-semibold group-hover:underline shrink-0">
+            {t("tmpl.manage")} →
+          </span>
+        </div>
+      </a>
     </div>
   );
 }
