@@ -1,5 +1,5 @@
 import { canonicalProfessionValue, PROFESSION_GROUPS } from "@/lib/professions";
-import { resolveProfessionalPoolSlug } from "@/lib/humanitarian/dispatcher";
+import { resolveProfessionalPoolSlug } from "@/lib/humanitarian/pool-slugs";
 
 function optionsFor(groupKey: string): string[] {
   return PROFESSION_GROUPS.find((g) => g.groupKey === groupKey)?.options ?? [];

@@ -6,6 +6,7 @@ import { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
 import { createHumanitarianMeetLink } from "@/lib/google-meet";
 import { logDailyRecording } from "@/lib/daily-recording-log";
 import { DEFAULT_VENEZUELA_POOLS, poolLabel } from "@/lib/humanitarian/constants";
+import { resolveProfessionalPoolSlug } from "@/lib/humanitarian/pool-slugs";
 import {
   notifyHumanitarianMissedTurn,
   notifyHumanitarianYourTurn,
@@ -832,24 +833,7 @@ export async function resolveVolunteerProfile(userId: string, role: string): Pro
   return null;
 }
 
-/** Maps a PROFESSIONAL's specialty to the single humanitarian pool they may join. */
-export function resolveProfessionalPoolSlug(specialty: string): string {
-  const s = specialty.toLowerCase();
-  let best: { slug: string; hintLen: number } | null = null;
-
-  for (const pool of DEFAULT_VENEZUELA_POOLS) {
-    if (!pool.volunteerRoles.includes("PROFESSIONAL") || !pool.specialtyHints) continue;
-    for (const hint of pool.specialtyHints) {
-      const h = hint.toLowerCase();
-      if (!s.includes(h)) continue;
-      if (!best || h.length > best.hintLen) {
-        best = { slug: pool.slug, hintLen: h.length };
-      }
-    }
-  }
-
-  return best?.slug ?? "medico";
-}
+export { resolveProfessionalPoolSlug } from "@/lib/humanitarian/pool-slugs";
 
 export function poolMatchesVolunteer(
   poolSlug: string,
