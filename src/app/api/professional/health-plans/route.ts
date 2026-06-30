@@ -55,18 +55,23 @@ export async function PUT(req: NextRequest) {
       ? body.healthPlanIds.map((id: string) => ({ healthPlanId: id }))
       : [];
 
-  await db.professionalHealthPlan.deleteMany({ where: { professionalId: profile.id } });
+  const ops = [
+    db.professionalHealthPlan.deleteMany({ where: { professionalId: profile.id } }),
+  ];
   if (rules.length > 0) {
-    await db.professionalHealthPlan.createMany({
-      data: rules.map((r) => ({
-        professionalId: profile.id,
-        healthPlanId: r.healthPlanId,
-        allowedWeekdays: normalizeWeekdays(r.allowedWeekdays),
-        minLeadDays: Math.max(0, r.minLeadDays ?? 0),
-      })),
-      skipDuplicates: true,
-    });
+    ops.push(
+      db.professionalHealthPlan.createMany({
+        data: rules.map((r) => ({
+          professionalId: profile.id,
+          healthPlanId: r.healthPlanId,
+          allowedWeekdays: normalizeWeekdays(r.allowedWeekdays),
+          minLeadDays: Math.max(0, r.minLeadDays ?? 0),
+        })),
+        skipDuplicates: true,
+      }),
+    );
   }
+  await db.$transaction(ops);
 
   return NextResponse.json({ ok: true });
 }

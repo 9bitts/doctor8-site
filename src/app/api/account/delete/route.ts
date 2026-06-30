@@ -14,19 +14,18 @@ export async function POST() {
     const userId = session.user.id;
     const now = new Date();
 
-    await db.user.update({
-      where: { id: userId },
-      data: {
-        deletedAt: now,
-        deletionScheduledAt: deletionScheduledDate(now),
-      },
-    });
+    await db.$transaction([
+      db.user.update({
+        where: { id: userId },
+        data: {
+          deletedAt: now,
+          deletionScheduledAt: deletionScheduledDate(now),
+        },
+      }),
+      db.session.deleteMany({ where: { userId } }),
+    ]);
 
     await audit.deletionRequest(userId);
-
-    await db.session.deleteMany({
-      where: { userId },
-    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

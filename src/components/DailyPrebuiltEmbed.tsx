@@ -20,7 +20,12 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const callRef = useRef<DailyCall | null>(null);
+  const onErrorRef = useRef(onError);
   const [joining, setJoining] = useState(true);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   useImperativeHandle(ref, () => ({
     leave: async () => {
@@ -63,7 +68,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       } catch (e) {
         if (!destroyed) {
           setJoining(false);
-          onError?.(e instanceof Error ? e.message : "Could not join video room");
+          onErrorRef.current?.(e instanceof Error ? e.message : "Could not join video room");
         }
       }
     }
@@ -73,9 +78,11 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
     return () => {
       destroyed = true;
       callRef.current = null;
-      call?.destroy();
+      try {
+        call?.destroy();
+      } catch {}
     };
-  }, [url, token, onError]);
+  }, [url, token]);
 
   useEffect(() => {
     function onPageHide() {

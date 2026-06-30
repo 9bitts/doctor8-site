@@ -52,20 +52,25 @@ export async function PUT(req: NextRequest) {
       ? body.healthPlanIds.map((id: string) => ({ healthPlanId: id }))
       : [];
 
-  await db.integrativeTherapistHealthPlan.deleteMany({
-    where: { integrativeTherapistId: therapist.id },
-  });
+  const ops = [
+    db.integrativeTherapistHealthPlan.deleteMany({
+      where: { integrativeTherapistId: therapist.id },
+    }),
+  ];
   if (rules.length > 0) {
-    await db.integrativeTherapistHealthPlan.createMany({
-      data: rules.map((r) => ({
-        integrativeTherapistId: therapist.id,
-        healthPlanId: r.healthPlanId,
-        allowedWeekdays: normalizeWeekdays(r.allowedWeekdays),
-        minLeadDays: Math.max(0, r.minLeadDays ?? 0),
-      })),
-      skipDuplicates: true,
-    });
+    ops.push(
+      db.integrativeTherapistHealthPlan.createMany({
+        data: rules.map((r) => ({
+          integrativeTherapistId: therapist.id,
+          healthPlanId: r.healthPlanId,
+          allowedWeekdays: normalizeWeekdays(r.allowedWeekdays),
+          minLeadDays: Math.max(0, r.minLeadDays ?? 0),
+        })),
+        skipDuplicates: true,
+      }),
+    );
   }
+  await db.$transaction(ops);
 
   return NextResponse.json({ ok: true });
 }
