@@ -7,7 +7,7 @@ import { Heart, ArrowLeft, Home, User, Stethoscope, ExternalLink } from "lucide-
 import { translate, Lang } from "@/lib/i18n/translations";
 import { HUMANITARIAN_LANDING_URL, VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianLangSwitcher from "@/components/humanitarian/HumanitarianLangSwitcher";
-import { humanitarianBackFallback, navigateBack } from "@/lib/safe-nav";
+import { humanitarianBackFallback } from "@/lib/safe-nav";
 import { resolveRoleHome } from "@/lib/role-home";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
@@ -71,6 +71,11 @@ export default function HumanitarianShell({
   const campaignHref = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
   const accountHref = homeHrefForRole(userRole, professionalSpecialty, isVolunteer, isAngel);
 
+  const backHref =
+    isVolunteer || isAngel
+      ? accountHref
+      : humanitarianBackFallback(pathname);
+
   const navLink = (href: string, active: boolean, label: string, icon: React.ReactNode) => (
     <Link
       href={href}
@@ -101,7 +106,7 @@ export default function HumanitarianShell({
             {showBack && (
               <button
                 type="button"
-                onClick={() => navigateBack(router, humanitarianBackFallback(pathname))}
+                onClick={() => router.push(backHref)}
                 className={`p-2 rounded-lg shrink-0 ${dark ? "text-slate-400 hover:text-white hover:bg-white/10" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"}`}
                 aria-label={t("hum.shell.back")}
               >

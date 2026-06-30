@@ -52,6 +52,20 @@ export default function HumanitarianVideoPage() {
         window.location.href = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}/tcle?return=${encodeURIComponent(`/video/humanitarian/${entryId}`)}`;
         return { error: "Redirecting to consent form..." };
       }
+      if (d.error === "NOT_READY" || res.status === 425) {
+        try {
+          const sess = await fetch("/api/auth/session").then((r) => r.json());
+          const role = sess?.user?.role as string | undefined;
+          const dest =
+            role && role !== "PATIENT"
+              ? "/humanitarian/volunteer"
+              : `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
+          window.location.replace(dest);
+        } catch {
+          window.location.replace(`/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`);
+        }
+        return { error: "Redirecting..." };
+      }
       return { error: d.message || d.error || roomError() };
     }
     return { data: { ...d, kind: "humanitarian", queueId: entryId, entryId } };

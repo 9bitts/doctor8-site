@@ -17,7 +17,7 @@ import DailyPrebuiltEmbed, { type DailyPrebuiltHandle } from "@/components/Daily
 import { useConsultSessionKeepalive } from "@/hooks/useConsultSessionKeepalive";
 import { translate } from "@/lib/i18n/translations";
 import { buildVideoChartLinks, providerAppointmentsPath, providerJitPath, videoReturnPath } from "@/lib/video-chart-nav";
-import { navigateBack, videoBackFallback } from "@/lib/safe-nav";
+import { videoBackFallback } from "@/lib/safe-nav";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
 export interface VideoConsultData {
@@ -569,7 +569,7 @@ export default function VideoConsultRoom({
             <p className="text-xs text-slate-500 mb-1 uppercase tracking-wide">{t("opensIn")}</p>
             <p className="text-emerald-400 font-bold text-4xl tabular-nums">{countdown || "..."}</p>
           </div>
-          <button type="button" onClick={() => navigateBack(router, videoBackFallback())} className="text-slate-400 hover:text-white text-sm font-medium flex items-center gap-2 mx-auto transition">
+          <button type="button" onClick={() => router.replace(videoBackFallback())} className="text-slate-400 hover:text-white text-sm font-medium flex items-center gap-2 mx-auto transition">
             <ArrowLeft size={15} /> {t("back")}
           </button>
         </div>
@@ -586,7 +586,7 @@ export default function VideoConsultRoom({
           </div>
           <h1 className="text-white text-xl font-bold mb-2">{t("unavailable")}</h1>
           <p className="text-slate-400 text-sm mb-8">{error}</p>
-          <button type="button" onClick={() => navigateBack(router, videoBackFallback())} className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition flex items-center gap-2 mx-auto">
+          <button type="button" onClick={() => router.replace(videoBackFallback())} className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition flex items-center gap-2 mx-auto">
             <ArrowLeft size={15} /> {t("back")}
           </button>
         </div>
@@ -639,7 +639,7 @@ export default function VideoConsultRoom({
     }
 
     await dailyRef.current?.leave();
-    router.push(leaveDestination(roomData));
+    router.replace(leaveDestination(roomData));
   }
 
   return (
