@@ -128,7 +128,7 @@ export default function ClinicalCalculators({ onInsert }: Props) {
               </div>
               {bmiResult && (
                 <p className="text-xs text-brand-700 font-medium">
-                  {t("metric.bmi")}: {bmiResult.bmi} ? {t(bmiCategoryLabelKey(bmiResult.category))}
+                  {t("metric.bmi")}: {bmiResult.bmi} — {t(bmiCategoryLabelKey(bmiResult.category))}
                 </p>
               )}
               <button

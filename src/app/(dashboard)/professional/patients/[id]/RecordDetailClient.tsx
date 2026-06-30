@@ -53,7 +53,14 @@ import {
   findPinnedAnamnesis,
   recordKindLabelKey,
 } from "@/lib/record-kind";
-import { consultDraftKey } from "@/lib/ai-consult-notes";
+import {
+  clearRecordDraft,
+  hasRecordDraft,
+  isRecordDraftEmpty,
+  loadRecordDraft,
+  saveRecordDraft,
+  type ClinicalRecordDraft,
+} from "@/lib/record-draft";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -300,6 +307,8 @@ export default function RecordDetailClient({
   const [addToDiagnoses, setAddToDiagnoses] = useState(true);
   const [recordKind, setRecordKind] = useState<ClinicalRecordKind>("EVOLUTION");
   const [showImageCompare, setShowImageCompare] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -338,10 +347,14 @@ export default function RecordDetailClient({
   }, []);
 
   useEffect(() => {
+    setPendingDraft(hasRecordDraft(chart.id));
+  }, [chart.id]);
+
+  useEffect(() => {
     if (searchParams.get("newRecord") === "1") {
-      setRecordKind(suggestRecordKind(initialDocuments));
-      setShowForm(true);
+      openNewRecordForm();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, initialDocuments]);
 
   useEffect(() => {
@@ -367,31 +380,56 @@ export default function RecordDetailClient({
   }, [searchParams]);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(consultDraftKey(chart.id));
-      if (!raw) return;
-      const draft = JSON.parse(raw) as {
-        title?: string;
-        content?: string;
-        recordKind?: ClinicalRecordKind;
-      };
-      sessionStorage.removeItem(consultDraftKey(chart.id));
-      if (draft.title) setTitle(draft.title);
-      if (draft.content) setContent(draft.content);
-      if (draft.recordKind) setRecordKind(draft.recordKind);
-      else setRecordKind("EVOLUTION");
-      setShowForm(true);
-      setChartTab("records");
-    } catch {
-      /* ignore corrupt draft */
+    if (editingDoc || !showForm) return;
+    const draft: ClinicalRecordDraft = {
+      categoryId,
+      cidSelection,
+      title,
+      content,
+      recordKind,
+      metrics,
+      addToDiagnoses,
+    };
+    if (isRecordDraftEmpty(draft)) {
+      clearRecordDraft(chart.id);
+      setPendingDraft(false);
+      return;
     }
-  }, [chart.id]);
+    saveRecordDraft(chart.id, draft);
+    setPendingDraft(true);
+  }, [
+    chart.id,
+    editingDoc,
+    showForm,
+    categoryId,
+    cidSelection,
+    title,
+    content,
+    recordKind,
+    metrics,
+    addToDiagnoses,
+  ]);
+
+  function applyRecordDraft(draft: ClinicalRecordDraft) {
+    if (draft.categoryId) setCategoryId(draft.categoryId);
+    setCidSelection(draft.cidSelection ?? null);
+    setTitle(draft.title ?? "");
+    setContent(draft.content ?? "");
+    setRecordKind(draft.recordKind ?? suggestRecordKind(docs));
+    setMetrics(draft.metrics ?? emptyMetrics());
+    setAddToDiagnoses(draft.addToDiagnoses ?? true);
+    setFiles([]);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setError(null);
+    setEditingDoc(null);
+  }
 
   function insertCalcText(text: string) {
     setContent((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
   }
 
-  function resetForm() {
+  function resetForm(clearDraft = false) {
     const first = groups[0]?.items[0];
     setCategoryId(first ? first.id : "");
     setCidSelection(null);
@@ -404,19 +442,36 @@ export default function RecordDetailClient({
     setImagePreview(null);
     setError(null);
     setEditingDoc(null);
+    setDraftRestored(false);
+    if (clearDraft) {
+      clearRecordDraft(chart.id);
+      setPendingDraft(false);
+    }
   }
 
   function openAnamnesisForm() {
-    resetForm();
-    setRecordKind("ANAMNESIS");
+    const draft = loadRecordDraft(chart.id);
+    if (draft && !isRecordDraftEmpty(draft)) {
+      applyRecordDraft(draft);
+      setDraftRestored(true);
+    } else {
+      resetForm();
+      setRecordKind("ANAMNESIS");
+    }
     setChartTab("records");
     setRecordFilter("anamnesis");
     setShowForm(true);
   }
 
   function openNewRecordForm() {
-    resetForm();
-    setRecordKind(suggestRecordKind(docs));
+    const draft = loadRecordDraft(chart.id);
+    if (draft && !isRecordDraftEmpty(draft)) {
+      applyRecordDraft(draft);
+      setDraftRestored(true);
+    } else {
+      resetForm();
+      setRecordKind(suggestRecordKind(docs));
+    }
     setShowForm(true);
   }
 
@@ -694,7 +749,7 @@ export default function RecordDetailClient({
         },
         ...prev,
       ]);
-      resetForm();
+      resetForm(true);
       setShowForm(false);
     } catch {
       setError(t("rec.networkError"));
@@ -1221,6 +1276,11 @@ export default function RecordDetailClient({
             className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
           >
             <Plus size={18} /> {t("timeline.addRecord")}
+            {pendingDraft && (
+              <span className="text-[10px] font-bold uppercase tracking-wide bg-white/20 px-1.5 py-0.5 rounded">
+                {t("rec.draftPending")}
+              </span>
+            )}
           </button>
           )}
         </div>
@@ -1431,11 +1491,16 @@ export default function RecordDetailClient({
               <h2 className="font-bold text-slate-800">
                 {editingDoc ? t("rec.editRecord") : t("rec.modal.newRecord")}
               </h2>
-              <button onClick={() => { setShowForm(false); resetForm(); }} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => { setShowForm(false); setDraftRestored(false); }} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
             <div className="p-5 space-y-4">
+              {!editingDoc && draftRestored && (
+                <p className="text-xs text-brand-700 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2">
+                  {t("rec.draftRestored")}
+                </p>
+              )}
               {!editingDoc && (
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">{t("kind.label")}</label>
@@ -1597,7 +1662,7 @@ export default function RecordDetailClient({
 
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => { setShowForm(false); resetForm(); }}
+                  onClick={() => { setShowForm(false); setDraftRestored(false); }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
                 >
                   {t("common.cancel")}

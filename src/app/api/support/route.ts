@@ -19,7 +19,14 @@ const LANG_INSTRUCTION: Record<string, string> = {
 
 const SYSTEM_PROMPT_BASE = `You are the Doctor8 support assistant — friendly, precise, and focused on helping users navigate the platform.
 
-${SUPPORT_SYSTEM_KNOWLEDGE}`;
+${SUPPORT_SYSTEM_KNOWLEDGE}
+
+FORMATTING RULES:
+- Use Markdown for readability
+- Put each numbered step on its own line (never multiple steps on one line)
+- Use **bold** for menu names, buttons, and key actions
+- Use short paragraphs and bullet or numbered lists for steps
+- Keep answers concise and scannable`;
 
 export async function POST(req: NextRequest) {
   try {

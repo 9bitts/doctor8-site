@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle, X, Send, Loader2, Bot, User, Minimize2 } from "lucide-react";
+import SupportMessageContent from "@/components/SupportMessageContent";
 
 interface Message {
   role: "user" | "assistant";
@@ -210,7 +211,9 @@ export default function SupportWidget() {
                     ? "bg-slate-100 text-slate-800 rounded-tl-sm"
                     : "bg-emerald-500 text-white rounded-tr-sm"
                 }`}>
-                  {msg.content}
+                  {msg.role === "assistant"
+                    ? <SupportMessageContent content={msg.content} />
+                    : msg.content}
                 </div>
               </div>
             ))}
