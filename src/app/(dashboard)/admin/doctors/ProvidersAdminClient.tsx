@@ -26,6 +26,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import {
   ADMIN_PROVIDER_TABS,
+  angelMatchesAdminTab,
   resolveAdminTabFromProfessionText,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
@@ -126,17 +127,29 @@ function computeLegacyTabCounts(
   return {
     pendentes: pending,
     anjos: angels.length,
-    medicos: doctors.filter((d) => matchesDoctorTab("medicos", d.specialty)).length,
-    psicologos: doctors.filter((d) => matchesDoctorTab("psicologos", d.specialty)).length,
-    nutricionistas: doctors.filter((d) => matchesDoctorTab("nutricionistas", d.specialty)).length,
-    fisioterapeutas: doctors.filter((d) => matchesDoctorTab("fisioterapeutas", d.specialty)).length,
+    medicos:
+      angels.filter((a) => angelMatchesAdminTab(a, "medicos")).length +
+      doctors.filter((d) => matchesDoctorTab("medicos", d.specialty)).length,
+    psicologos:
+      angels.filter((a) => angelMatchesAdminTab(a, "psicologos")).length +
+      doctors.filter((d) => matchesDoctorTab("psicologos", d.specialty)).length,
+    nutricionistas:
+      angels.filter((a) => angelMatchesAdminTab(a, "nutricionistas")).length +
+      doctors.filter((d) => matchesDoctorTab("nutricionistas", d.specialty)).length,
+    fisioterapeutas:
+      angels.filter((a) => angelMatchesAdminTab(a, "fisioterapeutas")).length +
+      doctors.filter((d) => matchesDoctorTab("fisioterapeutas", d.specialty)).length,
     psicanalistas:
+      angels.filter((a) => angelMatchesAdminTab(a, "psicanalistas")).length +
       doctors.filter((d) => matchesDoctorTab("psicanalistas", d.specialty)).length +
       psychoanalysts.length,
     terapeutas:
+      angels.filter((a) => angelMatchesAdminTab(a, "terapeutas")).length +
       doctors.filter((d) => matchesDoctorTab("terapeutas", d.specialty)).length +
       integrativeTherapists.length,
-    outros: doctors.filter((d) => matchesDoctorTab("outros", d.specialty)).length,
+    outros:
+      angels.filter((a) => angelMatchesAdminTab(a, "outros")).length +
+      doctors.filter((d) => matchesDoctorTab("outros", d.specialty)).length,
   };
 }
 
@@ -165,7 +178,7 @@ function applyLegacyTabFilter(
   }
   if (tab === "psicanalistas") {
     return {
-      angels: [],
+      angels: allAngels.filter((a) => angelMatchesAdminTab(a, tab)),
       doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty)),
       psychoanalysts: allPsychoanalysts,
       integrativeTherapists: [],
@@ -173,14 +186,14 @@ function applyLegacyTabFilter(
   }
   if (tab === "terapeutas") {
     return {
-      angels: [],
+      angels: allAngels.filter((a) => angelMatchesAdminTab(a, tab)),
       doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty)),
       psychoanalysts: [],
       integrativeTherapists: allIntegrative,
     };
   }
   return {
-    angels: [],
+    angels: allAngels.filter((a) => angelMatchesAdminTab(a, tab)),
     doctors: allDoctors.filter((d) => matchesDoctorTab(tab, d.specialty)),
     psychoanalysts: [],
     integrativeTherapists: [],
@@ -446,8 +459,14 @@ export default function ProvidersAdminClient() {
           >
             {TAB_ICONS[tab.id]}
             {providerTabLabel(tab.id, t)}
-            {tabCounts[tab.id] != null && tabCounts[tab.id]! > 0 && tab.id !== activeTab && (
-              <span className="ml-0.5 min-w-[1.1rem] rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            {tabCounts[tab.id] != null && tabCounts[tab.id]! > 0 && (
+              <span
+                className={`ml-0.5 min-w-[1.1rem] rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                  activeTab === tab.id
+                    ? "bg-white/25 text-white"
+                    : "bg-amber-500 text-white"
+                }`}
+              >
                 {tabCounts[tab.id]}
               </span>
             )}

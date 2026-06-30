@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { buildPublicProfileUrl } from "@/lib/public-slugs";
 import {
   resolveAdminTabFromProfessionText,
+  angelMatchesAdminTab,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
 
@@ -74,6 +75,14 @@ const ADMIN_PROVIDER_TAB_IDS: AdminProviderTab[] = [
   "anjos",
   "outros",
 ];
+
+function angelsForTab(allAngels: AdminAngelRow[], tab: AdminProviderTab): AdminAngelRow[] {
+  if (tab === "anjos") return allAngels;
+  if (tab === "pendentes") {
+    return allAngels.filter((a) => a.approvalStatus === "PENDING");
+  }
+  return allAngels.filter((a) => angelMatchesAdminTab(a, tab));
+}
 
 function matchesTab(tab: AdminProviderTab, specialty: string): boolean {
   if (tab === "pendentes" || tab === "anjos") return false;
@@ -245,7 +254,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
 
   if (tab === "pendentes") {
     return {
-      angels: allAngels.filter((a) => a.approvalStatus === "PENDING"),
+      angels: angelsForTab(allAngels, tab),
       doctors: allDoctors.filter((d) => !d.verified),
       psychoanalysts: allAnalysts.filter((p) => !p.verified),
       integrativeTherapists: allTherapists.filter((p) => !p.verified),
@@ -255,7 +264,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
 
   if (tab === "psicanalistas") {
     return {
-      angels: [],
+      angels: angelsForTab(allAngels, tab),
       doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty)),
       psychoanalysts: allAnalysts,
       integrativeTherapists: [],
@@ -265,7 +274,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
 
   if (tab === "terapeutas") {
     return {
-      angels: [],
+      angels: angelsForTab(allAngels, tab),
       doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty)),
       psychoanalysts: [],
       integrativeTherapists: allTherapists,
@@ -274,7 +283,7 @@ export async function listAdminProviders(tab: AdminProviderTab): Promise<AdminPr
   }
 
   return {
-    angels: [],
+    angels: angelsForTab(allAngels, tab),
     doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty)),
     psychoanalysts: [],
     integrativeTherapists: [],
@@ -299,12 +308,21 @@ function countForTab(
   }
   if (tab === "anjos") return angels.length;
   if (tab === "psicanalistas") {
-    return doctors.filter((d) => matchesTab(tab, d.specialty)).length + analysts.length;
+    return (
+      angels.filter((a) => angelMatchesAdminTab(a, tab)).length +
+      doctors.filter((d) => matchesTab(tab, d.specialty)).length +
+      analysts.length
+    );
   }
   if (tab === "terapeutas") {
-    return doctors.filter((d) => matchesTab(tab, d.specialty)).length + therapists.length;
+    return (
+      angels.filter((a) => angelMatchesAdminTab(a, tab)).length +
+      doctors.filter((d) => matchesTab(tab, d.specialty)).length +
+      therapists.length
+    );
   }
   return (
+    angels.filter((a) => angelMatchesAdminTab(a, tab)).length +
     doctors.filter((d) => matchesTab(tab, d.specialty)).length
   );
 }

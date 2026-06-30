@@ -83,6 +83,16 @@ export function resolveAdminTabFromProfessionText(text: string): AdminProviderTa
   if (/integrativ|hol[ií]stic|\bpics\b|naturop|reiki|aromaterap|fitoterap/.test(lower)) {
     return "terapeutas";
   }
+  if (/nutric|dietet|dietitian|dietista/.test(lower)) return "nutricionistas";
+  if (/fisioter|physiother|physical therap|rehabilit/.test(lower)) return "fisioterapeutas";
+  if (/psicolog|psycholog|mental health|sa[uú]de mental/.test(lower)) return "psicologos";
+  if (
+    /m[eé]dic|medicina|cl[ií]nic|enferm|dentist|odont|cirurg|pediatr|ginec|cardio|urolog|ortop|obstet|doula|parteira|midwife|gestante|matern/.test(
+      lower,
+    )
+  ) {
+    return "medicos";
+  }
 
   const healthCategory = resolveProfessionalCategory(trimmed);
   if (healthCategory !== "outros") return healthCategory;
@@ -111,6 +121,6 @@ export function angelMatchesAdminTab(
   if (tab === "anjos") return true;
   if (tab === "pendentes") return angel.approvalStatus === "PENDING";
   const text = angelProfessionText(angel);
-  if (!text.trim()) return tab === "outros" || tab === "medicos";
+  if (!text.trim()) return tab === "outros";
   return resolveAdminTabFromProfessionText(text) === tab;
 }
