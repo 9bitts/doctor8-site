@@ -19,6 +19,10 @@ import {
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { ANGEL_LOGIN, buildVerifyAccountHref } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
+import InternationalPhoneInput, {
+  type InternationalPhoneValue,
+} from "@/components/InternationalPhoneInput";
+import { buildInternationalPhoneE164, defaultDdiForRegion } from "@/lib/international-phone";
 
 const PASSWORD_RULES = [
   { key: "reg.rule8", test: (p: string) => p.length >= 8 },
@@ -38,7 +42,10 @@ export default function RegisterAngelPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState<InternationalPhoneValue>({
+    ddi: defaultDdiForRegion(region),
+    nationalNumber: "",
+  });
   const [profession, setProfession] = useState("");
   const [volunteerHelp, setVolunteerHelp] = useState("");
   const [certificate, setCertificate] = useState<File | null>(null);
@@ -80,7 +87,7 @@ export default function RegisterAngelPage() {
     acceptedTerms &&
     acceptedPrivacy &&
     languages.length > 0 &&
-    phone.length >= 8 &&
+    Boolean(buildInternationalPhoneE164(phone.ddi, phone.nationalNumber)) &&
     profession.trim().length > 0 &&
     volunteerHelp.trim().length > 0 &&
     !!certificate;
@@ -108,7 +115,8 @@ export default function RegisterAngelPage() {
       form.append("region", region);
       form.append("firstName", firstName);
       form.append("lastName", lastName);
-      form.append("phone", phone);
+      form.append("phoneDdi", phone.ddi);
+      form.append("phoneNational", phone.nationalNumber);
       form.append("profession", profession.trim());
       form.append("volunteerHelp", volunteerHelp.trim());
       form.append("languages", JSON.stringify(languages));
@@ -196,11 +204,14 @@ export default function RegisterAngelPage() {
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email[0]}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.phone")}</label>
-              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50" />
-            </div>
+            <InternationalPhoneInput
+              lang={lang}
+              dark
+              region={region}
+              value={phone}
+              onChange={setPhone}
+              error={errors.phoneNational?.[0]}
+            />
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.profession")}</label>

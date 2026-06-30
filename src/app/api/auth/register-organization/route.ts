@@ -9,6 +9,8 @@ import { UserRole, ConsentType } from "@prisma/client";
 import { sendEmailVerification } from "@/lib/email";
 import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
+import { parseRegistrationPhone } from "@/lib/international-phone";
+import { encryptUserPhone } from "@/lib/user-phone";
 
 const passwordSchema = z
   .string()
@@ -25,7 +27,8 @@ const registerOrgSchema = z.object({
   nomeFantasia: z.string().min(2).max(120),
   responsibleFirstName: z.string().min(1).max(100),
   responsibleLastName: z.string().min(1).max(100),
-  contactPhone: z.string().optional(),
+  phoneDdi: z.string().min(1).max(4),
+  phoneNational: z.string().min(6).max(20),
   addressStreet: z.string().optional(),
   addressNumber: z.string().optional(),
   addressComplement: z.string().optional(),
@@ -67,6 +70,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const phoneParsed = parseRegistrationPhone({
+      phoneDdi: parsed.phoneDdi,
+      phoneNational: parsed.phoneNational,
+    });
+    if ("error" in phoneParsed) {
+      return NextResponse.json(
+        { error: { phoneNational: ["Telefone inválido"] } },
+        { status: 400 },
+      );
+    }
+    const contactPhone = `+${phoneParsed.e164}`;
+
     const email = parsed.email.toLowerCase();
 
     const [existingEmail, existingCnpj] = await Promise.all([
@@ -105,6 +120,7 @@ export async function POST(req: NextRequest) {
           role: UserRole.ORGANIZATION,
           region: "BR",
           language: normalizedLanguage,
+          phone: encryptUserPhone(phoneParsed.e164),
         },
       });
 
@@ -115,7 +131,7 @@ export async function POST(req: NextRequest) {
           nomeFantasia: parsed.nomeFantasia,
           slug,
           contactEmail: email,
-          contactPhone: parsed.contactPhone,
+          contactPhone,
           responsibleFirstName: parsed.responsibleFirstName,
           responsibleLastName: parsed.responsibleLastName,
           addressStreet: parsed.addressStreet,

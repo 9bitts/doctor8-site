@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { UserRole, ConsentType } from "@prisma/client";
+import { parseRegistrationPhone } from "@/lib/international-phone";
+import { encryptUserPhone } from "@/lib/user-phone";
 
 const passwordSchema = z
   .string()
@@ -16,6 +18,8 @@ const registerStaffSchema = z.object({
   password: passwordSchema,
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
+  phoneDdi: z.string().min(1).max(4),
+  phoneNational: z.string().min(6).max(20),
   acceptedTerms: z.literal(true),
   acceptedPrivacy: z.literal(true),
   acceptedGdpr: z.literal(true),
@@ -63,6 +67,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: { general: ["Convite inválido ou expirado"] } }, { status: 400 });
     }
 
+    const phoneParsed = parseRegistrationPhone({
+      phoneDdi: data.data.phoneDdi,
+      phoneNational: data.data.phoneNational,
+    });
+    if ("error" in phoneParsed) {
+      return NextResponse.json(
+        { error: { phoneNational: ["Telefone inválido"] } },
+        { status: 400 },
+      );
+    }
+
     const email = invite.email.toLowerCase();
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
@@ -85,6 +100,7 @@ export async function POST(req: NextRequest) {
           region: "BR",
           language: "pt",
           emailVerified: new Date(),
+          phone: encryptUserPhone(phoneParsed.e164),
         },
       });
 

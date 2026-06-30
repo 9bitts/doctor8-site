@@ -24,6 +24,10 @@ import {
   requiresGdpr,
   requiresHipaa,
 } from "@/lib/registration-regions";
+import InternationalPhoneInput, {
+  type InternationalPhoneValue,
+} from "@/components/InternationalPhoneInput";
+import { buildInternationalPhoneE164, defaultDdiForRegion } from "@/lib/international-phone";
 
 export type RegisterRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 export type Region = RegistrationRegionCode;
@@ -126,10 +130,15 @@ export function RegisterAccountForm({
 
   useEffect(() => {
     setRegion(initialRegion);
+    setPhone((prev) => ({ ...prev, ddi: defaultDdiForRegion(initialRegion) }));
   }, [initialRegion]);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState<InternationalPhoneValue>({
+    ddi: defaultDdiForRegion(initialRegion),
+    nationalNumber: "",
+  });
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -142,8 +151,10 @@ export function RegisterAccountForm({
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
+  const isPhoneValid = Boolean(buildInternationalPhoneE164(phone.ddi, phone.nationalNumber));
   const canSubmit =
     isPasswordValid &&
+    isPhoneValid &&
     acceptedTerms &&
     acceptedPrivacy &&
     (!requiresHipaa(region) || acceptedHipaa) &&
@@ -155,6 +166,10 @@ export function RegisterAccountForm({
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
 
   async function handleGoogleSignUp() {
+    if (!isPhoneValid) {
+      setErrors({ phoneNational: [t("reg.phoneInvalid")] });
+      return;
+    }
     setGoogleLoading(true);
     try {
       const intentRes = await fetch("/api/auth/oauth-intent", {
@@ -163,6 +178,8 @@ export function RegisterAccountForm({
         body: JSON.stringify({
           role,
           professionalKind: isPsychologistSignup ? "psychologist" : undefined,
+          phoneDdi: phone.ddi,
+          phoneNational: phone.nationalNumber,
         }),
       });
       if (!intentRes.ok) {
@@ -199,6 +216,8 @@ export function RegisterAccountForm({
           region,
           firstName,
           lastName,
+          phoneDdi: phone.ddi,
+          phoneNational: phone.nationalNumber,
           language: lang,
           professionalKind: isPsychologistSignup ? "psychologist" : undefined,
           acceptedTerms,
@@ -289,7 +308,7 @@ export function RegisterAccountForm({
 
       <button
         onClick={handleGoogleSignUp}
-        disabled={googleLoading || loading}
+        disabled={googleLoading || loading || !isPhoneValid}
         className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-800 font-semibold py-3 rounded-xl transition mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {googleLoading ? (
@@ -357,6 +376,15 @@ export function RegisterAccountForm({
           />
           {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email[0]}</p>}
         </div>
+
+        <InternationalPhoneInput
+          lang={lang}
+          dark
+          region={region}
+          value={phone}
+          onChange={setPhone}
+          error={errors.phoneNational?.[0]}
+        />
 
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.password")}</label>

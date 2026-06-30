@@ -7,7 +7,6 @@ import { UserRole, ConsentType } from "@prisma/client";
 import { REGISTRATION_REGION_CODES, requiresGdpr } from "@/lib/registration-regions";
 import { sendEmailVerification } from "@/lib/email";
 import { ANGEL_LOGIN } from "@/lib/auth-portals";
-import { encrypt } from "@/lib/encryption";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { buildKey, uploadToS3 } from "@/lib/s3";
 import {
@@ -16,6 +15,8 @@ import {
   MAX_LICENSE_DOC_BYTES,
 } from "@/lib/provider-license-docs";
 import { notifyAdminLicenseDocumentUploaded } from "@/lib/provider-license-notify";
+import { parseRegistrationPhone } from "@/lib/international-phone";
+import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 
 const passwordSchema = z
   .string()
@@ -30,7 +31,8 @@ const registerAngelSchema = z.object({
   region: z.enum(REGISTRATION_REGION_CODES as [typeof REGISTRATION_REGION_CODES[number], ...typeof REGISTRATION_REGION_CODES[number][]]).default("BR"),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
-  phone: z.string().min(8).max(30),
+  phoneDdi: z.string().min(1).max(4),
+  phoneNational: z.string().min(6).max(20),
   profession: z.string().min(1).max(120),
   volunteerHelp: z.string().min(1).max(2000),
   languages: z.array(z.enum(["pt", "en", "es"])).min(1),
@@ -65,7 +67,8 @@ async function parseRegisterBody(req: NextRequest): Promise<{
       region: form.get("region") || "BR",
       firstName: form.get("firstName"),
       lastName: form.get("lastName"),
-      phone: form.get("phone"),
+      phoneDdi: form.get("phoneDdi"),
+      phoneNational: form.get("phoneNational"),
       profession: form.get("profession"),
       volunteerHelp: form.get("volunteerHelp"),
       languages,
@@ -141,7 +144,8 @@ export async function POST(req: NextRequest) {
       region,
       firstName,
       lastName,
-      phone,
+      phoneDdi,
+      phoneNational,
       profession,
       volunteerHelp,
       languages,
@@ -156,6 +160,14 @@ export async function POST(req: NextRequest) {
     if (requiresGdpr(region) && !acceptedGdpr) {
       return NextResponse.json(
         { error: { acceptedGdpr: ["GDPR consent required for EU users"] } },
+        { status: 400 },
+      );
+    }
+
+    const phoneParsed = parseRegistrationPhone({ phoneDdi, phoneNational });
+    if ("error" in phoneParsed) {
+      return NextResponse.json(
+        { error: { phoneNational: ["Invalid phone number"] } },
         { status: 400 },
       );
     }
@@ -192,10 +204,9 @@ export async function POST(req: NextRequest) {
           userId: newUser.id,
           firstName,
           lastName,
-          phone: encrypt(phone),
+          languages,
           profession,
           volunteerHelp,
-          languages,
           motivation: motivation || null,
           preferredCampaignSlug,
           approvalStatus: "PENDING",
@@ -220,6 +231,8 @@ export async function POST(req: NextRequest) {
           userAgent,
         })),
       });
+
+      await saveRegistrationPhone(tx, newUser.id, UserRole.ANGEL, phoneParsed.e164);
 
       return newUser;
     });

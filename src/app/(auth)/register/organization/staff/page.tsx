@@ -7,6 +7,10 @@ import { Loader2, AlertCircle, Building2, ArrowLeft, Eye, EyeOff } from "lucide-
 import { translate, normalizeLang, type Lang } from "@/lib/i18n/translations";
 import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
+import InternationalPhoneInput, {
+  type InternationalPhoneValue,
+} from "@/components/InternationalPhoneInput";
+import { buildInternationalPhoneE164 } from "@/lib/international-phone";
 
 const LANG_KEY = "doctor8.lang";
 
@@ -42,6 +46,7 @@ export default function RegisterOrganizationStaffPage() {
   } | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState<InternationalPhoneValue>({ ddi: "55", nationalNumber: "" });
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -79,6 +84,8 @@ export default function RegisterOrganizationStaffPage() {
           token,
           firstName,
           lastName,
+          phoneDdi: phone.ddi,
+          phoneNational: phone.nationalNumber,
           password,
           acceptedTerms: true,
           acceptedPrivacy: true,
@@ -151,6 +158,7 @@ export default function RegisterOrganizationStaffPage() {
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm" />
             </div>
           </div>
+          <InternationalPhoneInput lang={lang} dark region="BR" value={phone} onChange={setPhone} />
           <div className="relative">
             <label className="text-sm text-slate-300 block mb-1">{t("orgStaff.password")}</label>
             <input required type={showPassword ? "text" : "password"} value={password}
@@ -166,7 +174,7 @@ export default function RegisterOrganizationStaffPage() {
             <label className="flex gap-2"><input type="checkbox" checked={acceptedPrivacy} onChange={(e) => setAcceptedPrivacy(e.target.checked)} /> {t("orgStaff.acceptPrivacy")}</label>
             <label className="flex gap-2"><input type="checkbox" checked={acceptedGdpr} onChange={(e) => setAcceptedGdpr(e.target.checked)} /> {t("orgStaff.acceptGdpr")}</label>
           </div>
-          <button type="submit" disabled={saving || !acceptedTerms || !acceptedPrivacy || !acceptedGdpr}
+          <button type="submit" disabled={saving || !acceptedTerms || !acceptedPrivacy || !acceptedGdpr || !buildInternationalPhoneE164(phone.ddi, phone.nationalNumber)}
             className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-500 disabled:opacity-50 flex items-center justify-center gap-2">
             {saving && <Loader2 className="animate-spin" size={18} />}
             {t("orgStaff.submit")}

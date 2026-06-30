@@ -21,6 +21,8 @@ import {
   attachLinkedDocumentsToPatientProfile,
   linkChartsToPatientOnSignup,
 } from "@/lib/patient-chart-link";
+import { parseRegistrationPhone } from "@/lib/international-phone";
+import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -37,6 +39,8 @@ const registerSchema = z.object({
   region: z.enum(REGISTRATION_REGION_CODES as [typeof REGISTRATION_REGION_CODES[number], ...typeof REGISTRATION_REGION_CODES[number][]]).default("US"),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
+  phoneDdi: z.string().min(1).max(4),
+  phoneNational: z.string().min(6).max(20),
   // Optional language preference coming from the registration screen
   language: z.string().optional(),
 
@@ -71,6 +75,8 @@ export async function POST(req: NextRequest) {
       region,
       firstName,
       lastName,
+      phoneDdi,
+      phoneNational,
       language,
       acceptedTerms,
       acceptedPrivacy,
@@ -90,6 +96,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: { acceptedGdpr: ["GDPR consent required for EU users"] } },
         { status: 400 }
+      );
+    }
+
+    const phoneParsed = parseRegistrationPhone({ phoneDdi, phoneNational });
+    if ("error" in phoneParsed) {
+      return NextResponse.json(
+        { error: { phoneNational: ["Invalid phone number"] } },
+        { status: 400 },
       );
     }
 
@@ -193,6 +207,8 @@ export async function POST(req: NextRequest) {
           userAgent,
         })),
       });
+
+      await saveRegistrationPhone(tx, newUser.id, role as UserRole, phoneParsed.e164);
 
       return newUser;
     });

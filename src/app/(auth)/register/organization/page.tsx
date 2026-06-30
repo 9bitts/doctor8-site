@@ -8,6 +8,10 @@ import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
 import { ORGANIZATION_LOGIN, buildVerifyAccountHref } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import { RegisterLogo } from "@/components/auth/register-shared";
+import InternationalPhoneInput, {
+  type InternationalPhoneValue,
+} from "@/components/InternationalPhoneInput";
+import { buildInternationalPhoneE164 } from "@/lib/international-phone";
 import {
   Eye, EyeOff, Loader2, AlertCircle, Building2, ArrowLeft, Search, LogIn,
 } from "lucide-react";
@@ -45,7 +49,7 @@ export default function RegisterOrganizationPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [contactPhone, setContactPhone] = useState("");
+  const [phone, setPhone] = useState<InternationalPhoneValue>({ ddi: "55", nationalNumber: "" });
   const [addressCity, setAddressCity] = useState("");
   const [addressState, setAddressState] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -97,7 +101,8 @@ export default function RegisterOrganizationPage() {
           nomeFantasia,
           responsibleFirstName,
           responsibleLastName,
-          contactPhone,
+          phoneDdi: phone.ddi,
+          phoneNational: phone.nationalNumber,
           addressCity,
           addressState,
           language: lang,
@@ -274,11 +279,13 @@ export default function RegisterOrganizationPage() {
                   </button>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">{t("org.phone")}</label>
-                  <input
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  <InternationalPhoneInput
+                    lang={lang}
+                    dark
+                    region="BR"
+                    value={phone}
+                    onChange={setPhone}
+                    error={errors.phoneNational?.[0]}
                   />
                 </div>
                 <div>
@@ -308,7 +315,7 @@ export default function RegisterOrganizationPage() {
 
               <button
                 type="submit"
-                disabled={loading || !acceptedTerms || !acceptedPrivacy || !acceptedGdpr}
+                disabled={loading || !acceptedTerms || !acceptedPrivacy || !acceptedGdpr || !buildInternationalPhoneE164(phone.ddi, phone.nationalNumber)}
                 className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50"
               >
                 {loading && <Loader2 className="w-5 h-5 animate-spin" />}

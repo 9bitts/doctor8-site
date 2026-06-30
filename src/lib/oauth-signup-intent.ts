@@ -33,16 +33,19 @@ function signPayload(payload: string): string {
 export function createSignupRoleToken(
   role: SignupRole,
   professionalKind: SignupProfessionalKind = null,
+  phoneE164: string | null = null,
 ): string {
   const exp = Math.floor(Date.now() / 1000) + OAUTH_SIGNUP_ROLE_MAX_AGE_SECONDS;
   const kind = professionalKind ?? "";
-  const payload = `${role}:${kind}:${exp}`;
+  const phone = (phoneE164 || "").replace(/\D/g, "");
+  const payload = `${role}:${kind}:${phone}:${exp}`;
   return `${payload}.${signPayload(payload)}`;
 }
 
 export type ParsedSignupIntent = {
   role: SignupRole;
   professionalKind: SignupProfessionalKind;
+  phoneE164: string | null;
 };
 
 export function parseSignupRoleToken(token: string | undefined): ParsedSignupIntent | null {
@@ -70,13 +73,20 @@ export function parseSignupRoleToken(token: string | undefined): ParsedSignupInt
 
   let role: string;
   let kind: string;
+  let phone: string;
   let expStr: string;
 
-  if (parts.length === 2) {
+  if (parts.length === 4) {
+    [role, kind, phone, expStr] = parts;
+  } else if (parts.length === 3) {
+    [role, kind, expStr] = parts;
+    phone = "";
+  } else if (parts.length === 2) {
     [role, expStr] = parts;
     kind = "";
+    phone = "";
   } else {
-    [role, kind, expStr] = parts;
+    return null;
   }
 
   const exp = Number.parseInt(expStr, 10);
@@ -87,5 +97,6 @@ export function parseSignupRoleToken(token: string | undefined): ParsedSignupInt
   return {
     role: role as SignupRole,
     professionalKind: kind === "psychologist" ? "psychologist" : null,
+    phoneE164: phone || null,
   };
 }

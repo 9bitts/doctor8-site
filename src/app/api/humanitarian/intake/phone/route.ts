@@ -8,14 +8,21 @@ import {
   resolvePatientHumanitarianPhone,
   savePatientHumanitarianPhone,
 } from "@/lib/humanitarian/phone";
+import { buildInternationalPhoneE164 } from "@/lib/international-phone";
 import { decryptIdentificationData } from "@/lib/humanitarian/intake-encryption";
 import type { IdentificationData } from "@/lib/humanitarian/anamnese";
 
-const schema = z.object({
+const legacySchema = z.object({
   campaignSlug: z.string(),
   ddi: z.string().min(1).max(4),
   ddd: z.string().min(2).max(3),
   number: z.string().min(8).max(15),
+});
+
+const intlSchema = z.object({
+  campaignSlug: z.string(),
+  phoneDdi: z.string().min(1).max(4),
+  phoneNational: z.string().min(6).max(20),
 });
 
 export async function GET(req: NextRequest) {
@@ -66,13 +73,35 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const intlParsed = intlSchema.safeParse(body);
+  const legacyParsed = legacySchema.safeParse(body);
+  if (!intlParsed.success && !legacyParsed.success) {
+    return NextResponse.json({ error: "Invalid phone" }, { status: 400 });
   }
 
-  const { campaignSlug, ddi, ddd, number } = parsed.data;
-  const e164 = formatHumanitarianPhoneParts(ddi, ddd, number);
+  const campaignSlug = intlParsed.success
+    ? intlParsed.data.campaignSlug
+    : legacyParsed.data!.campaignSlug;
+
+  let phoneParts: { ddi: string; ddd: string; number: string };
+  if (intlParsed.success) {
+    const e164 = buildInternationalPhoneE164(
+      intlParsed.data.phoneDdi,
+      intlParsed.data.phoneNational,
+    );
+    if (!e164) {
+      return NextResponse.json({ error: "INVALID_PHONE" }, { status: 400 });
+    }
+    phoneParts = parsePhoneToParts(e164);
+  } else {
+    phoneParts = {
+      ddi: legacyParsed.data!.ddi,
+      ddd: legacyParsed.data!.ddd,
+      number: legacyParsed.data!.number,
+    };
+  }
+
+  const e164 = formatHumanitarianPhoneParts(phoneParts.ddi, phoneParts.ddd, phoneParts.number);
   if (!e164) {
     return NextResponse.json({ error: "INVALID_PHONE" }, { status: 400 });
   }
@@ -88,7 +117,7 @@ export async function POST(req: NextRequest) {
   try {
     await savePatientHumanitarianPhone(
       session.user.id,
-      { ddi, ddd, number },
+      phoneParts,
       campaign.id,
     );
     return NextResponse.json({ success: true, phoneReady: true });

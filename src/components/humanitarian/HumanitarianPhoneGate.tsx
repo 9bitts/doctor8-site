@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { Loader2, Phone, MessageCircle } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
+import InternationalPhoneInput, {
+  type InternationalPhoneValue,
+} from "@/components/InternationalPhoneInput";
+import { buildInternationalPhoneE164 } from "@/lib/international-phone";
 
 type Props = {
   lang: Lang;
@@ -19,9 +23,7 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ddi, setDdi] = useState("58");
-  const [ddd, setDdd] = useState("");
-  const [number, setNumber] = useState("");
+  const [phone, setPhone] = useState<InternationalPhoneValue>({ ddi: "58", nationalNumber: "" });
 
   useEffect(() => {
     fetch(`/api/humanitarian/intake/phone?campaignSlug=${campaignSlug}`)
@@ -32,9 +34,10 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
           return;
         }
         if (d.parts) {
-          setDdi(d.parts.ddi || "58");
-          setDdd(d.parts.ddd || "");
-          setNumber(d.parts.number || "");
+          setPhone({
+            ddi: d.parts.ddi || "58",
+            nationalNumber: `${d.parts.ddd || ""}${d.parts.number || ""}`,
+          });
         }
       })
       .catch(() => setError(t(lang, "hum.phone.error")))
@@ -53,7 +56,11 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
       const res = await fetch("/api/humanitarian/intake/phone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaignSlug, ddi, ddd, number }),
+        body: JSON.stringify({
+          campaignSlug,
+          phoneDdi: phone.ddi,
+          phoneNational: phone.nationalNumber,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -94,38 +101,12 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
       </div>
 
       <form onSubmit={handleSave} className="space-y-4">
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t(lang, "hum.phone.ddi")}</label>
-            <input
-              className="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-              value={ddi}
-              onChange={(e) => setDdi(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              placeholder="58"
-              required
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t(lang, "hum.phone.ddd")}</label>
-            <input
-              className="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-              value={ddd}
-              onChange={(e) => setDdd(e.target.value.replace(/\D/g, "").slice(0, 3))}
-              placeholder="412"
-              required
-            />
-          </div>
-          <div className="col-span-1">
-            <label className="text-xs font-medium text-slate-600">{t(lang, "hum.phone.number")}</label>
-            <input
-              className="mt-1 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-              value={number}
-              onChange={(e) => setNumber(e.target.value.replace(/\D/g, "").slice(0, 15))}
-              placeholder="1234567"
-              required
-            />
-          </div>
-        </div>
+        <InternationalPhoneInput
+          lang={lang}
+          value={phone}
+          onChange={setPhone}
+          region="VE"
+        />
 
         {error && (
           <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
@@ -135,7 +116,7 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
 
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || !buildInternationalPhoneE164(phone.ddi, phone.nationalNumber)}
           className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Phone size={16} />}

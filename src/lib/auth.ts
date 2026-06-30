@@ -13,6 +13,7 @@ import { isAccountVerified } from "@/lib/account-verified";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { encrypt } from "@/lib/encryption";
+import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -28,6 +29,7 @@ const SESSION_MAX_AGE = parseInt(
 async function readSignupIntent(): Promise<{
   role: "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
   professionalKind: "psychologist" | null;
+  phoneE164: string | null;
 }> {
   try {
     const { cookies } = await import("next/headers");
@@ -36,9 +38,9 @@ async function readSignupIntent(): Promise<{
     );
     const token = cookies().get(OAUTH_SIGNUP_ROLE_COOKIE)?.value;
     const parsed = parseSignupRoleToken(token);
-    return parsed ?? { role: "PATIENT", professionalKind: null };
+    return parsed ?? { role: "PATIENT", professionalKind: null, phoneE164: null };
   } catch {
-    return { role: "PATIENT", professionalKind: null };
+    return { role: "PATIENT", professionalKind: null, phoneE164: null };
   }
 }
 
@@ -183,7 +185,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           if (!dbUser) {
             // New Google user — use the role chosen on the registration screen
-            const { role: signupRole, professionalKind } = await readSignupIntent();
+            const { role: signupRole, professionalKind, phoneE164 } = await readSignupIntent();
 
             const nameParts = (user.name || "").split(" ");
             const firstName = nameParts[0] || "";
@@ -241,6 +243,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   avatarUrl: user.image || null,
                 },
               });
+            }
+
+            if (phoneE164) {
+              await saveRegistrationPhone(db, dbUser.id, signupRole, phoneE164);
             }
           } else if (!dbUser.emailVerified) {
             // Existing user who hadn't verified — Google now confirms their email
