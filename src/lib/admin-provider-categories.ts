@@ -80,12 +80,13 @@ export function resolveAdminTabFromProfessionText(text: string): AdminProviderTa
 
   const lower = normalizeProfessionSearchText(trimmed);
   if (/psicanal|psychoanal|psicoanal/.test(lower)) return "psicanalistas";
-  if (/integrativ|holistic|\bpics\b|naturop|reiki|aromaterap|fitoterap|terapeuta/.test(lower)) {
-    return "terapeutas";
-  }
   if (/nutric|dietet|dietitian|dietista/.test(lower)) return "nutricionistas";
+  // Before generic "terapeuta" — "fisioterapeuta" contains that substring.
   if (/fisioter|physiother|physical therap|rehabilit/.test(lower)) return "fisioterapeutas";
   if (/psicolog|psycholog|mental health|saude mental|crp\b/.test(lower)) return "psicologos";
+  if (/integrativ|holistic|\bpics\b|naturop|reiki|aromaterap|fitoterap|(?<!fisio)terapeuta/.test(lower)) {
+    return "terapeutas";
+  }
   if (
     /medic|medicina|clinic|enferm|dentist|odont|cirurg|pediatr|ginec|cardio|urolog|ortop|obstet|doula|parteira|midwife|gestante|matern|\bcrm\b/.test(
       lower,

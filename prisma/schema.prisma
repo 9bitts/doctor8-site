@@ -491,6 +491,11 @@ model ProfessionalProfile {
   subspecialties  String[] @default([])
   bio             String?
 
+  // CV (PDF) — psychologists only
+  cvFileKey       String?
+  cvFileName      String?
+  cvFileSize      Int?
+
   // Practice info
   clinicName      String?
   clinicAddress   String?

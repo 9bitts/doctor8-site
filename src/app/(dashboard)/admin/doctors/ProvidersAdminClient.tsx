@@ -234,13 +234,28 @@ export default function ProvidersAdminClient() {
       const res = await fetch(`/api/admin/providers?tab=${activeTab}`);
       const data = await parseJsonResponse(res);
       if (res.ok && data) {
-        setAngels((data.angels as AngelRow[]) || []);
-        setProfessionals((data.doctors as ProfessionalRow[]) || []);
-        setPsychoanalysts((data.psychoanalysts as ProviderRow[]) || []);
-        setIntegrativeTherapists((data.integrativeTherapists as ProviderRow[]) || []);
-        setTabCounts((data.pendingCounts as Partial<Record<AdminProviderTab, number>>) || {});
-        setLoading(false);
-        return;
+        const angels = (data.angels as AngelRow[]) || [];
+        const doctors = (data.doctors as ProfessionalRow[]) || [];
+        const psychoanalystRows = (data.psychoanalysts as ProviderRow[]) || [];
+        const integrativeRows = (data.integrativeTherapists as ProviderRow[]) || [];
+        const pendingCounts =
+          (data.pendingCounts as Partial<Record<AdminProviderTab, number>>) || {};
+        const actualCount =
+          angels.length + doctors.length + psychoanalystRows.length + integrativeRows.length;
+        const expectedCount = pendingCounts[activeTab] ?? 0;
+
+        // Count/list mismatch usually means a partial API failure — retry via legacy routes.
+        if (expectedCount > 0 && actualCount === 0) {
+          /* fall through to legacy endpoints below */
+        } else {
+          setAngels(angels);
+          setProfessionals(doctors);
+          setPsychoanalysts(psychoanalystRows);
+          setIntegrativeTherapists(integrativeRows);
+          setTabCounts(pendingCounts);
+          setLoading(false);
+          return;
+        }
       }
     } catch {
       /* try legacy endpoints below */
@@ -438,6 +453,19 @@ export default function ProvidersAdminClient() {
                 providerTabLabel(tabMeta.id, t).toLowerCase(),
               );
 
+  const otherTabsWithData = ADMIN_PROVIDER_TABS.filter(
+    (tab) => tab.id !== activeTab && (tabCounts[tab.id] ?? 0) > 0,
+  );
+  const emptyHint =
+    otherTabsWithData.length > 0
+      ? t("admin.providers.emptyHint").replace(
+          "{{tabs}}",
+          otherTabsWithData
+            .map((tab) => `${providerTabLabel(tab.id, t)} (${tabCounts[tab.id]})`)
+            .join(", "),
+        )
+      : null;
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
@@ -501,9 +529,26 @@ export default function ProvidersAdminClient() {
           <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
         </div>
       ) : listCount === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16 px-6">
           <Stethoscope className="mx-auto text-slate-300 mb-3" size={40} />
           <p className="text-slate-400 text-sm">{emptyLabel}</p>
+          {emptyHint && (
+            <p className="text-slate-500 text-sm mt-3 max-w-md mx-auto">{emptyHint}</p>
+          )}
+          {otherTabsWithData.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mt-4">
+              {otherTabsWithData.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setTab(tab.id)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition"
+                >
+                  {providerTabLabel(tab.id, t)} ({tabCounts[tab.id]})
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       ) : activeTab === "anjos" ? (
         <AngelList

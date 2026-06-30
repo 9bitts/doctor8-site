@@ -4,18 +4,20 @@
 // Complete, editable professional profile. i18n via useT().
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { PROFESSION_GROUPS, getProfessionLabel } from "@/lib/professions";
 import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
+import CvUpload from "@/components/CvUpload";
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
 import {
   parseRegistrationRegion,
   type RegistrationRegionCode,
 } from "@/lib/registration-regions";
+import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
 import {
   Loader2, CheckCircle2, User, Award, Camera, X, Plus,
   LayoutTemplate, Globe, Building2,
@@ -26,6 +28,8 @@ const inputClass = "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-s
 export default function ProfessionalSettings() {
   const { lang, t } = useI18n();
   const router = useRouter();
+  const pathname = usePathname();
+  const isPsychologistPortal = pathname.startsWith("/psychologist");
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -188,6 +192,7 @@ export default function ProfessionalSettings() {
     return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-brand-500" size={28} /></div>;
   }
 
+  const showCvUpload = isPsychologistPortal || isPsychologistSpecialty(profession);
   const initials = (firstName[0] || "") + (lastName[0] || "");
 
   return (
@@ -375,6 +380,8 @@ export default function ProfessionalSettings() {
       </div>
 
       <LicenseDocumentsUpload />
+
+      {showCvUpload && <CvUpload />}
 
       {/* Clinic / Address */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
