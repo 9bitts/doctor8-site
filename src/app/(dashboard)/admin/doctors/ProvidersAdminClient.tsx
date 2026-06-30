@@ -19,6 +19,7 @@ import {
   Users,
   Mail,
   Clock,
+  LayoutList,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -48,6 +49,7 @@ interface ProfessionalRow {
   publicUrl: string | null;
   isPublic: boolean;
   licenseDocCount: number;
+  adminTab?: AdminProviderTab;
 }
 
 interface ProviderRow {
@@ -84,6 +86,7 @@ interface AngelRow {
 
 const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
   pendentes: <Clock size={14} />,
+  todos: <LayoutList size={14} />,
   medicos: <Stethoscope size={14} />,
   psicologos: <Brain size={14} />,
   nutricionistas: <Apple size={14} />,
@@ -108,7 +111,7 @@ async function parseJsonResponse(res: Response): Promise<Record<string, unknown>
 }
 
 function matchesDoctorTab(tab: AdminProviderTab, specialty: string, licenseNumber?: string): boolean {
-  if (tab === "pendentes" || tab === "anjos") return false;
+  if (tab === "pendentes" || tab === "anjos" || tab === "todos") return false;
   return resolveAdminTabForProfessional(specialty, licenseNumber) === tab;
 }
 
@@ -126,6 +129,8 @@ function computeLegacyTabCounts(
 
   return {
     pendentes: pending,
+    todos:
+      angels.length + doctors.length + psychoanalysts.length + integrativeTherapists.length,
     anjos: angels.length,
     medicos:
       angels.filter((a) => angelMatchesAdminTab(a, "medicos")).length +
@@ -165,6 +170,14 @@ function applyLegacyTabFilter(
   psychoanalysts: ProviderRow[];
   integrativeTherapists: ProviderRow[];
 } {
+  if (tab === "todos") {
+    return {
+      angels: allAngels,
+      doctors: allDoctors,
+      psychoanalysts: allPsychoanalysts,
+      integrativeTherapists: allIntegrative,
+    };
+  }
   if (tab === "anjos") {
     return { angels: allAngels, doctors: [], psychoanalysts: [], integrativeTherapists: [] };
   }
@@ -211,6 +224,7 @@ export default function ProvidersAdminClient() {
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [queryErrors, setQueryErrors] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [docsBusyId, setDocsBusyId] = useState<string | null>(null);
   const [actingAngel, setActingAngel] = useState<string | null>(null);
@@ -230,6 +244,7 @@ export default function ProvidersAdminClient() {
   const load = useCallback(async (searchTerm = "") => {
     setLoading(true);
     setLoadError(null);
+    setQueryErrors([]);
     const term = searchTerm.trim();
     const providersUrl = term
       ? `/api/admin/providers?q=${encodeURIComponent(term)}`
@@ -257,6 +272,7 @@ export default function ProvidersAdminClient() {
           setPsychoanalysts(psychoanalystRows);
           setIntegrativeTherapists(integrativeRows);
           setTabCounts(pendingCounts);
+          setQueryErrors((data.queryErrors as string[] | undefined) ?? []);
           setLoading(false);
           return;
         }
@@ -472,7 +488,9 @@ export default function ProvidersAdminClient() {
   const emptyLabel =
     activeTab === "pendentes"
       ? t("admin.providers.emptyPending")
-      : activeTab === "anjos"
+      : activeTab === "todos"
+        ? t("admin.providers.emptyAll")
+        : activeTab === "anjos"
         ? t("admin.providers.emptyAngels")
         : activeTab === "psicanalistas"
           ? t("admin.providers.emptyPsychoanalysts")
@@ -554,6 +572,17 @@ export default function ProvidersAdminClient() {
         </p>
       )}
 
+      {queryErrors.length > 0 && (
+        <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 space-y-1">
+          <p className="font-medium">{t("admin.providers.partialLoadWarning")}</p>
+          <ul className="list-disc list-inside text-xs">
+            {queryErrors.map((err) => (
+              <li key={err}>{err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <p className="text-xs text-slate-400">
         {t("admin.providers.listCount")
           .replace("{{category}}", providerTabLabel(tabMeta.id, t))
@@ -613,6 +642,7 @@ export default function ProvidersAdminClient() {
             <ProfessionalList
               rows={filteredProfessionals}
               lang={lang}
+              showCategoryBadge={activeTab === "todos" || !!q.trim()}
               busyId={busyId}
               docsBusyId={docsBusyId}
               verifyingEmailUserId={verifyingEmailUserId}
@@ -900,6 +930,7 @@ function ActionButtons({
 function ProfessionalList({
   rows,
   lang,
+  showCategoryBadge,
   busyId,
   docsBusyId,
   verifyingEmailUserId,
@@ -909,6 +940,7 @@ function ProfessionalList({
 }: {
   rows: ProfessionalRow[];
   lang: string;
+  showCategoryBadge?: boolean;
   busyId: string | null;
   docsBusyId: string | null;
   verifyingEmailUserId: string | null;
@@ -928,6 +960,14 @@ function ProfessionalList({
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-slate-800 text-sm">{d.name}</p>
               <StatusBadge verified={d.verified} />
+              {showCategoryBadge && (
+                <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                  {providerTabLabel(
+                    d.adminTab ?? resolveAdminTabForProfessional(d.specialty, d.licenseNumber),
+                    t,
+                  )}
+                </span>
+              )}
               {d.isPublic && d.verified && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
                   <Globe size={11} /> {t("admin.providers.public")}

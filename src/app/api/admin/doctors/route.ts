@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
   const category = new URL(req.url).searchParams.get("category");
 
   const pros = await db.professionalProfile.findMany({
+    where: { user: { deletedAt: null } },
     orderBy: { createdAt: "desc" },
     include: {
       user: {
