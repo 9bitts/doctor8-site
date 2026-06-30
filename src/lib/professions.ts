@@ -144,6 +144,14 @@ export function specialtyMatchesSearch(lang: Lang, specialty: string, query: str
 
 export const ALL_PROFESSION_VALUES = PROFESSION_GROUPS.flatMap((g) => g.options);
 
+/** Lowercase + strip accents for profession matching (Psicóloga → psicologa). */
+export function normalizeProfessionSearchText(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 /** Legacy / free-text specialty values stored before canonical English keys. */
 const LEGACY_SPECIALTY_ALIASES: Record<string, string> = {
   Psychology: "Psychologist",
@@ -154,6 +162,11 @@ const LEGACY_SPECIALTY_ALIASES: Record<string, string> = {
   Psicologia: "Psychologist",
   Psicólogo: "Psychologist",
   Psicologo: "Psychologist",
+  Psicóloga: "Psychologist",
+  Médico: "General Practice",
+  Medico: "General Practice",
+  Médica: "General Practice",
+  Medica: "General Practice",
   Nutrição: "Nutritionist",
   Nutricao: "Nutritionist",
   Nutricionista: "Nutritionist",

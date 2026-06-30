@@ -1,4 +1,4 @@
-import { canonicalProfessionValue, PROFESSION_GROUPS } from "@/lib/professions";
+import { canonicalProfessionValue, PROFESSION_GROUPS, normalizeProfessionSearchText } from "@/lib/professions";
 import { resolveProfessionalPoolSlug } from "@/lib/humanitarian/pool-slugs";
 
 function optionsFor(groupKey: string): string[] {
@@ -78,16 +78,16 @@ export function resolveAdminTabFromProfessionText(text: string): AdminProviderTa
   const trimmed = text.trim();
   if (!trimmed) return "medicos";
 
-  const lower = trimmed.toLowerCase();
+  const lower = normalizeProfessionSearchText(trimmed);
   if (/psicanal|psychoanal|psicoanal/.test(lower)) return "psicanalistas";
-  if (/integrativ|hol[ií]stic|\bpics\b|naturop|reiki|aromaterap|fitoterap/.test(lower)) {
+  if (/integrativ|holistic|\bpics\b|naturop|reiki|aromaterap|fitoterap|terapeuta/.test(lower)) {
     return "terapeutas";
   }
   if (/nutric|dietet|dietitian|dietista/.test(lower)) return "nutricionistas";
   if (/fisioter|physiother|physical therap|rehabilit/.test(lower)) return "fisioterapeutas";
-  if (/psicolog|psycholog|mental health|sa[uú]de mental/.test(lower)) return "psicologos";
+  if (/psicolog|psycholog|mental health|saude mental|crp\b/.test(lower)) return "psicologos";
   if (
-    /m[eé]dic|medicina|cl[ií]nic|enferm|dentist|odont|cirurg|pediatr|ginec|cardio|urolog|ortop|obstet|doula|parteira|midwife|gestante|matern/.test(
+    /medic|medicina|clinic|enferm|dentist|odont|cirurg|pediatr|ginec|cardio|urolog|ortop|obstet|doula|parteira|midwife|gestante|matern|\bcrm\b/.test(
       lower,
     )
   ) {
@@ -120,6 +120,12 @@ export function angelMatchesAdminTab(
 ): boolean {
   if (tab === "anjos") return true;
   if (tab === "pendentes") return angel.approvalStatus === "PENDING";
+
+  const declaredProfession = angel.profession?.trim();
+  if (declaredProfession) {
+    return resolveAdminTabFromProfessionText(declaredProfession) === tab;
+  }
+
   const text = angelProfessionText(angel);
   if (!text.trim()) return tab === "outros";
   return resolveAdminTabFromProfessionText(text) === tab;
