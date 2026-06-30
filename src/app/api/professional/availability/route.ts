@@ -75,22 +75,26 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "ACURA_VOLUNTEER_REQUIRED" }, { status: 400 });
   }
 
-  await db.availabilitySlot.deleteMany({ where: { professionalId: professional.id } });
-
+  const ops = [
+    db.availabilitySlot.deleteMany({ where: { professionalId: professional.id } }),
+  ];
   if (normalized.length > 0) {
-    await db.availabilitySlot.createMany({
-      data: normalized.map((s) => ({
-        professionalId: professional.id,
-        dayOfWeek: s.dayOfWeek,
-        startTime: s.startTime,
-        endTime: s.endTime,
-        slotDurationMins: s.slotDurationMins,
-        slotGapMins: s.slotGapMins,
-        volunteerOnly: s.volunteerOnly,
-        isActive: true,
-      })),
-    });
+    ops.push(
+      db.availabilitySlot.createMany({
+        data: normalized.map((s) => ({
+          professionalId: professional.id,
+          dayOfWeek: s.dayOfWeek,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          slotDurationMins: s.slotDurationMins,
+          slotGapMins: s.slotGapMins,
+          volunteerOnly: s.volunteerOnly,
+          isActive: true,
+        })),
+      }),
+    );
   }
+  await db.$transaction(ops);
 
   return NextResponse.json({ ok: true });
 }
