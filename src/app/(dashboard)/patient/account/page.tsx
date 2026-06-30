@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import PushNotificationSettings from "@/components/PushNotificationSettings";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
 import type { DataResidencyInfo } from "@/lib/data-residency";
 
 const inputClass =
@@ -651,6 +652,8 @@ export default function AccountPage() {
           <LogOut size={15} /> {t("acct.signOut")}
         </button>
       </div>
+
+      <DeleteAccountSection />
     </div>
   );
 }
