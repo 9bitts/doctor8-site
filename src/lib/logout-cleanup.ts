@@ -18,6 +18,9 @@ const SCOPE_COOKIES = [
 
 const DRAFT_STORAGE_PREFIXES = ["doctor8:record-draft:", "doctor8:recordDraft:", "doctor8:hum:"] as const;
 
+const HUM_STORAGE_PREFIX = "doctor8:hum:";
+const HUM_DRAFT_KINDS = new Set(["triage", "anamnese"]);
+
 function expireCookie(name: string): void {
   if (typeof document === "undefined") return;
   try {
@@ -61,12 +64,52 @@ function extractScopedUserId(key: string, prefix: string): string | null {
   return rest.slice(0, colonIdx);
 }
 
-function draftKeyUserId(key: string): string | null {
-  for (const prefix of DRAFT_STORAGE_PREFIXES) {
-    const userId = extractScopedUserId(key, prefix);
-    if (userId !== null) return userId;
-    if (key.startsWith(prefix)) return null;
+function extractRecordDraftUserId(key: string): string | null {
+  if (key.startsWith("doctor8:record-draft:")) {
+    return extractScopedUserId(key, "doctor8:record-draft:");
   }
+  if (key.startsWith("doctor8:recordDraft:")) {
+    return null;
+  }
+  return null;
+}
+
+/** userId sits after the hum subtype segment: doctor8:hum:{subtype}:{userId}:? */
+function extractHumDraftUserId(key: string): string | null {
+  if (!key.startsWith(HUM_STORAGE_PREFIX)) return null;
+
+  const rest = key.slice(HUM_STORAGE_PREFIX.length);
+  const subtypeEnd = rest.indexOf(":");
+  if (subtypeEnd <= 0) return null;
+
+  const subtype = rest.slice(0, subtypeEnd);
+  if (subtype !== "draft" && subtype !== "queue" && subtype !== "volunteer" && subtype !== "angel") {
+    return null;
+  }
+
+  const afterSubtype = rest.slice(subtypeEnd + 1);
+  const userIdEnd = afterSubtype.indexOf(":");
+  if (userIdEnd <= 0) return null;
+
+  const candidate = afterSubtype.slice(0, userIdEnd);
+  if (!candidate) return null;
+
+  // Legacy draft keys used kind (triage/anamnese) where userId now lives.
+  if (subtype === "draft" && HUM_DRAFT_KINDS.has(candidate)) return null;
+
+  return candidate;
+}
+
+function draftKeyUserId(key: string): string | null {
+  const recordUserId = extractRecordDraftUserId(key);
+  if (recordUserId !== null || key.startsWith("doctor8:record-draft:") || key.startsWith("doctor8:recordDraft:")) {
+    return recordUserId;
+  }
+
+  if (key.startsWith(HUM_STORAGE_PREFIX)) {
+    return extractHumDraftUserId(key);
+  }
+
   return null;
 }
 
