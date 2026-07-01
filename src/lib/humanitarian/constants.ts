@@ -2,6 +2,10 @@
 
 export const HUMANITARIAN_LANDING_URL = "https://acurabrasil.org/sos-venezuela.html";
 
+/** Professional volunteer signup (SOS Venezuela). */
+export const PROFESSIONAL_VOLUNTEER_SIGNUP_URL =
+  "https://app.doctor8.org/register/professional/signup";
+
 /** Public signup for lay accompaniment volunteers (Anjo / Ángel). */
 export const ANGEL_REGISTER_PATH = "/register/angel";
 

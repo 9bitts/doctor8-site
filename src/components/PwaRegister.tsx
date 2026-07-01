@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import PwaUpdatePrompt from "@/components/humanitarian/PwaUpdatePrompt";
 
 /** Registers the humanitarian PWA service worker (no-op if unsupported). */
 export default function PwaRegister() {
@@ -11,5 +12,5 @@ export default function PwaRegister() {
     });
   }, []);
 
-  return null;
+  return <PwaUpdatePrompt />;
 }

@@ -9,6 +9,7 @@ import {
 import {
   DEFAULT_VENEZUELA_POOLS,
   HUMANITARIAN_LANDING_URL,
+  PROFESSIONAL_VOLUNTEER_SIGNUP_URL,
   VENEZUELA_CAMPAIGN_SLUG,
 } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
@@ -90,7 +91,7 @@ export default function SosVenezuelaPage() {
   const campaignPath = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
   const patientRegister = `/register?region=VE&role=PATIENT&callbackUrl=${encodeURIComponent(campaignPath)}`;
   const patientLogin = `/login?callbackUrl=${encodeURIComponent(campaignPath)}`;
-  const volRegister = `/register/professional/signup?region=VE&role=PROFESSIONAL&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
+  const volRegister = PROFESSIONAL_VOLUNTEER_SIGNUP_URL;
   const volLogin = `/login?callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
   const psychVolRegister = `/register/professional/signup?region=VE&portal=psychologist&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
   const psychoVolRegister = `/register/professional/signup?region=VE&role=PSYCHOANALYST&callbackUrl=${encodeURIComponent("/humanitarian/volunteer")}`;
@@ -153,7 +154,7 @@ export default function SosVenezuelaPage() {
             <p className="text-sm text-emerald-100/80 mt-1">{t(lang, "hum.landing.ctaReturningHint")}</p>
             <ChevronRight size={18} className="mt-3 opacity-70 group-hover:translate-x-0.5 transition" />
           </Link>
-          <Link
+          <a
             href={volRegister}
             className="group bg-white/10 hover:bg-white/15 border border-white/10 rounded-2xl p-5 sm:p-6 transition sm:col-span-2"
           >
@@ -161,7 +162,7 @@ export default function SosVenezuelaPage() {
             <p className="font-bold text-lg">{t(lang, "hum.landing.ctaVolunteer")}</p>
             <p className="text-sm text-slate-400 mt-1">{t(lang, "hum.landing.ctaVolunteerHint")}</p>
             <ChevronRight size={18} className="mt-3 text-slate-500 group-hover:translate-x-0.5 transition" />
-          </Link>
+          </a>
         </section>
 
         <p className="text-center text-sm text-slate-500">
@@ -169,15 +170,15 @@ export default function SosVenezuelaPage() {
           <Link href={patientLogin} className="text-emerald-400 hover:text-emerald-300 font-medium">
             {t(lang, "hum.landing.login")}
           </Link>
-          {" ? "}
+          {" · "}
           <Link href={volLogin} className="text-emerald-400 hover:text-emerald-300 font-medium">
             {t(lang, "hum.shell.volunteer")}
           </Link>
-          {" ? "}
+          {" · "}
           <Link href={psychVolRegister} className="text-emerald-400 hover:text-emerald-300 font-medium">
             {t(lang, "hum.landing.psychVolunteer")}
           </Link>
-          {" ? "}
+          {" · "}
           <Link href={psychoVolRegister} className="text-emerald-400 hover:text-emerald-300 font-medium">
             {t(lang, "hum.landing.psychoVolunteer")}
           </Link>

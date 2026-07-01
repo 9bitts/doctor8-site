@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="96" fill="#0f172a"/>
+  <text
+    x="256"
+    y="330"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+    font-weight="800"
+    font-size="260"
+    letter-spacing="-8"
+  >
+    <tspan fill="#1a6e8c">D</tspan><tspan fill="#e05930">8</tspan>
+  </text>
+</svg>

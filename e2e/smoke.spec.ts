@@ -68,7 +68,7 @@ test.describe("public smoke", () => {
     const res = await request.get("/sw.js");
     expect(res.ok()).toBeTruthy();
     const body = await res.text();
-    expect(body).toContain("doctor8-hum-v6");
+    expect(body).toContain("doctor8-hum-v7");
   });
 
   test("Daily webhook accepts verification ping", async ({ request }) => {
