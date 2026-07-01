@@ -82,15 +82,25 @@ export default function RegisterAngelPage() {
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
+  const isPhoneValid = Boolean(buildInternationalPhoneE164(phone.ddi, phone.nationalNumber));
   const canSubmit =
     isPasswordValid &&
     acceptedTerms &&
     acceptedPrivacy &&
     languages.length > 0 &&
-    Boolean(buildInternationalPhoneE164(phone.ddi, phone.nationalNumber)) &&
+    isPhoneValid &&
     profession.trim().length > 0 &&
     volunteerHelp.trim().length > 0 &&
     !!certificate;
+
+  const missingFields: string[] = [];
+  if (!isPhoneValid) missingFields.push(t("angel.register.missing.phone"));
+  if (!isPasswordValid) missingFields.push(t("angel.register.missing.password"));
+  if (!profession.trim()) missingFields.push(t("angel.register.missing.profession"));
+  if (!volunteerHelp.trim()) missingFields.push(t("angel.register.missing.volunteerHelp"));
+  if (!certificate) missingFields.push(t("angel.register.missing.certificate"));
+  if (!acceptedTerms || !acceptedPrivacy) missingFields.push(t("angel.register.missing.terms"));
+  if (languages.length === 0) missingFields.push(t("angel.register.missing.languages"));
 
   const loginHref = buildAuthHref(ANGEL_LOGIN, {
     callbackUrl: "/humanitarian/angel",
@@ -231,7 +241,7 @@ export default function RegisterAngelPage() {
               <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.certificate")}</label>
               <input
                 type="file"
-                accept="application/pdf,image/jpeg,image/png,image/webp,image/heic"
+                accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
                 required
                 onChange={(e) => setCertificate(e.target.files?.[0] ?? null)}
                 className="w-full text-sm text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-rose-500/20 file:text-rose-200 file:font-medium"
@@ -315,6 +325,17 @@ export default function RegisterAngelPage() {
                 </span>
               </label>
             </div>
+
+            {!canSubmit && missingFields.length > 0 && !loading && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                <p className="text-amber-200 text-sm font-medium mb-2">{t("angel.register.missingPrefix")}</p>
+                <ul className="list-disc list-inside space-y-1">
+                  {missingFields.map((item) => (
+                    <li key={item} className="text-amber-200/90 text-xs">{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <button type="submit" disabled={loading || !canSubmit}
               className="w-full bg-rose-500 hover:bg-rose-400 disabled:opacity-40 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">

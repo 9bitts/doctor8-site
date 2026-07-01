@@ -23,6 +23,7 @@ import {
 } from "@/lib/patient-chart-link";
 import { parseRegistrationPhone } from "@/lib/international-phone";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
+import { isAccountVerified } from "@/lib/account-verified";
 import { PROFESSION_SIGNUP, isProfessionSignupSlug } from "@/lib/profession-signup";
 
 // HIPAA: strong password requirements
@@ -116,14 +117,60 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const normalizedEmail = email.toLowerCase();
+    const normalizedLanguage = language === "pt" || language === "es" || language === "en"
+      ? language
+      : undefined;
+
     const existing = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
+      select: {
+        id: true,
+        role: true,
+        emailVerified: true,
+        phoneVerified: true,
+        language: true,
+        patientProfile: { select: { firstName: true } },
+        professionalProfile: { select: { firstName: true } },
+        psychoanalystProfile: { select: { firstName: true } },
+        integrativeTherapistProfile: { select: { firstName: true } },
+      },
     });
 
     if (existing) {
+      if (existing.role === role && !isAccountVerified(existing)) {
+        const token = randomBytes(32).toString("hex");
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await db.verificationToken.deleteMany({ where: { identifier: normalizedEmail } });
+        await db.verificationToken.create({
+          data: { identifier: normalizedEmail, token, expires },
+        });
+        try {
+          const resendName =
+            existing.psychoanalystProfile?.firstName ||
+            existing.integrativeTherapistProfile?.firstName ||
+            existing.professionalProfile?.firstName ||
+            existing.patientProfile?.firstName ||
+            firstName;
+          await sendEmailVerification({
+            email: normalizedEmail,
+            name: resendName,
+            token,
+            language: normalizedLanguage || existing.language || language,
+            from: resolveLoginPathForRegistration(role, professionalKind),
+          });
+        } catch (emailError) {
+          console.error("[REGISTER EMAIL RESEND]", emailError);
+        }
+        return NextResponse.json(
+          { success: true, userId: existing.id, pendingVerification: true },
+          { status: 200 },
+        );
+      }
+
       return NextResponse.json(
         { error: { email: ["Email already in use"] } },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -132,10 +179,6 @@ export async function POST(req: NextRequest) {
     const ip = req.headers.get("x-forwarded-for") ||
       req.headers.get("x-real-ip") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
-
-    const normalizedLanguage = language === "pt" || language === "es" || language === "en"
-      ? language
-      : undefined;
 
     // Create user + profile + consents in a transaction
     const user = await db.$transaction(async (tx) => {

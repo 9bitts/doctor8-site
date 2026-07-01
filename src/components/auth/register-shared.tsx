@@ -162,6 +162,13 @@ export function RegisterAccountForm({
     (!requiresHipaa(region) || acceptedHipaa) &&
     (!requiresGdpr(region) || acceptedGdpr);
 
+  const missingFields: string[] = [];
+  if (!isPhoneValid) missingFields.push(t("reg.missing.phone"));
+  if (!isPasswordValid) missingFields.push(t("reg.missing.password"));
+  if (!acceptedTerms || !acceptedPrivacy) missingFields.push(t("reg.missing.terms"));
+  if (requiresHipaa(region) && !acceptedHipaa) missingFields.push(t("reg.missing.hipaa"));
+  if (requiresGdpr(region) && !acceptedGdpr) missingFields.push(t("reg.missing.gdpr"));
+
   const isProfessional = role === "PROFESSIONAL";
   const isPsychologistSignup = isProfessional && professionalKind === "psychologist";
   const isPsychoanalyst = role === "PSYCHOANALYST";
@@ -465,6 +472,17 @@ export function RegisterAccountForm({
             />
           )}
         </div>
+
+        {!canSubmit && missingFields.length > 0 && !loading && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+            <p className="text-amber-200 text-sm font-medium mb-2">{t("reg.missingPrefix")}</p>
+            <ul className="list-disc list-inside space-y-1">
+              {missingFields.map((item) => (
+                <li key={item} className="text-amber-200/90 text-xs">{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <button
           type="submit"

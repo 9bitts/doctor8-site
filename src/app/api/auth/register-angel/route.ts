@@ -10,13 +10,14 @@ import { ANGEL_LOGIN } from "@/lib/auth-portals";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { buildKey, uploadToS3 } from "@/lib/s3";
 import {
-  LICENSE_DOC_MIME,
   licenseDocsFolder,
-  MAX_LICENSE_DOC_BYTES,
+  validateLicenseDocFile,
+  type LicenseDocValidationError,
 } from "@/lib/provider-license-docs";
 import { notifyAdminLicenseDocumentUploaded } from "@/lib/provider-license-notify";
 import { parseRegistrationPhone } from "@/lib/international-phone";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
+import { isAccountVerified } from "@/lib/account-verified";
 
 const passwordSchema = z
   .string()
@@ -43,6 +44,13 @@ const registerAngelSchema = z.object({
   acceptedPrivacy: z.literal(true),
   acceptedGdpr: z.boolean().optional(),
 });
+
+function certificateErrorMessage(error: LicenseDocValidationError): string {
+  if (error === "CERTIFICATE_TOO_LARGE") {
+    return "File too large. Maximum is 50 MB.";
+  }
+  return "File type not allowed. Use PDF or image.";
+}
 
 async function parseRegisterBody(req: NextRequest): Promise<{
   data: z.infer<typeof registerAngelSchema> | null;
@@ -97,18 +105,15 @@ async function parseRegisterBody(req: NextRequest): Promise<{
   return { data: parsed.data, certificate: null, fieldErrors: null };
 }
 
-async function storeAngelCertificate(userId: string, file: File): Promise<void> {
-  if (!(LICENSE_DOC_MIME as readonly string[]).includes(file.type)) {
-    throw new Error("INVALID_CERTIFICATE_TYPE");
-  }
-  if (file.size > MAX_LICENSE_DOC_BYTES) {
-    throw new Error("CERTIFICATE_TOO_LARGE");
-  }
-
+async function storeAngelCertificate(
+  userId: string,
+  file: File,
+  mimeType: string,
+): Promise<void> {
   const folder = licenseDocsFolder(userId);
   const key = buildKey(folder, file.name);
   const buffer = Buffer.from(await file.arrayBuffer());
-  await uploadToS3({ key, body: buffer, contentType: file.type });
+  await uploadToS3({ key, body: buffer, contentType: mimeType });
 
   await db.providerLicenseDocument.create({
     data: {
@@ -116,7 +121,7 @@ async function storeAngelCertificate(userId: string, file: File): Promise<void> 
       label: "Certificado profissional",
       fileKey: key,
       fileName: file.name.slice(0, 255),
-      mimeType: file.type,
+      mimeType,
       fileSize: file.size,
     },
   });
@@ -130,12 +135,50 @@ async function storeAngelCertificate(userId: string, file: File): Promise<void> 
   }).catch((err) => console.error("[angel-register] cert notify failed:", err));
 }
 
+async function issueVerificationEmail(opts: {
+  email: string;
+  firstName: string;
+  language: string;
+}): Promise<void> {
+  const token = randomBytes(32).toString("hex");
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const normalizedEmail = opts.email.toLowerCase();
+
+  await db.verificationToken.deleteMany({ where: { identifier: normalizedEmail } });
+  await db.verificationToken.create({
+    data: { identifier: normalizedEmail, token, expires },
+  });
+
+  await sendEmailVerification({
+    email: normalizedEmail,
+    name: opts.firstName,
+    token,
+    language: opts.language,
+    from: ANGEL_LOGIN,
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { data, certificate, fieldErrors } = await parseRegisterBody(req);
 
     if (!data) {
       return NextResponse.json({ error: fieldErrors }, { status: 400 });
+    }
+
+    if (!certificate) {
+      return NextResponse.json(
+        { error: { certificate: ["Certificate is required"] } },
+        { status: 400 },
+      );
+    }
+
+    const certCheck = validateLicenseDocFile(certificate);
+    if (!certCheck.ok) {
+      return NextResponse.json(
+        { error: { certificate: [certificateErrorMessage(certCheck.error)] } },
+        { status: 400 },
+      );
     }
 
     const {
@@ -172,10 +215,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const normalizedEmail = email.toLowerCase();
+    const normalizedLanguage = language && ["pt", "en", "es"].includes(language) ? language : "pt";
+
     const existing = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
+      select: {
+        id: true,
+        role: true,
+        emailVerified: true,
+        phoneVerified: true,
+        angelProfile: { select: { firstName: true } },
+      },
     });
+
     if (existing) {
+      if (existing.role === UserRole.ANGEL && !isAccountVerified(existing)) {
+        try {
+          await issueVerificationEmail({
+            email: normalizedEmail,
+            firstName: existing.angelProfile?.firstName || firstName,
+            language: normalizedLanguage,
+          });
+        } catch (emailError) {
+          console.error("[ANGEL REGISTER EMAIL RESEND]", emailError);
+        }
+
+        try {
+          await storeAngelCertificate(existing.id, certificate, certCheck.mimeType);
+        } catch (certErr) {
+          console.error("[ANGEL REGISTER CERT RESEND]", certErr);
+        }
+
+        return NextResponse.json(
+          { success: true, userId: existing.id, pendingVerification: true },
+          { status: 200 },
+        );
+      }
+
       return NextResponse.json(
         { error: { email: ["Email already in use"] } },
         { status: 409 },
@@ -185,13 +262,12 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 12);
     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
-    const normalizedLanguage = language && ["pt", "en", "es"].includes(language) ? language : "pt";
     const preferredCampaignSlug = campaignSlug || VENEZUELA_CAMPAIGN_SLUG;
 
     const user = await db.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
-          email: email.toLowerCase(),
+          email: normalizedEmail,
           passwordHash,
           role: UserRole.ANGEL,
           region,
@@ -237,43 +313,20 @@ export async function POST(req: NextRequest) {
       return newUser;
     });
 
-    if (certificate) {
-      try {
-        await storeAngelCertificate(user.id, certificate);
-      } catch (certErr) {
-        console.error("[ANGEL REGISTER CERT]", certErr);
-        if (certErr instanceof Error && certErr.message === "INVALID_CERTIFICATE_TYPE") {
-          return NextResponse.json(
-            { error: { certificate: ["File type not allowed. Use PDF or image."] } },
-            { status: 400 },
-          );
-        }
-        if (certErr instanceof Error && certErr.message === "CERTIFICATE_TOO_LARGE") {
-          return NextResponse.json(
-            { error: { certificate: ["File too large. Maximum is 50 MB."] } },
-            { status: 400 },
-          );
-        }
-      }
-    }
-
-    const token = randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    await db.verificationToken.deleteMany({ where: { identifier: email.toLowerCase() } });
-    await db.verificationToken.create({
-      data: { identifier: email.toLowerCase(), token, expires },
-    });
-
     try {
-      await sendEmailVerification({
-        email: email.toLowerCase(),
-        name: firstName,
-        token,
+      await issueVerificationEmail({
+        email: normalizedEmail,
+        firstName,
         language: normalizedLanguage,
-        from: ANGEL_LOGIN,
       });
     } catch (emailError) {
       console.error("[ANGEL REGISTER EMAIL]", emailError);
+    }
+
+    try {
+      await storeAngelCertificate(user.id, certificate, certCheck.mimeType);
+    } catch (certErr) {
+      console.error("[ANGEL REGISTER CERT]", certErr);
     }
 
     return NextResponse.json({ success: true, userId: user.id }, { status: 201 });

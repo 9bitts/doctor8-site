@@ -23,6 +23,9 @@ export async function POST(req: NextRequest) {
         language: true,
         patientProfile: { select: { firstName: true } },
         professionalProfile: { select: { firstName: true } },
+        psychoanalystProfile: { select: { firstName: true } },
+        integrativeTherapistProfile: { select: { firstName: true } },
+        angelProfile: { select: { firstName: true } },
       },
     });
 
@@ -38,6 +41,9 @@ export async function POST(req: NextRequest) {
     const firstName =
       user.patientProfile?.firstName ||
       user.professionalProfile?.firstName ||
+      user.psychoanalystProfile?.firstName ||
+      user.integrativeTherapistProfile?.firstName ||
+      user.angelProfile?.firstName ||
       "there";
 
     // Remove old tokens and create a new one
