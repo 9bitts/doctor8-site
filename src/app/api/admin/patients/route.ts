@@ -1,38 +1,64 @@
-// src/app/api/admin/patients/route.ts
-// ADMIN ONLY — list all patients (minimum necessary: name, email, region, counts).
-// Does NOT expose clinical data (history, documents content, etc.).
-import { NextResponse } from "next/server";
+// ADMIN ONLY — patient monitoring list with filters, counters and alerts.
+import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
-import { db } from "@/lib/db";
-import { decrypt } from "@/lib/encryption";
+import {
+  buildMonitoringAlerts,
+  buildMonitoringCounters,
+  filterAndSortPatients,
+  getDefaultQueueAlertMinutes,
+  listDistinctCountries,
+  listDistinctSpecialties,
+  loadPatientMonitoringData,
+  type PatientListFilters,
+  type PatientMonitorStatus,
+  type PatientOrigin,
+} from "@/lib/admin/patient-monitoring";
 
-function safeDecrypt(v: string | null): string {
-  if (v == null) return "";
-  try { return decrypt(v); } catch { return v; }
+export const runtime = "nodejs";
+
+function parseFilters(req: NextRequest): PatientListFilters {
+  const sp = new URL(req.url).searchParams;
+  const status = sp.get("status") as PatientMonitorStatus | null;
+  const origin = sp.get("origin") as PatientOrigin | null;
+  const queueAlertRaw = sp.get("queueAlertMinutes");
+  const queueAlertMinutes = queueAlertRaw
+    ? parseInt(queueAlertRaw, 10)
+    : getDefaultQueueAlertMinutes();
+
+  return {
+    q: sp.get("q") ?? undefined,
+    status: status ?? undefined,
+    country: sp.get("country") ?? undefined,
+    origin: origin === "humanitarian" || origin === "regular" ? origin : undefined,
+    registeredFrom: sp.get("registeredFrom") ?? undefined,
+    registeredTo: sp.get("registeredTo") ?? undefined,
+    lastSpecialty: sp.get("lastSpecialty") ?? undefined,
+    sort: (sp.get("sort") as PatientListFilters["sort"]) ?? "newest",
+    queueAlertMinutes,
+  };
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const profiles = await db.patientProfile.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      user: { select: { email: true, region: true, createdAt: true } },
-      _count: { select: { appointments: true, medicalDocuments: true } },
+  const filters = parseFilters(req);
+  const queueAlertMinutes = filters.queueAlertMinutes ?? getDefaultQueueAlertMinutes();
+
+  const contexts = await loadPatientMonitoringData(queueAlertMinutes);
+  const patients = filterAndSortPatients(contexts, filters);
+  const counters = buildMonitoringCounters(contexts);
+  const alerts = buildMonitoringAlerts(contexts);
+
+  return NextResponse.json({
+    patients,
+    counters,
+    alerts,
+    filters: {
+      countries: listDistinctCountries(contexts),
+      specialties: listDistinctSpecialties(contexts),
+      queueAlertMinutes,
     },
+    fetchedAt: new Date().toISOString(),
   });
-
-  const patients = profiles.map((p) => ({
-    id: p.id,
-    userId: p.userId,
-    name: `${safeDecrypt(p.firstName)} ${safeDecrypt(p.lastName)}`.trim() || "—",
-    email: p.user?.email ?? null,
-    region: p.user?.region ?? null,
-    appointments: p._count.appointments,
-    documents: p._count.medicalDocuments,
-    createdAt: p.createdAt.toISOString(),
-  }));
-
-  return NextResponse.json({ patients });
 }

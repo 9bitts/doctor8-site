@@ -837,6 +837,10 @@ model Appointment {
   cancelledBy      String?
   cancelReason     String?
 
+  adminProblemAt   DateTime?
+  adminProblemNote String?
+  adminProblemById String?
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -2508,6 +2512,14 @@ model HumanitarianQueueEntry {
 
   completionChannel HumanitarianCompletionChannel?
 
+  adminRemovedById    String?
+  adminRemovedAt      DateTime?
+  adminRemovalReason  String?
+
+  adminProblemAt      DateTime?
+  adminProblemNote    String?
+  adminProblemById    String?
+
   angelFollowUps  HumanitarianAngelFollowUp[]
 
   createdAt       DateTime                 @default(now())
@@ -2883,6 +2895,21 @@ model SmartRefreshToken {
   @@index([token])
   @@index([userId, clientId])
   @@index([expiresAt])
+}
+
+model ConsultVideoIncident {
+  id                  String    @id @default(cuid())
+  humanitarianEntryId String?
+  appointmentId       String?
+  patientUserId       String
+  reportedByUserId    String?
+  kind                String
+  notes               String?
+  createdAt           DateTime  @default(now())
+
+  @@index([humanitarianEntryId])
+  @@index([appointmentId])
+  @@index([patientUserId, createdAt])
 }
 
 model DailyRecordingLog {

@@ -774,6 +774,16 @@ export async function getEntryStatus(entryId: string, patientUserId: string, lan
   };
 }
 
+/** Admin variant — no patient ownership check. */
+export async function getEntryStatusForAdmin(entryId: string, lang = "pt") {
+  const entry = await db.humanitarianQueueEntry.findUnique({
+    where: { id: entryId },
+    select: { patientUserId: true },
+  });
+  if (!entry) return null;
+  return getEntryStatus(entryId, entry.patientUserId, lang);
+}
+
 export async function countActiveInPool(poolId: string): Promise<number> {
   return db.humanitarianQueueEntry.count({
     where: {

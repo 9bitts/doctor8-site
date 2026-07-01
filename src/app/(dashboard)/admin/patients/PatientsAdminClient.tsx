@@ -1,99 +1,151 @@
 "use client";
 
-// src/app/(dashboard)/admin/patients/PatientsAdminClient.tsx
-import { useState, useEffect } from "react";
-import { Users, Loader2, Search } from "lucide-react";
-import { useI18n } from "@/lib/i18n/I18nProvider";
-import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
+import { useCallback, useEffect, useState } from "react";
+import { Activity, Loader2 } from "lucide-react";
+import PatientMonitoringCards from "@/components/admin/patients/PatientMonitoringCards";
+import PatientAlertsPanel from "@/components/admin/patients/PatientAlertsPanel";
+import PatientFiltersBar, {
+  DEFAULT_FILTERS,
+  filtersToQuery,
+  type PatientFiltersState,
+} from "@/components/admin/patients/PatientFiltersBar";
+import PatientListTable, {
+  type PatientRow,
+} from "@/components/admin/patients/PatientListTable";
+import LastUpdatedIndicator from "@/components/admin/patients/LastUpdatedIndicator";
 
-interface Patient {
-  id: string;
-  userId: string;
-  name: string;
-  email: string | null;
-  region: string | null;
-  appointments: number;
-  documents: number;
-  createdAt: string;
+const POLL_MS = 12000;
+const STORAGE_KEY = "admin-patients-queue-alert-min";
+
+interface ListResponse {
+  patients: PatientRow[];
+  counters: {
+    total: number;
+    inQueue: number;
+    inConsult: number;
+    completedToday: number;
+    withProblem: number;
+  };
+  alerts: {
+    id: string;
+    type: string;
+    patientProfileId: string;
+    patientName: string;
+    message: string;
+    severity: "warning" | "critical";
+  }[];
+  filters: {
+    countries: string[];
+    specialties: string[];
+    queueAlertMinutes: number;
+  };
+  fetchedAt: string;
+}
+
+function loadStoredAlertMinutes(): number {
+  if (typeof window === "undefined") return 30;
+  try {
+    const v = localStorage.getItem(STORAGE_KEY);
+    if (v) {
+      const n = parseInt(v, 10);
+      if (Number.isFinite(n) && n >= 5) return n;
+    }
+  } catch { /* ignore */ }
+  return 30;
 }
 
 export default function PatientsAdminClient() {
-  const { t } = useI18n();
-  const [patients, setPatients] = useState<Patient[]>([]);
+  const [filters, setFilters] = useState<PatientFiltersState>({
+    ...DEFAULT_FILTERS,
+    queueAlertMinutes: 30,
+  });
+  const [appliedFilters, setAppliedFilters] = useState<PatientFiltersState>(filters);
+  const [data, setData] = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
+  const [countries, setCountries] = useState<string[]>([]);
+  const [specialties, setSpecialties] = useState<string[]>([]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/admin/patients");
-        const data = await res.json();
-        if (res.ok) setPatients(data.patients || []);
-      } catch { /* ignore */ }
-      setLoading(false);
-    })();
+    const stored = loadStoredAlertMinutes();
+    setFilters((f) => ({ ...f, queueAlertMinutes: stored }));
+    setAppliedFilters((f) => ({ ...f, queueAlertMinutes: stored }));
   }, []);
 
-  const filtered = patients.filter((p) =>
-    !q || p.name.toLowerCase().includes(q.toLowerCase()) ||
-    (p.email || "").toLowerCase().includes(q.toLowerCase())
-  );
+  const fetchData = useCallback(async (f: PatientFiltersState, silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const qs = filtersToQuery(f);
+      const res = await fetch(`/api/admin/patients?${qs}`);
+      const json = await res.json();
+      if (res.ok) {
+        setData(json);
+        setCountries(json.filters?.countries ?? []);
+        setSpecialties(json.filters?.specialties ?? []);
+      }
+    } catch { /* ignore */ }
+    if (!silent) setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchData(appliedFilters);
+  }, [appliedFilters, fetchData]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      fetchData(appliedFilters, true);
+    }, POLL_MS);
+    return () => clearInterval(id);
+  }, [appliedFilters, fetchData]);
+
+  function applyFilters() {
+    try {
+      localStorage.setItem(STORAGE_KEY, String(filters.queueAlertMinutes));
+    } catch { /* ignore */ }
+    setAppliedFilters({ ...filters });
+  }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">{t("admin.patients.title")}</h1>
-        <p className="text-slate-500 mt-1">
-          {t("admin.patients.summary").replace("{{count}}", String(patients.length))}
-        </p>
-      </div>
-
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t("admin.patients.searchPlaceholder")}
-          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
+    <div className="max-w-6xl mx-auto space-y-6 pb-10">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <Activity size={24} className="text-brand-500" />
+            Monitoramento de pacientes
+          </h1>
+          <p className="text-slate-500 mt-1 text-sm">
+            Acompanhamento em tempo real do atendimento humanitário e regular
+          </p>
+        </div>
+        <LastUpdatedIndicator
+          fetchedAt={data?.fetchedAt ?? null}
+          loading={loading && !data}
         />
       </div>
 
-      {loading ? (
-        <div className="flex items-center gap-2 text-sm text-slate-400 py-10 justify-center">
-          <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
+      {data ? (
+        <PatientMonitoringCards counters={data.counters} />
+      ) : (
+        <div className="h-24 flex items-center justify-center text-slate-400 text-sm">
+          <Loader2 size={18} className="animate-spin mr-2" /> Carregando contadores...
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
-          <Users className="mx-auto text-slate-300 mb-3" size={40} />
-          <p className="text-slate-400 text-sm">{t("admin.patients.empty")}</p>
+      )}
+
+      <PatientAlertsPanel alerts={data?.alerts ?? []} />
+
+      <PatientFiltersBar
+        filters={filters}
+        countries={countries}
+        specialties={specialties}
+        onChange={setFilters}
+        onApply={applyFilters}
+      />
+
+      {loading && !data ? (
+        <div className="flex items-center gap-2 text-sm text-slate-400 py-10 justify-center">
+          <Loader2 size={18} className="animate-spin" /> Carregando pacientes...
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
-          {filtered.map((p) => (
-            <div key={p.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm shrink-0">
-                {p.name && p.name !== "—" ? p.name.charAt(0).toUpperCase() : "?"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-slate-800 text-sm">{p.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {p.email || t("admin.patients.noEmail")} · {p.region || "—"}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                <AdminViewPhoneButton userId={p.userId} />
-                <div className="text-right">
-                  <p className="text-xs text-slate-400">
-                    {t("admin.patients.appointments").replace("{{n}}", String(p.appointments))}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {t("admin.patients.documents").replace("{{n}}", String(p.documents))}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <PatientListTable patients={data?.patients ?? []} />
       )}
     </div>
   );
