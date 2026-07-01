@@ -73,13 +73,13 @@ export default function BrVeSolidarityBadge() {
           <path
             d="M118,70 Q260.0,28 402,70"
             fill="none"
-            stroke="#ff7a1a"
+            stroke="#e05930"
             strokeWidth="2.2"
             strokeDasharray="2 6"
             strokeLinecap="round"
           />
-          <circle cx="118" cy="70" r="3" fill="#ff7a1a" />
-          <circle cx="402" cy="70" r="3" fill="#ff7a1a" />
+          <circle cx="118" cy="70" r="3" fill="#e05930" />
+          <circle cx="402" cy="70" r="3" fill="#e05930" />
 
           <text
             x="198.0"
@@ -94,7 +94,7 @@ export default function BrVeSolidarityBadge() {
           </text>
           <path
             d="M260.0,204.6 C249.0,194.7 249.0,185.9 260.0,191.4 C271.0,185.9 271.0,194.7 260.0,204.6 Z"
-            fill="#e23b5a"
+            fill="#e05930"
           />
           <text
             x="326.0"

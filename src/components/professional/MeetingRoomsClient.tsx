@@ -87,11 +87,11 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
           {t("meetRooms.title")}
         </h1>
-        <p className="text-emerald-700 font-medium text-sm sm:text-base mt-2">
-          {t("meetRooms.permanentLinksNotice")}
-        </p>
         <p className="text-slate-500 mt-1 text-sm sm:text-base">
           {t("meetRooms.subtitle")}
+        </p>
+        <p className="text-emerald-700 font-medium text-sm sm:text-base mt-2">
+          {t("meetRooms.permanentLinksNotice")}
         </p>
       </div>
 
