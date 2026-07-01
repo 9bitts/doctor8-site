@@ -1,0 +1,147 @@
+"use client";
+
+import { Video, Clock, Globe, Languages, ExternalLink, Heart } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import type { MeetingRoomConfig } from "@/lib/meeting-rooms";
+
+type RoomWithUrl = MeetingRoomConfig & { meetUrl: string | null };
+
+function formatTodaySchedule(room: MeetingRoomConfig): string {
+  const h = String(room.scheduleHour).padStart(2, "0");
+  const m = String(room.scheduleMinute).padStart(2, "0");
+  const tzLabel = room.timezone === "America/Sao_Paulo" ? "Brasil" : room.timezone;
+  return `${h}h${m} (${tzLabel})`;
+}
+
+function roomStatus(
+  room: MeetingRoomConfig,
+): "upcoming" | "live" | "ended" {
+  const now = new Date();
+  const brNow = new Date(
+    now.toLocaleString("en-US", { timeZone: room.timezone }),
+  );
+  const start = new Date(brNow);
+  start.setHours(room.scheduleHour, room.scheduleMinute, 0, 0);
+  const end = new Date(start);
+  end.setHours(end.getHours() + 2);
+
+  if (brNow < start) return "upcoming";
+  if (brNow >= start && brNow <= end) return "live";
+  return "ended";
+}
+
+const STATUS_STYLES = {
+  upcoming: "bg-sky-100 text-sky-800",
+  live: "bg-emerald-100 text-emerald-800",
+  ended: "bg-slate-100 text-slate-600",
+} as const;
+
+export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) {
+  const { t } = useI18n();
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-8">
+      <div>
+        <div className="flex items-center gap-2 text-brand-600 text-sm font-semibold mb-1">
+          <Heart size={16} className="text-rose-500" />
+          <span>SOS Venezuela ? Doctor8</span>
+        </div>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+          {t("meetRooms.title")}
+        </h1>
+        <p className="text-slate-500 mt-1 text-sm sm:text-base">
+          {t("meetRooms.subtitle")}
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/80 to-white p-4 sm:p-5 flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
+          <Languages size={20} className="text-brand-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-slate-900 text-sm">
+            {t("meetRooms.translationAuto")}
+          </p>
+          <p className="text-slate-600 text-xs sm:text-sm mt-1">
+            {t("meetRooms.translationHint")}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {rooms.map((room) => {
+          const status = roomStatus(room);
+          const schedule = formatTodaySchedule(room);
+
+          return (
+            <article
+              key={room.id}
+              className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+            >
+              <div className="p-5 sm:p-6 space-y-4">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
+                      <Video size={24} className="text-violet-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="text-lg font-bold text-slate-900 break-words">
+                        {t(room.titleKey)}
+                      </h2>
+                      <p className="text-slate-600 text-sm mt-1 leading-relaxed">
+                        {t(room.subtitleKey)}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${STATUS_STYLES[status]}`}
+                  >
+                    {t(`meetRooms.status.${status}`)}
+                  </span>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2 text-slate-700 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
+                    <Clock size={16} className="text-brand-500 shrink-0" />
+                    <span>
+                      <span className="text-slate-500">{t("meetRooms.todaySchedule")}: </span>
+                      <span className="font-semibold">{schedule}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-700 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100 min-w-0">
+                    <Globe size={16} className="text-brand-500 shrink-0" />
+                    <span className="truncate">
+                      <span className="text-slate-500">{t("meetRooms.local")}: </span>
+                      <span className="font-semibold">Google Meet</span>
+                    </span>
+                  </div>
+                </div>
+
+                {room.meetUrl ? (
+                  <a
+                    href={room.meetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl px-6 py-3 text-sm transition shadow-sm"
+                  >
+                    <Video size={18} />
+                    {t("meetRooms.enterRoom")}
+                    <ExternalLink size={14} className="opacity-80" />
+                  </a>
+                ) : (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {t("meetRooms.noLink")}
+                  </div>
+                )}
+              </div>
+
+              <div className="px-5 sm:px-6 py-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-500">
+                {t("meetRooms.waitingRoom")}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

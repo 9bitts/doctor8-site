@@ -38,7 +38,8 @@ export type NavIconKey =
   | "CreditCard"
   | "Plug"
   | "ScrollText"
-  | "PieChart";
+  | "PieChart"
+  | "Video";
 
 export type PlatformNavEntry = {
   href: string;
@@ -95,6 +96,7 @@ export const PROFESSIONAL_NAV: PlatformNavEntry[] = [
   { href: "/professional/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
   { href: "/professional/jit", labelKey: "nav.jit", roles: ["PROFESSIONAL"], iconKey: "Radio" },
   { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+  { href: "/professional/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
   { href: "/professional/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
   { href: "/professional/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
   { href: "/professional/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
@@ -116,6 +118,7 @@ export const PSYCHOLOGIST_NAV: PlatformNavEntry[] = [
   { href: "/psychologist/jit", labelKey: "nav.jit", roles: ["PROFESSIONAL"], iconKey: "Radio" },
   { href: "/psychologist/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
   { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+  { href: "/psychologist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
   { href: "/psychologist/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
   { href: "/psychologist/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
   { href: "/psychologist/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },

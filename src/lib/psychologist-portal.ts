@@ -27,6 +27,7 @@ export const PROFESSIONAL_TO_PSYCHOLOGIST_PATHS: [string, string][] = [
   ["/professional/account", "/psychologist/account"],
   ["/professional/doctor-connection", "/psychologist/doctor-connection"],
   ["/professional/jit", "/psychologist/jit"],
+  ["/professional/meeting-rooms", "/psychologist/meeting-rooms"],
   ["/professional", "/psychologist"],
 ];
 
