@@ -59,17 +59,17 @@ export default function InternationalPhoneInput({
     (validationIssue ? registrationPhoneErrorMessage(lang, validationIssue) : undefined);
 
   const inputClass = dark
-    ? "min-w-0 flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
-    : "min-w-0 flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
-  const labelClass = dark ? "block text-sm font-medium text-slate-300 mb-2" : "text-xs font-medium text-slate-600";
+    ? "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+    : "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
+  const labelClass = dark ? "block text-sm font-medium text-slate-300 mb-1.5" : "text-xs font-medium text-slate-600";
   const selectClass = dark
-    ? "w-[8.5rem] shrink-0 truncate bg-white/5 border border-white/10 rounded-xl px-2.5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-    : "w-[8.5rem] shrink-0 truncate border border-slate-200 rounded-xl px-2.5 py-2.5 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
+    ? "w-full bg-white/5 border border-white/10 rounded-xl px-2.5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+    : "w-full border border-slate-200 rounded-xl px-2.5 py-2.5 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
 
   return (
     <div className={className}>
       <label className={labelClass}>{t("reg.phone")}</label>
-      <div className="mt-1.5 flex items-stretch gap-2">
+      <div className="mt-1.5 flex flex-col gap-2">
         <select
           value={value.ddi}
           onChange={(e) => onChange({ ...value, ddi: e.target.value })}
