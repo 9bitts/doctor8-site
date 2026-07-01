@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth-portals";
 import { ForgotPasswordBackLink, SendResetEmailButton } from "../ForgotPasswordClient";
 import { ForgotPasswordLayout } from "@/components/auth/forgot-password-shared";
-import { getLoginAccentStyles } from "@/components/auth/login-shared";
+import { getLoginAccentStyles } from "@/lib/auth/login-accent-styles";
 
 export const dynamic = "force-dynamic";
 
