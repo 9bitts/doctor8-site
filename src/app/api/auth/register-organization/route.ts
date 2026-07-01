@@ -9,7 +9,7 @@ import { UserRole, ConsentType } from "@prisma/client";
 import { sendEmailVerification } from "@/lib/email";
 import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
-import { parseRegistrationPhone } from "@/lib/international-phone";
+import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
 
 const passwordSchema = z
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     });
     if ("error" in phoneParsed) {
       return NextResponse.json(
-        { error: { phoneNational: ["Telefone inválido"] } },
+        { error: { phoneNational: [registrationPhoneErrorMessage(parsed.language, phoneParsed.error)] } },
         { status: 400 },
       );
     }

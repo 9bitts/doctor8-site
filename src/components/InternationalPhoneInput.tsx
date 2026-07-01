@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { translate, type Lang } from "@/lib/i18n/translations";
 import { PHONE_COUNTRIES, phoneCountryLabel } from "@/lib/phone-countries";
-import { defaultDdiForRegion } from "@/lib/international-phone";
+import {
+  defaultDdiForRegion,
+  getRegistrationPhoneIssue,
+  registrationPhoneErrorMessage,
+} from "@/lib/international-phone";
 
 export type InternationalPhoneValue = {
   ddi: string;
@@ -34,18 +38,33 @@ export default function InternationalPhoneInput({
   const t = (key: string) => translate(lang, key);
 
   useEffect(() => {
-    if (!value.ddi && region) {
-      onChange({ ...value, ddi: defaultDdiForRegion(region) });
+    if (!region) return;
+    const ddi = defaultDdiForRegion(region);
+    if (ddi !== value.ddi) {
+      onChange({ ...value, ddi });
     }
   }, [region]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const countries = useMemo(() => {
+    const preferredIso = region && region !== "EU" ? region.toUpperCase() : null;
+    if (!preferredIso) return PHONE_COUNTRIES;
+    const preferred = PHONE_COUNTRIES.find((c) => c.iso2 === preferredIso);
+    if (!preferred) return PHONE_COUNTRIES;
+    return [preferred, ...PHONE_COUNTRIES.filter((c) => c.iso2 !== preferredIso)];
+  }, [region]);
+
+  const validationIssue = getRegistrationPhoneIssue(value.ddi, value.nationalNumber);
+  const inlineError =
+    error ||
+    (validationIssue ? registrationPhoneErrorMessage(lang, validationIssue) : undefined);
 
   const inputClass = dark
     ? "min-w-0 flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
     : "min-w-0 flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
   const labelClass = dark ? "block text-sm font-medium text-slate-300 mb-2" : "text-xs font-medium text-slate-600";
   const selectClass = dark
-    ? "w-[6.75rem] shrink-0 truncate bg-white/5 border border-white/10 rounded-xl px-2.5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-    : "w-[6.75rem] shrink-0 truncate border border-slate-200 rounded-xl px-2.5 py-2.5 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
+    ? "w-[8.5rem] shrink-0 truncate bg-white/5 border border-white/10 rounded-xl px-2.5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+    : "w-[8.5rem] shrink-0 truncate border border-slate-200 rounded-xl px-2.5 py-2.5 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
 
   return (
     <div className={className}>
@@ -58,7 +77,7 @@ export default function InternationalPhoneInput({
           className={selectClass}
           aria-label={t("reg.phoneDdi")}
         >
-          {PHONE_COUNTRIES.map((c) => (
+          {countries.map((c) => (
             <option
               key={c.iso2}
               value={c.dialCode}
@@ -79,12 +98,13 @@ export default function InternationalPhoneInput({
           required={required}
           className={inputClass}
           aria-label={t("reg.phoneNational")}
+          aria-invalid={Boolean(inlineError)}
         />
       </div>
       <p className={`text-xs mt-1 ${dark ? "text-slate-500" : "text-slate-400"}`}>
         {t("reg.phoneHint")}
       </p>
-      {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+      {inlineError && <p className="text-red-400 text-xs mt-1">{inlineError}</p>}
     </div>
   );
 }

@@ -17,7 +17,8 @@ let snsClient: SNSClient | null = null;
 
 export function isAwsSnsConfigured(): boolean {
   return Boolean(
-    process.env.AWS_ACCESS_KEY_ID?.trim() &&
+    process.env.AWS_SNS_SMS_ENABLED?.trim() === "1" &&
+      process.env.AWS_ACCESS_KEY_ID?.trim() &&
       process.env.AWS_SECRET_ACCESS_KEY?.trim(),
   );
 }

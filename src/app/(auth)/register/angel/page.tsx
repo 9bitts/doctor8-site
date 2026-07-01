@@ -22,7 +22,8 @@ import { buildAuthHref } from "@/components/auth/login-shared";
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
 } from "@/components/InternationalPhoneInput";
-import { buildInternationalPhoneE164, defaultDdiForRegion } from "@/lib/international-phone";
+import { defaultDdiForRegion, validateRegistrationPhone } from "@/lib/international-phone";
+import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
 
 const PASSWORD_RULES = [
   { key: "reg.rule8", test: (p: string) => p.length >= 8 },
@@ -63,7 +64,11 @@ export default function RegisterAngelPage() {
     const c = params.get("campaign");
     if (c) setCampaignSlug(c);
     const r = params.get("region");
-    if (r) setRegion(parseRegistrationRegion(r, "BR"));
+    if (r) {
+      const parsed = parseRegistrationRegion(r, "BR");
+      setRegion(parsed);
+      setPhone((prev) => ({ ...prev, ddi: defaultDdiForRegion(parsed) }));
+    }
     const langParam = params.get("lang");
     if (langParam) {
       const l = normalizeLang(langParam);
@@ -82,7 +87,12 @@ export default function RegisterAngelPage() {
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
-  const isPhoneValid = Boolean(buildInternationalPhoneE164(phone.ddi, phone.nationalNumber));
+  const isPhoneValid = validateRegistrationPhone(phone.ddi, phone.nationalNumber).ok;
+
+  function handleRegionChange(next: Region) {
+    setRegion(next);
+    setPhone((prev) => ({ ...prev, ddi: defaultDdiForRegion(next) }));
+  }
   const canSubmit =
     isPasswordValid &&
     acceptedTerms &&
@@ -186,6 +196,8 @@ export default function RegisterAngelPage() {
             <p className="text-sm font-medium text-rose-200">{t("angel.register.accountType")}</p>
           </div>
 
+          <RegisterVerificationNotice lang={lang} />
+
           {errors.general && (
             <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
               <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
@@ -270,7 +282,7 @@ export default function RegisterAngelPage() {
               <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.region")}</label>
               <RegistrationRegionSelect
                 value={region}
-                onChange={setRegion}
+                onChange={handleRegionChange}
                 lang={lang}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
                 optionClassName="bg-slate-800"

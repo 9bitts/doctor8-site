@@ -21,7 +21,7 @@ import {
   attachLinkedDocumentsToPatientProfile,
   linkChartsToPatientOnSignup,
 } from "@/lib/patient-chart-link";
-import { parseRegistrationPhone } from "@/lib/international-phone";
+import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { isAccountVerified } from "@/lib/account-verified";
 import { PROFESSION_SIGNUP, isProfessionSignupSlug } from "@/lib/profession-signup";
@@ -109,18 +109,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const normalizedLanguage = language === "pt" || language === "es" || language === "en"
+      ? language
+      : undefined;
+
     const phoneParsed = parseRegistrationPhone({ phoneDdi, phoneNational });
     if ("error" in phoneParsed) {
       return NextResponse.json(
-        { error: { phoneNational: ["Invalid phone number"] } },
+        {
+          error: {
+            phoneNational: [registrationPhoneErrorMessage(normalizedLanguage || language, phoneParsed.error)],
+          },
+        },
         { status: 400 },
       );
     }
 
     const normalizedEmail = email.toLowerCase();
-    const normalizedLanguage = language === "pt" || language === "es" || language === "en"
-      ? language
-      : undefined;
 
     const existing = await db.user.findUnique({
       where: { email: normalizedEmail },

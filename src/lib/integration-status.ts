@@ -2,7 +2,7 @@
 
 import { getWhatsAppReadiness } from "@/lib/whatsapp";
 import { isWebPushEnabled, getVapidPublicKey } from "@/lib/web-push";
-import { isSmsConfigured, usesTwilioVerify } from "@/lib/sms";
+import { isSmsConfigured, usesTwilioVerify, isAwsSnsConfigured } from "@/lib/sms";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { isGoogleMeetEnabled, isCalendarMeetConfigured } from "@/lib/google-meet";
 import { getPharmacyIntegrationMode } from "@/lib/pharmacy-marketplace/config";
@@ -27,6 +27,7 @@ export function getIntegrationStatuses(): IntegrationRow[] {
   const stripeWebhook = has(process.env.STRIPE_WEBHOOK_SECRET);
   const smsOk = isSmsConfigured();
   const twilioVerify = usesTwilioVerify();
+  const awsSms = isAwsSnsConfigured();
   const vapidPublic = getVapidPublicKey();
   const vapidClient = has(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
   const dailyOk = has(process.env.DAILY_API_KEY) || process.env.E2E_MOCK_DAILY === "1";
@@ -53,10 +54,12 @@ export function getIntegrationStatuses(): IntegrationRow[] {
       health: smsOk ? "ok" : "missing",
       configured: smsOk,
       detail: smsOk
-        ? twilioVerify
-          ? "Twilio Verify OTP (TWILIO_VERIFY_SERVICE_SID) + SMS fallback."
-          : "Twilio SMS (TWILIO_SMS_FROM) for verification codes."
-        : "SMS OTP needs TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN (+ Verify or SMS_FROM).",
+        ? awsSms
+          ? "AWS SNS SMS (AWS_SNS_SMS_ENABLED=1). Requires production SMS access in AWS."
+          : twilioVerify
+            ? "Twilio Verify OTP (TWILIO_VERIFY_SERVICE_SID) + SMS fallback."
+            : "Twilio SMS (TWILIO_SMS_FROM) for verification codes."
+        : "SMS OTP needs AWS_SNS_SMS_ENABLED=1 (+ AWS keys) or Twilio credentials.",
     },
     {
       id: "stripe",

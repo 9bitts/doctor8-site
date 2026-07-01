@@ -7,11 +7,11 @@ import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translatio
 import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
 import { ORGANIZATION_LOGIN, buildVerifyAccountHref } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
-import { RegisterLogo } from "@/components/auth/register-shared";
+import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
 } from "@/components/InternationalPhoneInput";
-import { buildInternationalPhoneE164 } from "@/lib/international-phone";
+import { validateRegistrationPhone } from "@/lib/international-phone";
 import {
   Eye, EyeOff, Loader2, AlertCircle, Building2, ArrowLeft, Search, LogIn,
 } from "lucide-react";
@@ -213,6 +213,7 @@ export default function RegisterOrganizationPage() {
 
           {step === 2 && (
             <form onSubmit={handleSubmit} className="space-y-4">
+              <RegisterVerificationNotice lang={lang} className="mb-2" />
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-slate-300 mb-1">{t("org.razaoSocial")}</label>
@@ -315,7 +316,7 @@ export default function RegisterOrganizationPage() {
 
               <button
                 type="submit"
-                disabled={loading || !acceptedTerms || !acceptedPrivacy || !acceptedGdpr || !buildInternationalPhoneE164(phone.ddi, phone.nationalNumber)}
+                disabled={loading || !acceptedTerms || !acceptedPrivacy || !acceptedGdpr || !validateRegistrationPhone(phone.ddi, phone.nationalNumber).ok}
                 className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50"
               >
                 {loading && <Loader2 className="w-5 h-5 animate-spin" />}

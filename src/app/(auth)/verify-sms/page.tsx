@@ -29,11 +29,36 @@ function VerifySmsContent() {
   const { t } = useLoginLang();
 
   const [phone, setPhone] = useState("");
+  const [phonePrefilled, setPhonePrefilled] = useState(false);
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    if (!email) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/verification-phone", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!cancelled && data.phone) {
+          setPhone(data.phone);
+          setPhonePrefilled(true);
+        }
+      } catch {
+        /* ignore — user can type manually */
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [email]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -165,10 +190,16 @@ function VerifySmsContent() {
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                setPhonePrefilled(false);
+              }}
               placeholder={t("verifySms.phonePlaceholder")}
               className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 ${styles.ring}`}
             />
+            {phonePrefilled && (
+              <p className="text-blue-300/80 text-xs mt-2">{t("verifySms.prefilledNote")}</p>
+            )}
             <p className="text-slate-500 text-xs mt-2">{t("verifySms.phoneHint")}</p>
           </div>
           <button

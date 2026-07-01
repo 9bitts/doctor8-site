@@ -15,7 +15,7 @@ import {
   type LicenseDocValidationError,
 } from "@/lib/provider-license-docs";
 import { notifyAdminLicenseDocumentUploaded } from "@/lib/provider-license-notify";
-import { parseRegistrationPhone } from "@/lib/international-phone";
+import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { isAccountVerified } from "@/lib/account-verified";
 
@@ -209,8 +209,9 @@ export async function POST(req: NextRequest) {
 
     const phoneParsed = parseRegistrationPhone({ phoneDdi, phoneNational });
     if ("error" in phoneParsed) {
+      const normalizedLanguage = language && ["pt", "en", "es"].includes(language) ? language : "pt";
       return NextResponse.json(
-        { error: { phoneNational: ["Invalid phone number"] } },
+        { error: { phoneNational: [registrationPhoneErrorMessage(normalizedLanguage, phoneParsed.error)] } },
         { status: 400 },
       );
     }

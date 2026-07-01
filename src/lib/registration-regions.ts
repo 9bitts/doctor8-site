@@ -125,3 +125,10 @@ export function requiresHipaa(code: RegistrationRegionCode | string): boolean {
 export function requiresGdpr(code: RegistrationRegionCode | string): boolean {
   return code === "EU";
 }
+
+/** Default registration country when none is passed in the URL. */
+export function defaultRegistrationRegionForLang(lang: Lang): RegistrationRegionCode {
+  if (lang === "pt") return "BR";
+  if (lang === "es") return "VE";
+  return "US";
+}

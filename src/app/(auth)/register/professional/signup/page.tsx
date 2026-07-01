@@ -6,7 +6,7 @@ import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import {
   Stethoscope, LogIn, Brain, Building2, ArrowLeft, Leaf, Heart,
 } from "lucide-react";
-import { parseRegistrationRegion } from "@/lib/registration-regions";
+import { parseRegistrationRegion, defaultRegistrationRegionForLang } from "@/lib/registration-regions";
 import { ANGEL_REGISTER, LOGIN, ORGANIZATION_REGISTER } from "@/lib/auth-portals";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { buildAuthHref } from "@/components/auth/login-shared";
@@ -39,7 +39,11 @@ export default function RegisterProfessionalSignupPage() {
     setCallbackUrl(params.get("callbackUrl") || "");
 
     const r = params.get("region");
-    if (r) setInitialRegion(parseRegistrationRegion(r, "US"));
+    if (r) {
+      setInitialRegion(parseRegistrationRegion(r, "US"));
+    } else {
+      setInitialRegion(defaultRegistrationRegionForLang(detectInitialLang()));
+    }
 
     const portalParam = params.get("portal");
     if (portalParam === "psychologist") {

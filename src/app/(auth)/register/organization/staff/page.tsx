@@ -10,6 +10,7 @@ import { buildAuthHref } from "@/components/auth/login-shared";
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
 } from "@/components/InternationalPhoneInput";
+import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
 import { buildInternationalPhoneE164 } from "@/lib/international-phone";
 
 const LANG_KEY = "doctor8.lang";
@@ -142,6 +143,7 @@ export default function RegisterOrganizationStaffPage() {
           <p className="text-red-300 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">{error}</p>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
+          <RegisterVerificationNotice lang={lang} className="mb-2" />
           <div>
             <label className="text-sm text-slate-300 block mb-1">{t("orgStaff.email")}</label>
             <input disabled value={invite.email} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-slate-400 text-sm" />

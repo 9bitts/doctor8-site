@@ -15,7 +15,7 @@ import {
   RegisterLogo,
   type Region,
 } from "@/components/auth/register-shared";
-import { parseRegistrationRegion } from "@/lib/registration-regions";
+import { parseRegistrationRegion, defaultRegistrationRegionForLang } from "@/lib/registration-regions";
 
 export default function RegisterPage() {
   const [callbackUrl, setCallbackUrl] = useState("");
@@ -27,7 +27,11 @@ export default function RegisterPage() {
     setCallbackUrl(params.get("callbackUrl") || "");
 
     const r = params.get("region");
-    if (r) setInitialRegion(parseRegistrationRegion(r, "US"));
+    if (r) {
+      setInitialRegion(parseRegistrationRegion(r, "US"));
+    } else {
+      setInitialRegion(defaultRegistrationRegionForLang(detectInitialLang()));
+    }
 
     const langParam = params.get("lang");
     if (langParam) {

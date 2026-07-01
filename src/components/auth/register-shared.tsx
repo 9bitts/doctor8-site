@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
+import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
 import { getLoginAccentStyles } from "@/components/auth/login-shared";
 import type { LoginAccent } from "@/lib/auth-portals";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -27,7 +28,7 @@ import {
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
 } from "@/components/InternationalPhoneInput";
-import { buildInternationalPhoneE164, defaultDdiForRegion } from "@/lib/international-phone";
+import { defaultDdiForRegion, validateRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 
 export type RegisterRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 export type Region = RegistrationRegionCode;
@@ -134,6 +135,11 @@ export function RegisterAccountForm({
     setRegion(initialRegion);
     setPhone((prev) => ({ ...prev, ddi: defaultDdiForRegion(initialRegion) }));
   }, [initialRegion]);
+
+  function handleRegionChange(next: Region) {
+    setRegion(next);
+    setPhone((prev) => ({ ...prev, ddi: defaultDdiForRegion(next) }));
+  }
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -153,7 +159,7 @@ export function RegisterAccountForm({
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
-  const isPhoneValid = Boolean(buildInternationalPhoneE164(phone.ddi, phone.nationalNumber));
+  const isPhoneValid = validateRegistrationPhone(phone.ddi, phone.nationalNumber).ok;
   const canSubmit =
     isPasswordValid &&
     isPhoneValid &&
@@ -241,7 +247,15 @@ export function RegisterAccountForm({
       const data = await res.json();
 
       if (!res.ok) {
-        setErrors(data.error || { general: [t("reg.regFailed")] });
+        const apiErrors = data.error || { general: [t("reg.regFailed")] };
+        if (apiErrors.phoneNational?.[0]) {
+          const raw = apiErrors.phoneNational[0] as string;
+          const knownIssues = ["TOO_SHORT", "TOO_LONG", "MISSING_AREA_CODE", "INVALID_FORMAT"] as const;
+          if (knownIssues.includes(raw as typeof knownIssues[number])) {
+            apiErrors.phoneNational = [registrationPhoneErrorMessage(lang, raw as typeof knownIssues[number])];
+          }
+        }
+        setErrors(apiErrors);
         return;
       }
 
@@ -310,6 +324,8 @@ export function RegisterAccountForm({
         </p>
       </div>
 
+      <RegisterVerificationNotice lang={lang} />
+
       {errors.general && (
         <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
           <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
@@ -346,7 +362,7 @@ export function RegisterAccountForm({
           <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.region")}</label>
           <RegistrationRegionSelect
             value={region}
-            onChange={setRegion}
+            onChange={handleRegionChange}
             lang={lang}
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
             optionClassName="bg-slate-800"
