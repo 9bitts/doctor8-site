@@ -6,6 +6,7 @@ import {
   MessageCircle, Mail, Copy, CheckCircle2,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { DoctorConnectionSeal } from "@/components/brand/DoctorConnectionSeal";
 import type { MeetingRoomConfig } from "@/lib/meeting-rooms";
 
 type RoomWithUrl = MeetingRoomConfig & { meetUrl: string | null; inviteUrl: string };
@@ -120,10 +121,13 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
           return (
             <article
               key={room.id}
-              className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+              className="relative rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
             >
+              <DoctorConnectionSeal
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 w-28 sm:w-36 md:w-40 rotate-[7deg] origin-top-right bg-white/85 backdrop-blur-[2px] rounded-lg p-1 sm:p-1.5 ring-1 ring-slate-200/80"
+              />
               <div className="p-5 sm:p-6 space-y-4">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="pr-24 sm:pr-32 md:pr-36 space-y-3">
                   <div className="flex items-start gap-3 min-w-0">
                     <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
                       <Video size={24} className="text-violet-600" />
@@ -148,7 +152,7 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap shrink-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span
                       className={`text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${STATUS_STYLES[status]}`}
                     >
