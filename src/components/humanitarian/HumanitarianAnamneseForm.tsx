@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Loader2, ChevronRight, ChevronLeft, CheckCircle2 } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
@@ -67,6 +68,8 @@ const inp =
   "w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
 
 export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) {
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<Step>("identification");
   const [saving, setSaving] = useState(false);
@@ -106,7 +109,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
         return;
       }
       if (intake.anamneseComplete) {
-        clearHumanitarianDraft(draftKey);
+        if (userId) clearHumanitarianDraft(userId, draftKey);
         setDone(true);
       }
 
@@ -176,9 +179,9 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
   }, [load]);
 
   useEffect(() => {
-    if (loading || done) return;
+    if (loading || done || !userId) return;
     if (!draftReadyRef.current) {
-      const local = loadHumanitarianDraft<AnamneseLocalDraft>(draftKey);
+      const local = loadHumanitarianDraft<AnamneseLocalDraft>(userId, draftKey);
       if (local) {
         setStep(local.step);
         setIdentification(local.identification);
@@ -192,7 +195,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
       draftReadyRef.current = true;
       return;
     }
-    saveHumanitarianDraft(draftKey, {
+    saveHumanitarianDraft(userId, draftKey, {
       step,
       identification,
       serviceTypes,
@@ -204,6 +207,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
   }, [
     loading,
     done,
+    userId,
     draftKey,
     step,
     identification,
@@ -257,7 +261,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
         return;
       }
       if (section === "consent") {
-        clearHumanitarianDraft(draftKey);
+        if (userId) clearHumanitarianDraft(userId, draftKey);
         setDone(true);
       } else {
         const next = STEPS[stepIndex + 1];

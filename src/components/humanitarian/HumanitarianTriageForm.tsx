@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Loader2, AlertTriangle, ChevronRight } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
 import type { HumanitarianTriageData } from "@/lib/humanitarian/triage";
@@ -81,8 +82,10 @@ function YesNo({
 }
 
 export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete }: Props) {
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const draftKey = humanitarianDraftKey("triage", campaignSlug);
-  const { data, setData, restored, clearDraft } = useHumanitarianDraft(draftKey, EMPTY);
+  const { data, setData, restored, clearDraft } = useHumanitarianDraft(userId, draftKey, EMPTY);
   const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

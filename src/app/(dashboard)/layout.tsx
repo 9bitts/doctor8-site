@@ -14,6 +14,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import OrganizationScopeSwitcher from "@/components/organization/OrganizationScopeSwitcher";
 import ProfessionalScopeSwitcher from "@/components/professional/ProfessionalScopeSwitcher";
 import { resolveLoginPathForSession } from "@/lib/auth-portals";
+import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { BrandLogo, BrandLogoLink } from "@/components/brand/BrandLogo";
 import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
 import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
@@ -166,7 +167,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         <div className="px-3 py-4 border-t border-slate-700/50 space-y-1">
           <LanguageSwitcher variant="sidebar" />
           <button
-            onClick={() => signOut({ callbackUrl: signOutHref })}
+            onClick={() => {
+              clearSensitiveClientState();
+              signOut({ callbackUrl: signOutHref });
+            }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all w-full"
           >
             <LogOut size={18} />

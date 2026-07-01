@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   await db.user.update({
     where: { id: session.user.id },
-    data: { passwordHash: newHash },
+    data: { passwordHash: newHash, tokenVersion: { increment: 1 } },
   });
 
   await db.auditLog.create({

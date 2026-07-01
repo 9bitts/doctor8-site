@@ -12,5 +12,17 @@ declare module "next-auth" {
   interface User {
     role: string;
     region: string;
+    tokenVersion?: number;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id?: string;
+    role?: string;
+    region?: string;
+    professionalSpecialty?: string | null;
+    tokenVersion?: number;
+    tvCheckedAt?: number;
   }
 }

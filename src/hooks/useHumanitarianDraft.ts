@@ -8,32 +8,37 @@ import {
   saveHumanitarianDraft,
 } from "@/lib/humanitarian/offline-draft";
 
-export function useHumanitarianDraft<T>(draftKey: string, initial: T) {
+export function useHumanitarianDraft<T>(
+  userId: string | undefined,
+  draftKey: string,
+  initial: T,
+) {
   const [data, setData] = useState<T>(initial);
   const [restored, setRestored] = useState(false);
   const hydrated = useRef(false);
 
   useEffect(() => {
-    if (hydrated.current) return;
+    if (!userId || hydrated.current) return;
     hydrated.current = true;
-    const saved = loadHumanitarianDraft<T>(draftKey);
+    const saved = loadHumanitarianDraft<T>(userId, draftKey);
     if (saved) {
       setData(saved);
       setRestored(true);
     }
-  }, [draftKey]);
+  }, [draftKey, userId]);
 
   useEffect(() => {
-    if (!hydrated.current) return;
-    saveHumanitarianDraft(draftKey, data);
-  }, [draftKey, data]);
+    if (!userId || !hydrated.current) return;
+    saveHumanitarianDraft(userId, draftKey, data);
+  }, [draftKey, data, userId]);
 
   const clearDraft = useCallback(() => {
-    clearHumanitarianDraft(draftKey);
+    if (!userId) return;
+    clearHumanitarianDraft(userId, draftKey);
     setRestored(false);
-  }, [draftKey]);
+  }, [draftKey, userId]);
 
-  const savedAt = humanitarianDraftSavedAt(draftKey);
+  const savedAt = userId ? humanitarianDraftSavedAt(userId, draftKey) : null;
 
   return { data, setData, restored, clearDraft, savedAt };
 }

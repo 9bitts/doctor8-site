@@ -2,7 +2,7 @@ import type { ClinicalMetricsInput } from "@/lib/clinical-metrics";
 import { hasAnyMetric } from "@/lib/clinical-metrics";
 import type { ClinicalRecordKind } from "@/lib/record-kind";
 
-const PREFIX = "doctor8:recordDraft:";
+const PREFIX = "doctor8:record-draft:";
 
 export type ClinicalRecordDraft = {
   categoryId?: string;
@@ -19,8 +19,8 @@ type DraftEnvelope = {
   data: ClinicalRecordDraft;
 };
 
-export function recordDraftKey(patientRecordId: string): string {
-  return `${PREFIX}${patientRecordId}`;
+export function recordDraftKey(userId: string, patientRecordId: string): string {
+  return `${PREFIX}${userId}:${patientRecordId}`;
 }
 
 export function isRecordDraftEmpty(draft: ClinicalRecordDraft): boolean {
@@ -30,20 +30,27 @@ export function isRecordDraftEmpty(draft: ClinicalRecordDraft): boolean {
     && !(draft.metrics && hasAnyMetric(draft.metrics));
 }
 
-export function saveRecordDraft(patientRecordId: string, draft: ClinicalRecordDraft): void {
+export function saveRecordDraft(
+  userId: string,
+  patientRecordId: string,
+  draft: ClinicalRecordDraft,
+): void {
   if (typeof window === "undefined") return;
   try {
     const envelope: DraftEnvelope = { savedAt: Date.now(), data: draft };
-    localStorage.setItem(recordDraftKey(patientRecordId), JSON.stringify(envelope));
+    localStorage.setItem(recordDraftKey(userId, patientRecordId), JSON.stringify(envelope));
   } catch {
     /* quota or private mode */
   }
 }
 
-export function loadRecordDraft(patientRecordId: string): ClinicalRecordDraft | null {
+export function loadRecordDraft(
+  userId: string,
+  patientRecordId: string,
+): ClinicalRecordDraft | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(recordDraftKey(patientRecordId));
+    const raw = localStorage.getItem(recordDraftKey(userId, patientRecordId));
     if (!raw) return null;
     const envelope = JSON.parse(raw) as DraftEnvelope;
     return envelope.data ?? null;
@@ -52,16 +59,16 @@ export function loadRecordDraft(patientRecordId: string): ClinicalRecordDraft | 
   }
 }
 
-export function clearRecordDraft(patientRecordId: string): void {
+export function clearRecordDraft(userId: string, patientRecordId: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(recordDraftKey(patientRecordId));
+    localStorage.removeItem(recordDraftKey(userId, patientRecordId));
   } catch {
     /* ignore */
   }
 }
 
-export function hasRecordDraft(patientRecordId: string): boolean {
-  const draft = loadRecordDraft(patientRecordId);
+export function hasRecordDraft(userId: string, patientRecordId: string): boolean {
+  const draft = loadRecordDraft(userId, patientRecordId);
   return draft !== null && !isRecordDraftEmpty(draft);
 }

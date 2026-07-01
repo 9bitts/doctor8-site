@@ -7,6 +7,8 @@ import { NextResponse } from "next/server";
 import { isPathAllowedForRole, resolveRoleHome } from "@/lib/role-home";
 import { resolveLoginPathForPathname } from "@/lib/auth-portals";
 
+const PRIVATE_CACHE_CONTROL = "private, no-store";
+
 // Legacy per-role login URLs — unified into a single /login (kept working
 // because these links were publicly shared and bookmarked).
 const LEGACY_LOGIN_PATHS = [
@@ -58,6 +60,26 @@ function isPublicRoute(pathname: string): boolean {
   });
 }
 
+function isPublicApi(pathname: string): boolean {
+  return (
+    pathname.startsWith("/api/auth")
+    || pathname.startsWith("/api/public/")
+    || pathname.startsWith("/api/fhir/smart/")
+    || pathname.startsWith("/api/cnpj/")
+    || pathname.startsWith("/api/buying-club/public")
+    || pathname.startsWith("/api/support")
+    || pathname.startsWith("/api/payments/webhook")
+    || pathname.startsWith("/api/webhooks/")
+    || pathname.startsWith("/api/cron/")
+    || pathname.startsWith("/api/reminders/")
+    || pathname.startsWith("/api/shared/")
+  );
+}
+
+function isPrivateApi(pathname: string): boolean {
+  return pathname.startsWith("/api/") && !isPublicApi(pathname);
+}
+
 // Role-based route prefixes
 const PATIENT_ROUTES = ["/patient"];
 const PROFESSIONAL_ROUTES = ["/professional"];
@@ -67,11 +89,45 @@ const INTEGRATIVE_THERAPIST_ROUTES = ["/integrative-therapist"];
 const ORGANIZATION_ROUTES = ["/organization"];
 const ANGEL_ROUTES = ["/humanitarian/angel"];
 const VOLUNTEER_ROUTES = ["/humanitarian/volunteer"];
+const HUMANITARIAN_ROUTES = ["/humanitarian"];
 const ADMIN_ROUTES = ["/admin"];
+
+const AUTHENTICATED_DASHBOARD_PREFIXES = [
+  ...PATIENT_ROUTES,
+  ...PROFESSIONAL_ROUTES,
+  ...PSYCHOLOGIST_ROUTES,
+  ...PSYCHOANALYST_ROUTES,
+  ...INTEGRATIVE_THERAPIST_ROUTES,
+  ...ORGANIZATION_ROUTES,
+  ...HUMANITARIAN_ROUTES,
+  ...ANGEL_ROUTES,
+  ...VOLUNTEER_ROUTES,
+  ...ADMIN_ROUTES,
+];
+
+function isAuthenticatedDashboard(pathname: string): boolean {
+  return AUTHENTICATED_DASHBOARD_PREFIXES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
+function withPrivateCacheHeaders(
+  response: NextResponse,
+  pathname: string,
+  authenticated: boolean,
+): NextResponse {
+  if (authenticated && isAuthenticatedDashboard(pathname)) {
+    response.headers.set("Cache-Control", PRIVATE_CACHE_CONTROL);
+  } else if (isPrivateApi(pathname)) {
+    response.headers.set("Cache-Control", PRIVATE_CACHE_CONTROL);
+  }
+  return response;
+}
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
+  const authenticated = Boolean(session?.user);
 
   if (pathname.startsWith("/embed/")) {
     const res = NextResponse.next();
@@ -149,7 +205,11 @@ export default auth((req) => {
   // Redirect to login if not authenticated (pages only — APIs return JSON)
   if (!session?.user) {
     if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return withPrivateCacheHeaders(
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+        pathname,
+        false,
+      );
     }
 
     const clubToken = req.nextUrl.searchParams.get("club");
@@ -176,7 +236,11 @@ export default auth((req) => {
 
   function denyWrongRole(): NextResponse {
     if (isApi) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return withPrivateCacheHeaders(
+        NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+        pathname,
+        authenticated,
+      );
     }
     if (!role) {
       const loginPath = resolveLoginPathForPathname(pathname);
@@ -184,7 +248,7 @@ export default auth((req) => {
     }
     const home = resolveRoleHome(role, professionalSpecialty);
     if (pathname === home || pathname.startsWith(`${home}/`)) {
-      return NextResponse.next();
+      return withPrivateCacheHeaders(NextResponse.next(), pathname, authenticated);
     }
     return NextResponse.redirect(new URL(home, req.url));
   }
@@ -260,7 +324,7 @@ export default auth((req) => {
     return denyWrongRole();
   }
 
-  return NextResponse.next();
+  return withPrivateCacheHeaders(NextResponse.next(), pathname, authenticated);
 });
 
 export const config = {

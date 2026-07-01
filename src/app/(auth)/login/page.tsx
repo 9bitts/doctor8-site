@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Stethoscope, Heart } from "lucide-react";
 import { persistAuthCallback, consumeAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
+import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { safePostLoginUrl } from "@/lib/role-home";
 import {
@@ -67,23 +68,8 @@ function UnifiedLoginForm() {
     const trimmedEmail = email.trim().toLowerCase();
 
     try {
-      const checkRes = await fetch("/api/auth/check-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmedEmail }),
-      });
-
-      if (checkRes.ok) {
-        const { needsVerification } = await checkRes.json();
-        if (needsVerification) {
-          setError("unverified");
-          setUnverifiedEmail(trimmedEmail);
-          setLoading(false);
-          return;
-        }
-      }
-
       // Clear any previous session so shared computers don't keep the last account.
+      clearSensitiveClientState();
       await signOut({ redirect: false });
 
       const result = await signIn("credentials", {
@@ -139,6 +125,7 @@ function UnifiedLoginForm() {
     setError("");
     persistAuthCallback(callbackUrl);
     try {
+      clearSensitiveClientState();
       await signOut({ redirect: false });
       await signIn("google", { callbackUrl: POST_LOGIN_CALLBACK });
     } catch {

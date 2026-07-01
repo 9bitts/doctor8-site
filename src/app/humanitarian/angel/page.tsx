@@ -52,6 +52,7 @@ export default function HumanitarianAngelPage() {
   const [outcome, setOutcome] = useState<"REACHED_OK" | "NEEDS_HELP" | "NO_ANSWER" | "WRONG_NUMBER" | "ESCALATED" | "OTHER">("REACHED_OK");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState("");
 
   useEffect(() => { setLang(getHumanitarianLang()); }, []);
 
@@ -69,9 +70,13 @@ export default function HumanitarianAngelPage() {
       const data = await res.json();
       setStatus(data.status || "UNKNOWN");
       setPatients(data.patients || []);
-      cacheAngelDashboard({ status: data.status, patients: data.patients });
+      if (userId) {
+        cacheAngelDashboard(userId, { status: data.status, patients: data.patients });
+      }
     } catch {
-      const cached = loadCachedAngelDashboard<{ status: string; patients: PatientRow[] }>();
+      const cached = userId
+        ? loadCachedAngelDashboard<{ status: string; patients: PatientRow[] }>(userId)
+        : null;
       if (cached) {
         setStatus(cached.status);
         setPatients(cached.patients);
@@ -80,7 +85,16 @@ export default function HumanitarianAngelPage() {
       }
     }
     setLoading(false);
-  }, [lang, router]);
+  }, [lang, router, userId]);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((s) => {
+        if (s?.user?.id) setUserId(s.user.id);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 

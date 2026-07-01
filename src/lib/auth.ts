@@ -26,6 +26,10 @@ const SESSION_MAX_AGE = parseInt(
   process.env.SESSION_MAX_AGE_SECONDS || "900"
 );
 
+const TOKEN_VERSION_CHECK_MS = 60_000;
+
+const isProduction = process.env.NODE_ENV === "production";
+
 // Reads the signed OAuth signup intent cookie set before the Google redirect.
 async function readSignupIntent(): Promise<{
   role: "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
@@ -117,6 +121,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           role: user.role,
           region: user.region,
+          tokenVersion: user.tokenVersion,
         };
       },
     }),
@@ -182,17 +187,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           role: user.role,
           region: user.region,
+          tokenVersion: user.tokenVersion,
         };
       },
     }),
   ],
+  cookies: {
+    sessionToken: {
+      name: isProduction ? "__Secure-authjs.session-token" : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: isProduction,
+      },
+    },
+  },
   callbacks: {
     // Handle Google sign-in: create/link user manually (no PrismaAdapter needed)
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
+          const googleEmail = user.email!.toLowerCase();
           let dbUser = await db.user.findUnique({
-            where: { email: user.email! },
+            where: { email: googleEmail },
           });
 
           if (dbUser) {
@@ -210,7 +228,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
             dbUser = await db.user.create({
               data: {
-                email: user.email!,
+                email: googleEmail,
                 emailVerified: new Date(), // Google already verified the email
                 role: signupRole,
                 region: "US",
@@ -314,19 +332,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.role = (user as { role: string }).role;
         token.region = (user as { region: string }).region;
+        token.tokenVersion = (user as { tokenVersion?: number }).tokenVersion ?? 0;
+        token.tvCheckedAt = Date.now();
         if (user.email) token.email = user.email;
       }
 
       // For Google sign-in, fetch role/region from DB
       if (account?.provider === "google" && token.email) {
         const dbUser = await db.user.findUnique({
-          where: { email: token.email },
-          select: { id: true, role: true, region: true },
+          where: { email: String(token.email).toLowerCase() },
+          select: { id: true, role: true, region: true, tokenVersion: true },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
           token.region = dbUser.region;
+          token.tokenVersion = dbUser.tokenVersion;
+          token.tvCheckedAt = Date.now();
         }
       }
 
@@ -367,6 +389,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           10,
         );
         token.exp = Math.floor(Date.now() / 1000) + consultMaxAge;
+      }
+
+      if (token.id) {
+        const lastChecked = (token.tvCheckedAt as number | undefined) ?? 0;
+        if (Date.now() - lastChecked > TOKEN_VERSION_CHECK_MS) {
+          try {
+            const dbUser = await db.user.findUnique({
+              where: { id: token.id as string },
+              select: { tokenVersion: true, lockedUntil: true },
+            });
+            if (!dbUser) return null;
+            if (dbUser.lockedUntil && dbUser.lockedUntil > new Date()) return null;
+            const tokenVersion = (token.tokenVersion as number | undefined) ?? 0;
+            if (dbUser.tokenVersion > tokenVersion) return null;
+            token.tvCheckedAt = Date.now();
+          } catch {
+            /* DB unavailable — keep session, retry on next window */
+          }
+        }
       }
 
       return token;

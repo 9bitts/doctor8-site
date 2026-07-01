@@ -5,6 +5,7 @@ import { signOut } from "next-auth/react";
 import { AlertTriangle, Loader2, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { resolveLoginPathForSession } from "@/lib/auth-portals";
+import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-400 transition";
@@ -63,6 +64,7 @@ function DeleteAccountConfirmModal({
         return;
       }
 
+      clearSensitiveClientState();
       await signOut({ callbackUrl: resolveLoginPathForSession() });
     } catch {
       setError(t("acct.deleteAccount.errGeneric"));

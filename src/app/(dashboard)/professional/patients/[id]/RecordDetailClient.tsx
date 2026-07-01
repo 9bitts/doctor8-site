@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
@@ -240,6 +241,8 @@ export default function RecordDetailClient({
   const canEdit = !readOnly && chartAccess !== "view";
   const pathname = usePathname();
   const portalBase = mapProfessionalPathToPortal(pathname, "/professional");
+  const { data: session } = useSession();
+  const userId = session?.user?.id ?? "";
   const { lang, t } = useI18n();
   const searchParams = useSearchParams();
   const consultReturnUrl = searchParams.get("returnUrl");
@@ -347,8 +350,9 @@ export default function RecordDetailClient({
   }, []);
 
   useEffect(() => {
-    setPendingDraft(hasRecordDraft(chart.id));
-  }, [chart.id]);
+    if (!userId) return;
+    setPendingDraft(hasRecordDraft(userId, chart.id));
+  }, [chart.id, userId]);
 
   useEffect(() => {
     if (searchParams.get("newRecord") === "1") {
@@ -380,7 +384,7 @@ export default function RecordDetailClient({
   }, [searchParams]);
 
   useEffect(() => {
-    if (editingDoc || !showForm) return;
+    if (!userId || editingDoc || !showForm) return;
     const draft: ClinicalRecordDraft = {
       categoryId,
       cidSelection,
@@ -391,13 +395,14 @@ export default function RecordDetailClient({
       addToDiagnoses,
     };
     if (isRecordDraftEmpty(draft)) {
-      clearRecordDraft(chart.id);
+      clearRecordDraft(userId, chart.id);
       setPendingDraft(false);
       return;
     }
-    saveRecordDraft(chart.id, draft);
+    saveRecordDraft(userId, chart.id, draft);
     setPendingDraft(true);
   }, [
+    userId,
     chart.id,
     editingDoc,
     showForm,
@@ -444,13 +449,13 @@ export default function RecordDetailClient({
     setEditingDoc(null);
     setDraftRestored(false);
     if (clearDraft) {
-      clearRecordDraft(chart.id);
+      clearRecordDraft(userId, chart.id);
       setPendingDraft(false);
     }
   }
 
   function openAnamnesisForm() {
-    const draft = loadRecordDraft(chart.id);
+    const draft = userId ? loadRecordDraft(userId, chart.id) : null;
     if (draft && !isRecordDraftEmpty(draft)) {
       applyRecordDraft(draft);
       setDraftRestored(true);
@@ -464,7 +469,7 @@ export default function RecordDetailClient({
   }
 
   function openNewRecordForm() {
-    const draft = loadRecordDraft(chart.id);
+    const draft = userId ? loadRecordDraft(userId, chart.id) : null;
     if (draft && !isRecordDraftEmpty(draft)) {
       applyRecordDraft(draft);
       setDraftRestored(true);

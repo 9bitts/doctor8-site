@@ -87,6 +87,7 @@ export default function HumanitarianCampaignPage() {
   const [switching, setSwitching] = useState<string | null>(null);
   const [queueStale, setQueueStale] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
     setLang(getHumanitarianLang());
@@ -121,6 +122,7 @@ export default function HumanitarianCampaignPage() {
           router.push("/humanitarian/volunteer");
           return;
         }
+        setUserId(s.user.id);
 
         const currentLang = getHumanitarianLang();
         setLang(currentLang);
@@ -148,7 +150,7 @@ export default function HumanitarianCampaignPage() {
         const queueData = await queueRes.json();
         if (queueRes.ok && queueData.entry) {
           setEntry(queueData.entry);
-          cacheHumanitarianQueueState(slug, queueData.entry);
+          cacheHumanitarianQueueState(s.user.id, slug, queueData.entry);
           setQueueStale(false);
         }
       })
@@ -183,7 +185,7 @@ export default function HumanitarianCampaignPage() {
       const data = await res.json();
       if (res.ok && data.entry) {
         setEntry(data.entry);
-        cacheHumanitarianQueueState(slug, data.entry);
+        if (userId) cacheHumanitarianQueueState(userId, slug, data.entry);
         setQueueStale(false);
         if (data.entry.status === "WAITING") {
           autoEnterRef.current = false;
@@ -193,7 +195,7 @@ export default function HumanitarianCampaignPage() {
         }
       }
     } catch {
-      const cached = loadCachedHumanitarianQueueState<QueueEntry>(slug);
+      const cached = userId ? loadCachedHumanitarianQueueState<QueueEntry>(userId, slug) : null;
       if (cached) {
         setEntry(cached);
         setQueueStale(true);

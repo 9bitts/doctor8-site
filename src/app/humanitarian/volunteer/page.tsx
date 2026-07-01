@@ -82,6 +82,7 @@ export default function HumanitarianVolunteerPage() {
   const [whatsappLoading, setWhatsappLoading] = useState(false);
   const [meetLoading, setMeetLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState("");
 
   useEffect(() => {
     setLang("pt");
@@ -102,7 +103,7 @@ export default function HumanitarianVolunteerPage() {
       setPools(data.pools || []);
       setCurrentEntry(data.currentEntry);
       setActivePoolSlug(data.activeVolunteer?.poolSlug ?? null);
-      cacheVolunteerDashboard({
+      cacheVolunteerDashboard(userId, {
         campaign: data.campaign,
         pools: data.pools,
         currentEntry: data.currentEntry,
@@ -138,12 +139,12 @@ export default function HumanitarianVolunteerPage() {
         router.push(`/video/humanitarian/${assigned.id}`);
       }
     } catch {
-      const cached = loadCachedVolunteerDashboard<{
+      const cached = userId ? loadCachedVolunteerDashboard<{
         campaign: { name: string; active: boolean } | null;
         pools: PoolRow[];
         currentEntry: CurrentEntry | null;
         activePoolSlug: string | null;
-      }>();
+      }>(userId) : null;
       if (cached) {
         setCampaign(cached.campaign);
         setPools(cached.pools);
@@ -154,7 +155,7 @@ export default function HumanitarianVolunteerPage() {
       }
     }
     setLoading(false);
-  }, [lang, router]);
+  }, [lang, router, userId]);
 
   useEffect(() => {
     const callbackUrl = encodeURIComponent("/humanitarian/volunteer");
@@ -171,6 +172,7 @@ export default function HumanitarianVolunteerPage() {
           router.push(`/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`);
           return;
         }
+        setUserId(s.user.id);
         load();
       });
     return () => {

@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   await db.$transaction([
     db.user.update({
       where: { id: userId },
-      data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
+      data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null, tokenVersion: { increment: 1 } },
     }),
     db.session.deleteMany({ where: { userId } }), // Invalidate all sessions
     db.verificationToken.delete({ where: { token } }), // Use token only once

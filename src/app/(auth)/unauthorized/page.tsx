@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 import { ShieldAlert, Loader2 } from "lucide-react";
 import { resolveRoleHome } from "@/lib/role-home";
 import { resolveLoginPathForSession } from "@/lib/auth-portals";
+import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import {
   useLoginLang,
   LoginPageShell,
@@ -38,6 +39,7 @@ export default function UnauthorizedPage() {
   }, []);
 
   function handleSignOut() {
+    clearSensitiveClientState();
     signOut({
       callbackUrl: resolveLoginPathForSession(sessionRole, pathname),
     });

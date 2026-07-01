@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getSession } from "next-auth/react";
 import { translate, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { detectInitialLang, LANG_KEY } from "@/components/auth/register-shared";
+import { clearForeignUserState } from "@/lib/logout-cleanup";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail, Brain, Leaf, Building2, Heart,
 } from "lucide-react";
@@ -97,7 +98,10 @@ export async function waitForAuthenticatedSession(
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const fromClient = await getSession();
-      if (matchesExpected(fromClient)) return fromClient;
+      if (matchesExpected(fromClient)) {
+        clearForeignUserState(fromClient!.user.id);
+        return fromClient;
+      }
 
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8_000);
@@ -110,6 +114,7 @@ export async function waitForAuthenticatedSession(
         if (res.ok) {
           const session = await res.json();
           if (matchesExpected(session)) {
+            clearForeignUserState(session.user.id);
             return session;
           }
         }

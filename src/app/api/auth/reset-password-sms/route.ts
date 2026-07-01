@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
           phone: encryptUserPhone(normalizedPhone),
           failedLoginAttempts: 0,
           lockedUntil: null,
+          tokenVersion: { increment: 1 },
         },
       }),
       db.session.deleteMany({ where: { userId: user.id } }),

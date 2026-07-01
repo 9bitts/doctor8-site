@@ -330,6 +330,7 @@ model User {
   lastLoginIp     String?    // @encrypted — stored encrypted
   failedLoginAttempts Int    @default(0)
   lockedUntil     DateTime?
+  tokenVersion    Int        @default(0)
 
   // MFA (phase 2)
   mfaEnabled      Boolean    @default(false)

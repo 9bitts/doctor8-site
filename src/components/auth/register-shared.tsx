@@ -6,6 +6,7 @@ import { signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { persistAuthCallback } from "@/lib/auth-callback";
+import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2,
   User, Stethoscope, ArrowLeft, Brain, Leaf,
@@ -206,6 +207,7 @@ export function RegisterAccountForm({
       const oauthCallback = isPsychologistSignup
         ? "/callback?portal=psychologist"
         : "/callback";
+      clearSensitiveClientState();
       await signOut({ redirect: false });
       await signIn("google", { callbackUrl: oauthCallback });
     } catch {
