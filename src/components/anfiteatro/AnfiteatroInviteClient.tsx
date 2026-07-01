@@ -4,16 +4,15 @@ import Link from "next/link";
 import { Video, Heart, UserPlus, LogIn } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { MeetingRoomConfig } from "@/lib/meeting-rooms";
+import { getMeetingRoomInvitePath } from "@/lib/meeting-rooms";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-
-const MEETING_ROOMS_CALLBACK = "/professional/meeting-rooms";
 
 export default function AnfiteatroInviteClient({ room }: { room: MeetingRoomConfig }) {
   const { t } = useI18n();
   const roomTitle = t(room.titleKey);
   const subject = t(room.subjectKey);
   const audience = t(room.audienceKey);
-  const callback = encodeURIComponent(MEETING_ROOMS_CALLBACK);
+  const callback = encodeURIComponent(getMeetingRoomInvitePath(room.id));
   const registerHref = `/register/professional/signup?region=VE&callbackUrl=${callback}`;
   const loginHref = `/login?callbackUrl=${callback}`;
 

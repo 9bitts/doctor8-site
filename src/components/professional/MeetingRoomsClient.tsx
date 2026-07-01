@@ -124,10 +124,14 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
               className="relative rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
             >
               <DoctorConnectionSeal
-                className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 w-28 sm:w-36 md:w-40 rotate-[7deg] origin-top-right bg-white/85 backdrop-blur-[2px] rounded-lg p-1 sm:p-1.5 ring-1 ring-slate-200/80"
+                compact
+                className="absolute top-3 right-3 z-10 w-10 sm:hidden rotate-[7deg] origin-top-right bg-white/85 backdrop-blur-[2px] rounded-md p-0.5 ring-1 ring-slate-200/80"
+              />
+              <DoctorConnectionSeal
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 hidden sm:block w-16 md:w-20 rotate-[7deg] origin-top-right bg-white/85 backdrop-blur-[2px] rounded-md p-0.5 sm:p-1 ring-1 ring-slate-200/80"
               />
               <div className="p-5 sm:p-6 space-y-4">
-                <div className="pr-24 sm:pr-32 md:pr-36 space-y-3">
+                <div className="pr-11 sm:pr-16 md:pr-20 space-y-3">
                   <div className="flex items-start gap-3 min-w-0">
                     <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
                       <Video size={24} className="text-violet-600" />

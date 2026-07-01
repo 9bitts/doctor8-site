@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import AnfiteatroInviteClient from "@/components/anfiteatro/AnfiteatroInviteClient";
 import { MEETING_ROOMS } from "@/lib/meeting-rooms";
-import { resolveProfessionalPortalBaseForUser } from "@/lib/psychologist-portal";
+import { meetingRoomsHomeForSession } from "@/lib/meeting-rooms-dashboard-page";
 
 export default async function AnfiteatroInvitePage({
   params,
@@ -13,12 +13,9 @@ export default async function AnfiteatroInvitePage({
   if (!room) notFound();
 
   const session = await auth();
-  if (session?.user?.role === "PROFESSIONAL") {
-    const base = await resolveProfessionalPortalBaseForUser(session.user.id);
-    redirect(`${base}/meeting-rooms`);
-  }
-  if (session?.user?.role === "ADMIN") {
-    redirect("/professional/meeting-rooms");
+  if (session?.user) {
+    const meetingRoomsHome = await meetingRoomsHomeForSession(session.user);
+    if (meetingRoomsHome) redirect(meetingRoomsHome);
   }
 
   return <AnfiteatroInviteClient room={room} />;

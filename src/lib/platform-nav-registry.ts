@@ -135,6 +135,7 @@ export const PSYCHOANALYST_NAV: PlatformNavEntry[] = [
   { href: "/psychoanalyst/resources", labelKey: "nav.library", roles: ["PSYCHOANALYST"], iconKey: "BookOpen" },
   { href: "/psychoanalyst/financeiro", labelKey: "nav.financeiro", roles: ["PSYCHOANALYST"], iconKey: "TrendingUp" },
   { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PSYCHOANALYST"], iconKey: "Heart" },
+  { href: "/psychoanalyst/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PSYCHOANALYST"], iconKey: "Video" },
   { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", roles: ["PSYCHOANALYST"], iconKey: "Calendar" },
   { href: "/psychoanalyst/account", labelKey: "nav.account", roles: ["PSYCHOANALYST"], iconKey: "Settings" },
 ];
@@ -146,6 +147,7 @@ export const INTEGRATIVE_THERAPIST_NAV: PlatformNavEntry[] = [
   { href: "/integrative-therapist/appointments", labelKey: "nav.appointments", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Calendar" },
   { href: "/integrative-therapist/financeiro", labelKey: "nav.financeiro", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "TrendingUp" },
   { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Heart" },
+  { href: "/integrative-therapist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Video" },
   { href: "/integrative-therapist/settings/availability", labelKey: "nav.availability", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Calendar" },
 ];
 
