@@ -8,6 +8,7 @@ import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
 import { ORGANIZATION_LOGIN, buildVerifyAccountHref } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
+import { RegisterLogo } from "@/components/auth/register-shared";
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
 } from "@/components/InternationalPhoneInput";
