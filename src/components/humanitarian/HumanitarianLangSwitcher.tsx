@@ -7,7 +7,7 @@ import { LANGUAGES, Lang, normalizeLang } from "@/lib/i18n/translations";
 const LANG_KEY = "doctor8.lang";
 
 export function getHumanitarianLang(): Lang {
-  if (typeof window === "undefined") return "pt";
+  if (typeof window === "undefined") return "es";
   try {
     const saved = localStorage.getItem(LANG_KEY);
     if (saved) return normalizeLang(saved);

@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { completeHumanitarianEntry } from "@/lib/humanitarian/dispatcher";
 
+export const runtime = "nodejs";
+
 const schema = z.object({ entryId: z.string() });
 
 export async function POST(req: NextRequest) {

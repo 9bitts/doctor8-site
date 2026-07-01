@@ -7,10 +7,12 @@ import {
   expireAllHumanitarianNoShows,
   expireHumanitarianNoShows,
   expireStaleVolunteers,
+  expireStaleWaitingPatients,
   poolMatchesVolunteer,
   reconcileStuckBusyVolunteers,
   releaseVolunteer,
   resolveVolunteerProfile,
+  revertStaleCalledToWaiting,
 } from "@/lib/humanitarian/dispatcher";
 import { presenceCutoff } from "@/lib/humanitarian/volunteer-presence";
 import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
@@ -22,6 +24,8 @@ import {
 import { decrypt } from "@/lib/encryption";
 import type { Lang } from "@/lib/i18n/translations";
 import type { HumanitarianIntake, HumanitarianQueueEntry } from "@prisma/client";
+
+export const runtime = "nodejs";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -99,6 +103,8 @@ export async function GET(req: NextRequest) {
   if (!campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
 
   await expireAllHumanitarianNoShows();
+  await revertStaleCalledToWaiting();
+  await expireStaleWaitingPatients();
   await expireStaleVolunteers();
   await reconcileStuckBusyVolunteers();
 
@@ -356,6 +362,8 @@ export async function PATCH(req: NextRequest) {
   if (!vol) return NextResponse.json({ ok: true });
 
   await expireAllHumanitarianNoShows();
+  await revertStaleCalledToWaiting();
+  await expireStaleWaitingPatients();
   await expireStaleVolunteers();
   await reconcileStuckBusyVolunteers();
 

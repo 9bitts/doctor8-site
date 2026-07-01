@@ -7,6 +7,7 @@ import {
   cancelHumanitarianEntry,
   countActiveInPool,
   getEntryStatus,
+  HumanitarianAlreadyInQueueError,
   HumanitarianQueueFullError,
   joinHumanitarianQueue,
 } from "@/lib/humanitarian/dispatcher";
@@ -21,6 +22,8 @@ import { getPatientActiveHumanitarianEntry } from "@/lib/humanitarian/notify";
 import { checkRateLimit, RATE_LIMITS, rateLimitResponse } from "@/lib/rate-limit";
 import { normalizeLang, translate } from "@/lib/i18n/translations";
 
+export const runtime = "nodejs";
+
 const joinSchema = z.object({
   campaignSlug: z.string(),
   poolSlug: z.string(),
@@ -31,6 +34,9 @@ const joinSchema = z.object({
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "PATIENT") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const entryId = new URL(req.url).searchParams.get("entryId");
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug");
@@ -191,6 +197,14 @@ export async function POST(req: NextRequest) {
         { error: "QUEUE_FULL", message: translate(lang, "hum.api.queueFullMessage") },
         { status: 429 },
       );
+    }
+    if (e instanceof HumanitarianAlreadyInQueueError) {
+      const active = await getPatientActiveHumanitarianEntry(session.user.id);
+      if (active) {
+        const status = await getEntryStatus(active.id, session.user.id, lang);
+        return NextResponse.json({ entry: status, alreadyInQueue: true });
+      }
+      return NextResponse.json({ error: "Already in queue" }, { status: 409 });
     }
     throw e;
   }

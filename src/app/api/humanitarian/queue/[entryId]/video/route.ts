@@ -12,6 +12,8 @@ import { promoteHumanitarianEntryToInProgress } from "@/lib/humanitarian/dispatc
 import { ensureIntegrativeClientForPatient } from "@/lib/providers";
 import { providerPanelFromSpecialty } from "@/lib/video-chart-nav";
 
+export const runtime = "nodejs";
+
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
   try { return decrypt(v); } catch { return v; }
@@ -191,7 +193,7 @@ export async function GET(
   }
 
   const userName = isPatient ? patientName : proName;
-  const tokenExp = Math.floor(Date.now() / 1000) + 2 * 60 * 60;
+  const tokenExp = Math.floor(Date.now() / 1000) + 7200;
   const token = await createMeetingToken(roomName, userName, isVolunteer, tokenExp);
 
   return NextResponse.json({

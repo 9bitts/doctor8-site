@@ -16,7 +16,6 @@ import {
   cacheVolunteerDashboard,
   loadCachedVolunteerDashboard,
 } from "@/lib/humanitarian/offline-draft";
-import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 
 interface PoolRow {
   id: string;
@@ -69,6 +68,8 @@ export default function HumanitarianVolunteerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoVideoRef = useRef<string | null>(null);
 
   const [lang, setLang] = useState<Lang>("pt");
   const [loading, setLoading] = useState(true);
@@ -83,7 +84,7 @@ export default function HumanitarianVolunteerPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLang(getHumanitarianLang());
+    setLang("pt");
   }, []);
 
   const load = useCallback(async () => {
@@ -110,8 +111,31 @@ export default function HumanitarianVolunteerPage() {
 
       if (data.activeVolunteer?.status === "ONLINE" || data.activeVolunteer?.status === "BUSY") {
         if (!pollRef.current) {
-          pollRef.current = setInterval(load, 4000);
+          pollRef.current = setInterval(load, 5000);
         }
+        if (!heartbeatRef.current) {
+          heartbeatRef.current = setInterval(() => {
+            fetch(
+              `/api/humanitarian/volunteer?campaignSlug=${VENEZUELA_CAMPAIGN_SLUG}`,
+              { method: "PATCH" },
+            ).catch(() => {});
+          }, 60_000);
+        }
+      } else {
+        if (heartbeatRef.current) {
+          clearInterval(heartbeatRef.current);
+          heartbeatRef.current = null;
+        }
+      }
+
+      const assigned = data.currentEntry;
+      if (
+        assigned &&
+        ["CALLED", "IN_PROGRESS"].includes(assigned.status) &&
+        autoVideoRef.current !== assigned.id
+      ) {
+        autoVideoRef.current = assigned.id;
+        router.push(`/video/humanitarian/${assigned.id}`);
       }
     } catch {
       const cached = loadCachedVolunteerDashboard<{
@@ -130,7 +154,7 @@ export default function HumanitarianVolunteerPage() {
       }
     }
     setLoading(false);
-  }, [lang]);
+  }, [lang, router]);
 
   useEffect(() => {
     const callbackUrl = encodeURIComponent("/humanitarian/volunteer");
@@ -151,6 +175,7 @@ export default function HumanitarianVolunteerPage() {
       });
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
   }, [router, load, searchParams]);
 
@@ -195,11 +220,23 @@ export default function HumanitarianVolunteerPage() {
       }
       await load();
       if (goOnline && !pollRef.current) {
-        pollRef.current = setInterval(load, 4000);
+        pollRef.current = setInterval(load, 5000);
+      }
+      if (goOnline && !heartbeatRef.current) {
+        heartbeatRef.current = setInterval(() => {
+          fetch(
+            `/api/humanitarian/volunteer?campaignSlug=${VENEZUELA_CAMPAIGN_SLUG}`,
+            { method: "PATCH" },
+          ).catch(() => {});
+        }, 60_000);
       }
       if (!goOnline && pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
+      }
+      if (!goOnline && heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
       }
     } catch {
       setError(t(lang, "hum.page.networkError"));

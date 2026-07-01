@@ -46,7 +46,7 @@ const nextConfig = {
           {
             key: "Permissions-Policy",
             value:
-              'camera=(self "https://doctor8.daily.co"), microphone=(self "https://doctor8.daily.co"), display-capture=(self "https://doctor8.daily.co"), fullscreen=(self "https://doctor8.daily.co"), autoplay=(self "https://doctor8.daily.co"), geolocation=()',
+              'camera=(self "https://*.daily.co"), microphone=(self "https://*.daily.co"), display-capture=(self "https://*.daily.co"), fullscreen=(self "https://*.daily.co"), autoplay=(self "https://*.daily.co"), geolocation=()',
           },
           {
             key: "Strict-Transport-Security",
@@ -61,6 +61,7 @@ const nextConfig = {
               "img-src 'self' data: https:",
               "font-src 'self' data:",
               "connect-src 'self' https://api.stripe.com https://*.daily.co wss://*.daily.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
+              "media-src 'self' https://*.daily.co blob:",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.daily.co",
             ].join("; "),
           },

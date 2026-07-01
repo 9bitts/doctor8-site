@@ -67,8 +67,9 @@ export default function HumanitarianCampaignPage() {
   const router = useRouter();
   const slug = VENEZUELA_CAMPAIGN_SLUG;
   const pollRef = useRef<NodeJS.Timeout>();
+  const autoEnterRef = useRef(false);
 
-  const [lang, setLang] = useState<Lang>("pt");
+  const [lang, setLang] = useState<Lang>("es");
   const [loading, setLoading] = useState(true);
   const [campaign, setCampaign] = useState<CampaignInfo | null>(null);
   const [pools, setPools] = useState<PoolInfo[]>([]);
@@ -173,7 +174,7 @@ export default function HumanitarianCampaignPage() {
   function startPolling(entryId: string) {
     if (pollRef.current) clearInterval(pollRef.current);
     pollEntry(entryId);
-    pollRef.current = setInterval(() => pollEntry(entryId), 3000);
+    pollRef.current = setInterval(() => pollEntry(entryId), 5000);
   }
 
   async function pollEntry(entryId: string) {
@@ -184,6 +185,9 @@ export default function HumanitarianCampaignPage() {
         setEntry(data.entry);
         cacheHumanitarianQueueState(slug, data.entry);
         setQueueStale(false);
+        if (data.entry.status === "WAITING") {
+          autoEnterRef.current = false;
+        }
         if (["DONE", "CANCELLED", "NO_SHOW"].includes(data.entry.status)) {
           clearInterval(pollRef.current);
         }
@@ -272,14 +276,23 @@ export default function HumanitarianCampaignPage() {
         const data = await res.json();
         setError(data.error || t(lang, "hum.page.networkError"));
         setEntering(false);
+        autoEnterRef.current = false;
         return;
       }
       window.location.href = `/video/humanitarian/${entry.id}`;
     } catch {
       setError(t(lang, "hum.page.networkError"));
+      autoEnterRef.current = false;
     }
     setEntering(false);
   }
+
+  useEffect(() => {
+    if (!entry || entry.status !== "CALLED" || entering || autoEnterRef.current) return;
+    autoEnterRef.current = true;
+    void enterConsultation();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entry?.id, entry?.status, entering]);
 
   async function leaveQueue() {
     if (!entry) return;

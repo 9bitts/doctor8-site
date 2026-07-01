@@ -13,7 +13,11 @@ import {
   notifyVolunteerAssigned,
 } from "@/lib/humanitarian/notify";
 import { WAITING_ENTRY_STATUSES } from "@/lib/humanitarian/types";
-import { presenceCutoff } from "@/lib/humanitarian/volunteer-presence";
+import {
+  patientWaitingCutoff,
+  presenceCutoff,
+  volunteerCalledRevertCutoff,
+} from "@/lib/humanitarian/volunteer-presence";
 import {
   buildVolunteerWhatsAppMessage,
   resolvePatientHumanitarianPhone,
@@ -28,6 +32,94 @@ function safeDecrypt(v: string | null | undefined): string {
 }
 
 const PRIORITY_SORT: HumanitarianPriority[] = ["CRISIS", "URGENT", "ROUTINE"];
+
+/** WAITING entries without patient heartbeat are cancelled (lazy expiry). */
+export async function expireStaleWaitingPatients(): Promise<number> {
+  const cutoff = patientWaitingCutoff();
+  const now = new Date();
+  const stale = await db.humanitarianQueueEntry.findMany({
+    where: {
+      status: "WAITING",
+      OR: [
+        { lastSeenAt: { lt: cutoff } },
+        { lastSeenAt: null, enteredAt: { lt: cutoff } },
+      ],
+    },
+    select: { id: true, poolId: true },
+  });
+
+  if (stale.length === 0) return 0;
+
+  await db.humanitarianQueueEntry.updateMany({
+    where: { id: { in: stale.map((e) => e.id) } },
+    data: { status: "CANCELLED", endedAt: now },
+  });
+
+  return stale.length;
+}
+
+/** CALLED but consult never started — revert to WAITING after volunteer no-show window. */
+export async function revertStaleCalledToWaiting(): Promise<number> {
+  const cutoff = volunteerCalledRevertCutoff();
+  const now = new Date();
+  const stale = await db.humanitarianQueueEntry.findMany({
+    where: {
+      status: "CALLED",
+      calledAt: { lt: cutoff },
+    },
+    select: { id: true, poolId: true, volunteerId: true },
+  });
+
+  if (stale.length === 0) return 0;
+
+  const poolsToReassign = new Set<string>();
+
+  for (const e of stale) {
+    await db.$transaction([
+      db.humanitarianQueueEntry.update({
+        where: { id: e.id, status: "CALLED" },
+        data: {
+          status: "WAITING",
+          volunteerId: null,
+          calledAt: null,
+          expiresAt: null,
+          meetingUrl: null,
+          meetingRoomId: null,
+          lastSeenAt: now,
+        },
+      }),
+      ...(e.volunteerId
+        ? [
+            db.humanitarianVolunteer.update({
+              where: { id: e.volunteerId },
+              data: { status: "ONLINE", currentEntryId: null },
+            }),
+          ]
+        : []),
+    ]);
+    poolsToReassign.add(e.poolId);
+  }
+
+  for (const poolId of poolsToReassign) {
+    await assignNextInPool(poolId);
+  }
+
+  return stale.length;
+}
+
+export async function touchPatientQueuePresence(
+  entryId: string,
+  patientUserId: string,
+): Promise<void> {
+  await db.humanitarianQueueEntry.updateMany({
+    where: {
+      id: entryId,
+      patientUserId,
+      status: { in: ["WAITING", "CALLED"] },
+    },
+    data: { lastSeenAt: new Date() },
+  });
+}
 
 export async function expireHumanitarianNoShows(poolId: string): Promise<number> {
   const now = new Date();
@@ -155,6 +247,8 @@ export async function reconcileStuckBusyVolunteers(): Promise<number> {
 
 export async function assignNextInPool(poolId: string): Promise<number> {
   await expireAllHumanitarianNoShows();
+  await revertStaleCalledToWaiting();
+  await expireStaleWaitingPatients();
   await expireStaleVolunteers();
   await reconcileStuckBusyVolunteers();
   let assigned = 0;
@@ -171,10 +265,19 @@ export async function promoteHumanitarianEntryToInProgress(entryId: string): Pro
 }
 
 async function findNextWaitingEntry(poolId: string) {
+  const patientCutoff = patientWaitingCutoff();
   for (const priority of PRIORITY_SORT) {
     const entry = await db.humanitarianQueueEntry.findFirst({
-      where: { poolId, status: "WAITING", priority },
-      orderBy: { position: "asc" },
+      where: {
+        poolId,
+        status: "WAITING",
+        priority,
+        OR: [
+          { lastSeenAt: { gte: patientCutoff } },
+          { lastSeenAt: null, enteredAt: { gte: patientCutoff } },
+        ],
+      },
+      orderBy: [{ position: "asc" }, { enteredAt: "asc" }],
     });
     if (entry) return entry;
   }
@@ -213,38 +316,58 @@ async function tryAssignOnce(poolId: string): Promise<HumanitarianQueueEntry | n
   );
 
   try {
-    const updated = await db.$transaction(async (tx) => {
-      const vol = await tx.humanitarianVolunteer.findUnique({
-        where: { id: volunteer.id },
-      });
-      if (!vol || vol.status !== "ONLINE") return null;
+    const updated = await db.$transaction(
+      async (tx) => {
+        const vol = await tx.humanitarianVolunteer.findUnique({
+          where: { id: volunteer.id },
+        });
+        if (!vol || vol.status !== "ONLINE") return null;
 
-      const waiting = await tx.humanitarianQueueEntry.findFirst({
-        where: { id: entry.id, status: "WAITING" },
-      });
-      if (!waiting) return null;
+        const waiting = await tx.humanitarianQueueEntry.findFirst({
+          where: {
+            id: entry.id,
+            status: "WAITING",
+            OR: [
+              { lastSeenAt: { gte: patientWaitingCutoff() } },
+              { lastSeenAt: null, enteredAt: { gte: patientWaitingCutoff() } },
+            ],
+          },
+        });
+        if (!waiting) return null;
 
-      await tx.humanitarianVolunteer.update({
-        where: { id: volunteer.id },
-        data: {
-          status: "BUSY",
-          currentEntryId: entry.id,
-          lastAssignedAt: now,
-        },
-      });
+        const volUpdated = await tx.humanitarianVolunteer.updateMany({
+          where: { id: volunteer.id, status: "ONLINE" },
+          data: {
+            status: "BUSY",
+            currentEntryId: entry.id,
+            lastAssignedAt: now,
+          },
+        });
+        if (volUpdated.count === 0) return null;
 
-      return tx.humanitarianQueueEntry.update({
-        where: { id: entry.id, status: "WAITING" },
-        data: {
-          status: "CALLED",
-          volunteerId: volunteer.id,
-          calledAt: now,
-          expiresAt,
-          meetingUrl: room.url || null,
-          meetingRoomId: room.name || null,
-        },
-      });
-    });
+        const entryUpdated = await tx.humanitarianQueueEntry.updateMany({
+          where: { id: entry.id, status: "WAITING" },
+          data: {
+            status: "CALLED",
+            volunteerId: volunteer.id,
+            calledAt: now,
+            expiresAt,
+            meetingUrl: room.url || null,
+            meetingRoomId: room.name || null,
+          },
+        });
+        if (entryUpdated.count === 0) {
+          await tx.humanitarianVolunteer.update({
+            where: { id: volunteer.id },
+            data: { status: "ONLINE", currentEntryId: null },
+          });
+          return null;
+        }
+
+        return tx.humanitarianQueueEntry.findUnique({ where: { id: entry.id } });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
     if (!updated) return null;
 
@@ -695,7 +818,10 @@ export async function getEntryStatus(entryId: string, patientUserId: string, lan
 
   if (!entry || entry.patientUserId !== patientUserId) return null;
 
+  await touchPatientQueuePresence(entryId, patientUserId);
   await expireAllHumanitarianNoShows();
+  await revertStaleCalledToWaiting();
+  await expireStaleWaitingPatients();
   await expireStaleVolunteers();
   await expireHumanitarianNoShows(entry.poolId);
 
@@ -717,13 +843,22 @@ export async function getEntryStatus(entryId: string, patientUserId: string, lan
     (p) => PRIORITY_SORT.indexOf(p) < PRIORITY_SORT.indexOf(refreshed.priority),
   );
 
+  const patientCutoff = patientWaitingCutoff();
   const aheadCount = await db.humanitarianQueueEntry.count({
     where: {
       poolId: refreshed.poolId,
       status: "WAITING",
       OR: [
-        ...higherPriority.map((priority) => ({ priority })),
-        { priority: refreshed.priority, position: { lt: refreshed.position } },
+        { lastSeenAt: { gte: patientCutoff } },
+        { lastSeenAt: null, enteredAt: { gte: patientCutoff } },
+      ],
+      AND: [
+        {
+          OR: [
+            ...higherPriority.map((priority) => ({ priority })),
+            { priority: refreshed.priority, position: { lt: refreshed.position } },
+          ],
+        },
       ],
     },
   });
@@ -793,6 +928,13 @@ export async function countActiveInPool(poolId: string): Promise<number> {
   });
 }
 
+export class HumanitarianAlreadyInQueueError extends Error {
+  constructor() {
+    super("ALREADY_IN_QUEUE");
+    this.name = "HumanitarianAlreadyInQueueError";
+  }
+}
+
 export class HumanitarianQueueFullError extends Error {
   constructor() {
     super("QUEUE_FULL");
@@ -811,6 +953,16 @@ export async function joinHumanitarianQueue(params: {
 }): Promise<HumanitarianQueueEntry> {
   return db.$transaction(
     async (tx) => {
+      const existingActive = await tx.humanitarianQueueEntry.findFirst({
+        where: {
+          patientUserId: params.patientUserId,
+          status: { in: [...WAITING_ENTRY_STATUSES] },
+        },
+      });
+      if (existingActive) {
+        throw new HumanitarianAlreadyInQueueError();
+      }
+
       const activeCount = await tx.humanitarianQueueEntry.count({
         where: {
           poolId: params.poolId,
@@ -827,6 +979,7 @@ export async function joinHumanitarianQueue(params: {
         select: { position: true },
       });
       const position = (last?.position ?? 0) + 1;
+      const now = new Date();
 
       return tx.humanitarianQueueEntry.create({
         data: {
@@ -838,6 +991,7 @@ export async function joinHumanitarianQueue(params: {
           position,
           chiefComplaint: params.chiefComplaint || null,
           intakeId: params.intakeId || null,
+          lastSeenAt: now,
         },
       });
     },

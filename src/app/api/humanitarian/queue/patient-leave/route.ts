@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { patientEndHumanitarianConsultation } from "@/lib/humanitarian/dispatcher";
 
+export const runtime = "nodejs";
+
 const schema = z.object({ entryId: z.string() });
 
 export async function POST(req: NextRequest) {
