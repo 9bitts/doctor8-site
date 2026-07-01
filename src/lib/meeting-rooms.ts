@@ -25,12 +25,24 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
   },
 ];
 
+/** Ensures Meet links open externally (not as a relative path on the app). */
+export function normalizeMeetUrl(raw: string | null | undefined): string | null {
+  const url = raw?.trim();
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("meet.google.com/")) return `https://${url}`;
+  if (/^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i.test(url)) {
+    return `https://meet.google.com/${url.toLowerCase()}`;
+  }
+  return `https://${url.replace(/^\/+/, "")}`;
+}
+
 export function getMeetingRoomMeetUrl(roomId: string): string | null {
   if (roomId === "nise-yamaguchi") {
     const url =
       process.env.NEXT_PUBLIC_MEETING_ROOM_NISE_URL?.trim() ||
       process.env.GOOGLE_MEET_DEFAULT_URL?.trim();
-    return url || null;
+    return normalizeMeetUrl(url);
   }
   return null;
 }
