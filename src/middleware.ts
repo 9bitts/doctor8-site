@@ -45,6 +45,7 @@ const PUBLIC_ROUTES = [
   "/embed/",       // embeddable booking widget (iframe)
   "/share/",     // shared medical records (token-based)
   "/club/join",  // buying club invite landing (public)
+  "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
   "/fhir/",        // FHIR metadata (public read)
 ];

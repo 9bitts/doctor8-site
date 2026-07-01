@@ -201,6 +201,7 @@ export const PLATFORM_PUBLIC_ROUTES: PublicRouteEntry[] = [
   { href: "/reset-password", description: "Set new password from email link" },
   { href: "/urgent", description: "Paid urgent care queue (patient)" },
   { href: "/humanitarian/volunteer", description: "Humanitarian volunteer dashboard (professionals)" },
+  { href: "/anfiteatro/nise-yamaguchi", description: "Virtual amphitheater invite — register as professional to join meeting rooms" },
   { href: "/humanitarian/angel", description: "Angel volunteer area" },
 ];
 

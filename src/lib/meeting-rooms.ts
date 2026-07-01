@@ -27,6 +27,20 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
   },
 ];
 
+export function getMeetingRoomInvitePath(roomId: string): string {
+  return `/anfiteatro/${roomId}`;
+}
+
+export function getMeetingRoomInviteUrl(roomId: string, origin?: string): string {
+  const base = (
+    origin ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    "https://app.doctor8.org"
+  ).replace(/\/$/, "");
+  return `${base}${getMeetingRoomInvitePath(roomId)}`;
+}
+
 /** Ensures Meet links open externally (not as a relative path on the app). */
 export function normalizeMeetUrl(raw: string | null | undefined): string | null {
   const url = raw?.trim();

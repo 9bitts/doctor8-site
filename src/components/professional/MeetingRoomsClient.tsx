@@ -8,7 +8,7 @@ import {
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { MeetingRoomConfig } from "@/lib/meeting-rooms";
 
-type RoomWithUrl = MeetingRoomConfig & { meetUrl: string | null };
+type RoomWithUrl = MeetingRoomConfig & { meetUrl: string | null; inviteUrl: string };
 
 function formatTodaySchedule(room: MeetingRoomConfig): string {
   const h = String(room.scheduleHour).padStart(2, "0");
@@ -81,11 +81,14 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
       <div>
         <div className="flex items-center gap-2 text-brand-600 text-sm font-semibold mb-1">
           <Heart size={16} className="text-rose-500" />
-          <span>SOS Venezuela ? Doctor8</span>
+          <span>{t("meetRooms.eyebrow")}</span>
         </div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
           {t("meetRooms.title")}
         </h1>
+        <p className="text-emerald-700 font-medium text-sm sm:text-base mt-2">
+          {t("meetRooms.permanentLinksNotice")}
+        </p>
         <p className="text-slate-500 mt-1 text-sm sm:text-base">
           {t("meetRooms.subtitle")}
         </p>
@@ -112,9 +115,7 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
           const roomTitle = t(room.titleKey);
           const subject = t(room.subjectKey);
           const audience = t(room.audienceKey);
-          const shareText = room.meetUrl
-            ? shareMessage(t, roomTitle, subject, room.meetUrl)
-            : "";
+          const shareText = shareMessage(t, roomTitle, subject, room.inviteUrl);
 
           return (
             <article
@@ -195,6 +196,7 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
                       <button
                         type="button"
                         onClick={() => shareWhatsApp(shareText)}
+                        disabled={!room.meetUrl}
                         className="inline-flex items-center justify-center gap-2 flex-1 sm:flex-none border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded-xl px-4 py-2.5 text-sm transition"
                       >
                         <MessageCircle size={16} />
@@ -203,6 +205,7 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
                       <button
                         type="button"
                         onClick={() => shareEmail(subject, shareText)}
+                        disabled={!room.meetUrl}
                         className="inline-flex items-center justify-center gap-2 flex-1 sm:flex-none border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-semibold rounded-xl px-4 py-2.5 text-sm transition"
                       >
                         <Mail size={16} />
@@ -210,7 +213,8 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
                       </button>
                       <button
                         type="button"
-                        onClick={() => copyLink(room.id, room.meetUrl!)}
+                        onClick={() => copyLink(room.id, room.inviteUrl)}
+                        disabled={!room.meetUrl}
                         className="inline-flex items-center justify-center gap-2 flex-1 sm:flex-none border border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-800 font-semibold rounded-xl px-4 py-2.5 text-sm transition"
                       >
                         {copiedRoomId === room.id ? (

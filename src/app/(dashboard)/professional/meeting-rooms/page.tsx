@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { resolveRoleHome } from "@/lib/role-home";
 import MeetingRoomsClient from "@/components/professional/MeetingRoomsClient";
-import { MEETING_ROOMS, getMeetingRoomMeetUrl } from "@/lib/meeting-rooms";
+import { MEETING_ROOMS, getMeetingRoomMeetUrl, getMeetingRoomInviteUrl } from "@/lib/meeting-rooms";
 
 export default async function ProfessionalMeetingRoomsPage() {
   const session = await auth();
@@ -12,6 +12,7 @@ export default async function ProfessionalMeetingRoomsPage() {
   const rooms = MEETING_ROOMS.map((room) => ({
     ...room,
     meetUrl: getMeetingRoomMeetUrl(room.id),
+    inviteUrl: getMeetingRoomInviteUrl(room.id),
   }));
 
   return <MeetingRoomsClient rooms={rooms} />;
