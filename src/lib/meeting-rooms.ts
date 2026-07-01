@@ -7,7 +7,8 @@
 export type MeetingRoomConfig = {
   id: string;
   titleKey: string;
-  subtitleKey: string;
+  subjectKey: string;
+  audienceKey: string;
   /** Daily start time in America/Sao_Paulo */
   scheduleHour: number;
   scheduleMinute: number;
@@ -18,7 +19,8 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
   {
     id: "nise-yamaguchi",
     titleKey: "meetRoom.nise.title",
-    subtitleKey: "meetRoom.nise.subtitle",
+    subjectKey: "meetRoom.nise.subject",
+    audienceKey: "meetRoom.nise.audience",
     scheduleHour: 17,
     scheduleMinute: 0,
     timezone: "America/Sao_Paulo",

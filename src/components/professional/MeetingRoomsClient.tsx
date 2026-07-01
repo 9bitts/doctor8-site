@@ -1,6 +1,10 @@
 "use client";
 
-import { Video, Clock, Globe, Languages, ExternalLink, Heart } from "lucide-react";
+import { useState } from "react";
+import {
+  Video, Clock, Globe, Languages, ExternalLink, Heart,
+  MessageCircle, Mail, Copy, CheckCircle2,
+} from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { MeetingRoomConfig } from "@/lib/meeting-rooms";
 
@@ -36,8 +40,41 @@ const STATUS_STYLES = {
   ended: "bg-slate-100 text-slate-600",
 } as const;
 
+function shareMessage(
+  t: (key: string) => string,
+  roomTitle: string,
+  subject: string,
+  url: string,
+): string {
+  return t("meetRooms.shareMessage")
+    .replace("{{title}}", roomTitle)
+    .replace("{{subject}}", subject)
+    .replace("{{url}}", url);
+}
+
 export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) {
   const { t } = useI18n();
+  const [copiedRoomId, setCopiedRoomId] = useState<string | null>(null);
+
+  async function copyLink(roomId: string, url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedRoomId(roomId);
+      setTimeout(() => setCopiedRoomId(null), 3000);
+    } catch { /* ignore */ }
+  }
+
+  function shareWhatsApp(text: string) {
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+  }
+
+  function shareEmail(subject: string, body: string) {
+    window.open(
+      `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -72,6 +109,12 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
         {rooms.map((room) => {
           const status = roomStatus(room);
           const schedule = formatTodaySchedule(room);
+          const roomTitle = t(room.titleKey);
+          const subject = t(room.subjectKey);
+          const audience = t(room.audienceKey);
+          const shareText = room.meetUrl
+            ? shareMessage(t, roomTitle, subject, room.meetUrl)
+            : "";
 
           return (
             <article
@@ -86,18 +129,36 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
                     </div>
                     <div className="min-w-0">
                       <h2 className="text-lg font-bold text-slate-900 break-words">
-                        {t(room.titleKey)}
+                        {roomTitle}
                       </h2>
-                      <p className="text-slate-600 text-sm mt-1 leading-relaxed">
-                        {t(room.subtitleKey)}
-                      </p>
+                      <div className="text-slate-600 text-sm mt-2 leading-relaxed space-y-1">
+                        <p>
+                          <span className="font-semibold text-slate-800">
+                            {t("meetRooms.subject")}:
+                          </span>{" "}
+                          {subject}
+                        </p>
+                        <p>
+                          <span className="font-semibold text-slate-800">
+                            {t("meetRooms.audience")}:
+                          </span>{" "}
+                          {audience}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <span
-                    className={`shrink-0 text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${STATUS_STYLES[status]}`}
-                  >
-                    {t(`meetRooms.status.${status}`)}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap shrink-0">
+                    <span
+                      className={`text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ${STATUS_STYLES[status]}`}
+                    >
+                      {t(`meetRooms.status.${status}`)}
+                    </span>
+                    {room.meetUrl && (
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-violet-100 text-violet-800">
+                        {t("meetRooms.permanentLink")}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
@@ -118,16 +179,51 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
                 </div>
 
                 {room.meetUrl ? (
-                  <a
-                    href={room.meetUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl px-6 py-3 text-sm transition shadow-sm"
-                  >
-                    <Video size={18} />
-                    {t("meetRooms.enterRoom")}
-                    <ExternalLink size={14} className="opacity-80" />
-                  </a>
+                  <div className="space-y-3">
+                    <a
+                      href={room.meetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl px-6 py-3 text-sm transition shadow-sm"
+                    >
+                      <Video size={18} />
+                      {t("meetRooms.enterRoom")}
+                      <ExternalLink size={14} className="opacity-80" />
+                    </a>
+
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => shareWhatsApp(shareText)}
+                        className="inline-flex items-center justify-center gap-2 flex-1 sm:flex-none border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded-xl px-4 py-2.5 text-sm transition"
+                      >
+                        <MessageCircle size={16} />
+                        {t("meetRooms.shareWhatsapp")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => shareEmail(subject, shareText)}
+                        className="inline-flex items-center justify-center gap-2 flex-1 sm:flex-none border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-semibold rounded-xl px-4 py-2.5 text-sm transition"
+                      >
+                        <Mail size={16} />
+                        {t("meetRooms.shareEmail")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => copyLink(room.id, room.meetUrl!)}
+                        className="inline-flex items-center justify-center gap-2 flex-1 sm:flex-none border border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-800 font-semibold rounded-xl px-4 py-2.5 text-sm transition"
+                      >
+                        {copiedRoomId === room.id ? (
+                          <CheckCircle2 size={16} />
+                        ) : (
+                          <Copy size={16} />
+                        )}
+                        {copiedRoomId === room.id
+                          ? t("meetRooms.linkCopied")
+                          : t("meetRooms.copyLink")}
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                     {t("meetRooms.noLink")}
