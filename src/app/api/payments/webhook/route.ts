@@ -9,8 +9,10 @@ import {
 } from "@/lib/club-stamps";
 import {
   fulfillConsultationPayment,
+  AppointmentSlotTakenError,
   type ConsultationPaymentMeta,
 } from "@/lib/fulfill-consultation";
+import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
 import { isClubPriceId } from "@/lib/stripe-payment-methods";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
@@ -124,7 +126,13 @@ export async function POST(req: NextRequest) {
   if (event.type === "payment_intent.succeeded") {
     const intent = event.data.object as any;
     const meta = intent.metadata || {};
-    if (meta.kind === "consultation" || (meta.userId && meta.scheduledAt && (meta.professionalId || meta.psychoanalystId))) {
+    if (meta.type === "JIT") {
+      // JIT payments are fulfilled by the queue flow, not here. Log for
+      // traceability/reconciliation instead of ignoring silently.
+      console.log(
+        `[WEBHOOK] JIT payment succeeded: ${intent.id} (user ${meta.userId || "?"}, session ${meta.sessionId || "?"}) — handled by JIT queue flow, skipping fulfillment.`,
+      );
+    } else if (meta.kind === "consultation" || (meta.userId && meta.scheduledAt && (meta.professionalId || meta.psychoanalystId))) {
       try {
         await fulfillConsultationPayment({
           stripePaymentId: intent.id,
@@ -134,6 +142,18 @@ export async function POST(req: NextRequest) {
         });
       } catch (e) {
         console.error("[WEBHOOK] Error creating appointment:", e);
+        if (e instanceof AppointmentSlotTakenError) {
+          // Payment captured but the slot was taken — refund automatically.
+          // Still return 200 to Stripe so it doesn't retry forever.
+          const refund = await refundPaymentIntentIdempotent(
+            intent.id,
+            "appointment_slot_taken",
+          );
+          console.error(
+            `[WEBHOOK] Slot taken for ${intent.id} — auto-refund result:`,
+            refund,
+          );
+        }
       }
     }
     return NextResponse.json({ received: true });

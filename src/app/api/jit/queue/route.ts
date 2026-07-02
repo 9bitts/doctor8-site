@@ -12,6 +12,7 @@ import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { decrypt } from "@/lib/encryption";
 import { readJsonBody } from "@/lib/safe-json";
+import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -297,6 +298,11 @@ export async function PATCH(req: NextRequest) {
         where: { id: e.id },
         data:  { status: "NO_SHOW", endedAt: now },
       });
+      // Auto-refund paid no-shows. Never blocks/delays the expiry — the
+      // helper swallows errors and logs [AUTO-REFUND-FAIL].
+      if (e.paymentId) {
+        await refundPaymentIntentIdempotent(e.paymentId, "jit_no_show_expired");
+      }
       // Notify patient
       const missedCopy = storedNotificationText("notif.jit.missed.title", "notif.jit.missed.body");
       await createNotification({
@@ -331,10 +337,20 @@ export async function PATCH(req: NextRequest) {
 
     // First expire any no-shows
     const now = new Date();
+    const expiringNoShows = await db.jitQueue.findMany({
+      where: { sessionId, status: "CALLED", expiresAt: { lt: now } },
+      select: { paymentId: true },
+    });
     await db.jitQueue.updateMany({
       where: { sessionId, status: "CALLED", expiresAt: { lt: now } },
       data:  { status: "NO_SHOW", endedAt: now },
     });
+    // Auto-refund paid no-shows (idempotent — safe if EXPIRE_NOSHOWS already ran).
+    for (const e of expiringNoShows) {
+      if (e.paymentId) {
+        await refundPaymentIntentIdempotent(e.paymentId, "jit_no_show_expired");
+      }
+    }
 
     // Mark current IN_PROGRESS as DONE
     const finishing = await db.jitQueue.findMany({

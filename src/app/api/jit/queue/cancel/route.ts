@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
 
 const schema = z.object({ queueId: z.string() });
 
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   const entry = await db.jitQueue.findUnique({
     where: { id: parsed.data.queueId },
-    select: { id: true, patientUserId: true, status: true },
+    select: { id: true, patientUserId: true, status: true, paymentId: true },
   });
 
   if (!entry || entry.patientUserId !== session.user.id) {
@@ -33,5 +34,16 @@ export async function POST(req: NextRequest) {
     data: { status: "CANCELLED", endedAt: new Date() },
   });
 
-  return NextResponse.json({ success: true });
+  // Auto-refund paid entries. paymentId holds the Stripe PaymentIntent id.
+  // Refund failure never blocks the cancellation itself.
+  let refunded = false;
+  if (entry.paymentId) {
+    const result = await refundPaymentIntentIdempotent(
+      entry.paymentId,
+      "jit_cancelled_by_patient",
+    );
+    refunded = result.refunded;
+  }
+
+  return NextResponse.json({ success: true, refunded });
 }

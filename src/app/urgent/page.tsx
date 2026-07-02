@@ -167,13 +167,41 @@ export default function UrgentPage() {
           window.location.href = `/patient/tcle?returnUrl=${encodeURIComponent("/urgent")}`;
           return;
         }
-        setError(data.error || t("urgent.errJoin"));
+        if (paymentIntentId) {
+          const refunded = await refundOrphanJitPayment(paymentIntentId);
+          setError(refunded ? t("urgent.joinFailedRefunded") : t("urgent.joinFailedRefundPending"));
+        } else {
+          setError(data.error || t("urgent.errJoin"));
+        }
         setJoining(null);
         return;
       }
       startQueuePolling(data.entry.id);
-    } catch { setError(t("common.loadError")); }
+    } catch {
+      if (paymentIntentId) {
+        const refunded = await refundOrphanJitPayment(paymentIntentId);
+        setError(refunded ? t("urgent.joinFailedRefunded") : t("urgent.joinFailedRefundPending"));
+      } else {
+        setError(t("common.loadError"));
+      }
+    }
     setJoining(null);
+  }
+
+  // Payment succeeded but the queue join failed — recover the orphaned
+  // payment. The API only refunds if no queue entry used this intent.
+  async function refundOrphanJitPayment(paymentIntentId: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/jit/refund-orphan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentIntentId }),
+      });
+      const data = await res.json();
+      return res.ok && data.refunded === true;
+    } catch {
+      return false;
+    }
   }
 
   // ── Paid session: open payment modal ──────────────────────────────────────
