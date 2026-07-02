@@ -116,6 +116,8 @@ async function main() {
       psychoanalystProfile: true,
       integrativeTherapistProfile: true,
       angelProfile: true,
+      patientProfile: { select: { id: true, firstName: true, lastName: true } },
+      accounts: { select: { provider: true } },
     },
   });
 
@@ -125,11 +127,39 @@ async function main() {
     return;
   }
 
+  const hasPassword = Boolean(user.passwordHash);
+  const hasGoogle = user.accounts.some((a) => a.provider === "google");
+  const verified = Boolean(user.emailVerified || user.phoneVerified);
+  const hasProProfile = Boolean(
+    user.professionalProfile ||
+    user.psychoanalystProfile ||
+    user.integrativeTherapistProfile,
+  );
+  const isOrphanProfessional =
+    ["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(user.role) &&
+    !hasProProfile;
+  const wrongRolePatient =
+    user.role === "PATIENT" &&
+    Boolean(user.patientProfile) &&
+    !hasProProfile;
+
   console.log(`\n--- User: ${user.email} ---`);
   console.log(`  id: ${user.id}`);
   console.log(`  role: ${user.role}`);
   console.log(`  emailVerified: ${user.emailVerified ? user.emailVerified.toISOString() : "NO"}`);
+  console.log(`  phoneVerified: ${user.phoneVerified ? user.phoneVerified.toISOString() : "NO"}`);
+  console.log(`  hasPassword: ${hasPassword ? "YES" : "NO"}`);
+  console.log(`  hasGoogle: ${hasGoogle ? "YES" : "NO"}`);
   console.log(`  deletedAt: ${user.deletedAt ? user.deletedAt.toISOString() : "no"}`);
+  console.log(`  createdAt: ${user.createdAt.toISOString()}`);
+
+  if (user.patientProfile) {
+    console.log(`\n  PatientProfile: id=${user.patientProfile.id}`);
+    if (wrongRolePatient) {
+      console.log("  >> WRONG ROLE: signed up as professional but has PATIENT role + patientProfile.");
+      console.log("  >> Will NOT appear under Profissionais. Login lands on /patient.");
+    }
+  }
 
   const pro = user.professionalProfile;
   if (pro) {
@@ -178,6 +208,38 @@ async function main() {
     const a = user.angelProfile;
     console.log(`\n  AngelProfile: ${a.firstName} ${a.lastName}, status=${a.approvalStatus}`);
     console.log(`    admin tab: anjos`);
+  }
+
+  console.log("\n--- Diagnosis ---");
+  if (isOrphanProfessional) {
+    console.log("  STATUS: INCOMPLETE SIGNUP (User exists, professional profile missing)");
+    console.log("  ADMIN: appears under Cadastros incompletos");
+    console.log("  FIX (bulk): node scripts/fix-incomplete-professional-signups.mjs --apply --email=" + email);
+    if (hasGoogle && !hasPassword) {
+      console.log("  FIX: ask user to login with Google -> /signup/role to finish");
+      console.log("  FIX: or re-register with same email+password after deploy (auto-resume)");
+    } else if (hasPassword && !verified) {
+      console.log("  FIX: user must verify email before password login works");
+    } else if (hasPassword && verified) {
+      console.log("  FIX: re-register with same email+password after deploy (auto-resume)");
+    } else if (hasGoogle) {
+      console.log("  FIX: login with Google to complete at /signup/role");
+    }
+  } else if (wrongRolePatient) {
+    console.log("  STATUS: WRONG ROLE (PATIENT instead of professional)");
+    console.log("  ADMIN: may appear under Pacientes, NOT Profissionais");
+    console.log("  FIX: manual role migration + create professional profile");
+  } else if (hasProProfile && !verified && hasPassword) {
+    console.log("  STATUS: REGISTERED but email not verified");
+    console.log("  FIX: user must click verification link before login");
+  } else if (hasProProfile && hasGoogle && !hasPassword) {
+    console.log("  STATUS: Google-only account");
+    console.log("  FIX: user must login with Google, not email/password");
+  } else if (hasProProfile) {
+    console.log("  STATUS: account looks OK — login issue may be wrong password or app crash");
+    console.log("  CHECK: Sentry for global-error after login");
+  } else {
+    console.log("  STATUS: unusual state — inspect profiles above");
   }
 }
 

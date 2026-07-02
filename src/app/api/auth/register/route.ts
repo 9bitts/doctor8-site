@@ -25,6 +25,7 @@ import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/int
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { isAccountVerified } from "@/lib/account-verified";
 import { userHasAnyProfile } from "@/lib/user-profile-complete";
+import { createSignupProfile } from "@/lib/signup-profile-create";
 import { PROFESSION_SIGNUP, isProfessionSignupSlug } from "@/lib/profession-signup";
 import {
   canSkipHumanitarianEmailVerification,
@@ -75,6 +76,92 @@ const registerSchema = z.object({
   ] as const).optional(),
   callbackUrl: z.string().optional(),
 });
+
+type RegisterProfileInput = {
+  userId: string;
+  role: UserRole;
+  firstName: string;
+  lastName: string;
+  email: string;
+  professionalKind?: "psychologist";
+  profession?: "medico" | "psicologo" | "fisioterapeuta" | "nutricionista" | "cuidados_paliativos";
+};
+
+async function createRegisterProfile(
+  tx: Parameters<Parameters<typeof db.$transaction>[0]>[0],
+  input: RegisterProfileInput,
+): Promise<void> {
+  const { userId, role, firstName, lastName, email, professionalKind, profession } = input;
+
+  if (role === "PATIENT") {
+    await tx.patientProfile.create({
+      data: {
+        userId,
+        firstName: encrypt(firstName),
+        lastName: encrypt(lastName),
+      },
+    });
+    await linkChartsToPatientOnSignup(tx, userId, email);
+    return;
+  }
+
+  if (role === "PROFESSIONAL" && profession && isProfessionSignupSlug(profession)) {
+    const specialty = PROFESSION_SIGNUP[profession].specialty ?? "";
+    await tx.professionalProfile.create({
+      data: {
+        userId,
+        firstName,
+        lastName,
+        licenseNumber: "",
+        specialty,
+        consultPrice: 0,
+      },
+    });
+    return;
+  }
+
+  await createSignupProfile(tx, {
+    userId,
+    role,
+    professionalKind: professionalKind ?? null,
+    firstName,
+    lastName,
+  });
+}
+
+async function createRegisterConsents(
+  tx: Parameters<Parameters<typeof db.$transaction>[0]>[0],
+  userId: string,
+  ip: string,
+  userAgent: string,
+  acceptedTerms: true,
+  acceptedPrivacy: true,
+  acceptedHipaa?: boolean,
+  acceptedGdpr?: boolean,
+): Promise<void> {
+  const consents: { type: ConsentType; granted: boolean; version: string }[] = [
+    { type: "TERMS_OF_SERVICE", granted: acceptedTerms, version: "1.0" },
+    { type: "PRIVACY_POLICY", granted: acceptedPrivacy, version: "1.0" },
+  ];
+
+  if (acceptedHipaa !== undefined) {
+    consents.push({ type: "HIPAA_AUTHORIZATION", granted: acceptedHipaa, version: "1.0" });
+  }
+  if (acceptedGdpr !== undefined) {
+    consents.push({ type: "GDPR_CONSENT", granted: acceptedGdpr, version: "1.0" });
+  }
+
+  await tx.consent.createMany({
+    data: consents.map((c) => ({
+      userId,
+      type: c.type,
+      version: c.version,
+      granted: c.granted,
+      ipAddress: ip,
+      userAgent,
+    })),
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -214,12 +301,94 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const passwordHash = await bcrypt.hash(password, 12);
+      const ip = req.headers.get("x-forwarded-for") ||
+        req.headers.get("x-real-ip") || "unknown";
+      const userAgent = req.headers.get("user-agent") || "unknown";
+      const alreadyVerified = isAccountVerified(existing);
+
+      await db.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: existing.id },
+          data: {
+            passwordHash,
+            role: role as UserRole,
+            region,
+            ...(normalizedLanguage ? { language: normalizedLanguage } : {}),
+            ...(skipEmailVerification && !alreadyVerified ? { emailVerified: new Date() } : {}),
+          },
+        });
+
+        await createRegisterProfile(tx, {
+          userId: existing.id,
+          role: role as UserRole,
+          firstName,
+          lastName,
+          email: normalizedEmail,
+          professionalKind,
+          profession,
+        });
+
+        await createRegisterConsents(
+          tx,
+          existing.id,
+          ip,
+          userAgent,
+          acceptedTerms,
+          acceptedPrivacy,
+          acceptedHipaa,
+          acceptedGdpr,
+        );
+
+        await saveRegistrationPhone(tx, existing.id, role as UserRole, phoneParsed.e164);
+      });
+
+      if (role === "PATIENT") {
+        try {
+          await attachLinkedDocumentsToPatientProfile(existing.id);
+        } catch (linkError) {
+          console.error("[REGISTER RESUME LINK ERROR]", linkError);
+        }
+      }
+
+      const skipVerificationAfterResume =
+        skipEmailVerification || alreadyVerified;
+
+      if (!skipVerificationAfterResume) {
+        const token = randomBytes(32).toString("hex");
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await db.verificationToken.deleteMany({ where: { identifier: normalizedEmail } });
+        await db.verificationToken.create({
+          data: { identifier: normalizedEmail, token, expires },
+        });
+        try {
+          await sendEmailVerification({
+            email: normalizedEmail,
+            name: firstName,
+            token,
+            language: normalizedLanguage || existing.language || language,
+            from: resolveLoginPathForRegistration(role, professionalKind),
+          });
+        } catch (emailError) {
+          console.error("[REGISTER RESUME EMAIL]", emailError);
+        }
+      }
+
+      console.info("[REGISTER] Resumed incomplete signup", {
+        userId: existing.id,
+        email: normalizedEmail,
+        role,
+        alreadyVerified,
+      });
+
       return NextResponse.json(
         {
-          code: "ACCOUNT_INCOMPLETE",
-          error: { email: ["Email already in use"] },
+          success: true,
+          userId: existing.id,
+          resumed: true,
+          ...(skipVerificationAfterResume ? { emailVerificationSkipped: true } : {}),
         },
-        { status: 409 },
+        { status: 200 },
       );
     }
 
@@ -243,78 +412,26 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      if (role === "PATIENT") {
-        await tx.patientProfile.create({
-          data: {
-            userId: newUser.id,
-            firstName: encrypt(firstName),
-            lastName: encrypt(lastName),
-          },
-        });
-
-        // ETAPA 3a: auto-link provider charts by email.
-        await linkChartsToPatientOnSignup(tx, newUser.id, email);
-      } else if (role === "PSYCHOANALYST") {
-        await tx.psychoanalystProfile.create({
-          data: {
-            userId: newUser.id,
-            firstName,
-            lastName,
-            trainingInstitution: "",
-            consultPrice: 0,
-          },
-        });
-      } else if (role === "INTEGRATIVE_THERAPIST") {
-        await tx.integrativeTherapistProfile.create({
-          data: {
-            userId: newUser.id,
-            firstName,
-            lastName,
-            trainingInstitution: "",
-            consultPrice: 0,
-          },
-        });
-      } else {
-        let specialty = "";
-        if (professionalKind === "psychologist") {
-          specialty = "Psychologist";
-        } else if (profession && isProfessionSignupSlug(profession)) {
-          specialty = PROFESSION_SIGNUP[profession].specialty ?? "";
-        }
-        await tx.professionalProfile.create({
-          data: {
-            userId: newUser.id,
-            firstName,
-            lastName,
-            licenseNumber: "",
-            specialty,
-            consultPrice: 0,
-          },
-        });
-      }
-
-      const consents: { type: ConsentType; granted: boolean; version: string }[] = [
-        { type: "TERMS_OF_SERVICE", granted: acceptedTerms, version: "1.0" },
-        { type: "PRIVACY_POLICY", granted: acceptedPrivacy, version: "1.0" },
-      ];
-
-      if (acceptedHipaa !== undefined) {
-        consents.push({ type: "HIPAA_AUTHORIZATION", granted: acceptedHipaa, version: "1.0" });
-      }
-      if (acceptedGdpr !== undefined) {
-        consents.push({ type: "GDPR_CONSENT", granted: acceptedGdpr, version: "1.0" });
-      }
-
-      await tx.consent.createMany({
-        data: consents.map((c) => ({
-          userId: newUser.id,
-          type: c.type,
-          version: c.version,
-          granted: c.granted,
-          ipAddress: ip,
-          userAgent,
-        })),
+      await createRegisterProfile(tx, {
+        userId: newUser.id,
+        role: role as UserRole,
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        professionalKind,
+        profession,
       });
+
+      await createRegisterConsents(
+        tx,
+        newUser.id,
+        ip,
+        userAgent,
+        acceptedTerms,
+        acceptedPrivacy,
+        acceptedHipaa,
+        acceptedGdpr,
+      );
 
       await saveRegistrationPhone(tx, newUser.id, role as UserRole, phoneParsed.e164);
 

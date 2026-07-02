@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession, getSession } from "next-auth/react";
 import {
@@ -64,6 +64,20 @@ function roleChoiceFromUserRole(role: string): RoleChoice {
 }
 
 export default function SignupRolePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+          <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+        </div>
+      }
+    >
+      <SignupRoleContent />
+    </Suspense>
+  );
+}
+
+function SignupRoleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status: sessionStatus, update: updateSession } = useSession();
