@@ -195,7 +195,7 @@ export default function VideoConsultRoom({
   const notesAssistantRef = useRef<ConsultNotesAssistantHandle>(null);
   const dailyRef = useRef<DailyPrebuiltHandle>(null);
 
-  useConsultSessionKeepalive(data);
+  useConsultSessionKeepalive(data, !videoEmbedError);
 
   const t = (k: string) => T[k]?.[lang] ?? T[k]?.["en"] ?? k;
 
@@ -607,21 +607,39 @@ export default function VideoConsultRoom({
 
   const roomData = data;
 
+  function navigateAwayFromConsult() {
+    const dest = leaveDestination(roomData);
+    try {
+      router.replace(dest);
+    } catch {
+      window.location.replace(dest);
+    }
+    window.setTimeout(() => {
+      if (window.location.pathname.startsWith("/video/")) {
+        window.location.replace(dest);
+      }
+    }, 400);
+  }
+
   async function handleLeaveCall() {
     const assistant = notesAssistantRef.current;
-    if (assistant?.isRecording()) {
-      if (assistant.shouldAutoSaveOnLeave()) {
-        if (!window.confirm(t("leaveSavingNotes"))) return;
-      } else if (!window.confirm(t("leaveDiscardRecording"))) {
+    const skipConfirm = !!videoEmbedError;
+
+    if (!skipConfirm) {
+      if (assistant?.isRecording()) {
+        if (assistant.shouldAutoSaveOnLeave()) {
+          if (!window.confirm(t("leaveSavingNotes"))) return;
+        } else if (!window.confirm(t("leaveDiscardRecording"))) {
+          return;
+        }
+      } else if (!window.confirm(t("leaveConfirm"))) {
         return;
       }
-    } else if (!window.confirm(t("leaveConfirm"))) {
-      return;
     }
 
     setLeavingCall(true);
     try {
-      if (assistant?.isRecording() && assistant.shouldAutoSaveOnLeave()) {
+      if (!skipConfirm && assistant?.isRecording() && assistant.shouldAutoSaveOnLeave()) {
         await Promise.race([
           assistant.finalizeOnLeave(),
           new Promise<void>((resolve) =>
@@ -656,7 +674,7 @@ export default function VideoConsultRoom({
       ]);
     } finally {
       setLeavingCall(false);
-      router.replace(leaveDestination(roomData));
+      navigateAwayFromConsult();
     }
   }
 

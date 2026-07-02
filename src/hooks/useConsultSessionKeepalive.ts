@@ -5,24 +5,39 @@ import { useSession } from "next-auth/react";
 import type { VideoConsultData } from "@/components/VideoConsultRoom";
 
 const KEEPALIVE_MS = 4 * 60 * 1000;
+const MIN_PING_GAP_MS = 60_000;
+const MIN_SESSION_UPDATE_GAP_MS = KEEPALIVE_MS - 30_000;
+
+function consultKeyFromData(data: VideoConsultData | null): string | null {
+  if (!data) return null;
+  const kind = data.kind || "appointment";
+  const id = data.appointmentId || data.queueId || data.entryId;
+  if (!id) return null;
+  return `${kind}:${id}`;
+}
 
 /** Keeps auth session alive while user is in an active video consultation. */
-export function useConsultSessionKeepalive(data: VideoConsultData | null) {
+export function useConsultSessionKeepalive(
+  data: VideoConsultData | null,
+  enabled = true,
+) {
   const { update, status } = useSession();
   const updateRef = useRef(update);
   const lastPingRef = useRef(0);
+  const lastSessionUpdateRef = useRef(0);
   const consecutive403Ref = useRef(0);
+  const consultKey = consultKeyFromData(data);
 
   useEffect(() => {
     updateRef.current = update;
   }, [update]);
 
   useEffect(() => {
-    if (!data || status !== "authenticated") return;
+    if (!enabled || !consultKey || status !== "authenticated") return;
 
-    const kind = data.kind || "appointment";
-    const id = data.appointmentId || data.queueId || data.entryId;
-    if (!id) return;
+    const sep = consultKey.indexOf(":");
+    const kind = consultKey.slice(0, sep);
+    const id = consultKey.slice(sep + 1);
 
     let interval: ReturnType<typeof setInterval> | null = null;
     let stopped = false;
@@ -39,7 +54,7 @@ export function useConsultSessionKeepalive(data: VideoConsultData | null) {
       if (stopped) return;
 
       const now = Date.now();
-      if (now - lastPingRef.current < 60_000) return;
+      if (now - lastPingRef.current < MIN_PING_GAP_MS) return;
       lastPingRef.current = now;
 
       try {
@@ -58,7 +73,11 @@ export function useConsultSessionKeepalive(data: VideoConsultData | null) {
         }
 
         consecutive403Ref.current = 0;
-        if (res.ok) await updateRef.current({ consultActive: true });
+        if (!res.ok) return;
+
+        if (now - lastSessionUpdateRef.current < MIN_SESSION_UPDATE_GAP_MS) return;
+        lastSessionUpdateRef.current = now;
+        await updateRef.current({ consultActive: true });
       } catch {
         /* non-blocking */
       }
@@ -71,5 +90,5 @@ export function useConsultSessionKeepalive(data: VideoConsultData | null) {
       stopKeepalive();
       consecutive403Ref.current = 0;
     };
-  }, [data, status]);
+  }, [consultKey, enabled, status]);
 }
