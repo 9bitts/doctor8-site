@@ -6,8 +6,36 @@ export function isHumanitarianPhoneGateEnabled(): boolean {
   return normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
+/** Default OFF when env unset ? email verification not required in humanitarian auth flows. */
+export function isHumanitarianEmailVerificationEnabled(): boolean {
+  const raw = process.env.HUMANITARIAN_EMAIL_VERIFICATION_ENABLED;
+  if (raw === undefined || raw === "") return false;
+  const normalized = raw.trim().toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
 /** When the gate is disabled, patients may proceed without a verified phone. */
 export function effectiveHumanitarianPhoneReady(actualPhoneReady: boolean): boolean {
   if (!isHumanitarianPhoneGateEnabled()) return true;
   return actualPhoneReady;
+}
+
+/** Auth/register originated from SOS Venezuela or in-app humanitarian patient flow. */
+export function isHumanitarianContext(callbackUrl: string | null | undefined): boolean {
+  if (!callbackUrl) return false;
+  try {
+    const path = callbackUrl.startsWith("http")
+      ? new URL(callbackUrl).pathname
+      : callbackUrl.split("?")[0];
+    return path.startsWith("/humanitarian/") || path === "/sos-venezuela";
+  } catch {
+    return false;
+  }
+}
+
+/** Skip email verification when humanitarian context and flag is off (default). */
+export function canSkipHumanitarianEmailVerification(
+  callbackUrl: string | null | undefined,
+): boolean {
+  return isHumanitarianContext(callbackUrl) && !isHumanitarianEmailVerificationEnabled();
 }

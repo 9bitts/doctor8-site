@@ -26,6 +26,10 @@ import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { isAccountVerified } from "@/lib/account-verified";
 import { userHasAnyProfile } from "@/lib/user-profile-complete";
 import { PROFESSION_SIGNUP, isProfessionSignupSlug } from "@/lib/profession-signup";
+import {
+  canSkipHumanitarianEmailVerification,
+  isHumanitarianContext,
+} from "@/lib/humanitarian/feature-flags";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -64,6 +68,7 @@ const registerSchema = z.object({
     "nutricionista",
     "cuidados_paliativos",
   ] as const).optional(),
+  callbackUrl: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -94,7 +99,11 @@ export async function POST(req: NextRequest) {
       acceptedGdpr,
       professionalKind,
       profession,
+      callbackUrl,
     } = data.data;
+
+    const skipEmailVerification =
+      role === "PATIENT" && canSkipHumanitarianEmailVerification(callbackUrl);
 
     if (requiresHipaa(region) && !acceptedHipaa) {
       return NextResponse.json(
@@ -145,6 +154,17 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       if (existing.role === role && !isAccountVerified(existing)) {
+        if (skipEmailVerification) {
+          await db.user.update({
+            where: { id: existing.id },
+            data: { emailVerified: new Date() },
+          });
+          return NextResponse.json(
+            { success: true, userId: existing.id, emailVerificationSkipped: true },
+            { status: 200 },
+          );
+        }
+
         const token = randomBytes(32).toString("hex");
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await db.verificationToken.deleteMany({ where: { identifier: normalizedEmail } });
@@ -205,7 +225,8 @@ export async function POST(req: NextRequest) {
           role: role as UserRole,
           region,
           ...(normalizedLanguage ? { language: normalizedLanguage } : {}),
-          // emailVerified is null — set after email confirmation
+          ...(skipEmailVerification ? { emailVerified: new Date() } : {}),
+          // emailVerified is null — set after email confirmation (unless humanitarian skip)
         },
       });
 
@@ -294,39 +315,47 @@ export async function POST(req: NextRequest) {
       console.error("[REGISTER LINK ERROR]", linkError);
     }
 
-    // Generate verification token (24h expiry)
-    const token = randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // Generate verification token (24h expiry) — skipped for humanitarian patient signup
+    if (!skipEmailVerification) {
+      const token = randomBytes(32).toString("hex");
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Remove any previous tokens for this email, then create new one
-    await db.verificationToken.deleteMany({
-      where: { identifier: email.toLowerCase() },
-    });
-    await db.verificationToken.create({
-      data: {
-        identifier: email.toLowerCase(),
-        token,
-        expires,
-      },
-    });
-
-    // Send verification email — non-blocking, don't fail registration if email fails
-    try {
-      await sendEmailVerification({
-        email: email.toLowerCase(),
-        name: firstName,
-        token,
-        language: normalizedLanguage || language,
-        from: resolveLoginPathForRegistration(role, professionalKind),
+      await db.verificationToken.deleteMany({
+        where: { identifier: email.toLowerCase() },
       });
-    } catch (emailError) {
-      console.error("[EMAIL VERIFICATION SEND ERROR]", emailError);
-      // User can request resend from verify-email page
+      await db.verificationToken.create({
+        data: {
+          identifier: email.toLowerCase(),
+          token,
+          expires,
+        },
+      });
+
+      try {
+        await sendEmailVerification({
+          email: email.toLowerCase(),
+          name: firstName,
+          token,
+          language: normalizedLanguage || language,
+          from: resolveLoginPathForRegistration(role, professionalKind),
+        });
+      } catch (emailError) {
+        console.error("[EMAIL VERIFICATION SEND ERROR]", emailError);
+        // User can request resend from verify-email page
+      }
+    } else if (isHumanitarianContext(callbackUrl)) {
+      console.info("[REGISTER] Humanitarian patient signup — email verification skipped", {
+        callbackUrl,
+      });
     }
 
     return NextResponse.json(
-      { success: true, userId: user.id },
-      { status: 201 }
+      {
+        success: true,
+        userId: user.id,
+        ...(skipEmailVerification ? { emailVerificationSkipped: true } : {}),
+      },
+      { status: 201 },
     );
   } catch (error) {
     console.error("[REGISTER ERROR]", error);

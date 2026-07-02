@@ -22,6 +22,7 @@ import {
   getLoginAccentStyles,
 } from "@/lib/auth/login-accent-styles";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { isHumanitarianContext } from "@/lib/humanitarian/feature-flags";
 
 export type { LoginAccent };
 export { getLoginAccentStyles };
@@ -45,15 +46,7 @@ const HEADER_ICONS: Record<PortalHeaderIcon, typeof Brain> = {
 };
 
 export function isHumanitarianAuthCallback(callbackUrl: string | null | undefined): boolean {
-  if (!callbackUrl) return false;
-  try {
-    const path = callbackUrl.startsWith("http")
-      ? new URL(callbackUrl).pathname
-      : callbackUrl.split("?")[0];
-    return path.startsWith("/humanitarian/") || path === "/sos-venezuela";
-  } catch {
-    return false;
-  }
+  return isHumanitarianContext(callbackUrl);
 }
 
 export function useLoginLang(callbackUrl?: string | null) {

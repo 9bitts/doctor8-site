@@ -21,10 +21,12 @@ import {
   isProfileExemptRole,
 } from "@/lib/user-profile-complete";
 import { fetchUserProfileSnapshot } from "@/lib/user-profile-db";
+import { canSkipHumanitarianEmailVerification } from "@/lib/humanitarian/feature-flags";
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+  callbackUrl: z.string().optional(),
 });
 
 // HIPAA: 15 minutes session timeout
@@ -131,21 +133,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        callbackUrl: { label: "Callback", type: "text" },
       },
       async authorize(credentials) {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const { email, password } = parsed.data;
+        const { email, password, callbackUrl } = parsed.data;
         const user = await db.user.findUnique({
           where: { email: email.toLowerCase() },
         });
 
         if (!user || !user.passwordHash) return null;
 
-        // Block login until email or SMS verification
+        // Block login until email or SMS verification (humanitarian callback may bypass)
         if (!isAccountVerified(user)) {
-          throw new Error("EmailNotVerified");
+          if (!canSkipHumanitarianEmailVerification(callbackUrl)) {
+            throw new Error("EmailNotVerified");
+          }
         }
 
         // HIPAA: account lockout after failed attempts

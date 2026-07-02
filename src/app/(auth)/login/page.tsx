@@ -75,6 +75,7 @@ function UnifiedLoginForm() {
       const result = await signIn("credentials", {
         email: trimmedEmail,
         password,
+        callbackUrl: callbackUrl || "",
         redirect: false,
       });
 

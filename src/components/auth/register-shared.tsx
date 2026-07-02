@@ -31,6 +31,12 @@ import InternationalPhoneInput, {
 } from "@/components/InternationalPhoneInput";
 import { defaultDdiForRegion, validateRegistrationPhone } from "@/lib/international-phone";
 import { mapRegisterApiErrors } from "@/lib/register-api-errors";
+import {
+  navigateAfterAuth,
+  waitForAuthenticatedSession,
+} from "@/components/auth/login-shared";
+import { safePostLoginUrl } from "@/lib/role-home";
+import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 
 export type RegisterRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 export type Region = RegistrationRegionCode;
@@ -244,6 +250,7 @@ export function RegisterAccountForm({
           acceptedPrivacy,
           acceptedHipaa: requiresHipaa(region) ? acceptedHipaa : undefined,
           acceptedGdpr: requiresGdpr(region) ? acceptedGdpr : undefined,
+          callbackUrl: callbackUrl || undefined,
         }),
       });
 
@@ -251,6 +258,40 @@ export function RegisterAccountForm({
 
       if (!res.ok) {
         setErrors(mapRegisterApiErrors(lang, data));
+        return;
+      }
+
+      if (data.emailVerificationSkipped) {
+        clearSensitiveClientState();
+        await signOut({ redirect: false });
+        const signInResult = await signIn("credentials", {
+          email: email.trim().toLowerCase(),
+          password,
+          callbackUrl: callbackUrl || "",
+          redirect: false,
+        });
+        if (signInResult?.ok) {
+          persistAuthCallback(callbackUrl);
+          const session = await waitForAuthenticatedSession({
+            expectedEmail: email.trim().toLowerCase(),
+          });
+          if (session?.user?.role) {
+            navigateAfterAuth(
+              safePostLoginUrl(
+                session.user.role,
+                callbackUrl || null,
+                resolvePatientPostLoginUrl,
+                session.user.professionalSpecialty,
+              ),
+            );
+            return;
+          }
+        }
+        router.push(
+          callbackUrl
+            ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+            : "/login",
+        );
         return;
       }
 
