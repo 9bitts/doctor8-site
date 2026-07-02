@@ -6484,8 +6484,6 @@ const pt: LocaleDict = {
   "set.zip": "CEP",
   "set.availabilityNote": "Defina seus horários semanais em",
   "set.availabilityLink": "Disponibilidade",
-  "set.saveProfile": "Salvar perfil",
-  "set.saving": "Salvando...",
   "pub.title": "Perfil público",
   "pub.subtitle": "Compartilhe seu link e apareça na busca pública após aprovação.",
   "pub.loading": "Carregando...",
