@@ -219,7 +219,13 @@ export function EmissionPostSaveFlow({
             <input
               type="checkbox"
               checked={sendWhatsApp}
-              onChange={(e) => setSendWhatsApp(e.target.checked)}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setSendWhatsApp(next);
+                if (typeof window !== "undefined") {
+                  sessionStorage.setItem("doctor8_emit_whatsapp_pref", next ? "1" : "0");
+                }
+              }}
               className="w-4 h-4 accent-brand-500"
             />
             {t("wa.sendAfterDeliver")}

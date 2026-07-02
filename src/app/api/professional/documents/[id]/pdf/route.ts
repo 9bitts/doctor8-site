@@ -115,7 +115,12 @@ export async function GET(
           "Content-Disposition": `inline; filename="documento-${params.id.slice(0, 8)}.pdf"`,
         },
       });
-    } catch { /* fall through to generate */ }
+    } catch {
+      return NextResponse.json(
+        { error: "SIGNED_PDF_UNAVAILABLE", message: "Signed PDF is temporarily unavailable." },
+        { status: 503 },
+      );
+    }
   }
 
   const viewer = await db.user.findUnique({

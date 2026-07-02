@@ -1,6 +1,9 @@
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
+const VIDEO_BACK_HREF_KEY = "doctor8_video_back_href";
+const VIDEO_VIEWER_ROLE_KEY = "doctor8_video_viewer_role";
+
 /** Navigate back when history exists; otherwise go to a safe in-app fallback. */
 export function navigateBack(router: AppRouterInstance, fallbackHref: string) {
   if (typeof window !== "undefined" && window.history.length > 1) {
@@ -15,13 +18,35 @@ export function navigateBack(router: AppRouterInstance, fallbackHref: string) {
   router.push(fallbackHref);
 }
 
+/** Persist role-aware back target for video error screens (read by videoBackFallback). */
+export function setVideoNavContext(ctx: {
+  role: "patient" | "professional";
+  backHref?: string;
+}) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(VIDEO_VIEWER_ROLE_KEY, ctx.role);
+  if (ctx.backHref) {
+    sessionStorage.setItem(VIDEO_BACK_HREF_KEY, ctx.backHref);
+  }
+}
+
 /** Contextual fallback for video room error/wait screens when session data is unavailable. */
 export function videoBackFallback(): string {
   if (typeof window === "undefined") return "/patient";
+
+  const storedBack = sessionStorage.getItem(VIDEO_BACK_HREF_KEY);
+  if (storedBack) return storedBack;
+
+  const role = sessionStorage.getItem(VIDEO_VIEWER_ROLE_KEY);
   const p = window.location.pathname;
+
   if (p.includes("/video/humanitarian")) return `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
-  if (p.includes("/video/jit")) return "/urgent";
-  if (p.includes("/video/")) return "/patient/appointments";
+  if (p.includes("/video/jit")) {
+    return role === "professional" ? "/professional/jit" : "/urgent";
+  }
+  if (p.includes("/video/")) {
+    return role === "professional" ? "/professional/appointments" : "/patient/appointments";
+  }
   return "/patient";
 }
 

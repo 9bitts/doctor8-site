@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { expireStaleJitSessions } from "@/lib/jit-session-lifecycle";
+import { expireStaleJitNoShows } from "@/lib/jit-no-show-expiry";
 
 function authorized(req: NextRequest): boolean {
   const secret = req.headers.get("x-cron-secret");
@@ -13,5 +14,6 @@ export async function POST(req: NextRequest) {
   }
 
   const expired = await expireStaleJitSessions();
-  return NextResponse.json({ ok: true, expired });
+  const expiredNoShows = await expireStaleJitNoShows();
+  return NextResponse.json({ ok: true, expired, expiredNoShows });
 }

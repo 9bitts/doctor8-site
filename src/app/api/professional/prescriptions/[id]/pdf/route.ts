@@ -123,7 +123,10 @@ export async function GET(
         },
       });
     } catch {
-      // Se falhar o S3, cai para gerar o PDF não assinado abaixo.
+      return NextResponse.json(
+        { error: "SIGNED_PDF_UNAVAILABLE", message: "Signed PDF is temporarily unavailable." },
+        { status: 503 },
+      );
     }
   }
 

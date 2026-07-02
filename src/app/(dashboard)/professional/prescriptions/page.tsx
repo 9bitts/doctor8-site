@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { useToast } from "@/components/ui/toast";
 import {
   Plus, Trash2, FileText, Download, Loader2, CheckCircle2, Search,
   AlertCircle, ChevronRight, AlertTriangle, PenLine, Pill, ArrowLeft, Copy,
@@ -132,14 +133,68 @@ function emissionShareUrl(kind: EmissionKind): string {
   return `${base}/patient/documents`;
 }
 
+const WHATSAPP_PREF_KEY = "doctor8_emit_whatsapp_pref";
+
+function readWhatsAppDeliverPref(): boolean {
+  if (typeof window === "undefined") return true;
+  return sessionStorage.getItem(WHATSAPP_PREF_KEY) !== "0";
+}
+
+function PdfDownloadButton({
+  url, t, onError,
+}: {
+  url: string;
+  t: (k: string) => string;
+  onError: (message: string) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleDownload() {
+    setLoading(true);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        onError(
+          data.error === "SIGNED_PDF_UNAVAILABLE"
+            ? t("rx.signedPdfUnavailable")
+            : t("rx.pdfDownloadError"),
+        );
+        return;
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch {
+      onError(t("rx.pdfDownloadError"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void handleDownload()}
+      disabled={loading}
+      className="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold transition disabled:opacity-50"
+    >
+      {loading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+      {t("rx.downloadPDF")}
+    </button>
+  );
+}
+
 function PrescriptionCard({
-  p, locale, t, onReuse, onSign,
+  p, locale, t, onReuse, onSign, onPdfError,
 }: {
   p: Prescription; locale: string; t: (k: string) => string;
-  onReuse: () => void; onSign: () => void;
+  onReuse: () => void; onSign: () => void; onPdfError: (message: string) => void;
 }) {
   const meds = p.medications as MedItem[];
   const signed = p.signatureStatus === "SIGNED";
+  const pending = p.signatureStatus === "PENDING";
   const patientName = p.document?.patient
     ? `${p.document.patient.firstName} ${p.document.patient.lastName}`
     : t("rx.patient");
@@ -153,6 +208,11 @@ function PrescriptionCard({
             {signed && (
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 bg-brand-100 px-2 py-0.5 rounded-full">
                 <CheckCircle2 size={11} /> {t("rx.signed")}
+              </span>
+            )}
+            {pending && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                <Clock size={11} /> {t("rx.signPending")}
               </span>
             )}
           </div>
@@ -174,16 +234,17 @@ function PrescriptionCard({
             className="flex items-center justify-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
             <Copy size={13} /> {t("rx.reuse")}
           </button>
-          {!signed && (
+          {!signed && !pending && (
             <button onClick={onSign}
               className="flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
               <PenLine size={13} /> {t("rx.sign")}
             </button>
           )}
-          <a href={`/api/professional/prescriptions/${p.id}/pdf`} target="_blank"
-            className="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
-            <Download size={13} /> {t("rx.downloadPDF")}
-          </a>
+          <PdfDownloadButton
+            url={`/api/professional/prescriptions/${p.id}/pdf`}
+            t={t}
+            onError={onPdfError}
+          />
           {signed && (
             <WhatsappDeliverButton
               kind="prescription"
@@ -203,12 +264,13 @@ function PrescriptionCard({
 }
 
 function ClinicalDocCard({
-  d, locale, t, onReuse, onSign,
+  d, locale, t, onReuse, onSign, onPdfError,
 }: {
   d: ClinicalDocument; locale: string; t: (k: string) => string;
-  onReuse: () => void; onSign: () => void;
+  onReuse: () => void; onSign: () => void; onPdfError: (message: string) => void;
 }) {
   const signed = d.signatureStatus === "SIGNED";
+  const pending = d.signatureStatus === "PENDING";
   const patientName = d.document?.patient
     ? `${d.document.patient.firstName} ${d.document.patient.lastName}`
     : t("rx.patient");
@@ -225,6 +287,11 @@ function ClinicalDocCard({
             {signed && (
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 bg-brand-100 px-2 py-0.5 rounded-full">
                 <CheckCircle2 size={11} /> {t("rx.signed")}
+              </span>
+            )}
+            {pending && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                <Clock size={11} /> {t("rx.signPending")}
               </span>
             )}
           </div>
@@ -248,16 +315,13 @@ function ClinicalDocCard({
             className="flex items-center justify-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
             <Copy size={13} /> {t("rx.reuse")}
           </button>
-          {!signed && (
+          {!signed && !pending && (
             <button onClick={onSign}
               className="flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
               <PenLine size={13} /> {t("rx.sign")}
             </button>
           )}
-          <a href={pdfUrl} target="_blank"
-            className="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
-            <Download size={13} /> {t("rx.downloadPDF")}
-          </a>
+          <PdfDownloadButton url={pdfUrl} t={t} onError={onPdfError} />
           {signed && (
             <WhatsappDeliverButton
               kind={emissionKindFromDoc(d.type)}
@@ -278,6 +342,7 @@ function ClinicalDocCard({
 
 export default function PrescriptionsPage() {
   const { t, lang } = useI18n();
+  const toast = useToast();
   const locale = localeOf(lang);
 
   const [view, setView] = useState<View>("hub");
@@ -324,6 +389,7 @@ export default function PrescriptionsPage() {
   const [signConfig, setSignConfig] = useState<{ configured: boolean; provider: string; cpfMasked: string } | null>(null);
   const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
   const [signResult, setSignResult] = useState<string | null>(null);
+  const [signProcessing, setSignProcessing] = useState(false);
 
   const [rxTemplates, setRxTemplates] = useState<RxTemplate[]>([]);
   const [savingTemplate, setSavingTemplate] = useState(false);
@@ -369,10 +435,15 @@ export default function PrescriptionsPage() {
           const res = await fetch("/api/professional/emissions/deliver", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ kind: deliverKind, id, sendWhatsApp: true }),
+            body: JSON.stringify({
+              kind: deliverKind,
+              id,
+              sendWhatsApp: readWhatsAppDeliverPref(),
+            }),
           });
           const data = await res.json();
           if (res.ok) {
+            toast.success(t("rx.flow.deliverSuccess"));
             setSavedEmission({
               kind,
               id,
@@ -388,10 +459,17 @@ export default function PrescriptionsPage() {
             setPostSaveStep("success");
             setPostSaveShareUrl(data.shareUrl || "");
             fetchAll();
+          } else {
+            toast.error(typeof data.error === "string" ? data.error : t("rx.flow.deliverError"));
           }
-        } catch { /* ignore */ }
+        } catch {
+          toast.error(t("rx.flow.deliverError"));
+        }
         window.history.replaceState({}, "", window.location.pathname);
       })();
+    } else if (sign === "processing") {
+      setSignProcessing(true);
+      window.history.replaceState({}, "", window.location.pathname);
     } else if (sign && sign !== "success") {
       setSignResult(sign);
       window.history.replaceState({}, "", window.location.pathname);
@@ -588,6 +666,7 @@ export default function PrescriptionsPage() {
   }
 
   function signPrescription(p: Prescription) {
+    if (p.signatureStatus === "PENDING") return;
     const label = p.document?.patient
       ? `${p.document.patient.firstName} ${p.document.patient.lastName}`
       : t("rx.patient");
@@ -595,6 +674,7 @@ export default function PrescriptionsPage() {
   }
 
   function signClinicalDoc(d: ClinicalDocument) {
+    if (d.signatureStatus === "PENDING") return;
     const label = d.title;
     setSignTarget({ kind: emissionKindFromDoc(d.type), id: d.id, label });
   }
@@ -1355,6 +1435,13 @@ export default function PrescriptionsPage() {
         </button>
       </div>
 
+      {signProcessing && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-800 font-medium">{t("rx.signProcessing")}</p>
+        </div>
+      )}
+
       {signResult === "success" && (
         <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 flex items-start gap-3">
           <CheckCircle2 size={18} className="text-brand-500 shrink-0 mt-0.5" />
@@ -1496,6 +1583,7 @@ export default function PrescriptionsPage() {
               key={p.id} p={p} locale={locale} t={t}
               onReuse={() => openReuse(p)}
               onSign={() => signPrescription(p)}
+              onPdfError={(msg) => toast.error(msg)}
             />
           ))}
           {showClinicalList && filteredClinical.map((d) => (
@@ -1503,6 +1591,7 @@ export default function PrescriptionsPage() {
               key={d.id} d={d} locale={locale} t={t}
               onReuse={() => openReuseClinical(d)}
               onSign={() => signClinicalDoc(d)}
+              onPdfError={(msg) => toast.error(msg)}
             />
           ))}
           {showPrescriptionList && showClinicalList && filtered.length === 0 && filteredClinical.length === 0 && (

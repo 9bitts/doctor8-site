@@ -47,7 +47,11 @@ export function EmissionsSignModal({
       });
       const data = await res.json();
       if (!res.ok || !data.redirectUrl) {
-        setError(typeof data.error === "string" ? data.error : t("digSign.modalErrStart"));
+        const code = typeof data.code === "string" ? data.code : "";
+        if (code === "LACUNA_QUOTA") setError(t("digSign.errQuota"));
+        else if (code === "LACUNA_CPF") setError(t("digSign.errCpf"));
+        else if (code === "LACUNA_CERTIFICATE") setError(t("digSign.errCertificate"));
+        else setError(typeof data.error === "string" ? data.error : t("digSign.modalErrStart"));
         setLoading(false);
         return;
       }

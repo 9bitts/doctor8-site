@@ -17,6 +17,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { audit } from "@/lib/audit";
 import { createSignatureSession } from "@/lib/lacuna";
+import { parseLacunaError } from "@/lib/lacuna-errors";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
 import { getPublicBase, buildSignReturnUrl, assertPublicSignBase } from "@/lib/sign-helpers";
 
@@ -222,9 +223,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     console.error("[SIGN] erro ao criar sessão de assinatura:", e);
+    const code = parseLacunaError(e);
     return NextResponse.json(
-      { error: "Serviço de assinatura digital indisponível no momento. Tente novamente em instantes." },
-      { status: 502 }
+      { error: "Serviço de assinatura digital indisponível no momento. Tente novamente em instantes.", code },
+      { status: 502 },
     );
   }
 

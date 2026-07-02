@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { Loader2, VideoOff, RefreshCw, AlertCircle } from "lucide-react";
 import VideoConsultRoom, { VideoConsultData } from "@/components/VideoConsultRoom";
+import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
+import { setVideoNavContext } from "@/lib/safe-nav";
 
 type MediaCheck = "checking" | "granted" | "denied" | "unavailable";
 
@@ -13,13 +15,11 @@ export default function JitVideoPage() {
   const queueId = params.queueId as string;
   const { t } = useI18n();
   const [mediaCheck, setMediaCheck] = useState<MediaCheck>("checking");
+  const [jitHeartbeatEnabled, setJitHeartbeatEnabled] = useState(false);
 
-  // Pre-check camera/microphone before mounting the video component, so a
-  // denied permission shows instructions instead of a generic error.
   const runMediaCheck = useCallback(async () => {
     setMediaCheck("checking");
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      // API unavailable (very old browser) — let the video component handle it.
       setMediaCheck("granted");
       return;
     }
@@ -53,6 +53,14 @@ export default function JitVideoPage() {
       }
       return { error: d.message || d.error || "Could not open the video room." };
     }
+
+    const isProfessional = d.role === "professional";
+    setJitHeartbeatEnabled(isProfessional);
+    setVideoNavContext({
+      role: isProfessional ? "professional" : "patient",
+      backHref: typeof d.backHref === "string" ? d.backHref : undefined,
+    });
+
     return { data: { ...d, kind: "jit", queueId } };
   }
 
@@ -112,5 +120,10 @@ export default function JitVideoPage() {
     );
   }
 
-  return <VideoConsultRoom fetchSession={fetchSession} />;
+  return (
+    <>
+      <JitSessionHeartbeat enabled={jitHeartbeatEnabled} />
+      <VideoConsultRoom fetchSession={fetchSession} />
+    </>
+  );
 }

@@ -1,5 +1,5 @@
 "use client";
-// Sends periodic heartbeat while a professional has the dashboard open (plant?o stay-alive).
+// Sends periodic heartbeat while a professional has the dashboard or JIT video room open.
 
 import { useEffect } from "react";
 

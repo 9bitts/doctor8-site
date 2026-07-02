@@ -14,6 +14,7 @@ import { decrypt } from "@/lib/encryption";
 import { readJsonBody } from "@/lib/safe-json";
 import { refundPaymentIntentIdempotent, type RefundResult } from "@/lib/stripe-refund";
 import { stripe } from "@/lib/stripe";
+import { expireStaleJitNoShows } from "@/lib/jit-no-show-expiry";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -52,9 +53,10 @@ const joinSchema = z.object({
 });
 
 const callSchema = z.object({
-  action:     z.enum(["CALL_NEXT", "EXPIRE_NOSHOWS"]),
-  sessionId:  z.string(),
-  queueId:    z.string().optional(), // for CALL_NEXT if professional picks specific
+  action: z.enum(["CALL_NEXT", "EXPIRE_NOSHOWS"]),
+  sessionId: z.string(),
+  queueId: z.string().optional(),
+  confirmEndInProgress: z.boolean().optional(),
 });
 
 // GET — patient polls their queue position
@@ -69,12 +71,28 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("mine") === "1") {
     // Patient restoring their active queue entry (e.g. after page refresh).
     // Always scoped to the session user — userId is never accepted as a param.
-    const entry = await db.jitQueue.findFirst({
+    const entry0 = await db.jitQueue.findFirst({
       where: {
         patientUserId: session.user.id,
         status: { in: ["WAITING", "CALLED"] },
       },
       orderBy: { enteredAt: "desc" },
+      include: {
+        session: {
+          select: {
+            estimatedMinutesPerPatient: true,
+            status: true,
+            professional: { select: { id: true, userId: true, firstName: true, lastName: true, specialty: true } },
+          },
+        },
+      },
+    });
+    if (!entry0) return NextResponse.json({ entry: null });
+
+    await expireStaleJitNoShows(entry0.sessionId);
+
+    const entry = await db.jitQueue.findFirst({
+      where: { id: entry0.id },
       include: {
         session: {
           select: {
@@ -134,32 +152,48 @@ export async function GET(req: NextRequest) {
     if (entry.patientUserId !== session.user.id)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    await expireStaleJitNoShows(entry.sessionId);
+
+    const refreshedEntry = await db.jitQueue.findUnique({
+      where: { id: queueId },
+      include: {
+        session: {
+          select: {
+            estimatedMinutesPerPatient: true,
+            status: true,
+            professional: { select: { id: true, userId: true, firstName: true, lastName: true, specialty: true } },
+          },
+        },
+      },
+    });
+    if (!refreshedEntry) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     // Count people ahead
     const aheadCount = await db.jitQueue.count({
       where: {
-        sessionId: entry.sessionId,
+        sessionId: refreshedEntry.sessionId,
         status:    "WAITING",
-        position:  { lt: entry.position },
+        position:  { lt: refreshedEntry.position },
       },
     });
 
-    const estimatedWaitMinutes = aheadCount * (entry.session.estimatedMinutesPerPatient ?? 20);
+    const estimatedWaitMinutes = aheadCount * (refreshedEntry.session.estimatedMinutesPerPatient ?? 20);
 
     return NextResponse.json({
       entry: {
-        id:                    entry.id,
-        status:                entry.status,
-        position:              entry.position,
+        id:                    refreshedEntry.id,
+        status:                refreshedEntry.status,
+        position:              refreshedEntry.position,
         aheadCount,
         estimatedWaitMinutes,
-        calledAt:              entry.calledAt?.toISOString() ?? null,
-        expiresAt:             entry.expiresAt?.toISOString() ?? null,
-        meetingUrl:            entry.meetingUrl ?? null,
-        sessionStatus:         entry.session.status,
-        professionalName:      `Dr. ${entry.session.professional.firstName} ${entry.session.professional.lastName}`,
-        professionalId:        entry.session.professional.id,
-        professionalUserId:    entry.session.professional.userId,
-        specialty:             entry.session.professional.specialty,
+        calledAt:              refreshedEntry.calledAt?.toISOString() ?? null,
+        expiresAt:             refreshedEntry.expiresAt?.toISOString() ?? null,
+        meetingUrl:            refreshedEntry.meetingUrl ?? null,
+        sessionStatus:         refreshedEntry.session.status,
+        professionalName:      `Dr. ${refreshedEntry.session.professional.firstName} ${refreshedEntry.session.professional.lastName}`,
+        professionalId:        refreshedEntry.session.professional.id,
+        professionalUserId:    refreshedEntry.session.professional.userId,
+        specialty:             refreshedEntry.session.professional.specialty,
       },
     });
   }
@@ -402,47 +436,16 @@ export async function PATCH(req: NextRequest) {
     if (!ownsSession)
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
 
-    const now = new Date();
-    const expired = await db.jitQueue.findMany({
-      where: {
-        sessionId,
-        status:    "CALLED",
-        expiresAt: { lt: now },
-      },
-    });
-
-    for (const e of expired) {
-      await db.jitQueue.update({
-        where: { id: e.id },
-        data:  { status: "NO_SHOW", endedAt: now },
-      });
-      // Auto-refund paid no-shows. Never blocks/delays the expiry — the
-      // helper swallows errors and logs [AUTO-REFUND-FAIL].
-      if (e.paymentId) {
-        await refundJitQueuePayment(e.paymentId, "jit_no_show_expired");
-      }
-      // Notify patient
-      const missedCopy = storedNotificationText("notif.jit.missed.title", "notif.jit.missed.body");
-      await createNotification({
-        userId: e.patientUserId,
-        title: missedCopy.title,
-        body: missedCopy.body,
-        type: "system",
-        data: {
-          sessionId,
-          titleKey: "notif.jit.missed.title",
-          bodyKey: "notif.jit.missed.body",
-        },
-      }).catch(() => {});
-    }
-
-    return NextResponse.json({ expired: expired.length });
+    const expired = await expireStaleJitNoShows(sessionId);
+    return NextResponse.json({ expired });
   }
 
   // ── CALL_NEXT: professional calls the next patient ──
   if (action === "CALL_NEXT") {
     if (session.user.role !== "PROFESSIONAL")
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const { confirmEndInProgress } = parsed.data;
 
     const professional = await db.professionalProfile.findUnique({
       where: { userId: session.user.id },
@@ -453,22 +456,15 @@ export async function PATCH(req: NextRequest) {
     if (!jitSession || jitSession.professionalId !== professional.id)
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
 
-    // First expire any no-shows
-    const now = new Date();
-    const expiringNoShows = await db.jitQueue.findMany({
-      where: { sessionId, status: "CALLED", expiresAt: { lt: now } },
-      select: { paymentId: true },
-    });
-    await db.jitQueue.updateMany({
-      where: { sessionId, status: "CALLED", expiresAt: { lt: now } },
-      data:  { status: "NO_SHOW", endedAt: now },
-    });
-    // Auto-refund paid no-shows (idempotent — safe if EXPIRE_NOSHOWS already ran).
-    for (const e of expiringNoShows) {
-      if (e.paymentId) {
-        await refundJitQueuePayment(e.paymentId, "jit_no_show_expired");
-      }
+    if (jitSession.status !== "ONLINE") {
+      return NextResponse.json(
+        { error: "SESSION_NOT_ONLINE", message: "Go online before calling the next patient." },
+        { status: 409 },
+      );
     }
+
+    const now = new Date();
+    await expireStaleJitNoShows(sessionId);
 
     // Guard: never call a second patient while one is still CALLED (and not
     // yet expired — expiry was handled above).
@@ -483,7 +479,18 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Mark current IN_PROGRESS as DONE
+    const inProgress = await db.jitQueue.findFirst({
+      where: { sessionId, status: "IN_PROGRESS" },
+      select: { id: true },
+    });
+    if (inProgress && !confirmEndInProgress) {
+      return NextResponse.json(
+        { error: "IN_PROGRESS_ACTIVE", message: "A consultation is in progress. Confirm to end it before calling the next patient." },
+        { status: 409 },
+      );
+    }
+
+    // Mark current IN_PROGRESS as DONE (only when confirmed or none active)
     const finishing = await db.jitQueue.findMany({
       where: { sessionId, status: "IN_PROGRESS" },
       select: { id: true },
@@ -509,15 +516,27 @@ export async function PATCH(req: NextRequest) {
 
     if (!next) return NextResponse.json({ called: null, message: "Queue is empty" });
 
-    // Create Daily.co room
+    // Create Daily.co room — must succeed before marking CALLED or notifying patient.
     let meetingUrl = "";
     let meetingRoomId = "";
     try {
       const { createEphemeralRoom } = await import("@/lib/daily");
       const room = await createEphemeralRoom({ maxParticipants: 2 });
-      meetingUrl = room?.url || "";
-      meetingRoomId = room?.name || "";
-    } catch { /* non-fatal — meeting URL stays empty */ }
+      if (!room?.url || !room?.name) {
+        throw new Error("Daily room response missing url or name");
+      }
+      meetingUrl = room.url;
+      meetingRoomId = room.name;
+    } catch (e) {
+      console.error("[JIT] Daily room creation failed:", e);
+      return NextResponse.json(
+        {
+          error: "VIDEO_ROOM_FAILED",
+          message: "Could not create the video room. Please try again.",
+        },
+        { status: 503 },
+      );
+    }
 
     const expiresAt = new Date(now.getTime() + jitSession.noShowTimeoutSeconds * 1000);
 

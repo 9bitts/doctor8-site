@@ -58,6 +58,7 @@ export default function JitPage() {
   const [loading,  setLoading]  = useState(true);
   const [calling,  setCalling]  = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [confirmEndOpen, setConfirmEndOpen] = useState(false);
   const [error,    setError]    = useState<string | null>(null);
 
   // Config form
@@ -168,17 +169,38 @@ export default function JitPage() {
     setToggling(false);
   }
 
-  async function callNext() {
+  async function callNext(confirmed = false) {
     if (!session) return;
+    if (inProgressEntry && !confirmed) {
+      setConfirmEndOpen(true);
+      return;
+    }
     setCalling(true); setError(null);
+    setConfirmEndOpen(false);
     try {
       const res  = await fetch("/api/jit/queue", {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ action: "CALL_NEXT", sessionId: session.id }),
+        body:    JSON.stringify({
+          action: "CALL_NEXT",
+          sessionId: session.id,
+          confirmEndInProgress: !!inProgressEntry,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) setError(data.error || t("jit.errGeneric"));
+      if (!res.ok) {
+        if (data.error === "ALREADY_CALLING") {
+          setError(t("jit.alreadyCalling"));
+        } else if (data.error === "IN_PROGRESS_ACTIVE") {
+          setError(t("jit.confirmEndInProgress"));
+        } else if (data.error === "VIDEO_ROOM_FAILED") {
+          setError(t("jit.videoRoomFailed"));
+        } else if (data.error === "SESSION_NOT_ONLINE") {
+          setError(t("jit.sessionNotOnline"));
+        } else {
+          setError(data.message || t("jit.errGeneric"));
+        }
+      }
       await loadSession();
     } catch { setError(t("jit.errNetwork")); }
     setCalling(false);
@@ -435,7 +457,7 @@ export default function JitPage() {
                   </p>
                 )}
               </div>
-              <button onClick={callNext}
+              <button onClick={() => callNext()}
                 disabled={calling || waitingCount === 0 || isPaused || !!calledEntry}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-500 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm min-h-[44px]">
                 {calling
@@ -444,6 +466,29 @@ export default function JitPage() {
               </button>
             </div>
           </div>
+
+          {confirmEndOpen && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+              <p className="text-sm text-amber-900 font-medium">{t("jit.confirmEndInProgress")}</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmEndOpen(false)}
+                  className="flex-1 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-medium"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => callNext(true)}
+                  disabled={calling}
+                  className="flex-1 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  {t("jit.confirmEndContinue")}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Queue list */}
           {queue.length > 0 && (

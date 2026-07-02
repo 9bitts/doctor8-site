@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import VideoConsultRoom, { VideoConsultData, VideoConsultFetchResult } from "@/components/VideoConsultRoom";
 import { providerAppointmentsPath, type ProviderChartPanel } from "@/lib/video-chart-nav";
+import { setVideoNavContext } from "@/lib/safe-nav";
 
 export default function AppointmentVideoPage() {
   const params = useParams();
@@ -34,6 +35,14 @@ export default function AppointmentVideoPage() {
       }
       return { error: d.message || d.error || "Could not open the video room." };
     }
+    const isProfessional = d.role === "professional";
+    const panel = (d.providerPanel as ProviderChartPanel) ?? "professional";
+    setVideoNavContext({
+      role: isProfessional ? "professional" : "patient",
+      backHref: isProfessional
+        ? providerAppointmentsPath(panel)
+        : "/patient/appointments",
+    });
     return { data: { ...d, kind: "appointment", appointmentId } };
   }
 

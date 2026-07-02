@@ -8,6 +8,8 @@ import { createMeetingToken, createEphemeralRoom, isDailyRoomJoinable } from "@/
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
+import { expireStaleJitNoShows } from "@/lib/jit-no-show-expiry";
+import { providerPanelFromSpecialty, providerJitPath } from "@/lib/video-chart-nav";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -32,13 +34,13 @@ export async function GET(
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const entry = await db.jitQueue.findUnique({
+  let entry = await db.jitQueue.findUnique({
     where: { id: params.queueId },
     include: {
       session: {
         include: {
           professional: {
-            select: { id: true, userId: true, firstName: true, lastName: true },
+            select: { id: true, userId: true, firstName: true, lastName: true, specialty: true },
           },
         },
       },
@@ -46,6 +48,23 @@ export async function GET(
   });
 
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await expireStaleJitNoShows(entry.sessionId);
+
+  const freshEntry = await db.jitQueue.findUnique({
+    where: { id: params.queueId },
+    include: {
+      session: {
+        include: {
+          professional: {
+            select: { id: true, userId: true, firstName: true, lastName: true, specialty: true },
+          },
+        },
+      },
+    },
+  });
+  if (!freshEntry) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  entry = freshEntry;
 
   const isPatient = entry.patientUserId === session.user.id;
   const isProfessional =
@@ -130,11 +149,15 @@ export async function GET(
     patientRecordId = await ensurePatientRecord(pro.id, entry.patientUserId);
   }
 
+  const providerPanel = providerPanelFromSpecialty(entry.session.professional.specialty);
+
   return NextResponse.json({
     url: meetingUrl,
     token,
     userName,
     role: isPatient ? "patient" : "professional",
+    providerPanel,
+    backHref: isPatient ? "/urgent" : providerJitPath(providerPanel),
     patientRecordId,
     patientUserId: entry.patientUserId,
     otherParty: isPatient
