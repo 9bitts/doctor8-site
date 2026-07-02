@@ -11,6 +11,8 @@ import TelemedicineTcleConsent from "@/components/consent/TelemedicineTcleConsen
 import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
+import { buildAuthHref } from "@/components/auth/login-shared";
+import { MAIN_LOGIN } from "@/lib/auth-portals";
 
 function t(lang: Lang, key: string) {
   return translate(lang, key);
@@ -38,7 +40,7 @@ export default function HumanitarianTclePage() {
       .then((r) => r.json())
       .then(async (s) => {
         if (!s?.user) {
-          router.push(`/login?callbackUrl=/humanitarian/${slug}/tcle`);
+          router.push(buildAuthHref(MAIN_LOGIN, { callbackUrl: `/humanitarian/${slug}/tcle` }));
           return;
         }
         if (s.user.role !== "PATIENT") {
@@ -67,7 +69,7 @@ export default function HumanitarianTclePage() {
 
         setLoading(false);
       })
-      .catch(() => router.push(`/login?callbackUrl=/humanitarian/${slug}/tcle`));
+      .catch(() => router.push(buildAuthHref(MAIN_LOGIN, { callbackUrl: `/humanitarian/${slug}/tcle` })));
   }, [router, slug, returnTo]);
 
   async function submit() {

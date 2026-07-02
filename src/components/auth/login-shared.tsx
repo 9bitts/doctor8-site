@@ -23,6 +23,7 @@ import {
 } from "@/lib/auth/login-accent-styles";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { isHumanitarianContext } from "@/lib/humanitarian/feature-flags";
+import { readClientHumOriginFlag } from "@/lib/humanitarian/origin-cookie";
 
 export type { LoginAccent };
 export { getLoginAccentStyles };
@@ -46,6 +47,7 @@ const HEADER_ICONS: Record<PortalHeaderIcon, typeof Brain> = {
 };
 
 export function isHumanitarianAuthCallback(callbackUrl: string | null | undefined): boolean {
+  if (typeof window !== "undefined" && readClientHumOriginFlag()) return true;
   return isHumanitarianContext(callbackUrl);
 }
 
@@ -255,6 +257,7 @@ export function LoginAlerts({
   t,
   roleOnlyKey,
   verifyFrom,
+  callbackUrl,
 }: {
   error: LoginErrorCode;
   verified: boolean;
@@ -263,6 +266,7 @@ export function LoginAlerts({
   t: (key: string) => string;
   roleOnlyKey?: string;
   verifyFrom?: string;
+  callbackUrl?: string;
 }) {
   return (
     <>
@@ -308,6 +312,7 @@ export function LoginAlerts({
             <Link
               href={buildVerifyAccountHref({
                 email: unverifiedEmail,
+                callbackUrl: callbackUrl || undefined,
                 from: verifyFrom || MAIN_LOGIN,
               })}
               className="text-xs text-amber-300 hover:text-amber-200 underline"

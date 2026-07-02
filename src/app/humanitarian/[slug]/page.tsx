@@ -20,6 +20,8 @@ import {
 } from "@/lib/humanitarian/offline-draft";
 import { humanitarianApiErrorMessage } from "@/lib/humanitarian/api-error-message";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
+import { buildAuthHref } from "@/components/auth/login-shared";
+import { MAIN_LOGIN } from "@/lib/auth-portals";
 
 interface PoolInfo {
   id: string;
@@ -117,7 +119,7 @@ export default function HumanitarianCampaignPage() {
       .then((r) => r.json())
       .then(async (s) => {
         if (!s?.user) {
-          router.push(`/login?callbackUrl=${encodeURIComponent(`/humanitarian/${slug}`)}`);
+          router.push(buildAuthHref(MAIN_LOGIN, { callbackUrl: `/humanitarian/${slug}` }));
           return;
         }
         if (s.user.role !== "PATIENT") {
@@ -167,7 +169,7 @@ export default function HumanitarianCampaignPage() {
           }
         }
       })
-      .catch(() => router.push(`/login?callbackUrl=${encodeURIComponent(`/humanitarian/${slug}`)}`));
+      .catch(() => router.push(buildAuthHref(MAIN_LOGIN, { callbackUrl: `/humanitarian/${slug}` })));
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);

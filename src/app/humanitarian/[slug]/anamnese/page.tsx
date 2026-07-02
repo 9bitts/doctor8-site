@@ -10,6 +10,8 @@ import HumanitarianAnamneseForm from "@/components/humanitarian/HumanitarianAnam
 import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 import { useHumanitarianOutboxFlush } from "@/hooks/useHumanitarianOutboxFlush";
+import { buildAuthHref } from "@/components/auth/login-shared";
+import { MAIN_LOGIN } from "@/lib/auth-portals";
 
 export default function HumanitarianAnamnesePage() {
   const router = useRouter();
@@ -30,7 +32,7 @@ export default function HumanitarianAnamnesePage() {
       .then((r) => r.json())
       .then(async (s) => {
         if (!s?.user) {
-          router.push(`/login?callbackUrl=/humanitarian/${slug}/anamnese`);
+          router.push(buildAuthHref(MAIN_LOGIN, { callbackUrl: `/humanitarian/${slug}/anamnese` }));
           return;
         }
         if (s.user.role !== "PATIENT") {
@@ -52,7 +54,7 @@ export default function HumanitarianAnamnesePage() {
 
         setLoading(false);
       })
-      .catch(() => router.push(`/login?callbackUrl=/humanitarian/${slug}/anamnese`));
+      .catch(() => router.push(buildAuthHref(MAIN_LOGIN, { callbackUrl: `/humanitarian/${slug}/anamnese` })));
   }, [router, slug]);
 
   if (loading) {

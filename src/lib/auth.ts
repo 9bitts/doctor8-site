@@ -22,6 +22,10 @@ import {
 } from "@/lib/user-profile-complete";
 import { fetchUserProfileSnapshot } from "@/lib/user-profile-db";
 import { canSkipHumanitarianEmailVerification } from "@/lib/humanitarian/feature-flags";
+import {
+  readServerHumAuthCookies,
+  resolveHumanitarianAuthCallback,
+} from "@/lib/humanitarian/origin-cookie";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -146,11 +150,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user || !user.passwordHash) return null;
 
-        // Block login until email or SMS verification (humanitarian callback may bypass)
+        let originCookie = false;
+        let returnPath: string | null = null;
+        try {
+          const hum = await readServerHumAuthCookies();
+          originCookie = hum.originCookie;
+          returnPath = hum.returnPath;
+        } catch {
+          /* ignore */
+        }
+
+        const effectiveCallback = resolveHumanitarianAuthCallback(callbackUrl, {
+          originCookie,
+          returnPath,
+        });
+
+        const skipEmailVerification = canSkipHumanitarianEmailVerification(
+          effectiveCallback,
+          originCookie,
+        );
+
+        // Block login until email or SMS verification (humanitarian context may bypass)
         if (!isAccountVerified(user)) {
-          if (!canSkipHumanitarianEmailVerification(callbackUrl)) {
+          if (!skipEmailVerification) {
             throw new Error("EmailNotVerified");
           }
+          await db.user.update({
+            where: { id: user.id },
+            data: { emailVerified: new Date() },
+          });
         }
 
         // HIPAA: account lockout after failed attempts

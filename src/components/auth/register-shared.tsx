@@ -32,6 +32,14 @@ import InternationalPhoneInput, {
 import { defaultDdiForRegion, validateRegistrationPhone } from "@/lib/international-phone";
 import { mapRegisterApiErrors } from "@/lib/register-api-errors";
 import {
+  canSkipHumanitarianEmailVerification,
+} from "@/lib/humanitarian/feature-flags";
+import {
+  readClientHumOriginFlag,
+  readClientHumReturnPath,
+  resolveHumanitarianAuthCallback,
+} from "@/lib/humanitarian/origin-cookie";
+import {
   navigateAfterAuth,
   waitForAuthenticatedSession,
 } from "@/components/auth/login-shared";
@@ -188,6 +196,14 @@ export function RegisterAccountForm({
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
 
+  function effectiveAuthCallback(): string {
+    const fromCookie = resolveHumanitarianAuthCallback(null, {
+      originCookie: readClientHumOriginFlag(),
+      returnPath: readClientHumReturnPath(),
+    });
+    return callbackUrl || fromCookie || "";
+  }
+
   async function handleGoogleSignUp() {
     if (!isPhoneValid) {
       setErrors({ phoneNational: [t("reg.phoneInvalid")] });
@@ -210,7 +226,7 @@ export function RegisterAccountForm({
         setGoogleLoading(false);
         return;
       }
-      persistAuthCallback(callbackUrl);
+      persistAuthCallback(effectiveAuthCallback());
       const oauthCallback = isPsychologistSignup
         ? "/callback?portal=psychologist"
         : "/callback";
@@ -231,6 +247,7 @@ export function RegisterAccountForm({
     setErrors({});
 
     try {
+      const authCallback = effectiveAuthCallback();
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -250,7 +267,7 @@ export function RegisterAccountForm({
           acceptedPrivacy,
           acceptedHipaa: requiresHipaa(region) ? acceptedHipaa : undefined,
           acceptedGdpr: requiresGdpr(region) ? acceptedGdpr : undefined,
-          callbackUrl: callbackUrl || undefined,
+          callbackUrl: authCallback || undefined,
         }),
       });
 
@@ -267,11 +284,11 @@ export function RegisterAccountForm({
         const signInResult = await signIn("credentials", {
           email: email.trim().toLowerCase(),
           password,
-          callbackUrl: callbackUrl || "",
+          callbackUrl: authCallback || "",
           redirect: false,
         });
         if (signInResult?.ok) {
-          persistAuthCallback(callbackUrl);
+          persistAuthCallback(authCallback);
           const session = await waitForAuthenticatedSession({
             expectedEmail: email.trim().toLowerCase(),
           });
@@ -279,7 +296,7 @@ export function RegisterAccountForm({
             navigateAfterAuth(
               safePostLoginUrl(
                 session.user.role,
-                callbackUrl || null,
+                authCallback || null,
                 resolvePatientPostLoginUrl,
                 session.user.professionalSpecialty,
               ),
@@ -288,17 +305,28 @@ export function RegisterAccountForm({
           }
         }
         router.push(
-          callbackUrl
-            ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+          authCallback
+            ? `/login?callbackUrl=${encodeURIComponent(authCallback)}`
             : "/login",
         );
+        return;
+      }
+
+      if (
+        role === "PATIENT"
+        && canSkipHumanitarianEmailVerification(
+          authCallback,
+          readClientHumOriginFlag(),
+        )
+      ) {
+        router.push(authCallback || "/login");
         return;
       }
 
       router.push(
         buildVerifyAccountHref({
           email,
-          callbackUrl: callbackUrl || undefined,
+          callbackUrl: authCallback || undefined,
           from: resolveLoginPathForRegistration(role, professionalKind),
         }),
       );

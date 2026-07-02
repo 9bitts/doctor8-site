@@ -12,6 +12,7 @@ import {
   getLoginAccentStyles,
   buildAuthHref,
 } from "@/components/auth/login-shared";
+import { resolveRegisterHref } from "@/lib/auth-callback";
 import { ForgotPasswordLayout } from "@/components/auth/forgot-password-shared";
 
 type Props = {
@@ -129,7 +130,7 @@ export default function VerifyEmailClient({ email, error, callbackUrl = "", from
 
         <div className="border-t border-white/10 pt-4">
           <p className="text-slate-500 text-xs mb-3">{t("verifyEmail.wrongEmail")}</p>
-          <Link href="/register" className={`${styles.link} text-sm font-medium transition`}>
+          <Link href={resolveRegisterHref(null, callbackUrl || null)} className={`${styles.link} text-sm font-medium transition`}>
             {t("verifyEmail.backRegister")}
           </Link>
           <span className="text-slate-600 mx-3" aria-hidden>·</span>

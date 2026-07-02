@@ -20,14 +20,22 @@ export function effectiveHumanitarianPhoneReady(actualPhoneReady: boolean): bool
   return actualPhoneReady;
 }
 
+function humanitarianPathMatches(path: string): boolean {
+  return path.startsWith("/humanitarian/") || path === "/sos-venezuela";
+}
+
 /** Auth/register originated from SOS Venezuela or in-app humanitarian patient flow. */
-export function isHumanitarianContext(callbackUrl: string | null | undefined): boolean {
+export function isHumanitarianContext(
+  callbackUrl: string | null | undefined,
+  originCookie = false,
+): boolean {
+  if (originCookie) return true;
   if (!callbackUrl) return false;
   try {
     const path = callbackUrl.startsWith("http")
       ? new URL(callbackUrl).pathname
       : callbackUrl.split("?")[0];
-    return path.startsWith("/humanitarian/") || path === "/sos-venezuela";
+    return humanitarianPathMatches(path);
   } catch {
     return false;
   }
@@ -36,6 +44,8 @@ export function isHumanitarianContext(callbackUrl: string | null | undefined): b
 /** Skip email verification when humanitarian context and flag is off (default). */
 export function canSkipHumanitarianEmailVerification(
   callbackUrl: string | null | undefined,
+  originCookie = false,
 ): boolean {
-  return isHumanitarianContext(callbackUrl) && !isHumanitarianEmailVerificationEnabled();
+  return isHumanitarianContext(callbackUrl, originCookie)
+    && !isHumanitarianEmailVerificationEnabled();
 }

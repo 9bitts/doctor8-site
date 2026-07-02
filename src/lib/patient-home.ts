@@ -1,3 +1,5 @@
+import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+
 /** After login, patients land on the main dashboard unless they have a deep link. */
 export function resolvePatientPostLoginUrl(callbackUrl: string): string {
   if (!callbackUrl) return "/patient";
@@ -6,14 +8,12 @@ export function resolvePatientPostLoginUrl(callbackUrl: string): string {
     const url = new URL(callbackUrl, "https://doctor8.org");
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
-    // Generic /urgent landing ? main panel (user picks care from dashboard)
     if (path === "/urgent" && !url.searchParams.has("sessionId")) {
       return "/patient";
     }
 
-    // Humanitarian registration flows ? dashboard first, banner leads to queue
-    if (path.startsWith("/humanitarian/") && !url.searchParams.has("entryId")) {
-      return "/patient";
+    if (path === "/sos-venezuela") {
+      return `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
     }
 
     return callbackUrl.startsWith("/") ? callbackUrl : path + url.search;

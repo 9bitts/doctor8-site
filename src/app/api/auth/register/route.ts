@@ -30,6 +30,11 @@ import {
   canSkipHumanitarianEmailVerification,
   isHumanitarianContext,
 } from "@/lib/humanitarian/feature-flags";
+import {
+  readHumOriginFlagFromCookieHeader,
+  readHumReturnPathFromCookieHeader,
+  resolveHumanitarianAuthCallback,
+} from "@/lib/humanitarian/origin-cookie";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -102,8 +107,16 @@ export async function POST(req: NextRequest) {
       callbackUrl,
     } = data.data;
 
+    const originCookie = readHumOriginFlagFromCookieHeader(req.headers.get("cookie") ?? undefined);
+    const returnPath = readHumReturnPathFromCookieHeader(req.headers.get("cookie") ?? undefined);
+    const effectiveCallback = resolveHumanitarianAuthCallback(callbackUrl, {
+      originCookie,
+      returnPath,
+    });
+
     const skipEmailVerification =
-      role === "PATIENT" && canSkipHumanitarianEmailVerification(callbackUrl);
+      role === "PATIENT"
+      && canSkipHumanitarianEmailVerification(effectiveCallback, originCookie);
 
     if (requiresHipaa(region) && !acceptedHipaa) {
       return NextResponse.json(
@@ -343,9 +356,10 @@ export async function POST(req: NextRequest) {
         console.error("[EMAIL VERIFICATION SEND ERROR]", emailError);
         // User can request resend from verify-email page
       }
-    } else if (isHumanitarianContext(callbackUrl)) {
+    } else if (isHumanitarianContext(effectiveCallback, originCookie)) {
       console.info("[REGISTER] Humanitarian patient signup — email verification skipped", {
-        callbackUrl,
+        callbackUrl: effectiveCallback,
+        originCookie,
       });
     }
 

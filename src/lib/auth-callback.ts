@@ -1,3 +1,9 @@
+import {
+  readClientHumOriginFlag,
+  readClientHumReturnPath,
+  resolveHumanitarianAuthCallback,
+} from "@/lib/humanitarian/origin-cookie";
+
 const AUTH_CALLBACK_KEY = "doctor8.authCallback";
 
 export function persistAuthCallback(url: string) {
@@ -18,6 +24,18 @@ export function consumeAuthCallback(): string | null {
   }
 }
 
+/** Query ?callbackUrl= with humanitarian origin cookie fallback. */
+export function resolveClientAuthCallback(queryCallback?: string | null): string {
+  const trimmed = queryCallback?.trim();
+  if (trimmed) return trimmed;
+  return (
+    resolveHumanitarianAuthCallback(null, {
+      originCookie: readClientHumOriginFlag(),
+      returnPath: readClientHumReturnPath(),
+    }) ?? ""
+  );
+}
+
 /** Safe internal register path from ?registerUrl= (defaults to patient /register). */
 export function resolveRegisterHref(
   registerUrl: string | null | undefined,
@@ -27,7 +45,8 @@ export function resolveRegisterHref(
     registerUrl?.startsWith("/register") && !registerUrl.startsWith("//")
       ? registerUrl
       : "/register";
-  if (!callbackUrl) return base;
+  const effective = callbackUrl?.trim() || resolveClientAuthCallback(null);
+  if (!effective) return base;
   const sep = base.includes("?") ? "&" : "?";
-  return `${base}${sep}callbackUrl=${encodeURIComponent(callbackUrl)}`;
+  return `${base}${sep}callbackUrl=${encodeURIComponent(effective)}`;
 }

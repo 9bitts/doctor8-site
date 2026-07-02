@@ -6,6 +6,7 @@ import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import { LogIn } from "lucide-react";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import { MAIN_LOGIN } from "@/lib/auth-portals";
+import { resolveClientAuthCallback } from "@/lib/auth-callback";
 import {
   detectInitialLang,
   LANG_KEY,
@@ -24,7 +25,8 @@ export default function RegisterPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setCallbackUrl(params.get("callbackUrl") || "");
+    const fromQuery = params.get("callbackUrl") || "";
+    setCallbackUrl(resolveClientAuthCallback(fromQuery));
 
     const r = params.get("region");
     if (r) {

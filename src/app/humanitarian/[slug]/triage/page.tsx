@@ -10,6 +10,8 @@ import HumanitarianTriageForm from "@/components/humanitarian/HumanitarianTriage
 import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
 import { useHumanitarianOutboxFlush } from "@/hooks/useHumanitarianOutboxFlush";
+import { buildAuthHref } from "@/components/auth/login-shared";
+import { MAIN_LOGIN } from "@/lib/auth-portals";
 
 export default function HumanitarianTriagePage() {
   const router = useRouter();
@@ -32,7 +34,7 @@ export default function HumanitarianTriagePage() {
       .then((r) => r.json())
       .then(async (s) => {
         if (!s?.user) {
-          router.push(`/login?callbackUrl=/humanitarian/${slug}/triage`);
+          router.push(buildAuthHref(MAIN_LOGIN, { callbackUrl: `/humanitarian/${slug}/triage` }));
           return;
         }
         if (s.user.role !== "PATIENT") {
@@ -55,7 +57,7 @@ export default function HumanitarianTriagePage() {
         }
         setLoading(false);
       })
-      .catch(() => router.push(`/login?callbackUrl=/humanitarian/${slug}/triage`));
+      .catch(() => router.push(buildAuthHref(MAIN_LOGIN, { callbackUrl: `/humanitarian/${slug}/triage` })));
   }, [router, slug, retake]);
 
   if (loading) {
