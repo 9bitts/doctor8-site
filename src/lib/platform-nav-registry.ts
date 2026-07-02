@@ -48,6 +48,11 @@ export type PlatformNavEntry = {
   iconKey: NavIconKey;
 };
 
+export type PlatformNavGroup = {
+  labelKey: string;
+  items: PlatformNavEntry[];
+};
+
 export type PlatformPortalId =
   | "PATIENT"
   | "PROFESSIONAL"
@@ -62,24 +67,57 @@ export type PublicRouteEntry = {
   description: string;
 };
 
+export const PATIENT_DASHBOARD_ENTRY: PlatformNavEntry = {
+  href: "/patient",
+  labelKey: "nav.dashboard",
+  roles: ["PATIENT"],
+  iconKey: "LayoutDashboard",
+};
+
+export const PATIENT_HUMANITARIAN_ENTRY: PlatformNavEntry = {
+  href: "/humanitarian/venezuela-terremoto-2026",
+  labelKey: "nav.humanitarian",
+  roles: ["PATIENT"],
+  iconKey: "Heart",
+};
+
+/** Patient sidebar groups — flat PATIENT_NAV is derived for support-knowledge index. */
+export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "nav.group.careNow",
+    items: [
+      { href: "/urgent", labelKey: "nav.urgent", roles: ["PATIENT"], iconKey: "Radio" },
+      { href: "/patient/appointments", labelKey: "nav.appointments", roles: ["PATIENT"], iconKey: "Calendar" },
+      { href: "/patient/find", labelKey: "nav.find", roles: ["PATIENT"], iconKey: "MapPin" },
+    ],
+  },
+  {
+    labelKey: "nav.group.myHealth",
+    items: [
+      { href: "/patient/history", labelKey: "nav.medicalHistory", roles: ["PATIENT"], iconKey: "FileText" },
+      { href: "/patient/prescriptions", labelKey: "nav.myPrescriptions", roles: ["PATIENT"], iconKey: "Stethoscope" },
+      { href: "/patient/exam-requests", labelKey: "nav.myExamRequests", roles: ["PATIENT"], iconKey: "FlaskConical" },
+      { href: "/patient/documents", labelKey: "nav.documents", roles: ["PATIENT"], iconKey: "ClipboardList" },
+      { href: "/patient/medications", labelKey: "nav.medications", roles: ["PATIENT"], iconKey: "Pill" },
+      { href: "/patient/resources", labelKey: "nav.doctorResources", roles: ["PATIENT"], iconKey: "BookOpen" },
+      { href: "/patient/integrative-care", labelKey: "nav.integrativeCare", roles: ["PATIENT"], iconKey: "Leaf" },
+    ],
+  },
+  {
+    labelKey: "nav.group.accountMore",
+    items: [
+      { href: "/patient/messages", labelKey: "nav.messages", roles: ["PATIENT"], iconKey: "MessageSquare" },
+      { href: "/patient/providers", labelKey: "nav.myProviders", roles: ["PATIENT"], iconKey: "Users" },
+      { href: "/patient/club-doctor", labelKey: "nav.benefits", roles: ["PATIENT"], iconKey: "Sparkles" },
+      { href: "/patient/account", labelKey: "nav.account", roles: ["PATIENT"], iconKey: "Settings" },
+    ],
+  },
+];
+
 export const PATIENT_NAV: PlatformNavEntry[] = [
-  { href: "/patient", labelKey: "nav.dashboard", roles: ["PATIENT"], iconKey: "LayoutDashboard" },
-  { href: "/patient/history", labelKey: "nav.medicalHistory", roles: ["PATIENT"], iconKey: "FileText" },
-  { href: "/patient/medications", labelKey: "nav.medications", roles: ["PATIENT"], iconKey: "Pill" },
-  { href: "/patient/buying-club", labelKey: "nav.buyingClub", roles: ["PATIENT"], iconKey: "ShoppingBag" },
-  { href: "/patient/club-doctor", labelKey: "nav.clubDoctor", roles: ["PATIENT"], iconKey: "Sparkles" },
-  { href: "/patient/prescriptions", labelKey: "nav.myPrescriptions", roles: ["PATIENT"], iconKey: "Stethoscope" },
-  { href: "/patient/exam-requests", labelKey: "nav.myExamRequests", roles: ["PATIENT"], iconKey: "FlaskConical" },
-  { href: "/patient/appointments", labelKey: "nav.appointments", roles: ["PATIENT"], iconKey: "Calendar" },
-  { href: "/patient/providers", labelKey: "nav.myProviders", roles: ["PATIENT"], iconKey: "Users" },
-  { href: "/patient/integrative-care", labelKey: "nav.integrativeCare", roles: ["PATIENT"], iconKey: "Leaf" },
-  { href: "/patient/documents", labelKey: "nav.documents", roles: ["PATIENT"], iconKey: "ClipboardList" },
-  { href: "/patient/resources", labelKey: "nav.doctorResources", roles: ["PATIENT"], iconKey: "BookOpen" },
-  { href: "/patient/messages", labelKey: "nav.messages", roles: ["PATIENT"], iconKey: "MessageSquare" },
-  { href: "/urgent", labelKey: "nav.urgent", roles: ["PATIENT"], iconKey: "Radio" },
-  { href: "/humanitarian/venezuela-terremoto-2026", labelKey: "nav.humanitarian", roles: ["PATIENT"], iconKey: "Heart" },
-  { href: "/patient/find", labelKey: "nav.find", roles: ["PATIENT"], iconKey: "MapPin" },
-  { href: "/patient/account", labelKey: "nav.account", roles: ["PATIENT"], iconKey: "Settings" },
+  PATIENT_DASHBOARD_ENTRY,
+  ...PATIENT_NAV_GROUPS.flatMap((g) => g.items),
+  PATIENT_HUMANITARIAN_ENTRY,
 ];
 
 export const PROFESSIONAL_NAV: PlatformNavEntry[] = [

@@ -23,7 +23,10 @@ import {
   ADMIN_NAV,
   INTEGRATIVE_THERAPIST_NAV,
   ORGANIZATION_NAV,
+  PATIENT_DASHBOARD_ENTRY,
+  PATIENT_HUMANITARIAN_ENTRY,
   PATIENT_NAV,
+  PATIENT_NAV_GROUPS,
   PROFESSIONAL_NAV,
   PSYCHOANALYST_NAV,
   PSYCHOLOGIST_NAV,
@@ -44,6 +47,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string>("PATIENT");
   const [userName, setUserName] = useState<string>("User");
   const [userId, setUserId] = useState<string>("");
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     async function loadSession() {
@@ -96,6 +100,27 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     };
   }, [role, userId]);
 
+  useEffect(() => {
+    if (role !== "PATIENT") return;
+
+    async function loadUnread() {
+      try {
+        const res = await fetch("/api/messages");
+        if (!res.ok) return;
+        const data = await res.json();
+        const total = (data.conversations || []).reduce(
+          (sum: number, c: { unread?: number }) => sum + (c.unread || 0),
+          0,
+        );
+        setUnreadMessages(total);
+      } catch { /* silent */ }
+    }
+
+    loadUnread();
+    const interval = setInterval(loadUnread, 30000);
+    return () => clearInterval(interval);
+  }, [role]);
+
   const isPsychologistPortal = pathname.startsWith("/psychologist");
 
   const navItems: NavItem[] =
@@ -119,6 +144,13 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
   const isOrganization = role === "ORGANIZATION";
+  const isPatient = role === "PATIENT";
+  const patientDashboardItem = withNavIcons([PATIENT_DASHBOARD_ENTRY])[0];
+  const patientHumanitarianItem = withNavIcons([PATIENT_HUMANITARIAN_ENTRY])[0];
+  const patientGroupedNav = PATIENT_NAV_GROUPS.map((group) => ({
+    ...group,
+    items: withNavIcons(group.items),
+  }));
   const navActive = isOrganization
     ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
     : isPsychologist
@@ -134,6 +166,31 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const avatarIcon = isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
   const headerAvatar = isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal);
+
+  function renderNavLink(item: NavItem, badge?: number) {
+    const isActive = pathname === item.href ||
+      (item.href !== `/${role.toLowerCase()}` && pathname.startsWith(item.href));
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => setSidebarOpen(false)}
+        className={`
+          flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+          ${isActive ? navActive : "text-slate-400 hover:text-white hover:bg-slate-800"}
+        `}
+      >
+        {item.icon}
+        <span className="flex-1 min-w-0 truncate">{t(item.labelKey)}</span>
+        {badge && badge > 0 ? (
+          <span className="min-w-[1.25rem] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        ) : null}
+        {isActive && <ChevronRight size={14} className="ml-auto shrink-0" />}
+      </Link>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
@@ -183,25 +240,29 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <div className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href ||
-                (item.href !== `/${role.toLowerCase()}` && pathname.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                    ${isActive ? navActive : "text-slate-400 hover:text-white hover:bg-slate-800"}
-                  `}
-                >
-                  {item.icon}
-                  {t(item.labelKey)}
-                  {isActive && <ChevronRight size={14} className="ml-auto" />}
-                </Link>
-              );
-            })}
+            {isPatient ? (
+              <>
+                {renderNavLink(patientDashboardItem)}
+                {patientGroupedNav.map((group) => (
+                  <div key={group.labelKey}>
+                    <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      {t(group.labelKey)}
+                    </p>
+                    <div className="space-y-1">
+                      {group.items.map((item) =>
+                        renderNavLink(
+                          item,
+                          item.href === "/patient/messages" ? unreadMessages : undefined,
+                        ),
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {renderNavLink(patientHumanitarianItem)}
+              </>
+            ) : (
+              navItems.map((item) => renderNavLink(item))
+            )}
           </div>
         </nav>
 

@@ -1,7 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
-import { Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import SupportWidget from "@/components/SupportWidget";
 import PwaRegister from "@/components/PwaRegister";
@@ -9,7 +9,7 @@ import AuthSessionProvider from "@/components/AuthSessionProvider";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
 import { normalizeLang } from "@/lib/i18n/translations";
 
-const inter = Inter({ subsets: ["latin"] });
+const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
   title: "Doctor8 — Secure Health Platform",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#059669",
+  themeColor: "#176a88",
 };
 
 export default function RootLayout({
@@ -33,7 +33,7 @@ export default function RootLayout({
 
   return (
     <html lang={htmlLang}>
-      <body className={`${inter.className} antialiased overflow-x-hidden`}>
+      <body className={`${poppins.className} antialiased overflow-x-hidden`}>
         <I18nProvider initialLang={lang}>
           <AuthSessionProvider>
             {children}
