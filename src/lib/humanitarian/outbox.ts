@@ -1,6 +1,7 @@
 const DB_NAME = "doctor8-hum";
 const STORE = "outbox";
 const LEGACY_KEY = "doctor8:hum:outbox";
+const ACTIVE_USER_META_ID = "__activeUserId__";
 
 export type OutboxItem = {
   id: string;
@@ -133,6 +134,20 @@ async function requestOutboxBackgroundSync(): Promise<void> {
   }
 }
 
+async function setActiveOutboxUserId(userId: string): Promise<void> {
+  const items = await readOutbox();
+  const withoutMeta = items.filter((i) => i.id !== ACTIVE_USER_META_ID);
+  const meta: OutboxItem = {
+    id: ACTIVE_USER_META_ID,
+    userId,
+    url: "",
+    method: "POST",
+    body: {},
+    createdAt: Date.now(),
+  };
+  await writeOutbox([meta, ...withoutMeta]);
+}
+
 export async function enqueueHumanitarianSubmit(
   userId: string,
   item: Omit<OutboxItem, "id" | "createdAt" | "userId">,
@@ -140,14 +155,15 @@ export async function enqueueHumanitarianSubmit(
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   const next: OutboxItem = { ...item, id, userId, createdAt: Date.now() };
   const items = await readOutbox();
-  await writeOutbox([...items, next]);
+  await writeOutbox([...items.filter((i) => i.id !== ACTIVE_USER_META_ID), next]);
+  await setActiveOutboxUserId(userId);
   await requestOutboxBackgroundSync();
   return id;
 }
 
 export async function listHumanitarianOutbox(userId: string): Promise<OutboxItem[]> {
   const all = await purgeLegacyOutboxItems(await readOutbox());
-  return all.filter((i) => i.userId === userId);
+  return all.filter((i) => i.id !== ACTIVE_USER_META_ID && i.userId === userId);
 }
 
 export async function removeHumanitarianOutboxItem(id: string): Promise<void> {

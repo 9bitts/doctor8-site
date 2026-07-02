@@ -3,6 +3,7 @@ const API_CACHE = "doctor8-hum-api-v7";
 const OUTBOX_DB = "doctor8-hum";
 const OUTBOX_STORE = "outbox";
 const SYNC_TAG = "hum-outbox-sync";
+const ACTIVE_USER_META_ID = "__activeUserId__";
 
 const PRECACHE = [
   "/sos-venezuela",
@@ -85,9 +86,23 @@ async function flushOutboxFromSw() {
   const items = await readOutboxItems(db);
   if (!items.length) return 0;
 
+  const meta = items.find((item) => item.id === ACTIVE_USER_META_ID);
+  const activeUserId = meta?.userId || null;
+  const queue = items.filter((item) => {
+    if (item.id === ACTIVE_USER_META_ID) return false;
+    if (!item.url || !item.url.startsWith("/api/humanitarian/")) return false;
+    if (!item.userId) {
+      console.log("[hum-outbox] discarding legacy item without userId", item.id);
+      return false;
+    }
+    if (!activeUserId || item.userId !== activeUserId) return false;
+    return true;
+  });
+
+  if (!queue.length) return 0;
+
   let flushed = 0;
-  for (const item of items) {
-    if (!item.url || !item.url.startsWith("/api/humanitarian/")) continue;
+  for (const item of queue) {
     try {
       const res = await fetch(item.url, {
         method: item.method || "POST",

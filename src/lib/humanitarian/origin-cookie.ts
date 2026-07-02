@@ -63,6 +63,7 @@ const HUM_COOKIE_OPTIONS = {
   path: "/",
   maxAge: HUM_ORIGIN_MAX_AGE_SECONDS,
   sameSite: "lax" as const,
+  httpOnly: true,
 };
 
 /** Middleware / route handlers: stamp short-lived humanitarian origin cookies. */

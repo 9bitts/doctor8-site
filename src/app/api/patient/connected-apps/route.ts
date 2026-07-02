@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { revokeSmartClientAccess } from "@/lib/fhir/smart-token-maintenance";
 import { getSmartClientName } from "@/lib/fhir/smart-oauth-clients";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
 
   const now = new Date();
   const tokens = await db.smartAccessToken.findMany({
-    where: { userId: session.user.id, expiresAt: { gt: now } },
+    where: { userId: ctx.userId, expiresAt: { gt: now } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -33,19 +33,19 @@ export async function GET() {
 }
 
 export async function DELETE(req: Request) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const row = await db.smartAccessToken.findFirst({
-    where: { id, userId: session.user.id },
+    where: { id, userId: ctx.userId },
     select: { clientId: true },
   });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await revokeSmartClientAccess(session.user.id, row.clientId);
+  await revokeSmartClientAccess(ctx.userId, row.clientId);
   return NextResponse.json({ success: true });
 }

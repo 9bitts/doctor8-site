@@ -5,21 +5,21 @@
 // JSON in `notes`. This lets us add as many fields as we want without DB changes.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { encrypt, decrypt } from "@/lib/encryption";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
 
   const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
   });
   if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await audit.viewRecord(session.user.id, "PatientProfile", patient.id);
+  await audit.viewRecord(ctx.userId, "PatientProfile", patient.id);
 
   // The full questionnaire lives as JSON inside `notes`.
   let full: Record<string, unknown> = {};
@@ -48,13 +48,13 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
 
   const body = await req.json();
 
   const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: ctx.userId },
   });
   if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -74,6 +74,6 @@ export async function PUT(req: NextRequest) {
     },
   });
 
-  await audit.updateRecord(session.user.id, "PatientProfile", patient.id);
+  await audit.updateRecord(ctx.userId, "PatientProfile", patient.id);
   return NextResponse.json({ success: true });
 }

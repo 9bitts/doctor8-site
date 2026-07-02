@@ -101,6 +101,8 @@ export const RATE_LIMITS = {
   supportIp: { limit: 30, windowMs: 60 * 60 * 1000 },
   /** Humanitarian queue joins per patient */
   humanitarianJoin: { limit: 10, windowMs: 60 * 60 * 1000 },
+  /** Humanitarian intake submissions per identity */
+  humanitarianIntake: { limit: 10, windowMs: 60 * 60 * 1000 },
   /** Public CNPJ lookup during registration */
   cnpjIp: { limit: 40, windowMs: 60 * 60 * 1000 },
 } as const;

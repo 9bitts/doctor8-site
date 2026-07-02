@@ -134,16 +134,10 @@ function withPrivateCacheHeaders(
 function maybeStampHumanitarianOrigin(
   response: NextResponse,
   pathname: string,
-  callbackUrl?: string | null,
 ): NextResponse {
   const fromPath = humanitarianReturnPathFromPathname(pathname);
   if (fromPath) {
     stampHumanitarianOriginOnResponse(response, fromPath);
-    return response;
-  }
-  const fromCallback = humanitarianReturnPathFromCallback(callbackUrl);
-  if (fromCallback) {
-    stampHumanitarianOriginOnResponse(response, fromCallback);
   }
   return response;
 }
@@ -212,8 +206,7 @@ export default auth((req) => {
 
   if (isPublicRoute(pathname)) {
     if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/register/")) {
-      const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
-      return maybeStampHumanitarianOrigin(NextResponse.next(), pathname, callbackUrl);
+      return NextResponse.next();
     }
     const publicHumPath = humanitarianReturnPathFromPathname(pathname);
     if (publicHumPath) {
@@ -273,7 +266,7 @@ export default auth((req) => {
     const callbackUrl = pathname + req.nextUrl.search;
     loginUrl.searchParams.set("callbackUrl", callbackUrl);
     const loginRedirect = NextResponse.redirect(loginUrl);
-    return maybeStampHumanitarianOrigin(loginRedirect, pathname, callbackUrl);
+    return maybeStampHumanitarianOrigin(loginRedirect, pathname);
   }
 
   const { role, professionalSpecialty } = session.user as {

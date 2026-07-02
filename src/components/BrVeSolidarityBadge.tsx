@@ -1,9 +1,13 @@
 "use client";
 
 import { useId } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+
+const SOLIDARITY_RED = "#dc2626";
 
 /** BR + VE solidarity badge for dashboard sidebar. */
 export default function BrVeSolidarityBadge() {
+  const { t } = useI18n();
   const uid = useId().replace(/:/g, "");
   const cardClip = `cardClip-${uid}`;
   const brFlag = `brFlag-${uid}`;
@@ -88,13 +92,13 @@ export default function BrVeSolidarityBadge() {
             fontFamily="Arial, Helvetica, sans-serif"
             fontSize="20"
             fontWeight="600"
-            fill="#e6edf5"
+            fill={SOLIDARITY_RED}
           >
             Brasil
           </text>
           <path
             d="M260.0,204.6 C249.0,194.7 249.0,185.9 260.0,191.4 C271.0,185.9 271.0,194.7 260.0,204.6 Z"
-            fill="#e05930"
+            fill={SOLIDARITY_RED}
           />
           <text
             x="326.0"
@@ -103,12 +107,18 @@ export default function BrVeSolidarityBadge() {
             fontFamily="Arial, Helvetica, sans-serif"
             fontSize="20"
             fontWeight="600"
-            fill="#e6edf5"
+            fill={SOLIDARITY_RED}
           >
             Venezuela
           </text>
         </g>
       </svg>
+      <p
+        className="text-center text-sm font-bold py-2 bg-[#0b1622]"
+        style={{ color: SOLIDARITY_RED }}
+      >
+        {t("nav.humanitarian")}
+      </p>
     </div>
   );
 }

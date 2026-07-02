@@ -10,7 +10,7 @@ function verifyDailySignature(
   timestamp: string | null,
 ): boolean {
   const secret = process.env.DAILY_WEBHOOK_SECRET?.trim();
-  if (!secret) return process.env.NODE_ENV !== "production";
+  if (!secret) return false;
   if (!signature || !timestamp) return false;
 
   let event: unknown;

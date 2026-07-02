@@ -2,15 +2,15 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Doctor8 \u2014 Atendimento humanit\u00e1rio",
-    short_name: "Doctor8 SOS",
-    description: "Triagem, fila e telemedicina humanit\u00e1ria",
-    start_url: "/sos-venezuela",
+    name: "Doctor8",
+    short_name: "Doctor8",
+    description: "HIPAA & GDPR compliant telehealth platform",
+    start_url: "/patient",
     scope: "/",
     display: "standalone",
-    background_color: "#0f172a",
-    theme_color: "#059669",
-    lang: "es",
+    background_color: "#ffffff",
+    theme_color: "#176a88",
+    lang: "en",
     icons: [
       {
         src: "/icons/icon-192.png",

@@ -41,11 +41,10 @@ export function isHumanitarianContext(
   }
 }
 
-/** Skip email verification when humanitarian context and flag is off (default). */
+/** Skip email verification only when middleware stamped origin cookie (not callbackUrl alone). */
 export function canSkipHumanitarianEmailVerification(
-  callbackUrl: string | null | undefined,
+  _callbackUrl: string | null | undefined,
   originCookie = false,
 ): boolean {
-  return isHumanitarianContext(callbackUrl, originCookie)
-    && !isHumanitarianEmailVerificationEnabled();
+  return originCookie && !isHumanitarianEmailVerificationEnabled();
 }

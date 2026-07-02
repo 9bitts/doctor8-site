@@ -11,6 +11,12 @@ import {
 } from "@/lib/sms";
 import { generateSmsCode } from "@/lib/sms-otp";
 import { encryptUserPhone, userPhonesMatch } from "@/lib/user-phone";
+import {
+  checkRateLimits,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 const COOLDOWN_MS = 60_000;
 const RESET_SMS_PREFIX = "reset-sms:";
@@ -34,6 +40,13 @@ export async function POST(req: NextRequest) {
     if (!normalizedPhone) {
       return NextResponse.json({ error: "INVALID_PHONE" }, { status: 400 });
     }
+
+    const ip = clientIp(req);
+    const rate = await checkRateLimits([
+      { namespace: "forgot-password-sms:email", key: normalizedEmail, ...RATE_LIMITS.authEmail },
+      { namespace: "forgot-password-sms:ip", key: ip, ...RATE_LIMITS.authIp },
+    ]);
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
 
     const user = await db.user.findUnique({
       where: { email: normalizedEmail },

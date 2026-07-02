@@ -9,6 +9,11 @@ import {
 import { humanitarianTriageSchema } from "@/lib/humanitarian/triage";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { z } from "zod";
+import {
+  checkRateLimits,
+  clientIp,
+  RATE_LIMITS,
+} from "@/lib/rate-limit";
 
 const postSchema = z.object({
   campaignSlug: z.string(),
@@ -20,6 +25,38 @@ const patchSchema = z.object({
   section: z.enum(["identification", "services", "specialty", "basicNeeds", "consent"]),
   data: z.unknown(),
 });
+
+async function enforceIntakeRateLimit(req: NextRequest, userId: string): Promise<NextResponse | null> {
+  const ip = clientIp(req);
+  const limits = [
+    { namespace: "humanitarian:intake:ip", key: ip, ...RATE_LIMITS.humanitarianIntake },
+    { namespace: "humanitarian:intake:user", key: userId, ...RATE_LIMITS.humanitarianIntake },
+  ];
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { phone: true },
+  });
+  if (user?.phone) {
+    limits.push({
+      namespace: "humanitarian:intake:phone",
+      key: user.phone.slice(0, 64),
+      ...RATE_LIMITS.humanitarianIntake,
+    });
+  }
+  const rate = await checkRateLimits(limits);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      {
+        errorCode: "RATE_LIMITED",
+        error: "RATE_LIMITED",
+        message: "Too many intake submissions. Please wait before trying again.",
+        retryAfterSec: rate.retryAfterSec,
+      },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+    );
+  }
+  return null;
+}
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -48,6 +85,9 @@ export async function POST(req: NextRequest) {
   if (session.user.role !== "PATIENT") {
     return NextResponse.json({ errorCode: "FORBIDDEN", error: "Only patients can submit triage" }, { status: 403 });
   }
+
+  const rateLimited = await enforceIntakeRateLimit(req, session.user.id);
+  if (rateLimited) return rateLimited;
 
   const body = await req.json();
   const parsed = postSchema.safeParse(body);
@@ -99,6 +139,9 @@ export async function PATCH(req: NextRequest) {
   if (session.user.role !== "PATIENT") {
     return NextResponse.json({ errorCode: "FORBIDDEN", error: "Only patients can update intake" }, { status: 403 });
   }
+
+  const rateLimited = await enforceIntakeRateLimit(req, session.user.id);
+  if (rateLimited) return rateLimited;
 
   const body = await req.json();
   const parsed = patchSchema.safeParse(body);
