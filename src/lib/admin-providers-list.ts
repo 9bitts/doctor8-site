@@ -63,6 +63,7 @@ export type AdminIncompleteSignupRow = {
   name: string | null;
   role: string;
   createdAt: string;
+  hasGoogleAccount: boolean;
 };
 
 export type AdminProvidersPayload = {
@@ -104,10 +105,11 @@ async function loadIncompleteProfessionalSignups(): Promise<AdminIncompleteSignu
   const users = await db.user.findMany({
     where: {
       deletedAt: null,
-      role: { in: ["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"] },
-      professionalProfile: null,
-      psychoanalystProfile: null,
-      integrativeTherapistProfile: null,
+      OR: [
+        { role: "PROFESSIONAL", professionalProfile: null },
+        { role: "PSYCHOANALYST", psychoanalystProfile: null },
+        { role: "INTEGRATIVE_THERAPIST", integrativeTherapistProfile: null },
+      ],
     },
     orderBy: { createdAt: "desc" },
     select: {
@@ -115,6 +117,11 @@ async function loadIncompleteProfessionalSignups(): Promise<AdminIncompleteSignu
       email: true,
       role: true,
       createdAt: true,
+      accounts: {
+        where: { provider: "google" },
+        select: { id: true },
+        take: 1,
+      },
     },
   });
 
@@ -124,6 +131,7 @@ async function loadIncompleteProfessionalSignups(): Promise<AdminIncompleteSignu
     name: null,
     role: u.role,
     createdAt: u.createdAt.toISOString(),
+    hasGoogleAccount: u.accounts.length > 0,
   }));
 }
 
@@ -136,7 +144,7 @@ function angelsForTab(allAngels: AdminAngelRow[], tab: AdminProviderTab): AdminA
 }
 
 function matchesTab(tab: AdminProviderTab, specialty: string, licenseNumber?: string): boolean {
-  if (tab === "pendentes" || tab === "anjos" || tab === "todos") return false;
+  if (tab === "pendentes" || tab === "incompletos" || tab === "anjos" || tab === "todos") return false;
   return resolveAdminTabForProfessional(specialty, licenseNumber) === tab;
 }
 

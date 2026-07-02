@@ -199,7 +199,7 @@ export function angelMatchesAdminTab(
   angel: { profession: string | null },
   tab: AdminProviderTab,
 ): boolean {
-  if (tab === "pendentes" || tab === "anjos" || tab === "todos") return false;
+  if (tab === "pendentes" || tab === "anjos" || tab === "todos" || tab === "incompletos") return false;
   return resolveAdminTabFromProfessionText(angel.profession) === tab;
 }
 
@@ -208,6 +208,6 @@ export function matchesAdminProviderTab(
   specialty: string | null | undefined,
   licenseNumber?: string | null,
 ): boolean {
-  if (tab === "pendentes" || tab === "anjos" || tab === "todos") return false;
+  if (tab === "pendentes" || tab === "anjos" || tab === "todos" || tab === "incompletos") return false;
   return resolveAdminTabForProfessional(specialty, licenseNumber) === tab;
 }

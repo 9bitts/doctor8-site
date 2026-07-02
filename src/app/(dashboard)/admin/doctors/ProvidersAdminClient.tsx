@@ -91,6 +91,7 @@ interface IncompleteSignupRow {
   name: string | null;
   role: string;
   createdAt: string;
+  hasGoogleAccount: boolean;
 }
 
 const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
@@ -121,7 +122,7 @@ async function parseJsonResponse(res: Response): Promise<Record<string, unknown>
 }
 
 function matchesDoctorTab(tab: AdminProviderTab, specialty: string, licenseNumber?: string): boolean {
-  if (tab === "pendentes" || tab === "anjos" || tab === "todos") return false;
+  if (tab === "pendentes" || tab === "incompletos" || tab === "anjos" || tab === "todos") return false;
   return resolveAdminTabForProfessional(specialty, licenseNumber) === tab;
 }
 
@@ -130,6 +131,7 @@ function computeLegacyTabCounts(
   doctors: ProfessionalRow[],
   psychoanalysts: ProviderRow[],
   integrativeTherapists: ProviderRow[],
+  incompleteCount = 0,
 ): Partial<Record<AdminProviderTab, number>> {
   const pending =
     angels.filter((a) => a.approvalStatus === "PENDING").length +
@@ -139,6 +141,7 @@ function computeLegacyTabCounts(
 
   return {
     pendentes: pending,
+    incompletos: incompleteCount,
     todos:
       angels.length + doctors.length + psychoanalysts.length + integrativeTherapists.length,
     anjos: angels.length,
@@ -191,6 +194,9 @@ function applyLegacyTabFilter(
   if (tab === "anjos") {
     return { angels: allAngels, doctors: [], psychoanalysts: [], integrativeTherapists: [] };
   }
+  if (tab === "incompletos") {
+    return { angels: [], doctors: [], psychoanalysts: [], integrativeTherapists: [] };
+  }
   if (tab === "pendentes") {
     return {
       angels: allAngels.filter((a) => a.approvalStatus === "PENDING"),
@@ -221,6 +227,26 @@ function applyLegacyTabFilter(
     psychoanalysts: [],
     integrativeTherapists: [],
   };
+}
+
+async function fetchIncompleteProvidersMeta(): Promise<{
+  rows: IncompleteSignupRow[];
+  count: number;
+} | null> {
+  try {
+    const res = await fetch("/api/admin/providers?tab=incompletos");
+    const data = await parseJsonResponse(res);
+    if (!res.ok || !data) return null;
+    const rows = (data.incompleteSignups as IncompleteSignupRow[]) || [];
+    const pendingCounts =
+      (data.pendingCounts as Partial<Record<AdminProviderTab, number>>) || {};
+    return {
+      rows,
+      count: pendingCounts.incompletos ?? rows.length,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export default function ProvidersAdminClient() {
@@ -261,6 +287,8 @@ export default function ProvidersAdminClient() {
       ? `/api/admin/providers?q=${encodeURIComponent(term)}`
       : `/api/admin/providers?tab=${activeTab}`;
 
+    const incompleteMetaPromise = fetchIncompleteProvidersMeta();
+
     try {
       const res = await fetch(providersUrl);
       const data = await parseJsonResponse(res);
@@ -286,7 +314,11 @@ export default function ProvidersAdminClient() {
           setPsychoanalysts(psychoanalystRows);
           setIntegrativeTherapists(integrativeRows);
           setIncompleteSignups(incompleteRows);
-          setTabCounts(pendingCounts);
+          const incompleteMeta = await incompleteMetaPromise;
+          setTabCounts({
+            ...pendingCounts,
+            incompletos: incompleteMeta?.count ?? pendingCounts.incompletos ?? incompleteRows.length,
+          });
           setQueryErrors((data.queryErrors as string[] | undefined) ?? []);
           setLoading(false);
           return;
@@ -315,12 +347,15 @@ export default function ProvidersAdminClient() {
       const allIntegrative = (integrativeData?.providers as ProviderRow[]) || [];
 
       const anyOk = angelsRes.ok || doctorsRes.ok || psychoRes.ok || integrativeRes.ok;
+      const incompleteMeta = await incompleteMetaPromise;
       if (!anyOk) {
         setLoadError(t("admin.providers.loadFail"));
         setAngels([]);
         setProfessionals([]);
         setPsychoanalysts([]);
         setIntegrativeTherapists([]);
+        setIncompleteSignups([]);
+        setTabCounts({ incompletos: incompleteMeta?.count ?? 0 });
         setLoading(false);
         return;
       }
@@ -344,6 +379,11 @@ export default function ProvidersAdminClient() {
         setIntegrativeTherapists(
           allIntegrative.filter((p) => matches([p.name, p.email, p.subtitle])),
         );
+        setIncompleteSignups(
+          (incompleteMeta?.rows ?? []).filter((u) =>
+            matches([u.email, u.name, u.role]),
+          ),
+        );
       } else {
         const filtered = applyLegacyTabFilter(
           activeTab,
@@ -356,9 +396,16 @@ export default function ProvidersAdminClient() {
         setProfessionals(filtered.doctors);
         setPsychoanalysts(filtered.psychoanalysts);
         setIntegrativeTherapists(filtered.integrativeTherapists);
+        setIncompleteSignups(activeTab === "incompletos" ? (incompleteMeta?.rows ?? []) : []);
       }
       setTabCounts(
-        computeLegacyTabCounts(allAngels, allDoctors, allPsychoanalysts, allIntegrative),
+        computeLegacyTabCounts(
+          allAngels,
+          allDoctors,
+          allPsychoanalysts,
+          allIntegrative,
+          incompleteMeta?.count ?? 0,
+        ),
       );
     } catch {
       setLoadError(t("admin.providers.loadFail"));
@@ -562,15 +609,17 @@ export default function ProvidersAdminClient() {
           >
             {TAB_ICONS[tab.id]}
             {providerTabLabel(tab.id, t)}
-            {tabCounts[tab.id] != null && tabCounts[tab.id]! > 0 && (
+            {(tab.id === "incompletos" || (tabCounts[tab.id] != null && tabCounts[tab.id]! > 0)) && (
               <span
                 className={`ml-0.5 min-w-[1.1rem] rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                   activeTab === tab.id
                     ? "bg-white/25 text-white"
-                    : "bg-amber-500 text-white"
+                    : tab.id === "incompletos" && (tabCounts.incompletos ?? 0) === 0
+                      ? "bg-slate-300 text-slate-700"
+                      : "bg-amber-500 text-white"
                 }`}
               >
-                {tabCounts[tab.id]}
+                {tab.id === "incompletos" ? (tabCounts.incompletos ?? 0) : tabCounts[tab.id]}
               </span>
             )}
           </button>
@@ -1156,7 +1205,25 @@ function IncompleteSignupList({
             <AlertCircle size={18} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-800 text-sm">{row.email}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-slate-800 text-sm">
+                {row.name?.trim() || row.email}
+              </p>
+              <span
+                className={`inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                  row.hasGoogleAccount
+                    ? "bg-blue-50 text-blue-700 border border-blue-100"
+                    : "bg-slate-100 text-slate-600 border border-slate-200"
+                }`}
+              >
+                {row.hasGoogleAccount
+                  ? t("admin.providers.incompleteGoogleLinked")
+                  : t("admin.providers.incompleteGoogleMissing")}
+              </span>
+            </div>
+            {row.name?.trim() && (
+              <p className="text-xs text-slate-500 mt-0.5">{row.email}</p>
+            )}
             <p className="text-xs text-slate-500 mt-0.5">
               {roleLabel(row.role)} ·{" "}
               {new Date(row.createdAt).toLocaleDateString(locale, {
