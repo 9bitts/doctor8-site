@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
+import PushPermissionPrompt from "@/components/PushPermissionPrompt";
 import Link from "next/link";
 import {
   Stethoscope, Search, Loader2, Clock, Users, CheckCircle2,
@@ -522,7 +523,12 @@ function UrgentPageInner() {
           {queueEntry.aheadCount > 0 && (
             <p className="text-sm text-slate-500 mb-4">{queueEntry.aheadCount} {t("urgent.ahead")}</p>
           )}
-          <p className="text-xs text-slate-400 bg-slate-50 rounded-xl px-4 py-3 mb-6">{t("urgent.keepOpen")}</p>
+          <p className="text-xs text-slate-400 bg-slate-50 rounded-xl px-4 py-3 mb-4">{t("urgent.keepOpen")}</p>
+          {userId && (
+            <div className="mb-4 text-left">
+              <PushPermissionPrompt context="jit" userId={userId} />
+            </div>
+          )}
           <div className="flex items-center justify-center gap-2 mb-2">
             <Loader2 size={14} className="animate-spin text-emerald-500" />
             <span className="text-xs text-slate-400">{t("urgent.polling")}</span>

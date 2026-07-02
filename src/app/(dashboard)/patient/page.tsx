@@ -22,6 +22,8 @@ import { activeOnlineJitSessionWhere } from "@/lib/jit-session-lifecycle";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 import PatientUpcomingConsultBanner from "@/components/patient/PatientUpcomingConsultBanner";
+import ConfirmAttendanceButton from "@/components/patient/ConfirmAttendanceButton";
+import PatientPostConsultReview from "@/components/patient/PatientPostConsultReview";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
 import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
@@ -557,6 +559,18 @@ export default async function PatientDashboard() {
                         {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), userTz, locale)}
                       </p>
                     </div>
+                    {(() => {
+                      const msUntil = new Date(apt.scheduledAt).getTime() - Date.now();
+                      const within48h = msUntil > 0 && msUntil <= 48 * 60 * 60 * 1000;
+                      return (
+                        <ConfirmAttendanceButton
+                          appointmentId={apt.id}
+                          confirmed={!!apt.patientConfirmedAt}
+                          within48h={within48h}
+                          compact
+                        />
+                      );
+                    })()}
                     {canJoinVideo && (
                       <a
                         href={`/video/${apt.id}`}
@@ -618,6 +632,8 @@ export default async function PatientDashboard() {
           )}
         </Section>
       </div>
+
+      <PatientPostConsultReview />
 
       {/* 6 — Privacy footer */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4">

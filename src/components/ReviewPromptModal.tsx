@@ -16,13 +16,17 @@ export default function ReviewPromptModal({
   onClose: () => void;
 }) {
   const { t } = useI18n();
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [done, setDone] = useState(false);
 
   async function submit() {
+    if (rating < 1) {
+      setMsg(t("pubReviews.ratingRequired"));
+      return;
+    }
     setSaving(true);
     setMsg("");
     try {
@@ -96,7 +100,7 @@ export default function ReviewPromptModal({
           <button
             type="button"
             onClick={submit}
-            disabled={saving}
+            disabled={saving || rating < 1}
             className="w-full bg-brand-500 hover:bg-brand-400 text-white font-semibold py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 size={18} className="animate-spin" /> : t("pubReviews.submit")}

@@ -211,19 +211,28 @@ export default function SupportWidget() {
     "/login", "/register", "/verify-email", "/verify-account", "/verify-sms",
     "/forgot-password", "/reset-password",
     "/club/join", "/callback", "/embed",
-    "/video", "/room",
     "/humanitarian",
   ];
   if (hideOnPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return null;
   }
 
+  const isVideoRoom =
+    pathname === "/video" ||
+    pathname.startsWith("/video/") ||
+    pathname === "/room" ||
+    pathname.startsWith("/room/");
+
   return (
     <>
       {open && (
         <div
-          className="fixed bottom-20 right-4 sm:right-6 w-[calc(100vw-32px)] sm:w-96 z-50 flex flex-col shadow-2xl rounded-2xl overflow-hidden border border-slate-200"
-          style={{ maxHeight: "min(520px, calc(100vh - 120px))" }}
+          className={`fixed z-50 flex flex-col shadow-2xl rounded-2xl overflow-hidden border border-slate-200 ${
+            isVideoRoom
+              ? "top-16 right-3 sm:right-4 w-[min(320px,calc(100vw-24px))]"
+              : "bottom-20 right-4 sm:right-6 w-[calc(100vw-32px)] sm:w-96"
+          }`}
+          style={{ maxHeight: isVideoRoom ? "min(420px, calc(100vh - 88px))" : "min(520px, calc(100vh - 120px))" }}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-slate-800 to-emerald-700 px-4 py-3.5 flex items-center gap-3 shrink-0">
@@ -315,11 +324,15 @@ export default function SupportWidget() {
 
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-4 right-4 sm:right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-slate-800 to-emerald-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
+        className={`fixed z-50 rounded-full bg-gradient-to-br from-slate-800 to-emerald-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center ${
+          isVideoRoom
+            ? "top-4 right-3 sm:right-4 w-11 h-11"
+            : "bottom-4 right-4 sm:right-6 w-14 h-14"
+        }`}
         aria-label={t("openLabel")}
       >
-        {open ? <X size={22} /> : <MessageCircle size={22} />}
-        {!open && <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white" />}
+        {open ? <X size={isVideoRoom ? 18 : 22} /> : <MessageCircle size={isVideoRoom ? 18 : 22} />}
+        {!open && <span className={`absolute border-2 border-white bg-emerald-400 rounded-full ${isVideoRoom ? "-top-0.5 -right-0.5 w-3 h-3" : "-top-1 -right-1 w-4 h-4"}`} />}
       </button>
     </>
   );

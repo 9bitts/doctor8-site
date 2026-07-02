@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listUnifiedProviders } from "@/lib/providers";
+import { getOnlineJitSessionByProfessionalId } from "@/lib/jit-online-index";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -13,12 +14,15 @@ export async function GET(req: NextRequest) {
   const specialty = searchParams.get("specialty") || undefined;
   const type = searchParams.get("type") || undefined;
 
-  const providers = await listUnifiedProviders({
-    specialty: specialty && specialty !== "All" ? specialty : null,
-    consultType: type || null,
-    verifiedOnly: true,
-    take: 80,
-  });
+  const [providers, onlineByProId] = await Promise.all([
+    listUnifiedProviders({
+      specialty: specialty && specialty !== "All" ? specialty : null,
+      consultType: type || null,
+      verifiedOnly: true,
+      take: 80,
+    }),
+    getOnlineJitSessionByProfessionalId(),
+  ]);
 
   const enriched = await Promise.all(
     providers.map(async (pro) => {
@@ -39,11 +43,16 @@ export async function GET(req: NextRequest) {
               },
             });
 
+      const jitSessionId =
+        pro.providerType === "health" ? onlineByProId.get(pro.id) ?? null : null;
+
       return {
         ...pro,
         upcomingAppointments: appointmentCount,
         rating: 4.8,
         reviewCount: 0,
+        isOnline: !!jitSessionId,
+        jitSessionId,
       };
     })
   );

@@ -250,6 +250,7 @@ export async function POST(req: NextRequest) {
         hoursUntil: 24,
         language: patientUser.language ?? undefined,
         patientTimezone,
+        appointmentId,
       });
       console.log(`[REMINDER] 24h email sent (user ${patientUser.id})`);
       await markSent({ reminder24hSent: true });

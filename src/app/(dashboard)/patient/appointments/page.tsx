@@ -33,12 +33,14 @@ import {
 } from "@/lib/timezone";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import ReviewPromptModal from "@/components/ReviewPromptModal";
+import ConfirmAttendanceButton from "@/components/patient/ConfirmAttendanceButton";
+import PushPermissionPrompt from "@/components/PushPermissionPrompt";
 import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
 import { isAcuraVolunteerProvider, compareVolunteerFirst } from "@/lib/acura-volunteer";
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
   CreditCard, Loader2, CheckCircle2, AlertCircle, Star, MapPin, Lock,
-  X, RefreshCw, AlertTriangle, Info, HelpCircle, QrCode, FileText, Heart,
+  X, RefreshCw, AlertTriangle, Info, HelpCircle, QrCode, FileText, Heart, Radio,
 } from "lucide-react";
 
 type PaymentMethodChoice = "card" | "pix" | "boleto" | "all";
@@ -65,12 +67,8 @@ interface Professional {
   yearsOfPractice?: number | null;
   acuraVolunteer?: boolean;
   verified?: boolean;
-}
-
-interface SlotDay {
-  date: string;
-  label: string;
-  slots: BookableSlot[];
+  isOnline?: boolean;
+  jitSessionId?: string | null;
 }
 
 interface Appointment {
@@ -83,7 +81,14 @@ interface Appointment {
   professionalId?: string;
   psychoanalystId?: string;
   providerType?: "health" | "psychoanalyst";
+  patientConfirmedAt?: string | null;
   professional: { firstName: string; lastName: string; specialty: string };
+}
+
+interface SlotDay {
+  date: string;
+  label: string;
+  slots: BookableSlot[];
 }
 
 const APPT_TIP_KEYS: Partial<Record<Step, string>> = {
@@ -171,6 +176,9 @@ export default function AppointmentsPage() {
     providerType: "health" | "psychoanalyst";
     providerName?: string;
   } | null>(null);
+  const [reviewedProIds, setReviewedProIds] = useState<Set<string>>(new Set());
+  const [reviewedPaIds, setReviewedPaIds] = useState<Set<string>>(new Set());
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [bookingSource, setBookingSource] = useState<
     "patient_panel" | "public_profile" | "public_search" | "public_embed" | "referral"
@@ -181,7 +189,13 @@ export default function AppointmentsPage() {
   const [healthPlanSlug, setHealthPlanSlug] = useState("particular");
   const [visitReason, setVisitReason] = useState("");
 
-  useEffect(() => { fetchProfessionals(); fetchAppointments(); fetchPastAppointments(); }, []);
+  useEffect(() => { fetchProfessionals(); fetchAppointments(); fetchPastAppointments(); fetchReviewStatus(); }, []);
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((s) => { if (s?.user?.id) setUserId(s.user.id); })
+      .catch(() => {});
+  }, []);
   useEffect(() => {
     if (step !== "payment" || stripeLoaded || paymentMethod !== "card") return;
     const meta =
@@ -261,6 +275,26 @@ export default function AppointmentsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionals]);
 
+  // Deep link: /patient/appointments?confirm=APPT_ID (from 24h email)
+  useEffect(() => {
+    const confirmId = searchParams.get("confirm");
+    if (!confirmId) return;
+    (async () => {
+      let ok = false;
+      try {
+        const res = await fetch(`/api/appointments/${confirmId}/confirm-attendance`, { method: "POST" });
+        ok = res.ok;
+        if (ok) await fetchAppointments();
+      } finally {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("confirm");
+        if (ok) url.searchParams.set("attendanceConfirmed", "1");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // Deep link: /patient/appointments?reviewPro=ID&providerType=health
   useEffect(() => {
     if (professionals.length === 0) return;
@@ -326,6 +360,43 @@ export default function AppointmentsPage() {
       (a: Appointment) => new Date(a.scheduledAt).getTime() < Date.now()
     );
     setPastAppointments(past.slice(0, 5));
+  }
+
+  async function fetchReviewStatus() {
+    try {
+      const res = await fetch("/api/patient/reviews");
+      if (!res.ok) return;
+      const d = await res.json();
+      setReviewedProIds(new Set(d.professionalIds || []));
+      setReviewedPaIds(new Set(d.psychoanalystIds || []));
+    } catch { /* silent */ }
+  }
+
+  function hasReviewForAppointment(apt: Appointment): boolean {
+    const providerType = apt.providerType ?? (apt.psychoanalystId ? "psychoanalyst" : "health");
+    const providerId =
+      providerType === "psychoanalyst"
+        ? apt.psychoanalystId || apt.professionalId
+        : apt.professionalId || apt.psychoanalystId;
+    if (!providerId) return true;
+    return providerType === "psychoanalyst"
+      ? reviewedPaIds.has(providerId)
+      : reviewedProIds.has(providerId);
+  }
+
+  function openReviewForAppointment(apt: Appointment) {
+    const providerType = apt.providerType ?? (apt.psychoanalystId ? "psychoanalyst" : "health");
+    const providerId =
+      providerType === "psychoanalyst"
+        ? apt.psychoanalystId || apt.professionalId
+        : apt.professionalId || apt.psychoanalystId;
+    if (!providerId) return;
+    const prefix = providerType === "psychoanalyst" ? "" : "Dr. ";
+    setReviewModal({
+      providerId,
+      providerType,
+      providerName: `${prefix}${apt.professional?.firstName || ""} ${apt.professional?.lastName || ""}`.trim(),
+    });
   }
 
   async function rebookFromPast(apt: Appointment) {
@@ -799,6 +870,7 @@ export default function AppointmentsPage() {
               const hoursUntil = (new Date(apt.scheduledAt).getTime() - Date.now()) / 3600000;
               const canCancel  = hoursUntil > 0;
               const canReschedule = hoursUntil > 24;
+              const within48h = hoursUntil > 0 && hoursUntil <= 48;
               return (
                 <div key={apt.id} id={`appt-${apt.id}`} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm flex-wrap scroll-mt-24">
                   <div className="min-w-0 flex-1">
@@ -815,6 +887,13 @@ export default function AppointmentsPage() {
                       {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), userTz, locale)}
                     </p>
                   </div>
+                  <ConfirmAttendanceButton
+                    appointmentId={apt.id}
+                    confirmed={!!apt.patientConfirmedAt}
+                    within48h={within48h}
+                    compact
+                    onConfirmed={fetchAppointments}
+                  />
                   <div className="flex gap-2 shrink-0">
                     {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
                       <a href={`/video/${apt.id}`} className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
@@ -867,6 +946,15 @@ export default function AppointmentsPage() {
                 >
                   <Calendar size={13} /> {t("appt.rebookCta")}
                 </button>
+                {!hasReviewForAppointment(apt) && (
+                  <button
+                    type="button"
+                    onClick={() => openReviewForAppointment(apt)}
+                    className="flex items-center gap-1 text-xs font-semibold text-amber-700 border border-amber-200 hover:bg-amber-50 px-3 py-2 rounded-lg transition"
+                  >
+                    <Star size={13} /> {t("appt.rateCta")}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -1328,6 +1416,7 @@ export default function AppointmentsPage() {
             </a>
           )}
           <p className="text-sm text-slate-500">{t("appt.emailSent")}</p>
+          {userId && <PushPermissionPrompt context="booking" userId={userId} />}
           <button onClick={resetFlow} className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl hover:bg-slate-700 transition">
             {t("appt.backToAppts")}
           </button>
@@ -1453,7 +1542,10 @@ export default function AppointmentsPage() {
           providerId={reviewModal.providerId}
           providerType={reviewModal.providerType}
           providerName={reviewModal.providerName}
-          onClose={() => setReviewModal(null)}
+          onClose={() => {
+            setReviewModal(null);
+            fetchReviewStatus();
+          }}
         />
       )}
     </div>
@@ -1531,6 +1623,15 @@ function DoctorCard({ pro, onSelect, locale, lang, t }: { pro: Professional; onS
       {pro.bio && <p className="text-xs text-slate-500 mt-3 line-clamp-2">{pro.bio}</p>}
       <div className="flex items-center gap-2 mt-4 flex-wrap">
         {showAcuraBadge && <AcuraVolunteerBadge />}
+        {pro.isOnline && pro.providerType !== "psychoanalyst" && (
+          <Link
+            href={pro.jitSessionId ? `/urgent?sessionId=${pro.jitSessionId}` : "/urgent"}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1 text-xs bg-emerald-500 text-white px-2.5 py-1 rounded-full font-semibold hover:bg-emerald-600 transition"
+          >
+            <Radio size={11} /> {t("map.attendsNow")}
+          </Link>
+        )}
         {pro.acceptsTeleconsult && <span className="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium"><Video size={11} /> {t("appt.online")}</span>}
         {pro.acceptsInPerson && <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium"><Building2 size={11} /> {t("appt.inPerson")}</span>}
         <button className="ml-auto flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-800">{t("appt.book")} <ChevronRight size={13} /></button>

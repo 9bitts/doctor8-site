@@ -14,6 +14,30 @@ const schema = z.object({
   comment: z.string().max(1000).optional(),
 });
 
+export async function GET() {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "PATIENT") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const [professionalReviews, psychoanalystReviews] = await Promise.all([
+    db.professionalReview.findMany({
+      where: { patientUserId: session.user.id },
+      select: { professionalId: true },
+    }),
+    db.psychoanalystReview.findMany({
+      where: { patientUserId: session.user.id },
+      select: { psychoanalystId: true },
+    }),
+  ]);
+
+  return NextResponse.json({
+    professionalIds: professionalReviews.map((r) => r.professionalId),
+    psychoanalystIds: psychoanalystReviews.map((r) => r.psychoanalystId),
+  });
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -219,6 +219,7 @@ export async function sendAppointmentReminder({
   language,
   whatsappUrl,
   patientTimezone,
+  appointmentId,
 }: {
   patientEmail: string;
   patientName: string;
@@ -229,17 +230,29 @@ export async function sendAppointmentReminder({
   language?: string;
   whatsappUrl?: string;
   patientTimezone?: string;
+  appointmentId?: string;
 }) {
   const lang = normEmailLang(language);
   const c = EMAIL_APPOINTMENT_REMINDER[lang];
   const locale = EMAIL_LOCALE[lang];
   const tz = patientTimezone || DEFAULT_TIME_ZONE;
   const timeStr = formatAppointmentTimeWithLabel(scheduledAt, tz, locale);
+  const appUrl = getAppUrl();
+  const confirmUrl = appointmentId
+    ? `${appUrl}/api/appointments/${appointmentId}/confirm-attendance`
+    : null;
 
   const body = `
     <h2 style="color:#0a4d6e;margin:0 0 16px;">${c.heading}</h2>
     <p style="color:#374151;">${c.hi(patientName)}</p>
     <p style="color:#6b7280;">${c.body(doctorName, hoursUntil, timeStr)}</p>
+    ${confirmUrl && hoursUntil >= 20 ? `
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${confirmUrl}" style="background:#1a6e8c;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;">
+          ${c.confirmPresence}
+        </a>
+      </div>
+    ` : ""}
     ${meetingUrl ? `
       <div style="text-align:center;margin:24px 0;">
         <a href="${meetingUrl}" style="background:#00b87a;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;">

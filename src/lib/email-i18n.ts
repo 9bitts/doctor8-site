@@ -332,6 +332,7 @@ export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
   hi: (name: string) => string;
   body: (doctor: string, hours: number, time: string) => string;
   join: string;
+  confirmPresence: string;
   hour: string;
   hours: string;
 }> = {
@@ -341,6 +342,7 @@ export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
     hi: (n) => `Hi ${n},`,
     body: (d, h, t) => `You have an appointment with <strong>Dr. ${d}</strong> in <strong>${h} ${h === 1 ? "hour" : "hours"}</strong> at <strong>${t}</strong>.`,
     join: "Join Now",
+    confirmPresence: "Yes, I'll be there",
     hour: "hour",
     hours: "hours",
   },
@@ -350,6 +352,7 @@ export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
     hi: (n) => `Olá ${n},`,
     body: (d, h, t) => `Você tem uma consulta com <strong>Dr. ${d}</strong> em <strong>${h} ${h === 1 ? "hora" : "horas"}</strong>, às <strong>${t}</strong>.`,
     join: "Entrar agora",
+    confirmPresence: "Confirmo que vou",
     hour: "hora",
     hours: "horas",
   },
@@ -359,6 +362,7 @@ export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
     hi: (n) => `Hola ${n},`,
     body: (d, h, t) => `Tienes una cita con <strong>Dr. ${d}</strong> en <strong>${h} ${h === 1 ? "hora" : "horas"}</strong>, a las <strong>${t}</strong>.`,
     join: "Unirse ahora",
+    confirmPresence: "Confirmo que asistiré",
     hour: "hora",
     hours: "horas",
   },

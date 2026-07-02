@@ -213,6 +213,11 @@ export default async function ProfessionalAppointments() {
         >
           {t(`status.${apt.status}`)}
         </span>
+        {apt.patientConfirmedAt && (
+          <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
+            {t("proappt.patientConfirmed")}
+          </span>
+        )}
         {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
           <a
             href={`/video/${apt.id}`}

@@ -110,7 +110,7 @@ function ProListItem({
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-slate-800 text-sm truncate">{pro.name}</p>
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${pro.isOnline ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-              {pro.isOnline ? t("map.online") : t("map.offline")}
+              {pro.isOnline ? t("map.attendsNow") : t("map.offline")}
             </span>
             {pro.teleconsultOnly && (
               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
@@ -520,7 +520,7 @@ export default function PatientMapClient() {
 
               <div className={`inline-flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-full ${selected.isOnline ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
                 <span className={`w-2 h-2 rounded-full ${selected.isOnline ? "bg-emerald-500" : "bg-slate-400"}`} />
-                {selected.isOnline ? t("map.onlineNow") : t("map.offlineNow")}
+                {selected.isOnline ? t("map.attendsNow") : t("map.offlineNow")}
               </div>
 
               {selected.isOnline && (
