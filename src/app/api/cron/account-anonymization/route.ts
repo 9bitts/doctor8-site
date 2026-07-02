@@ -27,7 +27,7 @@ async function anonymizeProfileInTransaction(
       await tx.patientProfile.update({
         where: { userId },
         data: {
-          firstName: encrypt("Usu?rio"),
+          firstName: encrypt("Usuário"),
           lastName: encrypt("Removido"),
           avatarUrl: null,
           phone: null,
@@ -51,7 +51,7 @@ async function anonymizeProfileInTransaction(
       await tx.professionalProfile.update({
         where: { userId },
         data: {
-          firstName: "Usu?rio",
+          firstName: "Usuário",
           lastName: "Removido",
           avatarUrl: null,
           phone: null,
@@ -71,7 +71,7 @@ async function anonymizeProfileInTransaction(
       await tx.psychoanalystProfile.update({
         where: { userId },
         data: {
-          firstName: "Usu?rio",
+          firstName: "Usuário",
           lastName: "Removido",
           avatarUrl: null,
           phone: null,
@@ -92,7 +92,7 @@ async function anonymizeProfileInTransaction(
       await tx.integrativeTherapistProfile.update({
         where: { userId },
         data: {
-          firstName: "Usu?rio",
+          firstName: "Usuário",
           lastName: "Removido",
           avatarUrl: null,
           phone: null,
@@ -111,7 +111,7 @@ async function anonymizeProfileInTransaction(
       await tx.angelProfile.update({
         where: { userId },
         data: {
-          firstName: "Usu?rio",
+          firstName: "Usuário",
           lastName: "Removido",
           phone: null,
         },

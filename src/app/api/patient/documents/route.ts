@@ -6,7 +6,7 @@
 // Phase 4B: POST now accepts categoryId (dynamic categories). We store categoryId
 // AND derive the legacy `type` enum from the category's legacyType (Option 1: coexist).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { getSignedReadUrl } from "@/lib/s3";
@@ -43,13 +43,9 @@ function normalizeType(v: string | null | undefined): DocType {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const patient = await db.patientProfile.findUnique({ where: { userId: session.user.id } });
-  if (!patient) return NextResponse.json({ error: "No profile" }, { status: 404 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -62,7 +58,7 @@ export async function POST(req: NextRequest) {
   // uploaded to their own scoped folder (patient-docs/<userId>/...). This blocks
   // referencing another user's S3 object and reading it back via GET.
   if (d.fileKey) {
-    const ownPrefix = `patient-docs/${session.user.id.replace(/[^a-zA-Z0-9_-]/g, "")}/`;
+    const ownPrefix = `patient-docs/${userId.replace(/[^a-zA-Z0-9_-]/g, "")}/`;
     if (!d.fileKey.startsWith(ownPrefix)) {
       return NextResponse.json({ error: "Invalid file reference" }, { status: 400 });
     }
@@ -89,7 +85,7 @@ export async function POST(req: NextRequest) {
   // Patient's own document: patientId = me, professionalId = null (so no "shared" tag)
   const doc = await db.medicalDocument.create({
     data: {
-      patientId: patient.id,
+      patientId: patientProfileId,
       categoryId,
       type: derivedType,
       title: encrypt(d.title),
@@ -112,13 +108,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const patient = await db.patientProfile.findUnique({ where: { userId: session.user.id } });
-  if (!patient) return NextResponse.json({ error: "No profile" }, { status: 404 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const { searchParams } = new URL(req.url);
   const documentId = searchParams.get("documentId");
@@ -133,8 +125,8 @@ export async function GET(req: NextRequest) {
   });
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const isOwn = doc.patientId === patient.id;
-  const isShared = doc.sharedRecords.some((s) => s.sharedWithUserId === session.user.id);
+  const isOwn = doc.patientId === patientProfileId;
+  const isShared = doc.sharedRecords.some((s) => s.sharedWithUserId === userId);
   if (!isOwn && !isShared) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

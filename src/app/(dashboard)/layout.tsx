@@ -17,6 +17,7 @@ import { resolveLoginPathForSession } from "@/lib/auth-portals";
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { BrandLogo, BrandLogoLink } from "@/components/brand/BrandLogo";
 import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
+import PwaInstallPrompt from "@/components/humanitarian/PwaInstallPrompt";
 import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
 import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
 import {
@@ -42,7 +43,7 @@ interface NavItem extends DashboardNavItem {}
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [role, setRole] = useState<string>("PATIENT");
   const [userName, setUserName] = useState<string>("User");
@@ -312,6 +313,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
           <PushSubscribe />
+          {role === "PATIENT" && userId && (
+            <PwaInstallPrompt lang={lang} variant="patient" userId={userId} />
+          )}
           <ProviderDashboardAlerts role={role} />
           {children}
         </main>

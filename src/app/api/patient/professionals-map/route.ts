@@ -2,15 +2,14 @@
 // Query: lat, lng, q, specialty, radiusKm (5|10|50|0=all)
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { getProfessionalsMap } from "@/lib/professionals-map-data";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (session.user.role !== "PATIENT")
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const ctx = await requirePatient();
+    if (isApiError(ctx)) return ctx.error;
+    const { userId } = ctx;
 
     const { searchParams } = new URL(req.url);
     const result = await getProfessionalsMap({
@@ -19,7 +18,7 @@ export async function GET(req: NextRequest) {
       q: searchParams.get("q"),
       specialty: searchParams.get("specialty"),
       radiusKm: searchParams.get("radiusKm"),
-      patientUserId: session.user.id,
+      patientUserId: userId,
     });
     return NextResponse.json(result);
   } catch (e) {

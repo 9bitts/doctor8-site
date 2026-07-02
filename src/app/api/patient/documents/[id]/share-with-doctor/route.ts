@@ -5,7 +5,7 @@
 // Eligibility (POST, checked server-side): the patient must have a CONFIRMED
 // appointment with that professional.
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
@@ -25,13 +25,12 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId },
     select: { id: true, firstName: true, lastName: true },
   });
   if (!patient) return NextResponse.json({ error: "No profile" }, { status: 404 });
@@ -45,7 +44,7 @@ export async function POST(
     where: { id: params.id },
     select: { id: true, patientId: true, title: true },
   });
-  if (!doc || doc.patientId !== patient.id) {
+  if (!doc || doc.patientId !== patientProfileId) {
     return NextResponse.json({ error: "Document not found" }, { status: 404 });
   }
 
@@ -56,7 +55,7 @@ export async function POST(
   if (!professional) return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
 
   const eligible = await db.appointment.findFirst({
-    where: { patientId: patient.id, professionalId: professional.id, status: "CONFIRMED" },
+    where: { patientId: patientProfileId, professionalId: professional.id, status: "CONFIRMED" },
     select: { id: true },
   });
   if (!eligible) {
@@ -70,7 +69,7 @@ export async function POST(
     where: {
       documentId: doc.id,
       sharedWithProfessionalId: professional.id,
-      sharedByUserId: session.user.id,
+      sharedByUserId: userId,
     },
     select: { id: true },
   });
@@ -81,9 +80,9 @@ export async function POST(
   await db.sharedRecord.create({
     data: {
       documentId: doc.id,
-      patientId: patient.id,
+      patientId: patientProfileId,
       sharedWithUserId: professional.userId,
-      sharedByUserId: session.user.id,
+      sharedByUserId: userId,
       sharedWithProfessionalId: professional.id,
     },
   });
@@ -93,7 +92,7 @@ export async function POST(
 
   await db.message.create({
     data: {
-      senderId: session.user.id,
+      senderId: userId,
       receiverId: professional.userId,
       content: encrypt(`📎 Shared a document with you: ${docTitle}`),
     },
@@ -109,7 +108,7 @@ export async function POST(
     body: shareCopy.body,
     type: "shared_record",
     data: {
-      fromUserId: session.user.id,
+      fromUserId: userId,
       documentId: doc.id,
       kind: "patient_shared_document",
       titleKey: "notif.docShared.title",
@@ -126,13 +125,12 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId },
     select: { id: true, firstName: true, lastName: true },
   });
   if (!patient) return NextResponse.json({ error: "No profile" }, { status: 404 });
@@ -145,7 +143,7 @@ export async function DELETE(
     where: { id: params.id },
     select: { id: true, patientId: true, title: true },
   });
-  if (!doc || doc.patientId !== patient.id) {
+  if (!doc || doc.patientId !== patientProfileId) {
     return NextResponse.json({ error: "Document not found" }, { status: 404 });
   }
 
@@ -160,7 +158,7 @@ export async function DELETE(
     where: {
       documentId: doc.id,
       sharedWithProfessionalId: professional.id,
-      patientId: patient.id,
+      patientId: patientProfileId,
     },
   });
 
@@ -171,7 +169,7 @@ export async function DELETE(
     // Tell the doctor it was un-shared.
     await db.message.create({
       data: {
-        senderId: session.user.id,
+        senderId: userId,
         receiverId: professional.userId,
         content: encrypt(`📌 Unshared a document: ${docTitle}`),
       },
@@ -186,7 +184,7 @@ export async function DELETE(
       body: unshareCopy.body,
       type: "shared_record",
       data: {
-        fromUserId: session.user.id,
+        fromUserId: userId,
         documentId: doc.id,
         kind: "patient_unshared_document",
         titleKey: "notif.docUnshared.title",

@@ -2,7 +2,7 @@
 // Materials shared by doctors via ResourceShare on the patient's linked chart.
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 
@@ -12,13 +12,12 @@ function safeDecrypt(v: string | null | undefined): string {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const shares = await db.resourceShare.findMany({
-    where: { patientRecord: { linkedUserId: session.user.id } },
+    where: { patientRecord: { linkedUserId: userId } },
     include: {
       resource: {
         include: {

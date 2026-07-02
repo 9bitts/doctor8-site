@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { getPharmacyOffers } from "@/lib/pharmacy-marketplace";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
 
   const { searchParams } = new URL(req.url);
   const drugCatalogId = searchParams.get("drugCatalogId")?.trim();

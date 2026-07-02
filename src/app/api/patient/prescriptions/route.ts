@@ -2,7 +2,7 @@
 // Lists the prescriptions that belong to the logged-in patient.
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 
@@ -14,19 +14,12 @@ function safeDecrypt(v: string | null | undefined): string {
 const EXPIRING_DAYS = 7;
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const profile = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!profile) return NextResponse.json({ prescriptions: [] });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { patientProfileId } = ctx;
 
   const prescriptions = await db.prescription.findMany({
-    where: { document: { patientId: profile.id } },
+    where: { document: { patientId: patientProfileId } },
     include: {
       professional: { select: { firstName: true, lastName: true, specialty: true } },
     },

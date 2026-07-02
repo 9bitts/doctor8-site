@@ -1,9 +1,8 @@
 // GET — patient history fill status + whether already shared with a professional.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
-import { decrypt } from "@/lib/encryption";
 import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 
 function isHistoryFilled(notesEncrypted: string | null): boolean {
@@ -11,9 +10,9 @@ function isHistoryFilled(notesEncrypted: string | null): boolean {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const { searchParams } = new URL(req.url);
   let professionalUserId = searchParams.get("professionalUserId");
@@ -28,7 +27,7 @@ export async function GET(req: NextRequest) {
   }
 
   const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId },
     select: { id: true, notes: true },
   });
   if (!patient) {

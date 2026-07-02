@@ -2,7 +2,7 @@
 // Signed download URL for a resource file shared with this patient.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { getSignedReadUrl } from "@/lib/s3";
@@ -16,15 +16,14 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const share = await db.resourceShare.findFirst({
     where: {
       id: params.id,
-      patientRecord: { linkedUserId: session.user.id },
+      patientRecord: { linkedUserId: userId },
     },
     include: { resource: { select: { fileUrl: true } } },
   });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { decrypt } from "@/lib/encryption";
@@ -90,11 +90,12 @@ function normLang(v: string | null | undefined): Lang {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const user = await db.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: userId },
     select: { language: true },
   });
   const lang = normLang(user?.language);
@@ -102,7 +103,7 @@ export async function GET() {
   const locale = LOCALE[lang];
 
   const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId },
     include: {
       medications: {
         where: { active: true },
@@ -113,7 +114,7 @@ export async function GET() {
 
   if (!patient) return new NextResponse("Not found", { status: 404 });
 
-  await audit.exportData(session.user.id);
+  await audit.exportData(userId);
 
   const firstName = decrypt(patient.firstName);
   const lastName = decrypt(patient.lastName);

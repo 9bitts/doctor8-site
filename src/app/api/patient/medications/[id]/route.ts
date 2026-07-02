@@ -1,7 +1,7 @@
 // src/app/api/patient/medications/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { encrypt, decrypt } from "@/lib/encryption";
@@ -16,26 +16,23 @@ const updateSchema = z.object({
   flow: z.enum(["CLINICAL", "PURCHASE"]),
 });
 
-async function getOwnedMedication(userId: string, id: string) {
-  const patient = await db.patientProfile.findUnique({ where: { userId } });
-  if (!patient) return null;
-
+async function getOwnedMedication(patientProfileId: string, id: string) {
   const medication = await db.medication.findFirst({
-    where: { id, patientId: patient.id, active: true },
+    where: { id, patientId: patientProfileId, active: true },
   });
   if (!medication) return null;
-
-  return { patient, medication };
+  return { medication };
 }
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
-  const owned = await getOwnedMedication(session.user.id, params.id);
+  const owned = await getOwnedMedication(patientProfileId, params.id);
   if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
@@ -58,7 +55,7 @@ export async function PATCH(
     },
   });
 
-  await audit.updateRecord(session.user.id, "Medication", params.id);
+  await audit.updateRecord(userId, "Medication", params.id);
 
   return NextResponse.json({
     medication: {
@@ -78,10 +75,11 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
-  const owned = await getOwnedMedication(session.user.id, params.id);
+  const owned = await getOwnedMedication(patientProfileId, params.id);
   if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await db.medication.update({
@@ -89,7 +87,7 @@ export async function DELETE(
     data: { active: false },
   });
 
-  await audit.deleteRecord(session.user.id, "Medication", params.id);
+  await audit.deleteRecord(userId, "Medication", params.id);
 
   return NextResponse.json({ success: true });
 }

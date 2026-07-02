@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     profile = await db.professionalProfile.create({
       data: {
         userId: ctx.userId,
-        licenseCountry: clinicCountry || "US",
+        licenseCountry: clinicCountry || null,
         verified: false,
         ...data,
       },

@@ -131,7 +131,7 @@ export function resolveNotificationHref(
     }
 
     case "payment":
-      return isPro ? `${portal}/financeiro` : "/patient/subscription";
+      return isPro ? `${portal}/financeiro` : "/patient/club-doctor";
 
     case "favorite_online":
       if (typeof d.professionalId === "string") {

@@ -4,21 +4,17 @@
 // status CONFIRMED with that professional (= paid + scheduled, even if the
 // consult hasn't happened yet — the doctor may need to see the exam before).
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const patient = await db.patientProfile.findUnique({ where: { userId: session.user.id } });
-  if (!patient) return NextResponse.json({ error: "No profile" }, { status: 404 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { patientProfileId } = ctx;
 
   // Distinct professionals with a CONFIRMED appointment for this patient.
   const appts = await db.appointment.findMany({
-    where: { patientId: patient.id, status: "CONFIRMED" },
+    where: { patientId: patientProfileId, status: "CONFIRMED" },
     select: {
       professional: {
         select: {

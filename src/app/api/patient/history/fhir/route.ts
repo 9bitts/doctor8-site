@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { audit } from "@/lib/audit";
 import { buildFhirBundleForPatient } from "@/lib/fhir/load-patient-fhir";
-import { db } from "@/lib/db";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
-  const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  const bundle = await buildFhirBundleForPatient(patient.id, session.user.id);
+  const bundle = await buildFhirBundleForPatient(patientProfileId, userId);
   if (!bundle) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await audit.exportData(session.user.id);
+  await audit.exportData(userId);
 
   const date = new Date().toISOString().split("T")[0];
 

@@ -122,7 +122,7 @@ async function createRegisterProfile(
 
   await createSignupProfile(tx, {
     userId,
-    role,
+    role: role as import("@/lib/oauth-signup-intent").SignupRole,
     professionalKind: professionalKind ?? null,
     firstName,
     lastName,

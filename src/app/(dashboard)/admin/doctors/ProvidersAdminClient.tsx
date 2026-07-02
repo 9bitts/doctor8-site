@@ -1060,9 +1060,11 @@ function ProfessionalList({
               )}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
-              {t("admin.providers.licenseLine")
+              {(d.licenseCountry
+                ? t("admin.providers.licenseLine")
+                : t("admin.providers.licenseLineNoCountry"))
                 .replace("{{number}}", d.licenseNumber)
-                .replace("{{country}}", d.licenseCountry)
+                .replace("{{country}}", d.licenseCountry || "")
                 .replace("{{appointments}}", String(d.appointments))
                 .replace("{{charts}}", String(d.charts))}
               {d.licenseDocCount > 0 &&

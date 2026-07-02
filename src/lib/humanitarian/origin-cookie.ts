@@ -59,11 +59,17 @@ export function humanitarianReturnPathFromCallback(
   }
 }
 
-const HUM_COOKIE_OPTIONS = {
+const HUM_ORIGIN_COOKIE_OPTIONS = {
   path: "/",
   maxAge: HUM_ORIGIN_MAX_AGE_SECONDS,
   sameSite: "lax" as const,
   httpOnly: true,
+};
+
+const HUM_RETURN_COOKIE_OPTIONS = {
+  path: "/",
+  maxAge: HUM_ORIGIN_MAX_AGE_SECONDS,
+  sameSite: "lax" as const,
 };
 
 /** Middleware / route handlers: stamp short-lived humanitarian origin cookies. */
@@ -71,16 +77,15 @@ export function stampHumanitarianOriginOnResponse(
   response: NextResponse,
   returnPath: string,
 ): void {
-  response.cookies.set(HUM_ORIGIN_COOKIE, "1", HUM_COOKIE_OPTIONS);
-  response.cookies.set(HUM_RETURN_COOKIE, returnPath, HUM_COOKIE_OPTIONS);
+  response.cookies.set(HUM_ORIGIN_COOKIE, "1", HUM_ORIGIN_COOKIE_OPTIONS);
+  response.cookies.set(HUM_RETURN_COOKIE, returnPath, HUM_RETURN_COOKIE_OPTIONS);
 }
 
-/** Client: set origin + return cookies (path=/, ~2h). */
+/** Client: set return cookie only (origin flag is middleware httpOnly). */
 export function setHumanitarianOriginCookies(returnPath: string) {
   if (typeof document === "undefined") return;
   const maxAge = HUM_ORIGIN_MAX_AGE_SECONDS;
   const base = `path=/; max-age=${maxAge}; SameSite=Lax`;
-  document.cookie = `${HUM_ORIGIN_COOKIE}=1; ${base}`;
   document.cookie = `${HUM_RETURN_COOKIE}=${encodeURIComponent(returnPath)}; ${base}`;
 }
 
@@ -113,7 +118,7 @@ export function readClientHumReturnPath(): string | null {
 
 export function readClientHumOriginFlag(): boolean {
   if (typeof document === "undefined") return false;
-  return readHumOriginFlagFromCookieHeader(document.cookie);
+  return readClientHumReturnPath() != null;
 }
 
 /** Server: origin flag + return path from next/headers cookies(). */

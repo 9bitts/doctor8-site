@@ -2,7 +2,7 @@
 // Exam requests issued to the logged-in patient (profile, linked chart, or shared).
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { parseExamContent } from "@/lib/sign-helpers";
@@ -13,26 +13,19 @@ function safeDecrypt(v: string | null | undefined): string {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const profile = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!profile) return NextResponse.json({ examRequests: [] });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const linkedRecords = await db.patientRecord.findMany({
-    where: { linkedUserId: session.user.id },
+    where: { linkedUserId: userId },
     select: { id: true },
   });
   const recordIds = linkedRecords.map((r) => r.id);
 
   const [direct, chart, shares] = await Promise.all([
     db.medicalDocument.findMany({
-      where: { patientId: profile.id, type: "EXAM_REQUEST" },
+      where: { patientId: patientProfileId, type: "EXAM_REQUEST" },
       include: { professional: { select: { firstName: true, lastName: true, specialty: true } } },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -46,7 +39,7 @@ export async function GET() {
         })
       : Promise.resolve([]),
     db.sharedRecord.findMany({
-      where: { sharedWithUserId: session.user.id },
+      where: { sharedWithUserId: userId },
       include: {
         document: {
           include: { professional: { select: { firstName: true, lastName: true, specialty: true } } },

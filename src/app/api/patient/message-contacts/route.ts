@@ -1,7 +1,7 @@
 // GET — professionals a patient can start a conversation with.
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 
 type Contact = {
@@ -32,23 +32,16 @@ function addContact(map: Map<string, Contact>, pro: {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!patient) return NextResponse.json({ contacts: [] });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const contacts = new Map<string, Contact>();
 
   const [appts, jitEntries, favorites, sent, received] = await Promise.all([
     db.appointment.findMany({
       where: {
-        patientId: patient.id,
+        patientId: patientProfileId,
         status: { in: ["CONFIRMED", "COMPLETED"] },
       },
       select: {
@@ -59,7 +52,7 @@ export async function GET() {
     }),
     db.jitQueue.findMany({
       where: {
-        patientUserId: session.user.id,
+        patientUserId: userId,
         status: { in: ["WAITING", "CALLED", "IN_PROGRESS", "DONE"] },
       },
       select: {
@@ -73,7 +66,7 @@ export async function GET() {
       },
     }),
     db.patientFavorite.findMany({
-      where: { patientUserId: session.user.id },
+      where: { patientUserId: userId },
       select: {
         professional: {
           select: { id: true, userId: true, firstName: true, lastName: true, specialty: true },
@@ -81,7 +74,7 @@ export async function GET() {
       },
     }),
     db.message.findMany({
-      where: { senderId: session.user.id, deletedAt: null },
+      where: { senderId: userId, deletedAt: null },
       select: {
         receiver: {
           select: {
@@ -94,7 +87,7 @@ export async function GET() {
       },
     }),
     db.message.findMany({
-      where: { receiverId: session.user.id, deletedAt: null },
+      where: { receiverId: userId, deletedAt: null },
       select: {
         sender: {
           select: {

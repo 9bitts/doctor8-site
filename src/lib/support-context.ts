@@ -1,4 +1,4 @@
-// Context helpers for the Doctor8 support AI ? page-aware hints and suggested questions.
+// Context helpers for the Doctor8 support AI — page-aware hints and suggested questions.
 
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
@@ -27,98 +27,98 @@ type PageHint = {
 const PAGE_HINTS: PageHint[] = [
   {
     match: (p) => p.startsWith("/patient/appointments"),
-    hintPt: "O usu?rio est? em Agendamentos (/patient/appointments). Priorize cancelamento, reagendamento, pagamento e entrada na videochamada.",
+    hintPt: "O usuário está em Agendamentos (/patient/appointments). Priorize cancelamento, reagendamento, pagamento e entrada na videochamada.",
     hintEn: "User is on Appointments (/patient/appointments). Prioritize cancel, reschedule, payment, and joining the video call.",
-    hintEs: "El usuario est? en Citas (/patient/appointments). Priorice cancelaci?n, reprogramaci?n, pago y unirse a la videollamada.",
+    hintEs: "El usuario está en Citas (/patient/appointments). Priorice cancelación, reprogramación, pago y unirse a la videollamada.",
   },
   {
     match: (p) => p.startsWith("/patient/prescriptions"),
-    hintPt: "O usu?rio est? em Minhas receitas. Priorize download de PDF, assinatura digital e prazo de disponibiliza??o pelo m?dico.",
+    hintPt: "O usuário está em Minhas receitas. Priorize download de PDF, assinatura digital e prazo de disponibilização pelo médico.",
     hintEn: "User is on My prescriptions. Prioritize PDF download, digital signature, and when the doctor makes it available.",
-    hintEs: "El usuario est? en Mis recetas. Priorice descarga PDF, firma digital y cu?ndo el m?dico la publica.",
+    hintEs: "El usuario está en Mis recetas. Priorice descarga PDF, firma digital y cuándo el médico la publica.",
   },
   {
     match: (p) => p.startsWith("/patient/medications"),
-    hintPt: "O usu?rio est? em Medicamentos. Priorize lista cl?nica, exportar PDF e comparar pre?os na farm?cia parceira.",
+    hintPt: "O usuário está em Medicamentos. Priorize lista clínica, exportar PDF e comparar preços na farmácia parceira.",
     hintEn: "User is on Medications. Prioritize clinical list, PDF export, and pharmacy price comparison.",
-    hintEs: "El usuario est? en Medicamentos. Priorice lista cl?nica, exportar PDF y comparar precios en farmacia.",
+    hintEs: "El usuario está en Medicamentos. Priorice lista clínica, exportar PDF y comparar precios en farmacia.",
   },
   {
     match: (p) => p.startsWith("/patient/history") || p.startsWith("/patient/medical-history"),
-    hintPt: "O usu?rio est? no hist?rico m?dico. Priorize preenchimento do question?rio e compartilhamento com m?dicos.",
+    hintPt: "O usuário está no histórico médico. Priorize preenchimento do questionário e compartilhamento com médicos.",
     hintEn: "User is on medical history. Prioritize filling the questionnaire and sharing with doctors.",
-    hintEs: "El usuario est? en historial m?dico. Priorice completar el cuestionario y compartir con m?dicos.",
+    hintEs: "El usuario está en historial médico. Priorice completar el cuestionario y compartir con médicos.",
   },
   {
     match: (p) => p.startsWith("/urgent"),
-    hintPt: "O usu?rio est? na fila de atendimento urgente (/urgent). Priorize pagamento, tempo de espera, cancelar fila e entrar na chamada.",
+    hintPt: "O usuário está na fila de atendimento urgente (/urgent). Priorize pagamento, tempo de espera, cancelar fila e entrar na chamada.",
     hintEn: "User is on urgent care queue (/urgent). Prioritize payment, wait time, leaving queue, and joining the call.",
-    hintEs: "El usuario est? en la cola de urgencias (/urgent). Priorice pago, tiempo de espera, salir de la cola y unirse a la llamada.",
+    hintEs: "El usuario está en la cola de urgencias (/urgent). Priorice pago, tiempo de espera, salir de la cola y unirse a la llamada.",
   },
   {
     match: (p) => p.startsWith(`/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`),
-    hintPt: "O usu?rio est? no SOS humanit?rio Venezuela. Priorize triagem, TCLE, verifica??o de telefone, fila por especialidade e videochamada.",
+    hintPt: "O usuário está no SOS humanitário Venezuela. Priorize triagem, TCLE, verificação de telefone, fila por especialidade e videochamada.",
     hintEn: "User is on Venezuela humanitarian SOS. Prioritize triage, consent, phone verification, specialty queue, and video call.",
-    hintEs: "El usuario est? en SOS humanitario Venezuela. Priorice triaje, consentimiento, tel?fono, cola por especialidad y videollamada.",
+    hintEs: "El usuario está en SOS humanitario Venezuela. Priorice triaje, consentimiento, teléfono, cola por especialidad y videollamada.",
   },
   {
     match: (p) => p.startsWith("/humanitarian/volunteer"),
-    hintPt: "O usu?rio ? volunt?rio humanit?rio. Priorize ficar online, aceitar pacientes, handoff (Daily/WhatsApp/Meet) e encerrar atendimento.",
+    hintPt: "O usuário é voluntário humanitário. Priorize ficar online, aceitar pacientes, handoff (Daily/WhatsApp/Meet) e encerrar atendimento.",
     hintEn: "User is a humanitarian volunteer. Prioritize going online, accepting patients, handoff options, and ending sessions.",
-    hintEs: "El usuario es voluntario humanitario. Priorice ponerse en l?nea, aceptar pacientes, handoff y cerrar sesi?n.",
+    hintEs: "El usuario es voluntario humanitario. Priorice ponerse en línea, aceptar pacientes, handoff y cerrar sesión.",
   },
   {
     match: (p) => p.startsWith("/professional/patients"),
-    hintPt: "O usu?rio ? profissional na ficha de pacientes. Priorize prontu?rio, evolu??o, receitas, pedidos de exame e assistente de notas com IA.",
+    hintPt: "O usuário é profissional na ficha de pacientes. Priorize prontuário, evolução, receitas, pedidos de exame e assistente de notas com IA.",
     hintEn: "User is a professional on patient charts. Prioritize records, evolution notes, prescriptions, exam orders, and AI notes assistant.",
-    hintEs: "El usuario es profesional en fichas de pacientes. Priorice historial, evoluci?n, recetas, ex?menes y asistente de notas con IA.",
+    hintEs: "El usuario es profesional en fichas de pacientes. Priorice historial, evolución, recetas, exámenes y asistente de notas con IA.",
   },
   {
     match: (p) => p.startsWith("/professional/jit") || p.startsWith("/psychologist/jit"),
-    hintPt: "O usu?rio est? no plant?o (JIT). Priorize ativar plant?o, pausar, fila de pacientes e atendimento imediato.",
+    hintPt: "O usuário está no plantão (JIT). Priorize ativar plantão, pausar, fila de pacientes e atendimento imediato.",
     hintEn: "User is on on-call (JIT). Prioritize going online, pausing, patient queue, and immediate care.",
-    hintEs: "El usuario est? en guardia (JIT). Priorice activar guardia, pausar, cola de pacientes y atenci?n inmediata.",
+    hintEs: "El usuario está en guardia (JIT). Priorice activar guardia, pausar, cola de pacientes y atención inmediata.",
   },
   {
     match: (p) => p.startsWith("/professional/settings"),
-    hintPt: "O usu?rio est? nas configura??es do profissional. Priorize verifica??o de perfil, assinatura digital ICP-Brasil e dados de consult?rio.",
+    hintPt: "O usuário está nas configurações do profissional. Priorize verificação de perfil, assinatura digital ICP-Brasil e dados de consultório.",
     hintEn: "User is on professional settings. Prioritize profile verification, ICP-Brasil digital signature, and practice details.",
-    hintEs: "El usuario est? en configuraci?n profesional. Priorice verificaci?n de perfil, firma digital ICP-Brasil y datos del consultorio.",
+    hintEs: "El usuario está en configuración profesional. Priorice verificación de perfil, firma digital ICP-Brasil y datos del consultorio.",
   },
   {
     match: (p) => p.startsWith("/register") || p.startsWith("/login"),
-    hintPt: "O usu?rio est? em login ou cadastro. Priorize criar conta, verificar e-mail, escolher tipo (paciente/profissional) e login com Google.",
+    hintPt: "O usuário está em login ou cadastro. Priorize criar conta, verificar e-mail, escolher tipo (paciente/profissional) e login com Google.",
     hintEn: "User is on login or registration. Prioritize account creation, email verification, role selection, and Google login.",
-    hintEs: "El usuario est? en login o registro. Priorice crear cuenta, verificar correo, elegir rol y login con Google.",
+    hintEs: "El usuario está en login o registro. Priorice crear cuenta, verificar correo, elegir rol y login con Google.",
   },
   {
     match: (p) => p.startsWith("/organization"),
-    hintPt: "O usu?rio est? no portal da cl?nica (CNPJ). Priorize agendamentos, pacientes, financeiro, conv?nios e equipe.",
+    hintPt: "O usuário está no portal da clínica (CNPJ). Priorize agendamentos, pacientes, financeiro, convênios e equipe.",
     hintEn: "User is on the clinic (organization) portal. Prioritize appointments, patients, finance, insurance, and team.",
-    hintEs: "El usuario est? en el portal de cl?nica (organizaci?n). Priorice citas, pacientes, finanzas, convenios y equipo.",
+    hintEs: "El usuario está en el portal de clínica (organización). Priorice citas, pacientes, finanzas, convenios y equipo.",
   },
   {
     match: (p) => p.startsWith("/psychoanalyst"),
-    hintPt: "O usu?rio ? psicanalista. Priorize analisandos, sess?es, biblioteca, assistente Freud (teoria) e voluntariado humanit?rio.",
+    hintPt: "O usuário é psicanalista. Priorize analisandos, sessões, biblioteca, assistente Freud (teoria) e voluntariado humanitário.",
     hintEn: "User is a psychoanalyst. Prioritize analysands, sessions, library, Freud assistant (theory), and humanitarian volunteering.",
-    hintEs: "El usuario es psicoanalista. Priorice analizantes, sesiones, biblioteca, asistente Freud (teor?a) y voluntariado.",
+    hintEs: "El usuario es psicoanalista. Priorice analizantes, sesiones, biblioteca, asistente Freud (teoría) y voluntariado.",
   },
   {
     match: (p) => p.startsWith("/psychologist"),
-    hintPt: "O usu?rio ? psic?logo. Priorize pacientes, escalas, sess?es, documentos, conformidade CFP e plant?o.",
+    hintPt: "O usuário é psicólogo. Priorize pacientes, escalas, sessões, documentos, conformidade CFP e plantão.",
     hintEn: "User is a psychologist. Prioritize patients, scales, sessions, documents, CFP compliance, and on-call.",
-    hintEs: "El usuario es psic?logo. Priorice pacientes, escalas, sesiones, documentos, cumplimiento CFP y guardia.",
+    hintEs: "El usuario es psicólogo. Priorice pacientes, escalas, sesiones, documentos, cumplimiento CFP y guardia.",
   },
 ];
 
 const ROLE_LABEL: Record<SupportUserRole, { pt: string; en: string; es: string }> = {
   PATIENT: { pt: "paciente", en: "patient", es: "paciente" },
-  PROFESSIONAL: { pt: "profissional de sa?de (m?dico)", en: "healthcare professional (physician)", es: "profesional de salud (m?dico)" },
+  PROFESSIONAL: { pt: "profissional de saúde (médico)", en: "healthcare professional (physician)", es: "profesional de salud (médico)" },
   PSYCHOANALYST: { pt: "psicanalista", en: "psychoanalyst", es: "psicoanalista" },
   INTEGRATIVE_THERAPIST: { pt: "terapeuta integrativo", en: "integrative therapist", es: "terapeuta integrativo" },
-  ORGANIZATION: { pt: "cl?nica/organiza??o (CNPJ)", en: "clinic/organization", es: "cl?nica/organizaci?n" },
+  ORGANIZATION: { pt: "clínica/organização (CNPJ)", en: "clinic/organization", es: "clínica/organización" },
   ADMIN: { pt: "administrador", en: "administrator", es: "administrador" },
-  GUEST: { pt: "visitante (n?o logado)", en: "visitor (not logged in)", es: "visitante (sin sesi?n)" },
+  GUEST: { pt: "visitante (não logado)", en: "visitor (not logged in)", es: "visitante (sin sesión)" },
 };
 
 type Lang = "pt" | "en" | "es";
@@ -136,7 +136,7 @@ export function buildContextBlock(ctx: SupportContext, lang: Lang): string {
   const pageHint = resolvePageHint(ctx.pathname, lang);
 
   const lines = [
-    "CURRENT SESSION CONTEXT (use to personalize ? do not repeat verbatim to the user):",
+    "CURRENT SESSION CONTEXT (use to personalize — do not repeat verbatim to the user):",
     `- Logged in: ${ctx.isLoggedIn ? "yes" : "no"}`,
     `- User role: ${roleLabel}`,
     `- Current page: ${ctx.pathname || "/"}`,
@@ -160,17 +160,17 @@ const SUGGESTED_BY_ROLE: Record<SupportUserRole, Record<Lang, string[]>> = {
       "How does urgent care work?",
     ],
     es: [
-      "?C?mo reservo una consulta?",
-      "?C?mo descargo mi receta en PDF?",
-      "?C?mo cancelo o reprogramo una cita?",
-      "?C?mo funciona la atenci?n urgente?",
+      "¿Cómo reservo una consulta?",
+      "¿Cómo descargo mi receta en PDF?",
+      "¿Cómo cancelo o reprogramo una cita?",
+      "¿Cómo funciona la atención urgente?",
     ],
   },
   PROFESSIONAL: {
     pt: [
       "Como uso o assistente de notas com IA?",
       "Como emitir e assinar receitas?",
-      "Como ativar o plant?o (JIT)?",
+      "Como ativar o plantão (JIT)?",
       "Como configurar minha agenda?",
     ],
     en: [
@@ -180,17 +180,17 @@ const SUGGESTED_BY_ROLE: Record<SupportUserRole, Record<Lang, string[]>> = {
       "How do I set up my availability?",
     ],
     es: [
-      "?C?mo uso el asistente de notas con IA?",
-      "?C?mo emito y firmo recetas?",
-      "?C?mo activo la guardia (JIT)?",
-      "?C?mo configuro mi agenda?",
+      "¿Cómo uso el asistente de notas con IA?",
+      "¿Cómo emito y firmo recetas?",
+      "¿Cómo activo la guardia (JIT)?",
+      "¿Cómo configuro mi agenda?",
     ],
   },
   PSYCHOANALYST: {
     pt: [
       "Como cadastrar analisandos?",
       "Como funciona o assistente Freud?",
-      "Como ser volunt?rio humanit?rio?",
+      "Como ser voluntário humanitário?",
       "Como configurar disponibilidade?",
     ],
     en: [
@@ -200,17 +200,17 @@ const SUGGESTED_BY_ROLE: Record<SupportUserRole, Record<Lang, string[]>> = {
       "How do I set availability?",
     ],
     es: [
-      "?C?mo registro analizantes?",
-      "?C?mo funciona el asistente Freud?",
-      "?C?mo ser voluntario humanitario?",
-      "?C?mo configuro disponibilidad?",
+      "¿Cómo registro analizantes?",
+      "¿Cómo funciona el asistente Freud?",
+      "¿Cómo ser voluntario humanitario?",
+      "¿Cómo configuro disponibilidad?",
     ],
   },
   INTEGRATIVE_THERAPIST: {
     pt: [
       "Como cadastrar clientes?",
       "Como agendar consultas?",
-      "Como ser volunt?rio humanit?rio?",
+      "Como ser voluntário humanitário?",
       "Como configurar disponibilidade?",
     ],
     en: [
@@ -220,18 +220,18 @@ const SUGGESTED_BY_ROLE: Record<SupportUserRole, Record<Lang, string[]>> = {
       "How do I set availability?",
     ],
     es: [
-      "?C?mo registro clientes?",
-      "?C?mo agendo consultas?",
-      "?C?mo ser voluntario humanitario?",
-      "?C?mo configuro disponibilidad?",
+      "¿Cómo registro clientes?",
+      "¿Cómo agendo consultas?",
+      "¿Cómo ser voluntario humanitario?",
+      "¿Cómo configuro disponibilidad?",
     ],
   },
   ORGANIZATION: {
     pt: [
-      "Como gerenciar agendamentos da cl?nica?",
+      "Como gerenciar agendamentos da clínica?",
       "Como convidar profissionais?",
-      "Como acessar relat?rios financeiros?",
-      "Como cadastrar conv?nios?",
+      "Como acessar relatórios financeiros?",
+      "Como cadastrar convênios?",
     ],
     en: [
       "How do I manage clinic appointments?",
@@ -240,23 +240,23 @@ const SUGGESTED_BY_ROLE: Record<SupportUserRole, Record<Lang, string[]>> = {
       "How do I register insurance plans?",
     ],
     es: [
-      "?C?mo gestiono citas de la cl?nica?",
-      "?C?mo invito profesionales?",
-      "?C?mo accedo a informes financieros?",
-      "?C?mo registro convenios?",
+      "¿Cómo gestiono citas de la clínica?",
+      "¿Cómo invito profesionales?",
+      "¿Cómo accedo a informes financieros?",
+      "¿Cómo registro convenios?",
     ],
   },
   ADMIN: {
-    pt: ["Como funciona o Doctor8?", "Quais ?reas existem na plataforma?"],
+    pt: ["Como funciona o Doctor8?", "Quais áreas existem na plataforma?"],
     en: ["How does Doctor8 work?", "What areas exist on the platform?"],
-    es: ["?C?mo funciona Doctor8?", "?Qu? ?reas existen en la plataforma?"],
+    es: ["¿Cómo funciona Doctor8?", "¿Qué áreas existen en la plataforma?"],
   },
   GUEST: {
     pt: [
       "Como funciona o Doctor8?",
       "Como me cadastro como paciente?",
       "Como me cadastro como profissional?",
-      "O atendimento humanit?rio ? gratuito?",
+      "O atendimento humanitário é gratuito?",
     ],
     en: [
       "How does Doctor8 work?",
@@ -265,10 +265,10 @@ const SUGGESTED_BY_ROLE: Record<SupportUserRole, Record<Lang, string[]>> = {
       "Is humanitarian care free?",
     ],
     es: [
-      "?C?mo funciona Doctor8?",
-      "?C?mo me registro como paciente?",
-      "?C?mo me registro como profesional?",
-      "?La atenci?n humanitaria es gratuita?",
+      "¿Cómo funciona Doctor8?",
+      "¿Cómo me registro como paciente?",
+      "¿Cómo me registro como profesional?",
+      "¿La atención humanitaria es gratuita?",
     ],
   },
 };
@@ -277,9 +277,9 @@ const SUGGESTED_BY_PATH: { match: (p: string) => boolean; questions: Record<Lang
   {
     match: (p) => p.startsWith("/patient/prescriptions"),
     questions: {
-      pt: ["Por que n?o vejo minha receita?", "Como baixo o PDF assinado?", "Quanto tempo demora para aparecer?"],
+      pt: ["Por que não vejo minha receita?", "Como baixo o PDF assinado?", "Quanto tempo demora para aparecer?"],
       en: ["Why can't I see my prescription?", "How do I download the signed PDF?", "How long until it appears?"],
-      es: ["?Por qu? no veo mi receta?", "?C?mo descargo el PDF firmado?", "?Cu?nto tarda en aparecer?"],
+      es: ["¿Por qué no veo mi receta?", "¿Cómo descargo el PDF firmado?", "¿Cuánto tarda en aparecer?"],
     },
   },
   {
@@ -287,15 +287,15 @@ const SUGGESTED_BY_PATH: { match: (p: string) => boolean; questions: Record<Lang
     questions: {
       pt: ["Como entrar na videochamada?", "Posso cancelar e receber reembolso?", "Como remarcar consulta?"],
       en: ["How do I join the video call?", "Can I cancel and get a refund?", "How do I reschedule?"],
-      es: ["?C?mo entro a la videollamada?", "?Puedo cancelar y recibir reembolso?", "?C?mo reprogramo?"],
+      es: ["¿Cómo entro a la videollamada?", "¿Puedo cancelar y recibir reembolso?", "¿Cómo reprogramo?"],
     },
   },
   {
     match: (p) => p.startsWith("/professional/patients"),
     questions: {
-      pt: ["Como usar o assistente de notas com IA?", "Como salvar evolu??o na ficha?", "Como pedir exames?"],
+      pt: ["Como usar o assistente de notas com IA?", "Como salvar evolução na ficha?", "Como pedir exames?"],
       en: ["How do I use the AI notes assistant?", "How do I save evolution to the chart?", "How do I order exams?"],
-      es: ["?C?mo uso el asistente de notas con IA?", "?C?mo guardo evoluci?n en la ficha?", "?C?mo pido ex?menes?"],
+      es: ["¿Cómo uso el asistente de notas con IA?", "¿Cómo guardo evolución en la ficha?", "¿Cómo pido exámenes?"],
     },
   },
   {
@@ -303,7 +303,7 @@ const SUGGESTED_BY_PATH: { match: (p: string) => boolean; questions: Record<Lang
     questions: {
       pt: ["Quais passos antes de entrar na fila?", "Preciso verificar telefone?", "Como sair da videochamada?"],
       en: ["What steps before joining the queue?", "Do I need phone verification?", "How do I leave the video call?"],
-      es: ["?Qu? pasos antes de la cola?", "?Debo verificar el tel?fono?", "?C?mo salgo de la videollamada?"],
+      es: ["¿Qué pasos antes de la cola?", "¿Debo verificar el teléfono?", "¿Cómo salgo de la videollamada?"],
     },
   },
 ];

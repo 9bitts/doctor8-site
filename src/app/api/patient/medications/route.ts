@@ -1,7 +1,7 @@
 // src/app/api/patient/medications/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { encrypt, decrypt } from "@/lib/encryption";
@@ -28,21 +28,17 @@ const medicationSchema = z.object({
 
 // GET — list all medications for the logged-in patient
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-  if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const medications = await db.medication.findMany({
-    where: { patientId: patient.id, active: true },
+    where: { patientId: patientProfileId, active: true },
     orderBy: [{ flow: "asc" }, { createdAt: "desc" }],
   });
 
   // HIPAA: audit log
-  await audit.viewRecord(session.user.id, "Medication", patient.id);
+  await audit.viewRecord(userId, "Medication", patientProfileId);
 
   // Decrypt PHI fields before returning
   const decrypted = medications.map((m) => ({
@@ -60,8 +56,9 @@ export async function GET() {
 
 // POST — add a new medication
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const body = await req.json();
   const parsed = medicationSchema.safeParse(body);
@@ -69,17 +66,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-  if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
-
   const { name, dosage, frequency, prescribedBy, notes, flow, drugCatalogId, referencePriceCents } = parsed.data;
 
   // Encrypt PHI fields before storing — HIPAA
   const medication = await db.medication.create({
     data: {
-      patientId: patient.id,
+      patientId: patientProfileId,
       name: encrypt(name),
       dosage: dosage ? encrypt(dosage) : null,
       frequency: frequency ? encrypt(frequency) : null,
@@ -91,7 +83,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  await audit.createRecord(session.user.id, "Medication", medication.id);
+  await audit.createRecord(userId, "Medication", medication.id);
 
   return NextResponse.json({ success: true, id: medication.id }, { status: 201 });
 }

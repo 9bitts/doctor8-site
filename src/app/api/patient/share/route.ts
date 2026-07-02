@@ -4,7 +4,7 @@
 // 2. Direct share to a Doctor8 professional (message + notification)
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { storedNotificationText } from "@/lib/notification-i18n";
@@ -21,9 +21,9 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const { type, professionalUserId, expiresInHours } = parsed.data;
 
   const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId },
   });
   if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   let content: Record<string, unknown> = {};
 
   if (type === "history") {
-    const profile = await db.patientProfile.findUnique({ where: { id: patient.id } });
+    const profile = await db.patientProfile.findUnique({ where: { id: patientProfileId } });
     if (profile?.notes) {
       try { content = JSON.parse(decrypt(profile.notes)); } catch { content = {}; }
     }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     if (profile?.allergies) content.allergies = decrypt(profile.allergies);
   } else {
     const meds = await db.medication.findMany({
-      where: { patientId: patient.id, active: true, flow: "CLINICAL" },
+      where: { patientId: patientProfileId, active: true, flow: "CLINICAL" },
       orderBy: { createdAt: "desc" },
     });
     content.medications = meds.map((m) => ({
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   // Find or create a MedicalDocument to attach the SharedRecord to
   const doc = await db.medicalDocument.create({
     data: {
-      patientId: patient.id,
+      patientId: patientProfileId,
       type: type === "history" ? "CLINICAL_NOTE" : "OTHER",
       title: type === "history" ? "Medical History (shared)" : "Medications (shared)",
       content: JSON.stringify(content),
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
   const shared = await db.sharedRecord.create({
     data: {
       documentId: doc.id,
-      patientId: patient.id,
+      patientId: patientProfileId,
       accessToken,
       expiresAt,
       ...(professionalUserId ? { sharedWithUserId: professionalUserId } : {}),
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     // Create message from patient's user to professional's user
     await db.message.create({
       data: {
-        senderId: session.user.id,
+        senderId: userId,
         receiverId: professionalUserId,
         content: messageContent,
       },
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  await audit.createRecord(session.user.id, "SharedRecord", shared.id);
+  await audit.createRecord(userId, "SharedRecord", shared.id);
 
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
   return NextResponse.json({
@@ -148,14 +148,12 @@ export async function POST(req: NextRequest) {
 
 // GET - list existing shares for the patient
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const patient = await db.patientProfile.findUnique({ where: { userId: session.user.id } });
-  if (!patient) return NextResponse.json({ shares: [] });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { patientProfileId } = ctx;
 
   const shares = await db.sharedRecord.findMany({
-    where: { patientId: patient.id },
+    where: { patientId: patientProfileId },
     include: { document: { select: { title: true, type: true, createdAt: true } } },
     orderBy: { createdAt: "desc" },
     take: 20,

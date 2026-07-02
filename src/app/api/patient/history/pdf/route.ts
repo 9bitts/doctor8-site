@@ -3,7 +3,7 @@
 // Patient can print → Save as PDF from any browser
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { decrypt } from "@/lib/encryption";
@@ -11,11 +11,12 @@ import { getAppUrl } from "@/lib/email-core";
 import { printBrandLogoImg } from "@/lib/brand";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId },
     include: {
       medications: {
         where: { active: true, flow: "CLINICAL" },
@@ -26,7 +27,7 @@ export async function GET() {
 
   if (!patient) return new NextResponse("Not found", { status: 404 });
 
-  await audit.exportData(session.user.id);
+  await audit.exportData(userId);
 
   const firstName = decrypt(patient.firstName);
   const lastName = decrypt(patient.lastName);

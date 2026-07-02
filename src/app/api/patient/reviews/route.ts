@@ -2,7 +2,7 @@
 // Patient must have at least one COMPLETED appointment with the provider.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -15,19 +15,17 @@ const schema = z.object({
 });
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const [professionalReviews, psychoanalystReviews] = await Promise.all([
     db.professionalReview.findMany({
-      where: { patientUserId: session.user.id },
+      where: { patientUserId: userId },
       select: { professionalId: true },
     }),
     db.psychoanalystReview.findMany({
-      where: { patientUserId: session.user.id },
+      where: { patientUserId: userId },
       select: { psychoanalystId: true },
     }),
   ]);
@@ -39,10 +37,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId, patientProfileId } = ctx;
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
@@ -61,15 +58,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Provider not specified" }, { status: 400 });
   }
 
-  const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
-
   const hadAppointment = await db.appointment.findFirst({
     where: {
-      patientId: patient.id,
+      patientId: patientProfileId,
       status: "COMPLETED",
       ...(providerType === "psychoanalyst"
         ? { psychoanalystId: providerId }
@@ -83,12 +74,12 @@ export async function POST(req: NextRequest) {
     const review = await db.psychoanalystReview.upsert({
       where: {
         patientUserId_psychoanalystId: {
-          patientUserId: session.user.id,
+          patientUserId: userId,
           psychoanalystId: providerId,
         },
       },
       create: {
-        patientUserId: session.user.id,
+        patientUserId: userId,
         psychoanalystId: providerId,
         rating: parsed.data.rating,
         comment: parsed.data.comment,
@@ -104,12 +95,12 @@ export async function POST(req: NextRequest) {
   const review = await db.professionalReview.upsert({
     where: {
       patientUserId_professionalId: {
-        patientUserId: session.user.id,
+        patientUserId: userId,
         professionalId: providerId,
       },
     },
     create: {
-      patientUserId: session.user.id,
+      patientUserId: userId,
       professionalId: providerId,
       rating: parsed.data.rating,
       comment: parsed.data.comment,

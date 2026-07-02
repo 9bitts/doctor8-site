@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
@@ -11,12 +11,12 @@ function safeDecrypt(v: string | null | undefined): string {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const patient = await db.patientProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId },
     select: {
       id: true,
       firstName: true,
@@ -36,9 +36,9 @@ export async function GET() {
   const [appointmentCount, documentCount, tcleGranted, subscription] = await Promise.all([
     db.appointment.count({ where: { patientId: patient.id } }),
     db.medicalDocument.count({ where: { patientId: patient.id } }),
-    hasTelemedicineTcle(session.user.id),
+    hasTelemedicineTcle(userId),
     db.subscription.findUnique({
-      where: { userId: session.user.id },
+      where: { userId },
       select: { status: true },
     }),
   ]);

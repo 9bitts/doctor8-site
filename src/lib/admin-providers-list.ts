@@ -325,7 +325,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
     email: p.user?.email ?? null,
     region: p.user?.region ?? null,
     subtitle: p.picsPractices.length
-      ? `${p.picsPractices.length} pr?tica(s) PICS ? ${p.trainingInstitution}`
+      ? `${p.picsPractices.length} prática(s) PICS — ${p.trainingInstitution}`
       : p.trainingInstitution,
     verified: p.verified,
     emailVerified: !!p.user?.emailVerified,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import {
   buildPartnerPurchaseUrl,
@@ -8,10 +8,8 @@ import {
 import { getPharmacyIntegrationMode } from "@/lib/pharmacy-marketplace/config";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "PATIENT") {
-    return new NextResponse("Unauthorized", { status: 401 });
-  }
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
 
   if (getPharmacyIntegrationMode() === "disabled") {
     return new NextResponse("Not found", { status: 404 });

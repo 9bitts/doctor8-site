@@ -3,7 +3,7 @@
 // DELETE — remove favorite ?professionalId=
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -13,13 +13,12 @@ const postSchema = z.object({
 });
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const favorites = await db.patientFavorite.findMany({
-    where: { patientUserId: session.user.id },
+    where: { patientUserId: userId },
     select: { professionalId: true, notifyOnline: true, createdAt: true },
   });
 
@@ -32,10 +31,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const body = await req.json();
   const parsed = postSchema.safeParse(body);
@@ -50,12 +48,12 @@ export async function POST(req: NextRequest) {
   const fav = await db.patientFavorite.upsert({
     where: {
       patientUserId_professionalId: {
-        patientUserId:  session.user.id,
+        patientUserId:  userId,
         professionalId: parsed.data.professionalId,
       },
     },
     create: {
-      patientUserId:  session.user.id,
+      patientUserId:  userId,
       professionalId: parsed.data.professionalId,
       notifyOnline:   parsed.data.notifyOnline,
     },
@@ -66,17 +64,16 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.role !== "PATIENT")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const ctx = await requirePatient();
+  if (isApiError(ctx)) return ctx.error;
+  const { userId } = ctx;
 
   const professionalId = req.nextUrl.searchParams.get("professionalId");
   if (!professionalId)
     return NextResponse.json({ error: "professionalId required" }, { status: 400 });
 
   await db.patientFavorite.deleteMany({
-    where: { patientUserId: session.user.id, professionalId },
+    where: { patientUserId: userId, professionalId },
   });
 
   return NextResponse.json({ ok: true });
