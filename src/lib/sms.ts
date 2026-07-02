@@ -114,7 +114,7 @@ export async function sendOtpSms(opts: {
 
   const data = (await res.json().catch(() => ({}))) as { message?: string };
   if (!res.ok) {
-    console.error("[TWILIO SMS] Send failed:", JSON.stringify(data));
+    console.error("[TWILIO SMS] Send failed:", data.message || `HTTP ${res.status}`);
     return { ok: false, error: "SEND_FAILED", detail: data.message };
   }
   return { ok: true };
@@ -149,7 +149,7 @@ export async function startTwilioVerification(
   const data = (await res.json().catch(() => ({}))) as TwilioErrorBody;
   if (!res.ok) {
     const error = mapTwilioErrorCode(data);
-    console.error("[TWILIO VERIFY] Start failed:", JSON.stringify(data));
+    console.error("[TWILIO VERIFY] Start failed:", data.message || `HTTP ${res.status}`);
     return { ok: false, error, detail: data.message };
   }
   return { ok: true };
@@ -191,7 +191,7 @@ export async function checkTwilioVerification(
   };
 
   if (!res.ok) {
-    console.error("[TWILIO VERIFY] Check failed:", JSON.stringify(data));
+    console.error("[TWILIO VERIFY] Check failed:", data.message || `HTTP ${res.status}`);
     return { ok: false, error: data.message || `HTTP ${res.status}` };
   }
   if (data.status === "approved") return { ok: true };

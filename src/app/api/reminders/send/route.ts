@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
         hoursUntil: 24,
         language: patientUser.language,
       });
-      console.log(`[REMINDER] 24h email sent to ${patientUser.email}`);
+      console.log(`[REMINDER] 24h email sent (user ${patientUser.id})`);
       await markSent({ reminder24hSent: true });
     } catch (e) {
       console.error("[REMINDER] 24h email failed:", e);
@@ -285,7 +285,7 @@ export async function POST(req: NextRequest) {
         language: patientUser.language,
         whatsappUrl,
       });
-      console.log(`[REMINDER] 3h email sent to ${patientUser.email}`);
+      console.log(`[REMINDER] 3h email sent (user ${patientUser.id})`);
     } catch (e) {
       console.error("[REMINDER] 3h email failed:", e);
     }
@@ -317,7 +317,7 @@ export async function POST(req: NextRequest) {
         });
         if (result.ok) {
           apiSent = true;
-          console.log(`[REMINDER] 3h WhatsApp API sent to ${phone}, id=${result.messageId}`);
+          console.log(`[REMINDER] 3h WhatsApp API sent (user ${patientUser.id}), id=${result.messageId}`);
         } else if (!result.skipped) {
           console.error(`[REMINDER] 3h WhatsApp API failed: ${result.error}`);
         }
@@ -345,7 +345,7 @@ export async function POST(req: NextRequest) {
       }).catch(() => {});
 
       if (!apiSent) {
-        console.log(`[REMINDER] 3h WhatsApp fallback notification for ${phone}`);
+        console.log(`[REMINDER] 3h WhatsApp fallback notification (user ${patientUser.id})`);
       }
       await markSent({ reminder1hSent: true });
     }

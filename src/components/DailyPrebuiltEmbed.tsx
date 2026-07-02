@@ -90,6 +90,17 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       }
     };
 
+    // Force-remove any leftover Daily iframe/instance so createFrame never
+    // throws "Duplicate DailyIframe instances are not allowed".
+    async function purgeExistingCall(DailyIframe: {
+      getCallInstance?: () => DailyCall | null | undefined;
+    }): Promise<void> {
+      const existing = DailyIframe.getCallInstance?.();
+      if (existing) {
+        await destroyWithTimeout(existing);
+      }
+    }
+
     const reportError = (msg: string) => {
       if (!cancelled) {
         console.log("[daily] error", msg);
@@ -118,13 +129,10 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
         const DailyIframe = (await import("@daily-co/daily-js")).default;
         if (cancelled || !containerRef.current) return;
 
-        const existing = DailyIframe.getCallInstance?.();
-        if (existing) {
-          await destroyWithTimeout(existing);
-        }
+        await purgeExistingCall(DailyIframe);
         if (cancelled || !containerRef.current) return;
 
-        const call = DailyIframe.createFrame(containerRef.current, {
+        const frameOptions = {
           iframeStyle: {
             width: "100%",
             height: "100%",
@@ -133,10 +141,23 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
             inset: "0",
           },
           showLeaveButton: false,
-        });
+        };
+
+        let call: DailyCall;
+        try {
+          call = DailyIframe.createFrame(containerRef.current, frameOptions);
+        } catch (frameErr) {
+          // Almost always "Duplicate DailyIframe instances are not allowed".
+          // Purge the zombie instance once more and retry a single time.
+          console.log("[daily] createFrame failed, retrying after purge", frameErr);
+          await purgeExistingCall(DailyIframe);
+          if (cancelled || !containerRef.current) return;
+          call = DailyIframe.createFrame(containerRef.current, frameOptions);
+        }
         callRef.current = call;
 
-        call.on("loaded", markConnected);
+        // NOTE: do not treat "loaded" as connected — it fires when the iframe
+        // shell loads, before the actual join, and would hide join failures.
         call.on("joined-meeting", markConnected);
         call.on("participant-joined", markConnected);
         call.on("left-meeting", () => {

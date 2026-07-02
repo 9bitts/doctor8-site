@@ -51,8 +51,9 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ redirectUrl });
   } catch (e) {
+    console.error("[DIGITAL SIGN TEST] erro:", e);
     return NextResponse.json(
-      { error: `Erro ao iniciar teste: ${(e as Error).message}` },
+      { error: "Não foi possível iniciar o teste de assinatura. Verifique a configuração e tente novamente." },
       { status: 502 },
     );
   }

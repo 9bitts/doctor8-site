@@ -21,6 +21,7 @@ import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { getPatientActiveHumanitarianEntry } from "@/lib/humanitarian/notify";
 import { checkRateLimit, RATE_LIMITS, rateLimitResponse } from "@/lib/rate-limit";
 import { normalizeLang, translate } from "@/lib/i18n/translations";
+import { readJsonBody } from "@/lib/safe-json";
 
 export const runtime = "nodejs";
 
@@ -68,7 +69,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Only patients can join" }, { status: 403 });
   }
 
-  const body = await req.json();
+  const body = await readJsonBody(req);
+  if (body === null) {
+    return NextResponse.json({ error: "INVALID_BODY", message: "Invalid request body." }, { status: 400 });
+  }
   const parsed = joinSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

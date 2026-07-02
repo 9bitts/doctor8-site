@@ -19,7 +19,7 @@ import {
   ALLOWED_MIME,
   MAX_UPLOAD_BYTES,
 } from "@/lib/s3";
-import { isAllowedUploadFolder, normalizeUploadFolder } from "@/lib/upload-folders";
+import { isAllowedUploadFolder, normalizeUploadFolder, patientDocsFolder } from "@/lib/upload-folders";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -28,7 +28,13 @@ export async function POST(req: NextRequest) {
   const form = await req.formData();
   const file = form.get("file");
   const folderRaw = (form.get("folder") as string) || "uploads";
-  const folder = normalizeUploadFolder(folderRaw) || "uploads";
+  let folder = normalizeUploadFolder(folderRaw) || "uploads";
+
+  // Patient document uploads are scoped to the caller's userId so the resulting
+  // key is ownership-verifiable (prevents cross-patient fileKey injection).
+  if (folder === "patient-docs") {
+    folder = patientDocsFolder(session.user.id);
+  }
 
   if (!isAllowedUploadFolder(folder)) {
     return NextResponse.json({ error: "Invalid upload folder" }, { status: 400 });

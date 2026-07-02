@@ -15,7 +15,7 @@ export default function HumanitarianAnamnesePage() {
   const router = useRouter();
   const slug = VENEZUELA_CAMPAIGN_SLUG;
 
-  const [lang, setLang] = useState<Lang>("pt");
+  const [lang, setLang] = useState<Lang>("es");
   const [loading, setLoading] = useState(true);
 
   useHumanitarianOutboxFlush(() => router.refresh());

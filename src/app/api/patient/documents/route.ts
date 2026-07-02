@@ -58,6 +58,16 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
 
+  // Guard against fileKey injection: a patient may only attach a file they just
+  // uploaded to their own scoped folder (patient-docs/<userId>/...). This blocks
+  // referencing another user's S3 object and reading it back via GET.
+  if (d.fileKey) {
+    const ownPrefix = `patient-docs/${session.user.id.replace(/[^a-zA-Z0-9_-]/g, "")}/`;
+    if (!d.fileKey.startsWith(ownPrefix)) {
+      return NextResponse.json({ error: "Invalid file reference" }, { status: 400 });
+    }
+  }
+
   // Resolve the category (if provided) and derive the legacy enum type.
   let categoryId: string | null = null;
   let categoryName: string | null = null;

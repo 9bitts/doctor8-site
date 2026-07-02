@@ -295,7 +295,9 @@ export async function notifyVolunteerAssigned(opts: {
     type: "system",
     data: {
       entryId: opts.entryId,
-      link: "/humanitarian/volunteer",
+      // Direct link to the room — the volunteer has a 180s no-show window, so
+      // every redirect hop counts.
+      link: `/video/humanitarian/${opts.entryId}`,
       titleKey: "hum.notif.volunteerAssigned.title",
       bodyKey: "hum.notif.volunteerAssigned.body",
       bodyParams: { patient: opts.patientName },

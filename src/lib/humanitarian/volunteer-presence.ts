@@ -7,6 +7,13 @@ export const PATIENT_WAITING_TTL_MS = 3 * 60 * 1000;
 /** CALLED entry reverts to WAITING if consult never starts (volunteer no-show). */
 export const VOLUNTEER_CALLED_REVERT_MS = 5 * 60 * 1000;
 
+/**
+ * IN_PROGRESS consult is considered abandoned if neither side sends a room
+ * heartbeat within this window (both tabs closed / crashed). Generous so a real
+ * consultation on a flaky connection is never cut short.
+ */
+export const IN_PROGRESS_STALE_MS = 15 * 60 * 1000;
+
 export function presenceCutoff(): Date {
   return new Date(Date.now() - VOLUNTEER_PRESENCE_TTL_MS);
 }
@@ -17,6 +24,10 @@ export function patientWaitingCutoff(): Date {
 
 export function volunteerCalledRevertCutoff(): Date {
   return new Date(Date.now() - VOLUNTEER_CALLED_REVERT_MS);
+}
+
+export function inProgressStaleCutoff(): Date {
+  return new Date(Date.now() - IN_PROGRESS_STALE_MS);
 }
 
 export function isVolunteerPresent(lastSeenAt: Date | null | undefined): boolean {

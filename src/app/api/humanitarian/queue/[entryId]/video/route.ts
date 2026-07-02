@@ -194,7 +194,16 @@ export async function GET(
 
   const userName = isPatient ? patientName : proName;
   const tokenExp = Math.floor(Date.now() / 1000) + 7200;
-  const token = await createMeetingToken(roomName, userName, isVolunteer, tokenExp);
+  let token: string;
+  try {
+    token = await createMeetingToken(roomName, userName, isVolunteer, tokenExp);
+  } catch (e) {
+    console.error("[humanitarian video] Daily token error:", e);
+    return NextResponse.json(
+      { error: "VIDEO_UNAVAILABLE", message: "Video service is temporarily unavailable. Please retry." },
+      { status: 503 },
+    );
+  }
 
   return NextResponse.json({
     url: entry.meetingUrl,

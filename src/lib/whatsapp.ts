@@ -185,7 +185,7 @@ export async function sendAppointmentReminderWhatsApp(opts: {
   };
 
   if (!res.ok) {
-    console.error("[WHATSAPP] Send failed:", JSON.stringify(data));
+    console.error("[WHATSAPP] Send failed:", data.error?.message || `HTTP ${res.status}`);
     await logWhatsAppDelivery({
       template: templateName,
       phone: to,
@@ -272,7 +272,7 @@ export async function sendClinicalDocumentWhatsApp(opts: {
   };
 
   if (!res.ok) {
-    console.error("[WHATSAPP] Document send failed:", JSON.stringify(data));
+    console.error("[WHATSAPP] Document send failed:", data.error?.message || `HTTP ${res.status}`);
     await logWhatsAppDelivery({
       template: templateName,
       phone: to,

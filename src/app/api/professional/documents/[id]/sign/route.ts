@@ -147,7 +147,7 @@ export async function POST(
   } catch (e) {
     console.error("[DOC SIGN] erro:", e);
     return NextResponse.json(
-      { error: `Erro interno: ${(e as Error).message || String(e)}` },
+      { error: "Não foi possível iniciar a assinatura digital. Tente novamente em instantes." },
       { status: 500 }
     );
   }

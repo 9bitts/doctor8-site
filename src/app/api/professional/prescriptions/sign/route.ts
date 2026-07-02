@@ -189,8 +189,9 @@ export async function POST(req: NextRequest) {
       signed: false,
     });
   } catch (e) {
+    console.error("[SIGN] erro ao gerar PDF:", e);
     return NextResponse.json(
-      { error: `Erro ao gerar PDF: ${(e as Error).message}` }, { status: 500 }
+      { error: "Não foi possível gerar o PDF da receita. Tente novamente." }, { status: 500 }
     );
   }
 
@@ -220,8 +221,9 @@ export async function POST(req: NextRequest) {
       cpf: proCpf,
     });
   } catch (e) {
+    console.error("[SIGN] erro ao criar sessão de assinatura:", e);
     return NextResponse.json(
-      { error: `Erro ao criar sessão de assinatura: ${(e as Error).message}` },
+      { error: "Serviço de assinatura digital indisponível no momento. Tente novamente em instantes." },
       { status: 502 }
     );
   }
@@ -241,7 +243,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error("[SIGN] erro inesperado:", e);
     return NextResponse.json(
-      { error: `Erro interno: ${(e as Error).message || String(e)}` },
+      { error: "Não foi possível iniciar a assinatura digital. Tente novamente em instantes." },
       { status: 500 }
     );
   }

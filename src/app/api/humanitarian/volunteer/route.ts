@@ -22,6 +22,7 @@ import {
   requireVerifiedVolunteer,
 } from "@/lib/humanitarian/volunteer-eligibility";
 import { decrypt } from "@/lib/encryption";
+import { readJsonBody } from "@/lib/safe-json";
 import type { Lang } from "@/lib/i18n/translations";
 import type { HumanitarianIntake, HumanitarianQueueEntry } from "@prisma/client";
 
@@ -201,7 +202,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json();
+  const body = await readJsonBody(req);
+  if (body === null) {
+    return NextResponse.json({ error: "INVALID_BODY", message: "Invalid request body." }, { status: 400 });
+  }
   const parsed = statusSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

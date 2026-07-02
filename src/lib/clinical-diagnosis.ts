@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 
 export async function upsertActiveDiagnosis(
   patientRecordId: string,
@@ -6,33 +7,39 @@ export async function upsertActiveDiagnosis(
   cidLabel: string | null | undefined,
   sourceDocumentId?: string | null,
 ) {
-  if (!cidCode.trim()) return null;
+  const code = cidCode.trim();
+  if (!code) return null;
 
-  const existing = await db.patientDiagnosis.findFirst({
-    where: {
-      patientRecordId,
-      cidCode: cidCode.trim(),
-      status: "ACTIVE",
-    },
-  });
-  if (existing) {
-    if (cidLabel && !existing.cidLabel) {
-      return db.patientDiagnosis.update({
-        where: { id: existing.id },
-        data: { cidLabel },
+  // Serializable so concurrent callers (e.g. document save + manual diagnosis
+  // POST for the same CID) cannot both pass the existence check and each create
+  // a duplicate ACTIVE row. There is no DB-level @@unique for this compound key,
+  // so the isolation level is what prevents the race.
+  return db.$transaction(
+    async (tx) => {
+      const existing = await tx.patientDiagnosis.findFirst({
+        where: { patientRecordId, cidCode: code, status: "ACTIVE" },
       });
-    }
-    return existing;
-  }
+      if (existing) {
+        if (cidLabel && !existing.cidLabel) {
+          return tx.patientDiagnosis.update({
+            where: { id: existing.id },
+            data: { cidLabel: cidLabel.trim() },
+          });
+        }
+        return existing;
+      }
 
-  return db.patientDiagnosis.create({
-    data: {
-      patientRecordId,
-      cidCode: cidCode.trim(),
-      cidLabel: cidLabel?.trim() || null,
-      sourceDocumentId: sourceDocumentId || null,
+      return tx.patientDiagnosis.create({
+        data: {
+          patientRecordId,
+          cidCode: code,
+          cidLabel: cidLabel?.trim() || null,
+          sourceDocumentId: sourceDocumentId || null,
+        },
+      });
     },
-  });
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
 }
 
 export async function createMetricSnapshot(

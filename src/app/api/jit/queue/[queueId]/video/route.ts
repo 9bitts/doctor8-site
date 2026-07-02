@@ -93,7 +93,16 @@ export async function GET(
     : `Dr. ${pro.firstName} ${pro.lastName}`;
 
   const tokenExp = Math.floor(Date.now() / 1000) + 2 * 60 * 60;
-  const token = await createMeetingToken(roomName, userName, isProfessional, tokenExp);
+  let token: string;
+  try {
+    token = await createMeetingToken(roomName, userName, isProfessional, tokenExp);
+  } catch (e) {
+    console.error("[jit video] Daily token error:", e);
+    return NextResponse.json(
+      { error: "VIDEO_UNAVAILABLE", message: "Video service is temporarily unavailable. Please retry." },
+      { status: 503 },
+    );
+  }
 
   let patientRecordId: string | null = null;
   if (isProfessional) {

@@ -52,13 +52,18 @@ type Lang = "pt" | "en" | "es";
 const LANG_KEY = "doctor8.lang";
 
 function detectLang(): Lang {
-  if (typeof window === "undefined") return "pt";
+  if (typeof window === "undefined") return "es";
   try {
     const s = localStorage.getItem(LANG_KEY) || "";
     if (s.startsWith("pt")) return "pt";
     if (s.startsWith("es")) return "es";
+    if (s.startsWith("en")) return "en";
   } catch { /* ignore */ }
-  return "en";
+  const nav = (navigator.language || "").toLowerCase();
+  if (nav.startsWith("pt")) return "pt";
+  if (nav.startsWith("en")) return "en";
+  // Humanitarian patients are Spanish-speaking; default to es rather than en.
+  return "es";
 }
 
 const T: Record<string, Record<Lang, string>> = {
@@ -68,6 +73,8 @@ const T: Record<string, Record<Lang, string>> = {
   opensIn:        { pt: "A sala abre em", en: "Room opens in", es: "La sala abre en" },
   back:           { pt: "Voltar", en: "Back", es: "Volver" },
   unavailable:    { pt: "Sala indisponível", en: "Room unavailable", es: "Sala no disponible" },
+  roomError:      { pt: "Não foi possível abrir a sala de vídeo.", en: "Could not open the video room.", es: "No se pudo abrir la sala de video." },
+  connError:      { pt: "Erro de conexão. Tente novamente.", en: "Connection error. Please try again.", es: "Error de conexión. Inténtalo de nuevo." },
   consultation:   { pt: "Consulta com", en: "Consultation with", es: "Consulta con" },
   encrypted:      { pt: "Criptografado · HIPAA & LGPD", en: "Encrypted · HIPAA & LGPD", es: "Cifrado · HIPAA & LGPD" },
   patientChart:   { pt: "Ficha do Paciente", en: "Patient Chart", es: "Ficha del Paciente" },
@@ -80,6 +87,7 @@ const T: Record<string, Record<Lang, string>> = {
   diagnoses:      { pt: "Diagnósticos", en: "Diagnoses", es: "Diagnósticos" },
   saving:         { pt: "Salvando...", en: "Saving...", es: "Guardando..." },
   saved:          { pt: "Salvo!", en: "Saved!", es: "¡Guardado!" },
+  saveError:      { pt: "Falha ao salvar. Tente novamente.", en: "Save failed. Try again.", es: "Error al guardar. Inténtalo de nuevo." },
   recentRecords:  { pt: "Registros recentes", en: "Recent records", es: "Registros recientes" },
   noRecords:      { pt: "Nenhum registro ainda.", en: "No records yet.", es: "Sin registros aún." },
   prescribe:      { pt: "Prescrever", en: "Prescribe", es: "Prescribir" },
@@ -172,6 +180,7 @@ export default function VideoConsultRoom({
   const [noteText, setNoteText] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
+  const [noteError, setNoteError] = useState(false);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [leavingCall, setLeavingCall] = useState(false);
   const [whatsappHandoff, setWhatsappHandoff] = useState<{
@@ -219,7 +228,7 @@ export default function VideoConsultRoom({
         return;
       }
       if (result.error || !result.data) {
-        setError(result.error || "Could not open the video room.");
+        setError(result.error || (T.roomError[lang] ?? T.roomError.en));
         return;
       }
       setData(result.data);
@@ -241,7 +250,7 @@ export default function VideoConsultRoom({
         loadHumanitarianIntake(result.data.entryId);
       }
     } catch {
-      setError("Connection error. Please try again.");
+      setError(T.connError[lang] ?? T.connError.en);
     } finally {
       setLoading(false);
     }
@@ -257,6 +266,25 @@ export default function VideoConsultRoom({
     return () => mq.removeEventListener("change", apply);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Room heartbeat for humanitarian consults (both patient and volunteer) so the
+  // server knows the call is still active and does not reap it as abandoned.
+  useEffect(() => {
+    if (!data || data.kind !== "humanitarian" || !data.entryId || videoEmbedError) {
+      return;
+    }
+    const entryId = data.entryId;
+    const beat = () => {
+      fetch("/api/humanitarian/queue/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryId }),
+      }).catch(() => { /* non-blocking */ });
+    };
+    beat();
+    const hb = setInterval(beat, 60_000);
+    return () => clearInterval(hb);
+  }, [data, videoEmbedError]);
 
   useEffect(() => {
     if (!data || data.kind !== "humanitarian" || data.role !== "patient" || !data.entryId) {
@@ -411,6 +439,8 @@ export default function VideoConsultRoom({
     const chartId = data?.integrativeClientRecordId || data?.analysandRecordId || data?.patientRecordId;
     if (!noteText.trim() || !chartId || !data) return;
     setNoteSaving(true);
+    setNoteError(false);
+    let ok = false;
     try {
       if (data.providerPanel === "integrative_therapist") {
         await fetch("/api/integrative-therapist/session-notes", {
@@ -444,11 +474,13 @@ export default function VideoConsultRoom({
           }),
         });
       }
+      ok = true;
       setNoteSaved(true);
       setNoteText("");
       setTimeout(() => setNoteSaved(false), 2500);
       loadRecords(chartId, data.providerPanel);
-    } catch { /* ignore */ }
+    } catch { /* handled below */ }
+    if (!ok) setNoteError(true);
     setNoteSaving(false);
   }
 
@@ -961,7 +993,7 @@ export default function VideoConsultRoom({
                     </p>
                     <textarea
                       value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
+                      onChange={(e) => { setNoteText(e.target.value); if (noteError) setNoteError(false); }}
                       placeholder={t("notePlaceholder")}
                       rows={4}
                       className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
@@ -980,6 +1012,11 @@ export default function VideoConsultRoom({
                           : <><Send size={13} /> {t("saveNote")}</>
                       }
                     </button>
+                    {noteError && (
+                      <p className="text-xs text-rose-400 flex items-center gap-1.5">
+                        <AlertCircle size={12} /> {t("saveError")}
+                      </p>
+                    )}
                   </div>
                   )}
 

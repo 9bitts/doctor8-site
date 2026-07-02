@@ -11,6 +11,7 @@ import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { decrypt } from "@/lib/encryption";
+import { readJsonBody } from "@/lib/safe-json";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -89,7 +90,24 @@ export async function GET(req: NextRequest) {
   }
 
   if (sessionId) {
-    // Professional checking full queue
+    // Professional checking full queue — must own the session (prevents IDOR
+    // leaking patient names + video URLs of any session to any logged-in user).
+    if (session.user.role !== "PROFESSIONAL")
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const professional = await db.professionalProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
+
+    const ownsSession = await db.jitSession.findFirst({
+      where: { id: sessionId, professionalId: professional.id },
+      select: { id: true },
+    });
+    if (!ownsSession)
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const entries = await db.jitQueue.findMany({
       where: {
         sessionId,
@@ -132,7 +150,9 @@ export async function POST(req: NextRequest) {
   if (session.user.role !== "PATIENT")
     return NextResponse.json({ error: "Only patients can join the queue" }, { status: 403 });
 
-  const body = await req.json();
+  const body = await readJsonBody(req);
+  if (body === null)
+    return NextResponse.json({ error: "INVALID_BODY", message: "Invalid request body." }, { status: 400 });
   const parsed = joinSchema.safeParse(body);
   if (!parsed.success)
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -236,7 +256,9 @@ export async function PATCH(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
+  const body = await readJsonBody(req);
+  if (body === null)
+    return NextResponse.json({ error: "INVALID_BODY", message: "Invalid request body." }, { status: 400 });
   const parsed = callSchema.safeParse(body);
   if (!parsed.success)
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });

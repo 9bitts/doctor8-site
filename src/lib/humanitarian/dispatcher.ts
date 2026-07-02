@@ -14,6 +14,7 @@ import {
 } from "@/lib/humanitarian/notify";
 import { WAITING_ENTRY_STATUSES } from "@/lib/humanitarian/types";
 import {
+  inProgressStaleCutoff,
   patientWaitingCutoff,
   presenceCutoff,
   volunteerCalledRevertCutoff,
@@ -115,10 +116,49 @@ export async function touchPatientQueuePresence(
     where: {
       id: entryId,
       patientUserId,
-      status: { in: ["WAITING", "CALLED"] },
+      status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] },
     },
     data: { lastSeenAt: new Date() },
   });
+}
+
+/**
+ * Room heartbeat for an active consult. Keeps entry.lastSeenAt (and the
+ * volunteer's presence) fresh while either party is in the video room, so
+ * expireStaleInProgress only reaps calls where everyone has really left.
+ */
+export async function touchHumanitarianConsultPresence(
+  entryId: string,
+  userId: string,
+): Promise<boolean> {
+  const entry = await db.humanitarianQueueEntry.findUnique({
+    where: { id: entryId },
+    select: {
+      id: true,
+      status: true,
+      patientUserId: true,
+      volunteerId: true,
+      volunteer: { select: { userId: true } },
+    },
+  });
+  if (!entry || !["CALLED", "IN_PROGRESS"].includes(entry.status)) return false;
+
+  const isPatient = entry.patientUserId === userId;
+  const isVolunteer = entry.volunteer?.userId === userId;
+  if (!isPatient && !isVolunteer) return false;
+
+  const now = new Date();
+  await db.humanitarianQueueEntry.update({
+    where: { id: entryId },
+    data: { lastSeenAt: now },
+  });
+  if (isVolunteer && entry.volunteerId) {
+    await db.humanitarianVolunteer.update({
+      where: { id: entry.volunteerId },
+      data: { lastSeenAt: now },
+    });
+  }
+  return true;
 }
 
 export async function expireHumanitarianNoShows(poolId: string): Promise<number> {
@@ -212,6 +252,53 @@ export async function expireStaleVolunteers(): Promise<number> {
   return stale.length;
 }
 
+/**
+ * Close IN_PROGRESS consults that stopped sending room heartbeats (both sides
+ * gone / crashed) and free the volunteer. Without this an abandoned video call
+ * leaves the entry IN_PROGRESS and the volunteer BUSY forever.
+ */
+export async function expireStaleInProgress(): Promise<number> {
+  const cutoff = inProgressStaleCutoff();
+  const now = new Date();
+  const stale = await db.humanitarianQueueEntry.findMany({
+    where: {
+      status: "IN_PROGRESS",
+      OR: [
+        { lastSeenAt: { lt: cutoff } },
+        { lastSeenAt: null, startedAt: { lt: cutoff } },
+      ],
+    },
+    select: { id: true, volunteerId: true, poolId: true },
+  });
+
+  if (stale.length === 0) return 0;
+
+  const poolsToReassign = new Set<string>();
+  for (const e of stale) {
+    await db.$transaction([
+      db.humanitarianQueueEntry.update({
+        where: { id: e.id },
+        data: { status: "DONE", endedAt: now, completionChannel: "VIDEO" },
+      }),
+      ...(e.volunteerId
+        ? [
+            db.humanitarianVolunteer.update({
+              where: { id: e.volunteerId },
+              data: { status: "ONLINE", currentEntryId: null },
+            }),
+          ]
+        : []),
+    ]);
+    poolsToReassign.add(e.poolId);
+  }
+
+  for (const poolId of poolsToReassign) {
+    await assignNextInPool(poolId);
+  }
+
+  return stale.length;
+}
+
 /** Free volunteers stuck BUSY with finished or expired entries. */
 export async function reconcileStuckBusyVolunteers(): Promise<number> {
   const now = new Date();
@@ -248,6 +335,7 @@ export async function reconcileStuckBusyVolunteers(): Promise<number> {
 export async function assignNextInPool(poolId: string): Promise<number> {
   await expireAllHumanitarianNoShows();
   await revertStaleCalledToWaiting();
+  await expireStaleInProgress();
   await expireStaleWaitingPatients();
   await expireStaleVolunteers();
   await reconcileStuckBusyVolunteers();
@@ -786,12 +874,24 @@ export async function releaseVolunteer(volunteerId: string): Promise<void> {
 
   const now = new Date();
   if (vol.currentEntryId) {
+    // Volunteer abandoned an active patient (e.g. closed the browser). Send the
+    // patient back to WAITING so another volunteer can pick them up, instead of
+    // cancelling — a patient who waited a long time must not be silently dropped.
     await db.humanitarianQueueEntry.updateMany({
       where: {
         id: vol.currentEntryId,
         status: { in: ["CALLED", "IN_PROGRESS"] },
       },
-      data: { status: "CANCELLED", endedAt: now },
+      data: {
+        status: "WAITING",
+        volunteerId: null,
+        calledAt: null,
+        startedAt: null,
+        expiresAt: null,
+        meetingUrl: null,
+        meetingRoomId: null,
+        lastSeenAt: now,
+      },
     });
     await assignNextInPool(vol.poolId);
   }

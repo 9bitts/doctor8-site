@@ -146,12 +146,22 @@ export default function HumanitarianCampaignPage() {
         }
 
         await loadCampaign();
-        const queueRes = await fetch(`/api/humanitarian/queue?campaignSlug=${slug}&lang=${currentLang}`);
-        const queueData = await queueRes.json();
-        if (queueRes.ok && queueData.entry) {
-          setEntry(queueData.entry);
-          cacheHumanitarianQueueState(s.user.id, slug, queueData.entry);
-          setQueueStale(false);
+        // A transient queue fetch failure (flaky 3G) must not redirect to login
+        // and must not blank the queue — fall back to the last cached state.
+        try {
+          const queueRes = await fetch(`/api/humanitarian/queue?campaignSlug=${slug}&lang=${currentLang}`);
+          const queueData = await queueRes.json();
+          if (queueRes.ok && queueData.entry) {
+            setEntry(queueData.entry);
+            cacheHumanitarianQueueState(s.user.id, slug, queueData.entry);
+            setQueueStale(false);
+          }
+        } catch {
+          const cached = loadCachedHumanitarianQueueState<QueueEntry>(s.user.id, slug);
+          if (cached) {
+            setEntry(cached);
+            setQueueStale(true);
+          }
         }
       })
       .catch(() => router.push(`/login?callbackUrl=${encodeURIComponent(`/humanitarian/${slug}`)}`));
