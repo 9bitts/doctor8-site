@@ -1,9 +1,12 @@
-// POST ? create a PatientRecord chart from an existing PatientProfile (Doctor8 account).
+// POST — create a PatientRecord chart from an existing PatientProfile (Doctor8 account).
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
+import { createAuditLog } from "@/lib/audit";
+import { AuditAction } from "@prisma/client";
+import { canProfessionalReadPatientAccount } from "@/lib/patient-professional-link";
 
 const schema = z.object({
   patientProfileId: z.string().optional(),
@@ -44,19 +47,23 @@ export async function POST(req: NextRequest) {
   const profile = parsed.data.patientProfileId
     ? await db.patientProfile.findUnique({
         where: { id: parsed.data.patientProfileId },
-        include: { user: { select: { email: true } } },
+        include: { user: { select: { email: true, role: true } } },
       })
     : null;
 
   const resolvedProfile = profile ?? (parsed.data.email
     ? (await db.user.findFirst({
         where: { email: parsed.data.email.toLowerCase(), role: "PATIENT" },
-        include: { patientProfile: { include: { user: { select: { email: true } } } } },
+        include: { patientProfile: { include: { user: { select: { email: true, role: true } } } } },
       }))?.patientProfile ?? null
     : null);
 
   if (!resolvedProfile) {
     return NextResponse.json({ error: "Paciente não encontrado" }, { status: 404 });
+  }
+
+  if (resolvedProfile.user?.role !== "PATIENT") {
+    return NextResponse.json({ error: "Invalid patient account" }, { status: 400 });
   }
 
   const email = resolvedProfile.user?.email?.toLowerCase() ?? null;
@@ -89,19 +96,25 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const allowedByAppointment = await db.appointment.findFirst({
-    where: { professionalId: ctx.professional.id, patientId: resolvedProfile.id },
-    select: { id: true },
+  const allowed = await canProfessionalReadPatientAccount({
+    professionalId: ctx.professional.id,
+    professionalUserId: ctx.userId,
+    patientProfileId: resolvedProfile.id,
+    patientUserId: resolvedProfile.userId,
   });
-  const allowedByShare = await db.sharedRecord.findFirst({
-    where: { sharedWithProfessionalId: ctx.professional.id, patientId: resolvedProfile.id },
-    select: { id: true },
-  });
-  const allowedByEmail = !!parsed.data.email;
-  const allowedByProfileId = !!parsed.data.patientProfileId;
-  if (!allowedByAppointment && !allowedByShare && !allowedByEmail && !allowedByProfileId) {
+
+  if (!allowed) {
+    console.log(
+      "[PHI-IMPORT-AUDIT]",
+      JSON.stringify({
+        professionalUserId: ctx.userId,
+        patientUserId: resolvedProfile.userId,
+        denied: true,
+        at: new Date().toISOString(),
+      }),
+    );
     return NextResponse.json(
-      { error: "Sem vinculo com este paciente. Crie a ficha manualmente em Pacientes." },
+      { error: "LINK_REQUIRED", code: "LINK_REQUIRED" },
       { status: 403 },
     );
   }
@@ -133,6 +146,24 @@ export async function POST(req: NextRequest) {
       zipCode: resolvedProfile.zipCode ? encrypt(safeDecrypt(resolvedProfile.zipCode)) : null,
       linkedUserId: resolvedProfile.userId,
     },
+  });
+
+  console.log(
+    "[PHI-IMPORT-AUDIT]",
+    JSON.stringify({
+      professionalUserId: ctx.userId,
+      patientUserId: resolvedProfile.userId,
+      recordId: record.id,
+      at: new Date().toISOString(),
+    }),
+  );
+
+  await createAuditLog({
+    userId: ctx.userId,
+    action: AuditAction.CREATE_RECORD,
+    resource: "PatientRecordImport",
+    resourceId: record.id,
+    details: { patientUserId: resolvedProfile.userId },
   });
 
   const dobDecrypted = record.dateOfBirth ? safeDecrypt(record.dateOfBirth) : null;

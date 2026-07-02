@@ -1,9 +1,21 @@
-// GET ? search patient charts + patients who can be imported (appointments, shares, e-mail).
+// GET — search patient charts + importable (appointments/shares) + minimal platform matches.
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
+import { createAuditLog } from "@/lib/audit";
+import { AuditAction } from "@prisma/client";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import {
+  getAcceptedLinkMap,
+  maskPatientDisplayName,
+  type LinkStatus,
+} from "@/lib/patient-professional-link";
+
+const PLATFORM_MIN_CHARS = 3;
+const PLATFORM_MAX_RESULTS = 10;
+const PLATFORM_SCAN_LIMIT = 300;
 
 function safeDecrypt(v: string | null | undefined): string {
   if (v == null) return "";
@@ -41,7 +53,16 @@ type Importable = {
   lastName: string;
   email: string | null;
   hasAccount: true;
-  source: "appointment" | "shared" | "email" | "platform";
+  source: "appointment" | "shared" | "email";
+};
+
+type PlatformMatch = {
+  patientProfileId: string;
+  patientUserId: string;
+  displayName: string;
+  city: string | null;
+  hasLink: boolean;
+  linkStatus: LinkStatus | "NONE";
 };
 
 function toImportable(
@@ -66,6 +87,31 @@ function toImportable(
   };
 }
 
+function normText(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+}
+
+function matchesPlatformQuery(
+  q: string,
+  firstName: string,
+  lastName: string,
+  email: string | null,
+  phone: string | null,
+): boolean {
+  const nq = normText(q);
+  const full = normText(`${firstName} ${lastName}`.trim());
+  if (full.includes(nq) || normText(firstName).includes(nq) || normText(lastName).includes(nq)) {
+    return true;
+  }
+  if (email && normText(email).includes(nq)) return true;
+  if (phone) {
+    const digits = phone.replace(/\D/g, "");
+    const qDigits = q.replace(/\D/g, "");
+    if (qDigits.length >= 3 && digits.includes(qDigits)) return true;
+  }
+  return false;
+}
+
 export async function GET(req: NextRequest) {
   const ctx = await requireProfessionalApi();
   if (isApiError(ctx)) return ctx.error;
@@ -73,7 +119,9 @@ export async function GET(req: NextRequest) {
   const professional = await db.professionalProfile.findUnique({
     where: { userId: ctx.userId },
   });
-  if (!professional) return NextResponse.json({ records: [], importable: [] });
+  if (!professional) {
+    return NextResponse.json({ records: [], importable: [], platformMatches: [] });
+  }
 
   const q = (req.nextUrl.searchParams.get("q") || "").trim();
 
@@ -156,37 +204,79 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  if (q.includes("@")) {
-    const user = await db.user.findFirst({
-      where: { email: { contains: q.toLowerCase(), mode: "insensitive" }, role: "PATIENT" },
-      include: { patientProfile: { include: { user: { select: { email: true } } } } },
+  let platformMatches: PlatformMatch[] = [];
+
+  if (q.length >= PLATFORM_MIN_CHARS) {
+    const rate = await checkRateLimit({
+      namespace: "phi-platform-search",
+      key: ctx.userId,
+      limit: 30,
+      windowMs: 60 * 60 * 1000,
     });
-    if (user?.patientProfile && !alreadyHasChart(user.patientProfile)) {
-      importableMap.set(user.patientProfile.id, toImportable(user.patientProfile, "email"));
+    if (!rate.allowed) {
+      return rateLimitResponse(rate.retryAfterSec);
     }
-  } else if (q.length >= 2) {
+
     const profiles = await db.patientProfile.findMany({
-      include: { user: { select: { email: true } } },
-      take: 500,
+      include: {
+        user: { select: { email: true, role: true } },
+      },
+      take: PLATFORM_SCAN_LIMIT,
+      orderBy: { updatedAt: "desc" },
     });
-    const searchable = profiles
-      .filter((p) => p.user?.email && !alreadyHasChart(p))
-      .map((p) => {
-        const item = toImportable(p, "platform");
-        return { ...item, id: item.patientProfileId };
-      });
-    for (const match of filterPatientCharts(searchable, q, 12)) {
-      importableMap.set(match.patientProfileId, {
-        id: match.patientProfileId,
-        patientProfileId: match.patientProfileId,
-        userId: match.userId,
-        firstName: match.firstName,
-        lastName: match.lastName,
-        email: match.email,
-        hasAccount: true,
-        source: "platform",
-      });
+
+    const candidates: {
+      profile: (typeof profiles)[0];
+      firstName: string;
+      lastName: string;
+      email: string | null;
+      phone: string | null;
+    }[] = [];
+
+    for (const p of profiles) {
+      if (p.user?.role !== "PATIENT") continue;
+      if (alreadyHasChart(p)) continue;
+      const firstName = safeDecrypt(p.firstName);
+      const lastName = safeDecrypt(p.lastName);
+      const email = p.user?.email ?? null;
+      const phone = p.phone ? safeDecrypt(p.phone) : null;
+      if (!matchesPlatformQuery(q, firstName, lastName, email, phone)) continue;
+      candidates.push({ profile: p, firstName, lastName, email, phone });
     }
+
+    const limited = candidates.slice(0, PLATFORM_MAX_RESULTS);
+    const userIds = limited.map((c) => c.profile.userId);
+    const linkMap = await getAcceptedLinkMap(ctx.userId, userIds);
+
+    platformMatches = limited.map(({ profile, firstName, lastName }) => {
+      const linkStatus = linkMap.get(profile.userId) ?? "NONE";
+      return {
+        patientProfileId: profile.id,
+        patientUserId: profile.userId,
+        displayName: maskPatientDisplayName(firstName, lastName),
+        city: profile.city || null,
+        hasLink: linkStatus === "ACCEPTED",
+        linkStatus,
+      };
+    });
+
+    console.log(
+      "[PHI-SEARCH-AUDIT]",
+      JSON.stringify({
+        professionalUserId: ctx.userId,
+        termLength: q.length,
+        resultCount: platformMatches.length,
+        at: new Date().toISOString(),
+      }),
+    );
+
+    await createAuditLog({
+      userId: ctx.userId,
+      action: AuditAction.VIEW_RECORD,
+      resource: "PlatformPatientSearch",
+      resourceId: ctx.professional.id,
+      details: { termLength: q.length, resultCount: platformMatches.length },
+    });
   }
 
   const importableAll = Array.from(importableMap.values());
@@ -194,5 +284,5 @@ export async function GET(req: NextRequest) {
     ? filterPatientCharts(importableAll, q, importableAll.length)
     : importableAll.slice(0, 8);
 
-  return NextResponse.json({ records: filteredRecords, importable });
+  return NextResponse.json({ records: filteredRecords, importable, platformMatches });
 }

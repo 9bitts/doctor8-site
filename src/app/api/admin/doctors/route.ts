@@ -8,6 +8,7 @@ import {
   resolveAdminTabForProfessional,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
+import { emissionReportDb } from "@/lib/patient-professional-link-db";
 
 const VALID_CATEGORIES = new Set<string>([
   "medicos",
@@ -51,28 +52,36 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const doctors = filtered.map((p) => ({
-    id: p.id,
-    userId: p.userId,
-    name: `${p.firstName} ${p.lastName}`.trim(),
-    email: p.user?.email ?? null,
-    region: p.user?.region ?? null,
-    specialty: p.specialty,
-    licenseNumber: p.licenseNumber,
-    licenseCountry: p.licenseCountry,
-    verified: p.verified,
-    emailVerified: !!p.user?.emailVerified,
-    verifiedAt: p.verifiedAt ? p.verifiedAt.toISOString() : null,
-    appointments: p._count.appointments,
-    charts: p._count.patientRecords,
-    createdAt: p.createdAt.toISOString(),
-    isPublic: p.virtualCard?.isPublic ?? false,
-    licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
-    publicUrl:
-      p.verified && p.virtualCard?.isPublic && p.virtualCard.specialtySlug && p.virtualCard.citySlug
-        ? buildPublicProfileUrl(p.virtualCard)
-        : null,
-  }));
+  const doctors = await Promise.all(
+    filtered.map(async (p) => {
+      const emissionReportCount = await emissionReportDb().count({
+        where: { professionalUserId: p.userId },
+      });
+      return {
+        id: p.id,
+        userId: p.userId,
+        name: `${p.firstName} ${p.lastName}`.trim(),
+        email: p.user?.email ?? null,
+        region: p.user?.region ?? null,
+        specialty: p.specialty,
+        licenseNumber: p.licenseNumber,
+        licenseCountry: p.licenseCountry,
+        verified: p.verified,
+        emailVerified: !!p.user?.emailVerified,
+        verifiedAt: p.verifiedAt ? p.verifiedAt.toISOString() : null,
+        appointments: p._count.appointments,
+        charts: p._count.patientRecords,
+        createdAt: p.createdAt.toISOString(),
+        isPublic: p.virtualCard?.isPublic ?? false,
+        licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
+        emissionReportCount,
+        publicUrl:
+          p.verified && p.virtualCard?.isPublic && p.virtualCard.specialtySlug && p.virtualCard.citySlug
+            ? buildPublicProfileUrl(p.virtualCard)
+            : null,
+      };
+    }),
+  );
 
   return NextResponse.json({ doctors, total: doctors.length });
 }

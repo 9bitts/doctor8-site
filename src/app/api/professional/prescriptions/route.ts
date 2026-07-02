@@ -14,9 +14,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
-import { audit } from "@/lib/audit";
+import { audit, createAuditLog } from "@/lib/audit";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
+import { AuditAction } from "@prisma/client";
+import { createNotification } from "@/lib/notifications";
+import { hasAcceptedLink } from "@/lib/patient-professional-link";
 
 const medicationItemSchema = z.object({
   name: z.string().min(1),
@@ -85,12 +88,48 @@ export async function POST(req: NextRequest) {
       if (profile) documentPatientId = profile.id;
     }
   } else if (patientUserId) {
-    // Old flow: prescribe for an existing account
+    const patientUser = await db.user.findUnique({
+      where: { id: patientUserId },
+      select: { role: true, deletedAt: true },
+    });
+    if (!patientUser || patientUser.role !== "PATIENT" || patientUser.deletedAt) {
+      return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+    }
+
     const patient = await db.patientProfile.findUnique({ where: { userId: patientUserId } });
     if (!patient) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
     documentPatientId = patient.id;
+  }
+
+  if (appointmentId) {
+    const appt = await db.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        professionalId: ctx.professional.id,
+        ...(documentPatientId ? { patientId: documentPatientId } : {}),
+      },
+      select: { id: true },
+    });
+    if (!appt) {
+      return NextResponse.json(
+        { error: "Appointment does not belong to this professional and patient" },
+        { status: 400 },
+      );
+    }
+  }
+
+  let emitWithoutLink = false;
+  if (patientUserId && !patientRecordId) {
+    const linked = await hasAcceptedLink(patientUserId, ctx.userId);
+    const hasAppointment = documentPatientId
+      ? await db.appointment.findFirst({
+          where: { professionalId: ctx.professional.id, patientId: documentPatientId },
+          select: { id: true },
+        })
+      : null;
+    emitWithoutLink = !linked && !hasAppointment;
   }
 
   // Create medical document entry (holds the link to patient and/or chart)
@@ -117,6 +156,46 @@ export async function POST(req: NextRequest) {
   });
 
   await audit.createRecord(ctx.userId, "Prescription", prescription.id);
+
+  if (emitWithoutLink && patientUserId) {
+    console.log(
+      "[PHI-EMIT-AUDIT]",
+      JSON.stringify({
+        professionalUserId: ctx.userId,
+        patientUserId,
+        prescriptionId: prescription.id,
+        at: new Date().toISOString(),
+      }),
+    );
+    await createAuditLog({
+      userId: ctx.userId,
+      action: AuditAction.CREATE_RECORD,
+      resource: "PrescriptionEmitWithoutLink",
+      resourceId: prescription.id,
+      details: { patientUserId },
+    });
+
+    const proFull = await db.professionalProfile.findUnique({
+      where: { id: ctx.professional.id },
+      select: { firstName: true, lastName: true, licenseNumber: true },
+    });
+    const drName = proFull
+      ? `Dr. ${proFull.firstName} ${proFull.lastName}`.trim()
+      : "Doctor";
+
+    await createNotification({
+      userId: patientUserId,
+      title: "New prescription",
+      body: `${drName} sent you a prescription. Review it and accept a connection if you know this provider.`,
+      type: "system",
+      data: {
+        url: "/patient/prescriptions",
+        prescriptionId: prescription.id,
+        professionalUserId: ctx.userId,
+        canReport: true,
+      },
+    });
+  }
 
   return NextResponse.json(
     { success: true, prescriptionId: prescription.id, documentId: document.id },

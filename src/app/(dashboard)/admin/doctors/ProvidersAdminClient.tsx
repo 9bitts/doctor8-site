@@ -50,6 +50,7 @@ interface ProfessionalRow {
   publicUrl: string | null;
   isPublic: boolean;
   licenseDocCount: number;
+  emissionReportCount?: number;
   adminTab?: AdminProviderTab;
 }
 
@@ -1069,6 +1070,11 @@ function ProfessionalList({
                 .replace("{{charts}}", String(d.charts))}
               {d.licenseDocCount > 0 &&
                 t("admin.providers.licenseDocs").replace("{{n}}", String(d.licenseDocCount))}
+              {(d.emissionReportCount ?? 0) > 0 && (
+                <span className="ml-2 text-rose-600 font-medium">
+                  {t("admin.providers.emissionReports").replace("{{n}}", String(d.emissionReportCount))}
+                </span>
+              )}
             </p>
             {d.publicUrl && (
               <a

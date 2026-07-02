@@ -30,7 +30,23 @@ type ImportablePatient = {
   lastName: string;
   email: string | null;
   hasAccount: true;
-  source: "appointment" | "shared" | "email" | "platform";
+  source: "appointment" | "shared" | "email";
+};
+
+type PlatformMatch = {
+  patientProfileId: string;
+  patientUserId: string;
+  displayName: string;
+  city: string | null;
+  hasLink: boolean;
+  linkStatus: "NONE" | "PENDING" | "ACCEPTED" | "REJECTED" | "REVOKED";
+};
+
+type PlatformRxTarget = {
+  patientUserId: string;
+  patientProfileId: string;
+  displayName: string;
+  linkStatus: PlatformMatch["linkStatus"];
 };
 
 function controlInfo(type: string | null | undefined): {
@@ -285,6 +301,9 @@ export default function PrescriptionsPage() {
 
   const [charts, setCharts] = useState<Chart[]>([]);
   const [importablePatients, setImportablePatients] = useState<ImportablePatient[]>([]);
+  const [platformMatches, setPlatformMatches] = useState<PlatformMatch[]>([]);
+  const [platformTarget, setPlatformTarget] = useState<PlatformRxTarget | null>(null);
+  const [requestingLinkId, setRequestingLinkId] = useState<string | null>(null);
   const [chartsLoading, setChartsLoading] = useState(false);
   const [importingPatientId, setImportingPatientId] = useState<string | null>(null);
   const [patientQuery, setPatientQuery] = useState("");
@@ -418,6 +437,7 @@ export default function PrescriptionsPage() {
       if (res.ok) {
         setCharts(d.records || []);
         setImportablePatients(d.importable || []);
+        setPlatformMatches(d.platformMatches || []);
       }
     } catch { /* ignore */ }
     finally { setChartsLoading(false); }
@@ -446,17 +466,52 @@ export default function PrescriptionsPage() {
           missingForRx: data.missingForRx,
         };
         setSelectedPatient(chart);
+        setPlatformTarget(null);
         setPatientQuery("");
         setPatientPickerOpen(false);
         await searchPatients("");
+      } else if (res.status === 403 && data.code === "LINK_REQUIRED") {
+        setFormError(t("link.requiredImport"));
       }
     } catch { /* ignore */ }
     finally { setImportingPatientId(null); }
   }
 
+  async function requestPatientLink(match: PlatformMatch) {
+    setRequestingLinkId(match.patientUserId);
+    try {
+      const res = await fetch("/api/professional/patient-links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientUserId: match.patientUserId }),
+      });
+      if (res.ok) {
+        await searchPatients(patientQuery);
+      }
+    } finally {
+      setRequestingLinkId(null);
+    }
+  }
+
+  function selectPlatformForRx(match: PlatformMatch) {
+    setPlatformTarget({
+      patientUserId: match.patientUserId,
+      patientProfileId: match.patientProfileId,
+      displayName: match.displayName,
+      linkStatus: match.linkStatus,
+    });
+    setSelectedPatient(null);
+    setPatientPickerOpen(false);
+    setPatientQuery("");
+  }
+
   function resetForm() {
-    setSelectedPatient(null); setPatientQuery(""); setImportablePatients([]); setDrugQuery("");
-    setDrugResults([]); setDrugCountry("BR"); setMedications([]);
+    setSelectedPatient(null);
+    setPlatformTarget(null);
+    setPatientQuery("");
+    setImportablePatients([]);
+    setPlatformMatches([]);
+    setDrugQuery(""); setDrugResults([]); setDrugCountry("BR"); setMedications([]);
     setInstructions(""); setValidDays(30); setFormError("");
     setReuseSource(null);
     setSavedEmission(null);
@@ -685,7 +740,7 @@ export default function PrescriptionsPage() {
 
   async function handleSubmit() {
     setFormError("");
-    if (!selectedPatient) { setFormError(t("rx2.needPatient")); return; }
+    if (!selectedPatient && !platformTarget) { setFormError(t("rx2.needPatient")); return; }
     if (medications.length === 0 || medications.some((m) => !isMedItemValid(m))) {
       setFormError(t("rx2.needMeds")); return;
     }
@@ -695,17 +750,30 @@ export default function PrescriptionsPage() {
         name: m.name.trim(), dosage: m.dosage || "", frequency: m.frequency || "",
         duration: m.duration, instructions: m.instructions, itemKind: m.itemKind || "medication",
       }));
+      const payload = selectedPatient
+        ? { patientRecordId: selectedPatient.id, medications: cleanMeds, instructions, validDays }
+        : { patientUserId: platformTarget!.patientUserId, medications: cleanMeds, instructions, validDays };
       const res = await fetch("/api/professional/prescriptions", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patientRecordId: selectedPatient.id, medications: cleanMeds, instructions, validDays }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         const data = await res.json();
+        const label = selectedPatient
+          ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
+          : platformTarget!.displayName;
+        const patientForSave: Chart = selectedPatient ?? {
+          id: "",
+          firstName: platformTarget!.displayName.split(" ")[0] || platformTarget!.displayName,
+          lastName: "",
+          email: null,
+          hasAccount: true,
+        };
         handleEmissionSaved({
           kind: "prescription",
           id: data.prescriptionId,
-          patient: selectedPatient,
-          label: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+          patient: patientForSave,
+          label,
         });
       } else {
         const d = await res.json().catch(() => ({}));
@@ -855,6 +923,30 @@ export default function PrescriptionsPage() {
                   </div>
                   <PatientNoAccountPanel patient={selectedPatient} />
                 </div>
+              ) : platformTarget ? (
+                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-sm shrink-0">
+                    {platformTarget.displayName[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-800 text-sm">{platformTarget.displayName}</p>
+                    <p className="text-xs text-slate-500">{t("link.platformRxHint")}</p>
+                    {platformTarget.linkStatus === "PENDING" && (
+                      <p className="text-xs text-amber-600 mt-0.5">{t("link.statusPending")}</p>
+                    )}
+                    {platformTarget.linkStatus === "ACCEPTED" && (
+                      <p className="text-xs text-brand-600 mt-0.5">{t("link.statusAccepted")}</p>
+                    )}
+                  </div>
+                  {!lockPatient && (
+                    <button
+                      onClick={() => setPlatformTarget(null)}
+                      className="text-xs text-brand-500 hover:text-brand-700 font-semibold shrink-0"
+                    >
+                      {t("rx2.changePatient")}
+                    </button>
+                  )}
+                </div>
               ) : (
                 <>
                   <div className="relative">
@@ -872,16 +964,14 @@ export default function PrescriptionsPage() {
                         <div className="p-4 flex items-center justify-center gap-2 text-sm text-slate-500">
                           <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
                         </div>
-                      ) : charts.length === 0 && importablePatients.length === 0 ? (
+                      ) : charts.length === 0 && importablePatients.length === 0 && platformMatches.length === 0 ? (
                         <div className="p-4 text-center text-sm text-slate-500 space-y-1">
                           <p>{t("rx2.noPatientFound")}</p>
-                          {patientQuery.trim().length > 0 && (
-                            <>
-                              <p className="text-xs text-slate-400">{t("rx2.noPatientHint")}</p>
-                              {!patientQuery.includes("@") && (
-                                <p className="text-xs text-slate-400">{t("rx2.searchByEmailHint")}</p>
-                              )}
-                            </>
+                          {patientQuery.trim().length > 0 && patientQuery.trim().length < 3 && (
+                            <p className="text-xs text-slate-400">{t("link.searchMinChars")}</p>
+                          )}
+                          {patientQuery.trim().length >= 3 && (
+                            <p className="text-xs text-slate-400">{t("rx2.noPatientHint")}</p>
                           )}
                         </div>
                       ) : (
@@ -891,7 +981,7 @@ export default function PrescriptionsPage() {
                               key={c.id}
                               type="button"
                               onMouseDown={keepFocusOnPointerDown}
-                              onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); setPatientQuery(""); }}
+                              onClick={() => { setSelectedPatient(c); setPlatformTarget(null); setPatientPickerOpen(false); setPatientQuery(""); }}
                               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 transition text-left"
                             >
                               <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
@@ -927,6 +1017,79 @@ export default function PrescriptionsPage() {
                                 <span className="text-xs font-semibold text-emerald-600 shrink-0">{t("rx2.importPatientChart")}</span>
                               )}
                             </button>
+                          ))}
+                          {platformMatches.map((match) => (
+                            <div
+                              key={match.patientProfileId}
+                              className="px-4 py-3 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-center gap-2"
+                            >
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
+                                  {match.displayName[0]}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-medium text-slate-800 text-sm">{match.displayName}</p>
+                                  {match.city && (
+                                    <p className="text-xs text-slate-400">{match.city}</p>
+                                  )}
+                                  <p className="text-xs text-slate-500">
+                                    {match.linkStatus === "ACCEPTED"
+                                      ? t("link.statusAccepted")
+                                      : match.linkStatus === "PENDING"
+                                        ? t("link.statusPending")
+                                        : t("link.platformBadge")}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                {match.linkStatus !== "ACCEPTED" && match.linkStatus !== "PENDING" && (
+                                  <button
+                                    type="button"
+                                    disabled={requestingLinkId === match.patientUserId}
+                                    onMouseDown={keepFocusOnPointerDown}
+                                    onClick={() => requestPatientLink(match)}
+                                    className="text-xs font-semibold border border-brand-200 text-brand-600 px-2.5 py-1.5 rounded-lg disabled:opacity-50 min-h-[44px]"
+                                  >
+                                    {requestingLinkId === match.patientUserId ? (
+                                      <Loader2 size={14} className="animate-spin inline" />
+                                    ) : (
+                                      t("link.requestConnection")
+                                    )}
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onMouseDown={keepFocusOnPointerDown}
+                                  onClick={() => selectPlatformForRx(match)}
+                                  className="text-xs font-semibold bg-brand-500 text-white px-2.5 py-1.5 rounded-lg min-h-[44px]"
+                                >
+                                  {t("link.prescribeWithoutChart")}
+                                </button>
+                                {match.hasLink && (
+                                  <button
+                                    type="button"
+                                    disabled={importingPatientId === match.patientProfileId}
+                                    onMouseDown={keepFocusOnPointerDown}
+                                    onClick={() => importPatientChart({
+                                      patientProfileId: match.patientProfileId,
+                                      userId: match.patientUserId,
+                                      firstName: match.displayName.split(" ")[0] || match.displayName,
+                                      lastName: "",
+                                      email: null,
+                                      hasAccount: true,
+                                      source: "appointment",
+                                    })}
+                                    className="text-xs font-semibold border border-emerald-200 text-emerald-700 px-2.5 py-1.5 rounded-lg disabled:opacity-50 min-h-[44px]"
+                                  >
+                                    {importingPatientId === match.patientProfileId ? (
+                                      <Loader2 size={14} className="animate-spin inline" />
+                                    ) : (
+                                      t("rx2.importPatientChart")
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           ))}
                         </>
                       )}

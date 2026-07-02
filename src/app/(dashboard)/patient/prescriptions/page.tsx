@@ -9,6 +9,7 @@ import { localeOf } from "@/lib/i18n/translations";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import { formatShortDateWithYear } from "@/lib/timezone";
 import { getProfessionLabel } from "@/lib/professions";
+import PatientEmissionAlertsPanel from "@/components/patient/PatientEmissionAlertsPanel";
 import {
   FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw,
   ShieldCheck, Clock, XCircle, MessageCircle,
@@ -113,6 +114,8 @@ export default function PatientPrescriptionsPage() {
         <h1 className="text-2xl font-bold text-slate-900">{t("myrx.title")}</h1>
         <p className="text-slate-500 text-sm mt-1">{t("myrx.subtitle")}</p>
       </div>
+
+      <PatientEmissionAlertsPanel />
 
       {loadError ? (
         <div className="flex flex-col items-center gap-3 py-16 bg-white rounded-2xl border border-amber-200">

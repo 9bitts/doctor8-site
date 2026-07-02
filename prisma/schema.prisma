@@ -222,6 +222,13 @@ enum AuditAction {
   DATA_DELETION_REQUEST
 }
 
+enum PatientProfessionalLinkStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  REVOKED
+}
+
 enum JitMode {
   QUEUE      // paciente entra na fila, sistema distribui automaticamente
   SHOWCASE   // paciente escolhe o profissional disponível
@@ -362,6 +369,10 @@ model User {
   clubStampEntries      ClubStampEntry[]
   clubDiversityAwards   ClubDiversityAward[]
   providerLicenseDocuments ProviderLicenseDocument[]
+  patientProfessionalLinksAsPatient      PatientProfessionalLink[] @relation("PatientProfessionalLinkPatient")
+  patientProfessionalLinksAsProfessional PatientProfessionalLink[] @relation("PatientProfessionalLinkProfessional")
+  emissionReportsAsPatient             ProfessionalEmissionReport[] @relation("EmissionReportPatient")
+  emissionReportsAsProfessional        ProfessionalEmissionReport[] @relation("EmissionReportProfessional")
 
   @@index([email])
   @@index([role])
@@ -949,6 +960,40 @@ model SharedRecord {
   @@index([patientId])
   @@index([accessToken])
   @@index([sharedWithProfessionalId])
+}
+
+// Consent-based patient ↔ medical professional link (prescribe/search without full chart read).
+model PatientProfessionalLink {
+  id                 String                        @id @default(cuid())
+  patientUserId      String
+  professionalUserId String
+  status             PatientProfessionalLinkStatus @default(PENDING)
+  requestedBy        String                        // "PROFESSIONAL" | "PATIENT"
+  createdAt          DateTime                      @default(now())
+  respondedAt        DateTime?
+
+  patient      User @relation("PatientProfessionalLinkPatient", fields: [patientUserId], references: [id], onDelete: Cascade)
+  professional User @relation("PatientProfessionalLinkProfessional", fields: [professionalUserId], references: [id], onDelete: Cascade)
+
+  @@unique([patientUserId, professionalUserId])
+  @@index([professionalUserId, status])
+  @@index([patientUserId, status])
+}
+
+// Patient report: "I don't know this professional" after unsolicited emission.
+model ProfessionalEmissionReport {
+  id                 String   @id @default(cuid())
+  patientUserId      String
+  professionalUserId String
+  resourceType       String   // PRESCRIPTION | EXAM_REQUEST | ...
+  resourceId         String
+  createdAt          DateTime @default(now())
+
+  patient      User @relation("EmissionReportPatient", fields: [patientUserId], references: [id], onDelete: Cascade)
+  professional User @relation("EmissionReportProfessional", fields: [professionalUserId], references: [id], onDelete: Cascade)
+
+  @@index([professionalUserId])
+  @@index([patientUserId])
 }
 
 model Prescription {

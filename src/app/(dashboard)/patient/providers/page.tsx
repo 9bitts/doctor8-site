@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { safeDecrypt } from "@/lib/sign-helpers";
 import Link from "next/link";
 import { Users, Stethoscope, Brain, Leaf, Calendar, MessageSquare } from "lucide-react";
+import PatientProvidersLinksClient from "@/components/patient/PatientProvidersLinksClient";
 
 export default async function PatientProvidersPage() {
   const session = await auth();
@@ -114,6 +115,8 @@ export default async function PatientProvidersPage() {
           <p className="text-sm text-slate-500">{t("providers.subtitle")}</p>
         </div>
       </div>
+
+      <PatientProvidersLinksClient />
 
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-8 text-center">
