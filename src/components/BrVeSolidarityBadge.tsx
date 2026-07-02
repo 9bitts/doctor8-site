@@ -1,13 +1,11 @@
 "use client";
 
 import { useId } from "react";
-import { useI18n } from "@/lib/i18n/I18nProvider";
 
 const SOLIDARITY_RED = "#dc2626";
 
 /** BR + VE solidarity badge for dashboard sidebar. */
 export default function BrVeSolidarityBadge() {
-  const { t } = useI18n();
   const uid = useId().replace(/:/g, "");
   const cardClip = `cardClip-${uid}`;
   const brFlag = `brFlag-${uid}`;
@@ -113,12 +111,6 @@ export default function BrVeSolidarityBadge() {
           </text>
         </g>
       </svg>
-      <p
-        className="text-center text-sm font-bold py-2 bg-[#0b1622]"
-        style={{ color: SOLIDARITY_RED }}
-      >
-        {t("nav.humanitarian")}
-      </p>
     </div>
   );
 }

@@ -168,9 +168,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const headerAvatar = isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal);
 
-  function renderNavLink(item: NavItem, badge?: number) {
+  function renderNavLink(item: NavItem, badge?: number, accentRed = false) {
     const isActive = pathname === item.href ||
       (item.href !== `/${role.toLowerCase()}` && pathname.startsWith(item.href));
+    const redActive = "bg-red-500/10 text-red-400 border border-red-500/20";
+    const redIdle = "text-red-500 hover:text-red-400 hover:bg-red-500/10";
     return (
       <Link
         key={item.href}
@@ -178,7 +180,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         onClick={() => setSidebarOpen(false)}
         className={`
           flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-          ${isActive ? navActive : "text-slate-400 hover:text-white hover:bg-slate-800"}
+          ${isActive
+            ? (accentRed ? redActive : navActive)
+            : (accentRed ? redIdle : "text-slate-400 hover:text-white hover:bg-slate-800")}
         `}
       >
         {item.icon}
@@ -243,6 +247,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           <div className="space-y-1">
             {isPatient ? (
               <>
+                {renderNavLink(patientHumanitarianItem, undefined, true)}
                 {renderNavLink(patientDashboardItem)}
                 {patientGroupedNav.map((group) => (
                   <div key={group.labelKey}>
@@ -259,7 +264,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                     </div>
                   </div>
                 ))}
-                {renderNavLink(patientHumanitarianItem)}
               </>
             ) : (
               navItems.map((item) => renderNavLink(item))
