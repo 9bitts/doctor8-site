@@ -8,6 +8,7 @@ import type { HumanitarianTriageData } from "@/lib/humanitarian/triage";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 import { humanitarianDraftKey } from "@/lib/humanitarian/offline-draft";
 import { enqueueHumanitarianSubmit } from "@/lib/humanitarian/outbox";
+import { humanitarianApiErrorMessage } from "@/lib/humanitarian/api-error-message";
 import { useHumanitarianDraft } from "@/hooks/useHumanitarianDraft";
 
 type Props = {
@@ -123,7 +124,11 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
     };
 
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      await enqueueHumanitarianSubmit({
+      if (!userId) {
+        setError(t(lang, "hum.triage.error"));
+        return;
+      }
+      await enqueueHumanitarianSubmit(userId, {
         url: "/api/humanitarian/intake",
         method: "POST",
         body: { campaignSlug, triage: payload },
@@ -142,7 +147,7 @@ export default function HumanitarianTriageForm({ lang, campaignSlug, onComplete 
       });
       const body = await res.json();
       if (!res.ok) {
-        setError(body.message || body.error || t(lang, "hum.triage.error"));
+        setError(humanitarianApiErrorMessage(lang, body));
         setSaving(false);
         return;
       }

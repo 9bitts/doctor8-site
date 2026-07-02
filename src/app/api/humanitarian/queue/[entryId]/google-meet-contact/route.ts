@@ -8,13 +8,13 @@ export async function POST(
   { params }: { params: { entryId: string } },
 ) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   if (!isGoogleMeetEnabled()) {
-    return NextResponse.json({ error: "MEET_DISABLED" }, { status: 503 });
+    return NextResponse.json({ errorCode: "MEET_DISABLED", error: "MEET_DISABLED" }, { status: 503 });
   }
 
   try {
@@ -26,11 +26,11 @@ export async function POST(
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     if (msg === "NOT_ACTIVE") {
-      return NextResponse.json({ error: "NOT_ACTIVE" }, { status: 409 });
+      return NextResponse.json({ errorCode: "NOT_ACTIVE", error: "NOT_ACTIVE" }, { status: 409 });
     }
     if (msg === "MEET_CREATE_FAILED") {
-      return NextResponse.json({ error: "MEET_CREATE_FAILED" }, { status: 502 });
+      return NextResponse.json({ errorCode: "MEET_CREATE_FAILED", error: "MEET_CREATE_FAILED" }, { status: 502 });
     }
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 }

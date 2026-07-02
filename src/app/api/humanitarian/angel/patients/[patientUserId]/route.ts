@@ -15,9 +15,9 @@ export async function GET(
   { params }: { params: Promise<{ patientUserId: string }> },
 ) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "ANGEL") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   const { patientUserId } = await params;
@@ -26,12 +26,15 @@ export async function GET(
 
   const access = await resolveAngelAccess(session.user.id, campaignSlug);
   if (!access.ok) {
-    return NextResponse.json({ error: access.reason }, { status: 403 });
+    return NextResponse.json({ errorCode: access.reason, error: access.reason }, { status: 403 });
   }
 
   const detail = await getAngelPatientDetail(access.campaignId, patientUserId, lang);
   if (!detail) {
-    return NextResponse.json({ error: "Patient not found or no consent" }, { status: 404 });
+    return NextResponse.json(
+      { errorCode: "NOT_FOUND", error: "Patient not found or no consent" },
+      { status: 404 },
+    );
   }
 
   return NextResponse.json({ patient: detail });

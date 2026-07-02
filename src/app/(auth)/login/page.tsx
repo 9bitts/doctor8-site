@@ -36,7 +36,8 @@ const POST_LOGIN_CALLBACK = "/callback";
 
 function UnifiedLoginForm() {
   const searchParams = useSearchParams();
-  const { lang, changeLang, t } = useLoginLang();
+  const callbackUrl = searchParams.get("callbackUrl") || "";
+  const { lang, changeLang, t } = useLoginLang(callbackUrl);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,7 +49,6 @@ function UnifiedLoginForm() {
 
   const verified = searchParams.get("verified") === "true";
   const passwordReset = searchParams.get("reset") === "success";
-  const callbackUrl = searchParams.get("callbackUrl") || "";
   const registerHref = resolveRegisterHref(null, callbackUrl || null);
   const forgotHref = buildForgotPasswordHref({
     email: email.trim() || undefined,

@@ -24,6 +24,7 @@ import {
   loadHumanitarianDraft,
   saveHumanitarianDraft,
 } from "@/lib/humanitarian/offline-draft";
+import { humanitarianApiErrorMessage } from "@/lib/humanitarian/api-error-message";
 import { enqueueHumanitarianSubmit } from "@/lib/humanitarian/outbox";
 import { parsePhoneToParts } from "@/lib/humanitarian/phone";
 
@@ -236,7 +237,11 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
     }
 
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      await enqueueHumanitarianSubmit({
+      if (!userId) {
+        setError(t(lang, "hum.anamnese.error"));
+        return;
+      }
+      await enqueueHumanitarianSubmit(userId, {
         url: "/api/humanitarian/intake",
         method: "PATCH",
         body: { campaignSlug, section, data },
@@ -256,7 +261,7 @@ export default function HumanitarianAnamneseForm({ lang, campaignSlug }: Props) 
       });
       const body = await res.json();
       if (!res.ok) {
-        setError(body.error || t(lang, "hum.anamnese.error"));
+        setError(humanitarianApiErrorMessage(lang, body));
         setSaving(false);
         return;
       }

@@ -2,7 +2,11 @@
 export const VOLUNTEER_PRESENCE_TTL_MS = 2 * 60 * 1000;
 
 /** Patient waiting queue — expire if no poll/heartbeat within this window. */
-export const PATIENT_WAITING_TTL_MS = 3 * 60 * 1000;
+export const PATIENT_WAITING_TTL_MS = (() => {
+  const raw = process.env.HUMANITARIAN_PRESENCE_TTL_MS;
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 600_000;
+})();
 
 /** CALLED entry reverts to WAITING if consult never starts (volunteer no-show). */
 export const VOLUNTEER_CALLED_REVERT_MS = 5 * 60 * 1000;

@@ -12,7 +12,10 @@ export async function GET(
   });
 
   if (!campaign) {
-    return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    return NextResponse.json(
+      { errorCode: "CAMPAIGN_UNAVAILABLE", error: "Campaign not found" },
+      { status: 404 },
+    );
   }
 
   const session = await auth();

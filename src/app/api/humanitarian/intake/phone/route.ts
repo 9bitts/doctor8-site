@@ -27,11 +27,14 @@ const intlSchema = z.object({
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
 
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug");
   if (!campaignSlug) {
-    return NextResponse.json({ error: "campaignSlug required" }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "VALIDATION_ERROR", error: "campaignSlug required" },
+      { status: 400 },
+    );
   }
 
   const phoneReady = !!(await resolvePatientHumanitarianPhone(session.user.id));
@@ -67,16 +70,19 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Only patients can save phone" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Only patients can save phone" }, { status: 403 });
   }
 
   const body = await req.json();
   const intlParsed = intlSchema.safeParse(body);
   const legacyParsed = legacySchema.safeParse(body);
   if (!intlParsed.success && !legacyParsed.success) {
-    return NextResponse.json({ error: "Invalid phone" }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "INVALID_PHONE", error: "Invalid phone" },
+      { status: 400 },
+    );
   }
 
   const campaignSlug = intlParsed.success
@@ -90,7 +96,10 @@ export async function POST(req: NextRequest) {
       intlParsed.data.phoneNational,
     );
     if (!e164) {
-      return NextResponse.json({ error: "INVALID_PHONE" }, { status: 400 });
+      return NextResponse.json(
+        { errorCode: "INVALID_PHONE", error: "INVALID_PHONE" },
+        { status: 400 },
+      );
     }
     phoneParts = parsePhoneToParts(e164);
   } else {
@@ -103,7 +112,7 @@ export async function POST(req: NextRequest) {
 
   const e164 = formatHumanitarianPhoneParts(phoneParts.ddi, phoneParts.ddd, phoneParts.number);
   if (!e164) {
-    return NextResponse.json({ error: "INVALID_PHONE" }, { status: 400 });
+    return NextResponse.json({ errorCode: "INVALID_PHONE", error: "INVALID_PHONE" }, { status: 400 });
   }
 
   const campaign = await db.humanitarianCampaign.findUnique({
@@ -111,7 +120,10 @@ export async function POST(req: NextRequest) {
     select: { id: true, active: true },
   });
   if (!campaign?.active) {
-    return NextResponse.json({ error: "Campaign not available" }, { status: 404 });
+    return NextResponse.json(
+      { errorCode: "CAMPAIGN_UNAVAILABLE", error: "Campaign not available" },
+      { status: 404 },
+    );
   }
 
   try {
@@ -124,8 +136,14 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     if (msg === "INVALID_PHONE") {
-      return NextResponse.json({ error: "INVALID_PHONE" }, { status: 400 });
+      return NextResponse.json(
+        { errorCode: "INVALID_PHONE", error: "INVALID_PHONE" },
+        { status: 400 },
+      );
     }
-    return NextResponse.json({ error: "Could not save phone" }, { status: 500 });
+    return NextResponse.json(
+      { errorCode: "PHONE_SAVE_FAILED", error: "Could not save phone" },
+      { status: 500 },
+    );
   }
 }

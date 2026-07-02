@@ -4,6 +4,7 @@ const LEGACY_KEY = "doctor8:hum:outbox";
 
 export type OutboxItem = {
   id: string;
+  userId?: string;
   url: string;
   method: "POST" | "PATCH";
   body: Record<string, unknown>;
@@ -109,6 +110,17 @@ async function writeOutbox(items: OutboxItem[]): Promise<void> {
   }
 }
 
+/** Drop legacy items that have no userId — they cannot be safely replayed. */
+async function purgeLegacyOutboxItems(all: OutboxItem[]): Promise<OutboxItem[]> {
+  const scoped = all.filter((item) => item.userId);
+  const dropped = all.length - scoped.length;
+  if (dropped > 0) {
+    console.log(`[hum-outbox] discarding ${dropped} legacy item(s) without userId`);
+    await writeOutbox(scoped);
+  }
+  return scoped;
+}
+
 async function requestOutboxBackgroundSync(): Promise<void> {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
   try {
@@ -122,18 +134,20 @@ async function requestOutboxBackgroundSync(): Promise<void> {
 }
 
 export async function enqueueHumanitarianSubmit(
-  item: Omit<OutboxItem, "id" | "createdAt">,
+  userId: string,
+  item: Omit<OutboxItem, "id" | "createdAt" | "userId">,
 ): Promise<string> {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  const next: OutboxItem = { ...item, id, createdAt: Date.now() };
+  const next: OutboxItem = { ...item, id, userId, createdAt: Date.now() };
   const items = await readOutbox();
   await writeOutbox([...items, next]);
   await requestOutboxBackgroundSync();
   return id;
 }
 
-export async function listHumanitarianOutbox(): Promise<OutboxItem[]> {
-  return readOutbox();
+export async function listHumanitarianOutbox(userId: string): Promise<OutboxItem[]> {
+  const all = await purgeLegacyOutboxItems(await readOutbox());
+  return all.filter((i) => i.userId === userId);
 }
 
 export async function removeHumanitarianOutboxItem(id: string): Promise<void> {
@@ -141,9 +155,14 @@ export async function removeHumanitarianOutboxItem(id: string): Promise<void> {
   await writeOutbox(items.filter((i) => i.id !== id));
 }
 
-export async function flushHumanitarianOutbox(): Promise<number> {
-  if (typeof window === "undefined" || !navigator.onLine) return 0;
+export async function clearHumanitarianOutboxForUser(userId: string): Promise<void> {
   const items = await readOutbox();
+  await writeOutbox(items.filter((i) => i.userId !== userId));
+}
+
+export async function flushHumanitarianOutbox(userId: string): Promise<number> {
+  if (typeof window === "undefined" || !navigator.onLine || !userId) return 0;
+  const items = await listHumanitarianOutbox(userId);
   if (items.length === 0) return 0;
 
   let flushed = 0;

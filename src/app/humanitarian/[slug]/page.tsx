@@ -18,6 +18,7 @@ import {
   cacheHumanitarianQueueState,
   loadCachedHumanitarianQueueState,
 } from "@/lib/humanitarian/offline-draft";
+import { humanitarianApiErrorMessage } from "@/lib/humanitarian/api-error-message";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 
 interface PoolInfo {
@@ -43,7 +44,7 @@ interface QueueEntry {
   status: string;
   position: number;
   aheadCount: number;
-  estimatedWaitMinutes: number;
+  estimatedWaitMinutes: number | null;
   onlineVolunteers: number;
   poolLabel: string;
   poolSlug?: string;
@@ -98,7 +99,7 @@ export default function HumanitarianCampaignPage() {
       const res = await fetch(`/api/humanitarian/campaigns/${slug}?lang=${lang}`);
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || t(lang, "hum.page.unavailable"));
+        setError(humanitarianApiErrorMessage(lang, data));
         setLoading(false);
         return;
       }
@@ -229,27 +230,28 @@ export default function HumanitarianCampaignPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        if (data.error === "TRIAGE_REQUIRED") {
+        const code = data.errorCode || data.error;
+        if (code === "TRIAGE_REQUIRED") {
           router.replace(`/humanitarian/${slug}/triage`);
           return;
         }
-        if (data.error === "TCLE_REQUIRED") {
+        if (code === "TCLE_REQUIRED") {
           router.replace(`/humanitarian/${slug}/tcle`);
           return;
         }
-        if (data.error === "PHONE_REQUIRED") {
+        if (code === "PHONE_REQUIRED") {
           setPhoneReady(false);
           setError(t(lang, "hum.phone.required"));
           setJoining(null);
           return;
         }
-        if (data.error === "CANNOT_SWITCH_IN_CONSULT") {
+        if (code === "CANNOT_SWITCH_IN_CONSULT") {
           setError(t(lang, "hum.page.cannotSwitchInConsult"));
           setJoining(null);
           setSwitching(null);
           return;
         }
-        setError(data.message || data.error || t(lang, "hum.page.queueError"));
+        setError(humanitarianApiErrorMessage(lang, data));
         setJoining(null);
         return;
       }
@@ -286,7 +288,7 @@ export default function HumanitarianCampaignPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || t(lang, "hum.page.networkError"));
+        setError(humanitarianApiErrorMessage(lang, data));
         setEntering(false);
         autoEnterRef.current = false;
         return;
@@ -320,6 +322,11 @@ export default function HumanitarianCampaignPage() {
     setLeaving(false);
     loadCampaign();
   }
+
+  const totalVolunteersOnline = pools.reduce(
+    (sum, p) => sum + p.volunteersOnline + p.volunteersBusy,
+    0,
+  );
 
   if (loading) {
     return (
@@ -426,6 +433,12 @@ export default function HumanitarianCampaignPage() {
 
         {phoneReady && (
         <>
+        {totalVolunteersOnline === 0 && campaign?.active && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 space-y-1">
+            <p className="text-sm font-semibold text-amber-100">{t(lang, "hum.noVolunteersTitle")}</p>
+            <p className="text-xs text-amber-200/80 leading-relaxed">{t(lang, "hum.noVolunteersText")}</p>
+          </div>
+        )}
         <div className="space-y-3">
           {pools.map((pool) => (
             <button
@@ -655,12 +668,25 @@ function QueueScreen({
     );
   }
 
-  if (entry.status === "NO_SHOW" || entry.status === "CANCELLED") {
+  if (entry.status === "NO_SHOW") {
     return (
       <div className={`${card} border-white/10`}>
         <AlertCircle size={32} className="text-rose-400 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-white mb-2">{t(lang, "hum.page.missedTitle")}</h2>
         <p className="text-slate-400 text-sm mb-6">{t(lang, "hum.page.missedDesc")}</p>
+        <button type="button" onClick={onRejoin} className="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">
+          {t(lang, "hum.page.rejoin")}
+        </button>
+      </div>
+    );
+  }
+
+  if (entry.status === "CANCELLED") {
+    return (
+      <div className={`${card} border-white/10`}>
+        <AlertCircle size={32} className="text-amber-400 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-white mb-2">{t(lang, "hum.connectionLostTitle")}</h2>
+        <p className="text-slate-400 text-sm mb-6">{t(lang, "hum.connectionLostText")}</p>
         <button type="button" onClick={onRejoin} className="w-full py-3 rounded-xl bg-emerald-500 text-white font-semibold">
           {t(lang, "hum.page.rejoin")}
         </button>
@@ -714,10 +740,17 @@ function QueueScreen({
           <p className="text-3xl font-bold text-emerald-400">{entry.aheadCount + 1}</p>
           <p className="text-xs text-slate-500 mt-1">{t(lang, "hum.page.yourPosition")}</p>
         </div>
-        <div className="bg-white/5 rounded-xl p-4">
-          <p className="text-3xl font-bold text-slate-200">~{entry.estimatedWaitMinutes}</p>
-          <p className="text-xs text-slate-500 mt-1">{t(lang, "hum.page.estMinutes")}</p>
-        </div>
+        {entry.onlineVolunteers === 0 || entry.estimatedWaitMinutes == null ? (
+          <div className="bg-white/5 rounded-xl p-4 col-span-1">
+            <p className="text-sm font-semibold text-amber-200/90 leading-snug">{t(lang, "hum.noVolunteersTitle")}</p>
+            <p className="text-xs text-slate-500 mt-1">{t(lang, "hum.noVolunteersText")}</p>
+          </div>
+        ) : (
+          <div className="bg-white/5 rounded-xl p-4">
+            <p className="text-3xl font-bold text-slate-200">~{entry.estimatedWaitMinutes}</p>
+            <p className="text-xs text-slate-500 mt-1">{t(lang, "hum.page.estMinutes")}</p>
+          </div>
+        )}
       </div>
       <p className="text-xs text-slate-500 mb-4 flex items-center justify-center gap-1">
         <Users size={14} /> {t(lang, "hum.page.volOnline", { count: entry.onlineVolunteers })}

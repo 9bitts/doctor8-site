@@ -13,13 +13,13 @@ function volunteerLang(req: NextRequest): Lang {
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
 
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug") || VENEZUELA_CAMPAIGN_SLUG;
   const lang = volunteerLang(req);
 
   if (session.user.role !== "ANGEL" && session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   const profile = await db.angelProfile.findUnique({
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   });
 
   if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    return NextResponse.json({ errorCode: "NOT_FOUND", error: "Profile not found" }, { status: 404 });
   }
 
   const user = await db.user.findUnique({

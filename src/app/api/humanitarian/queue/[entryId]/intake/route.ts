@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { entryId: string } },
 ) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
 
   const langParam = new URL(_req.url).searchParams.get("lang");
   const lang = langParam === "pt" || langParam === "en" || langParam === "es" ? langParam : "es";
@@ -28,14 +28,14 @@ export async function GET(
     },
   });
 
-  if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!entry) return NextResponse.json({ errorCode: "NOT_FOUND", error: "Not found" }, { status: 404 });
 
   const isPatient = entry.patientUserId === session.user.id;
   const isVolunteer = isVolunteerOnEntry(entry.volunteer, session.user.id);
   const isAdmin = session.user.role === "ADMIN";
 
   if (!isPatient && !isVolunteer && !isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   if (!entry.intake) {

@@ -14,9 +14,9 @@ export async function POST(
   { params }: { params: { entryId: string } },
 ) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   const lang = volunteerLang(req);
@@ -32,13 +32,13 @@ export async function POST(
     const msg = e instanceof Error ? e.message : "Error";
     if (msg === "NO_PHONE") {
       return NextResponse.json(
-        { error: "NO_PHONE", message: "Patient has no WhatsApp phone on file." },
+        { errorCode: "NO_PHONE", error: "NO_PHONE", message: "Patient has no WhatsApp phone on file." },
         { status: 422 },
       );
     }
     if (msg === "NOT_ACTIVE") {
-      return NextResponse.json({ error: "NOT_ACTIVE" }, { status: 409 });
+      return NextResponse.json({ errorCode: "NOT_ACTIVE", error: "NOT_ACTIVE" }, { status: 409 });
     }
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 }

@@ -21,8 +21,13 @@ interface ChecklistState {
 }
 
 const STORAGE_KEY = "doctor8.patient.checklist.dismissed";
-const CACHE_KEY = "doctor8.patient.checklist.state";
+const CACHE_KEY_PREFIX = "doctor8.patient.checklist.state";
+const LEGACY_CACHE_KEY = "doctor8.patient.checklist.state";
 const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function cacheKeyForUser(userId: string): string {
+  return `${CACHE_KEY_PREFIX}.${userId}`;
+}
 
 function detectLang(): Lang {
   if (typeof window === "undefined") return "pt";
@@ -41,21 +46,35 @@ export default function PatientChecklist() {
   const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     setLang(detectLang());
-    if (localStorage.getItem(STORAGE_KEY)) {
-      setDismissed(true);
-      setLoading(false);
-      return;
-    }
-    loadState();
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((s) => {
+        const id = s?.user?.id as string | undefined;
+        if (!id) {
+          setLoading(false);
+          return;
+        }
+        setUserId(id);
+        try { localStorage.removeItem(LEGACY_CACHE_KEY); } catch { /* ignore */ }
+        if (localStorage.getItem(STORAGE_KEY)) {
+          setDismissed(true);
+          setLoading(false);
+          return;
+        }
+        loadState(id);
+      })
+      .catch(() => setLoadError(true));
   }, []);
 
-  async function loadState() {
+  async function loadState(activeUserId: string) {
     setLoadError(false);
+    const cacheKey = cacheKeyForUser(activeUserId);
     try {
-      const cached = localStorage.getItem(CACHE_KEY);
+      const cached = localStorage.getItem(cacheKey);
       if (cached) {
         const { data, ts } = JSON.parse(cached);
         if (Date.now() - ts < CACHE_TTL_MS) {
@@ -71,7 +90,7 @@ export default function PatientChecklist() {
       if (res.ok) {
         const data = await res.json();
         setState(data);
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+        localStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() }));
       } else {
         setLoadError(true);
       }
@@ -106,7 +125,7 @@ export default function PatientChecklist() {
         </div>
         <button
           type="button"
-          onClick={() => { setLoading(true); loadState(); }}
+          onClick={() => { if (userId) { setLoading(true); loadState(userId); } }}
           className="text-xs font-semibold text-amber-800 flex items-center gap-1 hover:underline shrink-0"
         >
           <RefreshCw size={13} /> {t("common.retry")}

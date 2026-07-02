@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Phone, MessageCircle } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
+import { humanitarianApiErrorMessage } from "@/lib/humanitarian/api-error-message";
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
 } from "@/components/InternationalPhoneInput";
@@ -64,11 +65,7 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(
-          data.error === "INVALID_PHONE"
-            ? t(lang, "hum.phone.invalid")
-            : t(lang, "hum.phone.error"),
-        );
+        setError(humanitarianApiErrorMessage(lang, data));
         return;
       }
       onReady();

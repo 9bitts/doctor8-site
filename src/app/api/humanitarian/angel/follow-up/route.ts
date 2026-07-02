@@ -19,21 +19,24 @@ const followUpSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "ANGEL") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   const body = await req.json();
   const parsed = followUpSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "VALIDATION_ERROR", error: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
 
   const campaignSlug = parsed.data.campaignSlug || VENEZUELA_CAMPAIGN_SLUG;
   const access = await resolveAngelAccess(session.user.id, campaignSlug);
   if (!access.ok) {
-    return NextResponse.json({ error: access.reason }, { status: 403 });
+    return NextResponse.json({ errorCode: access.reason, error: access.reason }, { status: 403 });
   }
 
   const intake = await db.humanitarianIntake.findUnique({
@@ -47,7 +50,10 @@ export async function POST(req: NextRequest) {
   });
 
   if (!intake?.angelContactConsentAt) {
-    return NextResponse.json({ error: "Patient did not consent to angel contact" }, { status: 403 });
+    return NextResponse.json(
+      { errorCode: "FORBIDDEN", error: "Patient did not consent to angel contact" },
+      { status: 403 },
+    );
   }
 
   const followUp = await db.humanitarianAngelFollowUp.create({

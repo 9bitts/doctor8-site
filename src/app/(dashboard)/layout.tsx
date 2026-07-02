@@ -42,6 +42,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [role, setRole] = useState<string>("PATIENT");
   const [userName, setUserName] = useState<string>("User");
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
     async function loadSession() {
@@ -49,6 +50,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         const res = await fetch("/api/auth/session");
         const session = await res.json();
         if (session?.user?.role) setRole(session.user.role);
+        if (session?.user?.id) setUserId(session.user.id);
         if (session?.user?.name) setUserName(session.user.name);
         else if (session?.user?.email) setUserName(session.user.email.split("@")[0]);
       } catch { /* keep defaults */ }
@@ -169,7 +171,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           <LanguageSwitcher variant="sidebar" />
           <button
             onClick={() => {
-              clearSensitiveClientState();
+              clearSensitiveClientState(userId || undefined);
               signOut({ callbackUrl: signOutHref });
             }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all w-full"

@@ -972,12 +972,14 @@ export async function getEntryStatus(entryId: string, patientUserId: string, lan
   });
 
   const estMins = refreshed.pool.campaign.estimatedMinutesPerPatient;
-  const estimatedWaitMinutes =
+  const estimatedWaitMinutes: number | null =
     refreshed.status === "WAITING"
-      ? Math.max(
-          estMins,
-          Math.ceil((aheadCount + 1) / Math.max(onlineVolunteers, 1)) * estMins,
-        )
+      ? onlineVolunteers === 0
+        ? null
+        : Math.max(
+            estMins,
+            Math.ceil((aheadCount + 1) / onlineVolunteers) * estMins,
+          )
       : 0;
 
   let professionalName: string | null = null;

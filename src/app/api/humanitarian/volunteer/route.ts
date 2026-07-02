@@ -72,15 +72,19 @@ const statusSchema = z.object({
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (!isVolunteerRole(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   const verification = await requireVerifiedVolunteer(session.user.id, session.user.role);
   if (!verification.ok) {
     return NextResponse.json(
-      { error: verification.error, message: "Professional verification required before volunteering." },
+      {
+        errorCode: verification.error,
+        error: verification.error,
+        message: "Professional verification required before volunteering.",
+      },
       { status: 403 },
     );
   }
@@ -101,7 +105,7 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  if (!campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+  if (!campaign) return NextResponse.json({ errorCode: "NOT_FOUND", error: "Campaign not found" }, { status: 404 });
 
   await expireAllHumanitarianNoShows();
   await revertStaleCalledToWaiting();
@@ -110,7 +114,7 @@ export async function GET(req: NextRequest) {
   await reconcileStuckBusyVolunteers();
 
   const profile = await resolveVolunteerProfile(session.user.id, session.user.role);
-  if (!profile) return NextResponse.json({ error: "Profile required" }, { status: 404 });
+  if (!profile) return NextResponse.json({ errorCode: "NOT_FOUND", error: "Profile required" }, { status: 404 });
 
   const eligiblePools = campaign.pools.filter((p) =>
     poolMatchesVolunteer(p.slug, profile, session.user.role),
@@ -197,18 +201,24 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (!isVolunteerRole(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   const body = await readJsonBody(req);
   if (body === null) {
-    return NextResponse.json({ error: "INVALID_BODY", message: "Invalid request body." }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "INVALID_BODY", error: "INVALID_BODY", message: "Invalid request body." },
+      { status: 400 },
+    );
   }
   const parsed = statusSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "VALIDATION_ERROR", error: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
 
   const { status, campaignSlug, poolSlug } = parsed.data;
@@ -217,7 +227,11 @@ export async function POST(req: NextRequest) {
     const verification = await requireVerifiedVolunteer(session.user.id, session.user.role);
     if (!verification.ok) {
       return NextResponse.json(
-        { error: verification.error, message: "Professional verification required before volunteering." },
+        {
+          errorCode: verification.error,
+          error: verification.error,
+          message: "Professional verification required before volunteering.",
+        },
         { status: 403 },
       );
     }
@@ -230,15 +244,21 @@ export async function POST(req: NextRequest) {
     include: { pools: { where: { slug: poolSlug } } },
   });
   if (!campaign?.active || !campaign.pools[0]) {
-    return NextResponse.json({ error: "Campaign unavailable" }, { status: 404 });
+    return NextResponse.json(
+      { errorCode: "CAMPAIGN_UNAVAILABLE", error: "Campaign unavailable" },
+      { status: 404 },
+    );
   }
 
   const pool = campaign.pools[0];
   const profile = await resolveVolunteerProfile(session.user.id, session.user.role);
-  if (!profile) return NextResponse.json({ error: "Profile required" }, { status: 404 });
+  if (!profile) return NextResponse.json({ errorCode: "NOT_FOUND", error: "Profile required" }, { status: 404 });
 
   if (!poolMatchesVolunteer(poolSlug, profile, session.user.role)) {
-    return NextResponse.json({ error: "Pool not eligible for your profile" }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "VALIDATION_ERROR", error: "Pool not eligible for your profile" },
+      { status: 400 },
+    );
   }
 
   if (status === "OFFLINE") {
@@ -266,7 +286,7 @@ export async function POST(req: NextRequest) {
   });
   if (existingVol?.status === "BUSY") {
     return NextResponse.json(
-      { error: "Complete your current consultation before going online again." },
+      { errorCode: "VALIDATION_ERROR", error: "Complete your current consultation before going online again." },
       { status: 400 },
     );
   }
@@ -281,7 +301,7 @@ export async function POST(req: NextRequest) {
   });
   if (otherActive) {
     return NextResponse.json(
-      { error: "Already volunteering in another pool. Go offline first." },
+      { errorCode: "ALREADY_IN_QUEUE", error: "Already volunteering in another pool. Go offline first." },
       { status: 400 },
     );
   }
@@ -346,9 +366,9 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug") || "venezuela-terremoto-2026";

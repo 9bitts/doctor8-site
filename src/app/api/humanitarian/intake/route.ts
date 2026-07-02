@@ -23,12 +23,15 @@ const patchSchema = z.object({
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
 
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug");
   const full = new URL(req.url).searchParams.get("full") === "1";
   if (!campaignSlug) {
-    return NextResponse.json({ error: "campaignSlug required" }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "VALIDATION_ERROR", error: "campaignSlug required" },
+      { status: 400 },
+    );
   }
 
   const status = await getPatientIntakeStatusBySlug(
@@ -41,15 +44,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Only patients can submit triage" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Only patients can submit triage" }, { status: 403 });
   }
 
   const body = await req.json();
   const parsed = postSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "VALIDATION_ERROR", error: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
 
   const campaign = await db.humanitarianCampaign.findUnique({
@@ -58,7 +64,10 @@ export async function POST(req: NextRequest) {
   });
 
   if (!campaign?.active) {
-    return NextResponse.json({ error: "Campaign not available" }, { status: 404 });
+    return NextResponse.json(
+      { errorCode: "CAMPAIGN_UNAVAILABLE", error: "Campaign not available" },
+      { status: 404 },
+    );
   }
 
   const saved = await saveHumanitarianTriage({
@@ -86,15 +95,18 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Only patients can update intake" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Only patients can update intake" }, { status: 403 });
   }
 
   const body = await req.json();
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "VALIDATION_ERROR", error: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
 
   const campaign = await db.humanitarianCampaign.findUnique({
@@ -103,7 +115,10 @@ export async function PATCH(req: NextRequest) {
   });
 
   if (!campaign?.active) {
-    return NextResponse.json({ error: "Campaign not available" }, { status: 404 });
+    return NextResponse.json(
+      { errorCode: "CAMPAIGN_UNAVAILABLE", error: "Campaign not available" },
+      { status: 404 },
+    );
   }
 
   try {
@@ -124,7 +139,10 @@ export async function PATCH(req: NextRequest) {
     });
   } catch (e) {
     if (e instanceof Error && e.message === "TRIAGE_REQUIRED") {
-      return NextResponse.json({ error: "TRIAGE_REQUIRED" }, { status: 403 });
+      return NextResponse.json(
+        { errorCode: "TRIAGE_REQUIRED", error: "TRIAGE_REQUIRED" },
+        { status: 403 },
+      );
     }
     throw e;
   }

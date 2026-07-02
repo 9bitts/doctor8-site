@@ -114,7 +114,7 @@ function draftKeyUserId(key: string): string | null {
 }
 
 /** Clears sensitive client state on logout / pre-login signOut. */
-export function clearSensitiveClientState(): void {
+export function clearSensitiveClientState(userId?: string): void {
   if (typeof window === "undefined") return;
 
   removeStorageKeys(localStorage, (key) => matchesPrefix(key, LOCAL_STORAGE_PREFIXES));
@@ -126,6 +126,12 @@ export function clearSensitiveClientState(): void {
 
   for (const name of SCOPE_COOKIES) {
     expireCookie(name);
+  }
+
+  if (userId) {
+    import("@/lib/humanitarian/outbox")
+      .then((m) => m.clearHumanitarianOutboxForUser(userId))
+      .catch(() => {});
   }
 }
 

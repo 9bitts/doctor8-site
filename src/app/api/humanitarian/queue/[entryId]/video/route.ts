@@ -35,7 +35,7 @@ export async function GET(
   { params }: { params: { entryId: string } },
 ) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
 
   const entry = await db.humanitarianQueueEntry.findUnique({
     where: { id: params.entryId },
@@ -51,18 +51,19 @@ export async function GET(
     },
   });
 
-  if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!entry) return NextResponse.json({ errorCode: "NOT_FOUND", error: "Not found" }, { status: 404 });
 
   const isPatient = entry.patientUserId === session.user.id;
   const isVolunteer = isVolunteerOnEntry(entry.volunteer, session.user.id);
 
   if (!isPatient && !isVolunteer) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   if (isPatient && !(await hasTelemedicineTcle(session.user.id))) {
     return NextResponse.json(
       {
+        errorCode: "TCLE_REQUIRED",
         error: "TCLE_REQUIRED",
         message: "Sign the telemedicine consent form before entering the consultation.",
       },
@@ -84,6 +85,7 @@ export async function GET(
       if (entry.completionChannel === "WHATSAPP") {
         return NextResponse.json(
           {
+            errorCode: "WHATSAPP_HANDOFF",
             error: "WHATSAPP_HANDOFF",
             message: "Your volunteer will contact you on WhatsApp.",
             professionalName: proName,
@@ -95,6 +97,7 @@ export async function GET(
       if (entry.completionChannel === "GOOGLE_MEET") {
         return NextResponse.json(
           {
+            errorCode: "MEET_HANDOFF",
             error: "MEET_HANDOFF",
             message: "Join your consultation on Google Meet.",
             professionalName: proName,
@@ -106,7 +109,7 @@ export async function GET(
       }
     }
     return NextResponse.json(
-      { error: "NOT_READY", message: "Consultation is not active yet." },
+      { errorCode: "NOT_READY", error: "NOT_READY", message: "Consultation is not active yet." },
       { status: 425 },
     );
   }
@@ -134,7 +137,7 @@ export async function GET(
   }
 
   if (!roomName || !meetingUrl) {
-    return NextResponse.json({ error: "Video room not ready." }, { status: 503 });
+    return NextResponse.json({ errorCode: "VIDEO_ROOM_NOT_READY", error: "Video room not ready." }, { status: 503 });
   }
 
   await promoteHumanitarianEntryToInProgress(params.entryId);

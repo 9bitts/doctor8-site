@@ -34,9 +34,9 @@ const joinSchema = z.object({
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
   const entryId = new URL(req.url).searchParams.get("entryId");
@@ -53,29 +53,38 @@ export async function GET(req: NextRequest) {
   }
 
   if (!entryId) {
-    return NextResponse.json({ error: "entryId or campaignSlug required" }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "VALIDATION_ERROR", error: "entryId or campaignSlug required" },
+      { status: 400 },
+    );
   }
 
   const status = await getEntryStatus(entryId, session.user.id, lang);
-  if (!status) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!status) return NextResponse.json({ errorCode: "NOT_FOUND", error: "Not found" }, { status: 404 });
 
   return NextResponse.json({ entry: status });
 }
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
   if (session.user.role !== "PATIENT") {
-    return NextResponse.json({ error: "Only patients can join" }, { status: 403 });
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Only patients can join" }, { status: 403 });
   }
 
   const body = await readJsonBody(req);
   if (body === null) {
-    return NextResponse.json({ error: "INVALID_BODY", message: "Invalid request body." }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "INVALID_BODY", error: "INVALID_BODY", message: "Invalid request body." },
+      { status: 400 },
+    );
   }
   const parsed = joinSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { errorCode: "VALIDATION_ERROR", error: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
 
   const { campaignSlug, poolSlug, chiefComplaint, lang: bodyLang } = parsed.data;
@@ -89,7 +98,10 @@ export async function POST(req: NextRequest) {
   });
 
   if (!campaign?.active || !campaign.pools[0]) {
-    return NextResponse.json({ error: "Campaign or pool not available" }, { status: 404 });
+    return NextResponse.json(
+      { errorCode: "CAMPAIGN_UNAVAILABLE", error: "Campaign or pool not available" },
+      { status: 404 },
+    );
   }
 
   const pool = campaign.pools[0];
@@ -98,6 +110,7 @@ export async function POST(req: NextRequest) {
   if (!intake?.computedPriority) {
     return NextResponse.json(
       {
+        errorCode: "TRIAGE_REQUIRED",
         error: "TRIAGE_REQUIRED",
         message: "Complete initial triage before joining the queue.",
       },
@@ -114,6 +127,7 @@ export async function POST(req: NextRequest) {
   if (!(await hasTelemedicineTcle(session.user.id))) {
     return NextResponse.json(
       {
+        errorCode: "TCLE_REQUIRED",
         error: "TCLE_REQUIRED",
         message: "Sign the telemedicine consent form before joining the queue.",
       },
@@ -124,6 +138,7 @@ export async function POST(req: NextRequest) {
   if (!(await resolvePatientHumanitarianPhone(session.user.id))) {
     return NextResponse.json(
       {
+        errorCode: "PHONE_REQUIRED",
         error: "PHONE_REQUIRED",
         message: "Register your WhatsApp phone number before joining the queue.",
       },
@@ -147,6 +162,7 @@ export async function POST(req: NextRequest) {
     if (existing.status === "IN_PROGRESS") {
       return NextResponse.json(
         {
+          errorCode: "CANNOT_SWITCH_IN_CONSULT",
           error: "CANNOT_SWITCH_IN_CONSULT",
           message: "Finish or leave the current consultation before choosing another service.",
         },
@@ -156,7 +172,10 @@ export async function POST(req: NextRequest) {
 
     const cancelled = await cancelHumanitarianEntry(existing.id, session.user.id);
     if (!cancelled) {
-      return NextResponse.json({ error: "Cannot switch queue" }, { status: 400 });
+      return NextResponse.json(
+        { errorCode: "VALIDATION_ERROR", error: "Cannot switch queue" },
+        { status: 400 },
+      );
     }
   }
 
@@ -168,6 +187,7 @@ export async function POST(req: NextRequest) {
   if (!rate.allowed) {
     return NextResponse.json(
       {
+        errorCode: "RATE_LIMITED",
         error: "RATE_LIMITED",
         message: "Too many queue join attempts. Please wait before trying again.",
         retryAfterSec: rate.retryAfterSec,
@@ -179,7 +199,7 @@ export async function POST(req: NextRequest) {
   const activeCount = await countActiveInPool(pool.id);
   if (activeCount >= pool.maxWaiting) {
     return NextResponse.json(
-      { error: "QUEUE_FULL", message: translate(lang, "hum.api.queueFullMessage") },
+      { errorCode: "QUEUE_FULL", error: "QUEUE_FULL", message: translate(lang, "hum.api.queueFullMessage") },
       { status: 429 },
     );
   }
@@ -198,7 +218,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     if (e instanceof HumanitarianQueueFullError) {
       return NextResponse.json(
-        { error: "QUEUE_FULL", message: translate(lang, "hum.api.queueFullMessage") },
+        { errorCode: "QUEUE_FULL", error: "QUEUE_FULL", message: translate(lang, "hum.api.queueFullMessage") },
         { status: 429 },
       );
     }
@@ -208,7 +228,10 @@ export async function POST(req: NextRequest) {
         const status = await getEntryStatus(active.id, session.user.id, lang);
         return NextResponse.json({ entry: status, alreadyInQueue: true });
       }
-      return NextResponse.json({ error: "Already in queue" }, { status: 409 });
+      return NextResponse.json(
+        { errorCode: "ALREADY_IN_QUEUE", error: "Already in queue" },
+        { status: 409 },
+      );
     }
     throw e;
   }

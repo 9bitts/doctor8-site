@@ -11,7 +11,7 @@ interface LiveQueue {
   status: string;
   position: number;
   aheadCount: number;
-  estimatedWaitMinutes: number;
+  estimatedWaitMinutes: number | null;
   onlineVolunteers: number;
   poolLabel: string;
   professionalName: string | null;

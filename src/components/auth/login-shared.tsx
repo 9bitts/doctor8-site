@@ -44,9 +44,37 @@ const HEADER_ICONS: Record<PortalHeaderIcon, typeof Brain> = {
   heart: Heart,
 };
 
-export function useLoginLang() {
+export function isHumanitarianAuthCallback(callbackUrl: string | null | undefined): boolean {
+  if (!callbackUrl) return false;
+  try {
+    const path = callbackUrl.startsWith("http")
+      ? new URL(callbackUrl).pathname
+      : callbackUrl.split("?")[0];
+    return path.startsWith("/humanitarian/") || path === "/sos-venezuela";
+  } catch {
+    return false;
+  }
+}
+
+export function useLoginLang(callbackUrl?: string | null) {
   const [lang, setLang] = useState<Lang>("en");
-  useEffect(() => { setLang(detectInitialLang()); }, []);
+  useEffect(() => {
+    let initial = detectInitialLang();
+    const cb =
+      callbackUrl
+      ?? (typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("callbackUrl")
+        : null);
+    if (isHumanitarianAuthCallback(cb)) {
+      try {
+        const saved = window.localStorage.getItem(LANG_KEY);
+        if (!saved) initial = "es";
+      } catch {
+        initial = "es";
+      }
+    }
+    setLang(initial);
+  }, [callbackUrl]);
 
   function changeLang(l: Lang) {
     setLang(l);

@@ -3,10 +3,11 @@
 // src/components/LegalLayout.tsx
 // Shared layout for all legal pages — trilingual PT/EN/ES
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import { sanitizeLegalHtml } from "@/lib/sanitize-html";
+import { normalizeLang } from "@/lib/i18n/translations";
 
 interface Section {
   title: { pt: string; en: string; es: string };
@@ -20,14 +21,38 @@ interface LegalLayoutProps {
   sections: Section[];
   badge?: string;
   badgeColor?: string;
+  initialLang?: Lang;
 }
 
 type Lang = "pt" | "en" | "es";
 
+function resolveInitialLang(initialLang?: Lang): Lang {
+  if (typeof window === "undefined") return initialLang ?? "pt";
+
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get("lang");
+  if (fromQuery) return normalizeLang(fromQuery) as Lang;
+
+  if (initialLang) return initialLang;
+
+  try {
+    const ref = document.referrer || "";
+    if (ref.includes("/humanitarian/") || ref.includes("/sos-venezuela")) {
+      return "es";
+    }
+  } catch { /* ignore */ }
+
+  return "pt";
+}
+
 export default function LegalLayout({
-  title, subtitle, lastUpdated, sections, badge, badgeColor = "#176a88",
+  title, subtitle, lastUpdated, sections, badge, badgeColor = "#176a88", initialLang,
 }: LegalLayoutProps) {
-  const [lang, setLang] = useState<Lang>("pt");
+  const [lang, setLang] = useState<Lang>(() => resolveInitialLang(initialLang));
+
+  useEffect(() => {
+    setLang(resolveInitialLang(initialLang));
+  }, [initialLang]);
 
   const t = (obj: { pt: string; en: string; es: string }) => obj[lang];
 

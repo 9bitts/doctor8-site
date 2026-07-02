@@ -12,9 +12,8 @@ export function getHumanitarianLang(): Lang {
     const saved = localStorage.getItem(LANG_KEY);
     if (saved) return normalizeLang(saved);
   } catch { /* ignore */ }
-  const nav = (navigator.language || "es").toLowerCase();
-  if (nav.startsWith("pt")) return "pt";
-  if (nav.startsWith("en")) return "en";
+  // Inside /humanitarian/* the default is always Spanish — browser locale
+  // is ignored so Venezuelan patients are not shown Portuguese.
   return "es";
 }
 

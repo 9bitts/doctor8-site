@@ -135,6 +135,7 @@ export default function HumanitarianTclePage() {
           checked={accepted}
           onChange={setAccepted}
           dark
+          termHref={`/tcle-telemedicina?lang=${lang}`}
         />
 
         {error && (
@@ -153,7 +154,7 @@ export default function HumanitarianTclePage() {
         </button>
 
         <p className="text-center text-xs text-slate-500">
-          <Link href="/tcle-telemedicina" target="_blank" className="text-emerald-500 hover:underline">
+          <Link href={`/tcle-telemedicina?lang=${lang}`} target="_blank" className="text-emerald-500 hover:underline">
             {t(lang, "tcle.readFull")}
           </Link>
         </p>
