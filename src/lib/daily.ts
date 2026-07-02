@@ -168,6 +168,30 @@ export async function createEphemeralRoom(
   }
 }
 
+/**
+ * Checks whether a room still exists and has not expired on Daily's side.
+ * Ephemeral rooms are created with exp = +2h, so a consult that sat stuck can
+ * point at a dead room — in that case joins always fail and the room must be
+ * recreated. Returns true on any uncertainty (network error, no API key) so we
+ * never block a join based on a failed check.
+ */
+export async function isDailyRoomJoinable(roomName: string): Promise<boolean> {
+  const key = process.env.DAILY_API_KEY;
+  if (!key || process.env.E2E_MOCK_DAILY === "1") return true;
+  try {
+    const res = await fetch(`${DAILY_API}/rooms/${roomName}`, { headers: headers() });
+    if (res.status === 404) return false;
+    if (!res.ok) return true;
+    const data = await res.json();
+    const exp = data?.config?.exp;
+    // Treat rooms expiring within the next minute as dead too.
+    if (typeof exp === "number" && exp * 1000 < Date.now() + 60_000) return false;
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 export async function deleteDailyRoom(roomName: string): Promise<void> {
   const key = process.env.DAILY_API_KEY;
   if (!key) return;

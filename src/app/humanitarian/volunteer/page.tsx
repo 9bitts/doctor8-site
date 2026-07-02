@@ -130,10 +130,16 @@ export default function HumanitarianVolunteerPage() {
       }
 
       const assigned = data.currentEntry;
+      // If the volunteer just left this consult (e.g. the video failed to join),
+      // do NOT auto-redirect back into it — that traps them in a loop. Keep them
+      // on the dashboard so they can retry manually or finish the consult.
+      let leftConsult: string | null = null;
+      try { leftConsult = sessionStorage.getItem("doctor8.leftConsult"); } catch { /* ignore */ }
       if (
         assigned &&
         ["CALLED", "IN_PROGRESS"].includes(assigned.status) &&
-        autoVideoRef.current !== assigned.id
+        autoVideoRef.current !== assigned.id &&
+        leftConsult !== assigned.id
       ) {
         autoVideoRef.current = assigned.id;
         router.push(`/video/humanitarian/${assigned.id}`);
@@ -315,6 +321,7 @@ export default function HumanitarianVolunteerPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ entryId: currentEntry.id }),
       });
+      try { sessionStorage.removeItem("doctor8.leftConsult"); } catch { /* ignore */ }
       setCurrentEntry(null);
       await load();
     } catch {

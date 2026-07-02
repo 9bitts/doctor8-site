@@ -641,6 +641,13 @@ export default function VideoConsultRoom({
 
   function navigateAwayFromConsult() {
     const dest = leaveDestination(roomData);
+    // Record that the user deliberately left this consult so the volunteer
+    // dashboard does NOT auto-redirect them straight back into it (which traps
+    // them in a loop when the video room fails to join).
+    try {
+      const leftId = roomData.entryId || roomData.queueId || "";
+      if (leftId) sessionStorage.setItem("doctor8.leftConsult", leftId);
+    } catch { /* ignore */ }
     try {
       router.replace(dest);
     } catch {
