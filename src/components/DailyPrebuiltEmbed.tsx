@@ -36,14 +36,13 @@ async function destroyCallSafely(call: DailyCall | null): Promise<void> {
   }
 }
 
-function isJoinedMeetingState(call: DailyCall): boolean {
-  try {
-    const stateFn = (call as DailyCall & { meetingState?: () => string }).meetingState;
-    const state = typeof stateFn === "function" ? stateFn() : "";
-    return state === "joined-meeting";
-  } catch {
-    return false;
-  }
+async function destroyWithTimeout(call: DailyCall | null, ms = 3000): Promise<void> {
+  if (!call) return;
+  const winner = await Promise.race([
+    destroyCallSafely(call).then(() => "destroy" as const),
+    new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), ms)),
+  ]);
+  if (winner === "timeout") console.log("[daily] destroy timed out");
 }
 
 const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function DailyPrebuiltEmbed(
@@ -63,7 +62,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
     leave: async () => {
       const call = callRef.current;
       callRef.current = null;
-      await destroyCallSafely(call);
+      await destroyWithTimeout(call);
     },
   }));
 
@@ -85,6 +84,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
 
     const markConnected = () => {
       if (!cancelled) {
+        console.log("[daily] joined");
         clearConnectTimeout();
         setJoining(false);
       }
@@ -92,6 +92,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
 
     const reportError = (msg: string) => {
       if (!cancelled) {
+        console.log("[daily] error", msg);
         clearConnectTimeout();
         setJoining(false);
         onErrorRef.current?.(msg);
@@ -102,11 +103,15 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       if (!containerRef.current || cancelled) return;
       setJoining(true);
 
+      connectTimeout = setTimeout(() => {
+        reportError("Connection timed out. Please retry.");
+      }, 30_000);
+
       try {
         if (callRef.current) {
           const prev = callRef.current;
           callRef.current = null;
-          await destroyCallSafely(prev);
+          await destroyWithTimeout(prev);
         }
         if (cancelled || !containerRef.current) return;
 
@@ -115,7 +120,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
 
         const existing = DailyIframe.getCallInstance?.();
         if (existing) {
-          await destroyCallSafely(existing);
+          await destroyWithTimeout(existing);
         }
         if (cancelled || !containerRef.current) return;
 
@@ -135,17 +140,15 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
         call.on("joined-meeting", markConnected);
         call.on("participant-joined", markConnected);
         call.on("left-meeting", () => {
+          console.log("[daily] left");
           if (!cancelled) setJoining(false);
         });
         call.on("error", (ev: { errorMsg?: string; error?: { msg?: string } }) => {
+          console.log("[daily] error event", ev);
           const msg =
             ev?.errorMsg || ev?.error?.msg || "Could not join video room";
           reportError(msg);
         });
-
-        connectTimeout = setTimeout(() => {
-          reportError("Connection timed out. Please retry.");
-        }, 45_000);
 
         if (cancelled) return;
 
@@ -153,9 +156,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
 
         if (cancelled) return;
 
-        if (isJoinedMeetingState(call)) {
-          markConnected();
-        }
+        markConnected();
       } catch (e) {
         if (!cancelled) {
           reportError(e instanceof Error ? e.message : "Could not join video room");
@@ -170,7 +171,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       clearConnectTimeout();
       const instance = callRef.current;
       callRef.current = null;
-      void destroyCallSafely(instance);
+      void destroyWithTimeout(instance);
     };
   }, [url, token]);
 

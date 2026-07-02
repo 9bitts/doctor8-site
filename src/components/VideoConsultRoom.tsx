@@ -612,9 +612,6 @@ export default function VideoConsultRoom({
     if (assistant?.isRecording()) {
       if (assistant.shouldAutoSaveOnLeave()) {
         if (!window.confirm(t("leaveSavingNotes"))) return;
-        setLeavingCall(true);
-        await assistant.finalizeOnLeave();
-        setLeavingCall(false);
       } else if (!window.confirm(t("leaveDiscardRecording"))) {
         return;
       }
@@ -622,24 +619,45 @@ export default function VideoConsultRoom({
       return;
     }
 
-    if (
-      roomData.kind === "humanitarian" &&
-      roomData.role === "patient" &&
-      roomData.entryId
-    ) {
-      setLeavingCall(true);
-      try {
-        await fetch("/api/humanitarian/queue/patient-leave", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ entryId: roomData.entryId }),
-        });
-      } catch { /* still leave room */ }
-      setLeavingCall(false);
-    }
+    setLeavingCall(true);
+    try {
+      if (assistant?.isRecording() && assistant.shouldAutoSaveOnLeave()) {
+        await Promise.race([
+          assistant.finalizeOnLeave(),
+          new Promise<void>((resolve) =>
+            setTimeout(() => {
+              console.warn("[daily] finalizeOnLeave timeout");
+              resolve();
+            }, 10_000),
+          ),
+        ]);
+      }
 
-    await dailyRef.current?.leave();
-    router.replace(leaveDestination(roomData));
+      if (
+        roomData.kind === "humanitarian" &&
+        roomData.role === "patient" &&
+        roomData.entryId
+      ) {
+        try {
+          await Promise.race([
+            fetch("/api/humanitarian/queue/patient-leave", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ entryId: roomData.entryId }),
+            }),
+            new Promise<void>((resolve) => setTimeout(resolve, 5_000)),
+          ]);
+        } catch { /* still leave room */ }
+      }
+
+      await Promise.race([
+        dailyRef.current?.leave() ?? Promise.resolve(),
+        new Promise<void>((resolve) => setTimeout(resolve, 3_000)),
+      ]);
+    } finally {
+      setLeavingCall(false);
+      router.replace(leaveDestination(roomData));
+    }
   }
 
   return (
