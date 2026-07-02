@@ -1,5 +1,7 @@
 // Shared helpers for availability slot generation and display.
 
+import { zonedTimeToUtc } from "@/lib/timezone";
+
 export function localDateKey(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -71,7 +73,8 @@ interface AvailabilityBlock {
 }
 
 export function generateTimeSlots(
-  date: Date,
+  dateStr: string,
+  timeZone: string,
   blocks: AvailabilityBlock[],
   bookedTimes: Set<string>,
   now: Date
@@ -88,9 +91,7 @@ export function generateTimeSlots(
     );
 
     for (const slot of generated) {
-      const [currentHour, currentMin] = slot.startTime.split(":").map(Number);
-      const slotDate = new Date(date);
-      slotDate.setHours(currentHour, currentMin, 0, 0);
+      const slotDate = zonedTimeToUtc(dateStr, slot.startTime, timeZone);
 
       const isPast = slotDate.getTime() < now.getTime() + 60 * 60 * 1000;
       const isBooked = bookedTimes.has(slotDate.toISOString());

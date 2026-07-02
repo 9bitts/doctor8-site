@@ -1,13 +1,20 @@
 // Shared availability slot generation for authenticated and public APIs.
 
 import { db } from "@/lib/db";
-import { generateTimeSlots, localDateKey } from "@/lib/scheduling";
+import { generateTimeSlots } from "@/lib/scheduling";
 import type { ProviderType } from "@/lib/providers";
 import {
   applyHealthPlanSlotFilter,
   getHealthPlanSchedulingRule,
 } from "@/lib/health-plan-rules";
 import type { DaySlots } from "@/lib/appointment-slots";
+import {
+  addCalendarDays,
+  calendarDateInTimeZone,
+  dayOfWeekForDateStr,
+  DEFAULT_TIME_ZONE,
+  zonedTimeToUtc,
+} from "@/lib/timezone";
 
 export type { DaySlots, BookableSlot } from "@/lib/appointment-slots";
 
@@ -25,6 +32,7 @@ export async function getProviderAvailableDays(
     const psychoanalyst = await db.psychoanalystProfile.findUnique({
       where: { id: providerId },
       include: {
+        user: true,
         availabilitySlots: {
           where: { isActive: true },
           orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
@@ -32,6 +40,9 @@ export async function getProviderAvailableDays(
       },
     });
     if (!psychoanalyst || psychoanalyst.availabilitySlots.length === 0) return [];
+
+    const timeZone =
+      (psychoanalyst.user as { timezone?: string } | null)?.timezone || DEFAULT_TIME_ZONE;
 
     const bookedAppointments = await db.appointment.findMany({
       where: {
@@ -51,7 +62,8 @@ export async function getProviderAvailableDays(
         bookedTimes,
         now,
         daysAhead,
-        locale
+        locale,
+        timeZone
       ),
       providerId,
       providerType,
@@ -71,6 +83,9 @@ export async function getProviderAvailableDays(
   });
   if (!professional || professional.availabilitySlots.length === 0) return [];
 
+  const timeZone =
+    (professional as { timezone?: string }).timezone || DEFAULT_TIME_ZONE;
+
   const bookedAppointments = await db.appointment.findMany({
     where: {
       professionalId: providerId,
@@ -89,7 +104,8 @@ export async function getProviderAvailableDays(
       bookedTimes,
       now,
       daysAhead,
-      locale
+      locale,
+      timeZone
     ),
     providerId,
     providerType,
@@ -122,24 +138,24 @@ function buildDaysFromBlocks(
   bookedTimes: Set<string>,
   now: Date,
   daysAhead: number,
-  locale: string
+  locale: string,
+  timeZone: string
 ): DaySlots[] {
   const days: DaySlots[] = [];
+  const todayStr = calendarDateInTimeZone(now, timeZone);
 
   for (let i = 0; i < daysAhead; i++) {
-    const date = new Date(now);
-    date.setDate(date.getDate() + i);
-    date.setHours(0, 0, 0, 0);
-
-    const dayOfWeek = date.getDay();
+    const dateStr = addCalendarDays(todayStr, i);
+    const dayOfWeek = dayOfWeekForDateStr(dateStr, timeZone);
     const blocksForDay = blocks.filter((slot) => slot.dayOfWeek === dayOfWeek);
     if (blocksForDay.length === 0) continue;
 
-    const slots = generateTimeSlots(date, blocksForDay, bookedTimes, now);
+    const slots = generateTimeSlots(dateStr, timeZone, blocksForDay, bookedTimes, now);
     if (slots.some((s) => s.available)) {
+      const labelDate = zonedTimeToUtc(dateStr, "12:00", timeZone);
       days.push({
-        date: localDateKey(date),
-        label: date.toLocaleDateString(locale, {
+        date: dateStr,
+        label: labelDate.toLocaleDateString(locale, {
           weekday: "short",
           month: "short",
           day: "numeric",

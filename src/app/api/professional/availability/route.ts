@@ -5,18 +5,32 @@ import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { validateAvailabilityBlocks } from "@/lib/availability-validation";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
+import { isValidIanaTimeZone, DEFAULT_TIME_ZONE } from "@/lib/timezone";
 
 export async function GET() {
   const ctx = await requireProfessionalApi();
   if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({
+  const raw = await db.professionalProfile.findUnique({
     where: { id: ctx.professional.id },
-    select: { id: true, acuraVolunteer: true, verified: true },
+    select: {
+      id: true,
+      acuraVolunteer: true,
+      verified: true,
+      timezone: true,
+    } as never,
   });
+  const professional = raw as {
+    id: string;
+    acuraVolunteer: boolean;
+    verified: boolean;
+    timezone: string;
+  } | null;
   if (!professional) {
-    return NextResponse.json({ slots: [], acuraVolunteer: false, badgeVisible: false });
+    return NextResponse.json({ slots: [], acuraVolunteer: false, badgeVisible: false, timezone: DEFAULT_TIME_ZONE });
   }
+
+  const proTz = (professional as { timezone?: string }).timezone ?? DEFAULT_TIME_ZONE;
 
   const slots = await db.availabilitySlot.findMany({
     where: { professionalId: professional.id, isActive: true },
@@ -26,6 +40,7 @@ export async function GET() {
   return NextResponse.json({
     acuraVolunteer: professional.acuraVolunteer,
     badgeVisible: isAcuraVolunteerProvider(professional.verified, professional.acuraVolunteer),
+    timezone: proTz,
     slots: slots.map((s) => ({
       dayOfWeek: s.dayOfWeek,
       startTime: s.startTime,
@@ -41,13 +56,23 @@ export async function PUT(req: NextRequest) {
   const ctx = await requireProfessionalApi();
   if (isApiError(ctx)) return ctx.error;
 
-  const { slots } = await req.json();
+  const { slots, timezone } = await req.json();
 
   const professional = await db.professionalProfile.findUnique({
     where: { id: ctx.professional.id },
     select: { id: true, acuraVolunteer: true, verified: true },
   });
   if (!professional) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (timezone !== undefined) {
+    if (typeof timezone !== "string" || !isValidIanaTimeZone(timezone)) {
+      return NextResponse.json({ error: "INVALID_TIMEZONE" }, { status: 400 });
+    }
+    await db.professionalProfile.update({
+      where: { id: professional.id },
+      data: { timezone } as never,
+    });
+  }
 
   const normalized = (slots as {
     dayOfWeek: number;

@@ -25,6 +25,7 @@ import Link from "next/link";
 import PushNotificationSettings from "@/components/PushNotificationSettings";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import type { DataResidencyInfo } from "@/lib/data-residency";
+import { DEFAULT_TIME_ZONE, listTimeZoneOptions } from "@/lib/timezone";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-400 transition";
@@ -93,6 +94,11 @@ export default function AccountPage() {
   const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");
   const [dataResidency, setDataResidency] = useState<DataResidencyInfo | null>(null);
+  const [accountTimezone, setAccountTimezone] = useState(DEFAULT_TIME_ZONE);
+  const [timezoneSaving, setTimezoneSaving] = useState(false);
+  const [timezoneSaved, setTimezoneSaved] = useState(false);
+  const [timezoneError, setTimezoneError] = useState("");
+  const timeZoneOptions = listTimeZoneOptions();
 
   const isPasswordValid = PASSWORD_RULES.every((r) => r.test(newPwd));
   const passwordsMatch = newPwd === confirmPwd;
@@ -112,6 +118,12 @@ export default function AccountPage() {
         if (d?.dataResidency) {
           setDataResidency(d.dataResidency);
         }
+      })
+      .catch(() => {});
+    fetch("/api/user/timezone")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.timezone) setAccountTimezone(d.timezone);
       })
       .catch(() => {});
   }, []);
@@ -249,6 +261,28 @@ export default function AccountPage() {
     }
   }
 
+  async function saveAccountTimezone() {
+    setTimezoneSaving(true);
+    setTimezoneError("");
+    setTimezoneSaved(false);
+    try {
+      const res = await fetch("/api/user/timezone", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timezone: accountTimezone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t("acct.timezoneErr"));
+      if (data.timezone) setAccountTimezone(data.timezone);
+      setTimezoneSaved(true);
+      setTimeout(() => setTimezoneSaved(false), 4000);
+    } catch (e) {
+      setTimezoneError(e instanceof Error ? e.message : t("acct.timezoneErr"));
+    } finally {
+      setTimezoneSaving(false);
+    }
+  }
+
   async function saveAccountRegion() {
     setRegionSaving(true);
     setRegionError("");
@@ -342,6 +376,46 @@ export default function AccountPage() {
             </dl>
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Globe size={18} className="text-emerald-600" /> {t("acct.timezoneTitle")}
+        </h2>
+        <p className="text-sm text-slate-500">{t("acct.timezoneDesc")}</p>
+        {timezoneError && (
+          <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+            {timezoneError}
+          </p>
+        )}
+        {timezoneSaved && (
+          <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+            {t("acct.timezoneSaved")}
+          </p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">{t("acct.timezoneLabel")}</label>
+            <select
+              value={accountTimezone}
+              onChange={(e) => setAccountTimezone(e.target.value)}
+              className={inputClass}
+            >
+              {timeZoneOptions.map((tz) => (
+                <option key={tz} value={tz}>{tz.replace(/_/g, " ")}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={saveAccountTimezone}
+            disabled={timezoneSaving}
+            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0"
+          >
+            {timezoneSaving && <Loader2 size={14} className="animate-spin" />}
+            {t("acct.timezoneSave")}
+          </button>
+        </div>
       </div>
 
       {/* Current account info */}

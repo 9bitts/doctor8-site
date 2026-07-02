@@ -30,6 +30,7 @@ import {
 } from "@/lib/platform-nav-registry";
 import { withNavIcons, type DashboardNavItem } from "@/lib/dashboard-nav-icons";
 import { ToastProvider } from "@/components/ui/toast";
+import { isValidIanaTimeZone } from "@/lib/timezone";
 import {
   User, Settings, LogOut, Menu, X, ChevronRight,
 } from "lucide-react";
@@ -57,6 +58,43 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     }
     loadSession();
   }, []);
+
+  useEffect(() => {
+    if (role !== "PATIENT" || !userId) return;
+    const guardKey = `doctor8.tz.sync.${userId}`;
+    if (sessionStorage.getItem(guardKey)) return;
+
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!isValidIanaTimeZone(browserTz)) {
+      sessionStorage.setItem(guardKey, "1");
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/user/timezone");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (data.timezone === browserTz) {
+          sessionStorage.setItem(guardKey, "1");
+          return;
+        }
+        await fetch("/api/user/timezone", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ timezone: browserTz }),
+        });
+        if (!cancelled) sessionStorage.setItem(guardKey, "1");
+      } catch {
+        /* silent — retry on next session */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [role, userId]);
 
   const isPsychologistPortal = pathname.startsWith("/psychologist");
 

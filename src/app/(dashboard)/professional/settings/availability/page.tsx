@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, formatSlotCount } from "@/lib/i18n/translations";
 import { countSlotsInRange, generateSlotsInRange } from "@/lib/scheduling";
 import { validateAvailabilityBlocks } from "@/lib/availability-validation";
+import { DEFAULT_TIME_ZONE, listTimeZoneOptions } from "@/lib/timezone";
 import { Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
 
 interface TimeBlock {
@@ -91,6 +92,8 @@ export default function AvailabilityPage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [badgeVisible, setBadgeVisible] = useState(false);
+  const [timezone, setTimezone] = useState(DEFAULT_TIME_ZONE);
+  const timeZoneOptions = useMemo(() => listTimeZoneOptions(), []);
 
   useEffect(() => { fetchAvailability(); }, []);
 
@@ -100,6 +103,7 @@ export default function AvailabilityPage() {
       if (res.ok) {
         const d = await res.json();
         setBadgeVisible(!!d.badgeVisible);
+        if (d.timezone) setTimezone(d.timezone);
         if (d.slots?.length) {
           setSchedules(defaultSchedules().map((def) => {
             const daySlots = d.slots.filter(
@@ -195,7 +199,7 @@ export default function AvailabilityPage() {
       const res = await fetch("/api/professional/availability", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots }),
+        body: JSON.stringify({ slots, timezone }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -225,6 +229,20 @@ export default function AvailabilityPage() {
           <p className="text-2xl font-bold text-brand-500">{totalWeeklySlots}</p>
           <p className="text-xs text-slate-400">{t("avail.slotsPerWeek")}</p>
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+        <label className="block text-sm font-semibold text-slate-800">{t("avail.timezoneLabel")}</label>
+        <p className="text-xs text-slate-500">{t("avail.timezoneHelp")}</p>
+        <select
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white"
+        >
+          {timeZoneOptions.map((tz) => (
+            <option key={tz} value={tz}>{tz.replace(/_/g, " ")}</option>
+          ))}
+        </select>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">

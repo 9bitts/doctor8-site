@@ -2,6 +2,11 @@ import { db } from "@/lib/db";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 import { generateTimeSlots } from "@/lib/scheduling";
 import type { ProviderType } from "@/lib/providers";
+import {
+  calendarDateInTimeZone,
+  dayOfWeekForDateStr,
+  DEFAULT_TIME_ZONE,
+} from "@/lib/timezone";
 
 type AvailabilityBlock = {
   dayOfWeek: number;
@@ -28,15 +33,15 @@ export async function resolveSlotAtDateTime(
   const blocks = await loadAvailabilityBlocks(providerId, providerType);
   if (blocks.length === 0) return null;
 
-  const dayStart = new Date(scheduledAt);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayOfWeek = dayStart.getDay();
+  const timeZone = await loadProviderTimeZone(providerId, providerType);
+  const dateStr = calendarDateInTimeZone(scheduledAt, timeZone);
+  const dayOfWeek = dayOfWeekForDateStr(dateStr, timeZone);
   const blocksForDay = blocks.filter((b) => b.dayOfWeek === dayOfWeek);
   if (blocksForDay.length === 0) return null;
 
   const now = new Date();
   const bookedTimes = await loadBookedTimes(providerId, providerType, now);
-  const slots = generateTimeSlots(dayStart, blocksForDay, bookedTimes, now);
+  const slots = generateTimeSlots(dateStr, timeZone, blocksForDay, bookedTimes, now);
   const target = scheduledAt.toISOString();
   const match = slots.find((s) => s.datetime === target);
   if (!match) return null;
@@ -85,6 +90,24 @@ export class VolunteerSlotBookingError extends Error {
     super(code);
     this.name = "VolunteerSlotBookingError";
   }
+}
+
+async function loadProviderTimeZone(
+  providerId: string,
+  providerType: ProviderType,
+): Promise<string> {
+  if (providerType === "psychoanalyst") {
+    const row = await db.psychoanalystProfile.findUnique({
+      where: { id: providerId },
+      include: { user: true },
+    });
+    return (row?.user as { timezone?: string } | undefined)?.timezone || DEFAULT_TIME_ZONE;
+  }
+  const row = await db.professionalProfile.findUnique({
+    where: { id: providerId },
+    select: { timezone: true } as never,
+  });
+  return (row as { timezone?: string } | null)?.timezone || DEFAULT_TIME_ZONE;
 }
 
 async function loadProviderVolunteerStatus(
