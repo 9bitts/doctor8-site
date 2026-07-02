@@ -9,6 +9,7 @@ import { persistAuthCallback, consumeAuthCallback, resolveRegisterHref, resolveC
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { safePostLoginUrl } from "@/lib/role-home";
+import { syncHumanitarianOriginFromCallback } from "@/lib/humanitarian/origin-cookie";
 import {
   PATIENT_LOGIN,
   PROFESSIONAL_REGISTER,
@@ -59,6 +60,10 @@ function UnifiedLoginForm() {
   useEffect(() => {
     setError(parseLoginError(searchParams.get("error")));
   }, [searchParams]);
+
+  useEffect(() => {
+    syncHumanitarianOriginFromCallback(callbackUrl || queryCallback || null);
+  }, [callbackUrl, queryCallback]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

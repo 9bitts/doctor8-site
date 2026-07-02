@@ -7,6 +7,11 @@ import { NextResponse } from "next/server";
 import { isPathAllowedForRole, resolveRoleHome } from "@/lib/role-home";
 import { resolveLoginPathForPathname } from "@/lib/auth-portals";
 import { sessionProfileIncomplete } from "@/lib/user-profile-complete";
+import {
+  humanitarianReturnPathFromCallback,
+  humanitarianReturnPathFromPathname,
+  stampHumanitarianOriginOnResponse,
+} from "@/lib/humanitarian/origin-cookie";
 
 const PRIVATE_CACHE_CONTROL = "private, no-store";
 
@@ -126,6 +131,23 @@ function withPrivateCacheHeaders(
   return response;
 }
 
+function maybeStampHumanitarianOrigin(
+  response: NextResponse,
+  pathname: string,
+  callbackUrl?: string | null,
+): NextResponse {
+  const fromPath = humanitarianReturnPathFromPathname(pathname);
+  if (fromPath) {
+    stampHumanitarianOriginOnResponse(response, fromPath);
+    return response;
+  }
+  const fromCallback = humanitarianReturnPathFromCallback(callbackUrl);
+  if (fromCallback) {
+    stampHumanitarianOriginOnResponse(response, fromCallback);
+  }
+  return response;
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
@@ -188,7 +210,17 @@ export default auth((req) => {
     }
   }
 
-  if (isPublicRoute(pathname)) return NextResponse.next();
+  if (isPublicRoute(pathname)) {
+    if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/register/")) {
+      const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+      return maybeStampHumanitarianOrigin(NextResponse.next(), pathname, callbackUrl);
+    }
+    const publicHumPath = humanitarianReturnPathFromPathname(pathname);
+    if (publicHumPath) {
+      return maybeStampHumanitarianOrigin(NextResponse.next(), pathname);
+    }
+    return NextResponse.next();
+  }
 
   // Allow API auth routes
   if (pathname.startsWith("/api/auth")) return NextResponse.next();
@@ -240,7 +272,8 @@ export default auth((req) => {
     const loginUrl = new URL(loginPath, req.url);
     const callbackUrl = pathname + req.nextUrl.search;
     loginUrl.searchParams.set("callbackUrl", callbackUrl);
-    return NextResponse.redirect(loginUrl);
+    const loginRedirect = NextResponse.redirect(loginUrl);
+    return maybeStampHumanitarianOrigin(loginRedirect, pathname, callbackUrl);
   }
 
   const { role, professionalSpecialty } = session.user as {

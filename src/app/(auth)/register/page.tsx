@@ -7,6 +7,7 @@ import { LogIn } from "lucide-react";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import { MAIN_LOGIN } from "@/lib/auth-portals";
 import { resolveClientAuthCallback } from "@/lib/auth-callback";
+import { syncHumanitarianOriginFromCallback } from "@/lib/humanitarian/origin-cookie";
 import {
   detectInitialLang,
   LANG_KEY,
@@ -26,7 +27,9 @@ export default function RegisterPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const fromQuery = params.get("callbackUrl") || "";
-    setCallbackUrl(resolveClientAuthCallback(fromQuery));
+    const resolved = resolveClientAuthCallback(fromQuery);
+    setCallbackUrl(resolved);
+    syncHumanitarianOriginFromCallback(fromQuery || resolved || null);
 
     const r = params.get("region");
     if (r) {

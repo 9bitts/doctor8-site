@@ -278,7 +278,14 @@ export function RegisterAccountForm({
         return;
       }
 
-      if (data.emailVerificationSkipped) {
+      const humanitarianSkip =
+        role === "PATIENT"
+        && canSkipHumanitarianEmailVerification(
+          authCallback,
+          readClientHumOriginFlag(),
+        );
+
+      if (data.emailVerificationSkipped || humanitarianSkip) {
         clearSensitiveClientState();
         await signOut({ redirect: false });
         const signInResult = await signIn("credentials", {
@@ -312,17 +319,6 @@ export function RegisterAccountForm({
         return;
       }
 
-      if (
-        role === "PATIENT"
-        && canSkipHumanitarianEmailVerification(
-          authCallback,
-          readClientHumOriginFlag(),
-        )
-      ) {
-        router.push(authCallback || "/login");
-        return;
-      }
-
       router.push(
         buildVerifyAccountHref({
           email,
@@ -336,6 +332,13 @@ export function RegisterAccountForm({
       setLoading(false);
     }
   }
+
+  const humanitarianPatientSkip =
+    role === "PATIENT"
+    && canSkipHumanitarianEmailVerification(
+      effectiveAuthCallback(),
+      readClientHumOriginFlag(),
+    );
 
   return (
     <>
@@ -388,7 +391,7 @@ export function RegisterAccountForm({
         </p>
       </div>
 
-      <RegisterVerificationNotice lang={lang} />
+      {!humanitarianPatientSkip && <RegisterVerificationNotice lang={lang} />}
 
       {errors.general && (
         <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">

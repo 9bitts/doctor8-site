@@ -1,3 +1,4 @@
+import type { NextResponse } from "next/server";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
 /** Short-lived marker: user entered via SOS / humanitarian patient campaign. */
@@ -41,6 +42,38 @@ export function defaultHumanitarianReturnPath(): string {
   return DEFAULT_CAMPAIGN_PATH;
 }
 
+/** Return path from ?callbackUrl= when it points at SOS / humanitarian patient flow. */
+export function humanitarianReturnPathFromCallback(
+  callbackUrl: string | null | undefined,
+): string | null {
+  if (!callbackUrl?.trim()) return null;
+  const trimmed = callbackUrl.trim();
+  try {
+    const path = trimmed.startsWith("http")
+      ? new URL(trimmed).pathname
+      : trimmed.split("?")[0];
+    if (!path.startsWith("/")) return null;
+    return humanitarianReturnPathFromPathname(path);
+  } catch {
+    return null;
+  }
+}
+
+const HUM_COOKIE_OPTIONS = {
+  path: "/",
+  maxAge: HUM_ORIGIN_MAX_AGE_SECONDS,
+  sameSite: "lax" as const,
+};
+
+/** Middleware / route handlers: stamp short-lived humanitarian origin cookies. */
+export function stampHumanitarianOriginOnResponse(
+  response: NextResponse,
+  returnPath: string,
+): void {
+  response.cookies.set(HUM_ORIGIN_COOKIE, "1", HUM_COOKIE_OPTIONS);
+  response.cookies.set(HUM_RETURN_COOKIE, returnPath, HUM_COOKIE_OPTIONS);
+}
+
 /** Client: set origin + return cookies (path=/, ~2h). */
 export function setHumanitarianOriginCookies(returnPath: string) {
   if (typeof document === "undefined") return;
@@ -48,6 +81,12 @@ export function setHumanitarianOriginCookies(returnPath: string) {
   const base = `path=/; max-age=${maxAge}; SameSite=Lax`;
   document.cookie = `${HUM_ORIGIN_COOKIE}=1; ${base}`;
   document.cookie = `${HUM_RETURN_COOKIE}=${encodeURIComponent(returnPath)}; ${base}`;
+}
+
+/** Client: persist origin cookies when auth pages receive a humanitarian callbackUrl. */
+export function syncHumanitarianOriginFromCallback(callbackUrl: string | null | undefined) {
+  const returnPath = humanitarianReturnPathFromCallback(callbackUrl);
+  if (returnPath) setHumanitarianOriginCookies(returnPath);
 }
 
 export function readHumOriginFlagFromCookieHeader(cookieHeader: string | undefined): boolean {
