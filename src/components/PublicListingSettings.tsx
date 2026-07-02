@@ -34,7 +34,15 @@ type ListingInfo = {
   analytics?: ProfileAnalytics;
 };
 
-export default function PublicListingSettings({ apiPath }: { apiPath: string }) {
+export default function PublicListingSettings({
+  apiPath,
+  hideToggle = false,
+  embedded = false,
+}: {
+  apiPath: string;
+  hideToggle?: boolean;
+  embedded?: boolean;
+}) {
   const { t, lang } = useI18n();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -128,7 +136,7 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex items-center gap-2 text-slate-400 text-sm">
+      <div className={`flex items-center gap-2 text-slate-400 text-sm ${embedded ? "py-4" : "bg-white rounded-2xl border border-slate-100 shadow-sm p-6"}`}>
         <Loader2 size={16} className="animate-spin" /> {t("pub.loading")}
       </div>
     );
@@ -143,19 +151,26 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
     live: "bg-brand-50 text-brand-600 border-brand-200",
   };
 
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-            <Globe size={18} className="text-brand-500" /> {t("pub.title")}
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">{t("pub.subtitle")}</p>
+  const inner = (
+    <div className="space-y-4">
+      {!embedded && (
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <Globe size={18} className="text-brand-500" /> {t("pub.title")}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">{t("pub.subtitle")}</p>
+          </div>
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${statusColors[info.status]}`}>
+            {t(`pub.status.${info.status}`)}
+          </span>
         </div>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${statusColors[info.status]}`}>
+      )}
+      {embedded && (
+        <span className={`inline-flex text-xs font-medium px-2.5 py-1 rounded-full border ${statusColors[info.status]}`}>
           {t(`pub.status.${info.status}`)}
         </span>
-      </div>
+      )}
 
       {info.status === "pending_approval" && (
         <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm text-amber-800">
@@ -168,6 +183,7 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-700">{error}</div>
       )}
 
+      {!hideToggle && (
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -188,6 +204,7 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
           {t("pub.toggleLabel")}
         </div>
       </div>
+      )}
 
       <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-2">
         <input
@@ -367,6 +384,14 @@ export default function PublicListingSettings({ apiPath }: { apiPath: string }) 
           </div>
         </div>
       )}
+    </div>
+  );
+
+  if (embedded) return inner;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      {inner}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { DollarSign, Video, Building2, Loader2, CheckCircle2 } from "lucide-react";
 
@@ -13,6 +13,10 @@ export type ConsultPricingSettingsProps = {
   pricingPatchPath?: string;
   showSessionDuration?: boolean;
   accent?: "brand" | "teal";
+  embedded?: boolean;
+  autoSave?: boolean;
+  hideSaveButton?: boolean;
+  onSaved?: () => void;
 };
 
 export default function ConsultPricingSettings({
@@ -20,6 +24,10 @@ export default function ConsultPricingSettings({
   pricingPatchPath,
   showSessionDuration = false,
   accent = "brand",
+  embedded = false,
+  autoSave = false,
+  hideSaveButton = false,
+  onSaved,
 }: ConsultPricingSettingsProps) {
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
@@ -31,9 +39,14 @@ export default function ConsultPricingSettings({
   const [acceptsTeleconsult, setAcceptsTeleconsult] = useState(true);
   const [acceptsInPerson, setAcceptsInPerson] = useState(false);
   const [sessionDurationMins, setSessionDurationMins] = useState("50");
+  const readyRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const accentText = accent === "teal" ? "text-teal-500" : "text-brand-500";
-  const accentBg = accent === "teal" ? "bg-teal-50 border-teal-200 text-teal-600" : "bg-brand-50 border-brand-200 text-brand-600";
+  const accentBg =
+    accent === "teal"
+      ? "bg-teal-50 border-teal-200 text-teal-600"
+      : "bg-brand-50 border-brand-200 text-brand-600";
   const accentBtn = accent === "teal" ? "bg-teal-600 hover:bg-teal-700" : "bg-brand-500 hover:bg-brand-400";
   const accentRing = accent === "teal" ? "focus:ring-teal-500/40" : "focus:ring-brand-500/40";
   const accentCheck = accent === "teal" ? "accent-teal-600" : "accent-brand-500";
@@ -54,15 +67,15 @@ export default function ConsultPricingSettings({
         }
       })
       .catch(() => setError(t("it.settings.pricingLoadErr")))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        readyRef.current = true;
+      });
   }, [profileApiPath, showSessionDuration, t]);
 
-  async function handleSave() {
+  const persist = useCallback(async () => {
     setError("");
-    if (!price || Number(price) <= 0) {
-      setError(t("it.settings.pricingRequired"));
-      return;
-    }
+    if (!price || Number(price) <= 0) return;
     setSaving(true);
     try {
       if (pricingPatchPath) {
@@ -80,29 +93,10 @@ export default function ConsultPricingSettings({
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || t("set.errGeneric"));
       } else {
-        const profileRes = await fetch(profileApiPath);
-        const profileData = await profileRes.json();
-        const p = profileData.profile;
-        if (!p) throw new Error("Perfil não encontrado.");
-
         const res = await fetch(profileApiPath, {
-          method: "POST",
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            firstName: p.firstName,
-            lastName: p.lastName,
-            specialty: p.specialty,
-            subspecialties: p.subspecialties || [],
-            licenseNumber: p.licenseNumber,
-            licenseState: p.licenseState || "",
-            bio: p.bio || "",
-            avatarUrl: p.avatarUrl || "",
-            clinicName: p.clinicName || "",
-            clinicAddress: p.clinicAddress || "",
-            clinicCity: p.clinicCity || "",
-            clinicState: p.clinicState || "",
-            clinicCountry: p.clinicCountry || "",
-            clinicZip: p.clinicZip || "",
             consultPrice: Math.round(Number(price) * 100),
             currency,
             acceptsTeleconsult,
@@ -113,37 +107,92 @@ export default function ConsultPricingSettings({
         if (!res.ok) throw new Error(data.error || t("set.errGeneric"));
       }
       setSaved(true);
-      setTimeout(() => setSaved(false), 4000);
+      setTimeout(() => setSaved(false), 3000);
+      onSaved?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("set.errGeneric"));
     } finally {
       setSaving(false);
     }
+  }, [
+    price,
+    currency,
+    acceptsTeleconsult,
+    acceptsInPerson,
+    sessionDurationMins,
+    pricingPatchPath,
+    profileApiPath,
+    t,
+    onSaved,
+  ]);
+
+  useEffect(() => {
+    if (!autoSave || !readyRef.current) return;
+    if (!price || Number(price) <= 0) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      void persist();
+    }, 1200);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [price, currency, acceptsTeleconsult, acceptsInPerson, sessionDurationMins, autoSave, persist]);
+
+  async function handleSave() {
+    if (!price || Number(price) <= 0) {
+      setError(t("it.settings.pricingRequired"));
+      return;
+    }
+    await persist();
   }
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex justify-center">
+      <div
+        className={`flex justify-center ${embedded ? "py-6" : "bg-white rounded-2xl border border-slate-100 shadow-sm p-6"}`}
+      >
         <Loader2 className={`animate-spin ${accentText}`} size={22} />
       </div>
     );
   }
 
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-            <DollarSign size={18} className={accentText} /> {t("set.consultation")}
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">{t("it.settings.pricingDesc")}</p>
+  const showSaveButton = !hideSaveButton && !autoSave;
+
+  const form = (
+    <div className="space-y-4">
+      {!embedded && (
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <DollarSign size={18} className={accentText} /> {t("set.consultation")}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">{t("it.settings.pricingDesc")}</p>
+          </div>
+          {saved && !autoSave && (
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-medium border px-3 py-1.5 rounded-full ${accentBg}`}
+            >
+              <CheckCircle2 size={14} /> {t("avail.saved")}
+            </span>
+          )}
         </div>
-        {saved && (
-          <span className={`inline-flex items-center gap-1.5 text-xs font-medium border px-3 py-1.5 rounded-full ${accentBg}`}>
-            <CheckCircle2 size={14} /> {t("avail.saved")}
-          </span>
-        )}
-      </div>
+      )}
+
+      {embedded && <p className="text-sm text-slate-500">{t("it.settings.pricingDesc")}</p>}
+
+      {autoSave && (saving || saved) && (
+        <p className="text-xs text-slate-500 flex items-center gap-1.5">
+          {saving ? (
+            <>
+              <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
+            </>
+          ) : (
+            <>
+              <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
+            </>
+          )}
+        </p>
+      )}
 
       {error && (
         <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
@@ -165,16 +214,16 @@ export default function ConsultPricingSettings({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1.5">
-            {t("set.currency")}
-          </label>
+          <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("set.currency")}</label>
           <select
             className={`${inputClass} bg-white ${accentRing}`}
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
           >
             {CURRENCIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>
+                {c}
+              </option>
             ))}
           </select>
         </div>
@@ -220,15 +269,23 @@ export default function ConsultPricingSettings({
         </label>
       </div>
 
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving}
-        className={`${accentBtn} disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2`}
-      >
-        {saving && <Loader2 size={14} className="animate-spin" />}
-        {saving ? t("set.saving") : t("it.settings.pricingSave")}
-      </button>
+      {showSaveButton && (
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className={`${accentBtn} disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2`}
+        >
+          {saving && <Loader2 size={14} className="animate-spin" />}
+          {saving ? t("set.saving") : t("it.settings.pricingSave")}
+        </button>
+      )}
     </div>
+  );
+
+  if (embedded) return form;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">{form}</div>
   );
 }

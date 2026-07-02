@@ -159,10 +159,10 @@ export default function ProfessionalChecklist() {
   }
 
   const items = [
-    { id: "profile", icon: <User size={16} />, href: mapPath("/professional/account"), done: state.hasProfile, label: t("profile"), hint: t("profileHint") },
+    { id: "profile", icon: <User size={16} />, href: mapPath("/professional/settings"), done: state.hasProfile, label: t("profile"), hint: t("profileHint") },
     { id: "availability", icon: <Calendar size={16} />, href: mapPath("/professional/settings/availability"), done: state.hasAvailability, label: t("availability"), hint: t("availHint") },
     ...(!psychologyPortal
-      ? [{ id: "digSign", icon: <PenLine size={16} />, href: mapPath("/professional/account#digital-sign"), done: state.hasDigitalSign, label: t("digSign"), hint: t("digSignHint") }]
+      ? [{ id: "digSign", icon: <PenLine size={16} />, href: mapPath("/professional/settings#section-digital-sign"), done: state.hasDigitalSign, label: t("digSign"), hint: t("digSignHint") }]
       : []),
     { id: "patient", icon: <Users size={16} />, href: mapPath("/professional/patients"), done: state.hasPatient, label: t("patient"), hint: t("patientHint") },
     ...(!psychologyPortal

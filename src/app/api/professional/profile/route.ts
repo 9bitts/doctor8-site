@@ -118,3 +118,74 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ profile, success: true, profileComplete: isComplete });
 }
+
+/** PATCH — partial update (auto-save). Only updates fields present in the body. */
+export async function PATCH(req: NextRequest) {
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
+
+  const body = await req.json();
+  const existing = await db.professionalProfile.findUnique({
+    where: { userId: ctx.userId },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
+  const allowed = [
+    "avatarUrl", "firstName", "lastName", "specialty", "subspecialties",
+    "licenseNumber", "licenseState", "bio", "consultPrice", "currency",
+    "acceptsTeleconsult", "acceptsInPerson",
+    "clinicName", "clinicAddress", "clinicCity", "clinicState", "clinicCountry", "clinicZip",
+  ] as const;
+
+  const data: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in body) {
+      if (key === "subspecialties") {
+        const raw = body.subspecialties;
+        data.subspecialties = Array.isArray(raw)
+          ? raw
+          : typeof raw === "string" && raw.length
+          ? raw.split(",").map((s: string) => s.trim()).filter(Boolean)
+          : [];
+      } else if (key === "consultPrice") {
+        data.consultPrice = Number(body.consultPrice);
+      } else if (key === "acceptsTeleconsult" || key === "acceptsInPerson") {
+        data[key] = Boolean(body[key]);
+      } else {
+        data[key] = body[key] ?? null;
+      }
+    }
+  }
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+  }
+
+  const profile = await db.professionalProfile.update({
+    where: { userId: ctx.userId },
+    data,
+  });
+
+  await audit.updateRecord(ctx.userId, "ProfessionalProfile", profile.id);
+
+  const { ensureVirtualCard } = await import("@/lib/public-profile");
+  await ensureVirtualCard({
+    professionalId: profile.id,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    specialty: profile.specialty,
+    clinicCity: profile.clinicCity,
+  });
+
+  const isComplete = Boolean(
+    profile.firstName &&
+      profile.lastName &&
+      profile.licenseNumber &&
+      profile.specialty &&
+      profile.consultPrice > 0,
+  );
+
+  return NextResponse.json({ profile, success: true, profileComplete: isComplete });
+}

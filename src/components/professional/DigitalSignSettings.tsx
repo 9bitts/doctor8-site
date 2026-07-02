@@ -25,10 +25,21 @@ function formatCpfInput(value: string): string {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
-export default function DigitalSignSettings() {
+export type DigitalSignSettingsProps = {
+  embedded?: boolean;
+  onConfiguredChange?: (configured: boolean) => void;
+};
+
+export default function DigitalSignSettings({
+  embedded = false,
+  onConfiguredChange,
+}: DigitalSignSettingsProps = {}) {
   const t = useT();
   const pathname = usePathname();
+  const settingsPath = mapProfessionalPathToPortal(pathname, "/professional/settings");
   const accountPath = mapProfessionalPathToPortal(pathname, "/professional/account");
+  const scrollPath = embedded ? settingsPath : accountPath;
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -47,10 +58,11 @@ export default function DigitalSignSettings() {
         const data = await res.json();
         setConfig(data);
         if (data.provider === "VIDaaS") setProvider("VIDaaS");
+        onConfiguredChange?.(!!data.configured);
       }
     } catch { /* ignore */ }
     setLoading(false);
-  }, []);
+  }, [onConfiguredChange]);
 
   useEffect(() => {
     load();
@@ -69,14 +81,14 @@ export default function DigitalSignSettings() {
     if (signTest) {
       params.delete("signTest");
       const qs = params.toString();
-      window.history.replaceState({}, "", `${accountPath}${qs ? `?${qs}` : ""}#digital-sign`);
+      window.history.replaceState({}, "", `${scrollPath}${qs ? `?${qs}` : ""}#digital-sign`);
     }
     if (window.location.hash === "#digital-sign" || params.get("digitalSign") === "1") {
       requestAnimationFrame(() => {
         document.getElementById("digital-sign")?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     }
-  }, [t]);
+  }, [t, scrollPath]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -128,14 +140,17 @@ export default function DigitalSignSettings() {
     }
   }
 
-  return (
-    <div id="digital-sign" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5 scroll-mt-24">
-      <div>
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <PenLine size={18} className="text-brand-500" /> {t("digSign.title")}
-        </h2>
-        <p className="text-sm text-slate-500 mt-1">{t("digSign.subtitle")}</p>
-      </div>
+  const content = (
+    <>
+      {!embedded && (
+        <div>
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <PenLine size={18} className="text-brand-500" /> {t("digSign.title")}
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">{t("digSign.subtitle")}</p>
+        </div>
+      )}
+      {embedded && <p className="text-sm text-slate-500">{t("digSign.subtitle")}</p>}
 
       <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 space-y-2">
         <p className="text-sm font-semibold text-brand-700 flex items-center gap-2">
@@ -245,6 +260,20 @@ export default function DigitalSignSettings() {
           )}
         </>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div id="digital-sign" className="space-y-5 scroll-mt-24">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <div id="digital-sign" className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5 scroll-mt-24">
+      {content}
     </div>
   );
 }
