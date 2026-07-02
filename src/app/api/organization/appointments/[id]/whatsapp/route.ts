@@ -77,16 +77,18 @@ export async function POST(
   const patientUser = appointment.patient.userId
     ? await db.user.findUnique({
         where: { id: appointment.patient.userId },
-        select: { language: true },
-      })
+        select: { language: true, timezone: true } as never,
+      }) as { language: string | null; timezone?: string } | null
     : null;
   const waLang = resolveWhatsAppLang(patientUser?.language);
+  const patientTimezone = patientUser?.timezone;
   const waMeText = buildAppointmentReminderWaMeMessage({
     patientName,
     doctorName: `${org.nomeFantasia} — ${doctorName}`,
     scheduledAt: appointment.scheduledAt,
     meetingUrl: appointment.meetingUrl,
     lang: waLang,
+    patientTimezone,
   });
 
   if (isWhatsAppConfigured()) {
@@ -97,6 +99,7 @@ export async function POST(
       scheduledAt: appointment.scheduledAt,
       meetingUrl: appointment.meetingUrl,
       language: waLang,
+      patientTimezone,
     });
 
     if (result.skipped) {

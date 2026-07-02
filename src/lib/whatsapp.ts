@@ -111,6 +111,7 @@ export async function sendAppointmentReminderWhatsApp(opts: {
   scheduledAt: Date;
   meetingUrl?: string | null;
   language?: Lang;
+  patientTimezone?: string;
 }): Promise<{ ok: boolean; messageId?: string; error?: string; skipped?: boolean }> {
   if (!isWhatsAppConfigured()) {
     return { ok: false, skipped: true };
@@ -127,7 +128,7 @@ export async function sendAppointmentReminderWhatsApp(opts: {
   if (!to) return { ok: false, error: "Invalid phone number" };
 
   const firstName = opts.patientName.trim().split(/\s+/)[0] || opts.patientName;
-  const { combined } = formatWhatsAppDateTime(opts.scheduledAt, lang);
+  const { combined } = formatWhatsAppDateTime(opts.scheduledAt, lang, opts.patientTimezone);
 
   const components: Record<string, unknown>[] = [
     {

@@ -217,10 +217,12 @@ export async function POST(req: NextRequest) {
 
   const patientUser = await db.user.findFirst({
     where: { patientProfile: { id: appointment.patientId } },
-    select: { id: true, email: true, language: true },
-  });
+    select: { id: true, email: true, language: true, timezone: true } as never,
+  }) as { id: string; email: string; language: string | null; timezone?: string } | null;
 
   if (!patientUser) return NextResponse.json({ skipped: true, reason: "Patient user not found" });
+
+  const patientTimezone = patientUser.timezone;
 
   const patientName = `${safeDecrypt(appointment.patient.firstName)} ${safeDecrypt(appointment.patient.lastName)}`.trim();
   const doctorName = appointment.professional
@@ -246,7 +248,8 @@ export async function POST(req: NextRequest) {
         scheduledAt,
         meetingUrl: joinUrl,
         hoursUntil: 24,
-        language: patientUser.language,
+        language: patientUser.language ?? undefined,
+        patientTimezone,
       });
       console.log(`[REMINDER] 24h email sent (user ${patientUser.id})`);
       await markSent({ reminder24hSent: true });
@@ -270,6 +273,7 @@ export async function POST(req: NextRequest) {
           scheduledAt,
           meetingUrl: joinUrl,
           lang: waLang,
+          patientTimezone,
         });
         whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
       }
@@ -282,8 +286,9 @@ export async function POST(req: NextRequest) {
         scheduledAt,
         meetingUrl: joinUrl,
         hoursUntil: 3,
-        language: patientUser.language,
+        language: patientUser.language ?? undefined,
         whatsappUrl,
+        patientTimezone,
       });
       console.log(`[REMINDER] 3h email sent (user ${patientUser.id})`);
     } catch (e) {
@@ -302,6 +307,7 @@ export async function POST(req: NextRequest) {
         scheduledAt,
         meetingUrl: joinUrl,
         lang: waLang,
+        patientTimezone,
       });
       const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
 
@@ -314,6 +320,7 @@ export async function POST(req: NextRequest) {
           scheduledAt,
           meetingUrl: joinUrl,
           language: waLang,
+          patientTimezone,
         });
         if (result.ok) {
           apiSent = true;

@@ -35,6 +35,12 @@ import { getPatientIntakeStatusBySlug } from "@/lib/humanitarian/intake";
 import { resolveRoleHome } from "@/lib/role-home";
 import { getPendingChartLinkNotices } from "@/lib/chart-link-notices";
 import { parseAppointmentIntake } from "@/lib/appointment-intake";
+import {
+  DEFAULT_TIME_ZONE,
+  formatShortDate,
+  formatShortDateWithYear,
+  formatAppointmentTimeWithLabel,
+} from "@/lib/timezone";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -158,7 +164,7 @@ export default async function PatientDashboard() {
     }),
     db.user.findUnique({
       where: { id: userId },
-      select: { region: true },
+      select: { region: true, timezone: true } as never,
     }),
     getActiveCampaignForRegion(session.user.region),
     getPatientActiveHumanitarianEntry(userId),
@@ -166,8 +172,12 @@ export default async function PatientDashboard() {
     getPendingChartLinkNotices(userId),
   ]);
 
+  const userMeta = userRow as { region?: string | null; timezone?: string } | null;
+
   const hasActiveClub =
     !!subscription && ["active", "trialing"].includes(subscription.status);
+
+  const userTz = userMeta?.timezone ?? DEFAULT_TIME_ZONE;
 
   const soonAppointment = patient.appointments.find((apt) => {
     const ms = new Date(apt.scheduledAt).getTime() - Date.now();
@@ -299,7 +309,7 @@ export default async function PatientDashboard() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
 
-      {(humanitarianCampaign?.active || userRow?.region === "VE") && (
+      {(humanitarianCampaign?.active || userMeta?.region === "VE") && (
         <>
           <HumanitarianBanner
             lang={lang}
@@ -322,7 +332,7 @@ export default async function PatientDashboard() {
 
       <ClubDoctorBanner
         subscribed={hasActiveClub}
-        defaultRegion={userRow?.region || session.user.region}
+        defaultRegion={userMeta?.region || session.user.region}
       />
 
       <ChartLinkNoticeBanner notices={chartLinkNotices} />
@@ -532,11 +542,11 @@ export default async function PatientDashboard() {
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                     <div className="text-left sm:text-right">
                       <p className="text-xs font-semibold text-slate-700">
-                        {new Date(apt.scheduledAt).toLocaleDateString(locale, { month: "short", day: "numeric" })}
+                        {formatShortDate(new Date(apt.scheduledAt), userTz, locale)}
                       </p>
                       <p className="text-xs text-slate-500 flex items-center gap-1 sm:justify-end">
                         <Clock size={10} />
-                        {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
+                        {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), userTz, locale)}
                       </p>
                     </div>
                     {canJoinVideo && (
@@ -663,9 +673,7 @@ export default async function PatientDashboard() {
                       {doc.type.replace("_", " ")}
                     </p>
                     <p className="text-xs text-slate-500">
-                      {new Date(doc.createdAt).toLocaleDateString(locale, {
-                        month: "short", day: "numeric", year: "numeric",
-                      })}
+                      {formatShortDateWithYear(new Date(doc.createdAt), userTz, locale)}
                     </p>
                   </div>
                   <ChevronRight size={16} className="text-slate-400 shrink-0" />

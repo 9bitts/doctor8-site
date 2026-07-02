@@ -24,6 +24,11 @@ import {
   EMAIL_REVIEW_REQUEST,
   EMAIL_MAGIC_LINK,
 } from "./email-i18n";
+import {
+  DEFAULT_TIME_ZONE,
+  formatEmailAppointmentDateTime,
+  formatAppointmentTimeWithLabel,
+} from "./timezone";
 import { appendEmailQueryParam } from "./auth-portals";
 
 // ─── EMAIL VERIFICATION ──────────────────────────────────────────────────────
@@ -143,6 +148,7 @@ export async function sendAppointmentConfirmation({
   meetingUrl,
   appointmentId,
   language,
+  patientTimezone,
 }: {
   patientEmail: string;
   patientName: string;
@@ -153,17 +159,14 @@ export async function sendAppointmentConfirmation({
   meetingUrl?: string;
   appointmentId: string;
   language?: string;
+  patientTimezone?: string;
 }) {
   const lang = normEmailLang(language);
   const c = EMAIL_APPOINTMENT_CONFIRM[lang];
   const locale = EMAIL_LOCALE[lang];
+  const tz = patientTimezone || DEFAULT_TIME_ZONE;
 
-  const dateStr = scheduledAt.toLocaleDateString(locale, {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-  });
-  const timeStr = scheduledAt.toLocaleTimeString(locale, {
-    hour: "2-digit", minute: "2-digit",
-  });
+  const { dateStr, timeStr } = formatEmailAppointmentDateTime(scheduledAt, tz, locale);
   const appUrl = getAppUrl();
   const calendarUrl = `${appUrl}/api/appointments/${appointmentId}/calendar`;
 
@@ -215,6 +218,7 @@ export async function sendAppointmentReminder({
   hoursUntil,
   language,
   whatsappUrl,
+  patientTimezone,
 }: {
   patientEmail: string;
   patientName: string;
@@ -224,11 +228,13 @@ export async function sendAppointmentReminder({
   hoursUntil: number;
   language?: string;
   whatsappUrl?: string;
+  patientTimezone?: string;
 }) {
   const lang = normEmailLang(language);
   const c = EMAIL_APPOINTMENT_REMINDER[lang];
   const locale = EMAIL_LOCALE[lang];
-  const timeStr = scheduledAt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  const tz = patientTimezone || DEFAULT_TIME_ZONE;
+  const timeStr = formatAppointmentTimeWithLabel(scheduledAt, tz, locale);
 
   const body = `
     <h2 style="color:#0a4d6e;margin:0 0 16px;">${c.heading}</h2>

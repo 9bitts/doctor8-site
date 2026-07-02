@@ -1,6 +1,11 @@
 import type { EmissionDeliverKind } from "@/lib/emission-deliver";
 import { interpolate } from "@/lib/notification-i18n";
 import { Lang, localeOf, normalizeLang, translate } from "@/lib/i18n/translations";
+import {
+  DEFAULT_TIME_ZONE,
+  formatInTimeZone,
+  formatAppointmentTimeWithLabel,
+} from "@/lib/timezone";
 
 /** Meta WhatsApp template language codes (must match approved templates in Business Manager). */
 export function whatsappTemplateLocale(lang: Lang): string {
@@ -13,10 +18,17 @@ export function resolveWhatsAppLang(language: string | null | undefined): Lang {
   return normalizeLang(language);
 }
 
-export function formatWhatsAppDateTime(scheduledAt: Date, lang: Lang): { date: string; time: string; combined: string } {
+export function formatWhatsAppDateTime(
+  scheduledAt: Date,
+  lang: Lang,
+  timeZone: string = DEFAULT_TIME_ZONE,
+): { date: string; time: string; combined: string } {
   const locale = localeOf(lang);
-  const date = scheduledAt.toLocaleDateString(locale, { day: "2-digit", month: "2-digit" });
-  const time = scheduledAt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  const date = formatInTimeZone(scheduledAt, timeZone, locale, {
+    day: "2-digit",
+    month: "2-digit",
+  });
+  const time = formatAppointmentTimeWithLabel(scheduledAt, timeZone, locale);
   const combined = interpolate(translate(lang, "wa.reminder.dateTime"), { date, time });
   return { date, time, combined };
 }
@@ -28,8 +40,13 @@ export function buildAppointmentReminderWaMeMessage(opts: {
   scheduledAt: Date;
   meetingUrl?: string | null;
   lang: Lang;
+  patientTimezone?: string;
 }): string {
-  const { date, time } = formatWhatsAppDateTime(opts.scheduledAt, opts.lang);
+  const { date, time } = formatWhatsAppDateTime(
+    opts.scheduledAt,
+    opts.lang,
+    opts.patientTimezone,
+  );
   const firstName = opts.patientName.trim().split(/\s+/)[0] || opts.patientName;
   let msg = `${translate(opts.lang, "wa.reminder.header")}\n\n${interpolate(translate(opts.lang, "wa.reminder.body"), {
     name: firstName,

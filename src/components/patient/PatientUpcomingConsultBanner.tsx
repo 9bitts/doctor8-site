@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Calendar, ChevronRight, Video, ClipboardList } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { useUserTimeZone } from "@/hooks/useUserTimeZone";
+import { formatShortDateWithWeekday, formatAppointmentTimeWithLabel } from "@/lib/timezone";
 
 export type UpcomingConsultProps = {
   appointmentId: string;
@@ -20,19 +22,13 @@ export default function PatientUpcomingConsultBanner({
 }) {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
+  const userTz = useUserTimeZone();
   const when = new Date(appointment.scheduledAt);
   const msUntil = when.getTime() - Date.now();
   const hoursUntil = Math.max(0, Math.round(msUntil / (60 * 60 * 1000)));
 
-  const timeLabel = when.toLocaleTimeString(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const dateLabel = when.toLocaleDateString(locale, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  const timeLabel = formatAppointmentTimeWithLabel(when, userTz, locale);
+  const dateLabel = formatShortDateWithWeekday(when, userTz, locale);
 
   const title =
     hoursUntil <= 24

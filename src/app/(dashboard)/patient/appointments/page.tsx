@@ -22,6 +22,15 @@ import {
 import { getProfessionLabel, specialtyMatchesSearch, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { getProfessionInfo } from "@/lib/profession-label";
 import { parseLocalDate } from "@/lib/scheduling";
+import { useUserTimeZone } from "@/hooks/useUserTimeZone";
+import {
+  formatShortDate,
+  formatShortDateWithYear,
+  formatLongDate,
+  formatAppointmentTimeWithLabel,
+  dayChipFromInstant,
+  refInstantFromDaySlots,
+} from "@/lib/timezone";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import ReviewPromptModal from "@/components/ReviewPromptModal";
 import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
@@ -86,6 +95,7 @@ const APPT_TIP_KEYS: Partial<Record<Step, string>> = {
 export default function AppointmentsPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
+  const userTz = useUserTimeZone();
   const searchParams = useSearchParams();
   const highlightApptId = searchParams.get("id");
 
@@ -799,10 +809,10 @@ export default function AppointmentsPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-semibold text-emerald-700">
-                      {new Date(apt.scheduledAt).toLocaleDateString(locale, { month: "short", day: "numeric" })}
+                      {formatShortDate(new Date(apt.scheduledAt), userTz, locale)}
                     </p>
                     <p className="text-xs text-slate-500">
-                      {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
+                      {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), userTz, locale)}
                     </p>
                   </div>
                   <div className="flex gap-2 shrink-0">
@@ -847,11 +857,7 @@ export default function AppointmentsPage() {
                       : `Dr. ${apt.professional?.firstName} ${apt.professional?.lastName}`}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {new Date(apt.scheduledAt).toLocaleDateString(locale, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                    {formatShortDateWithYear(new Date(apt.scheduledAt), userTz, locale)}
                   </p>
                 </div>
                 <button
@@ -1001,14 +1007,15 @@ export default function AppointmentsPage() {
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {slots.map((day) => {
                       const avail = day.slots.filter((s) => s.available).length;
-                      const dayDate = parseLocalDate(day.date);
-                      const weekday = dayDate.toLocaleDateString(locale, { weekday: "short" });
-                      const dayNum = dayDate.getDate();
+                      const ref = refInstantFromDaySlots(day.slots);
+                      const chip = ref
+                        ? dayChipFromInstant(ref, userTz, locale)
+                        : { weekday: parseLocalDate(day.date).toLocaleDateString(locale, { weekday: "short", timeZone: userTz }), dayNum: String(parseLocalDate(day.date).getDate()) };
                       return (
                         <button key={day.date} onClick={() => { setSelectedDay(day); setSelectedSlot(""); }}
                           className={`shrink-0 flex flex-col items-center px-4 py-3 rounded-xl border-2 transition ${selectedDay?.date === day.date ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-slate-300"}`}>
-                          <span className="text-xs text-slate-500 font-medium">{weekday}</span>
-                          <span className="text-lg font-bold text-slate-800 mt-0.5">{dayNum}</span>
+                          <span className="text-xs text-slate-500 font-medium">{chip.weekday}</span>
+                          <span className="text-lg font-bold text-slate-800 mt-0.5">{chip.dayNum}</span>
                           <span className="text-xs text-emerald-600 font-semibold mt-1">{formatSlotCount(lang, avail)}</span>
                         </button>
                       );
@@ -1031,7 +1038,7 @@ export default function AppointmentsPage() {
                           onClick={() => setSelectedSlot(slot.datetime)}
                           className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition ${patientSlotButtonClass(slot, selectedSlot === slot.datetime)}`}
                         >
-                          {slot.time}
+                          {formatAppointmentTimeWithLabel(new Date(slot.datetime), userTz, locale)}
                         </button>
                       ))}
                     </div>
@@ -1089,11 +1096,11 @@ export default function AppointmentsPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t("appt.date")}</span>
-              <span>{new Date(selectedSlot).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" })}</span>
+              <span>{formatShortDateWithYear(new Date(selectedSlot), userTz, locale)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t("appt.time")}</span>
-              <span>{new Date(selectedSlot).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</span>
+              <span>{formatAppointmentTimeWithLabel(new Date(selectedSlot), userTz, locale)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-600">{t("appt.type")}</span>
@@ -1292,11 +1299,11 @@ export default function AppointmentsPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">{t("appt.date")}</span>
-              <span className="font-semibold">{new Date(selectedSlot).toLocaleDateString(locale, { weekday: "long", month: "long", day: "numeric" })}</span>
+              <span className="font-semibold">{formatLongDate(new Date(selectedSlot), userTz, locale)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">{t("appt.time")}</span>
-              <span className="font-semibold">{new Date(selectedSlot).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</span>
+              <span className="font-semibold">{formatAppointmentTimeWithLabel(new Date(selectedSlot), userTz, locale)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">{t("appt.amountPaid")}</span>
@@ -1402,14 +1409,15 @@ export default function AppointmentsPage() {
               <>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {rescheduleSlots.map((day) => {
-                    const dayDate = parseLocalDate(day.date);
-                    const weekday = dayDate.toLocaleDateString(locale, { weekday: "short" });
-                    const dayNum = dayDate.getDate();
+                    const ref = refInstantFromDaySlots(day.slots);
+                    const chip = ref
+                      ? dayChipFromInstant(ref, userTz, locale)
+                      : { weekday: parseLocalDate(day.date).toLocaleDateString(locale, { weekday: "short", timeZone: userTz }), dayNum: String(parseLocalDate(day.date).getDate()) };
                     return (
                     <button key={day.date} onClick={() => { setRescheduleDay(day); setRescheduleSlot(""); }}
                       className={`shrink-0 flex flex-col items-center px-3 py-2 rounded-xl border-2 transition text-center ${rescheduleDay?.date === day.date ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}>
-                      <span className="text-xs text-slate-500">{weekday}</span>
-                      <span className="text-base font-bold text-slate-800">{dayNum}</span>
+                      <span className="text-xs text-slate-500">{chip.weekday}</span>
+                      <span className="text-base font-bold text-slate-800">{chip.dayNum}</span>
                     </button>
                     );
                   })}
@@ -1419,7 +1427,7 @@ export default function AppointmentsPage() {
                     {rescheduleDay.slots.filter(s => s.available).map((slot) => (
                       <button key={slot.datetime} onClick={() => setRescheduleSlot(slot.datetime)}
                         className={`py-2 rounded-xl text-sm font-semibold border-2 transition ${rescheduleSlot === slot.datetime ? "bg-blue-500 border-blue-500 text-white" : "border-slate-200 hover:border-blue-400"}`}>
-                        {slot.time}
+                        {formatAppointmentTimeWithLabel(new Date(slot.datetime), userTz, locale)}
                       </button>
                     ))}
                   </div>

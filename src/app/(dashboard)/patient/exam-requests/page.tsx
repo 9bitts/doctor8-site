@@ -6,6 +6,8 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { useUserTimeZone } from "@/hooks/useUserTimeZone";
+import { formatShortDateWithYear } from "@/lib/timezone";
 import { getProfessionLabel } from "@/lib/professions";
 import {
   FlaskConical, Download, Loader2, Calendar, AlertCircle, RefreshCw,
@@ -29,6 +31,7 @@ interface ExamItem {
 export default function PatientExamRequestsPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
+  const userTz = useUserTimeZone();
 
   const [exams, setExams] = useState<ExamItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +55,7 @@ export default function PatientExamRequestsPage() {
   }
 
   function fmt(date: string) {
-    return new Date(date).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
+    return formatShortDateWithYear(new Date(date), userTz, locale);
   }
 
   function statusBadges(p: ExamItem) {

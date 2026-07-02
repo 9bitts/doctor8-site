@@ -6,6 +6,8 @@
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { useUserTimeZone } from "@/hooks/useUserTimeZone";
+import { formatShortDateWithYear } from "@/lib/timezone";
 import { getProfessionLabel } from "@/lib/professions";
 import {
   BookOpen, ExternalLink, Download, Loader2, AlertCircle, RefreshCw, FileText,
@@ -24,6 +26,7 @@ interface ResourceItem {
 export default function PatientResourcesPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
+  const userTz = useUserTimeZone();
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -48,7 +51,7 @@ export default function PatientResourcesPage() {
   }
 
   function fmt(date: string) {
-    return new Date(date).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
+    return formatShortDateWithYear(new Date(date), userTz, locale);
   }
 
   async function downloadFile(shareId: string) {

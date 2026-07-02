@@ -4,6 +4,9 @@ import { db } from "@/lib/db";
 import { buildAppointmentIcs } from "@/lib/calendar";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
+import { getUserLang } from "@/lib/i18n/server-lang";
+import { translate } from "@/lib/i18n/translations";
+import { interpolate } from "@/lib/notification-i18n";
 
 export async function GET(
   _req: NextRequest,
@@ -38,6 +41,10 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const lang = await getUserLang(session.user.id);
+  const t = (key: string, vars?: Record<string, string>) =>
+    vars ? interpolate(translate(lang, key), vars) : translate(lang, key);
+
   const doctorName = appointment.professional
     ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
     : appointment.psychoanalyst
@@ -48,17 +55,18 @@ export async function GET(
   const start = new Date(appointment.scheduledAt);
   const end = new Date(start.getTime() + (appointment.durationMins || 30) * 60_000);
 
-  const location =
-    appointment.type === "TELECONSULT"
-      ? "Teleconsulta \u2014 Doctor8"
-      : [appointment.professional?.clinicAddress, appointment.professional?.clinicCity].filter(Boolean).join(", ") ||
-        "Consulta presencial \u2014 Doctor8";
+  const isTele = appointment.type === "TELECONSULT";
+  const location = isTele
+    ? t("cal.teleconsultLocation")
+    : [appointment.professional?.clinicAddress, appointment.professional?.clinicCity].filter(Boolean).join(", ") ||
+      t("cal.inPersonLocation");
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
+  const typeLine = isTele ? t("cal.teleconsultDescription") : t("cal.inPersonDescription");
   const ics = buildAppointmentIcs({
     appointmentId: appointment.id,
-    summary: `Consulta com Dr. ${doctorName}`,
-    description: `${specialty}\n${appointment.type === "TELECONSULT" ? "Teleconsulta online" : "Consulta presencial"}\n\nDoctor8: ${appUrl}/patient/appointments`,
+    summary: t("cal.summary", { doctor: doctorName }),
+    description: `${specialty}\n${typeLine}\n\nDoctor8: ${appUrl}/patient/appointments`,
     location,
     url: appointment.meetingUrl ?? `${appUrl}/video/${appointment.id}`,
     start,

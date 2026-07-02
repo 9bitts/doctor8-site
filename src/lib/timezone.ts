@@ -123,3 +123,119 @@ export function dayOfWeekForDateStr(dateStr: string, timeZone: string): number {
   };
   return map[short] ?? 0;
 }
+
+/** Format a UTC instant for display in a specific IANA time zone. */
+export function formatInTimeZone(
+  date: Date,
+  timeZone: string,
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  return new Intl.DateTimeFormat(locale, { ...options, timeZone }).format(date);
+}
+
+export function formatShortDate(date: Date, timeZone: string, locale: string): string {
+  return formatInTimeZone(date, timeZone, locale, { month: "short", day: "numeric" });
+}
+
+export function formatShortDateWithWeekday(date: Date, timeZone: string, locale: string): string {
+  return formatInTimeZone(date, timeZone, locale, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+export function formatShortDateWithYear(date: Date, timeZone: string, locale: string): string {
+  return formatInTimeZone(date, timeZone, locale, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function formatLongDate(date: Date, timeZone: string, locale: string): string {
+  return formatInTimeZone(date, timeZone, locale, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+export function formatShortTime(date: Date, timeZone: string, locale: string): string {
+  return formatInTimeZone(date, timeZone, locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function formatDateTime(date: Date, timeZone: string, locale: string): string {
+  return formatInTimeZone(date, timeZone, locale, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Short offset/name label, e.g. "GMT-3" or "EST". */
+export function getTimeZoneLabel(
+  timeZone: string,
+  locale: string,
+  at: Date = new Date(),
+): string {
+  const parts = new Intl.DateTimeFormat(locale, {
+    timeZone,
+    timeZoneName: "short",
+  }).formatToParts(at);
+  return parts.find((p) => p.type === "timeZoneName")?.value ?? timeZone;
+}
+
+/** Appointment clock time; appends zone label when not the platform default. */
+export function formatAppointmentTimeWithLabel(
+  date: Date,
+  timeZone: string,
+  locale: string,
+): string {
+  const time = formatShortTime(date, timeZone, locale);
+  if (timeZone === DEFAULT_TIME_ZONE) return time;
+  return `${time} (${getTimeZoneLabel(timeZone, locale, date)})`;
+}
+
+export function formatEmailAppointmentDateTime(
+  scheduledAt: Date,
+  timeZone: string,
+  locale: string,
+): { dateStr: string; timeStr: string } {
+  return {
+    dateStr: formatInTimeZone(scheduledAt, timeZone, locale, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    timeStr: formatAppointmentTimeWithLabel(scheduledAt, timeZone, locale),
+  };
+}
+
+/** Weekday + day number for slot day chips, derived from a slot ISO instant. */
+export function dayChipFromInstant(
+  date: Date,
+  timeZone: string,
+  locale: string,
+): { weekday: string; dayNum: string } {
+  return {
+    weekday: formatInTimeZone(date, timeZone, locale, { weekday: "short" }),
+    dayNum: formatInTimeZone(date, timeZone, locale, { day: "numeric" }),
+  };
+}
+
+/** First available slot instant for day-chip labels in the patient's time zone. */
+export function refInstantFromDaySlots(
+  slots: { datetime: string; available?: boolean }[],
+): Date | null {
+  const iso =
+    slots.find((s) => s.available !== false)?.datetime ?? slots[0]?.datetime;
+  return iso ? new Date(iso) : null;
+}

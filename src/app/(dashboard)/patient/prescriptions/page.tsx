@@ -6,6 +6,8 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { useUserTimeZone } from "@/hooks/useUserTimeZone";
+import { formatShortDateWithYear } from "@/lib/timezone";
 import { getProfessionLabel } from "@/lib/professions";
 import {
   FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw,
@@ -38,6 +40,7 @@ interface RxItem {
 export default function PatientPrescriptionsPage() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
+  const userTz = useUserTimeZone();
 
   const [prescriptions, setPrescriptions] = useState<RxItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +61,7 @@ export default function PatientPrescriptionsPage() {
   }
 
   function fmt(date: string) {
-    return new Date(date).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
+    return formatShortDateWithYear(new Date(date), userTz, locale);
   }
 
   function statusBadges(p: RxItem) {

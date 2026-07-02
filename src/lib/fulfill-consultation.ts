@@ -207,8 +207,9 @@ export async function fulfillConsultationPayment(params: {
 
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { email: true, language: true },
-  });
+    select: { email: true, language: true, timezone: true } as never,
+  }) as { email: string; language: string | null; timezone?: string } | null;
+  const patientTimezone = user?.timezone;
 
   if (providerType === "psychoanalyst") {
     await ensureAnalysandForPatient({
@@ -239,7 +240,8 @@ export async function fulfillConsultationPayment(params: {
         scheduledAt: new Date(scheduledAt),
         type: type || "TELECONSULT",
         appointmentId: appointment.id,
-        language: user.language,
+        language: user.language ?? undefined,
+        patientTimezone,
         meetingUrl: (type || "TELECONSULT") === "TELECONSULT"
           ? teleconsultJoinUrl(appointment.id)
           : undefined,

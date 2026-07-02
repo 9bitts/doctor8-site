@@ -16,6 +16,8 @@ export type MeetLinkParams = {
   scheduledAt?: Date;
   durationMins?: number;
   kind?: "humanitarian" | "appointment";
+  /** IANA zone for Calendar API event display (appointments: provider TZ). */
+  eventTimeZone?: string;
 };
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
@@ -203,6 +205,10 @@ async function createMeetViaCalendarApi(params: MeetLinkParams): Promise<string 
         `Entrada: ${params.entryId}`,
       ].join("\n");
 
+  const eventTz = isAppointment
+    ? (params.eventTimeZone || "America/Sao_Paulo")
+    : "America/Sao_Paulo";
+
   const { data } = await calendar.events.insert({
     calendarId: "primary",
     conferenceDataVersion: 1,
@@ -210,8 +216,8 @@ async function createMeetViaCalendarApi(params: MeetLinkParams): Promise<string 
     requestBody: {
       summary,
       description,
-      start: { dateTime: start.toISOString(), timeZone: "America/Sao_Paulo" },
-      end: { dateTime: end.toISOString(), timeZone: "America/Sao_Paulo" },
+      start: { dateTime: start.toISOString(), timeZone: eventTz },
+      end: { dateTime: end.toISOString(), timeZone: eventTz },
       anyoneCanAddSelf: true,
       guestsCanInviteOthers: true,
       guestsCanSeeOtherGuests: true,
@@ -249,6 +255,7 @@ export async function createAppointmentMeetLink(params: {
   durationMins: number;
   attendeeEmails?: string[];
   hostEmail?: string | null;
+  providerTimeZone?: string;
 }): Promise<string> {
   return createMeetLink({
     entryId: params.appointmentId,
@@ -258,6 +265,7 @@ export async function createAppointmentMeetLink(params: {
     hostEmail: params.hostEmail,
     scheduledAt: params.scheduledAt,
     durationMins: params.durationMins,
+    eventTimeZone: params.providerTimeZone,
     kind: "appointment",
   });
 }

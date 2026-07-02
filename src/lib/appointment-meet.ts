@@ -4,6 +4,7 @@ import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { appointmentJoinWindow } from "@/lib/appointment-join-window";
+import { DEFAULT_TIME_ZONE } from "@/lib/timezone";
 
 export async function handoffAppointmentViaGoogleMeet(
   appointmentId: string,
@@ -49,9 +50,10 @@ export async function handoffAppointmentViaGoogleMeet(
     providerName = `${appointment.integrativeTherapist.firstName} ${appointment.integrativeTherapist.lastName}`.trim();
   }
 
-  const [providerUser, patientUser] = await Promise.all([
+  const [providerUser, patientUser, providerTimeZone] = await Promise.all([
     db.user.findUnique({ where: { id: providerUserId }, select: { email: true } }),
     db.user.findUnique({ where: { id: appointment.patient.userId }, select: { email: true } }),
+    resolveProviderTimeZone(appointment, providerUserId),
   ]);
 
   const meetUrl = await createAppointmentMeetLink({
@@ -62,6 +64,7 @@ export async function handoffAppointmentViaGoogleMeet(
     durationMins: duration,
     hostEmail: providerUser?.email ?? null,
     attendeeEmails: [providerUser?.email, patientUser?.email].filter(Boolean) as string[],
+    providerTimeZone,
   });
 
   await db.appointment.update({
@@ -94,4 +97,26 @@ export async function handoffAppointmentViaGoogleMeet(
   }).catch(() => {});
 
   return { meetUrl, patientName, providerName };
+}
+
+async function resolveProviderTimeZone(
+  appointment: {
+    professionalId: string | null;
+    psychoanalystId: string | null;
+    integrativeTherapistId: string | null;
+  },
+  providerUserId: string,
+): Promise<string> {
+  if (appointment.professionalId) {
+    const pro = await db.professionalProfile.findUnique({
+      where: { userId: providerUserId },
+      select: { timezone: true } as never,
+    });
+    return (pro as { timezone?: string } | null)?.timezone || DEFAULT_TIME_ZONE;
+  }
+  const user = await db.user.findUnique({
+    where: { id: providerUserId },
+    select: { timezone: true } as never,
+  });
+  return (user as { timezone?: string } | null)?.timezone || DEFAULT_TIME_ZONE;
 }

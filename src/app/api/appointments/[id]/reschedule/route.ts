@@ -99,8 +99,8 @@ export async function POST(
   try {
     const patientUser = await db.user.findUnique({
       where:  { id: session.user.id },
-      select: { email: true, language: true },
-    });
+      select: { email: true, language: true, timezone: true } as never,
+    }) as { email: string; language: string | null; timezone?: string } | null;
     const patientProfile = await db.patientProfile.findUnique({
       where:  { userId: session.user.id },
       select: { firstName: true, lastName: true },
@@ -117,7 +117,8 @@ export async function POST(
         scheduledAt:   new Date(newScheduledAt),
         type:          appointment.type,
         appointmentId: params.id,
-        language:      patientUser.language,
+        language:      patientUser.language ?? undefined,
+        patientTimezone: patientUser.timezone,
       });
     }
   } catch (e) {
