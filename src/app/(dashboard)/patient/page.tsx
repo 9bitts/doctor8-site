@@ -103,6 +103,9 @@ export default async function PatientDashboard() {
 
   const [
     prescriptionCount,
+    upcomingCount,
+    medicationCount,
+    documentCount,
     unreadMessages,
     onlineDoctors,
     activeQueue,
@@ -115,6 +118,20 @@ export default async function PatientDashboard() {
   ] = await Promise.all([
     db.prescription.count({
       where: { document: { patientId: patient.id } },
+    }),
+    // Real totals for the stat cards — the lists above are capped by take.
+    db.appointment.count({
+      where: {
+        patientId: patient.id,
+        scheduledAt: { gte: new Date() },
+        status: { in: ["CONFIRMED", "PENDING"] },
+      },
+    }),
+    db.medication.count({
+      where: { patientId: patient.id, active: true, flow: "CLINICAL" },
+    }),
+    db.medicalDocument.count({
+      where: { patientId: patient.id },
     }),
     db.message.count({
       where: { receiverId: userId, readAt: null, deletedAt: null },
@@ -151,10 +168,6 @@ export default async function PatientDashboard() {
 
   const hasActiveClub =
     !!subscription && ["active", "trialing"].includes(subscription.status);
-
-  const upcomingCount = patient.appointments.length;
-  const medicationCount = patient.medications.length;
-  const documentCount = patient.medicalDocuments.length;
 
   const soonAppointment = patient.appointments.find((apt) => {
     const ms = new Date(apt.scheduledAt).getTime() - Date.now();
@@ -380,7 +393,7 @@ export default async function PatientDashboard() {
                 ? t("pdash.urgent.desc.inProgress").replace(
                     "{{doctor}}",
                     activeQueue?.session.professional
-                      ? `Dr. ${activeQueue.session.professional.firstName} ${activeQueue.session.professional.lastName}`
+                      ? `Dr. ${safeDecrypt(activeQueue.session.professional.firstName)} ${safeDecrypt(activeQueue.session.professional.lastName)}`.trim()
                       : ""
                   )
                 : queueCalled
@@ -487,9 +500,15 @@ export default async function PatientDashboard() {
             <div className="space-y-3">
               {patient.appointments.map((apt) => {
                 const pro = apt.professional ?? apt.psychoanalyst ?? apt.integrativeTherapist;
-                const specialty = apt.professional?.specialty ?? (apt.psychoanalyst ? "Psychoanalysis" : "Integrative therapy");
+                const specialtyLabel = apt.professional
+                  ? getProfessionLabel(lang, apt.professional.specialty)
+                  : apt.psychoanalyst
+                    ? t("providers.typePsychoanalyst")
+                    : t("providers.typeIntegrative");
                 const prefix = apt.professional ? "Dr. " : "";
                 if (!pro) return null;
+                const proFirstName = safeDecrypt(pro.firstName);
+                const proLastName = safeDecrypt(pro.lastName);
                 const canJoinVideo =
                   apt.type === "TELECONSULT" &&
                   apt.status === "CONFIRMED" &&
@@ -501,13 +520,13 @@ export default async function PatientDashboard() {
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
-                      {pro.firstName.charAt(0)}{pro.lastName.charAt(0)}
+                      {proFirstName.charAt(0)}{proLastName.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-800 text-sm truncate">
-                        {prefix}{pro.firstName} {pro.lastName}
+                        {prefix}{proFirstName} {proLastName}
                       </p>
-                      <p className="text-xs text-slate-500">{getProfessionLabel(lang, specialty)}</p>
+                      <p className="text-xs text-slate-500">{specialtyLabel}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">

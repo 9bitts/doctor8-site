@@ -108,7 +108,7 @@ export default function PatientResourcesPage() {
                   <p className="text-xs text-slate-400 mt-1">
                     {t("presRes.fromDoctor").replace("{{name}}", r.doctor.name)}
                     {r.doctor.specialty && (
-                      <span> ? {getProfessionLabel(lang, r.doctor.specialty)}</span>
+                      <span> · {getProfessionLabel(lang, r.doctor.specialty)}</span>
                     )}
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">

@@ -1,7 +1,7 @@
 "use client";
 
 // src/app/(dashboard)/patient/exam-requests/page.tsx
-// Patient exam requests from their doctors ? read-only with PDF download.
+// Patient exam requests from their doctors — read-only with PDF download.
 
 import { useState, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -118,7 +118,7 @@ export default function PatientExamRequestsPage() {
                     <p className="text-sm text-slate-600 mt-0.5">
                       Dr. {p.doctor.name}
                       {p.doctor.specialty && (
-                        <span className="text-slate-400"> ? {getProfessionLabel(lang, p.doctor.specialty)}</span>
+                        <span className="text-slate-400"> · {getProfessionLabel(lang, p.doctor.specialty)}</span>
                       )}
                     </p>
                   )}
@@ -126,7 +126,7 @@ export default function PatientExamRequestsPage() {
                     <Calendar size={12} />
                     {t("myexam.issued")} {fmt(p.createdAt)}
                     {p.signedAt && (
-                      <span> ? {t("myrx.signedAt").replace("{{date}}", fmt(p.signedAt))}</span>
+                      <span> · {t("myrx.signedAt").replace("{{date}}", fmt(p.signedAt))}</span>
                     )}
                   </p>
                   <div className="flex flex-wrap gap-1.5 mt-2">{statusBadges(p)}</div>

@@ -67,6 +67,8 @@ export default function AccountPage() {
   // P1-e: personal data
   const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [profileLoadError, setProfileLoadError] = useState(false);
+  const [profileLoadEpoch, setProfileLoadEpoch] = useState(0);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -114,24 +116,30 @@ export default function AccountPage() {
       .catch(() => {});
   }, []);
 
-  // P1-e: load current personal data
+  // P1-e: load current personal data. A failed load must block the save
+  // form, otherwise real data could be overwritten with an empty form.
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) { setProfileLoading(true); setProfileLoadError(false); }
       try {
         const res = await fetch("/api/patient/profile");
+        if (!res.ok) {
+          if (active) setProfileLoadError(true);
+          return;
+        }
         const data = await res.json();
-        if (active && res.ok && data.profile) {
+        if (active && data.profile) {
           setProfile({ ...EMPTY_PROFILE, ...data.profile });
         }
       } catch {
-        /* ignore — keep empty */
+        if (active) setProfileLoadError(true);
       } finally {
         if (active) setProfileLoading(false);
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [profileLoadEpoch]);
 
   function setField(field: keyof ProfileData, value: string) {
     setProfile((p) => ({ ...p, [field]: value }));
@@ -370,6 +378,19 @@ export default function AccountPage() {
         {profileLoading ? (
           <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
             <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
+          </div>
+        ) : profileLoadError ? (
+          <div className="flex flex-col items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-sm text-red-700">
+              <AlertCircle size={16} className="shrink-0" /> {t("common.loadError")}
+            </div>
+            <button
+              type="button"
+              onClick={() => setProfileLoadEpoch((n) => n + 1)}
+              className="text-sm font-semibold text-emerald-600"
+            >
+              {t("common.retry")}
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSaveProfile} className="space-y-4">

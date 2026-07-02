@@ -29,6 +29,7 @@ import {
   PSYCHOLOGIST_NAV,
 } from "@/lib/platform-nav-registry";
 import { withNavIcons, type DashboardNavItem } from "@/lib/dashboard-nav-icons";
+import { ToastProvider } from "@/components/ui/toast";
 import {
   User, Settings, LogOut, Menu, X, ChevronRight,
 } from "lucide-react";
@@ -219,5 +220,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return <DashboardInner>{children}</DashboardInner>;
+  return (
+    <ToastProvider>
+      <DashboardInner>{children}</DashboardInner>
+    </ToastProvider>
+  );
 }

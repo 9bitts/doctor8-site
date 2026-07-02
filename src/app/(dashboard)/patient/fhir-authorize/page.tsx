@@ -141,7 +141,7 @@ function FhirAuthorizeInner() {
 
 export default function FhirAuthorizePage() {
   return (
-    <Suspense fallback={<div className="py-16 text-center text-slate-400">?</div>}>
+    <Suspense fallback={<div className="py-16 text-center text-slate-400">…</div>}>
       <FhirAuthorizeInner />
     </Suspense>
   );

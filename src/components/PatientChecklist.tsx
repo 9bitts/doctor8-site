@@ -184,7 +184,7 @@ export default function PatientChecklist() {
 
       {allDone && (
         <div className="px-5 py-4 text-center">
-          <p className="text-2xl mb-1">??</p>
+          <p className="text-2xl mb-1">🎉</p>
           <button type="button" onClick={dismiss} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">
             {t("pcheck.dismiss")}
           </button>

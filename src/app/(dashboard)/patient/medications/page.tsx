@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { Pill, Plus, Trash2, Tag, Stethoscope, X, Loader2, Share2, Download, Pencil, AlertCircle, RefreshCw } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
+import { useToast } from "@/components/ui/toast";
 import PharmacyMarketplacePanel from "@/components/patient/PharmacyMarketplacePanel";
 
 type Flow = "CLINICAL" | "PURCHASE";
@@ -34,6 +35,7 @@ function formatBrl(cents: number): string {
 
 export default function MedicationsPage() {
   const t = useT();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<Flow>("CLINICAL");
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,6 @@ export default function MedicationsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [shareLoading, setShareLoading] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -79,7 +80,12 @@ export default function MedicationsPage() {
       if (res.ok) {
         closeForm();
         fetchMedications();
+        toast.success(t("med.saveOk"));
+      } else {
+        toast.error(t("med.saveError"));
       }
+    } catch {
+      toast.error(t("med.saveError"));
     } finally { setSaving(false); }
   }
 
@@ -104,20 +110,17 @@ export default function MedicationsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm(t("med.removeConfirm"))) return;
-    const res = await fetch(`/api/patient/medications/${id}`, { method: "DELETE" });
-    if (res.ok) fetchMedications();
-  }
-
-  async function handleShare() {
-    setShareLoading(true);
     try {
-      const res = await fetch("/api/patient/medications/share", { method: "POST" });
-      const data = await res.json();
-      if (data.url) {
-        await navigator.clipboard.writeText(data.url);
-        alert(t("med.shareCopied"));
+      const res = await fetch(`/api/patient/medications/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error(t("med.deleteError"));
+        return;
       }
-    } finally { setShareLoading(false); }
+      fetchMedications();
+      toast.success(t("med.deleteOk"));
+    } catch {
+      toast.error(t("med.deleteError"));
+    }
   }
 
   async function handleExportPDF() {
@@ -192,10 +195,9 @@ export default function MedicationsPage() {
           <div className="flex items-center gap-2 px-5 py-3 bg-slate-50 border-b border-slate-200">
             <button
               onClick={() => setShowShareModal(true)}
-              disabled={shareLoading}
               className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition"
             >
-              {shareLoading ? <Loader2 size={12} className="animate-spin" /> : <Share2 size={12} />}
+              <Share2 size={12} />
               {t("med.shareWithDoctor")}
             </button>
             <button

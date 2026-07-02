@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
-import { createMeetingToken } from "@/lib/daily";
+import { createMeetingToken, createEphemeralRoom, isDailyRoomJoinable } from "@/lib/daily";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
@@ -73,8 +73,29 @@ export async function GET(
     );
   }
 
-  const roomName = roomNameFromEntry(entry.meetingRoomId, entry.meetingUrl);
-  if (!roomName || !entry.meetingUrl) {
+  let roomName = roomNameFromEntry(entry.meetingRoomId, entry.meetingUrl);
+  let meetingUrl = entry.meetingUrl;
+
+  // Ephemeral rooms expire (~2h). If the stored room is dead — e.g. the consult
+  // sat stuck IN_PROGRESS — recreate it so retrying the join can succeed instead
+  // of failing forever with a 503. (Same approach as the humanitarian flow.)
+  if (!roomName || !meetingUrl || !(await isDailyRoomJoinable(roomName))) {
+    try {
+      const fresh = await createEphemeralRoom({ maxParticipants: 2 });
+      if (fresh?.url && fresh?.name) {
+        await db.jitQueue.update({
+          where: { id: entry.id },
+          data: { meetingUrl: fresh.url, meetingRoomId: fresh.name },
+        });
+        roomName = fresh.name;
+        meetingUrl = fresh.url;
+      }
+    } catch (e) {
+      console.error("[jit video] room recreate error:", e);
+    }
+  }
+
+  if (!roomName || !meetingUrl) {
     return NextResponse.json({ error: "Video room not ready." }, { status: 503 });
   }
 
@@ -110,7 +131,7 @@ export async function GET(
   }
 
   return NextResponse.json({
-    url: entry.meetingUrl,
+    url: meetingUrl,
     token,
     userName,
     role: isPatient ? "patient" : "professional",

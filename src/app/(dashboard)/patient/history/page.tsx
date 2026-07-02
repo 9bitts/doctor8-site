@@ -25,7 +25,7 @@ import {
   HIST_INFECTIOUS,
   HIST_REVIEW_SYSTEMS,
 } from "@/lib/medical-history-options";
-import { Save, Share2, Download, Loader2, CheckCircle2 } from "lucide-react";
+import { Save, Share2, Download, Loader2, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 
 function ChipGroup({
@@ -146,6 +146,7 @@ export default function HistoryPage() {
   const optLabel = (key: string) => histOptionLabel(lang, key);
   const [data, setData] = useState<HistoryData>(EMPTY);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -166,12 +167,17 @@ export default function HistoryPage() {
   }, []);
 
   async function fetchHistory() {
+    setLoading(true);
+    setLoadError(false);
     try {
       const res = await fetch("/api/patient/history");
-      if (res.ok) {
-        const d = await res.json();
-        if (d.history) setData({ ...EMPTY, ...d.history });
-      }
+      // A failed load must block the form — otherwise saving would
+      // overwrite the stored anamnesis with an empty one.
+      if (!res.ok) { setLoadError(true); return; }
+      const d = await res.json();
+      if (d.history) setData({ ...EMPTY, ...d.history });
+    } catch {
+      setLoadError(true);
     } finally { setLoading(false); }
   }
 
@@ -214,6 +220,20 @@ export default function HistoryPage() {
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-emerald-500" size={28} /></div>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <div className="flex flex-col items-center gap-3 py-16 px-4 text-center bg-white border border-slate-100 rounded-2xl">
+          <AlertCircle size={24} className="text-amber-500" />
+          <p className="text-sm text-slate-600">{t("common.loadError")}</p>
+          <button type="button" onClick={fetchHistory} className="text-sm font-semibold text-emerald-600 flex items-center gap-1">
+            <RefreshCw size={14} /> {t("common.retry")}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

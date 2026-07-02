@@ -55,10 +55,13 @@ export default function MessagesPage() {
   const [loadError, setLoadError] = useState(false);
   const [actionError, setActionError] = useState(false);
   const [sending, setSending] = useState(false);
+  const [connWarning, setConnWarning] = useState(false);
   const [search, setSearch] = useState("");
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageTime = useRef<string>("");
   const pollRef = useRef<NodeJS.Timeout>();
+  const pollFailures = useRef(0);
+  const sendingRef = useRef(false);
 
   // P4: new conversation modal
   const [role, setRole] = useState<string>("");
@@ -134,26 +137,36 @@ export default function MessagesPage() {
   async function fetchMessages(since?: string) {
     if (!activeConv) return;
     const url = `/api/messages?with=${activeConv.userId}${since ? `&since=${since}` : ""}`;
-    const res = await fetch(url);
-    const d = await res.json();
-    const msgs: Message[] = d.messages || [];
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("fetch messages failed");
+      const d = await res.json();
+      const msgs: Message[] = d.messages || [];
 
-    if (since && msgs.length > 0) {
-      setMessages((prev) => [...prev, ...msgs]);
-    } else if (!since) {
-      setMessages(msgs);
-    }
+      if (since && msgs.length > 0) {
+        setMessages((prev) => [...prev, ...msgs]);
+      } else if (!since && !sendingRef.current) {
+        // Full replace — skipped mid-send so the optimistic bubble survives.
+        setMessages(msgs);
+      }
 
-    if (msgs.length > 0) {
-      lastMessageTime.current = msgs[msgs.length - 1].createdAt;
+      if (msgs.length > 0) {
+        lastMessageTime.current = msgs[msgs.length - 1].createdAt;
+      }
+      pollFailures.current = 0;
+      setConnWarning(false);
+    } catch {
+      // Keep the messages already on screen and retry on the next cycle.
+      pollFailures.current += 1;
+      if (pollFailures.current >= 3) setConnWarning(true);
     }
   }
 
   function startPolling() {
     pollRef.current = setInterval(() => {
-      if (lastMessageTime.current) {
-        fetchMessages(lastMessageTime.current);
-      }
+      // Poll even in empty conversations, otherwise the doctor's first
+      // message never arrives without a reload.
+      fetchMessages(lastMessageTime.current || undefined);
     }, 4000);
   }
 
@@ -168,6 +181,7 @@ export default function MessagesPage() {
     const content = newMessage.trim();
     setNewMessage("");
     setSending(true);
+    sendingRef.current = true;
     setActionError(false);
 
     const tempMsg: Message = {
@@ -206,6 +220,7 @@ export default function MessagesPage() {
       setActionError(true);
     } finally {
       setSending(false);
+      sendingRef.current = false;
     }
   }
 
@@ -419,6 +434,13 @@ export default function MessagesPage() {
               ))
             )}
           </div>
+
+          {connWarning && (
+            <div className="mx-4 mb-2 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-xl">
+              <AlertCircle size={14} className="shrink-0" />
+              <span className="flex-1">{t("msg.connectionIssue")}</span>
+            </div>
+          )}
 
           {actionError && (
             <div className="mx-4 mb-2 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-xl">

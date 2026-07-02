@@ -14,6 +14,7 @@ import {
 import { translate, normalizeLang, Lang, TranslationKey } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import { navigateBack } from "@/lib/safe-nav";
+import { ToastProvider, useToast } from "@/components/ui/toast";
 
 const LANG_KEY = "doctor8.lang";
 const PENDING_JOIN_PREFIX = "doctor8.urgent.pendingJoin.";
@@ -127,7 +128,16 @@ function QueueSharePrompt({
 }
 
 export default function UrgentPage() {
+  return (
+    <ToastProvider>
+      <UrgentPageInner />
+    </ToastProvider>
+  );
+}
+
+function UrgentPageInner() {
   const router = useRouter();
+  const toast = useToast();
   const [lang, setLang] = useState<Lang>("pt");
   useEffect(() => { setLang(detectLang()); }, []);
   const t = (key: TranslationKey) => translate(lang, key);
@@ -392,18 +402,32 @@ export default function UrgentPage() {
     setEntering(false);
   }
 
-  function leaveQueue() {
+  async function leaveQueue() {
+    const entry = queueEntry;
     clearInterval(pollRef.current);
-    const id = queueEntry?.id;
-    setQueueEntry(null);
-    if (id) {
-      fetch("/api/jit/queue/cancel", {
+    // Entries that are already finished (NO_SHOW/CANCELLED screen) just
+    // dismiss — there is nothing to cancel server-side.
+    if (!entry || !["WAITING", "CALLED"].includes(entry.status)) {
+      setQueueEntry(null);
+      loadAvailable();
+      return;
+    }
+    try {
+      const res = await fetch("/api/jit/queue/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ queueId: id }),
-      }).catch(() => {});
+        body: JSON.stringify({ queueId: entry.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error("cancel failed");
+      setQueueEntry(null);
+      toast.success(data.refunded ? t("urgent.leftQueueRefunded") : t("urgent.leftQueue"));
+      loadAvailable();
+    } catch {
+      // Revert: keep the queue screen and resume polling.
+      toast.error(t("urgent.leaveError"));
+      startQueuePolling(entry.id);
     }
-    loadAvailable();
   }
 
   const filtered = available.filter(p =>

@@ -123,7 +123,7 @@ export default async function PatientProvidersPage() {
             href="/patient/find"
             className="inline-flex items-center gap-2 mt-4 text-sm font-semibold text-brand-600 hover:text-brand-700"
           >
-            {t("nav.find")} ?
+            {t("nav.find")} →
           </Link>
         </div>
       ) : (

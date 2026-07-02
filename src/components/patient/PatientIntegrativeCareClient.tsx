@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import {
+  AlertCircle,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -11,6 +12,7 @@ import {
   Leaf,
   Loader2,
   Printer,
+  RefreshCw,
 } from "lucide-react";
 
 type Session = {
@@ -30,18 +32,21 @@ export default function PatientIntegrativeCareClient() {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await fetch("/api/patient/integrative-sessions");
-      if (res.ok) {
-        const data = await res.json();
-        setSessions(data.sessions || []);
-      }
+      if (!res.ok) { setLoadError(true); return; }
+      const data = await res.json();
+      setSessions(data.sessions || []);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -94,6 +99,14 @@ export default function PatientIntegrativeCareClient() {
         <div className="flex justify-center py-16">
           <Loader2 className="animate-spin text-teal-500" size={28} />
         </div>
+      ) : loadError ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+          <AlertCircle className="mx-auto text-amber-500 mb-3" size={24} />
+          <p className="text-sm text-slate-600 mb-3">{t("common.loadError")}</p>
+          <button type="button" onClick={() => void load()} className="text-sm font-semibold text-teal-600 inline-flex items-center gap-1">
+            <RefreshCw size={14} /> {t("common.retry")}
+          </button>
+        </div>
       ) : sessions.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
           <Leaf className="mx-auto text-slate-300 mb-3" size={40} />
@@ -124,7 +137,7 @@ export default function PatientIntegrativeCareClient() {
                     <p className="font-semibold text-slate-800 text-sm">{session.title}</p>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {session.therapistName}
-                      {" ? "}
+                      {" · "}
                       {new Date(session.createdAt).toLocaleDateString(locale, {
                         day: "numeric",
                         month: "short",

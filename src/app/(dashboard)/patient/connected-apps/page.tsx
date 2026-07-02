@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Shield, Loader2, Trash2, ArrowLeft } from "lucide-react";
+import { Shield, Loader2, Trash2, ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
+import { useToast } from "@/components/ui/toast";
 
 type AppRow = {
   id: string;
@@ -16,16 +17,22 @@ type AppRow = {
 
 export default function ConnectedAppsPage() {
   const t = useT();
+  const toast = useToast();
   const [apps, setApps] = useState<AppRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await fetch("/api/patient/connected-apps");
+      if (!res.ok) { setLoadError(true); return; }
       const data = await res.json();
-      if (res.ok) setApps(data.apps || []);
+      setApps(data.apps || []);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -36,8 +43,15 @@ export default function ConnectedAppsPage() {
   async function revoke(id: string) {
     setRevoking(id);
     try {
-      await fetch(`/api/patient/connected-apps?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const res = await fetch(`/api/patient/connected-apps?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error(t("smart.apps.revokeError"));
+        return;
+      }
       setApps((prev) => prev.filter((a) => a.id !== id));
+      toast.success(t("smart.apps.revokeOk"));
+    } catch {
+      toast.error(t("smart.apps.revokeError"));
     } finally {
       setRevoking(null);
     }
@@ -57,6 +71,14 @@ export default function ConnectedAppsPage() {
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="animate-spin text-slate-400" /></div>
+      ) : loadError ? (
+        <div className="flex flex-col items-center gap-3 py-10 px-4 text-center bg-white border border-slate-100 rounded-2xl">
+          <AlertCircle size={22} className="text-amber-500" />
+          <p className="text-sm text-slate-600">{t("common.loadError")}</p>
+          <button type="button" onClick={load} className="text-sm font-semibold text-emerald-600 flex items-center gap-1">
+            <RefreshCw size={14} /> {t("common.retry")}
+          </button>
+        </div>
       ) : apps.length === 0 ? (
         <p className="text-sm text-slate-500 bg-white border border-slate-100 rounded-2xl p-6">{t("smart.apps.empty")}</p>
       ) : (

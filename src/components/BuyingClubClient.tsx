@@ -10,6 +10,7 @@ import {
   Users, Search, Loader2, ShoppingBag, Share2, CheckCircle2,
   AlertCircle, MapPin, X,
 } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 interface DrugResult {
   id: string;
@@ -43,6 +44,7 @@ interface BuyingClubClientProps {
 
 export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubClientProps) {
   const t = useT();
+  const toast = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState("");
@@ -193,8 +195,12 @@ export default function BuyingClubClient({ pagePath, accountPath }: BuyingClubCl
         setClub(data);
         setJoined(true);
         loadActiveClubs();
+      } else {
+        toast.error(t("buyClub.joinError"));
       }
-    } catch { /* ignore */ }
+    } catch {
+      toast.error(t("buyClub.joinError"));
+    }
     setJoining(false);
   }
 
