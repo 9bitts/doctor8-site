@@ -1,4 +1,4 @@
-// Consent-based patient ? professional link helpers (PRO-1A).
+// Consent-based patient-professional link helpers (PRO-1A).
 
 import { db } from "@/lib/db";
 import { linkDb, type LinkStatus, type PatientProfessionalLinkRow } from "@/lib/patient-professional-link-db";

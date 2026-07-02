@@ -1,4 +1,4 @@
-// GET ù pending + accepted links for the patient. POST revoke via [id]/revoke.
+// GET pending + accepted links for the patient. POST revoke via [id]/revoke.
 import { NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";

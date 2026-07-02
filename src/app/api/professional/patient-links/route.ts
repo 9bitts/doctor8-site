@@ -1,4 +1,4 @@
-// POST — professional requests a consent link with a patient account.
+// POST: professional requests a consent link with a patient account.
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";

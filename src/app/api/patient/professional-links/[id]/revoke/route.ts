@@ -1,4 +1,4 @@
-// POST — patient revokes an accepted connection.
+// POST: patient revokes an accepted connection.
 import { NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { linkDb } from "@/lib/patient-professional-link-db";

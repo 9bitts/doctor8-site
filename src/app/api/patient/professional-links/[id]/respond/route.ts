@@ -1,4 +1,4 @@
-// POST — patient accepts or rejects a connection request.
+// POST: patient accepts or rejects a connection request.
 import { NextRequest, NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { linkDb } from "@/lib/patient-professional-link-db";
