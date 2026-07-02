@@ -16,6 +16,42 @@ import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import { navigateBack } from "@/lib/safe-nav";
 
 const LANG_KEY = "doctor8.lang";
+const PENDING_JOIN_PREFIX = "doctor8.urgent.pendingJoin.";
+
+interface PendingJoin {
+  paymentIntentId:   string;
+  sessionId:         string;
+  specialty:         string;
+  professionalId?:   string;
+  professionalName?: string;
+}
+
+// Paid join interrupted by the TCLE detour — persisted per user so the
+// payment intent is reused (never re-charged) when the patient returns.
+function readPendingJoin(uid: string): PendingJoin | null {
+  try {
+    // Discard pending joins from other users (shared device safety).
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const k = sessionStorage.key(i);
+      if (k && k.startsWith(PENDING_JOIN_PREFIX) && k !== PENDING_JOIN_PREFIX + uid) {
+        sessionStorage.removeItem(k);
+      }
+    }
+    const raw = sessionStorage.getItem(PENDING_JOIN_PREFIX + uid);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.paymentIntentId || !parsed?.sessionId || !parsed?.specialty) return null;
+    return parsed as PendingJoin;
+  } catch { return null; }
+}
+
+function savePendingJoin(uid: string, data: PendingJoin) {
+  try { sessionStorage.setItem(PENDING_JOIN_PREFIX + uid, JSON.stringify(data)); } catch { /* ignore */ }
+}
+
+function clearPendingJoin(uid: string) {
+  try { sessionStorage.removeItem(PENDING_JOIN_PREFIX + uid); } catch { /* ignore */ }
+}
 
 function detectLang(): Lang {
   if (typeof window === "undefined") return "pt";
@@ -103,6 +139,7 @@ export default function UrgentPage() {
   const [joining,      setJoining]      = useState<string | null>(null);
   const [error,        setError]        = useState<string | null>(null);
   const [userId,       setUserId]       = useState<string | null>(null);
+  const userIdRef = useRef<string | null>(null);
 
   // Payment modal for paid sessions
   const [payModal,     setPayModal]     = useState<AvailablePro | null>(null);
@@ -121,15 +158,47 @@ export default function UrgentPage() {
   const pollRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    fetch("/api/auth/session").then(r => r.json()).then(s => {
+    fetch("/api/auth/session").then(r => r.json()).then(async s => {
       if (!s?.user) { router.push(`/login?callbackUrl=/urgent`); return; }
       if (s.user.role !== "PATIENT") { router.push("/professional"); return; }
+      userIdRef.current = s.user.id;
       setUserId(s.user.id);
       setCheckingAuth(false);
+      const pending = readPendingJoin(s.user.id);
+      if (pending) {
+        // Paid join interrupted by the TCLE detour — retry with the same
+        // PaymentIntent (no new charge). joinQueue clears the key on success
+        // and triggers the orphan refund on non-TCLE failure.
+        await joinQueue(
+          pending.sessionId,
+          pending.specialty,
+          pending.professionalId,
+          pending.professionalName,
+          pending.paymentIntentId,
+        );
+      } else {
+        await restoreActiveQueue();
+      }
       loadAvailable();
     }).catch(() => { router.push("/login?callbackUrl=/urgent"); });
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
+
+  // Restore an active queue entry (WAITING/CALLED) after refresh/reopen,
+  // instead of dropping the patient back on the selection screen.
+  async function restoreActiveQueue() {
+    try {
+      const res  = await fetch("/api/jit/queue?mine=1");
+      const data = await res.json();
+      if (res.ok && data.entry) {
+        setQueueEntry(data.entry);
+        if (data.entry.professionalId && data.entry.professionalName) {
+          setCareProfessional({ id: data.entry.professionalId, name: data.entry.professionalName });
+        }
+        startQueuePolling(data.entry.id);
+      }
+    } catch { /* ignore — fall back to the selection screen */ }
+  }
 
   async function loadAvailable() {
     setLoadingList(true);
@@ -164,10 +233,18 @@ export default function UrgentPage() {
       const data = await res.json();
       if (!res.ok) {
         if (data.error === "TCLE_REQUIRED") {
+          // Preserve the confirmed payment across the TCLE detour so the
+          // join can be retried with the same intent (no new charge).
+          if (paymentIntentId && userIdRef.current) {
+            savePendingJoin(userIdRef.current, {
+              paymentIntentId, sessionId, specialty, professionalId, professionalName,
+            });
+          }
           window.location.href = `/patient/tcle?returnUrl=${encodeURIComponent("/urgent")}`;
           return;
         }
         if (paymentIntentId) {
+          if (userIdRef.current) clearPendingJoin(userIdRef.current);
           const refunded = await refundOrphanJitPayment(paymentIntentId);
           setError(refunded ? t("urgent.joinFailedRefunded") : t("urgent.joinFailedRefundPending"));
         } else {
@@ -176,10 +253,13 @@ export default function UrgentPage() {
         setJoining(null);
         return;
       }
+      if (userIdRef.current) clearPendingJoin(userIdRef.current);
       startQueuePolling(data.entry.id);
     } catch {
       if (paymentIntentId) {
         const refunded = await refundOrphanJitPayment(paymentIntentId);
+        // Once refunded, the pending join must not be retried with this intent.
+        if (refunded && userIdRef.current) clearPendingJoin(userIdRef.current);
         setError(refunded ? t("urgent.joinFailedRefunded") : t("urgent.joinFailedRefundPending"));
       } else {
         setError(t("common.loadError"));

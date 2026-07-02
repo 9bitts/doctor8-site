@@ -42,6 +42,56 @@ export async function GET(req: NextRequest) {
   const queueId = searchParams.get("queueId");
   const sessionId = searchParams.get("sessionId");
 
+  if (searchParams.get("mine") === "1") {
+    // Patient restoring their active queue entry (e.g. after page refresh).
+    // Always scoped to the session user — userId is never accepted as a param.
+    const entry = await db.jitQueue.findFirst({
+      where: {
+        patientUserId: session.user.id,
+        status: { in: ["WAITING", "CALLED"] },
+      },
+      orderBy: { enteredAt: "desc" },
+      include: {
+        session: {
+          select: {
+            estimatedMinutesPerPatient: true,
+            status: true,
+            professional: { select: { id: true, userId: true, firstName: true, lastName: true, specialty: true } },
+          },
+        },
+      },
+    });
+    if (!entry) return NextResponse.json({ entry: null });
+
+    const aheadCount = await db.jitQueue.count({
+      where: {
+        sessionId: entry.sessionId,
+        status:    "WAITING",
+        position:  { lt: entry.position },
+      },
+    });
+    const estimatedWaitMinutes = aheadCount * (entry.session.estimatedMinutesPerPatient ?? 20);
+
+    return NextResponse.json({
+      entry: {
+        id:                    entry.id,
+        sessionId:             entry.sessionId,
+        status:                entry.status,
+        position:              entry.position,
+        aheadCount,
+        estimatedWaitMinutes,
+        calledAt:              entry.calledAt?.toISOString() ?? null,
+        expiresAt:             entry.expiresAt?.toISOString() ?? null,
+        meetingUrl:            entry.meetingUrl ?? null,
+        sessionStatus:         entry.session.status,
+        professionalName:      `Dr. ${entry.session.professional.firstName} ${entry.session.professional.lastName}`,
+        professionalId:        entry.session.professional.id,
+        professionalUserId:    entry.session.professional.userId,
+        specialty:             entry.session.professional.specialty,
+      },
+    });
+  }
+
   if (queueId) {
     // Patient checking their own entry
     const entry = await db.jitQueue.findUnique({
@@ -352,6 +402,19 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    // Guard: never call a second patient while one is still CALLED (and not
+    // yet expired — expiry was handled above).
+    const activeCalled = await db.jitQueue.findFirst({
+      where: { sessionId, status: "CALLED" },
+      select: { id: true },
+    });
+    if (activeCalled) {
+      return NextResponse.json(
+        { error: "ALREADY_CALLING", message: "A patient has already been called. Wait for them to join or for the timeout to expire." },
+        { status: 409 },
+      );
+    }
+
     // Mark current IN_PROGRESS as DONE
     const finishing = await db.jitQueue.findMany({
       where: { sessionId, status: "IN_PROGRESS" },
@@ -420,6 +483,8 @@ export async function PATCH(req: NextRequest) {
         queueId: called.id,
         meetingUrl,
         sessionId,
+        url: "/urgent",
+        link: "/urgent",
         titleKey: "notif.jit.yourTurn.title",
         bodyKey: "notif.jit.yourTurn.body",
       },

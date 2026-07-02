@@ -106,6 +106,25 @@ async function fulfillConsultationCheckoutSession(sessionId: string) {
   });
 }
 
+// Slot taken after a hosted-checkout payment (boleto/Pix/card) was captured —
+// refund the session's PaymentIntent idempotently. Never throws.
+async function refundCheckoutSlotTaken(cs: any) {
+  const paymentIntentId =
+    typeof cs.payment_intent === "string" ? cs.payment_intent : cs.payment_intent?.id;
+  if (!paymentIntentId) {
+    console.error(`[AUTO-REFUND-FAIL] checkout session sem payment_intent: ${cs.id}`);
+    return;
+  }
+  const refund = await refundPaymentIntentIdempotent(
+    paymentIntentId,
+    "appointment_slot_taken_checkout",
+  );
+  console.error(
+    `[WEBHOOK] Slot taken for checkout ${cs.id} (${paymentIntentId}) — auto-refund result:`,
+    refund,
+  );
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
@@ -172,6 +191,8 @@ export async function POST(req: NextRequest) {
         await fulfillConsultationCheckoutSession(cs.id);
       } catch (e) {
         console.error("[WEBHOOK] async_payment_succeeded consultation:", e);
+        // Event only fires after capture, so a refund is safe here.
+        if (e instanceof AppointmentSlotTakenError) await refundCheckoutSlotTaken(cs);
       }
     }
     return NextResponse.json({ received: true });
@@ -278,6 +299,9 @@ export async function POST(req: NextRequest) {
         await fulfillConsultationCheckoutSession(cs.id);
       } catch (e) {
         console.error("[WEBHOOK] checkout consultation:", e);
+        // Guard above already requires payment_status === "paid" (unpaid
+        // boleto is handled later by async_payment_succeeded).
+        if (e instanceof AppointmentSlotTakenError) await refundCheckoutSlotTaken(cs);
       }
     }
 

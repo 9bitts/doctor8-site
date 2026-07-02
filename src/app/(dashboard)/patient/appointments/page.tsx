@@ -137,10 +137,14 @@ export default function AppointmentsPage() {
   const [cancelReason,    setCancelReason]    = useState("");
   const [cancelLoading,   setCancelLoading]   = useState(false);
   const [cancelResult,    setCancelResult]    = useState<{ refunded: boolean; hoursUntil: number } | null>(null);
+  const [cancelError,     setCancelError]     = useState<string | null>(null);
   const [rescheduleSlots, setRescheduleSlots] = useState<SlotDay[]>([]);
   const [rescheduleDay,   setRescheduleDay]   = useState<SlotDay | null>(null);
   const [rescheduleSlot,  setRescheduleSlot]  = useState<string>("");
   const [rescheduleLoading, setRescheduleLoading] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+  const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false);
+  const [rescheduleSlotsError, setRescheduleSlotsError] = useState(false);
 
   // Onboarding tip state
   const [showTip, setShowTip] = useState(true);
@@ -609,43 +613,73 @@ export default function AppointmentsPage() {
   async function handleCancel() {
     if (!cancelModal) return;
     setCancelLoading(true);
-    const res  = await fetch(`/api/appointments/${cancelModal.id}/cancel`, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ reason: cancelReason || "Patient requested" }),
-    });
-    const data = await res.json();
-    setCancelResult({ refunded: data.refunded, hoursUntil: data.hoursUntil });
-    setCancelLoading(false);
-    fetchAppointments();
+    setCancelError(null);
+    try {
+      const res  = await fetch(`/api/appointments/${cancelModal.id}/cancel`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ reason: cancelReason || "Patient requested" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCancelError(typeof data.error === "string" && data.error ? data.error : t("appt.cancelError"));
+        return;
+      }
+      setCancelResult({ refunded: data.refunded === true, hoursUntil: data.hoursUntil });
+      fetchAppointments();
+    } catch {
+      setCancelError(t("appt.cancelError"));
+    } finally {
+      setCancelLoading(false);
+    }
   }
 
   async function handleReschedule() {
     if (!rescheduleModal || !rescheduleSlot) return;
     setRescheduleLoading(true);
-    const res = await fetch(`/api/appointments/${rescheduleModal.id}/reschedule`, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ newScheduledAt: rescheduleSlot }),
-    });
-    if (res.ok) {
-      setRescheduleModal(null);
-      setRescheduleSlot("");
-      fetchAppointments();
+    setRescheduleError(null);
+    try {
+      const res = await fetch(`/api/appointments/${rescheduleModal.id}/reschedule`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ newScheduledAt: rescheduleSlot }),
+      });
+      if (res.ok) {
+        setRescheduleModal(null);
+        setRescheduleSlot("");
+        fetchAppointments();
+      } else {
+        setRescheduleError(res.status === 409 ? t("appt.rescheduleSlotTaken") : t("appt.rescheduleError"));
+      }
+    } catch {
+      setRescheduleError(t("appt.rescheduleError"));
+    } finally {
+      setRescheduleLoading(false);
     }
-    setRescheduleLoading(false);
   }
 
   async function openReschedule(apt: Appointment) {
     setRescheduleModal(apt);
+    setRescheduleError(null);
+    setRescheduleSlotsError(false);
+    setRescheduleSlots([]);
+    setRescheduleDay(null);
+    setRescheduleSlot("");
     const proId = (apt as any).professionalId || (apt as any).psychoanalystId;
     const providerType = (apt as any).providerType === "psychoanalyst" ? "psychoanalyst" : "health";
-    if (proId) {
+    if (!proId) { setRescheduleSlotsError(true); return; }
+    setRescheduleSlotsLoading(true);
+    try {
       const res  = await fetch(`/api/professionals/${proId}/slots?lang=${lang}&providerType=${providerType}`);
+      if (!res.ok) { setRescheduleSlotsError(true); return; }
       const d    = await res.json();
       const days = (d.days || []).filter((day: SlotDay) => day.slots.some((s) => s.available));
       setRescheduleSlots(days);
       if (days.length > 0) setRescheduleDay(days[0]);
+    } catch {
+      setRescheduleSlotsError(true);
+    } finally {
+      setRescheduleSlotsLoading(false);
     }
   }
 
@@ -783,7 +817,7 @@ export default function AppointmentsPage() {
                       </button>
                     )}
                     {canCancel && (
-                      <button onClick={() => { setCancelModal(apt); setCancelResult(null); setCancelReason(""); }} className="flex items-center gap-1 text-xs text-rose-600 border border-rose-200 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition">
+                      <button onClick={() => { setCancelModal(apt); setCancelResult(null); setCancelReason(""); setCancelError(null); }} className="flex items-center gap-1 text-xs text-rose-600 border border-rose-200 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition">
                         <X size={12} /> {t("appt.cancelBtn")}
                       </button>
                     )}
@@ -1328,8 +1362,11 @@ export default function AppointmentsPage() {
                   <label className="text-xs font-medium text-slate-600 mb-1 block">{t("appt.cancelReasonLabel")}</label>
                   <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} placeholder={t("appt.cancelReasonPlaceholder")} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-500/30" />
                 </div>
+                {cancelError && (
+                  <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-3">{cancelError}</p>
+                )}
                 <div className="flex gap-3">
-                  <button onClick={() => setCancelModal(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm">{t("appt.back")}</button>
+                  <button onClick={() => { setCancelModal(null); setCancelError(null); }} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm">{t("appt.back")}</button>
                   <button onClick={handleCancel} disabled={cancelLoading} className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2">
                     {cancelLoading ? <Loader2 size={14} className="animate-spin" /> : null}
                     {t("appt.confirmCancel")}
@@ -1350,8 +1387,17 @@ export default function AppointmentsPage() {
               <button onClick={() => setRescheduleModal(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
             </div>
             <p className="text-xs text-slate-500">{t("appt.rescheduleHint")}</p>
-            {rescheduleSlots.length === 0 ? (
+            {rescheduleSlotsLoading ? (
               <div className="flex justify-center py-6"><Loader2 size={20} className="animate-spin text-slate-400" /></div>
+            ) : rescheduleSlotsError ? (
+              <div className="text-center py-6 space-y-3">
+                <p className="text-sm text-rose-600">{t("appt.rescheduleLoadError")}</p>
+                <button onClick={() => openReschedule(rescheduleModal)} className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm">
+                  {t("common.retry")}
+                </button>
+              </div>
+            ) : rescheduleSlots.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-6">{t("appt.noSlots")}</p>
             ) : (
               <>
                 <div className="flex gap-2 overflow-x-auto pb-1">
@@ -1377,6 +1423,9 @@ export default function AppointmentsPage() {
                       </button>
                     ))}
                   </div>
+                )}
+                {rescheduleError && (
+                  <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-3">{rescheduleError}</p>
                 )}
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setRescheduleModal(null)} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm">{t("appt.cancelBtn")}</button>

@@ -48,7 +48,7 @@ export async function GET(
       sharedRecords: { select: { sharedWithUserId: true } },
       patientRecord: {
         select: {
-          professionalId: true,
+          professionalId: true, linkedUserId: true,
           firstName: true, lastName: true, dateOfBirth: true, cpf: true,
           addressLine1: true, city: true, state: true, country: true, zipCode: true,
         },
@@ -82,6 +82,14 @@ export async function GET(
     document.patientId &&
     document.patientId === viewerPatient.id
   );
+  // The professional workflow creates documents against a PatientRecord
+  // (chart) without filling patientId — the patient linked to that chart
+  // is still the owner of their own document.
+  const isLinkedChartPatient = !!(
+    viewerPatient &&
+    document.patientRecord?.linkedUserId &&
+    document.patientRecord.linkedUserId === session.user.id
+  );
   const isPatientShared = document.sharedRecords.some(
     (s) => s.sharedWithUserId === session.user.id,
   );
@@ -89,6 +97,7 @@ export async function GET(
     isDocOwner ||
     isChartOwner ||
     isPatientOwner ||
+    isLinkedChartPatient ||
     isPatientShared;
 
   if (!canAccess) return new NextResponse("Forbidden", { status: 403 });
