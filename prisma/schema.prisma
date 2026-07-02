@@ -310,6 +310,7 @@ model User {
   role            UserRole
   region          String     @default("US") @db.VarChar(2)
   language        String     @default("en")
+  timezone        String     @default("America/Sao_Paulo")
   jitQueueEntries   JitQueue[]  @relation("JitQueuePatient")
   humanitarianQueueEntries HumanitarianQueueEntry[] @relation("HumanitarianQueuePatient")
   humanitarianVolunteers   HumanitarianVolunteer[]  @relation("HumanitarianVolunteer")
@@ -522,6 +523,7 @@ model ProfessionalProfile {
 
   // Availability (JSON: {dayOfWeek: [startTime, endTime]})
   availability    Json?
+  timezone        String  @default("America/Sao_Paulo")
 
   // Verification
   verified        Boolean  @default(false)
@@ -837,6 +839,8 @@ model Appointment {
   cancelledAt      DateTime?
   cancelledBy      String?
   cancelReason     String?
+
+  patientConfirmedAt DateTime?
 
   adminProblemAt   DateTime?
   adminProblemNote String?
