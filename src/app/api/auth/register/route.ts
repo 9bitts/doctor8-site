@@ -24,6 +24,7 @@ import {
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { isAccountVerified } from "@/lib/account-verified";
+import { userHasAnyProfile } from "@/lib/user-profile-complete";
 import { PROFESSION_SIGNUP, isProfessionSignupSlug } from "@/lib/profession-signup";
 
 // HIPAA: strong password requirements
@@ -173,8 +174,18 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      if (userHasAnyProfile(existing)) {
+        return NextResponse.json(
+          { error: { email: ["Email already in use"] } },
+          { status: 409 },
+        );
+      }
+
       return NextResponse.json(
-        { error: { email: ["Email already in use"] } },
+        {
+          code: "ACCOUNT_INCOMPLETE",
+          error: { email: ["Email already in use"] },
+        },
         { status: 409 },
       );
     }

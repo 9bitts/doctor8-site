@@ -12,9 +12,15 @@ import { audit } from "@/lib/audit";
 import { isAccountVerified } from "@/lib/account-verified";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { encrypt } from "@/lib/encryption";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { resolveDeletedAccountOnLogin } from "@/lib/account-deletion";
+import { createSignupProfile } from "@/lib/signup-profile-create";
+import type { ParsedSignupIntent } from "@/lib/oauth-signup-intent";
+import {
+  computeProfileComplete,
+  isProfileExemptRole,
+} from "@/lib/user-profile-complete";
+import { fetchUserProfileSnapshot } from "@/lib/user-profile-db";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -31,21 +37,16 @@ const TOKEN_VERSION_CHECK_MS = 60_000;
 const isProduction = process.env.NODE_ENV === "production";
 
 // Reads the signed OAuth signup intent cookie set before the Google redirect.
-async function readSignupIntent(): Promise<{
-  role: "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
-  professionalKind: "psychologist" | null;
-  phoneE164: string | null;
-}> {
+async function readSignupIntent(): Promise<ParsedSignupIntent | null> {
   try {
     const { cookies } = await import("next/headers");
     const { parseSignupRoleToken, OAUTH_SIGNUP_ROLE_COOKIE } = await import(
       "@/lib/oauth-signup-intent"
     );
     const token = cookies().get(OAUTH_SIGNUP_ROLE_COOKIE)?.value;
-    const parsed = parseSignupRoleToken(token);
-    return parsed ?? { role: "PATIENT", professionalKind: null, phoneE164: null };
+    return parseSignupRoleToken(token);
   } catch {
-    return { role: "PATIENT", professionalKind: null, phoneE164: null };
+    return null;
   }
 }
 
@@ -219,70 +220,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           if (!dbUser) {
-            // New Google user — use the role chosen on the registration screen
-            const { role: signupRole, professionalKind, phoneE164 } = await readSignupIntent();
+            const intent = await readSignupIntent();
+            if (!intent) {
+              return "/signup/role";
+            }
 
+            const { role: signupRole, professionalKind, phoneE164 } = intent;
             const nameParts = (user.name || "").split(" ");
             const firstName = nameParts[0] || "";
             const lastName = nameParts.slice(1).join(" ") || "";
 
-            dbUser = await db.user.create({
-              data: {
-                email: googleEmail,
-                emailVerified: new Date(), // Google already verified the email
+            dbUser = await db.$transaction(async (tx) => {
+              const newUser = await tx.user.create({
+                data: {
+                  email: googleEmail,
+                  emailVerified: new Date(),
+                  role: signupRole,
+                  region: "US",
+                },
+              });
+
+              await createSignupProfile(tx, {
+                userId: newUser.id,
                 role: signupRole,
-                region: "US",
-              },
+                professionalKind,
+                firstName,
+                lastName,
+                avatarUrl: user.image || null,
+              });
+
+              if (phoneE164) {
+                await saveRegistrationPhone(tx, newUser.id, signupRole, phoneE164);
+              }
+
+              return newUser;
             });
-
-            if (signupRole === "PROFESSIONAL") {
-              await db.professionalProfile.create({
-                data: {
-                  userId: dbUser.id,
-                  firstName,
-                  lastName,
-                  avatarUrl: user.image || null,
-                  licenseNumber: "",
-                  specialty: professionalKind === "psychologist" ? "Psychologist" : "",
-                  consultPrice: 0,
-                },
-              });
-            } else if (signupRole === "PSYCHOANALYST") {
-              await db.psychoanalystProfile.create({
-                data: {
-                  userId: dbUser.id,
-                  firstName,
-                  lastName,
-                  avatarUrl: user.image || null,
-                  trainingInstitution: "",
-                  consultPrice: 0,
-                },
-              });
-            } else if (signupRole === "INTEGRATIVE_THERAPIST") {
-              await db.integrativeTherapistProfile.create({
-                data: {
-                  userId: dbUser.id,
-                  firstName,
-                  lastName,
-                  avatarUrl: user.image || null,
-                  trainingInstitution: "",
-                  consultPrice: 0,
-                },
-              });
-            } else {
-              await db.patientProfile.create({
-                data: {
-                  userId: dbUser.id,
-                  firstName: encrypt(firstName),
-                  lastName: encrypt(lastName),
-                  avatarUrl: user.image || null,
-                },
-              });
-            }
-
-            if (phoneE164) {
-              await saveRegistrationPhone(db, dbUser.id, signupRole, phoneE164);
-            }
           } else if (!dbUser.emailVerified) {
             // Existing user who hadn't verified — Google now confirms their email
             await db.user.update({
@@ -349,6 +321,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.region = dbUser.region;
           token.tokenVersion = dbUser.tokenVersion;
           token.tvCheckedAt = Date.now();
+        }
+      }
+
+      const shouldRefreshProfileComplete =
+        token.id &&
+        (user ||
+          account ||
+          (trigger === "update" &&
+            (session as { refreshProfileComplete?: boolean })?.refreshProfileComplete) ||
+          token.profileComplete === undefined);
+
+      if (shouldRefreshProfileComplete) {
+        const role = String(token.role ?? "");
+        if (isProfileExemptRole(role)) {
+          token.profileComplete = true;
+        } else {
+          const snapshot = await fetchUserProfileSnapshot(token.id as string);
+          token.profileComplete = snapshot ? computeProfileComplete(snapshot) : true;
         }
       }
 
@@ -420,6 +410,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.region = token.region as string;
         session.user.professionalSpecialty =
           (token.professionalSpecialty as string | null | undefined) ?? null;
+        (session.user as { profileComplete?: boolean }).profileComplete =
+          token.profileComplete !== false;
       }
       return session;
     },

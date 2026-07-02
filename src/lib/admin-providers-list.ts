@@ -57,17 +57,27 @@ export type AdminProviderRow = {
   licenseDocCount: number;
 };
 
+export type AdminIncompleteSignupRow = {
+  userId: string;
+  email: string;
+  name: string | null;
+  role: string;
+  createdAt: string;
+};
+
 export type AdminProvidersPayload = {
   angels: AdminAngelRow[];
   doctors: AdminProfessionalRow[];
   psychoanalysts: AdminProviderRow[];
   integrativeTherapists: AdminProviderRow[];
+  incompleteSignups: AdminIncompleteSignupRow[];
   pendingCounts: Record<AdminProviderTab, number>;
   queryErrors?: string[];
 };
 
 const ADMIN_PROVIDER_TAB_IDS: AdminProviderTab[] = [
   "pendentes",
+  "incompletos",
   "todos",
   "medicos",
   "psicologos",
@@ -86,8 +96,36 @@ type RawAdminRows = {
   allDoctors: AdminProfessionalRow[];
   allAnalysts: AdminProviderRow[];
   allTherapists: AdminProviderRow[];
+  incompleteSignups: AdminIncompleteSignupRow[];
   queryErrors: string[];
 };
+
+async function loadIncompleteProfessionalSignups(): Promise<AdminIncompleteSignupRow[]> {
+  const users = await db.user.findMany({
+    where: {
+      deletedAt: null,
+      role: { in: ["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"] },
+      professionalProfile: null,
+      psychoanalystProfile: null,
+      integrativeTherapistProfile: null,
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      createdAt: true,
+    },
+  });
+
+  return users.map((u) => ({
+    userId: u.id,
+    email: u.email,
+    name: null,
+    role: u.role,
+    createdAt: u.createdAt.toISOString(),
+  }));
+}
 
 function angelsForTab(allAngels: AdminAngelRow[], tab: AdminProviderTab): AdminAngelRow[] {
   if (tab === "anjos" || tab === "todos") return allAngels;
@@ -121,7 +159,7 @@ async function safeQuery<T>(
 async function loadRawAdminRows(): Promise<RawAdminRows> {
   const queryErrors: string[] = [];
 
-  const [angelRows, healthPros, analysts, therapists] = await Promise.all([
+  const [angelRows, healthPros, analysts, therapists, incompleteSignups] = await Promise.all([
     safeQuery(
       "angelProfile",
       () =>
@@ -207,6 +245,12 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
       [],
       queryErrors,
     ),
+    safeQuery(
+      "incompleteSignups",
+      () => loadIncompleteProfessionalSignups(),
+      [],
+      queryErrors,
+    ),
   ]);
 
   const allAngels: AdminAngelRow[] = angelRows.map((a) => ({
@@ -286,7 +330,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
       : null,
   }));
 
-  return { allAngels, allDoctors, allAnalysts, allTherapists, queryErrors };
+  return { allAngels, allDoctors, allAnalysts, allTherapists, incompleteSignups, queryErrors };
 }
 
 function matchesProviderSearch(
@@ -303,11 +347,12 @@ function buildPendingCounts(
   allDoctors: AdminProfessionalRow[],
   allAnalysts: AdminProviderRow[],
   allTherapists: AdminProviderRow[],
+  incompleteSignups: AdminIncompleteSignupRow[],
 ): Record<AdminProviderTab, number> {
   return Object.fromEntries(
     ADMIN_PROVIDER_TAB_IDS.map((id) => [
       id,
-      countForTab(id, allAngels, allDoctors, allAnalysts, allTherapists),
+      countForTab(id, allAngels, allDoctors, allAnalysts, allTherapists, incompleteSignups),
     ]),
   ) as Record<AdminProviderTab, number>;
 }
@@ -316,8 +361,26 @@ function payloadFromRows(
   tab: AdminProviderTab,
   rows: RawAdminRows,
 ): AdminProvidersPayload {
-  const { allAngels, allDoctors, allAnalysts, allTherapists, queryErrors } = rows;
-  const pendingCounts = buildPendingCounts(allAngels, allDoctors, allAnalysts, allTherapists);
+  const { allAngels, allDoctors, allAnalysts, allTherapists, incompleteSignups, queryErrors } = rows;
+  const pendingCounts = buildPendingCounts(
+    allAngels,
+    allDoctors,
+    allAnalysts,
+    allTherapists,
+    incompleteSignups,
+  );
+
+  if (tab === "incompletos") {
+    return {
+      angels: [],
+      doctors: [],
+      psychoanalysts: [],
+      integrativeTherapists: [],
+      incompleteSignups,
+      pendingCounts,
+      queryErrors: queryErrors.length ? queryErrors : undefined,
+    };
+  }
 
   if (tab === "todos") {
     return {
@@ -325,6 +388,7 @@ function payloadFromRows(
       doctors: allDoctors,
       psychoanalysts: allAnalysts,
       integrativeTherapists: allTherapists,
+      incompleteSignups: [],
       pendingCounts,
       queryErrors: queryErrors.length ? queryErrors : undefined,
     };
@@ -336,6 +400,7 @@ function payloadFromRows(
       doctors: [],
       psychoanalysts: [],
       integrativeTherapists: [],
+      incompleteSignups: [],
       pendingCounts,
       queryErrors: queryErrors.length ? queryErrors : undefined,
     };
@@ -347,6 +412,7 @@ function payloadFromRows(
       doctors: allDoctors.filter((d) => !d.verified),
       psychoanalysts: allAnalysts.filter((p) => !p.verified),
       integrativeTherapists: allTherapists.filter((p) => !p.verified),
+      incompleteSignups: [],
       pendingCounts,
       queryErrors: queryErrors.length ? queryErrors : undefined,
     };
@@ -358,6 +424,7 @@ function payloadFromRows(
       doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty, d.licenseNumber)),
       psychoanalysts: allAnalysts,
       integrativeTherapists: [],
+      incompleteSignups: [],
       pendingCounts,
       queryErrors: queryErrors.length ? queryErrors : undefined,
     };
@@ -369,6 +436,7 @@ function payloadFromRows(
       doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty, d.licenseNumber)),
       psychoanalysts: [],
       integrativeTherapists: allTherapists,
+      incompleteSignups: [],
       pendingCounts,
       queryErrors: queryErrors.length ? queryErrors : undefined,
     };
@@ -379,6 +447,7 @@ function payloadFromRows(
     doctors: allDoctors.filter((d) => matchesTab(tab, d.specialty, d.licenseNumber)),
     psychoanalysts: [],
     integrativeTherapists: [],
+    incompleteSignups: [],
     pendingCounts,
     queryErrors: queryErrors.length ? queryErrors : undefined,
   };
@@ -392,6 +461,7 @@ export async function searchAdminProviders(query: string): Promise<AdminProvider
     rows.allDoctors,
     rows.allAnalysts,
     rows.allTherapists,
+    rows.incompleteSignups,
   );
 
   return {
@@ -414,6 +484,9 @@ export async function searchAdminProviders(query: string): Promise<AdminProvider
     integrativeTherapists: rows.allTherapists.filter((p) =>
       matchesProviderSearch(query, [p.name, p.email, p.subtitle]),
     ),
+    incompleteSignups: rows.incompleteSignups.filter((u) =>
+      matchesProviderSearch(query, [u.email, u.name, u.role]),
+    ),
     pendingCounts,
     queryErrors: rows.queryErrors.length ? rows.queryErrors : undefined,
   };
@@ -430,7 +503,9 @@ function countForTab(
   doctors: AdminProfessionalRow[],
   analysts: AdminProviderRow[],
   therapists: AdminProviderRow[],
+  incompleteSignups: AdminIncompleteSignupRow[],
 ): number {
+  if (tab === "incompletos") return incompleteSignups.length;
   if (tab === "todos") {
     return angels.length + doctors.length + analysts.length + therapists.length;
   }

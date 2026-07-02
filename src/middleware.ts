@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { isPathAllowedForRole, resolveRoleHome } from "@/lib/role-home";
 import { resolveLoginPathForPathname } from "@/lib/auth-portals";
+import { sessionProfileIncomplete } from "@/lib/user-profile-complete";
 
 const PRIVATE_CACHE_CONTROL = "private, no-store";
 
@@ -37,6 +38,7 @@ const PUBLIC_ROUTES = [
   "/verify-email",
   "/verify-account",
   "/verify-sms",
+  "/signup/role",
   "/auth/magic",
   "/unauthorized",
   "/privacy",
@@ -164,6 +166,9 @@ export default auth((req) => {
   // Already-authenticated users shouldn't see the login screen — send them to
   // their dashboard so they don't get stuck on a form they don't need.
   if (pathname === "/login" && session?.user) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
     const { role, professionalSpecialty } = session.user as {
       role: string;
       professionalSpecialty?: string | null;
@@ -171,6 +176,16 @@ export default auth((req) => {
     return NextResponse.redirect(
       new URL(resolveRoleHome(role, professionalSpecialty), req.url),
     );
+  }
+
+  if (
+    session?.user?.id &&
+    pathname !== "/signup/role" &&
+    isAuthenticatedDashboard(pathname)
+  ) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
   }
 
   if (isPublicRoute(pathname)) return NextResponse.next();

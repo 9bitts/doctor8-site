@@ -20,6 +20,7 @@ import {
   Mail,
   Clock,
   LayoutList,
+  AlertCircle,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -84,8 +85,17 @@ interface AngelRow {
   createdAt: string;
 }
 
+interface IncompleteSignupRow {
+  userId: string;
+  email: string;
+  name: string | null;
+  role: string;
+  createdAt: string;
+}
+
 const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
   pendentes: <Clock size={14} />,
+  incompletos: <AlertCircle size={14} />,
   todos: <LayoutList size={14} />,
   medicos: <Stethoscope size={14} />,
   psicologos: <Brain size={14} />,
@@ -234,6 +244,7 @@ export default function ProvidersAdminClient() {
   const [professionals, setProfessionals] = useState<ProfessionalRow[]>([]);
   const [psychoanalysts, setPsychoanalysts] = useState<ProviderRow[]>([]);
   const [integrativeTherapists, setIntegrativeTherapists] = useState<ProviderRow[]>([]);
+  const [incompleteSignups, setIncompleteSignups] = useState<IncompleteSignupRow[]>([]);
   const [angels, setAngels] = useState<AngelRow[]>([]);
   const [tabCounts, setTabCounts] = useState<Partial<Record<AdminProviderTab, number>>>({});
 
@@ -258,10 +269,13 @@ export default function ProvidersAdminClient() {
         const doctors = (data.doctors as ProfessionalRow[]) || [];
         const psychoanalystRows = (data.psychoanalysts as ProviderRow[]) || [];
         const integrativeRows = (data.integrativeTherapists as ProviderRow[]) || [];
+        const incompleteRows = (data.incompleteSignups as IncompleteSignupRow[]) || [];
         const pendingCounts =
           (data.pendingCounts as Partial<Record<AdminProviderTab, number>>) || {};
         const actualCount =
-          angels.length + doctors.length + psychoanalystRows.length + integrativeRows.length;
+          activeTab === "incompletos"
+            ? incompleteRows.length
+            : angels.length + doctors.length + psychoanalystRows.length + integrativeRows.length;
         const expectedCount = term ? actualCount : (pendingCounts[activeTab] ?? 0);
 
         if (!term && expectedCount > 0 && actualCount === 0) {
@@ -271,6 +285,7 @@ export default function ProvidersAdminClient() {
           setProfessionals(doctors);
           setPsychoanalysts(psychoanalystRows);
           setIntegrativeTherapists(integrativeRows);
+          setIncompleteSignups(incompleteRows);
           setTabCounts(pendingCounts);
           setQueryErrors((data.queryErrors as string[] | undefined) ?? []);
           setLoading(false);
@@ -478,15 +493,27 @@ export default function ProvidersAdminClient() {
           (a.motivation || "").toLowerCase().includes(q.toLowerCase()),
       );
 
+  const filteredIncompleteSignups = q.trim()
+    ? incompleteSignups.filter((u) =>
+        [u.email, u.name, u.role].some((part) =>
+          (part ?? "").toLowerCase().includes(q.toLowerCase()),
+        ),
+      )
+    : incompleteSignups;
+
   const tabMeta = ADMIN_PROVIDER_TABS.find((t) => t.id === activeTab)!;
   const listCount =
-    filteredAngels.length +
-    filteredProfessionals.length +
-    filteredPsychoanalysts.length +
-    filteredIntegrativeTherapists.length;
+    activeTab === "incompletos"
+      ? filteredIncompleteSignups.length
+      : filteredAngels.length +
+        filteredProfessionals.length +
+        filteredPsychoanalysts.length +
+        filteredIntegrativeTherapists.length;
 
   const emptyLabel =
-    activeTab === "pendentes"
+    activeTab === "incompletos"
+      ? t("admin.providers.emptyIncomplete")
+      : activeTab === "pendentes"
       ? t("admin.providers.emptyPending")
       : activeTab === "todos"
         ? t("admin.providers.emptyAll")
@@ -615,6 +642,8 @@ export default function ProvidersAdminClient() {
             </div>
           )}
         </div>
+      ) : activeTab === "incompletos" ? (
+        <IncompleteSignupList rows={filteredIncompleteSignups} locale={locale} t={t} />
       ) : activeTab === "anjos" ? (
         <AngelList
           rows={filteredAngels}
@@ -1097,6 +1126,46 @@ function ProviderList({
             onViewDocs={onViewDocs}
             onVerifyEmail={onVerifyEmail}
           />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function IncompleteSignupList({
+  rows,
+  locale,
+  t,
+}: {
+  rows: IncompleteSignupRow[];
+  locale: string;
+  t: (key: TranslationKey | string) => string;
+}) {
+  const roleLabel = (role: string) => {
+    if (role === "PROFESSIONAL") return t("admin.providers.incompleteRole.professional");
+    if (role === "PSYCHOANALYST") return t("admin.providers.incompleteRole.psychoanalyst");
+    if (role === "INTEGRATIVE_THERAPIST") return t("admin.providers.incompleteRole.integrative");
+    return role;
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
+      {rows.map((row) => (
+        <div key={row.userId} className="flex items-center gap-4 px-5 py-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-100 text-amber-700">
+            <AlertCircle size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-slate-800 text-sm">{row.email}</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {roleLabel(row.role)} ·{" "}
+              {new Date(row.createdAt).toLocaleDateString(locale, {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
+          </div>
         </div>
       ))}
     </div>

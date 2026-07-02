@@ -29,7 +29,8 @@ import {
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
 } from "@/components/InternationalPhoneInput";
-import { defaultDdiForRegion, validateRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
+import { defaultDdiForRegion, validateRegistrationPhone } from "@/lib/international-phone";
+import { mapRegisterApiErrors } from "@/lib/register-api-errors";
 
 export type RegisterRole = "PATIENT" | "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 export type Region = RegistrationRegionCode;
@@ -199,7 +200,7 @@ export function RegisterAccountForm({
         }),
       });
       if (!intentRes.ok) {
-        setErrors({ form: ["Could not start Google sign-up. Please try again."] });
+        setErrors({ form: [t("reg.genericError")] });
         setGoogleLoading(false);
         return;
       }
@@ -211,7 +212,7 @@ export function RegisterAccountForm({
       await signOut({ redirect: false });
       await signIn("google", { callbackUrl: oauthCallback });
     } catch {
-      setErrors({ form: ["Could not start Google sign-up. Please try again."] });
+      setErrors({ form: [t("reg.genericError")] });
       setGoogleLoading(false);
     }
   }
@@ -246,18 +247,10 @@ export function RegisterAccountForm({
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        const apiErrors = data.error || { general: [t("reg.regFailed")] };
-        if (apiErrors.phoneNational?.[0]) {
-          const raw = apiErrors.phoneNational[0] as string;
-          const knownIssues = ["TOO_SHORT", "TOO_LONG", "MISSING_AREA_CODE", "INVALID_FORMAT"] as const;
-          if (knownIssues.includes(raw as typeof knownIssues[number])) {
-            apiErrors.phoneNational = [registrationPhoneErrorMessage(lang, raw as typeof knownIssues[number])];
-          }
-        }
-        setErrors(apiErrors);
+        setErrors(mapRegisterApiErrors(lang, data));
         return;
       }
 
@@ -332,6 +325,13 @@ export function RegisterAccountForm({
         <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
           <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
           <p className="text-red-300 text-sm">{errors.general[0]}</p>
+        </div>
+      )}
+
+      {errors.form && (
+        <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+          <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+          <p className="text-red-300 text-sm">{errors.form[0]}</p>
         </div>
       )}
 

@@ -13,6 +13,7 @@ import {
   waitForAuthenticatedSession,
   navigateAfterAuth,
 } from "@/components/auth/login-shared";
+import { sessionProfileIncomplete } from "@/lib/user-profile-complete";
 import { AuthLogo } from "@/components/auth/auth-logo";
 
 export default function CallbackPage() {
@@ -39,6 +40,11 @@ function CallbackInner() {
       if (!session?.user?.role) {
         setTimedOut(true);
         navigateAfterAuth(`${PATIENT_LOGIN}?error=SessionTimeout`);
+        return;
+      }
+
+      if (sessionProfileIncomplete(session.user)) {
+        navigateAfterAuth("/signup/role");
         return;
       }
 

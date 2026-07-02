@@ -37,6 +37,7 @@ function tabFromCanonicalProfession(raw: string): AdminProviderTab | null {
 
 export type AdminProviderTab =
   | "pendentes"
+  | "incompletos"
   | "todos"
   | "medicos"
   | "psicologos"
@@ -49,6 +50,7 @@ export type AdminProviderTab =
 
 export const ADMIN_PROVIDER_TABS: { id: AdminProviderTab }[] = [
   { id: "pendentes" },
+  { id: "incompletos" },
   { id: "todos" },
   { id: "medicos" },
   { id: "psicologos" },
