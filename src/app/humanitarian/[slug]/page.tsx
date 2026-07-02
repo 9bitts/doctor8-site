@@ -71,6 +71,7 @@ export default function HumanitarianCampaignPage() {
   const slug = VENEZUELA_CAMPAIGN_SLUG;
   const pollRef = useRef<NodeJS.Timeout>();
   const autoEnterRef = useRef(false);
+  const joinPanelRef = useRef<HTMLDivElement>(null);
 
   const [lang, setLang] = useState<Lang>("es");
   const [loading, setLoading] = useState(true);
@@ -96,6 +97,14 @@ export default function HumanitarianCampaignPage() {
   useEffect(() => {
     setLang(getHumanitarianLang());
   }, []);
+
+  useEffect(() => {
+    if (!selectedPool) return;
+    const timer = window.setTimeout(() => {
+      joinPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [selectedPool]);
 
   const loadCampaign = useCallback(async () => {
     try {
@@ -417,6 +426,48 @@ export default function HumanitarianCampaignPage() {
           {t(lang, "hum.page.whatNeed")}
         </h2>
 
+        {(!phoneGateEnabled || phoneReady) && selectedPool && campaign?.active && (
+          <div
+            ref={joinPanelRef}
+            className="sticky top-[6.75rem] z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 py-3 bg-slate-950/95 backdrop-blur-md border border-emerald-500/40 rounded-2xl space-y-3 shadow-lg shadow-black/30"
+          >
+            <button
+              type="button"
+              onClick={() => joinPool(selectedPool)}
+              disabled={!!joining}
+              className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50 text-base sm:text-lg shadow-lg shadow-emerald-900/30"
+            >
+              {joining === selectedPool ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                t(lang, "hum.page.joinBtn")
+              )}
+            </button>
+            <p className="text-sm text-slate-300 text-center">
+              {t(lang, "hum.page.joinTitle", {
+                pool: pools.find((p) => p.slug === selectedPool)?.label || "",
+              })}
+            </p>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1.5">{t(lang, "hum.page.complaintLabel")}</label>
+              <textarea
+                value={complaint}
+                onChange={(e) => setComplaint(e.target.value)}
+                rows={2}
+                placeholder={t(lang, "hum.page.complaintPlaceholder")}
+                className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedPool(null)}
+              className="w-full text-sm text-slate-500 hover:text-slate-300 py-1"
+            >
+              {t(lang, "hum.page.cancel")}
+            </button>
+          </div>
+        )}
+
         {forceMedicalPool && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-100">
             {t(lang, "hum.page.medicalUrgentHint")}
@@ -446,6 +497,7 @@ export default function HumanitarianCampaignPage() {
             <p className="text-xs text-amber-200/80 leading-relaxed">{t(lang, "hum.noVolunteersText")}</p>
           </div>
         )}
+
         <div className="space-y-3">
           {pools.map((pool) => (
             <button
@@ -454,9 +506,11 @@ export default function HumanitarianCampaignPage() {
               disabled={!campaign?.active || pool.isFull || !!joining}
               onClick={() => setSelectedPool(pool.slug)}
               className={`w-full text-left bg-white/5 hover:bg-white/10 border rounded-2xl p-4 sm:p-5 transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                forceMedicalPool && pool.slug === "medico"
-                  ? "border-amber-400/50 ring-1 ring-amber-400/30"
-                  : "border-white/10"
+                selectedPool === pool.slug
+                  ? "border-emerald-400/50 ring-1 ring-emerald-400/30 bg-emerald-500/10"
+                  : forceMedicalPool && pool.slug === "medico"
+                    ? "border-amber-400/50 ring-1 ring-amber-400/30"
+                    : "border-white/10"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
@@ -480,47 +534,6 @@ export default function HumanitarianCampaignPage() {
             </button>
           ))}
         </div>
-
-        {selectedPool && campaign?.active && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-4">
-            <p className="text-sm text-slate-300">
-              {t(lang, "hum.page.joinTitle", {
-                pool: pools.find((p) => p.slug === selectedPool)?.label || "",
-              })}
-            </p>
-
-            <button
-              type="button"
-              onClick={() => joinPool(selectedPool)}
-              disabled={!!joining}
-              className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base"
-            >
-              {joining === selectedPool ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                t(lang, "hum.page.joinBtn")
-              )}
-            </button>
-
-            <div>
-              <label className="block text-xs text-slate-500 mb-1.5">{t(lang, "hum.page.complaintLabel")}</label>
-              <textarea
-                value={complaint}
-                onChange={(e) => setComplaint(e.target.value)}
-                rows={3}
-                placeholder={t(lang, "hum.page.complaintPlaceholder")}
-                className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedPool(null)}
-              className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
-            >
-              {t(lang, "hum.page.cancel")}
-            </button>
-          </div>
-        )}
 
         </>
         )}
