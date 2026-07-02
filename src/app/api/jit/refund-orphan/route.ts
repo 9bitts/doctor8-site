@@ -41,17 +41,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not a JIT payment" }, { status: 403 });
   }
 
-  // c. Orphan check: if any queue entry (active or completed) used this
-  // payment, the join actually succeeded ? nothing to recover.
-  const existingEntry = await db.jitQueue.findFirst({
-    where: {
-      paymentId: paymentIntentId,
-      status: { in: ["WAITING", "CALLED", "IN_PROGRESS", "DONE"] },
-    },
-    select: { id: true },
+  // c. Orphan check: if a JitPayment for this intent is linked to an active
+  // queue entry, the join succeeded — nothing to recover.
+  const existingPayment = await db.jitPayment.findUnique({
+    where: { stripePaymentId: paymentIntentId },
+    include: { queueEntry: { select: { id: true, status: true } } },
   });
-  if (existingEntry) {
-    return NextResponse.json({ error: "Payment is not orphaned" }, { status: 409 });
+  if (existingPayment?.queueEntry) {
+    const activeStatuses = ["WAITING", "CALLED", "IN_PROGRESS", "DONE"];
+    if (activeStatuses.includes(existingPayment.queueEntry.status)) {
+      return NextResponse.json({ error: "Payment is not orphaned" }, { status: 409 });
+    }
   }
 
   const result = await refundPaymentIntentIdempotent(paymentIntentId, "jit_join_failed");

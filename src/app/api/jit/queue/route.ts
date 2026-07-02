@@ -12,14 +12,38 @@ import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { decrypt } from "@/lib/encryption";
 import { readJsonBody } from "@/lib/safe-json";
-import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
+import { refundPaymentIntentIdempotent, type RefundResult } from "@/lib/stripe-refund";
+import { stripe } from "@/lib/stripe";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
   try { return decrypt(v); } catch { return v; }
 }
 
-import { stripe } from "@/lib/stripe";
+type VerifiedJitIntent = { id: string; amount: number; currency: string };
+
+/** Resolves JitQueue.paymentId (FK) → Stripe PaymentIntent id for refunds. */
+async function refundJitQueuePayment(
+  paymentId: string | null | undefined,
+  reason: string,
+): Promise<RefundResult> {
+  if (!paymentId) return { refunded: false };
+  const payment = await db.jitPayment.findUnique({
+    where: { id: paymentId },
+    select: { id: true, stripePaymentId: true },
+  });
+  if (!payment?.stripePaymentId) {
+    console.error(`[AUTO-REFUND-FAIL] JitPayment ${paymentId} has no stripePaymentId`);
+    return { refunded: false, error: true };
+  }
+  const result = await refundPaymentIntentIdempotent(payment.stripePaymentId, reason);
+  if (result.refunded) {
+    await db.jitPayment
+      .update({ where: { id: payment.id }, data: { status: "refunded" } })
+      .catch(() => {});
+  }
+  return result;
+}
 
 const joinSchema = z.object({
   sessionId: z.string(),
@@ -224,7 +248,7 @@ export async function POST(req: NextRequest) {
   if (!jitSession || jitSession.status !== "ONLINE")
     return NextResponse.json({ error: "Session not available" }, { status: 404 });
 
-  let verifiedPaymentId: string | undefined;
+  let verifiedIntent: VerifiedJitIntent | undefined;
   if (!jitSession.isFree && jitSession.priceAmount > 0) {
     if (!paymentIntentId) {
       return NextResponse.json({ error: "Payment required" }, { status: 402 });
@@ -240,12 +264,27 @@ export async function POST(req: NextRequest) {
       if (intent.metadata?.sessionId !== sessionId || intent.metadata?.userId !== session.user.id) {
         return NextResponse.json({ error: "Invalid payment" }, { status: 402 });
       }
-      verifiedPaymentId = paymentIntentId;
+      verifiedIntent = {
+        id: intent.id,
+        amount: intent.amount,
+        currency: intent.currency,
+      };
     } catch {
       return NextResponse.json({ error: "Could not verify payment" }, { status: 402 });
     }
   } else if (paymentIntentId) {
-    verifiedPaymentId = paymentIntentId;
+    try {
+      const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (intent.status === "succeeded") {
+        verifiedIntent = {
+          id: intent.id,
+          amount: intent.amount,
+          currency: intent.currency,
+        };
+      }
+    } catch {
+      /* optional intent on free sessions — ignore retrieve failures */
+    }
   }
 
   // Check if patient is already in this queue
@@ -277,6 +316,32 @@ export async function POST(req: NextRequest) {
         });
         const position = (lastEntry?.position ?? 0) + 1;
 
+        let linkedPaymentId: string | null = null;
+        if (verifiedIntent) {
+          const existingPay = await tx.jitPayment.findUnique({
+            where: { stripePaymentId: verifiedIntent.id },
+            include: { queueEntry: { select: { status: true } } },
+          });
+          if (existingPay?.queueEntry) {
+            const active = ["WAITING", "CALLED", "IN_PROGRESS", "DONE"];
+            if (active.includes(existingPay.queueEntry.status)) {
+              throw new Error("PAYMENT_ALREADY_USED");
+            }
+          }
+          const jitPay =
+            existingPay ??
+            (await tx.jitPayment.create({
+              data: {
+                amount: verifiedIntent.amount,
+                currency: verifiedIntent.currency.toUpperCase(),
+                stripePaymentId: verifiedIntent.id,
+                paidAt: new Date(),
+                status: "paid",
+              },
+            }));
+          linkedPaymentId = jitPay.id;
+        }
+
         return tx.jitQueue.create({
           data: {
             sessionId,
@@ -284,7 +349,7 @@ export async function POST(req: NextRequest) {
             status: "WAITING",
             position,
             specialty,
-            paymentId: verifiedPaymentId ?? null,
+            paymentId: linkedPaymentId,
           },
         });
       },
@@ -293,6 +358,9 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     if (e instanceof Error && e.message === "QUEUE_FULL") {
       return NextResponse.json({ error: "Queue is full. Please try again later." }, { status: 429 });
+    }
+    if (e instanceof Error && e.message === "PAYMENT_ALREADY_USED") {
+      return NextResponse.json({ error: "Payment already used for an active queue entry" }, { status: 409 });
     }
     throw e;
   }
@@ -351,7 +419,7 @@ export async function PATCH(req: NextRequest) {
       // Auto-refund paid no-shows. Never blocks/delays the expiry — the
       // helper swallows errors and logs [AUTO-REFUND-FAIL].
       if (e.paymentId) {
-        await refundPaymentIntentIdempotent(e.paymentId, "jit_no_show_expired");
+        await refundJitQueuePayment(e.paymentId, "jit_no_show_expired");
       }
       // Notify patient
       const missedCopy = storedNotificationText("notif.jit.missed.title", "notif.jit.missed.body");
@@ -398,7 +466,7 @@ export async function PATCH(req: NextRequest) {
     // Auto-refund paid no-shows (idempotent — safe if EXPIRE_NOSHOWS already ran).
     for (const e of expiringNoShows) {
       if (e.paymentId) {
-        await refundPaymentIntentIdempotent(e.paymentId, "jit_no_show_expired");
+        await refundJitQueuePayment(e.paymentId, "jit_no_show_expired");
       }
     }
 
