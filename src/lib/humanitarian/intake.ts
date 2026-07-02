@@ -22,6 +22,10 @@ import {
 import type { HumanitarianIntakeStatus, HumanitarianPriority } from "@prisma/client";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
+import {
+  effectiveHumanitarianPhoneReady,
+  isHumanitarianPhoneGateEnabled,
+} from "@/lib/humanitarian/feature-flags";
 import { decryptTriageData } from "@/lib/humanitarian/intake-encryption";
 import {
   buildAnamneseHintsFromTriage,
@@ -65,6 +69,7 @@ export interface IntakeStatusDto {
   anamneseStarted: boolean;
   tcleAccepted: boolean;
   phoneReady: boolean;
+  phoneGateEnabled: boolean;
   anamnese?: AnamneseDto;
   prefill?: IntakePrefillDto;
   anamneseHints?: AnamneseHintsFromTriage;
@@ -130,6 +135,8 @@ export async function getPatientIntakeStatus(
     },
   });
 
+  const phoneGateEnabled = isHumanitarianPhoneGateEnabled();
+
   if (!intake) {
     return {
       id: null,
@@ -143,14 +150,16 @@ export async function getPatientIntakeStatus(
       anamneseComplete: false,
       anamneseStarted: false,
       tcleAccepted: false,
-      phoneReady: false,
+      phoneReady: effectiveHumanitarianPhoneReady(false),
+      phoneGateEnabled,
     };
   }
 
   const valid = isTriageValid(intake.triageCompletedAt);
   const anamneseComplete = intake.status === "COMPLETE";
   const tcleAccepted = await hasTelemedicineTcle(patientUserId);
-  const phoneReady = !!(await resolvePatientHumanitarianPhone(patientUserId));
+  const actualPhoneReady = !!(await resolvePatientHumanitarianPhone(patientUserId));
+  const phoneReady = effectiveHumanitarianPhoneReady(actualPhoneReady);
 
   let anamneseBlock: Pick<IntakeStatusDto, "anamnese" | "prefill" | "anamneseHints"> = {};
   if (opts?.includeAnamnese) {
@@ -190,6 +199,7 @@ export async function getPatientIntakeStatus(
     anamneseStarted: intake.status !== "TRIAGE_ONLY",
     tcleAccepted,
     phoneReady,
+    phoneGateEnabled,
     ...anamneseBlock,
   };
 }
@@ -217,7 +227,8 @@ export async function getPatientIntakeStatusBySlug(
       anamneseComplete: false,
       anamneseStarted: false,
       tcleAccepted: false,
-      phoneReady: false,
+      phoneReady: effectiveHumanitarianPhoneReady(false),
+      phoneGateEnabled: isHumanitarianPhoneGateEnabled(),
     };
   }
 

@@ -17,6 +17,7 @@ export default function HumanitarianAnamnesePage() {
 
   const [lang, setLang] = useState<Lang>("es");
   const [loading, setLoading] = useState(true);
+  const [phoneGateEnabled, setPhoneGateEnabled] = useState(false);
 
   useHumanitarianOutboxFlush(() => router.refresh());
 
@@ -47,6 +48,7 @@ export default function HumanitarianAnamnesePage() {
           router.replace(`/humanitarian/${slug}/tcle?return=${encodeURIComponent(`/humanitarian/${slug}/anamnese`)}`);
           return;
         }
+        setPhoneGateEnabled(!!intakeData.intake?.phoneGateEnabled);
 
         setLoading(false);
       })
@@ -66,7 +68,7 @@ export default function HumanitarianAnamnesePage() {
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
       <div className="space-y-6">
-        <HumanitarianFlowStepper lang={lang} current="anamnese" dark />
+        <HumanitarianFlowStepper lang={lang} current="anamnese" dark phoneGateEnabled={phoneGateEnabled} />
         <HumanitarianAnamneseForm lang={lang} campaignSlug={slug} />
       </div>
     </HumanitarianShell>

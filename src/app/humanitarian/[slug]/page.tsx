@@ -84,6 +84,7 @@ export default function HumanitarianCampaignPage() {
   const [anamneseComplete, setAnamneseComplete] = useState(true);
   const [tcleAccepted, setTcleAccepted] = useState(false);
   const [phoneReady, setPhoneReady] = useState(false);
+  const [phoneGateEnabled, setPhoneGateEnabled] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [switching, setSwitching] = useState<string | null>(null);
   const [queueStale, setQueueStale] = useState(false);
@@ -144,6 +145,7 @@ export default function HumanitarianCampaignPage() {
           setAnamneseComplete(!!intakeData.intake.anamneseComplete);
           setTcleAccepted(!!intakeData.intake.tcleAccepted);
           setPhoneReady(!!intakeData.intake.phoneReady);
+          setPhoneGateEnabled(!!intakeData.intake.phoneGateEnabled);
         }
 
         await loadCampaign();
@@ -342,7 +344,7 @@ export default function HumanitarianCampaignPage() {
     return (
       <HumanitarianShell lang={lang} onLangChange={setLang} dark>
         <div className="max-w-lg mx-auto space-y-4 mb-4">
-          <HumanitarianFlowStepper lang={lang} current="waiting" dark />
+          <HumanitarianFlowStepper lang={lang} current="waiting" dark phoneGateEnabled={phoneGateEnabled} />
           <HumanitarianOfflineBanner lang={lang} />
         </div>
         <QueueScreen
@@ -374,7 +376,9 @@ export default function HumanitarianCampaignPage() {
           current={humanitarianFlowStep(
             { triageValid: true, tcleAccepted, phoneReady, anamneseComplete },
             false,
+            phoneGateEnabled,
           )}
+          phoneGateEnabled={phoneGateEnabled}
           dark
         />
         <div className="flex items-start gap-3">
@@ -423,15 +427,16 @@ export default function HumanitarianCampaignPage() {
           </p>
         )}
 
-        {!phoneReady && tcleAccepted && (
+        {phoneGateEnabled && !phoneReady && tcleAccepted && (
           <HumanitarianPhoneGate
             lang={lang}
             campaignSlug={slug}
+            enabled={phoneGateEnabled}
             onReady={() => setPhoneReady(true)}
           />
         )}
 
-        {phoneReady && (
+        {(!phoneGateEnabled || phoneReady) && (
         <>
         {totalVolunteersOnline === 0 && campaign?.active && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 space-y-1">

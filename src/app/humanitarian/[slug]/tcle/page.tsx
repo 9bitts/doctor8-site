@@ -24,6 +24,7 @@ export default function HumanitarianTclePage() {
 
   const [lang, setLang] = useState<Lang>("es");
   const [loading, setLoading] = useState(true);
+  const [phoneGateEnabled, setPhoneGateEnabled] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +56,7 @@ export default function HumanitarianTclePage() {
           router.replace(returnTo);
           return;
         }
+        setPhoneGateEnabled(!!intakeData.intake?.phoneGateEnabled);
 
         const tcleRes = await fetch("/api/consent/telemedicine-tcle");
         const tcleData = await tcleRes.json();
@@ -111,7 +113,7 @@ export default function HumanitarianTclePage() {
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
       <div className="max-w-lg mx-auto space-y-6 py-4">
-        <HumanitarianFlowStepper lang={lang} current="tcle" dark />
+        <HumanitarianFlowStepper lang={lang} current="tcle" dark phoneGateEnabled={phoneGateEnabled} />
         <HumanitarianOfflineBanner lang={lang} />
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">

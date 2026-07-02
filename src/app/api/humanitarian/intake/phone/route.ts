@@ -11,6 +11,10 @@ import {
 import { buildInternationalPhoneE164 } from "@/lib/international-phone";
 import { decryptIdentificationData } from "@/lib/humanitarian/intake-encryption";
 import type { IdentificationData } from "@/lib/humanitarian/anamnese";
+import {
+  effectiveHumanitarianPhoneReady,
+  isHumanitarianPhoneGateEnabled,
+} from "@/lib/humanitarian/feature-flags";
 
 const legacySchema = z.object({
   campaignSlug: z.string(),
@@ -37,7 +41,9 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const phoneReady = !!(await resolvePatientHumanitarianPhone(session.user.id));
+  const phoneGateEnabled = isHumanitarianPhoneGateEnabled();
+  const actualPhoneReady = !!(await resolvePatientHumanitarianPhone(session.user.id));
+  const phoneReady = effectiveHumanitarianPhoneReady(actualPhoneReady);
   let parts = { ddi: "58", ddd: "", number: "" };
 
   const [profile, intake] = await Promise.all([
@@ -65,7 +71,7 @@ export async function GET(req: NextRequest) {
     parts = parsePhoneToParts(profile);
   }
 
-  return NextResponse.json({ phoneReady, parts });
+  return NextResponse.json({ phoneReady, phoneGateEnabled, parts });
 }
 
 export async function POST(req: NextRequest) {

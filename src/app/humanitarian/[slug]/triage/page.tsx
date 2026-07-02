@@ -19,6 +19,7 @@ export default function HumanitarianTriagePage() {
 
   const [lang, setLang] = useState<Lang>("es");
   const [loading, setLoading] = useState(true);
+  const [phoneGateEnabled, setPhoneGateEnabled] = useState(false);
 
   useHumanitarianOutboxFlush(() => router.refresh());
 
@@ -49,6 +50,9 @@ export default function HumanitarianTriagePage() {
           }
           return;
         }
+        if (res.ok && data.intake) {
+          setPhoneGateEnabled(!!data.intake.phoneGateEnabled);
+        }
         setLoading(false);
       })
       .catch(() => router.push(`/login?callbackUrl=/humanitarian/${slug}/triage`));
@@ -67,7 +71,7 @@ export default function HumanitarianTriagePage() {
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang} dark>
       <div className="max-w-lg mx-auto space-y-5 py-2">
-        <HumanitarianFlowStepper lang={lang} current="triage" dark />
+        <HumanitarianFlowStepper lang={lang} current="triage" dark phoneGateEnabled={phoneGateEnabled} />
         <HumanitarianTriageForm
         lang={lang}
         campaignSlug={slug}

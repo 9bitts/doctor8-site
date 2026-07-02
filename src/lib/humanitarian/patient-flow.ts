@@ -24,10 +24,11 @@ export function humanitarianFlowStep(
     anamneseComplete?: boolean;
   },
   inQueue?: boolean,
+  phoneGateEnabled = false,
 ): HumanitarianFlowStep {
   if (!intake.triageValid) return "triage";
   if (!intake.tcleAccepted) return "tcle";
-  if (!intake.phoneReady) return "phone";
+  if (phoneGateEnabled && !intake.phoneReady) return "phone";
   if (!intake.anamneseComplete && !inQueue) return "anamnese";
   if (inQueue) return "waiting";
   return "care";

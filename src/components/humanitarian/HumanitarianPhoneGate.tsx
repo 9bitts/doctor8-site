@@ -14,19 +14,25 @@ type Props = {
   lang: Lang;
   campaignSlug: string;
   onReady: () => void;
+  enabled?: boolean;
 };
 
 function t(lang: Lang, key: string) {
   return translate(lang, key);
 }
 
-export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: Props) {
+export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady, enabled = true }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [phone, setPhone] = useState<InternationalPhoneValue>({ ddi: "58", nationalNumber: "" });
 
   useEffect(() => {
+    if (!enabled) {
+      onReady();
+      setLoading(false);
+      return;
+    }
     fetch(`/api/humanitarian/intake/phone?campaignSlug=${campaignSlug}`)
       .then((r) => r.json())
       .then((d) => {
@@ -43,7 +49,7 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
       })
       .catch(() => setError(t(lang, "hum.phone.error")))
       .finally(() => setLoading(false));
-  }, [campaignSlug, lang, onReady]);
+  }, [campaignSlug, enabled, lang, onReady]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -75,6 +81,8 @@ export default function HumanitarianPhoneGate({ lang, campaignSlug, onReady }: P
       setSaving(false);
     }
   }
+
+  if (!enabled) return null;
 
   if (loading) {
     return (

@@ -17,6 +17,7 @@ import { requireValidIntake } from "@/lib/humanitarian/intake";
 import { decryptHumanitarianIntakeFields } from "@/lib/humanitarian/intake-encryption";
 import type { HumanitarianTriageData } from "@/lib/humanitarian/triage";
 import { resolvePatientHumanitarianPhone } from "@/lib/humanitarian/phone";
+import { isHumanitarianPhoneGateEnabled } from "@/lib/humanitarian/feature-flags";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { getPatientActiveHumanitarianEntry } from "@/lib/humanitarian/notify";
 import { checkRateLimit, RATE_LIMITS, rateLimitResponse } from "@/lib/rate-limit";
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!(await resolvePatientHumanitarianPhone(session.user.id))) {
+  if (isHumanitarianPhoneGateEnabled() && !(await resolvePatientHumanitarianPhone(session.user.id))) {
     return NextResponse.json(
       {
         errorCode: "PHONE_REQUIRED",
