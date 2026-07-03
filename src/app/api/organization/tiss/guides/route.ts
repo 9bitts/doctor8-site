@@ -6,6 +6,10 @@ import {
 
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { dateOnlyRangeInTz } from "@/lib/timezone";
+
+/** Brazilian organizations — report/filter boundaries use America/Sao_Paulo. */
+const ORG_REPORT_TZ = "America/Sao_Paulo";
 
 export async function GET(req: NextRequest) {
   const ctx = await requireOrganizationApi();
@@ -62,7 +66,7 @@ const createSchema = z.object({
   patientCpf: z.string().optional(),
   cardNumber: z.string().optional(),
   amountCents: z.number().int().positive(),
-  serviceDate: z.string().datetime(),
+  serviceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   appointmentId: z.string().optional(),
 });
 
@@ -95,7 +99,7 @@ export async function POST(req: NextRequest) {
       patientCpf: parsed.data.patientCpf,
       cardNumber: parsed.data.cardNumber,
       amountCents: parsed.data.amountCents,
-      serviceDate: new Date(parsed.data.serviceDate),
+      serviceDate: dateOnlyRangeInTz(parsed.data.serviceDate, ORG_REPORT_TZ).start,
       appointmentId: parsed.data.appointmentId,
       guideNumber,
     },

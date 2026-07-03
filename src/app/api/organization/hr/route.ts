@@ -4,6 +4,10 @@ import { canViewFinance } from "@/lib/organization-auth";
 
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { dateOnlyRangeInTz } from "@/lib/timezone";
+
+/** Brazilian organizations — report/filter boundaries use America/Sao_Paulo. */
+const ORG_REPORT_TZ = "America/Sao_Paulo";
 
 export async function GET() {
   const ctx = await requireOrganizationApi();
@@ -56,7 +60,7 @@ const employeeSchema = z.object({
   employmentType: z.enum(["CLT", "PJ", "ASSOCIATE"]),
   jobTitle: z.string().optional(),
   salaryCents: z.number().int().optional(),
-  startDate: z.string().datetime(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   professionalId: z.string().optional(),
 });
 
@@ -76,7 +80,7 @@ export async function POST(req: NextRequest) {
       employmentType: parsed.data.employmentType,
       jobTitle: parsed.data.jobTitle,
       salaryCents: parsed.data.salaryCents,
-      startDate: new Date(parsed.data.startDate),
+      startDate: dateOnlyRangeInTz(parsed.data.startDate, ORG_REPORT_TZ).start,
       professionalId: parsed.data.professionalId,
     },
   });

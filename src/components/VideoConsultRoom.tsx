@@ -16,6 +16,7 @@ import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianInt
 import DailyPrebuiltEmbed, { type DailyPrebuiltHandle } from "@/components/DailyPrebuiltEmbed";
 import { useConsultSessionKeepalive } from "@/hooks/useConsultSessionKeepalive";
 import { translate } from "@/lib/i18n/translations";
+import { formatAppointmentTimeWithLabel } from "@/lib/timezone";
 import { buildVideoChartLinks, providerAppointmentsPath, providerJitPath, videoReturnPath } from "@/lib/video-chart-nav";
 import { videoBackFallback } from "@/lib/safe-nav";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
@@ -718,7 +719,7 @@ export default function VideoConsultRoom({
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen min-h-[100dvh] bg-slate-950 flex flex-col">
       <div className="bg-slate-900 border-b border-slate-800 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 shrink-0 z-10">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <button
@@ -739,7 +740,7 @@ export default function VideoConsultRoom({
           <div className="min-w-0">
             <p className="text-white text-sm font-semibold truncate">{t("consultation")} {data.otherParty}</p>
             <p className="text-slate-500 text-xs">
-              {new Date(data.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })} · {data.durationMins} min
+              {formatAppointmentTimeWithLabel(new Date(data.scheduledAt), Intl.DateTimeFormat().resolvedOptions().timeZone, locale)} · {data.durationMins} min
             </p>
           </div>
         </div>
@@ -794,7 +795,7 @@ export default function VideoConsultRoom({
         <div
           className={`relative flex flex-col min-h-0 shrink-0 transition-all duration-300 ${
             isPro && sidebarOpen
-              ? "h-[52vh] lg:h-auto lg:flex-1 lg:w-[65%]"
+              ? "h-[52vh] h-[52dvh] lg:h-auto lg:flex-1 lg:w-[65%]"
               : "flex-1 w-full"
           }`}
         >

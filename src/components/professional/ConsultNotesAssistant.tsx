@@ -53,7 +53,33 @@ const T: Record<string, Record<Lang, string>> = {
   },
   savedToChart: { pt: "Evolução salva na ficha do paciente!", en: "Evolution saved to patient chart!", es: "¡Evolución guardada en la ficha del paciente!" },
   noChart: { pt: "Ficha do paciente não vinculada.", en: "Patient chart not linked.", es: "Ficha del paciente no vinculada." },
+  recordingNotSupported: {
+    pt: "Gravação não suportada neste navegador.",
+    en: "Recording not supported in this browser.",
+    es: "Grabación no compatible con este navegador.",
+  },
 };
+
+function pickRecordingMime(): string | undefined {
+  if (typeof MediaRecorder === "undefined") return undefined;
+  const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+  for (const c of candidates) {
+    try {
+      if (MediaRecorder.isTypeSupported(c)) return c;
+    } catch {
+      /* ignore */
+    }
+  }
+  return undefined;
+}
+
+function audioFileExtension(mime: string): string {
+  const lower = mime.toLowerCase();
+  if (lower.includes("mp4") || lower.includes("m4a")) return "m4a";
+  return "webm";
+}
+
+const recordingSupported = typeof MediaRecorder !== "undefined";
 
 export type ConsultNotesAssistantHandle = {
   isRecording: () => boolean;
@@ -213,6 +239,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
   }
 
   async function startRecording() {
+    if (!recordingSupported) return;
     if (!consent) {
       setError(t("needConsent"));
       return;
@@ -225,10 +252,10 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
     setSuccess("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : "audio/webm";
-      const recorder = new MediaRecorder(stream, { mimeType: mime });
+      const chosenMime = pickRecordingMime();
+      const recorder = chosenMime
+        ? new MediaRecorder(stream, { mimeType: chosenMime })
+        : new MediaRecorder(stream);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -237,7 +264,8 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
         stream.getTracks().forEach((tr) => tr.stop());
         stopTimer();
         setRecording(false);
-        const blob = new Blob(chunksRef.current, { type: mime });
+        const effectiveMime = recorder.mimeType || chosenMime || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: effectiveMime });
         if (blob.size === 0) {
           setError(t("genericError"));
           resolveFinalize("failed");
@@ -245,7 +273,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
         }
         const form = new FormData();
         form.append("consent", "true");
-        form.append("audio", blob, "consult.webm");
+        form.append("audio", blob, `consult.${audioFileExtension(effectiveMime)}`);
         form.append("lang", lang);
         Object.entries(chartFields()).forEach(([k, v]) => form.append(k, v));
         if (appointmentId) form.append("appointmentId", appointmentId);
@@ -377,7 +405,7 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
-  const canRecord = consent && transcribeOk && summarizeOk && !!chartId;
+  const canRecord = recordingSupported && consent && transcribeOk && summarizeOk && !!chartId;
 
   return (
     <>
@@ -430,15 +458,28 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
             {t("processing")}
           </p>
         ) : (
-          <button
-            type="button"
-            onClick={startRecording}
-            disabled={!canRecord}
-            title={!transcribeOk ? t("transcribeNotConfigured") : !summarizeOk ? t("aiNotConfigured") : undefined}
-            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 py-2.5 rounded-lg transition min-h-[44px]"
-          >
-            <Mic size={13} /> {t("start")}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={startRecording}
+              disabled={!canRecord}
+              title={
+                !recordingSupported
+                  ? t("recordingNotSupported")
+                  : !transcribeOk
+                    ? t("transcribeNotConfigured")
+                    : !summarizeOk
+                      ? t("aiNotConfigured")
+                      : undefined
+              }
+              className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 py-2.5 rounded-lg transition min-h-[44px]"
+            >
+              <Mic size={13} /> {t("start")}
+            </button>
+            {!recordingSupported && (
+              <p className="text-[10px] text-amber-400/90">{t("recordingNotSupported")}</p>
+            )}
+          </>
         )}
 
         {!transcribeOk && !recording && !processing && (

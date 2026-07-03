@@ -39,7 +39,7 @@ export default function OrganizationHrPage() {
         employmentType: form.employmentType,
         jobTitle: form.jobTitle || undefined,
         salaryCents: form.salary ? Math.round(parseFloat(form.salary) * 100) : undefined,
-        startDate: new Date(form.startDate).toISOString(),
+        startDate: form.startDate,
       }),
     });
     setForm({ fullName: "", employmentType: "CLT", jobTitle: "", salary: "", startDate: new Date().toISOString().slice(0, 10) });

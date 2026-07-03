@@ -4,6 +4,10 @@ import { canViewFinance } from "@/lib/organization-auth";
 
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { dateOnlyRangeInTz } from "@/lib/timezone";
+
+/** Brazilian organizations — report/filter boundaries use America/Sao_Paulo. */
+const ORG_REPORT_TZ = "America/Sao_Paulo";
 
 export async function GET(req: NextRequest) {
   const ctx = await requireOrganizationApi();
@@ -69,7 +73,7 @@ const createSchema = z.object({
   description: z.string().min(2).max(200),
   category: z.string().max(60).optional(),
   amountCents: z.number().int().positive(),
-  dueDate: z.string().datetime().optional(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -90,7 +94,9 @@ export async function POST(req: NextRequest) {
       category: parsed.data.category,
       amountCents: parsed.data.amountCents,
       currency: ctx.organization.currency,
-      dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
+      dueDate: parsed.data.dueDate
+        ? dateOnlyRangeInTz(parsed.data.dueDate, ORG_REPORT_TZ).start
+        : null,
       createdById: ctx.userId,
     },
   });
@@ -103,7 +109,7 @@ const patchSchema = z.object({
   status: z.enum(["PENDING", "PAID", "OVERDUE", "CANCELLED"]).optional(),
   description: z.string().min(2).max(200).optional(),
   amountCents: z.number().int().positive().optional(),
-  dueDate: z.string().datetime().nullable().optional(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -136,7 +142,11 @@ export async function PATCH(req: NextRequest) {
       status: parsed.data.status,
       description: parsed.data.description,
       amountCents: parsed.data.amountCents,
-      dueDate: parsed.data.dueDate === null ? null : parsed.data.dueDate ? new Date(parsed.data.dueDate) : undefined,
+      dueDate: parsed.data.dueDate === null
+        ? null
+        : parsed.data.dueDate
+          ? dateOnlyRangeInTz(parsed.data.dueDate, ORG_REPORT_TZ).start
+          : undefined,
       paidAt,
     },
   });

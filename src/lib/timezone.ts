@@ -239,3 +239,17 @@ export function refInstantFromDaySlots(
     slots.find((s) => s.available !== false)?.datetime ?? slots[0]?.datetime;
   return iso ? new Date(iso) : null;
 }
+
+/** Parse "YYYY-MM-DD" as a LOCAL calendar date (not UTC midnight). */
+export function parseDateOnlyLocal(s: string): Date {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Range boundaries for a "YYYY-MM-DD" filter in a given IANA timezone:
+    [startOfDay, startOfNextDay) as UTC Dates. */
+export function dateOnlyRangeInTz(s: string, tz: string): { start: Date; end: Date } {
+  const start = zonedTimeToUtc(s, "00:00", tz);
+  const end = zonedTimeToUtc(addCalendarDays(s, 1), "00:00", tz);
+  return { start, end };
+}

@@ -65,7 +65,7 @@ export default function OrganizationConveniosPage() {
         patientName: newGuide.patientName,
         cardNumber: newGuide.cardNumber || undefined,
         amountCents,
-        serviceDate: newGuide.serviceDate ? new Date(newGuide.serviceDate).toISOString() : new Date().toISOString(),
+        serviceDate: newGuide.serviceDate,
       }),
     });
     setNewGuide({ orgHealthPlanId: "", professionalId: "", patientName: "", cardNumber: "", amount: "", serviceDate: "" });

@@ -230,7 +230,7 @@ export default function SupportWidget() {
           className={`fixed z-50 flex flex-col shadow-2xl rounded-2xl overflow-hidden border border-slate-200 ${
             isVideoRoom
               ? "top-16 right-3 sm:right-4 w-[min(320px,calc(100vw-24px))]"
-              : "bottom-20 right-4 sm:right-6 w-[calc(100vw-32px)] sm:w-96"
+              : "bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 sm:right-6 w-[calc(100vw-32px)] sm:w-96"
           }`}
           style={{ maxHeight: isVideoRoom ? "min(420px, calc(100vh - 88px))" : "min(520px, calc(100vh - 120px))" }}
         >
@@ -309,7 +309,7 @@ export default function SupportWidget() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={t("placeholder")}
               disabled={loading}
-              className="flex-1 text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition disabled:opacity-50"
+              className="flex-1 text-base border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition disabled:opacity-50"
             />
             <button
               type="submit"
@@ -327,7 +327,7 @@ export default function SupportWidget() {
         className={`fixed z-50 rounded-full bg-gradient-to-br from-slate-800 to-emerald-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center ${
           isVideoRoom
             ? "top-4 right-3 sm:right-4 w-11 h-11"
-            : "bottom-4 right-4 sm:right-6 w-14 h-14"
+            : "bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 sm:right-6 w-14 h-14"
         }`}
         aria-label={t("openLabel")}
       >

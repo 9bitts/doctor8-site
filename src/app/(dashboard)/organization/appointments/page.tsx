@@ -3,6 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Calendar, MessageCircle } from "lucide-react";
 import { readOrgProviderScopeCookie } from "@/lib/work-context";
+import {
+  formatShortDateWithWeekday,
+  formatAppointmentTimeWithLabel,
+  DEFAULT_TIME_ZONE,
+} from "@/lib/timezone";
+
+/** Brazilian organizations — appointment display uses America/Sao_Paulo. */
+const ORG_APPT_TZ = DEFAULT_TIME_ZONE;
+const ORG_APPT_LOCALE = "pt-BR";
 
 type Appt = {
   id: string;
@@ -108,13 +117,9 @@ export default function OrganizationAppointmentsPage() {
               <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 flex-wrap">
                 <div className="text-right">
                   <p className="text-sm font-medium text-slate-800">
-                    {new Date(a.scheduledAt).toLocaleDateString("pt-BR", {
-                      weekday: "short", day: "2-digit", month: "short",
-                    })}
+                    {formatShortDateWithWeekday(new Date(a.scheduledAt), ORG_APPT_TZ, ORG_APPT_LOCALE)}
                     {" - "}
-                    {new Date(a.scheduledAt).toLocaleTimeString("pt-BR", {
-                      hour: "2-digit", minute: "2-digit",
-                    })}
+                    {formatAppointmentTimeWithLabel(new Date(a.scheduledAt), ORG_APPT_TZ, ORG_APPT_LOCALE)}
                   </p>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor[a.status] || "bg-slate-100 text-slate-600"}`}>
                     {a.status}

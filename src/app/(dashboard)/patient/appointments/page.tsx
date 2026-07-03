@@ -21,7 +21,6 @@ import {
 } from "@/lib/appointment-slots";
 import { getProfessionLabel, specialtyMatchesSearch, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { getProfessionInfo } from "@/lib/profession-label";
-import { parseLocalDate } from "@/lib/scheduling";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import {
   formatShortDate,
@@ -30,6 +29,7 @@ import {
   formatAppointmentTimeWithLabel,
   dayChipFromInstant,
   refInstantFromDaySlots,
+  zonedTimeToUtc,
 } from "@/lib/timezone";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import ReviewPromptModal from "@/components/ReviewPromptModal";
@@ -978,7 +978,7 @@ export default function AppointmentsPage() {
               <div className="relative flex-1">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("appt.search")}
-                  className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400" />
+                  className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400" />
               </div>
               <div className="flex gap-2">
                 {(["TELECONSULT", "IN_PERSON"] as const).map((tp) => (
@@ -1084,7 +1084,7 @@ export default function AppointmentsPage() {
                 <select
                   value={healthPlanSlug}
                   onChange={(e) => onHealthPlanChange(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 >
                   <option value="particular">{t("appt.healthPlanPrivate")}</option>
                   {providerPlans.map((plan) => (
@@ -1107,7 +1107,7 @@ export default function AppointmentsPage() {
                       const ref = refInstantFromDaySlots(day.slots);
                       const chip = ref
                         ? dayChipFromInstant(ref, userTz, locale)
-                        : { weekday: parseLocalDate(day.date).toLocaleDateString(locale, { weekday: "short", timeZone: userTz }), dayNum: String(parseLocalDate(day.date).getDate()) };
+                        : dayChipFromInstant(zonedTimeToUtc(day.date, "12:00", userTz), userTz, locale);
                       return (
                         <button key={day.date} onClick={() => { setSelectedDay(day); setSelectedSlot(""); }}
                           className={`shrink-0 flex flex-col items-center px-4 py-3 rounded-xl border-2 transition ${selectedDay?.date === day.date ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-slate-300"}`}>
@@ -1221,7 +1221,7 @@ export default function AppointmentsPage() {
                 <select
                   value={selectedServiceId}
                   onChange={(e) => setSelectedServiceId(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 >
                   <option value="">{t("appt.serviceDefault")}</option>
                   {providerServices.map((svc) => (
@@ -1238,7 +1238,7 @@ export default function AppointmentsPage() {
               <select
                 value={healthPlanSlug}
                 onChange={(e) => setHealthPlanSlug(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               >
                 <option value="particular">{t("appt.healthPlanPrivate")}</option>
                 {providerPlans.map((plan) => (
@@ -1257,7 +1257,7 @@ export default function AppointmentsPage() {
                 rows={3}
                 maxLength={2000}
                 placeholder={t("appt.visitReasonPlaceholder")}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-base resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
           </div>
@@ -1524,7 +1524,7 @@ export default function AppointmentsPage() {
                     const ref = refInstantFromDaySlots(day.slots);
                     const chip = ref
                       ? dayChipFromInstant(ref, userTz, locale)
-                      : { weekday: parseLocalDate(day.date).toLocaleDateString(locale, { weekday: "short", timeZone: userTz }), dayNum: String(parseLocalDate(day.date).getDate()) };
+                      : dayChipFromInstant(zonedTimeToUtc(day.date, "12:00", userTz), userTz, locale);
                     return (
                     <button key={day.date} onClick={() => { setRescheduleDay(day); setRescheduleSlot(""); }}
                       className={`shrink-0 flex flex-col items-center px-3 py-2 rounded-xl border-2 transition text-center ${rescheduleDay?.date === day.date ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}>

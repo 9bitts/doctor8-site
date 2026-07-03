@@ -223,7 +223,7 @@ export function ExamCreateView({
 
       {error && <p className="text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">{error}</p>}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 z-30">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-30">
         <div className="max-w-3xl mx-auto flex gap-3">
           <button onClick={onBack} className="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm">
             {t("rx2.cancel")}

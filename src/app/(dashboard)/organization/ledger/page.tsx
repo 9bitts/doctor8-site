@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import { Loader2, Plus, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { formatShortDate, DEFAULT_TIME_ZONE } from "@/lib/timezone";
+
+/** Brazilian organizations — date display/filter boundaries use America/Sao_Paulo. */
+const ORG_REPORT_TZ = DEFAULT_TIME_ZONE;
 
 function fmt(cents: number, currency: string, locale: string) {
   return new Intl.NumberFormat(locale, { style: "currency", currency: currency || "BRL" }).format(cents / 100);
@@ -68,7 +72,7 @@ export default function OrganizationLedgerPage() {
         description: form.description.trim(),
         category: form.category || undefined,
         amountCents,
-        dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
+        dueDate: form.dueDate || undefined,
       }),
     });
     setForm({ type: "EXPENSE", description: "", category: "", amount: "", dueDate: "" });
@@ -165,7 +169,7 @@ export default function OrganizationLedgerPage() {
                 <p className="text-xs text-slate-500">
                   {e.type === "INCOME" ? t("org.ledger.income") : t("org.ledger.expense")}
                   {e.category ? ` · ${e.category}` : ""}
-                  {e.dueDate ? ` · ${t("org.ledger.due")} ${new Date(e.dueDate).toLocaleDateString(locale)}` : ""}
+                  {e.dueDate ? ` · ${t("org.ledger.due")} ${formatShortDate(new Date(e.dueDate), ORG_REPORT_TZ, locale)}` : ""}
                   {e.isOverdue && <span className="text-amber-600 ml-1">· {t("org.ledger.overdueTag")}</span>}
                 </p>
               </div>

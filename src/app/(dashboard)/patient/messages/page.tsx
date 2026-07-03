@@ -351,7 +351,7 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto h-[calc(100vh-140px)] flex gap-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="max-w-5xl mx-auto h-[calc(100vh-140px)] h-[calc(100dvh-140px)] flex gap-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
       {/* Sidebar — conversation list */}
       <div className={`w-full sm:w-80 border-r border-slate-200 flex flex-col shrink-0 ${activeConv ? "hidden sm:flex" : "flex"}`}>
@@ -487,7 +487,7 @@ export default function MessagesPage() {
             </div>
           )}
 
-          <form onSubmit={sendMessage} className="px-4 py-4 bg-white border-t border-slate-200 flex items-end gap-3">
+          <form onSubmit={sendMessage} className="px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-white border-t border-slate-200 flex items-end gap-3">
             <textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}

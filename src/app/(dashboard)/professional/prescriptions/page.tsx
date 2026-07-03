@@ -1394,7 +1394,7 @@ export default function PrescriptionsPage() {
         </>
 
         {/* Sticky footer */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 p-4 z-30">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-30">
             <div className="max-w-3xl mx-auto flex gap-2">
               <button type="button" onClick={closeCreate}
                 className="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition">
