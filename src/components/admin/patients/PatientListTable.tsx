@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users } from "lucide-react";
+import { CheckCircle2, FileText, Users } from "lucide-react";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
 import PatientStatusBadge, { OriginBadge } from "@/components/admin/patients/PatientStatusBadge";
 import type { PatientMonitorStatus } from "@/lib/admin/patient-monitoring";
@@ -20,6 +20,9 @@ export interface PatientRow {
   lastSpecialty: string | null;
   appointments: number;
   documents: number;
+  adminReviewedAt: string | null;
+  hasAnamnese: boolean;
+  anamneseStatus: string | null;
 }
 
 function formatDate(iso: string): string {
@@ -28,6 +31,13 @@ function formatDate(iso: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+function anamneseLabel(status: string | null): string {
+  if (!status) return "Sem anamnese";
+  if (status === "COMPLETE") return "Anamnese completa";
+  if (status === "PARTIAL") return "Anamnese parcial";
+  return "Só triagem";
 }
 
 export default function PatientListTable({ patients }: { patients: PatientRow[] }) {
@@ -52,7 +62,9 @@ export default function PatientListTable({ patients }: { patients: PatientRow[] 
               <th className="px-4 py-3">Cadastro</th>
               <th className="px-4 py-3">Origem</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Anamnese</th>
               <th className="px-4 py-3">Especialidade</th>
+              <th className="px-4 py-3">Atend.</th>
               <th className="px-4 py-3 text-right">Acoes</th>
             </tr>
           </thead>
@@ -79,10 +91,30 @@ export default function PatientListTable({ patients }: { patients: PatientRow[] 
                   <OriginBadge origin={p.origin} />
                 </td>
                 <td className="px-4 py-3">
-                  <PatientStatusBadge status={p.status} detail={p.statusDetail} />
+                  <div className="flex flex-col gap-1">
+                    <PatientStatusBadge status={p.status} detail={p.statusDetail} />
+                    {p.adminReviewedAt && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700">
+                        <CheckCircle2 size={11} /> Conferido
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  {p.hasAnamnese ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-slate-600">
+                      <FileText size={12} className="text-emerald-500" />
+                      {anamneseLabel(p.anamneseStatus)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-slate-600 text-xs max-w-[140px] truncate">
                   {p.lastSpecialty ?? "?"}
+                </td>
+                <td className="px-4 py-3 text-slate-600 text-xs whitespace-nowrap">
+                  {p.appointments}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-2">
@@ -126,6 +158,16 @@ export default function PatientListTable({ patients }: { patients: PatientRow[] 
               <OriginBadge origin={p.origin} />
               <span>{p.country ?? "?"}</span>
               <span>{formatDate(p.registeredAt)}</span>
+              {p.hasAnamnese && (
+                <span className="inline-flex items-center gap-0.5">
+                  <FileText size={11} /> {anamneseLabel(p.anamneseStatus)}
+                </span>
+              )}
+              {p.adminReviewedAt && (
+                <span className="inline-flex items-center gap-0.5 text-emerald-700">
+                  <CheckCircle2 size={11} /> Conferido
+                </span>
+              )}
             </div>
             <div className="flex gap-2">
               <AdminViewPhoneButton userId={p.userId} />

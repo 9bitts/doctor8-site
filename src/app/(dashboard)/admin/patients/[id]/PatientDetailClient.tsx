@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
 import PatientStatusBadge, { OriginBadge } from "@/components/admin/patients/PatientStatusBadge";
 import PatientLiveStatusPanel from "@/components/admin/patients/PatientLiveStatusPanel";
 import PatientTimeline from "@/components/admin/patients/PatientTimeline";
 import PatientConsultationsList from "@/components/admin/patients/PatientConsultationsList";
 import PatientAdminActions from "@/components/admin/patients/PatientAdminActions";
+import PatientAdminReviewPanel from "@/components/admin/patients/PatientAdminReviewPanel";
+import PatientAnamnesePanel from "@/components/admin/patients/PatientAnamnesePanel";
 import LastUpdatedIndicator from "@/components/admin/patients/LastUpdatedIndicator";
 import type { PatientDetailDto } from "@/lib/admin/patient-monitoring";
 
@@ -104,6 +106,11 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
           <div className="flex flex-wrap items-center gap-2">
             <PatientStatusBadge status={patient.status} detail={patient.statusDetail} />
             <OriginBadge origin={patient.origin} />
+            {patient.adminReviewedAt && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                <CheckCircle2 size={12} /> Conferido
+              </span>
+            )}
           </div>
         </div>
 
@@ -156,6 +163,15 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
         professionalName={patient.liveConsult?.professionalName ?? null}
         providerTab={patient.liveConsult?.providerTab ?? null}
         onActionDone={() => load(true)}
+      />
+
+      <PatientAnamnesePanel anamnese={patient.anamnese} />
+
+      <PatientAdminReviewPanel
+        patientId={patient.id}
+        initialNote={patient.adminNote}
+        initialReviewedAt={patient.adminReviewedAt}
+        onSaved={() => load(true)}
       />
 
       <section className="space-y-3">

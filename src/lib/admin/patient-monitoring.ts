@@ -3,6 +3,8 @@ import { decrypt } from "@/lib/encryption";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import { getEntryStatusForAdmin } from "@/lib/humanitarian/dispatcher";
 import { poolLabel } from "@/lib/humanitarian/constants";
+import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
+import type { IntakeSummarySection } from "@/lib/humanitarian/intake-summary";
 import type {
   Appointment,
   HumanitarianQueueEntry,
@@ -30,6 +32,7 @@ export interface PatientListFilters {
   lastSpecialty?: string;
   sort?: "newest" | "oldest" | "lastActivity";
   queueAlertMinutes?: number;
+  reviewed?: "yes" | "no" | "all";
 }
 
 export interface PatientListRow {
@@ -50,6 +53,10 @@ export interface PatientListRow {
   documents: number;
   activeQueueEntryId: string | null;
   problemReasons: string[];
+  adminNote: string | null;
+  adminReviewedAt: string | null;
+  hasAnamnese: boolean;
+  anamneseStatus: string | null;
 }
 
 export interface MonitoringCounters {
@@ -58,6 +65,7 @@ export interface MonitoringCounters {
   inConsult: number;
   completedToday: number;
   withProblem: number;
+  pendingReview: number;
 }
 
 export interface MonitoringAlert {
@@ -131,6 +139,15 @@ export interface PatientDetailDto {
     adminProblemNote: string | null;
   }[];
   problemReasons: string[];
+  adminNote: string | null;
+  adminReviewedAt: string | null;
+  anamnese: {
+    priority: string | null;
+    status: string;
+    anamneseComplete: boolean;
+    sections: IntakeSummarySection[];
+    submittedAt: string | null;
+  } | null;
 }
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -213,6 +230,8 @@ function volunteerDisplayName(vol: {
 type ProfileBundle = PatientProfile & {
   user: Pick<User, "email" | "region" | "language" | "phone" | "createdAt">;
   _count: { appointments: number; medicalDocuments: number };
+  adminNote?: string | null;
+  adminReviewedAt?: Date | null;
 };
 
 type EntryWithPool = HumanitarianQueueEntry & {
@@ -232,6 +251,7 @@ interface PatientContext {
   humanitarianEntries: EntryWithPool[];
   appointments: ApptRow[];
   hasIntake: boolean;
+  intakeStatus: string | null;
   videoIncidents: { id: string; kind: string; createdAt: Date; notes: string | null }[];
   activeEntry: EntryWithPool | null;
   activeAppointment: ApptRow | null;
@@ -248,6 +268,7 @@ function derivePatientContext(
   humanitarianEntries: EntryWithPool[],
   appointments: ApptRow[],
   hasIntake: boolean,
+  intakeStatus: string | null,
   videoIncidents: { id: string; kind: string; createdAt: Date; notes: string | null }[],
   queueAlertMinutes: number,
 ): PatientContext {
@@ -382,6 +403,7 @@ function derivePatientContext(
     humanitarianEntries,
     appointments,
     hasIntake,
+    intakeStatus,
     videoIncidents,
     activeEntry,
     activeAppointment,
@@ -414,6 +436,10 @@ function contextToListRow(ctx: PatientContext): PatientListRow {
     documents: p._count.medicalDocuments,
     activeQueueEntryId: ctx.activeEntry?.id ?? null,
     problemReasons: ctx.problemReasons,
+    adminNote: p.adminNote ?? null,
+    adminReviewedAt: p.adminReviewedAt?.toISOString() ?? null,
+    hasAnamnese: ctx.hasIntake,
+    anamneseStatus: ctx.intakeStatus,
   };
 }
 
@@ -439,7 +465,8 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
     }),
     db.humanitarianIntake.findMany({
       where: { patientUserId: { in: userIds } },
-      select: { patientUserId: true },
+      select: { patientUserId: true, status: true },
+      orderBy: { updatedAt: "desc" },
     }),
     db.appointment.findMany({
       where: { patient: { userId: { in: userIds } } },
@@ -470,6 +497,12 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
   }
 
   const intakeUsers = new Set(intakes.map((i) => i.patientUserId));
+  const intakeStatusByUser = new Map<string, string>();
+  for (const i of intakes) {
+    if (!intakeStatusByUser.has(i.patientUserId)) {
+      intakeStatusByUser.set(i.patientUserId, i.status);
+    }
+  }
 
   const apptsByPatient = new Map<string, ApptRow[]>();
   for (const a of appointments) {
@@ -491,6 +524,7 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
       entriesByUser.get(profile.userId) ?? [],
       apptsByPatient.get(profile.id) ?? [],
       intakeUsers.has(profile.userId),
+      intakeStatusByUser.get(profile.userId) ?? null,
       incidentsByUser.get(profile.userId) ?? [],
       queueAlertMinutes,
     ),
@@ -548,6 +582,11 @@ export function filterAndSortPatients(
     const to = endOfDay(new Date(filters.registeredTo));
     filtered = filtered.filter((ctx) => ctx.profile.createdAt <= to);
   }
+  if (filters.reviewed === "yes") {
+    filtered = filtered.filter((ctx) => ctx.profile.adminReviewedAt != null);
+  } else if (filters.reviewed === "no") {
+    filtered = filtered.filter((ctx) => ctx.profile.adminReviewedAt == null);
+  }
 
   let rows = filtered.map(contextToListRow);
 
@@ -573,11 +612,13 @@ export function buildMonitoringCounters(contexts: PatientContext[]): MonitoringC
   let inConsult = 0;
   let completedToday = 0;
   let withProblem = 0;
+  let pendingReview = 0;
 
   for (const ctx of contexts) {
     if (ctx.status === "PROBLEM") withProblem++;
     if (ctx.status === "IN_QUEUE") inQueue++;
     if (ctx.status === "IN_CONSULT") inConsult++;
+    if (!ctx.profile.adminReviewedAt) pendingReview++;
 
     const humToday = ctx.humanitarianEntries.some(
       (e) => e.status === "DONE" && e.endedAt && e.endedAt >= todayStart,
@@ -594,6 +635,7 @@ export function buildMonitoringCounters(contexts: PatientContext[]): MonitoringC
     inConsult,
     completedToday,
     withProblem,
+    pendingReview,
   };
 }
 
@@ -830,7 +872,7 @@ export async function loadPatientDetail(
   });
   if (!profile) return null;
 
-  const [humanitarianEntries, hasIntake, appointments, videoIncidents, medicalDocs] =
+  const [humanitarianEntries, intakeRecord, appointments, videoIncidents, medicalDocs] =
     await Promise.all([
       db.humanitarianQueueEntry.findMany({
         where: { patientUserId: profile.userId },
@@ -853,7 +895,10 @@ export async function loadPatientDetail(
         },
         orderBy: { enteredAt: "desc" },
       }),
-      db.humanitarianIntake.count({ where: { patientUserId: profile.userId } }),
+      db.humanitarianIntake.findFirst({
+        where: { patientUserId: profile.userId },
+        orderBy: { updatedAt: "desc" },
+      }),
       db.appointment.findMany({
         where: { patientId: profile.id },
         include: {
@@ -884,7 +929,8 @@ export async function loadPatientDetail(
     profile as ProfileBundle,
     humanitarianEntries,
     appointments as ApptRow[],
-    hasIntake > 0,
+    Boolean(intakeRecord),
+    intakeRecord?.status ?? null,
     videoIncidents,
     queueAlertMinutes,
   );
@@ -1038,6 +1084,18 @@ export async function loadPatientDetail(
 
   const profilePhone = safeDecrypt(profile.phone);
 
+  let anamnese: PatientDetailDto["anamnese"] = null;
+  if (intakeRecord) {
+    const summary = buildIntakeSummary(intakeRecord, profile.user.language === "pt" ? "pt" : profile.user.language === "en" ? "en" : "es");
+    anamnese = {
+      priority: summary.priority,
+      status: summary.status,
+      anamneseComplete: summary.anamneseComplete,
+      sections: summary.sections,
+      submittedAt: intakeRecord.consentAt?.toISOString() ?? intakeRecord.updatedAt.toISOString(),
+    };
+  }
+
   return {
     id: profile.id,
     userId: profile.userId,
@@ -1056,6 +1114,9 @@ export async function loadPatientDetail(
     timeline,
     consultations,
     problemReasons: ctx.problemReasons,
+    adminNote: profile.adminNote ?? null,
+    adminReviewedAt: profile.adminReviewedAt?.toISOString() ?? null,
+    anamnese,
   };
 }
 

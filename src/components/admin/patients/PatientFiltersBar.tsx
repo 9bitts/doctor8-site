@@ -13,6 +13,7 @@ export interface PatientFiltersState {
   lastSpecialty: string;
   sort: "newest" | "oldest" | "lastActivity";
   queueAlertMinutes: number;
+  reviewed: "" | "yes" | "no";
 }
 
 interface PatientFiltersBarProps {
@@ -145,6 +146,21 @@ export default function PatientFiltersBar({
         </label>
 
         <label className="block">
+          <span className="text-xs font-semibold text-slate-500 uppercase">Conferido</span>
+          <select
+            value={filters.reviewed}
+            onChange={(e) =>
+              set("reviewed", e.target.value as PatientFiltersState["reviewed"])
+            }
+            className="mt-1 w-full text-sm border border-slate-200 rounded-lg px-3 py-2"
+          >
+            <option value="">Todos</option>
+            <option value="yes">Já conferido</option>
+            <option value="no">Pendente</option>
+          </select>
+        </label>
+
+        <label className="block">
           <span className="text-xs font-semibold text-slate-500 uppercase">
             Alerta fila (min)
           </span>
@@ -182,6 +198,7 @@ export const DEFAULT_FILTERS: PatientFiltersState = {
   lastSpecialty: "",
   sort: "newest",
   queueAlertMinutes: 30,
+  reviewed: "",
 };
 
 export function filtersToQuery(f: PatientFiltersState): string {
@@ -195,5 +212,6 @@ export function filtersToQuery(f: PatientFiltersState): string {
   if (f.lastSpecialty) qs.set("lastSpecialty", f.lastSpecialty);
   if (f.sort !== "newest") qs.set("sort", f.sort);
   if (f.queueAlertMinutes !== 30) qs.set("queueAlertMinutes", String(f.queueAlertMinutes));
+  if (f.reviewed) qs.set("reviewed", f.reviewed);
   return qs.toString();
 }

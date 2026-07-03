@@ -12,6 +12,7 @@ import PatientFiltersBar, {
 import PatientListTable, {
   type PatientRow,
 } from "@/components/admin/patients/PatientListTable";
+import PatientConsultationsExportBar from "@/components/admin/patients/PatientConsultationsExportBar";
 import LastUpdatedIndicator from "@/components/admin/patients/LastUpdatedIndicator";
 
 const POLL_MS = 12000;
@@ -25,6 +26,7 @@ interface ListResponse {
     inConsult: number;
     completedToday: number;
     withProblem: number;
+    pendingReview: number;
   };
   alerts: {
     id: string;
@@ -131,6 +133,8 @@ export default function PatientsAdminClient() {
       )}
 
       <PatientAlertsPanel alerts={data?.alerts ?? []} />
+
+      <PatientConsultationsExportBar />
 
       <PatientFiltersBar
         filters={filters}

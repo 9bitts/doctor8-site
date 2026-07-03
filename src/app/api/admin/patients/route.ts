@@ -35,6 +35,7 @@ function parseFilters(req: NextRequest): PatientListFilters {
     lastSpecialty: sp.get("lastSpecialty") ?? undefined,
     sort: (sp.get("sort") as PatientListFilters["sort"]) ?? "newest",
     queueAlertMinutes,
+    reviewed: (sp.get("reviewed") as PatientListFilters["reviewed"]) ?? undefined,
   };
 }
 

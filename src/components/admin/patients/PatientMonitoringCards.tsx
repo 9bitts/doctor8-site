@@ -6,6 +6,7 @@ interface MonitoringCounters {
   inConsult: number;
   completedToday: number;
   withProblem: number;
+  pendingReview: number;
 }
 
 export default function PatientMonitoringCards({
@@ -19,10 +20,11 @@ export default function PatientMonitoringCards({
     { label: "Em atendimento", value: counters.inConsult, accent: "text-emerald-600" },
     { label: "Concluidos hoje", value: counters.completedToday, accent: "text-brand-600" },
     { label: "Com problema", value: counters.withProblem, accent: "text-rose-600" },
+    { label: "Conferencia pendente", value: counters.pendingReview, accent: "text-amber-600" },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {cards.map((c) => (
         <div
           key={c.label}
