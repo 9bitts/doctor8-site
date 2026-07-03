@@ -16,6 +16,8 @@ import {
   EMAIL_CHANGE,
   EMAIL_APPOINTMENT_CONFIRM,
   EMAIL_APPOINTMENT_REMINDER,
+  EMAIL_PRO_APPOINTMENT_BOOKED,
+  EMAIL_PRO_APPOINTMENT_CANCELLED,
   EMAIL_PATIENT_INVITE,
   EMAIL_COLLEAGUE_INVITE,
   EMAIL_ORG_STAFF_INVITE,
@@ -278,6 +280,106 @@ export async function sendAppointmentReminder({
         </div>
       </div>`,
     tag: "appointment-reminder",
+  });
+}
+
+// ─── PROFESSIONAL: NEW APPOINTMENT ───────────────────────────────────────────
+export async function sendProfessionalNewAppointmentEmail({
+  providerEmail,
+  patientName,
+  scheduledAt,
+  appointmentId,
+  language,
+  providerTimezone,
+  appointmentsUrl,
+}: {
+  providerEmail: string;
+  patientName: string;
+  scheduledAt: Date;
+  appointmentId: string;
+  language?: string;
+  providerTimezone?: string;
+  appointmentsUrl: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_PRO_APPOINTMENT_BOOKED[lang];
+  const locale = EMAIL_LOCALE[lang];
+  const tz = providerTimezone || DEFAULT_TIME_ZONE;
+  const { dateStr, timeStr } = formatEmailAppointmentDateTime(scheduledAt, tz, locale);
+  const appUrl = getAppUrl();
+  const viewUrl = appointmentsUrl.startsWith("http")
+    ? appointmentsUrl
+    : `${appUrl}${appointmentsUrl}`;
+
+  const body = `
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.intro}</p>
+    <div style="background:#f0fdf9;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0;">
+      <table style="width:100%;font-size:14px;">
+        <tr><td style="color:#6b7280;padding:6px 0;width:140px;">${c.patient}</td><td style="color:#1a2a3a;font-weight:600;">${patientName}</td></tr>
+        <tr><td style="color:#6b7280;padding:6px 0;">${c.date}</td><td style="color:#1a2a3a;font-weight:600;">${dateStr}</td></tr>
+        <tr><td style="color:#6b7280;padding:6px 0;">${c.time}</td><td style="color:#1a2a3a;font-weight:600;">${timeStr}</td></tr>
+      </table>
+    </div>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${viewUrl}" style="background:#0a4d6e;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;">
+        ${c.view}
+      </a>
+    </div>`;
+
+  await sendTransactionalEmail({
+    to: providerEmail,
+    subject: c.subject(dateStr),
+    html: emailShell(c.heading, body, lang),
+    tag: "pro-appointment-booked",
+  });
+}
+
+// ─── PROFESSIONAL: APPOINTMENT CANCELLED ─────────────────────────────────────
+export async function sendProfessionalAppointmentCancelledEmail({
+  providerEmail,
+  patientName,
+  scheduledAt,
+  language,
+  providerTimezone,
+  appointmentsUrl,
+}: {
+  providerEmail: string;
+  patientName: string;
+  scheduledAt: Date;
+  appointmentId: string;
+  language?: string;
+  providerTimezone?: string;
+  appointmentsUrl: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_PRO_APPOINTMENT_CANCELLED[lang];
+  const locale = EMAIL_LOCALE[lang];
+  const tz = providerTimezone || DEFAULT_TIME_ZONE;
+  const { dateStr, timeStr } = formatEmailAppointmentDateTime(scheduledAt, tz, locale);
+  const appUrl = getAppUrl();
+  const viewUrl = appointmentsUrl.startsWith("http")
+    ? appointmentsUrl
+    : `${appUrl}${appointmentsUrl}`;
+
+  const body = `
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.intro(patientName)}</p>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;margin:24px 0;">
+      <table style="width:100%;font-size:14px;">
+        <tr><td style="color:#6b7280;padding:6px 0;width:140px;">${c.date}</td><td style="color:#1a2a3a;font-weight:600;">${dateStr}</td></tr>
+        <tr><td style="color:#6b7280;padding:6px 0;">${c.time}</td><td style="color:#1a2a3a;font-weight:600;">${timeStr}</td></tr>
+      </table>
+    </div>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${viewUrl}" style="background:#0a4d6e;color:white;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;">
+        ${c.view}
+      </a>
+    </div>`;
+
+  await sendTransactionalEmail({
+    to: providerEmail,
+    subject: c.subject(dateStr),
+    html: emailShell(c.heading, body, lang),
+    tag: "pro-appointment-cancelled",
   });
 }
 

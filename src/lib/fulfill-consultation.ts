@@ -8,6 +8,7 @@ import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/provi
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { Prisma } from "@prisma/client";
 import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
+import { notifyProfessionalNewBooking } from "@/lib/pro-appointment-notify";
 
 export type ConsultationPaymentMeta = {
   userId: string;
@@ -262,6 +263,15 @@ export async function fulfillConsultationPayment(params: {
   schedulePostConsultNotesReminder(appointment.id, new Date(scheduledAt), durationMins).catch((e) => {
     console.error("[QSTASH POST-CONSULT SCHEDULE ERROR]", e);
   });
+
+  notifyProfessionalNewBooking({
+    appointmentId: appointment.id,
+    scheduledAt: new Date(scheduledAt),
+    professionalId: providerType === "health" ? providerId : null,
+    psychoanalystId: providerType === "psychoanalyst" ? providerId : null,
+    patientFirstName: patient.firstName,
+    patientLastName: patient.lastName,
+  }).catch((e) => console.error("[PRO-APPT-NOTIFY] New booking failed:", e));
 
   return { appointmentId: appointment.id, created: true };
 }

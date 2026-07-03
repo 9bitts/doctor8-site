@@ -11,6 +11,7 @@ type NotificationType =
   | "shared_record"
   | "appointment_reminder"
   | "appointment_confirmed"
+  | "appointment_booked"
   | "payment"
   | "system"
   | "favorite_online"
@@ -41,7 +42,9 @@ export async function createNotification(params: {
           ? params.data.link
           : params.type === "message"
             ? "/patient/messages"
-            : params.type === "appointment_reminder" || params.type === "appointment_confirmed"
+            : params.type === "appointment_reminder" ||
+                params.type === "appointment_confirmed" ||
+                params.type === "appointment_booked"
               ? typeof params.data?.appointmentId === "string"
                 ? `/patient/appointments?id=${params.data.appointmentId}`
                 : "/patient/appointments"

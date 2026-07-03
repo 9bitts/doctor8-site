@@ -258,6 +258,78 @@ export const EMAIL_APPOINTMENT_CONFIRM: Record<EmailLang, {
   },
 };
 
+export const EMAIL_PRO_APPOINTMENT_BOOKED: Record<EmailLang, {
+  subject: (date: string) => string;
+  heading: string;
+  intro: string;
+  patient: string;
+  date: string;
+  time: string;
+  view: string;
+}> = {
+  en: {
+    subject: (d) => `New appointment – ${d}`,
+    heading: "New appointment booked",
+    intro: "A patient booked a consultation with you:",
+    patient: "Patient",
+    date: "Date",
+    time: "Time",
+    view: "View appointment",
+  },
+  pt: {
+    subject: (d) => `Nova consulta – ${d}`,
+    heading: "Nova consulta agendada",
+    intro: "Um paciente agendou uma consulta com você:",
+    patient: "Paciente",
+    date: "Data",
+    time: "Horário",
+    view: "Ver consulta",
+  },
+  es: {
+    subject: (d) => `Nueva cita – ${d}`,
+    heading: "Nueva cita agendada",
+    intro: "Un paciente reservó una consulta contigo:",
+    patient: "Paciente",
+    date: "Fecha",
+    time: "Hora",
+    view: "Ver cita",
+  },
+};
+
+export const EMAIL_PRO_APPOINTMENT_CANCELLED: Record<EmailLang, {
+  subject: (date: string) => string;
+  heading: string;
+  intro: (name: string) => string;
+  date: string;
+  time: string;
+  view: string;
+}> = {
+  en: {
+    subject: (d) => `Appointment cancelled – ${d}`,
+    heading: "Appointment cancelled",
+    intro: (n) => `<strong>${n}</strong> cancelled the appointment scheduled for:`,
+    date: "Date",
+    time: "Time",
+    view: "View appointments",
+  },
+  pt: {
+    subject: (d) => `Consulta cancelada – ${d}`,
+    heading: "Consulta cancelada",
+    intro: (n) => `<strong>${n}</strong> cancelou a consulta agendada para:`,
+    date: "Data",
+    time: "Horário",
+    view: "Ver consultas",
+  },
+  es: {
+    subject: (d) => `Cita cancelada – ${d}`,
+    heading: "Cita cancelada",
+    intro: (n) => `<strong>${n}</strong> canceló la cita programada para:`,
+    date: "Fecha",
+    time: "Hora",
+    view: "Ver citas",
+  },
+};
+
 export const EMAIL_SLOT_ALERT: Record<EmailLang, {
   subject: (provider: string) => string;
   heading: string;

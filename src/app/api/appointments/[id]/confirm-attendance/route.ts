@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getAppUrl } from "@/lib/email-core";
+import { notifyProfessionalAttendanceConfirmed } from "@/lib/pro-appointment-notify";
 
 type Params = { params: { id: string } };
 
@@ -14,7 +15,15 @@ async function confirmForPatient(appointmentId: string, userId: string) {
 
   const appointment = await db.appointment.findFirst({
     where: { id: appointmentId, patientId: patient.id },
-    select: { id: true, status: true, scheduledAt: true, patientConfirmedAt: true },
+    select: {
+      id: true,
+      status: true,
+      scheduledAt: true,
+      patientConfirmedAt: true,
+      professionalId: true,
+      psychoanalystId: true,
+      patient: { select: { firstName: true, lastName: true } },
+    },
   });
   if (!appointment) return { error: "Not found", status: 404 as const };
 
@@ -30,6 +39,15 @@ async function confirmForPatient(appointmentId: string, userId: string) {
     where: { id: appointment.id },
     data: { patientConfirmedAt: new Date() },
   });
+
+  notifyProfessionalAttendanceConfirmed({
+    appointmentId: appointment.id,
+    scheduledAt: appointment.scheduledAt,
+    professionalId: appointment.professionalId,
+    psychoanalystId: appointment.psychoanalystId,
+    patientFirstName: appointment.patient.firstName,
+    patientLastName: appointment.patient.lastName,
+  }).catch((e) => console.error("[CONFIRM-ATTENDANCE] Pro notify failed:", e));
 
   return { ok: true, alreadyConfirmed: false };
 }

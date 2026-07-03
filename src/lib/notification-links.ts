@@ -113,7 +113,8 @@ export function resolveNotificationHref(
     }
 
     case "appointment_reminder":
-    case "appointment_confirmed": {
+    case "appointment_confirmed":
+    case "appointment_booked": {
       if (typeof d.appointmentId === "string") {
         return `${appointmentsPath(role, professionalSpecialty)}?id=${d.appointmentId}`;
       }

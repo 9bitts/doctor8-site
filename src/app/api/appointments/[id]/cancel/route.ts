@@ -16,6 +16,7 @@ import { storedNotificationText } from "@/lib/notification-i18n";
 import { localeOf } from "@/lib/i18n/translations";
 import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import { notifyProfessionalCancelled } from "@/lib/pro-appointment-notify";
 
 export async function POST(
   req: NextRequest,
@@ -106,34 +107,45 @@ export async function POST(
   // Notify the other party
   const notifyUserId = isPatient ? providerUserId! : appointment.patient.userId;
   const cancellerName = isPatient
-    ? `${appointment.patient.firstName} ${appointment.patient.lastName}`
+    ? `${safeDecrypt(appointment.patient.firstName)} ${safeDecrypt(appointment.patient.lastName)}`.trim()
     : provider
       ? appointment.psychoanalyst
         ? `${safeDecrypt(provider.firstName)} ${safeDecrypt(provider.lastName)}`
         : `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
       : "Provider";
 
-  const cancelCopy = storedNotificationText(
-    "notif.apptCancelled.title",
-    "notif.apptCancelled.body",
-    {
-      name: cancellerName,
-      date: new Date(appointment.scheduledAt).toLocaleDateString(localeOf("en")),
-    },
-  );
-  await createNotification({
-    userId: notifyUserId,
-    title: cancelCopy.title,
-    body: cancelCopy.body,
-    type: "system",
-    data:   {
+  if (isPatient && providerUserId) {
+    await notifyProfessionalCancelled({
       appointmentId: params.id,
-      refunded,
-      titleKey: "notif.apptCancelled.title",
-      bodyKey: "notif.apptCancelled.body",
-      bodyParams: { name: cancellerName, scheduledAt: appointment.scheduledAt.toISOString() },
-    },
-  }).catch(() => {});
+      scheduledAt: appointment.scheduledAt,
+      professionalId: appointment.professionalId,
+      psychoanalystId: appointment.psychoanalystId,
+      patientFirstName: appointment.patient.firstName,
+      patientLastName: appointment.patient.lastName,
+    }).catch(() => {});
+  } else {
+    const cancelCopy = storedNotificationText(
+      "notif.apptCancelled.title",
+      "notif.apptCancelled.body",
+      {
+        name: cancellerName,
+        date: new Date(appointment.scheduledAt).toLocaleDateString(localeOf("en")),
+      },
+    );
+    await createNotification({
+      userId: notifyUserId,
+      title: cancelCopy.title,
+      body: cancelCopy.body,
+      type: "system",
+      data: {
+        appointmentId: params.id,
+        refunded,
+        titleKey: "notif.apptCancelled.title",
+        bodyKey: "notif.apptCancelled.body",
+        bodyParams: { name: cancellerName, scheduledAt: appointment.scheduledAt.toISOString() },
+      },
+    }).catch(() => {});
+  }
 
   notifySlotAlerts({
     professionalId: appointment.professionalId,
