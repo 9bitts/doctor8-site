@@ -60,7 +60,6 @@ function PdfDownloadButton({
 export function EmissionCardActions({
   kind,
   emissionId,
-  documentId,
   signatureStatus,
   patientNotifiedAt,
   whatsappNotifyStatus,
@@ -118,7 +117,7 @@ export function EmissionCardActions({
     if (title) lines.push(title);
     if (medications?.length) {
       medications.forEach((m, i) => {
-        lines.push(`${i + 1}. ${m.name}${m.dosage ? ` — ${m.dosage}` : ""}${m.frequency ? `, ${m.frequency}` : ""}`);
+        lines.push(`${i + 1}. ${m.name}${m.dosage ? ` - ${m.dosage}` : ""}${m.frequency ? `, ${m.frequency}` : ""}`);
       });
     }
     if (examItems?.length) {
