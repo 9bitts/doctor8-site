@@ -20,6 +20,7 @@ import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
 import PwaInstallPrompt from "@/components/humanitarian/PwaInstallPrompt";
 import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
 import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
+import VolunteerAttendGuideModal from "@/components/VolunteerAttendGuideModal";
 import {
   ADMIN_NAV,
   INTEGRATIVE_THERAPIST_NAV,
@@ -381,6 +382,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             <PwaInstallPrompt lang={lang} variant="patient" userId={userId} />
           )}
           <ProviderDashboardAlerts role={role} />
+          {(role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST") && (
+            <VolunteerAttendGuideModal />
+          )}
           {children}
         </main>
       </div>

@@ -14,9 +14,7 @@ import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
-import ProfessionalChecklist from "@/components/ProfessionalChecklist";
 import ProfessionalInsightsBanner from "@/components/professional/ProfessionalInsightsBanner";
-import PsychologistTourWrapper from "./PsychologistTourWrapper";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 import { getProfessionalDashboardInsights } from "@/lib/professional-dashboard-insights";
@@ -131,8 +129,6 @@ export default async function PsychologistDashboard() {
         accountHref="/psychologist/account"
       />
 
-      <ProfessionalChecklist />
-
       <ProfessionalInsightsBanner insights={dashboardInsights} />
 
       <div className="flex items-start gap-4">
@@ -231,7 +227,6 @@ export default async function PsychologistDashboard() {
         )}
       </div>
 
-      <PsychologistTourWrapper lang={lang} />
     </div>
   );
 }

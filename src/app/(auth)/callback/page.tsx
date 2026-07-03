@@ -61,7 +61,7 @@ function CallbackInner() {
           ? fallback
           : destination;
 
-      navigateAfterAuth(target);
+      navigateAfterAuth(target, session.user.role);
     }
 
     finishCallback().catch(() => {

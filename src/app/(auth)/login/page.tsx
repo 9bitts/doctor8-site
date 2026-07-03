@@ -117,6 +117,7 @@ function UnifiedLoginForm() {
             session.user.professionalSpecialty,
             { fromHumCookie },
           ),
+          session.user.role,
         );
         return;
       }

@@ -307,6 +307,7 @@ export function RegisterAccountForm({
                 resolvePatientPostLoginUrl,
                 session.user.professionalSpecialty,
               ),
+              session.user.role,
             );
             return;
           }
