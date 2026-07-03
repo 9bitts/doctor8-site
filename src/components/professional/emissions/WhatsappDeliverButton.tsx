@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MessageCircle, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { MessageCircle, Loader2, AlertCircle } from "lucide-react";
 import { openUrlAfterAsync } from "@/lib/open-url-safely";
+import { EMISSION_BTN_FULL, EMISSION_BTN_WHATSAPP } from "./emission-button-styles";
 
 type EmissionKind = "prescription" | "exam" | "document";
 
@@ -14,7 +15,7 @@ type Props = {
   t: (k: string) => string;
   defaultMessage?: string;
   initialStatus?: string | null;
-  compact?: boolean;
+  size?: "card" | "full";
   onStatusChange?: (status: string) => void;
 };
 
@@ -26,7 +27,7 @@ export default function WhatsappDeliverButton({
   t,
   defaultMessage,
   initialStatus,
-  compact,
+  size = "card",
   onStatusChange,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -91,35 +92,21 @@ export default function WhatsappDeliverButton({
     }
   }
 
-  const statusLabel = status === "SENT"
-    ? t("wa.statusSent")
-    : status === "FAILED"
-      ? t("wa.statusFailed")
-      : status === "NO_PHONE"
-        ? t("wa.noPhone")
-        : status === "SKIPPED"
-          ? t("wa.statusSkipped")
-          : "";
+  const iconSize = size === "card" ? 14 : 18;
+  const btnLabel = size === "card"
+    ? t("brand.whatsapp")
+    : (status === "SENT" ? t("wa.resend") : t("wa.send"));
 
-  const btnClass = compact
-    ? "flex items-center justify-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-800 border border-green-200 px-3 py-2 rounded-xl text-xs font-semibold transition w-full"
-    : "w-full py-3 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 text-green-800 font-semibold text-sm transition flex items-center justify-center gap-2";
+  const btnClass = size === "card"
+    ? EMISSION_BTN_WHATSAPP
+    : `${EMISSION_BTN_FULL} border border-green-200 bg-green-50 hover:bg-green-100 text-green-800 font-semibold`;
 
   return (
     <>
-      {statusLabel && (
-        <p className={`text-xs flex items-center gap-1 mb-1 ${
-          status === "SENT" ? "text-green-700" : status === "NO_PHONE" ? "text-amber-700" : "text-slate-500"
-        }`}>
-          {status === "SENT" ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-          {statusLabel}
-        </p>
-      )}
-
       <button type="button" onClick={() => { setMessage(previewMessage); setOpen(true); }}
         className={btnClass}>
-        <MessageCircle size={compact ? 13 : 18} />
-        {status === "SENT" ? t("wa.resend") : t("wa.send")}
+        <MessageCircle size={iconSize} />
+        {btnLabel}
       </button>
 
       {open && (
@@ -143,13 +130,13 @@ export default function WhatsappDeliverButton({
             )}
             <div className="flex gap-2">
               <button type="button" onClick={() => setOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium">
+                className="flex-1 min-h-10 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium">
                 {t("common.cancel")}
               </button>
               <button type="button" onClick={() => send(status === "SENT")} disabled={sending}
-                className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+                className="flex-1 min-h-10 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
                 {sending ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />}
-                {t("wa.confirmSend")}
+                {t("brand.whatsapp")}
               </button>
             </div>
           </div>

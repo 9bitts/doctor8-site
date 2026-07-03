@@ -7,6 +7,12 @@ import {
 import WhatsappDeliverButton from "./WhatsappDeliverButton";
 import Doctor8DeliverButton from "./Doctor8DeliverButton";
 import type { EmissionKind } from "./EmissionsSignModal";
+import {
+  EMISSION_ACTIONS_ROW,
+  EMISSION_BTN_AMBER,
+  EMISSION_BTN_BRAND,
+  EMISSION_BTN_NEUTRAL,
+} from "./emission-button-styles";
 
 type MedItem = { name: string; dosage?: string; frequency?: string; duration?: string; instructions?: string };
 
@@ -17,12 +23,11 @@ function emissionShareUrl(kind: EmissionKind): string {
 }
 
 function PdfDownloadButton({
-  url, t, onError, compact,
+  url, t, onError,
 }: {
   url: string;
   t: (k: string) => string;
   onError: (message: string) => void;
-  compact?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
   async function download() {
@@ -46,11 +51,8 @@ function PdfDownloadButton({
       setLoading(false);
     }
   }
-  const cls = compact
-    ? "inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
-    : "inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition disabled:opacity-50";
   return (
-    <button type="button" onClick={download} disabled={loading} className={cls}>
+    <button type="button" onClick={download} disabled={loading} className={EMISSION_BTN_NEUTRAL}>
       {loading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
       {t("rx.downloadPDF")}
     </button>
@@ -69,7 +71,6 @@ export function EmissionCardActions({
   title,
   content,
   t,
-  layout = "row",
   onReuse,
   onSign,
   onShare,
@@ -107,11 +108,6 @@ export function EmissionCardActions({
   const shareUrl = emissionShareUrl(kind);
   const delivered = !!patientNotifiedAt;
 
-  const btnRow = "inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition disabled:opacity-50";
-  const containerClass = layout === "column"
-    ? "flex flex-col gap-2 shrink-0"
-    : "mt-3 flex items-center gap-2 flex-wrap";
-
   function defaultCopy() {
     const lines: string[] = [];
     if (title) lines.push(title);
@@ -128,82 +124,78 @@ export function EmissionCardActions({
   }
 
   return (
-    <div className={containerClass}>
-      <button type="button" onClick={onCopy || defaultCopy} className={btnRow}>
+    <div className={EMISSION_ACTIONS_ROW}>
+      <button type="button" onClick={onCopy || defaultCopy} className={EMISSION_BTN_NEUTRAL}>
         <Copy size={14} /> {t("rec.copy")}
       </button>
 
       {onPrint && (
-        <button type="button" onClick={onPrint} className={btnRow}>
+        <button type="button" onClick={onPrint} className={EMISSION_BTN_NEUTRAL}>
           <Printer size={14} /> {t("rec.print")}
         </button>
       )}
 
       {onReuse && (
-        <button type="button" onClick={onReuse} className={btnRow}>
+        <button type="button" onClick={onReuse} className={EMISSION_BTN_NEUTRAL}>
           <Copy size={14} /> {t("rx.reuse")}
         </button>
       )}
 
       {!signed && !pending && onSign && (
-        <button type="button" onClick={onSign} className={`${btnRow} text-brand-600 border-brand-200 bg-brand-50`}>
+        <button type="button" onClick={onSign} className={`${EMISSION_BTN_NEUTRAL} text-brand-600 border-brand-200 bg-brand-50`}>
           <PenLine size={14} /> {t("rx.sign")}
         </button>
       )}
 
       {pending && (
-        <span className={`${btnRow} text-amber-700 border-amber-200 bg-amber-50 cursor-default`}>
+        <span className={EMISSION_BTN_AMBER}>
           <Clock size={14} /> {t("rx.signPending")}
         </span>
       )}
 
       {signed && (
-        <span className={`${btnRow} text-brand-600 border-brand-200 bg-brand-50 cursor-default`}>
+        <span className={EMISSION_BTN_BRAND}>
           <CheckCircle2 size={14} /> {t("rx.signed")}
         </span>
       )}
 
       {onPdfError && (
-        <PdfDownloadButton url={pdfUrl} t={t} onError={onPdfError} compact />
+        <PdfDownloadButton url={pdfUrl} t={t} onError={onPdfError} />
       )}
 
       {(onShare || !delivered) && (
         delivered ? (
-          <span className={`${btnRow} text-brand-500 bg-brand-50 cursor-default`}>
-            <CheckCircle2 size={14} /> {t("rec.shareShared")}
+          <span className={EMISSION_BTN_BRAND}>
+            <CheckCircle2 size={14} /> {t("brand.doctor8")}
           </span>
         ) : onShare ? (
-          <button type="button" onClick={onShare} className={btnRow}>
+          <button type="button" onClick={onShare} className={EMISSION_BTN_NEUTRAL}>
             <Share2 size={14} /> {t("rec.shareWithPatient")}
           </button>
         ) : (
-          <div className={layout === "column" ? "w-full" : ""}>
-            <Doctor8DeliverButton
-              kind={kind}
-              id={emissionId}
-              t={t}
-              compact={layout === "column"}
-              initialDelivered={delivered}
-              onDelivered={() => onDelivered?.()}
-              onError={onPdfError}
-            />
-          </div>
+          <Doctor8DeliverButton
+            kind={kind}
+            id={emissionId}
+            t={t}
+            size="card"
+            initialDelivered={delivered}
+            onDelivered={() => onDelivered?.()}
+            onError={onPdfError}
+          />
         )
       )}
 
       {signed && (
-        <div className={layout === "column" ? "w-full" : ""}>
-          <WhatsappDeliverButton
-            kind={kind}
-            id={emissionId}
-            patientName={patientName}
-            shareUrl={shareUrl}
-            t={t}
-            defaultMessage={t("rx.flow.whatsappMessage")}
-            initialStatus={whatsappNotifyStatus}
-            compact={layout === "column"}
-          />
-        </div>
+        <WhatsappDeliverButton
+          kind={kind}
+          id={emissionId}
+          patientName={patientName}
+          shareUrl={shareUrl}
+          t={t}
+          defaultMessage={t("rx.flow.whatsappMessage")}
+          initialStatus={whatsappNotifyStatus}
+          size="card"
+        />
       )}
     </div>
   );

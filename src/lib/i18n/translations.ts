@@ -4034,6 +4034,8 @@ const en = {
   "rx.flow.doctor8NoticeNoAccount": "The patient will receive an email invite to create a Doctor8 account and access this document.",
   "rx.flow.skipDeliver": "Finish without sending",
   "rx.flow.deliveredDoctor8": "Sent via Doctor8 — the patient was notified by email.",
+  "brand.doctor8": "Doctor8",
+  "brand.whatsapp": "WhatsApp",
 
   "wa.send": "Send via WhatsApp",
   "wa.resend": "Resend WhatsApp",
@@ -8459,6 +8461,8 @@ const pt: LocaleDict = {
   "rx.flow.doctor8NoticeNoAccount": "O paciente receberá um convite por e-mail para criar conta na Doctor8 e acessar este documento.",
   "rx.flow.skipDeliver": "Concluir sem enviar",
   "rx.flow.deliveredDoctor8": "Enviado pela Doctor8 — o paciente foi notificado por e-mail.",
+  "brand.doctor8": "Doctor8",
+  "brand.whatsapp": "WhatsApp",
 
   "wa.send": "Enviar por WhatsApp",
   "wa.resend": "Reenviar WhatsApp",
@@ -12875,6 +12879,8 @@ const es: LocaleDict = {
   "rx.flow.doctor8NoticeNoAccount": "El paciente recibirá una invitación por correo para crear una cuenta en Doctor8 y acceder a este documento.",
   "rx.flow.skipDeliver": "Finalizar sin enviar",
   "rx.flow.deliveredDoctor8": "Enviado por Doctor8 — el paciente fue notificado por correo.",
+  "brand.doctor8": "Doctor8",
+  "brand.whatsapp": "WhatsApp",
 
   "wa.send": "Enviar por WhatsApp",
   "wa.resend": "Reenviar WhatsApp",

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Send, Loader2, CheckCircle2 } from "lucide-react";
+import { EMISSION_BTN_BRAND, EMISSION_BTN_DOCTOR8, EMISSION_BTN_FULL } from "./emission-button-styles";
 
 type EmissionKind = "prescription" | "exam" | "document";
 
@@ -9,7 +10,7 @@ type Props = {
   kind: EmissionKind;
   id: string;
   t: (k: string) => string;
-  compact?: boolean;
+  size?: "card" | "full";
   sendWhatsApp?: boolean;
   onDelivered?: (data: { shareUrl?: string; hasPhone?: boolean; whatsappStatus?: string }) => void;
   onError?: (message: string) => void;
@@ -20,7 +21,7 @@ export default function Doctor8DeliverButton({
   kind,
   id,
   t,
-  compact,
+  size = "card",
   sendWhatsApp = false,
   onDelivered,
   onError,
@@ -58,23 +59,33 @@ export default function Doctor8DeliverButton({
     }
   }
 
-  const btnClass = compact
-    ? "flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-xl text-xs font-semibold transition w-full disabled:opacity-50"
-    : "w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50";
+  const label = size === "card" ? t("brand.doctor8") : t("rx.flow.sendDoctor8");
+  const iconSize = size === "card" ? 14 : 18;
 
   if (delivered) {
+    if (size === "card") {
+      return (
+        <span className={EMISSION_BTN_BRAND}>
+          <CheckCircle2 size={14} /> {t("brand.doctor8")}
+        </span>
+      );
+    }
     return (
-      <div className={`flex items-center gap-2 text-brand-700 ${compact ? "text-xs" : "text-sm"}`}>
-        <CheckCircle2 size={compact ? 14 : 18} className="shrink-0" />
+      <div className="flex items-center gap-2 text-brand-700 text-sm">
+        <CheckCircle2 size={18} className="shrink-0" />
         <span>{t("rx.flow.deliveredDoctor8")}</span>
       </div>
     );
   }
 
+  const btnClass = size === "card"
+    ? EMISSION_BTN_DOCTOR8
+    : `${EMISSION_BTN_FULL} bg-brand-500 hover:bg-brand-600 text-white`;
+
   return (
     <button type="button" onClick={deliver} disabled={delivering} className={btnClass}>
-      {delivering ? <Loader2 size={compact ? 13 : 18} className="animate-spin" /> : <Send size={compact ? 13 : 18} />}
-      {t("rx.flow.sendDoctor8")}
+      {delivering ? <Loader2 size={iconSize} className="animate-spin" /> : <Send size={iconSize} />}
+      {label}
     </button>
   );
 }

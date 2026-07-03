@@ -206,6 +206,7 @@ export function EmissionPostSaveFlow({
               kind={emission.kind}
               id={emission.id}
               t={t}
+              size="full"
               sendWhatsApp={sendWhatsApp}
               onDelivered={(data) => {
                 setShareUrl(data.shareUrl || "");
@@ -265,6 +266,7 @@ export function EmissionPostSaveFlow({
             t={t}
             defaultMessage={t("rx.flow.whatsappMessage")}
             initialStatus={whatsappStatus}
+            size="full"
             onStatusChange={setWhatsappStatus}
           />
         )}
