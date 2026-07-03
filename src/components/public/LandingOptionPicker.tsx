@@ -72,7 +72,10 @@ export default function LandingOptionPicker({
   }
 
   const sheet = open && mounted ? (
-    <div className="fixed inset-0 z-[9999]" role="presentation">
+    <div
+      className="fixed inset-0 z-[9999] flex items-end justify-center sm:items-center sm:p-6"
+      role="presentation"
+    >
       <button
         type="button"
         aria-label="Close"
@@ -84,7 +87,7 @@ export default function LandingOptionPicker({
         role="dialog"
         aria-modal="true"
         aria-label={label ?? t("pubSearch.specialty")}
-        className="absolute inset-x-0 bottom-0 flex max-h-[min(88vh,720px)] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:max-h-[min(80vh,640px)]"
+        className="relative z-10 flex w-full max-h-[85vh] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-h-[75vh] sm:max-w-lg sm:rounded-2xl"
       >
         {/* Handle (mobile) */}
         <div className="flex shrink-0 justify-center pt-2 sm:hidden">
