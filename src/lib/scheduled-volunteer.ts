@@ -1,4 +1,4 @@
-/** P8b ù scheduled voluntary care (JSON volunteerBlocks), distinct from Acura/humanitarian flows. */
+/** P8b - scheduled voluntary care (JSON volunteerBlocks), distinct from Acura/humanitarian flows. */
 
 export const SCHEDULED_VOLUNTEER_BOOKING_SOURCE = "volunteer_scheduled";
 
