@@ -4,7 +4,7 @@ import { stripe } from "@/lib/stripe";
 import { getAppUrl } from "@/lib/email-core";
 import { resolveProfessionalPortalBaseForUser } from "@/lib/psychologist-portal";
 
-/** Default OFF when env unset — safe deploy; enable with STRIPE_CONNECT_ENABLED=true */
+/** Default OFF when env unset - safe deploy; enable with STRIPE_CONNECT_ENABLED=true */
 export function isStripeConnectEnabled(): boolean {
   const raw = process.env.STRIPE_CONNECT_ENABLED;
   if (raw === undefined || raw === "") return false;
