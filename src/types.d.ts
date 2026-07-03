@@ -8,6 +8,7 @@ declare module "next-auth" {
       region: string;
       professionalSpecialty?: string | null;
       showVolunteerGuide?: boolean;
+      profileComplete?: boolean;
     } & DefaultSession["user"];
   }
   interface User {
@@ -26,5 +27,6 @@ declare module "next-auth/jwt" {
     tokenVersion?: number;
     tvCheckedAt?: number;
     showVolunteerGuide?: boolean;
+    profileComplete?: boolean;
   }
 }
