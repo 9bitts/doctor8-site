@@ -50,8 +50,11 @@ export function videoBackFallback(): string {
   return "/patient";
 }
 
-/** Contextual fallback for humanitarian sub-routes when browser history is empty. */
-export function humanitarianBackFallback(pathname: string): string {
+/** Safe back target for humanitarian patient flow (avoids redirect loops with intake gates). */
+export function humanitarianBackFallback(
+  pathname: string,
+  opts?: { retakeTriage?: boolean },
+): string {
   const m = pathname.match(/^\/humanitarian\/([^/]+)(?:\/(.+))?$/);
   if (!m) {
     if (pathname.startsWith("/humanitarian/volunteer")) return "/patient";
@@ -60,8 +63,11 @@ export function humanitarianBackFallback(pathname: string): string {
   }
   const slug = m[1];
   const sub = m[2] || "";
-  if (sub === "triage") return `/humanitarian/${slug}`;
-  if (sub === "tcle") return `/humanitarian/${slug}/triage`;
+  // Triage/TCLE pages auto-forward when intake is incomplete — never back to campaign root.
+  if (sub === "triage") {
+    return opts?.retakeTriage ? `/humanitarian/${slug}` : "/patient";
+  }
+  if (sub === "tcle") return "/patient";
   if (sub === "anamnese") return `/humanitarian/${slug}`;
   return "/patient";
 }

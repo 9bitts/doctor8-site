@@ -71,10 +71,18 @@ export default function HumanitarianShell({
   const campaignHref = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
   const accountHref = homeHrefForRole(userRole, professionalSpecialty, isVolunteer, isAngel);
 
-  const backHref =
-    isVolunteer || isAngel
-      ? accountHref
-      : humanitarianBackFallback(pathname);
+  function resolveBackHref(): string {
+    if (isVolunteer || isAngel) return accountHref;
+    const retakeTriage =
+      pathname.includes("/triage")
+      && typeof window !== "undefined"
+      && new URLSearchParams(window.location.search).get("retake") === "1";
+    return humanitarianBackFallback(pathname, { retakeTriage });
+  }
+
+  function handleBack() {
+    router.replace(resolveBackHref());
+  }
 
   const navLink = (href: string, active: boolean, label: string, icon: React.ReactNode) => (
     <Link
@@ -106,11 +114,11 @@ export default function HumanitarianShell({
             {showBack && (
               <button
                 type="button"
-                onClick={() => router.push(backHref)}
-                className={`p-2 rounded-lg shrink-0 ${dark ? "text-slate-400 hover:text-white hover:bg-white/10" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"}`}
+                onClick={handleBack}
+                className="w-9 h-9 flex items-center justify-center rounded-lg shrink-0 bg-red-600 text-white hover:bg-red-500 active:bg-red-700 shadow-sm transition"
                 aria-label={t("hum.shell.back")}
               >
-                <ArrowLeft size={20} />
+                <ArrowLeft size={20} strokeWidth={2.5} />
               </button>
             )}
             <div className="flex items-center gap-2 min-w-0 flex-1">
