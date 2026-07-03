@@ -6,6 +6,10 @@
 import { NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import {
+  getStripeConnectStatusForProfile,
+  isStripeConnectEnabled,
+} from "@/lib/stripe-connect";
 
 export async function GET() {
   const ctx = await requireProfessionalApi();
@@ -60,6 +64,11 @@ export async function GET() {
     where: { professionalId: professional.id, active: true },
   });
 
+  const connectEnabled = isStripeConnectEnabled();
+  const connectStatus = connectEnabled
+    ? await getStripeConnectStatusForProfile(professional.id)
+    : null;
+
   return NextResponse.json({
     hasProfile:      hasProfile,
     hasAvailability: availCount > 0,
@@ -68,5 +77,7 @@ export async function GET() {
     hasJit:          jitCount > 0,
     hasResource:     resourceCount > 0,
     hasDigitalSign:  !!professional.digitalSignCpf,
+    stripeConnectEnabled: connectEnabled,
+    hasStripeConnect: connectStatus === "active",
   });
 }

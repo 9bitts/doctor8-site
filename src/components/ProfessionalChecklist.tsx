@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   CheckCircle2, Circle, ChevronRight, X, Sparkles,
   User, Calendar, Users, Pill, Radio, BookOpen, PenLine,
-  AlertCircle, RefreshCw,
+  AlertCircle, RefreshCw, CreditCard,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { mapProfessionalPathToPortal, professionalPortalBase } from "@/lib/psychologist-portal";
@@ -19,6 +19,8 @@ interface ChecklistState {
   hasJit: boolean;
   hasResource: boolean;
   hasDigitalSign: boolean;
+  stripeConnectEnabled?: boolean;
+  hasStripeConnect?: boolean;
 }
 
 const DISMISS_KEY_PREFIX = "doctor8.pro.checklist.dismissed";
@@ -140,6 +142,16 @@ export default function ProfessionalChecklist() {
       : []),
     { id: "jit", icon: <Radio size={16} />, href: mapPath("/professional/jit"), done: state.hasJit, label: t("procheck.jit"), hint: t("procheck.jitHint") },
     { id: "resource", icon: <BookOpen size={16} />, href: mapPath("/professional/resources"), done: state.hasResource, label: t("procheck.resource"), hint: t("procheck.resourceHint") },
+    ...(state.stripeConnectEnabled
+      ? [{
+          id: "stripeConnect",
+          icon: <CreditCard size={16} />,
+          href: mapPath("/professional/financeiro"),
+          done: !!state.hasStripeConnect,
+          label: t("procheck.stripeConnect"),
+          hint: t("procheck.stripeConnectHint"),
+        }]
+      : []),
   ];
 
   const doneCount = items.filter((i) => i.done).length;

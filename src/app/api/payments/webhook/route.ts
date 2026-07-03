@@ -16,6 +16,10 @@ import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
 import { isClubPriceId } from "@/lib/stripe-payment-methods";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
+import {
+  isStripeConnectEnabled,
+  logConnectAccountUpdated,
+} from "@/lib/stripe-connect";
 
 async function notifyClubPaymentIssue(
   userId: string,
@@ -372,6 +376,12 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error("[WEBHOOK] Error syncing subscription:", e);
     }
+    return NextResponse.json({ received: true });
+  }
+
+  if (event.type === "account.updated" && isStripeConnectEnabled()) {
+    const account = event.data.object as import("stripe").Stripe.Account;
+    logConnectAccountUpdated(account);
     return NextResponse.json({ received: true });
   }
 

@@ -15,6 +15,8 @@ import ConsultPricingSettings, {
   type ConsultPricingSettingsProps,
 } from "@/components/professional/ConsultPricingSettings";
 import { RateioSection } from "./RateioSection";
+import { RateioInfoSection } from "./RateioInfoSection";
+import { StripeConnectCard } from "./StripeConnectCard";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { financeTypeLabel, FINANCE_TYPE_COLORS } from "@/lib/finance-display";
@@ -184,6 +186,9 @@ export type FinanceiroDashboardProps = {
   apiPath?: string;
   showPricingSettings?: boolean;
   showRateio?: boolean;
+  rateioMode?: "full" | "info";
+  stripeConnectEnabled?: boolean;
+  stripeConnectMode?: "full" | "unavailable";
   pricingSettingsProps?: ConsultPricingSettingsProps;
 };
 
@@ -191,6 +196,9 @@ export function FinanceiroDashboard({
   apiPath = "/api/professional/financeiro",
   showPricingSettings = true,
   showRateio = true,
+  rateioMode = "full",
+  stripeConnectEnabled = false,
+  stripeConnectMode = "full",
   pricingSettingsProps,
 }: FinanceiroDashboardProps) {
   const { t, lang } = useI18n();
@@ -245,6 +253,8 @@ export function FinanceiroDashboard({
       </div>
 
       {showPricingSettings && <ConsultPricingSettings {...pricingSettingsProps} />}
+
+      {stripeConnectEnabled && <StripeConnectCard mode={stripeConnectMode} />}
 
       {error && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl flex items-center gap-2 flex-wrap">
@@ -503,13 +513,18 @@ export function FinanceiroDashboard({
             )}
           </div>
           {/* ── Livro Aberto / Rateio ── */}
-          {showRateio && <RateioSection currency={currency} />}
+          {showRateio && rateioMode === "info" && <RateioInfoSection />}
+          {showRateio && rateioMode === "full" && <RateioSection currency={currency} />}
         </>
       ) : null}
     </div>
   );
 }
 
+import { isStripeConnectEnabled } from "@/lib/stripe-connect";
+
 export default function ProfessionalFinanceiroPage() {
-  return <FinanceiroDashboard />;
+  return (
+    <FinanceiroDashboard stripeConnectEnabled={isStripeConnectEnabled()} />
+  );
 }

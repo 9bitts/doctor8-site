@@ -28,7 +28,8 @@ import { decrypt } from "@/lib/encryption";
 import { getProfessionLabel } from "@/lib/professions";
 import { resolveRoleHome } from "@/lib/role-home";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
-import { providerDayBounds, providerMonthStart } from "@/lib/provider-day-bounds";
+import { providerDayBounds } from "@/lib/provider-day-bounds";
+import { buildProviderFinanceiroReport } from "@/lib/provider-financeiro";
 import {
   DEFAULT_TIME_ZONE,
   formatShortDate,
@@ -71,14 +72,12 @@ export default async function ProfessionalDashboard() {
 
   const providerTz = professional.timezone || DEFAULT_TIME_ZONE;
   const { start: todayStart, end: todayEnd } = providerDayBounds(providerTz);
-  const monthStart = providerMonthStart(providerTz);
 
   await audit.viewRecord(userId, "ProfessionalProfile", professional.id);
 
   const [
     completedToday,
     patientCount,
-    monthEarnings,
     upcomingCount,
     jitSession,
     sharedPending,
@@ -88,6 +87,7 @@ export default async function ProfessionalDashboard() {
     humanitarianCampaign,
     humanitarianVolunteer,
     dashboardInsights,
+    monthFinanceReport,
   ] = await Promise.all([
     db.appointment.count({
       where: {
@@ -97,15 +97,6 @@ export default async function ProfessionalDashboard() {
       },
     }),
     db.patientRecord.count({ where: { professionalId: professional.id } }),
-    db.appointment.aggregate({
-      where: {
-        professionalId: professional.id,
-        status: "COMPLETED",
-        paidAt: { not: null },
-        scheduledAt: { gte: monthStart },
-      },
-      _sum: { priceAmount: true },
-    }),
     db.appointment.count({
       where: {
         professionalId: professional.id,
@@ -148,12 +139,19 @@ export default async function ProfessionalDashboard() {
     getActiveCampaignForRegion(null),
     getVolunteerDashboardState(userId),
     getProfessionalDashboardInsights(professional.id),
+    buildProviderFinanceiroReport({
+      providerId: professional.id,
+      providerField: "professionalId",
+      currency: professional.currency,
+      period: "this_month",
+      includeJit: true,
+    }),
   ]);
 
   const hasActiveSubscription =
     !!subscription && ["active", "trialing"].includes(subscription.status);
 
-  const monthEarningsTotal = monthEarnings._sum.priceAmount || 0;
+  const monthEarningsTotal = monthFinanceReport.totalNetCents;
   const jitOnline = jitSession?.status === "ONLINE";
   const jitPaused = jitSession?.status === "PAUSED";
   const jitWaiting = jitSession?._count.queue ?? 0;
@@ -312,7 +310,7 @@ export default async function ProfessionalDashboard() {
         />
         <StatCard
           icon={<DollarSign className="text-brand-500" size={20} />}
-          label={t("prodash.stat.monthEarnings")}
+          label={t("prodash.stat.monthEarningsNet")}
           value={fmtCurrency(monthEarningsTotal)}
           bg="bg-brand-50"
           href="/professional/financeiro"
