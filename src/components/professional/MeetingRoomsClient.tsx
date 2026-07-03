@@ -45,12 +45,14 @@ function shareMessage(
   t: (key: string) => string,
   roomTitle: string,
   subject: string,
-  url: string,
+  meetUrl: string,
+  portalUrl: string,
 ): string {
   return t("meetRooms.shareMessage")
     .replace("{{title}}", roomTitle)
     .replace("{{subject}}", subject)
-    .replace("{{url}}", url);
+    .replace("{{meetUrl}}", meetUrl)
+    .replace("{{portalUrl}}", portalUrl);
 }
 
 export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) {
@@ -116,7 +118,7 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
           const roomTitle = t(room.titleKey);
           const subject = t(room.subjectKey);
           const audience = t(room.audienceKey);
-          const shareText = shareMessage(t, roomTitle, subject, room.inviteUrl);
+          const shareText = shareMessage(t, roomTitle, subject, room.meetUrl!, room.inviteUrl);
 
           return (
             <article
@@ -221,7 +223,7 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
                       </button>
                       <button
                         type="button"
-                        onClick={() => copyLink(room.id, room.inviteUrl)}
+                        onClick={() => copyLink(room.id, room.meetUrl!)}
                         disabled={!room.meetUrl}
                         className="inline-flex items-center justify-center gap-2 flex-1 sm:flex-none border border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-800 font-semibold rounded-xl px-4 py-2.5 text-sm transition"
                       >

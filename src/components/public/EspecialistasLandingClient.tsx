@@ -25,7 +25,7 @@ import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
 import CookieBanner from "@/components/public/CookieBanner";
 import LandingOptionPicker from "@/components/public/LandingOptionPicker";
 import SymptomMatchPicker, { type SymptomMatchOption } from "@/components/public/SymptomMatchPicker";
-import type { Lang } from "@/lib/i18n/translations";
+import { formatProfessionCount, type Lang } from "@/lib/i18n/translations";
 
 const LandingMapPanel = dynamic(() => import("@/components/public/LandingMapPanel"), {
   ssr: false,
@@ -152,7 +152,7 @@ export default function EspecialistasLandingClient() {
   const specialtyOptions = specialties.map((s) => ({
     value: s.slug,
     label: s.label,
-    meta: s.count > 0 ? `${s.count}` : undefined,
+    meta: s.count > 0 ? formatProfessionCount(lang, s.count) : undefined,
   }));
 
   const healthPlanOptions = healthPlans.map((p) => ({

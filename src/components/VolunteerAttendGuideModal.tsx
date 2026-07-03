@@ -21,6 +21,19 @@ type ProviderSession = {
   showVolunteerGuide: boolean;
 };
 
+function renderBodyWithEmphasis(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={index} className="font-semibold text-slate-700">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
+
 async function fetchProviderSession(maxAttempts = 20): Promise<ProviderSession | null> {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -193,7 +206,7 @@ export default function VolunteerAttendGuideModal() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900 text-sm">{step.title}</p>
-                  <p className="text-slate-500 text-sm mt-1 leading-relaxed">{step.body}</p>
+                  <p className="text-slate-500 text-sm mt-1 leading-relaxed">{renderBodyWithEmphasis(step.body)}</p>
                   <Link
                     href={step.href}
                     onClick={dismiss}

@@ -455,9 +455,9 @@ const en = {
   "meetRooms.permanentLink": "Permanent exclusive link",
   "meetRooms.shareWhatsapp": "Share on WhatsApp",
   "meetRooms.shareEmail": "Share by email",
-  "meetRooms.copyLink": "Copy link",
-  "meetRooms.linkCopied": "Link copied!",
-  "meetRooms.shareMessage": "{{title}}\nSubject:\n{{subject}}\n\n\nAccess the room via Doctor8\nFree registration\n{{url}}",
+  "meetRooms.copyLink": "Copy Meet link",
+  "meetRooms.linkCopied": "Meet link copied!",
+  "meetRooms.shareMessage": "{{title}}\nSubject: {{subject}}\n\nGoogle Meet link:\n{{meetUrl}}\n\nThis same link is always available through:\n{{portalUrl}}",
   "meetRooms.invite.desc": "Create your free professional account on Doctor8 to access the virtual amphitheater and enter the meeting room.",
   "meetRooms.invite.register": "Create professional account",
   "meetRooms.invite.login": "I already have an account — sign in",
@@ -4919,9 +4919,9 @@ const pt: LocaleDict = {
   "meetRooms.permanentLink": "Link permanente e exclusivo",
   "meetRooms.shareWhatsapp": "Compartilhar no WhatsApp",
   "meetRooms.shareEmail": "Compartilhar por e-mail",
-  "meetRooms.copyLink": "Copiar link",
-  "meetRooms.linkCopied": "Link copiado!",
-  "meetRooms.shareMessage": "{{title}}\nAssunto:\n{{subject}}\n\n\nAcesse a sala pela Doctor8\nCadastro gratuito\n{{url}}",
+  "meetRooms.copyLink": "Link Meet copiar",
+  "meetRooms.linkCopied": "Link Meet copiado!",
+  "meetRooms.shareMessage": "{{title}}\nAssunto: {{subject}}\n\nLink Google Meet:\n{{meetUrl}}\n\nEste mesmo link está sempre disponível através do link:\n{{portalUrl}}",
   "meetRooms.invite.desc": "Crie sua conta profissional gratuita na Doctor8 para acessar o anfiteatro virtual e entrar na sala de reunião.",
   "meetRooms.invite.register": "Criar conta profissional",
   "meetRooms.invite.login": "Já tenho conta — entrar",
@@ -9346,9 +9346,9 @@ const es: LocaleDict = {
   "meetRooms.permanentLink": "Enlace permanente y exclusivo",
   "meetRooms.shareWhatsapp": "Compartir por WhatsApp",
   "meetRooms.shareEmail": "Compartir por correo",
-  "meetRooms.copyLink": "Copiar enlace",
-  "meetRooms.linkCopied": "¡Enlace copiado!",
-  "meetRooms.shareMessage": "{{title}}\nAsunto:\n{{subject}}\n\n\nAcceda a la sala por Doctor8\nRegistro gratuito\n{{url}}",
+  "meetRooms.copyLink": "Enlace Meet copiar",
+  "meetRooms.linkCopied": "¡Enlace Meet copiado!",
+  "meetRooms.shareMessage": "{{title}}\nAsunto: {{subject}}\n\nEnlace de Google Meet:\n{{meetUrl}}\n\nEste mismo enlace está siempre disponible a través del enlace:\n{{portalUrl}}",
   "meetRooms.invite.desc": "Cree su cuenta profesional gratuita en Doctor8 para acceder al anfiteatro virtual y entrar a la sala de reunión.",
   "meetRooms.invite.register": "Crear cuenta profesional",
   "meetRooms.invite.login": "Ya tengo cuenta — iniciar sesión",
@@ -13360,6 +13360,30 @@ export function formatSlotCount(lang: Lang, count: number): string {
     return count === 1 ? "1 horario" : `${count} horarios`;
   }
   return count === 1 ? "1 slot" : `${count} slots`;
+}
+
+/** Compact professional count for picker badges (e.g. "1 prof." vs "5 prof."). */
+export function formatProfessionCount(lang: Lang, count: number): string {
+  if (count <= 0) return "";
+  if (lang === "pt") {
+    return count === 1 ? "1 prof." : `${count} prof.`;
+  }
+  if (lang === "es") {
+    return count === 1 ? "1 prof." : `${count} prof.`;
+  }
+  return count === 1 ? "1 pro" : `${count} pros`;
+}
+
+/** Option count shown at the bottom of the landing picker sheet. */
+export function formatPickerOptionCount(lang: Lang, count: number): string {
+  if (count <= 0) return "";
+  if (lang === "pt") {
+    return count === 1 ? "1 opção" : `${count} opções`;
+  }
+  if (lang === "es") {
+    return count === 1 ? "1 opción" : `${count} opciones`;
+  }
+  return count === 1 ? "1 option" : `${count} options`;
 }
 
 // Time-of-day greeting key
