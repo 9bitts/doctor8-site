@@ -83,10 +83,19 @@ export function useConsultSessionKeepalive(
       }
     };
 
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void ping();
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     void ping();
     interval = setInterval(() => void ping(), KEEPALIVE_MS);
 
     return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       stopKeepalive();
       consecutive403Ref.current = 0;
     };

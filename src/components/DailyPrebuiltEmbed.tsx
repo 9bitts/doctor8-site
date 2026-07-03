@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { DailyCall } from "@daily-co/daily-js";
 
 export type DailyPrebuiltHandle = {
@@ -45,6 +45,15 @@ async function destroyWithTimeout(call: DailyCall | null, ms = 3000): Promise<vo
   if (winner === "timeout") console.log("[daily] destroy timed out");
 }
 
+function readMeetingState(call: DailyCall): string {
+  try {
+    const stateFn = (call as DailyCall & { meetingState?: () => string }).meetingState;
+    return typeof stateFn === "function" ? stateFn() : "";
+  } catch {
+    return "";
+  }
+}
+
 const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function DailyPrebuiltEmbed(
   { url, token, className = "flex-1 w-full h-full min-h-[200px]", onError },
   ref,
@@ -52,14 +61,29 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
   const containerRef = useRef<HTMLDivElement>(null);
   const callRef = useRef<DailyCall | null>(null);
   const onErrorRef = useRef(onError);
+  const wasConnectedRef = useRef(false);
+  const intentionalLeaveRef = useRef(false);
+  const joiningRef = useRef(true);
   const [joining, setJoining] = useState(true);
+  const [needsReconnect, setNeedsReconnect] = useState(false);
+  const [reconnectKey, setReconnectKey] = useState(0);
 
   useEffect(() => {
     onErrorRef.current = onError;
   }, [onError]);
 
+  const triggerReconnect = useCallback(() => {
+    intentionalLeaveRef.current = false;
+    wasConnectedRef.current = false;
+    joiningRef.current = true;
+    setNeedsReconnect(false);
+    setJoining(true);
+    setReconnectKey((k) => k + 1);
+  }, []);
+
   useImperativeHandle(ref, () => ({
     leave: async () => {
+      intentionalLeaveRef.current = true;
       const call = callRef.current;
       callRef.current = null;
       await destroyWithTimeout(call);
@@ -69,6 +93,7 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
   useEffect(() => {
     if (!url?.trim() || !token?.trim()) {
       setJoining(false);
+      joiningRef.current = false;
       return;
     }
 
@@ -82,13 +107,69 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       }
     };
 
+    const markDisconnected = () => {
+      if (cancelled) return;
+      clearConnectTimeout();
+      joiningRef.current = false;
+      setJoining(false);
+      setNeedsReconnect(true);
+    };
+
     const markConnected = () => {
       if (!cancelled) {
         console.log("[daily] joined");
+        wasConnectedRef.current = true;
+        joiningRef.current = false;
         clearConnectTimeout();
         setJoining(false);
+        setNeedsReconnect(false);
       }
     };
+
+    const reportError = (msg: string) => {
+      if (!cancelled) {
+        console.log("[daily] error", msg);
+        clearConnectTimeout();
+        joiningRef.current = false;
+        setJoining(false);
+        onErrorRef.current?.(msg);
+      }
+    };
+
+    const armConnectTimeout = () => {
+      clearConnectTimeout();
+      connectTimeout = setTimeout(() => {
+        if (cancelled) return;
+        if (document.visibilityState === "hidden") {
+          armConnectTimeout();
+          return;
+        }
+        reportError("Connection timed out. Please retry.");
+      }, 30_000);
+    };
+
+    function onVisibilityChange() {
+      if (cancelled || document.visibilityState === "hidden") return;
+
+      const call = callRef.current;
+      if (!call) {
+        if (joiningRef.current && !connectTimeout) {
+          armConnectTimeout();
+        }
+        return;
+      }
+
+      if (wasConnectedRef.current) {
+        const state = readMeetingState(call);
+        if (state === "error" || state === "left-meeting") {
+          markDisconnected();
+        }
+      } else if (joiningRef.current && !connectTimeout) {
+        armConnectTimeout();
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     // Force-remove any leftover Daily iframe/instance so createFrame never
     // throws "Duplicate DailyIframe instances are not allowed".
@@ -101,22 +182,15 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       }
     }
 
-    const reportError = (msg: string) => {
-      if (!cancelled) {
-        console.log("[daily] error", msg);
-        clearConnectTimeout();
-        setJoining(false);
-        onErrorRef.current?.(msg);
-      }
-    };
-
     async function mount() {
       if (!containerRef.current || cancelled) return;
+      wasConnectedRef.current = false;
+      intentionalLeaveRef.current = false;
+      joiningRef.current = true;
       setJoining(true);
+      setNeedsReconnect(false);
 
-      connectTimeout = setTimeout(() => {
-        reportError("Connection timed out. Please retry.");
-      }, 30_000);
+      armConnectTimeout();
 
       try {
         if (callRef.current) {
@@ -162,7 +236,17 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
         call.on("participant-joined", markConnected);
         call.on("left-meeting", () => {
           console.log("[daily] left");
-          if (!cancelled) setJoining(false);
+          if (cancelled || intentionalLeaveRef.current) {
+            joiningRef.current = false;
+            setJoining(false);
+            return;
+          }
+          if (wasConnectedRef.current) {
+            markDisconnected();
+            return;
+          }
+          joiningRef.current = false;
+          setJoining(false);
         });
         call.on("error", (ev: { errorMsg?: string; error?: { msg?: string } }) => {
           console.log("[daily] error event", ev);
@@ -189,12 +273,14 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
 
     return () => {
       cancelled = true;
+      intentionalLeaveRef.current = true;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       clearConnectTimeout();
       const instance = callRef.current;
       callRef.current = null;
       void destroyWithTimeout(instance);
     };
-  }, [url, token]);
+  }, [url, token, reconnectKey]);
 
   useEffect(() => {
     function onPageHide() {
@@ -218,9 +304,21 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
       className={`relative ${className}`}
       style={{ minHeight: 200 }}
     >
-      {joining && (
+      {joining && !needsReconnect && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 z-10 text-white text-sm">
           Connecting…
+        </div>
+      )}
+      {needsReconnect && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 z-10 p-6 text-center gap-4">
+          <p className="text-white text-sm">Connection lost. Please reconnect.</p>
+          <button
+            type="button"
+            onClick={triggerReconnect}
+            className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+          >
+            Reconnect
+          </button>
         </div>
       )}
     </div>
