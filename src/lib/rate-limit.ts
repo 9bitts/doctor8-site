@@ -105,4 +105,7 @@ export const RATE_LIMITS = {
   humanitarianIntake: { limit: 10, windowMs: 60 * 60 * 1000 },
   /** Public CNPJ lookup during registration */
   cnpjIp: { limit: 40, windowMs: 60 * 60 * 1000 },
+  /** Angel volunteer write actions */
+  angelAction: { limit: 30, windowMs: 60 * 60 * 1000 },
+  angelActionIp: { limit: 60, windowMs: 60 * 60 * 1000 },
 } as const;

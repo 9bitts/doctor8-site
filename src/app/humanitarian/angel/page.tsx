@@ -11,32 +11,60 @@ import { buildAuthHref } from "@/components/auth/login-shared";
 import { translate, Lang } from "@/lib/i18n/translations";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import { getHumanitarianLang } from "@/components/humanitarian/HumanitarianLangSwitcher";
-import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
+import AngelRiskBadge from "@/components/humanitarian/AngelRiskBadge";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
-import { cacheAngelDashboard, loadCachedAngelDashboard } from "@/lib/humanitarian/offline-draft";
+import {
+  cacheAngelDashboard,
+  loadCachedAngelDashboard,
+  type AngelDashboardCachePayload,
+} from "@/lib/humanitarian/offline-draft";
 import { buildWhatsAppUrl } from "@/lib/humanitarian/angel";
+import type { AngelRiskSummary } from "@/lib/humanitarian/angel-risk-summary";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
 
-interface PatientRow {
+interface MyPatientRow {
   patientUserId: string;
   patientName: string;
   phone: string;
   priority: string;
   poolLabel: string;
   consultEndedAt: string | null;
-  intakeSummary: {
-    priority: string | null;
-    status: string;
-    anamneseComplete: boolean;
-    sections: { title: string; items: { label: string; value: string }[] }[];
-  } | null;
+  riskSummary: AngelRiskSummary;
   lastFollowUp: { contactedAt: string; outcome: string } | null;
   queueEntryId: string;
 }
 
-function t(lang: Lang, key: string) {
-  return translate(lang, key);
+interface AvailableRow {
+  patientUserId: string;
+  firstName: string;
+  priority: string;
+  poolLabel: string;
+  consultEndedAt: string | null;
+  riskSummary: AngelRiskSummary;
+}
+
+type FollowUpRow = {
+  id: string;
+  contactedAt: string;
+  outcome: string;
+  channel: string;
+  notes?: string | null;
+  angelName: string;
+};
+
+function t(lang: Lang, key: string, params?: Record<string, string | number>) {
+  let text = translate(lang, key);
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      text = text.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), String(v));
+    }
+  }
+  return text;
+}
+
+function firstNameFromFull(name: string): string {
+  return name.trim().split(/\s+/)[0] || name;
 }
 
 export default function HumanitarianAngelPage() {
@@ -44,17 +72,50 @@ export default function HumanitarianAngelPage() {
   const [lang, setLang] = useState<Lang>("pt");
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("LOADING");
-  const [patients, setPatients] = useState<PatientRow[]>([]);
-  const [selected, setSelected] = useState<PatientRow | null>(null);
-  const [detail, setDetail] = useState<Awaited<ReturnType<typeof fetchDetail>> | null>(null);
+  const [myPatients, setMyPatients] = useState<MyPatientRow[]>([]);
+  const [available, setAvailable] = useState<AvailableRow[]>([]);
+  const [assignmentCount, setAssignmentCount] = useState(0);
+  const [maxPatients, setMaxPatients] = useState(10);
+  const [selected, setSelected] = useState<MyPatientRow | null>(null);
+  const [detail, setDetail] = useState<{
+    followUps: FollowUpRow[];
+    riskSummary: AngelRiskSummary;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
   const [channel, setChannel] = useState<"WHATSAPP" | "PHONE" | "SMS" | "OTHER">("WHATSAPP");
-  const [outcome, setOutcome] = useState<"REACHED_OK" | "NEEDS_HELP" | "NO_ANSWER" | "WRONG_NUMBER" | "ESCALATED" | "OTHER">("REACHED_OK");
+  const [outcome, setOutcome] = useState<
+    "REACHED_OK" | "NEEDS_HELP" | "NO_ANSWER" | "WRONG_NUMBER" | "ESCALATED" | "OTHER"
+  >("REACHED_OK");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState("");
 
   useEffect(() => { setLang(getHumanitarianLang()); }, []);
+
+  const cachePayload = useCallback(
+    (
+      data: {
+        status: string;
+        myPatients: MyPatientRow[];
+        available: AvailableRow[];
+        assignmentCount: number;
+        maxPatients: number;
+      },
+    ): AngelDashboardCachePayload => ({
+      status: data.status,
+      assignmentCount: data.assignmentCount,
+      maxPatients: data.maxPatients,
+      myPatients: data.myPatients.map((p) => ({
+        firstName: firstNameFromFull(p.patientName),
+        priority: p.priority,
+        poolLabel: p.poolLabel,
+        consultEndedAt: p.consultEndedAt,
+      })),
+      availableCount: data.available.length,
+    }),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,23 +130,27 @@ export default function HumanitarianAngelPage() {
       }
       const data = await res.json();
       setStatus(data.status || "UNKNOWN");
-      setPatients(data.patients || []);
+      setMyPatients(data.myPatients || []);
+      setAvailable(data.available || []);
+      setAssignmentCount(data.assignmentCount ?? 0);
+      setMaxPatients(data.maxPatients ?? 10);
       if (userId) {
-        cacheAngelDashboard(userId, { status: data.status, patients: data.patients });
+        cacheAngelDashboard(userId, cachePayload(data));
       }
     } catch {
-      const cached = userId
-        ? loadCachedAngelDashboard<{ status: string; patients: PatientRow[] }>(userId)
-        : null;
+      const cached = userId ? loadCachedAngelDashboard(userId) : null;
       if (cached) {
         setStatus(cached.status);
-        setPatients(cached.patients);
+        setAssignmentCount(cached.assignmentCount);
+        setMaxPatients(cached.maxPatients);
+        setMyPatients([]);
+        setAvailable([]);
       } else {
         setError(t(lang, "angel.portal.loadError"));
       }
     }
     setLoading(false);
-  }, [lang, router, userId]);
+  }, [lang, router, userId, cachePayload]);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -104,14 +169,60 @@ export default function HumanitarianAngelPage() {
     );
     if (!res.ok) return null;
     const data = await res.json();
-    return data.patient;
+    return data.patient as {
+      followUps: FollowUpRow[];
+      riskSummary: AngelRiskSummary;
+    };
   }
 
-  async function openPatient(row: PatientRow) {
+  async function openPatient(row: MyPatientRow) {
     setSelected(row);
     setDetail(null);
     const d = await fetchDetail(row.patientUserId);
     setDetail(d);
+  }
+
+  async function claimPatient(patientUserId: string) {
+    setClaimingId(patientUserId);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/humanitarian/angel/patients/${patientUserId}/claim?campaignSlug=${VENEZUELA_CAMPAIGN_SLUG}`,
+        { method: "POST" },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (data.errorCode === "LIMIT_REACHED") {
+          setError(t(lang, "angel.portal.limitReached", { max: maxPatients }));
+        } else if (data.errorCode === "ALREADY_ASSIGNED") {
+          setError(t(lang, "angel.portal.alreadyAssigned"));
+        } else {
+          setError(t(lang, "angel.portal.claimError"));
+        }
+        return;
+      }
+      await load();
+    } catch {
+      setError(t(lang, "angel.portal.claimError"));
+    }
+    setClaimingId(null);
+  }
+
+  async function releasePatient(patientUserId: string) {
+    setSaving(true);
+    try {
+      const res = await fetch(
+        `/api/humanitarian/angel/patients/${patientUserId}/release?campaignSlug=${VENEZUELA_CAMPAIGN_SLUG}`,
+        { method: "POST" },
+      );
+      if (!res.ok) throw new Error("release failed");
+      setSelected(null);
+      setDetail(null);
+      await load();
+    } catch {
+      setError(t(lang, "angel.portal.saveError"));
+    }
+    setSaving(false);
   }
 
   async function saveFollowUp() {
@@ -142,6 +253,7 @@ export default function HumanitarianAngelPage() {
   }
 
   const waMessage = t(lang, "angel.portal.waTemplate");
+  const sep = t(lang, "angel.portal.listSeparator");
 
   if (loading && status === "LOADING") {
     return (
@@ -222,13 +334,16 @@ export default function HumanitarianAngelPage() {
           <div className="w-12 h-12 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center">
             <Heart className="w-6 h-6 text-rose-400" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="text-xs uppercase tracking-wider text-rose-300/80 font-semibold">
               {t(lang, "angel.portal.eyebrow")}
             </p>
             <h1 className="text-xl font-bold text-white">{t(lang, "angel.portal.title")}</h1>
             <p className="text-slate-400 text-sm">{t(lang, "angel.portal.subtitle")}</p>
           </div>
+          <p className="text-xs font-semibold text-rose-200 bg-rose-500/10 border border-rose-500/30 px-3 py-1.5 rounded-full">
+            {t(lang, "angel.portal.assignmentCount", { current: assignmentCount, max: maxPatients })}
+          </p>
         </div>
 
         {error && (
@@ -238,30 +353,79 @@ export default function HumanitarianAngelPage() {
         )}
 
         {!selected ? (
-          <div className="space-y-3">
-            {patients.length === 0 ? (
-              <p className="text-center text-slate-500 py-12 text-sm">{t(lang, "angel.portal.empty")}</p>
-            ) : (
-              patients.map((p) => (
-                <button
-                  key={p.patientUserId}
-                  onClick={() => openPatient(p)}
-                  className="w-full text-left p-4 rounded-2xl border border-white/10 bg-white/5 hover:border-rose-500/40 hover:bg-rose-500/5 transition flex items-center gap-4"
-                >
-                  <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center shrink-0">
-                    <User className="w-5 h-5 text-slate-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white truncate">{p.patientName}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {p.poolLabel} ? {t(lang, `angel.priority.${p.priority}`)}
-                      {p.lastFollowUp ? ` — ${t(lang, "angel.portal.contacted")}` : ""}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-500 shrink-0" />
-                </button>
-              ))
-            )}
+          <div className="space-y-8">
+            <section>
+              <h2 className="text-sm font-semibold text-white mb-3">{t(lang, "angel.portal.myPatients")}</h2>
+              {myPatients.length === 0 ? (
+                <p className="text-center text-slate-500 py-8 text-sm">{t(lang, "angel.portal.emptyMy")}</p>
+              ) : (
+                <div className="space-y-3">
+                  {myPatients.map((p) => (
+                    <button
+                      key={p.patientUserId}
+                      onClick={() => openPatient(p)}
+                      className="w-full text-left p-4 rounded-2xl border border-white/10 bg-white/5 hover:border-rose-500/40 hover:bg-rose-500/5 transition flex items-center gap-4"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center shrink-0">
+                        <User className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-white truncate">{p.patientName}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {p.poolLabel} {sep} {t(lang, `angel.priority.${p.priority}`)}
+                          {p.lastFollowUp ? ` ${sep} ${t(lang, "angel.portal.contacted")}` : ""}
+                        </p>
+                        <div className="mt-2">
+                          <AngelRiskBadge summary={p.riskSummary} lang={lang} dark compact />
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-500 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section>
+              <h2 className="text-sm font-semibold text-white mb-3">{t(lang, "angel.portal.available")}</h2>
+              {available.length === 0 ? (
+                <p className="text-center text-slate-500 py-8 text-sm">{t(lang, "angel.portal.emptyAvailable")}</p>
+              ) : (
+                <div className="space-y-3">
+                  {available.map((p) => (
+                    <div
+                      key={p.patientUserId}
+                      className="p-4 rounded-2xl border border-white/10 bg-white/5 flex items-center gap-4"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center shrink-0">
+                        <User className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-white truncate">{p.firstName}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {p.poolLabel} {sep} {t(lang, `angel.priority.${p.priority}`)}
+                        </p>
+                        <div className="mt-2">
+                          <AngelRiskBadge summary={p.riskSummary} lang={lang} dark compact />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={claimingId === p.patientUserId || assignmentCount >= maxPatients}
+                        onClick={() => claimPatient(p.patientUserId)}
+                        className="shrink-0 px-3 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-semibold disabled:opacity-40"
+                      >
+                        {claimingId === p.patientUserId ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          t(lang, "angel.portal.claim")
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         ) : (
           <div className="space-y-4">
@@ -269,17 +433,31 @@ export default function HumanitarianAngelPage() {
               onClick={() => { setSelected(null); setDetail(null); }}
               className="text-sm text-slate-400 hover:text-white"
             >
-              ? {t(lang, "reg.back")}
+              &larr; {t(lang, "reg.back")}
             </button>
 
             <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
-              <h2 className="text-lg font-bold text-white mb-1">{selected.patientName}</h2>
-              <p className="text-sm text-slate-400 mb-4">
-                {selected.poolLabel} ? {t(lang, `angel.priority.${selected.priority}`)}
-              </p>
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-lg font-bold text-white mb-1">{selected.patientName}</h2>
+                  <p className="text-sm text-slate-400">
+                    {selected.poolLabel} {sep} {t(lang, `angel.priority.${selected.priority}`)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => releasePatient(selected.patientUserId)}
+                  disabled={saving}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/20 text-slate-300 hover:bg-white/5 disabled:opacity-50"
+                >
+                  {t(lang, "angel.portal.release")}
+                </button>
+              </div>
+
+              <AngelRiskBadge summary={detail?.riskSummary ?? selected.riskSummary} lang={lang} dark />
 
               {selected.phone && (
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-2 mt-4">
                   <a
                     href={`tel:${selected.phone.replace(/\s/g, "")}`}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold"
@@ -293,14 +471,10 @@ export default function HumanitarianAngelPage() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold"
                     >
-                      <MessageCircle className="w-4 h-4" /> WhatsApp
+                      <MessageCircle className="w-4 h-4" /> {t(lang, "angel.portal.whatsapp")}
                     </a>
                   )}
                 </div>
-              )}
-
-              {selected.intakeSummary && (
-                <HumanitarianIntakeSummary summary={selected.intakeSummary} lang={lang} dark />
               )}
             </div>
 
@@ -308,10 +482,12 @@ export default function HumanitarianAngelPage() {
               <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
                 <h3 className="text-sm font-semibold text-white mb-3">{t(lang, "angel.portal.history")}</h3>
                 <div className="space-y-2">
-                  {detail.followUps.map((f: { id: string; contactedAt: string; outcome: string; channel: string; notes: string | null; angelName: string }) => (
+                  {detail.followUps.map((f) => (
                     <div key={f.id} className="text-xs text-slate-400 border-l-2 border-rose-500/30 pl-3 py-1">
                       <p className="text-slate-300">
-                        {new Date(f.contactedAt).toLocaleString()} ? {f.channel} ? {t(lang, `angel.outcome.${f.outcome}`)}
+                        {new Date(f.contactedAt).toLocaleString()} {sep}{" "}
+                        {t(lang, `angel.channel.${f.channel}`)} {sep}{" "}
+                        {t(lang, `angel.outcome.${f.outcome}`)}
                       </p>
                       {f.notes && <p className="mt-1">{f.notes}</p>}
                       <p className="text-slate-500 mt-0.5">{f.angelName}</p>
@@ -325,11 +501,17 @@ export default function HumanitarianAngelPage() {
               <h3 className="text-sm font-semibold text-white mb-3">{t(lang, "angel.portal.recordTitle")}</h3>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {(["WHATSAPP", "PHONE", "SMS", "OTHER"] as const).map((c) => (
-                  <button key={c} type="button" onClick={() => setChannel(c)}
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setChannel(c)}
                     className={`py-2 rounded-lg text-xs font-medium border ${
-                      channel === c ? "border-rose-400 bg-rose-500/20 text-white" : "border-white/10 text-slate-400"
-                    }`}>
-                    {c}
+                      channel === c
+                        ? "border-rose-400 bg-rose-500/20 text-white"
+                        : "border-white/10 text-slate-400"
+                    }`}
+                  >
+                    {t(lang, `angel.channel.${c}`)}
                   </button>
                 ))}
               </div>
@@ -338,7 +520,9 @@ export default function HumanitarianAngelPage() {
                 onChange={(e) => setOutcome(e.target.value as typeof outcome)}
                 className="w-full mb-3 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white text-sm"
               >
-                {(["REACHED_OK", "NEEDS_HELP", "NO_ANSWER", "WRONG_NUMBER", "ESCALATED", "OTHER"] as const).map((o) => (
+                {(
+                  ["REACHED_OK", "NEEDS_HELP", "NO_ANSWER", "WRONG_NUMBER", "ESCALATED", "OTHER"] as const
+                ).map((o) => (
                   <option key={o} value={o}>{t(lang, `angel.outcome.${o}`)}</option>
                 ))}
               </select>

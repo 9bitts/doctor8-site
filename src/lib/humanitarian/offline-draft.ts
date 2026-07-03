@@ -24,6 +24,22 @@ function angelStorageKey(userId: string): string {
   return `${ANGEL_PREFIX}${userId}:dash`;
 }
 
+/** Angel dashboard offline cache TTL (30 minutes). */
+const ANGEL_CACHE_TTL_MS = 30 * 60 * 1000;
+
+export type AngelDashboardCachePayload = {
+  status: string;
+  assignmentCount: number;
+  maxPatients: number;
+  myPatients: Array<{
+    firstName: string;
+    priority: string;
+    poolLabel: string;
+    consultEndedAt: string | null;
+  }>;
+  availableCount: number;
+};
+
 export function humanitarianDraftKey(kind: "triage" | "anamnese", campaignSlug: string): string {
   return `${kind}:${campaignSlug}`;
 }
@@ -124,7 +140,7 @@ export function loadCachedVolunteerDashboard<T>(userId: string): T | null {
   }
 }
 
-export function cacheAngelDashboard(userId: string, state: unknown): void {
+export function cacheAngelDashboard(userId: string, state: AngelDashboardCachePayload): void {
   if (typeof window === "undefined" || !userId) return;
   try {
     sessionStorage.setItem(
@@ -136,12 +152,17 @@ export function cacheAngelDashboard(userId: string, state: unknown): void {
   }
 }
 
-export function loadCachedAngelDashboard<T>(userId: string): T | null {
+export function loadCachedAngelDashboard<T = AngelDashboardCachePayload>(userId: string): T | null {
   if (typeof window === "undefined" || !userId) return null;
   try {
     const raw = sessionStorage.getItem(angelStorageKey(userId));
     if (!raw) return null;
-    return (JSON.parse(raw) as { state: T }).state ?? null;
+    const envelope = JSON.parse(raw) as { savedAt: number; state: T };
+    if (!envelope.savedAt || Date.now() - envelope.savedAt > ANGEL_CACHE_TTL_MS) {
+      sessionStorage.removeItem(angelStorageKey(userId));
+      return null;
+    }
+    return envelope.state ?? null;
   } catch {
     return null;
   }

@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { AuditAction } from "@prisma/client";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   auditAngelEvent,
-  getAngelPatientDetail,
+  enforceAngelRateLimit,
+  releaseAngelPatient,
   resolveAngelAccess,
 } from "@/lib/humanitarian/angel";
-import { AuditAction } from "@prisma/client";
-import type { Lang } from "@/lib/i18n/translations";
+import { db } from "@/lib/db";
 
-function volunteerLang(req: NextRequest): Lang {
-  const raw = new URL(req.url).searchParams.get("lang");
-  if (raw === "pt" || raw === "en" || raw === "es") return raw;
-  return "pt";
-}
-
-export async function GET(
+export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ patientUserId: string }> },
 ) {
@@ -27,15 +21,28 @@ export async function GET(
 
   const { patientUserId } = await params;
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug") || VENEZUELA_CAMPAIGN_SLUG;
-  const lang = volunteerLang(req);
 
   const isAdmin = session.user.role === "ADMIN";
   if (!isAdmin && session.user.role !== "ANGEL") {
     return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
 
+  const rateLimited = await enforceAngelRateLimit(req, session.user.id, "release");
+  if (rateLimited) return rateLimited;
+
   let campaignId: string;
+  let angelUserId = session.user.id;
+
   if (isAdmin) {
+    const body = await req.json().catch(() => ({}));
+    const targetAngelId = typeof body.angelUserId === "string" ? body.angelUserId : null;
+    if (!targetAngelId) {
+      return NextResponse.json(
+        { errorCode: "VALIDATION_ERROR", error: "angelUserId required for admin release" },
+        { status: 400 },
+      );
+    }
+    angelUserId = targetAngelId;
     const campaign = await db.humanitarianCampaign.findUnique({
       where: { slug: campaignSlug },
       select: { id: true },
@@ -52,28 +59,21 @@ export async function GET(
     campaignId = access.campaignId;
   }
 
-  const detail = await getAngelPatientDetail(
-    campaignId,
-    patientUserId,
-    session.user.id,
-    lang,
-    { isAdmin },
-  );
-
-  if (!detail) {
+  const released = await releaseAngelPatient(campaignId, angelUserId, patientUserId);
+  if (!released) {
     return NextResponse.json(
-      { errorCode: "NOT_FOUND", error: "Patient not found, no consent, or not assigned" },
-      { status: isAdmin ? 404 : 403 },
+      { errorCode: "NOT_FOUND", error: "No active assignment" },
+      { status: 404 },
     );
   }
 
   await auditAngelEvent({
     userId: session.user.id,
-    action: AuditAction.VIEW_RECORD,
+    action: AuditAction.UPDATE_RECORD,
     patientUserId,
     campaignId,
-    details: { event: "angel_patient_detail" },
+    details: { event: "angel_release", angelUserId },
   });
 
-  return NextResponse.json({ patient: detail });
+  return NextResponse.json({ success: true });
 }

@@ -6,7 +6,7 @@ import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
 const patchSchema = z.object({
   userId: z.string(),
-  action: z.enum(["approve", "reject"]),
+  action: z.enum(["approve", "reject", "pause", "reactivate"]),
   rejectionReason: z.string().max(500).optional(),
   campaignSlug: z.string().optional(),
 });
@@ -28,6 +28,9 @@ export async function GET() {
           region: true,
           language: true,
           createdAt: true,
+          humanitarianAngels: {
+            select: { active: true, campaign: { select: { slug: true } } },
+          },
           _count: { select: { providerLicenseDocuments: true } },
         },
       },
@@ -53,6 +56,7 @@ export async function GET() {
       region: a.user.region,
       licenseDocCount: a.user._count.providerLicenseDocuments,
       hasPhone: Boolean(a.phone),
+      enrollmentActive: a.user.humanitarianAngels.some((e) => e.active),
       createdAt: a.createdAt.toISOString(),
     })),
   });
@@ -77,15 +81,60 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Angel not found" }, { status: 404 });
   }
 
-  if (parsed.data.action === "reject") {
-    await db.angelProfile.update({
-      where: { id: profile.id },
-      data: {
-        approvalStatus: "REJECTED",
-        rejectionReason: parsed.data.rejectionReason || null,
-        approvedAt: null,
-        approvedById: null,
+  const campaignSlug =
+    parsed.data.campaignSlug || profile.preferredCampaignSlug || VENEZUELA_CAMPAIGN_SLUG;
+
+  if (parsed.data.action === "pause") {
+    await db.humanitarianAngel.updateMany({
+      where: { userId: parsed.data.userId },
+      data: { active: false },
+    });
+    return NextResponse.json({ success: true, status: "PAUSED" });
+  }
+
+  if (parsed.data.action === "reactivate") {
+    if (profile.approvalStatus !== "APPROVED") {
+      return NextResponse.json(
+        { error: "Angel must be approved before reactivation" },
+        { status: 400 },
+      );
+    }
+    const campaign = await db.humanitarianCampaign.findUnique({
+      where: { slug: campaignSlug },
+      select: { id: true },
+    });
+    if (!campaign) {
+      return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    }
+    await db.humanitarianAngel.upsert({
+      where: {
+        campaignId_userId: { campaignId: campaign.id, userId: parsed.data.userId },
       },
+      create: {
+        campaignId: campaign.id,
+        userId: parsed.data.userId,
+        active: true,
+      },
+      update: { active: true },
+    });
+    return NextResponse.json({ success: true, status: "REACTIVATED" });
+  }
+
+  if (parsed.data.action === "reject") {
+    await db.$transaction(async (tx) => {
+      await tx.angelProfile.update({
+        where: { id: profile.id },
+        data: {
+          approvalStatus: "REJECTED",
+          rejectionReason: parsed.data.rejectionReason || null,
+          approvedAt: null,
+          approvedById: null,
+        },
+      });
+      await tx.humanitarianAngel.updateMany({
+        where: { userId: parsed.data.userId },
+        data: { active: false },
+      });
     });
     return NextResponse.json({ success: true, status: "REJECTED" });
   }
@@ -101,7 +150,6 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  const campaignSlug = parsed.data.campaignSlug || profile.preferredCampaignSlug || VENEZUELA_CAMPAIGN_SLUG;
   const campaign = await db.humanitarianCampaign.findUnique({
     where: { slug: campaignSlug },
     select: { id: true },

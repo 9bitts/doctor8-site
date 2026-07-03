@@ -3,8 +3,17 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { encrypt } from "@/lib/encryption";
+import { AuditAction } from "@prisma/client";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
-import { resolveAngelAccess } from "@/lib/humanitarian/angel";
+import {
+  auditAngelEvent,
+  enforceAngelRateLimit,
+  getAngelPatientDetail,
+  hasActiveAngelAssignment,
+  notifyAngelEscalation,
+  resolveAngelAccess,
+  validateAngelQueueEntry,
+} from "@/lib/humanitarian/angel";
 
 const followUpSchema = z.object({
   campaignSlug: z.string().optional(),
@@ -19,10 +28,15 @@ const followUpSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
+  }
   if (session.user.role !== "ANGEL") {
     return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
   }
+
+  const rateLimited = await enforceAngelRateLimit(req, session.user.id, "follow-up");
+  if (rateLimited) return rateLimited;
 
   const body = await req.json();
   const parsed = followUpSchema.safeParse(body);
@@ -39,6 +53,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ errorCode: access.reason, error: access.reason }, { status: 403 });
   }
 
+  const assigned = await hasActiveAngelAssignment(
+    session.user.id,
+    parsed.data.patientUserId,
+    access.campaignId,
+  );
+  if (!assigned) {
+    return NextResponse.json(
+      { errorCode: "FORBIDDEN", error: "No active assignment for this patient" },
+      { status: 403 },
+    );
+  }
+
   const intake = await db.humanitarianIntake.findUnique({
     where: {
       campaignId_patientUserId: {
@@ -46,7 +72,7 @@ export async function POST(req: NextRequest) {
         patientUserId: parsed.data.patientUserId,
       },
     },
-    select: { angelContactConsentAt: true },
+    select: { angelContactConsentAt: true, computedPriority: true },
   });
 
   if (!intake?.angelContactConsentAt) {
@@ -55,6 +81,22 @@ export async function POST(req: NextRequest) {
       { status: 403 },
     );
   }
+
+  if (parsed.data.queueEntryId) {
+    const valid = await validateAngelQueueEntry(
+      parsed.data.queueEntryId,
+      access.campaignId,
+      parsed.data.patientUserId,
+    );
+    if (!valid) {
+      return NextResponse.json(
+        { errorCode: "VALIDATION_ERROR", error: "Invalid queueEntryId for patient" },
+        { status: 400 },
+      );
+    }
+  }
+
+  const escalated = parsed.data.escalated ?? parsed.data.outcome === "ESCALATED";
 
   const followUp = await db.humanitarianAngelFollowUp.create({
     data: {
@@ -66,9 +108,37 @@ export async function POST(req: NextRequest) {
       outcome: parsed.data.outcome,
       notes: parsed.data.notes ? encrypt(parsed.data.notes) : null,
       needsFlags: parsed.data.needsFlags ?? [],
-      escalated: parsed.data.escalated ?? parsed.data.outcome === "ESCALATED",
+      escalated,
     },
   });
+
+  await auditAngelEvent({
+    userId: session.user.id,
+    action: AuditAction.CREATE_RECORD,
+    patientUserId: parsed.data.patientUserId,
+    campaignId: access.campaignId,
+    details: {
+      event: "angel_follow_up",
+      followUpId: followUp.id,
+      outcome: parsed.data.outcome,
+      escalated,
+    },
+  });
+
+  if (escalated) {
+    const detail = await getAngelPatientDetail(
+      access.campaignId,
+      parsed.data.patientUserId,
+      session.user.id,
+      "pt",
+    );
+    await notifyAngelEscalation({
+      followUpId: followUp.id,
+      patientUserId: parsed.data.patientUserId,
+      patientName: detail?.patientName || "Paciente",
+      priority: intake.computedPriority,
+    });
+  }
 
   return NextResponse.json({
     followUp: {

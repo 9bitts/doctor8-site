@@ -326,6 +326,8 @@ model User {
   humanitarianAngels         HumanitarianAngel[]      @relation("HumanitarianAngelUser")
   angelFollowUpsAuthored     HumanitarianAngelFollowUp[] @relation("AngelFollowUpAuthor")
   angelFollowUpsAsPatient    HumanitarianAngelFollowUp[] @relation("AngelFollowUpPatient")
+  angelAssignmentsAuthored   HumanitarianAngelAssignment[] @relation("AngelAssignmentAngel")
+  angelAssignmentsAsPatient  HumanitarianAngelAssignment[] @relation("AngelAssignmentPatient")
 
   // Soft delete — GDPR right to erasure
   // After 30 days we hard-delete PHI, keep anonymized stats
@@ -2458,6 +2460,7 @@ model HumanitarianCampaign {
   entries                  HumanitarianQueueEntry[]
   intakes                  HumanitarianIntake[]
   angelFollowUps           HumanitarianAngelFollowUp[]
+  angelAssignments         HumanitarianAngelAssignment[]
 
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
@@ -2667,6 +2670,7 @@ model HumanitarianAngelFollowUp {
   notes           String?                // @encrypted
   needsFlags      String[]               @default([])
   escalated       Boolean                @default(false)
+  escalationResolvedAt DateTime?
 
   contactedAt     DateTime               @default(now())
   createdAt       DateTime               @default(now())
@@ -2674,6 +2678,29 @@ model HumanitarianAngelFollowUp {
   @@index([campaignId, patientUserId])
   @@index([angelUserId, contactedAt])
   @@index([queueEntryId])
+  @@index([escalated, escalationResolvedAt])
+}
+
+model HumanitarianAngelAssignment {
+  id              String               @id @default(cuid())
+  campaignId      String
+  campaign        HumanitarianCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  angelUserId     String
+  angelUser       User                 @relation("AngelAssignmentAngel", fields: [angelUserId], references: [id], onDelete: Cascade)
+  patientUserId   String
+  patientUser     User                 @relation("AngelAssignmentPatient", fields: [patientUserId], references: [id], onDelete: Cascade)
+
+  active          Boolean              @default(true)
+  claimedAt       DateTime             @default(now())
+  releasedAt      DateTime?
+
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@unique([angelUserId, patientUserId])
+  @@index([angelUserId, active])
+  @@index([patientUserId, active])
+  @@index([campaignId, active])
 }
 
 // ─────────────────────────────────────────

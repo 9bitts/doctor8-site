@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { AuditAction } from "@prisma/client";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
-import { listAngelFollowUpPatients, resolveAngelAccess } from "@/lib/humanitarian/angel";
+import {
+  auditAngelEvent,
+  listAngelDashboard,
+  MAX_PATIENTS_PER_ANGEL,
+  resolveAngelAccess,
+} from "@/lib/humanitarian/angel";
 import type { Lang } from "@/lib/i18n/translations";
 
 function volunteerLang(req: NextRequest): Lang {
@@ -13,14 +19,16 @@ function volunteerLang(req: NextRequest): Lang {
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
+  if (!session?.user) {
+    return NextResponse.json({ errorCode: "UNAUTHORIZED", error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (session.user.role !== "ANGEL") {
+    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
+  }
 
   const campaignSlug = new URL(req.url).searchParams.get("campaignSlug") || VENEZUELA_CAMPAIGN_SLUG;
   const lang = volunteerLang(req);
-
-  if (session.user.role !== "ANGEL" && session.user.role !== "ADMIN") {
-    return NextResponse.json({ errorCode: "FORBIDDEN", error: "Forbidden" }, { status: 403 });
-  }
 
   const profile = await db.angelProfile.findUnique({
     where: { userId: session.user.id },
@@ -47,16 +55,29 @@ export async function GET(req: NextRequest) {
       status: access.reason,
       profile,
       emailVerified: !!user?.emailVerified,
-      patients: [],
+      myPatients: [],
+      available: [],
+      assignmentCount: 0,
+      maxPatients: MAX_PATIENTS_PER_ANGEL,
     });
   }
 
-  const patients = await listAngelFollowUpPatients(access.campaignId, lang);
+  const dashboard = await listAngelDashboard(access.campaignId, session.user.id, lang);
+
+  await auditAngelEvent({
+    userId: session.user.id,
+    action: AuditAction.VIEW_RECORD,
+    campaignId: access.campaignId,
+    details: { event: "angel_dashboard_list" },
+  });
 
   return NextResponse.json({
     status: "ACTIVE",
     profile,
     emailVerified: true,
-    patients,
+    myPatients: dashboard.myPatients,
+    available: dashboard.available,
+    assignmentCount: dashboard.assignmentCount,
+    maxPatients: MAX_PATIENTS_PER_ANGEL,
   });
 }
