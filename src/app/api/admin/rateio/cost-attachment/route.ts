@@ -15,7 +15,7 @@ const ALLOWED_CONTENT_TYPES = new Set([
   "application/pdf",
 ]);
 
-export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
 const RECEIPT_PREFIX = "rateio-receipts/";
 
