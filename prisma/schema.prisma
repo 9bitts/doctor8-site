@@ -854,7 +854,7 @@ model Appointment {
   // Payment
   priceAmount      Int     // in cents
   currency         String  @default("USD")
-  stripePaymentId  String?
+  stripePaymentId  String?  @unique
   paidAt           DateTime?
 
   // Clinical
@@ -893,6 +893,16 @@ model Appointment {
   @@index([providerType])
   @@index([scheduledAt])
   @@index([status])
+}
+
+// Stripe webhook idempotency — one row per event.id after side effects complete.
+model ProcessedStripeEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  type        String
+  status      String   // PROCESSED | FAILED
+  error       String?
+  processedAt DateTime @default(now())
 }
 
 // ─────────────────────────────────────────

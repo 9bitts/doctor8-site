@@ -233,58 +233,79 @@ export async function fulfillConsultationPayment(params: {
         ? { integrativeTherapistId: providerId }
         : { professionalId: providerId };
 
-  const { appointment, created } = await db.$transaction(
-    async (tx) => {
-      const existingPayment =
-        stripePaymentId && !isVolunteerBooking
-          ? await tx.appointment.findFirst({ where: { stripePaymentId } })
-          : null;
-      if (existingPayment) {
-        return { appointment: existingPayment, created: false };
+  let appointment: Awaited<ReturnType<typeof db.appointment.create>>;
+  let created: boolean;
+
+  try {
+    const result = await db.$transaction(
+      async (tx) => {
+        const existingPayment =
+          stripePaymentId && !isVolunteerBooking
+            ? await tx.appointment.findFirst({ where: { stripePaymentId } })
+            : null;
+        if (existingPayment) {
+          return { appointment: existingPayment, created: false };
+        }
+
+        const slotTaken = await tx.appointment.findFirst({
+          where: {
+            ...slotWhere,
+            scheduledAt: new Date(scheduledAt),
+            status: { in: ["CONFIRMED", "PENDING"] },
+          },
+        });
+        if (slotTaken) throw new AppointmentSlotTakenError();
+
+        if (revalidateBeforeCreate) {
+          await revalidateBeforeCreate();
+        }
+
+        const createdAppointment = await tx.appointment.create({
+          data: {
+            patientId: patient.id,
+            providerType:
+              providerType === "psychoanalyst"
+                ? "PSYCHOANALYST"
+                : providerType === "integrative"
+                  ? "INTEGRATIVE_THERAPIST"
+                  : "HEALTH",
+            professionalId: providerType === "health" ? providerId : null,
+            psychoanalystId: providerType === "psychoanalyst" ? providerId : null,
+            integrativeTherapistId: providerType === "integrative" ? providerId : null,
+            scheduledAt: new Date(scheduledAt),
+            type: (type as "TELECONSULT" | "IN_PERSON") || "TELECONSULT",
+            status: "CONFIRMED",
+            priceAmount: amount,
+            currency: isVolunteerBooking ? "BRL" : currency,
+            stripePaymentId: isVolunteerBooking ? null : stripePaymentId,
+            paidAt: isVolunteerBooking ? null : new Date(),
+            durationMins,
+            bookingSource: (bookingSource as any) || (isVolunteerBooking ? "acura_volunteer" : "patient_panel"),
+            ...(intakePayload ? { chiefComplaint: intakePayload } : {}),
+          },
+        });
+
+        return { appointment: createdAppointment, created: true };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+    appointment = result.appointment;
+    created = result.created;
+  } catch (e) {
+    if (
+      stripePaymentId &&
+      !isVolunteerBooking &&
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002"
+    ) {
+      const existing = await db.appointment.findFirst({ where: { stripePaymentId } });
+      if (existing) {
+        console.log(`[FULFILL-DEDUP] stripePaymentId=${stripePaymentId} appointmentId=${existing.id}`);
+        return { appointmentId: existing.id, created: false };
       }
-
-      const slotTaken = await tx.appointment.findFirst({
-        where: {
-          ...slotWhere,
-          scheduledAt: new Date(scheduledAt),
-          status: { in: ["CONFIRMED", "PENDING"] },
-        },
-      });
-      if (slotTaken) throw new AppointmentSlotTakenError();
-
-      if (revalidateBeforeCreate) {
-        await revalidateBeforeCreate();
-      }
-
-      const createdAppointment = await tx.appointment.create({
-        data: {
-          patientId: patient.id,
-          providerType:
-            providerType === "psychoanalyst"
-              ? "PSYCHOANALYST"
-              : providerType === "integrative"
-                ? "INTEGRATIVE_THERAPIST"
-                : "HEALTH",
-          professionalId: providerType === "health" ? providerId : null,
-          psychoanalystId: providerType === "psychoanalyst" ? providerId : null,
-          integrativeTherapistId: providerType === "integrative" ? providerId : null,
-          scheduledAt: new Date(scheduledAt),
-          type: (type as "TELECONSULT" | "IN_PERSON") || "TELECONSULT",
-          status: "CONFIRMED",
-          priceAmount: amount,
-          currency: isVolunteerBooking ? "BRL" : currency,
-          stripePaymentId: isVolunteerBooking ? null : stripePaymentId,
-          paidAt: isVolunteerBooking ? null : new Date(),
-          durationMins,
-          bookingSource: (bookingSource as any) || (isVolunteerBooking ? "acura_volunteer" : "patient_panel"),
-          ...(intakePayload ? { chiefComplaint: intakePayload } : {}),
-        },
-      });
-
-      return { appointment: createdAppointment, created: true };
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-  );
+    }
+    throw e;
+  }
 
   if (!created) {
     return { appointmentId: appointment.id, created: false };
