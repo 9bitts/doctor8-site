@@ -681,6 +681,8 @@ model PsychoanalystProfile {
 
   @@index([userId])
 }
+
+model PsychoanalystAvailabilitySlot {
   id               String              @id @default(cuid())
   psychoanalystId  String
   psychoanalyst    PsychoanalystProfile  @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)

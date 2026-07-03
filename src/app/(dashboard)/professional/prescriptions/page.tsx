@@ -103,6 +103,28 @@ interface MedItem {
   presentation?: string; controlled?: boolean; prescriptionType?: string | null;
   itemKind?: "medication" | "device" | "phytotherapy";
 }
+
+function medItemFieldErrors(m: MedItem): { name: boolean; dosage: boolean; frequency: boolean } {
+  const kind = m.itemKind || "medication";
+  return {
+    name: !m.name.trim(),
+    dosage: kind === "medication" && !m.dosage?.trim(),
+    frequency: kind === "medication" && !m.frequency?.trim(),
+  };
+}
+
+function isMedItemValid(m: MedItem): boolean {
+  const errors = medItemFieldErrors(m);
+  return !errors.name && !errors.dosage && !errors.frequency;
+}
+
+function isMedsFormValid(medications: MedItem[]): boolean {
+  return medications.length > 0 && medications.every(isMedItemValid);
+}
+
+function rxFieldClass(invalid: boolean): string {
+  return invalid ? " !border-rose-400 !bg-rose-50" : "";
+}
 interface Prescription {
   id: string; createdAt: string; validUntil?: string;
   instructions?: string; patientRecordId?: string | null;
@@ -387,6 +409,7 @@ export default function PrescriptionsPage() {
   const drugDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [medications, setMedications] = useState<MedItem[]>([]);
+  const [highlightIncompleteMeds, setHighlightIncompleteMeds] = useState(false);
   const [instructions, setInstructions] = useState("");
   const [validDays, setValidDays] = useState(30);
 
@@ -594,6 +617,7 @@ export default function PrescriptionsPage() {
     setImportablePatients([]);
     setPlatformMatches([]);
     setDrugQuery(""); setDrugResults([]); setDrugCountry("BR"); setMedications([]);
+    setHighlightIncompleteMeds(false);
     setInstructions(""); setValidDays(30); setFormError("");
     setReuseSource(null);
     setSavedEmission(null);
@@ -748,11 +772,9 @@ export default function PrescriptionsPage() {
     setDrugQuery(""); setDrugResults([]);
   }
 
-  function isMedItemValid(m: MedItem): boolean {
-    if (!m.name.trim()) return false;
-    const kind = m.itemKind || "medication";
-    if (kind === "medication") return Boolean(m.dosage?.trim() && m.frequency?.trim());
-    return true;
+  function flagIncompleteMeds(): void {
+    setHighlightIncompleteMeds(true);
+    setFormError(t("rx2.incompleteItems"));
   }
 
   function addManual() {
@@ -789,10 +811,11 @@ export default function PrescriptionsPage() {
   }
 
   async function saveAsRxTemplate() {
-    if (medications.length === 0 || medications.some((m) => !isMedItemValid(m))) {
-      setFormError(t("rx2.needMeds"));
+    if (!isMedsFormValid(medications)) {
+      flagIncompleteMeds();
       return;
     }
+    setHighlightIncompleteMeds(false);
     const name = window.prompt(t("tmpl.rxNamePrompt"));
     if (!name?.trim()) return;
     setSavingTemplate(true);
@@ -825,9 +848,11 @@ export default function PrescriptionsPage() {
   async function handleSubmit() {
     setFormError("");
     if (!selectedPatient && !platformTarget) { setFormError(t("rx2.needPatient")); return; }
-    if (medications.length === 0 || medications.some((m) => !isMedItemValid(m))) {
-      setFormError(t("rx2.needMeds")); return;
+    if (!isMedsFormValid(medications)) {
+      flagIncompleteMeds();
+      return;
     }
+    setHighlightIncompleteMeds(false);
     setSaving(true);
     try {
       const cleanMeds = medications.map((m) => ({
@@ -1304,9 +1329,13 @@ export default function PrescriptionsPage() {
             <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
               <label className="text-sm font-semibold text-slate-800">{t("rx2.selectedMeds")}</label>
               {medications.length === 0 ? (
-                <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  <Pill size={28} className="text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm text-slate-400">{t("rx2.noMeds")}</p>
+                <div className={`text-center py-8 rounded-xl border border-dashed ${
+                  highlightIncompleteMeds
+                    ? "bg-rose-50 border-rose-300"
+                    : "bg-slate-50 border-slate-200"
+                }`}>
+                  <Pill size={28} className={`mx-auto mb-2 ${highlightIncompleteMeds ? "text-rose-300" : "text-slate-300"}`} />
+                  <p className={`text-sm ${highlightIncompleteMeds ? "text-rose-600" : "text-slate-400"}`}>{t("rx2.noMeds")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1315,8 +1344,15 @@ export default function PrescriptionsPage() {
                     const kind = med.itemKind || "medication";
                     const kindLabel = kind === "device" ? t("rx.itemKind.device")
                       : kind === "phytotherapy" ? t("rx.itemKind.phytotherapy") : null;
+                    const fieldErrors = medItemFieldErrors(med);
+                    const itemInvalid = !isMedItemValid(med);
+                    const showErrors = highlightIncompleteMeds && itemInvalid;
                     return (
-                      <div key={index} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                      <div key={index} className={`rounded-xl p-4 space-y-3 border ${
+                        showErrors
+                          ? "bg-rose-50/60 border-rose-300 ring-1 ring-rose-200"
+                          : "bg-slate-50 border-slate-200"
+                      }`}>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0 space-y-2">
                             {kindLabel && (
@@ -1324,10 +1360,13 @@ export default function PrescriptionsPage() {
                                 {kindLabel}
                               </span>
                             )}
-                            <label className="text-xs font-medium text-slate-600">{t("rx2.manualName")}</label>
+                            <label className={`text-xs font-medium block mb-1 ${
+                              showErrors && fieldErrors.name ? "text-rose-700" : "text-slate-600"
+                            }`}>{t("rx2.manualName")}</label>
                             <input type="text" value={med.name}
                               onChange={(e) => updateMedication(index, "name", e.target.value)}
-                              placeholder={t("rx2.manualNamePlaceholder")} className="rx-inp-sm" />
+                              placeholder={t("rx2.manualNamePlaceholder")}
+                              className={`rx-inp-sm${rxFieldClass(showErrors && fieldErrors.name)}`} />
                             {med.controlled && ci && (
                               <p className="text-[11px] text-red-700 bg-red-50 rounded-md px-2 py-1 inline-flex items-center gap-1">
                                 <AlertCircle size={11} />{ci.receita}
@@ -1340,16 +1379,20 @@ export default function PrescriptionsPage() {
                         </div>
                         <div className="grid sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">
+                            <label className={`text-xs font-medium block mb-1 ${
+                              showErrors && fieldErrors.dosage ? "text-rose-700" : "text-slate-600"
+                            }`}>
                               {t("rx2.dosageLabel")}{kind === "medication" ? " *" : ` (${t("rx.fieldOptional")})`}
                             </label>
-                            <input type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder={t("rx.medDosagePlaceholder")} className="rx-inp-sm" />
+                            <input type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder={t("rx.medDosagePlaceholder")} className={`rx-inp-sm${rxFieldClass(showErrors && fieldErrors.dosage)}`} />
                           </div>
                           <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">
+                            <label className={`text-xs font-medium block mb-1 ${
+                              showErrors && fieldErrors.frequency ? "text-rose-700" : "text-slate-600"
+                            }`}>
                               {t("rx2.frequencyLabel")}{kind === "medication" ? " *" : ` (${t("rx.fieldOptional")})`}
                             </label>
-                            <select value={med.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className="rx-inp-sm">
+                            <select value={med.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className={`rx-inp-sm${rxFieldClass(showErrors && fieldErrors.frequency)}`}>
                               <option value="">{t("med.freqSelect")}</option>
                               <option value="Once daily">{t("med.freqOnce")}</option>
                               <option value="Twice daily">{t("med.freqTwice")}</option>

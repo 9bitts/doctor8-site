@@ -15,6 +15,7 @@ import ConsultPricingSettings, {
   type ConsultPricingSettingsProps,
 } from "@/components/professional/ConsultPricingSettings";
 import { RateioSection } from "./RateioSection";
+import { RateioRulesPanel } from "@/components/financeiro/RateioRules";
 import { RateioInfoSection } from "./RateioInfoSection";
 import { StripeConnectCard } from "./StripeConnectCard";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -514,7 +515,12 @@ export function FinanceiroDashboard({
           </div>
           {/* ── Livro Aberto / Rateio ── */}
           {showRateio && rateioMode === "info" && <RateioInfoSection />}
-          {showRateio && rateioMode === "full" && <RateioSection currency={currency} />}
+          {showRateio && rateioMode === "full" && (
+            <>
+              <RateioSection currency={currency} />
+              <RateioRulesPanel />
+            </>
+          )}
         </>
       ) : null}
     </div>
