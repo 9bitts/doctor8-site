@@ -82,32 +82,32 @@ export function RateioRules({ rules, myProgress }: RateioRulesProps) {
   return (
     <div className="space-y-4">
       <h2 className="text-base font-bold text-slate-800">
-        Como funciona o rateio — livro aberto
+        {"Como funciona o rateio \u2014 livro aberto"}
       </h2>
 
       <div className="bg-gradient-to-br from-brand-500/10 to-accent-500/10 border border-brand-100 rounded-2xl p-4 sm:p-5 space-y-3">
         <p className="text-sm font-bold text-slate-800">
-          Seu mês até agora ({myProgress.month})
+          {"Seu m\u00eas at\u00e9 agora ("}{myProgress.month}{")"}
         </p>
         <ul className="text-sm text-slate-700 space-y-1.5">
           <li>
-            Consultas válidas: {myProgress.validConsults} de {rules.minValidConsults} necessárias
+            {"Consultas v\u00e1lidas: "}{myProgress.validConsults}{" de "}{rules.minValidConsults}{" necess\u00e1rias"}
           </li>
           {myProgress.pendingRefundWindow > 0 && (
             <li>
-              +{myProgress.pendingRefundWindow} consulta(s) aguardando a janela de estorno de{" "}
-              {rules.refundWindowDays} dias
+              {"+"}{myProgress.pendingRefundWindow}{" consulta(s) aguardando a janela de estorno de "}
+              {rules.refundWindowDays}{" dias"}
             </li>
           )}
           <li>
             {myProgress.avgRating != null
-              ? `Sua nota média: ${fmtRating(myProgress.avgRating)}`
-              : "Você ainda não recebeu avaliações — sem nota, seu multiplicador é neutro (1,0)"}
+              ? `Sua nota m\u00e9dia: ${fmtRating(myProgress.avgRating)}`
+              : "Voc\u00ea ainda n\u00e3o recebeu avalia\u00e7\u00f5es \u2014 sem nota, seu multiplicador \u00e9 neutro (1,0)"}
           </li>
           <li>
             {myProgress.qualified
-              ? "? Você está qualificado para o rateio deste mês"
-              : `Faltam ${remaining} consultas válidas para você participar do rateio deste mês`}
+              ? "\u2713 Voc\u00ea est\u00e1 qualificado para o rateio deste m\u00eas"
+              : `Faltam ${remaining} consultas v\u00e1lidas para voc\u00ea participar do rateio deste m\u00eas`}
           </li>
         </ul>
         <div className="space-y-1">
@@ -123,86 +123,74 @@ export function RateioRules({ rules, myProgress }: RateioRulesProps) {
       <div className="space-y-2">
         <AccordionBlock title="De onde vem o dinheiro do pote">
           <p>
-            De cada consulta paga na plataforma, {pct(rules.commissionRate)}% viram comissão. Essa
-            comissão não é lucro da Doctor8: ela paga os custos de manter o sistema funcionando
-            (servidores, vídeo, mensagens, inteligência artificial) e o que sobra volta para os
-            profissionais no fim do mês. Custos e sobras ficam visíveis para todos nesta página — por
-            isso chamamos de livro aberto.
+            {"De cada consulta paga na plataforma, "}{pct(rules.commissionRate)}{"% viram comiss\u00e3o. Essa comiss\u00e3o n\u00e3o \u00e9 lucro da Doctor8: ela paga os custos de manter o sistema funcionando (servidores, v\u00eddeo, mensagens, intelig\u00eancia artificial) e o que sobra volta para os profissionais no fim do m\u00eas. Custos e sobras ficam vis\u00edveis para todos nesta p\u00e1gina \u2014 por isso chamamos de livro aberto."}
           </p>
         </AccordionBlock>
 
-        <AccordionBlock title="O que é uma consulta válida">
-          <p className="mb-2">Para entrar na conta do rateio, a consulta precisa:</p>
+        <AccordionBlock title={"O que \u00e9 uma consulta v\u00e1lida"}>
+          <p className="mb-2">{"Para entrar na conta do rateio, a consulta precisa:"}</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>ter sido paga de verdade (pagamento confirmado, não pendente);</li>
+            <li>{"ter sido paga de verdade (pagamento confirmado, n\u00e3o pendente);"}</li>
             <li>
-              ter passado a janela de estorno de {rules.refundWindowDays} dias — se o paciente for
-              reembolsado, ela não conta;
+              {"ter passado a janela de estorno de "}{rules.refundWindowDays}{" dias \u2014 se o paciente for reembolsado, ela n\u00e3o conta;"}
             </li>
             <li>
-              ser de um paciente real e distinto — consultas artificiais são detectadas e descartadas.
+              {"ser de um paciente real e distinto \u2014 consultas artificiais s\u00e3o detectadas e descartadas."}
             </li>
           </ul>
           <p className="mt-2">
-            No Plantão Online, chamadas com menos de {rules.shortCallSeconds} segundos passam por
-            revisão antes de contar.
+            {"No Plant\u00e3o Online, chamadas com menos de "}{rules.shortCallSeconds}{" segundos passam por revis\u00e3o antes de contar."}
           </p>
         </AccordionBlock>
 
-        <AccordionBlock title="O que você precisa para participar do mês">
+        <AccordionBlock title={"O que voc\u00ea precisa para participar do m\u00eas"}>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Pelo menos {rules.minValidConsults} consultas válidas no mês;</li>
+            <li>{"Pelo menos "}{rules.minValidConsults}{" consultas v\u00e1lidas no m\u00eas;"}</li>
             <li>
-              Nota média de pelo menos {fmtRating(rules.minRating)} (se você ainda não tem
-              avaliações, isso não te desqualifica).
+              {"Nota m\u00e9dia de pelo menos "}{fmtRating(rules.minRating)}{" (se voc\u00ea ainda n\u00e3o tem avalia\u00e7\u00f5es, isso n\u00e3o te desqualifica)."}
             </li>
           </ul>
           <p className="mt-2">
-            Quem não atinge os mínimos em um mês continua contribuindo para o pote, e volta a
-            participar assim que atingir — as regras recomeçam do zero todo mês.
+            {"Quem n\u00e3o atinge os m\u00ednimos em um m\u00eas continua contribuindo para o pote, e volta a participar assim que atingir \u2014 as regras recome\u00e7am do zero todo m\u00eas."}
           </p>
         </AccordionBlock>
 
-        <AccordionBlock title="Como o pote é dividido">
+        <AccordionBlock title={"Como o pote \u00e9 dividido"}>
           <p className="mb-2">
-            Pote do mês = comissões arrecadadas ? custos do sistema (nunca negativo).
+            {"Pote do m\u00eas = comiss\u00f5es arrecadadas \u2212 custos do sistema (nunca negativo)."}
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              {pct(rules.baseFraction)}% do pote: dividido em partes iguais entre todos os
-              qualificados do mês.
+              {pct(rules.baseFraction)}{"% do pote: dividido em partes iguais entre todos os qualificados do m\u00eas."}
             </li>
             <li>
-              {pct(rules.meritFraction)}% do pote: dividido por mérito, proporcional ao seu score.
+              {pct(rules.meritFraction)}{"% do pote: dividido por m\u00e9rito, proporcional ao seu score."}
             </li>
           </ul>
           <p className="mt-2">
-            Score = consultas válidas × multiplicador de qualidade.
+            {"Score = consultas v\u00e1lidas \u00d7 multiplicador de qualidade."}
             <br />
-            O multiplicador vem da sua nota média: nota {fmtRating(rules.minRating)} vale{" "}
-            {fmtMult(rules.ratingMultiplierAtMin)}×, nota 5,0 vale {fmtMult(rules.qualityMax)}×, sempre entre{" "}
-            {fmtMult(rules.qualityMin)} e {fmtMult(rules.qualityMax)}. Sem avaliações, vale 1,0
-            (neutro).
+            {"O multiplicador vem da sua nota m\u00e9dia: nota "}{fmtRating(rules.minRating)}{" vale "}
+            {fmtMult(rules.ratingMultiplierAtMin)}{"\u00d7, nota 5,0 vale "}{fmtMult(rules.qualityMax)}{"\u00d7, sempre entre "}
+            {fmtMult(rules.qualityMin)}{" e "}{fmtMult(rules.qualityMax)}{". Sem avalia\u00e7\u00f5es, vale 1,0 (neutro)."}
             <br />
-            Exemplo: 20 consultas válidas com nota 4,5 ? multiplicador 1,1 ? score 22.
+            {"Exemplo: 20 consultas v\u00e1lidas com nota 4,5 \u2192 multiplicador 1,1 \u2192 score 22."}
           </p>
         </AccordionBlock>
 
-        <AccordionBlock title="Regras de proteção e compromissos">
+        <AccordionBlock title={"Regras de prote\u00e7\u00e3o e compromissos"}>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              Sinais objetivos: usamos o pagamento real (Stripe), a duração real da chamada e a
-              identidade do paciente para validar — não dá para inflar números artificialmente.
+              {"Sinais objetivos: usamos o pagamento real (Stripe), a dura\u00e7\u00e3o real da chamada e a identidade do paciente para validar \u2014 n\u00e3o d\u00e1 para inflar n\u00fameros artificialmente."}
             </li>
             <li>
-              Casos suspeitos passam por revisão humana antes de qualquer exclusão.
+              {"Casos suspeitos passam por revis\u00e3o humana antes de qualquer exclus\u00e3o."}
             </li>
             <li>
-              Mudanças de regra valem apenas para os meses seguintes, nunca retroativamente.
+              {"Mudan\u00e7as de regra valem apenas para os meses seguintes, nunca retroativamente."}
             </li>
             <li>
-              Este livro aberto é um compromisso da Doctor8: os mesmos números que você vê aqui são
-              os usados no cálculo.
+              {"Este livro aberto \u00e9 um compromisso da Doctor8: os mesmos n\u00fameros que voc\u00ea v\u00ea aqui s\u00e3o os usados no c\u00e1lculo."}
             </li>
           </ul>
         </AccordionBlock>
