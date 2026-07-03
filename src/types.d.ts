@@ -7,6 +7,7 @@ declare module "next-auth" {
       role: string;
       region: string;
       professionalSpecialty?: string | null;
+      showVolunteerGuide?: boolean;
     } & DefaultSession["user"];
   }
   interface User {
@@ -24,5 +25,6 @@ declare module "next-auth/jwt" {
     professionalSpecialty?: string | null;
     tokenVersion?: number;
     tvCheckedAt?: number;
+    showVolunteerGuide?: boolean;
   }
 }

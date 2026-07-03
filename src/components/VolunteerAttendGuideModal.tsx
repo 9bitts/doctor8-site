@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { X, User, Calendar, Radio, FileText, Heart, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
@@ -13,43 +15,92 @@ import {
   volunteerGuidePaths,
 } from "@/lib/volunteer-attend-guide";
 
+type ProviderSession = {
+  role: string;
+  specialty: string | null;
+  showVolunteerGuide: boolean;
+};
+
+async function fetchProviderSession(maxAttempts = 20): Promise<ProviderSession | null> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await fetch("/api/auth/session", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        const session = await res.json();
+        const role = session?.user?.role as string | undefined;
+        if (role && !isVolunteerGuideProviderRole(role)) return null;
+        if (role && isVolunteerGuideProviderRole(role)) {
+          return {
+            role,
+            specialty: session?.user?.professionalSpecialty ?? null,
+            showVolunteerGuide: session?.user?.showVolunteerGuide === true,
+          };
+        }
+      }
+    } catch {
+      /* retry */
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  return null;
+}
+
 export default function VolunteerAttendGuideModal() {
   const t = useT();
   const pathname = usePathname();
+  const { update } = useSession();
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState("");
   const [specialty, setSpecialty] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!shouldShowVolunteerAttendGuide()) return;
+    setMounted(true);
+  }, []);
 
+  useEffect(() => {
+    if (!mounted) return;
+
+    const clientFlag = shouldShowVolunteerAttendGuide();
     let cancelled = false;
+
     (async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        const session = await res.json();
-        if (cancelled) return;
-        const userRole = session?.user?.role as string | undefined;
-        if (!userRole || !isVolunteerGuideProviderRole(userRole)) return;
-        setRole(userRole);
-        setSpecialty(session?.user?.professionalSpecialty ?? null);
-        setOpen(true);
-      } catch {
-        /* ignore */
-      }
+      const session = await fetchProviderSession();
+      if (cancelled || !session) return;
+      if (!session.showVolunteerGuide && !clientFlag) return;
+      setRole(session.role);
+      setSpecialty(session.specialty);
+      setOpen(true);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+  }, [mounted]);
 
-  function dismiss() {
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  async function dismiss() {
     clearVolunteerAttendGuideFlag();
+    try {
+      await update({ clearVolunteerGuide: true });
+    } catch {
+      /* ignore */
+    }
     setOpen(false);
   }
 
-  if (!open || !role) return null;
+  if (!mounted || !open || !role) return null;
 
   const isPsychologistPortal =
     pathname.startsWith("/psychologist") ||
@@ -87,11 +138,11 @@ export default function VolunteerAttendGuideModal() {
     },
   ];
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-black/55"
+        className="absolute inset-0 bg-black/60"
         aria-label={t("volguide.dismiss")}
         onClick={dismiss}
       />
@@ -99,7 +150,7 @@ export default function VolunteerAttendGuideModal() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="volguide-title"
-        className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col"
+        className="relative w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-100 overflow-hidden max-h-[92dvh] sm:max-h-[90vh] flex flex-col"
       >
         <div className="bg-gradient-to-r from-rose-600 to-emerald-600 px-5 py-4 flex items-start gap-3 shrink-0">
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
@@ -114,14 +165,14 @@ export default function VolunteerAttendGuideModal() {
           <button
             type="button"
             onClick={dismiss}
-            className="text-white/70 hover:text-white transition shrink-0"
+            className="text-white/70 hover:text-white transition shrink-0 p-1"
             aria-label={t("volguide.dismiss")}
           >
             <X size={20} />
           </button>
         </div>
 
-        <ol className="overflow-y-auto divide-y divide-slate-100">
+        <ol className="overflow-y-auto overscroll-contain divide-y divide-slate-100 flex-1 min-h-0">
           {steps.map((step, index) => (
             <li key={step.title} className="px-5 py-4">
               <div className="flex gap-3">
@@ -137,7 +188,7 @@ export default function VolunteerAttendGuideModal() {
                   <Link
                     href={step.href}
                     onClick={dismiss}
-                    className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                    className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 min-h-[44px]"
                   >
                     {step.linkLabel}
                     <ChevronRight size={14} />
@@ -148,16 +199,17 @@ export default function VolunteerAttendGuideModal() {
           ))}
         </ol>
 
-        <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 shrink-0">
+        <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={dismiss}
-            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition"
+            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition min-h-[48px]"
           >
             {t("volguide.dismiss")}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

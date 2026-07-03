@@ -236,6 +236,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
       <JitSessionHeartbeat enabled={isProfessional || isPsychologist} />
+      <VolunteerAttendGuideModal />
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
@@ -382,9 +383,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             <PwaInstallPrompt lang={lang} variant="patient" userId={userId} />
           )}
           <ProviderDashboardAlerts role={role} />
-          {(role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST") && (
-            <VolunteerAttendGuideModal />
-          )}
           {children}
         </main>
       </div>
