@@ -508,6 +508,181 @@ async function doLedger(month: string, currency: string) {
   return { commissionsWritten: written };
 }
 
+const RATEIO_RECEIPT_PREFIX = "rateio-receipts/";
+
+function parseTaxRate(): number {
+  const defaultRate = 0.05;
+  const raw = process.env.RATEIO_TAX_RATE;
+  if (!raw?.trim()) return defaultRate;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0 || n >= 1) {
+    console.log("[RATEIO-TAX-CONFIG]", { raw, using: defaultRate });
+    return defaultRate;
+  }
+  return n;
+}
+
+function autoTaxSourceRef(month: string, currency: string): string {
+  return `AUTO-TAX-${month}-${currency}`;
+}
+
+function normalizeAttachmentKey(raw: unknown): string | null {
+  if (raw == null || raw === "") return null;
+  const key = String(raw).trim();
+  if (!key.startsWith(RATEIO_RECEIPT_PREFIX)) {
+    throw new Error("INVALID_ATTACHMENT_KEY");
+  }
+  return key;
+}
+
+async function createLedgerCostEntry(
+  tx: Prisma.TransactionClient,
+  params: {
+    type: "COST_FIXED" | "COST_USAGE";
+    category: string;
+    amountCents: number;
+    currency: string;
+    competenceMonth: string;
+    source: string;
+    sourceRef: string | null;
+    attachmentKey?: string | null;
+    invoiceUrl?: string | null;
+    occurredAt: Date;
+  },
+) {
+  const last = await tx.ledgerEntry.findFirst({
+    orderBy: { createdAt: "desc" },
+    select: { hash: true },
+  });
+  const hash = ledgerHash(last?.hash ?? null, {
+    type: params.type,
+    category: params.category,
+    amountCents: params.amountCents,
+    currency: params.currency,
+    competenceMonth: params.competenceMonth,
+    source: params.source,
+    sourceRef: params.sourceRef,
+    appointmentId: null,
+    jitQueueId: null,
+    occurredAt: params.occurredAt.toISOString(),
+  });
+
+  return tx.ledgerEntry.create({
+    data: {
+      type: params.type,
+      category: params.category as never,
+      amountCents: params.amountCents,
+      currency: params.currency,
+      competenceMonth: params.competenceMonth,
+      source: params.source as never,
+      sourceRef: params.sourceRef,
+      attachmentKey: params.attachmentKey ?? null,
+      invoiceUrl: params.invoiceUrl ?? null,
+      prevHash: last?.hash ?? null,
+      hash,
+      occurredAt: params.occurredAt,
+    },
+    select: { id: true, hash: true },
+  });
+}
+
+async function ensureAutoTaxEntries(
+  month: string,
+  currency: string,
+  opts: { force?: boolean } = {},
+): Promise<void> {
+  const taxRate = parseTaxRate();
+  const taxRef = autoTaxSourceRef(month, currency);
+  const backoffs = [100, 200, 400];
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await db.$transaction(
+        async (tx) => {
+          const commissionAgg = await tx.ledgerEntry.aggregate({
+            where: { competenceMonth: month, currency, type: "COMMISSION_IN" },
+            _sum: { amountCents: true },
+          });
+          const totalCommission = commissionAgg._sum.amountCents ?? 0;
+          const expectedTax = Math.round(totalCommission * taxRate);
+
+          const existingTax = await tx.ledgerEntry.findFirst({
+            where: { competenceMonth: month, currency, sourceRef: taxRef },
+            select: { id: true, amountCents: true },
+          });
+
+          if (!existingTax) {
+            if (expectedTax <= 0) return;
+            await createLedgerCostEntry(tx, {
+              type: "COST_FIXED",
+              category: "OTHER",
+              amountCents: expectedTax,
+              currency,
+              competenceMonth: month,
+              source: "SYSTEM",
+              sourceRef: taxRef,
+              occurredAt: new Date(),
+            });
+            return;
+          }
+
+          if (!opts.force) return;
+
+          const diff = expectedTax - existingTax.amountCents;
+          if (diff > 0) {
+            await createLedgerCostEntry(tx, {
+              type: "COST_FIXED",
+              category: "OTHER",
+              amountCents: diff,
+              currency,
+              competenceMonth: month,
+              source: "SYSTEM",
+              sourceRef: `AUTO-TAX-ADJ-${month}-${currency}-${Date.now()}`,
+              occurredAt: new Date(),
+            });
+          } else if (diff < 0) {
+            console.log("[RATEIO-TAX-ADJ-SKIPPED]", { month, currency, diff, expectedTax, existing: existingTax.amountCents });
+          }
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+      return;
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2034" &&
+        attempt < 2
+      ) {
+        await sleep(backoffs[attempt] ?? 400);
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
+async function doListCosts(month: string, currency: string) {
+  const costs = await db.ledgerEntry.findMany({
+    where: {
+      competenceMonth: month,
+      currency,
+      type: { in: ["COST_FIXED", "COST_USAGE"] },
+    },
+    orderBy: { occurredAt: "desc" },
+    select: {
+      id: true,
+      type: true,
+      category: true,
+      amountCents: true,
+      source: true,
+      sourceRef: true,
+      attachmentKey: true,
+      occurredAt: true,
+    },
+  });
+  return { costs };
+}
+
 // ── AÇÃO: cost (lançar um custo de máquina manualmente) ───────────────────────
 async function doCost(req: NextRequest, month: string, currency: string) {
   const body = await req.json().catch(() => ({}));
@@ -519,46 +694,38 @@ async function doCost(req: NextRequest, month: string, currency: string) {
   const source = String(body.source || "MANUAL_INVOICE");
   const occurredAt = body.occurredAt ? new Date(body.occurredAt) : new Date();
 
+  let attachmentKey: string | null = null;
+  try {
+    attachmentKey = normalizeAttachmentKey(body.attachmentKey);
+  } catch {
+    return { error: "attachmentKey must start with rateio-receipts/" };
+  }
+
+  const manualSourceRef =
+    typeof body.sourceRef === "string" && body.sourceRef.trim()
+      ? body.sourceRef.trim()
+      : typeof body.description === "string" && body.description.trim()
+        ? body.description.trim().slice(0, 200)
+        : null;
+
   const backoffs = [100, 200, 400];
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const entry = await db.$transaction(
-        async (tx) => {
-          const last = await tx.ledgerEntry.findFirst({
-            orderBy: { createdAt: "desc" },
-            select: { hash: true },
-          });
-          const hash = ledgerHash(last?.hash ?? null, {
+        async (tx) =>
+          createLedgerCostEntry(tx, {
             type,
             category,
             amountCents,
             currency,
             competenceMonth: month,
             source,
-            sourceRef: body.sourceRef ?? null,
-            appointmentId: null,
-            jitQueueId: null,
-            occurredAt: occurredAt.toISOString(),
-          });
-
-          return tx.ledgerEntry.create({
-            data: {
-              type,
-              category: category as never,
-              amountCents,
-              currency,
-              competenceMonth: month,
-              source: source as never,
-              sourceRef: body.sourceRef ?? null,
-              invoiceUrl: body.invoiceUrl ?? null,
-              prevHash: last?.hash ?? null,
-              hash,
-              occurredAt,
-            },
-            select: { id: true, hash: true },
-          });
-        },
+            sourceRef: manualSourceRef,
+            attachmentKey,
+            invoiceUrl: body.invoiceUrl ?? null,
+            occurredAt,
+          }),
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
       return { ok: true, entry };
@@ -739,6 +906,8 @@ async function doClose(
     }
   }
 
+  await ensureAutoTaxEntries(month, currency, { force: opts.force ?? false });
+
   const p = await computePool(month, currency);
   const last = await db.ledgerEntry.findFirst({ orderBy: { createdAt: "desc" }, select: { hash: true } });
 
@@ -821,7 +990,8 @@ export async function GET(req: NextRequest) {
   const { action, month, currency } = params(req);
   try {
     if (action === "preview") return NextResponse.json(await doPreview(month, currency));
-    return NextResponse.json({ error: "Ação GET inválida. Use ?action=preview" }, { status: 400 });
+    if (action === "costs") return NextResponse.json(await doListCosts(month, currency));
+    return NextResponse.json({ error: "Ação GET inválida. Use ?action=preview|costs" }, { status: 400 });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Erro" }, { status: 500 });
   }

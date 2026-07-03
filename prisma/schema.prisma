@@ -2797,6 +2797,7 @@ model LedgerEntry {
   source          LedgerSource
   sourceRef       String?          // id externo (Stripe balance_txn, etc.) OU hash da resposta da API
   invoiceUrl      String?          // chave S3 da fatura tarjada (nível 1)
+  attachmentKey   String?          // chave S3 do recibo/NF (rateio-receipts/)
   fetchedAt       DateTime?        // quando foi puxado da fonte (nível 2)
 
   // Referência mole à consulta que gerou a comissão (sem FK — ledger não cascateia)
