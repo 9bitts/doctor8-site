@@ -14,6 +14,7 @@ import {
   FileText, Download, Loader2, Tag, User, FolderPlus, FolderOpen, FilePlus2, CheckCircle2,
   Users, Eye, Pencil,
 } from "lucide-react";
+import { openUrlAfterAsync } from "@/lib/open-url-safely";
 
 interface TeamChart {
   shareId: string;
@@ -94,11 +95,12 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
   async function handleDownload(documentId: string) {
     setDownloadingId(documentId);
     try {
-      const res = await fetch(`/api/professional/shared?documentId=${documentId}`);
-      const data = await res.json();
-      if (res.ok && data.url) {
-        window.open(data.url, "_blank", "noopener,noreferrer");
-      }
+      await openUrlAfterAsync(async () => {
+        const res = await fetch(`/api/professional/shared?documentId=${documentId}`);
+        const data = await res.json();
+        if (res.ok && data.url) return data.url as string;
+        return null;
+      });
     } catch { /* ignore */ }
     setDownloadingId(null);
   }

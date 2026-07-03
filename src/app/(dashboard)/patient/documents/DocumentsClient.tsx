@@ -12,6 +12,7 @@ import {
   FileText, Plus, X, Download, Loader2, UserCheck, Tag, Share2, CheckCircle2,
   Stethoscope, AlertCircle, XCircle,
 } from "lucide-react";
+import { openUrlAfterAsync } from "@/lib/open-url-safely";
 
 interface SharedDoctor {
   professionalId: string;
@@ -236,13 +237,13 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     setDownloadingId(id);
     setActionError(false);
     try {
-      const res = await fetch(`/api/patient/documents?documentId=${id}`);
-      const data = await res.json();
-      if (res.ok && data.url) {
-        window.open(data.url, "_blank", "noopener,noreferrer");
-      } else {
+      await openUrlAfterAsync(async () => {
+        const res = await fetch(`/api/patient/documents?documentId=${id}`);
+        const data = await res.json();
+        if (res.ok && data.url) return data.url as string;
         setActionError(true);
-      }
+        return null;
+      });
     } catch {
       setActionError(true);
     }

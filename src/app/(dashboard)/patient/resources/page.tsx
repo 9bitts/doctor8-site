@@ -12,6 +12,7 @@ import { getProfessionLabel } from "@/lib/professions";
 import {
   BookOpen, ExternalLink, Download, Loader2, AlertCircle, RefreshCw, FileText,
 } from "lucide-react";
+import { openUrlAfterAsync } from "@/lib/open-url-safely";
 
 interface ResourceItem {
   id: string;
@@ -58,13 +59,13 @@ export default function PatientResourcesPage() {
     setDownloadingId(shareId);
     setActionError(false);
     try {
-      const res = await fetch(`/api/patient/resources/${shareId}/file`);
-      const data = await res.json();
-      if (res.ok && data.url) {
-        window.open(data.url, "_blank", "noopener,noreferrer");
-      } else {
+      await openUrlAfterAsync(async () => {
+        const res = await fetch(`/api/patient/resources/${shareId}/file`);
+        const data = await res.json();
+        if (res.ok && data.url) return data.url as string;
         setActionError(true);
-      }
+        return null;
+      });
     } catch {
       setActionError(true);
     }

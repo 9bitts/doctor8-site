@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { MessageCircle, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { openUrlAfterAsync } from "@/lib/open-url-safely";
 
 type EmissionKind = "prescription" | "exam" | "document";
 
@@ -46,34 +47,45 @@ export default function WhatsappDeliverButton({
     setSending(true);
     setError("");
     try {
-      const deliverKind = kind === "prescription" ? "prescription"
-        : kind === "exam" ? "exam" : "document";
-      const res = await fetch("/api/professional/emissions/whatsapp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: deliverKind,
-          id,
-          message,
-          force,
-        }),
+      await openUrlAfterAsync(async () => {
+        const deliverKind = kind === "prescription" ? "prescription"
+          : kind === "exam" ? "exam" : "document";
+        const res = await fetch("/api/professional/emissions/whatsapp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: deliverKind,
+            id,
+            message,
+            force,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || t("wa.sendError"));
+          throw new Error("DELIVER_FAILED");
+        }
+        const next = data.status || "FAILED";
+        setStatus(next);
+        onStatusChange?.(next);
+        if (data.status === "SENT") setOpen(false);
+        if (data.status === "NO_PHONE") {
+          setError(t("wa.noPhone"));
+          throw new Error("NO_URL");
+        }
+        if (data.status === "FAILED") {
+          setError(data.error || t("wa.sendError"));
+          throw new Error("DELIVER_FAILED");
+        }
+        if (data.status === "SKIPPED" && data.waMeUrl) {
+          return data.waMeUrl as string;
+        }
+        throw new Error("NO_URL");
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || t("wa.sendError"));
-        return;
+    } catch (e) {
+      if (!(e instanceof Error && (e.message === "NO_URL" || e.message === "DELIVER_FAILED"))) {
+        setError(t("wa.sendError"));
       }
-      const next = data.status || "FAILED";
-      setStatus(next);
-      onStatusChange?.(next);
-      if (data.status === "SKIPPED" && data.waMeUrl) {
-        window.open(data.waMeUrl, "_blank", "noopener,noreferrer");
-      }
-      if (data.status === "SENT") setOpen(false);
-      if (data.status === "NO_PHONE") setError(t("wa.noPhone"));
-      if (data.status === "FAILED") setError(data.error || t("wa.sendError"));
-    } catch {
-      setError(t("wa.sendError"));
     } finally {
       setSending(false);
     }
