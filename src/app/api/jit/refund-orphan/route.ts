@@ -16,6 +16,9 @@ const schema = z.object({ paymentIntentId: z.string() });
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "PATIENT") {
+    return NextResponse.json({ error: "PATIENT_ROLE_REQUIRED" }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);

@@ -158,21 +158,54 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
 
+  let isFree = d.isFree;
+  let priceAmount = d.isFree ? 0 : d.priceAmount;
+  const jitEventId = d.jitEventId || null;
+  const requestedIsFree = d.isFree;
+  const requestedPriceAmount = d.isFree ? 0 : d.priceAmount;
+  let forceFreeOverrode = false;
+
+  if (jitEventId) {
+    const jitEvent = await db.jitEvent.findUnique({ where: { id: jitEventId } });
+    const now = new Date();
+    const eventInvalid =
+      !jitEvent ||
+      !jitEvent.active ||
+      jitEvent.startAt > now ||
+      (jitEvent.endAt != null && jitEvent.endAt < now);
+
+    if (eventInvalid) {
+      return NextResponse.json({ error: "JIT_EVENT_INVALID" }, { status: 400 });
+    }
+
+    if (jitEvent.forceFree) {
+      forceFreeOverrode = !requestedIsFree || requestedPriceAmount !== 0;
+      isFree = true;
+      priceAmount = 0;
+    }
+  }
+
   const jitSession = await db.jitSession.create({
     data: {
       professionalId:              professional.id,
       mode:                        d.mode,
       status:                      "ONLINE",
       specialty:                   d.specialty,
-      isFree:                      d.isFree,
-      priceAmount:                 d.isFree ? 0 : d.priceAmount,
+      isFree,
+      priceAmount,
       currency:                    d.currency,
       maxQueueSize:                d.maxQueueSize,
       estimatedMinutesPerPatient:  d.estimatedMinutesPerPatient,
-      jitEventId:                  d.jitEventId || null,
+      jitEventId,
       lastHeartbeatAt:             new Date(),
     },
   });
+
+  if (forceFreeOverrode) {
+    console.log(
+      `[JIT-FORCE-FREE] sessionId=${jitSession.id} eventId=${jitEventId} requested isFree=${requestedIsFree} priceAmount=${requestedPriceAmount}`,
+    );
+  }
 
   const { notifyFavoritePatientsOnline } = await import("@/lib/notify-favorites");
   notifyFavoritePatientsOnline(professional.id).catch(() => {});

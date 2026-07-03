@@ -140,7 +140,7 @@ export async function POST(
       freshBeforeRefund.stripePaymentId ?? appointment.stripePaymentId!,
       refundReason,
       {
-        triggeredBy: "PATIENT_CANCEL",
+        triggeredBy: isProfessional ? "PROFESSIONAL_CANCEL" : "PATIENT_CANCEL",
         appointmentId: params.id,
         userId: session.user.id,
       },
