@@ -26,6 +26,7 @@ import {
   ORGANIZATION_NAV,
   PATIENT_DASHBOARD_ENTRY,
   PATIENT_HUMANITARIAN_ENTRY,
+  PATIENT_SCHEDULED_VOLUNTEER_ENTRY,
   PATIENT_NAV,
   PATIENT_NAV_GROUPS,
   PLATFORM_NAV_GROUPS_BY_PORTAL,
@@ -181,6 +182,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const isPatient = role === "PATIENT";
   const patientDashboardItem = withNavIcons([PATIENT_DASHBOARD_ENTRY])[0];
   const patientHumanitarianItem = withNavIcons([PATIENT_HUMANITARIAN_ENTRY])[0];
+  const patientScheduledVolunteerItem = withNavIcons([PATIENT_SCHEDULED_VOLUNTEER_ENTRY])[0];
   const patientGroupedNav = PATIENT_NAV_GROUPS.map((group) => ({
     ...group,
     items: withNavIcons(group.items),
@@ -288,6 +290,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             ) : isPatient ? (
               <>
                 {renderNavLink(patientHumanitarianItem, undefined, true)}
+                {renderNavLink(patientScheduledVolunteerItem, undefined, true)}
                 {renderNavLink(patientDashboardItem)}
                 {patientGroupedNav.map((group) => (
                   <div key={group.labelKey}>

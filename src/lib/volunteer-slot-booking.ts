@@ -97,6 +97,27 @@ export async function assertPaidSlotBooking(
   }
 }
 
+/** P8b — slot must be a free scheduled volunteer block (isVolunteer + priceCents 0), not Acura volunteerOnly. */
+export async function assertScheduledVolunteerSlotBooking(
+  providerId: string,
+  providerType: ProviderType,
+  scheduledAtIso: string,
+): Promise<void> {
+  const slot = await resolveSlotAtDateTime(providerId, providerType, scheduledAtIso);
+  if (!slot) {
+    throw new VolunteerSlotBookingError("slot_not_found");
+  }
+  if (!slot.available) {
+    throw new VolunteerSlotBookingError("slot_unavailable");
+  }
+  if (!slot.isVolunteer || slot.volunteerOnly) {
+    throw new VolunteerSlotBookingError("not_scheduled_volunteer_slot");
+  }
+  if (slot.priceCents !== 0) {
+    throw new VolunteerSlotBookingError("not_free_volunteer_slot");
+  }
+}
+
 export class VolunteerSlotBookingError extends Error {
   constructor(public code: string) {
     super(code);

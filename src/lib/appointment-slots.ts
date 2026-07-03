@@ -57,7 +57,7 @@ export function patientSlotButtonClass(
     return "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed";
   }
 
-  const volunteer = !!slot.volunteerOnly;
+  const volunteer = !!slot.volunteerOnly || !!slot.isVolunteer;
 
   if (selected) {
     if (volunteer) return "bg-green-600 border-green-600 text-white";

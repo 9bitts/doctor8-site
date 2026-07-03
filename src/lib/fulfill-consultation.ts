@@ -9,6 +9,7 @@ import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { Prisma } from "@prisma/client";
 import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
 import { notifyProfessionalNewBooking } from "@/lib/pro-appointment-notify";
+import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
 
 export type ConsultationPaymentMeta = {
   userId: string;
@@ -36,6 +37,39 @@ export class AppointmentSlotTakenError extends Error {
     super("Appointment slot is no longer available");
     this.name = "AppointmentSlotTakenError";
   }
+}
+
+export async function fulfillScheduledVolunteerConsultation(params: {
+  userId: string;
+  providerId: string;
+  scheduledAt: string;
+  type: "TELECONSULT" | "IN_PERSON";
+  acceptedCancellationPolicy: boolean;
+  visitReason?: string;
+  healthPlanSlug?: string;
+  healthPlanLabel?: string;
+  serviceId?: string;
+  serviceName?: string;
+}): Promise<{ appointmentId: string; created: boolean }> {
+  return fulfillConsultationPayment({
+    stripePaymentId: "",
+    amount: 0,
+    currency: "BRL",
+    metadata: {
+      userId: params.userId,
+      providerType: "health",
+      professionalId: params.providerId,
+      scheduledAt: params.scheduledAt,
+      type: params.type,
+      visitReason: params.visitReason,
+      healthPlanSlug: params.healthPlanSlug,
+      healthPlanLabel: params.healthPlanLabel,
+      serviceId: params.serviceId,
+      serviceName: params.serviceName,
+      acceptedCancellationPolicy: params.acceptedCancellationPolicy ? "true" : undefined,
+      bookingSource: SCHEDULED_VOLUNTEER_BOOKING_SOURCE,
+    },
+  });
 }
 
 export async function fulfillVolunteerConsultation(params: {

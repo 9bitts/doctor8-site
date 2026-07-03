@@ -81,6 +81,13 @@ export const PATIENT_HUMANITARIAN_ENTRY: PlatformNavEntry = {
   iconKey: "Heart",
 };
 
+export const PATIENT_SCHEDULED_VOLUNTEER_ENTRY: PlatformNavEntry = {
+  href: "/patient/volunteer-appointments",
+  labelKey: "nav.scheduledVolunteer",
+  roles: ["PATIENT"],
+  iconKey: "Calendar",
+};
+
 /** Patient sidebar groups — flat PATIENT_NAV is derived for support-knowledge index. */
 export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
   {
@@ -118,6 +125,7 @@ export const PATIENT_NAV: PlatformNavEntry[] = [
   PATIENT_DASHBOARD_ENTRY,
   ...PATIENT_NAV_GROUPS.flatMap((g) => g.items),
   PATIENT_HUMANITARIAN_ENTRY,
+  PATIENT_SCHEDULED_VOLUNTEER_ENTRY,
 ];
 
 function flattenNavGroups(groups: PlatformNavGroup[]): PlatformNavEntry[] {

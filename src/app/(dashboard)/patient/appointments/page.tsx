@@ -37,6 +37,7 @@ import ConfirmAttendanceButton from "@/components/patient/ConfirmAttendanceButto
 import PushPermissionPrompt from "@/components/PushPermissionPrompt";
 import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
 import { isAcuraVolunteerProvider, compareVolunteerFirst } from "@/lib/acura-volunteer";
+import { isScheduledVolunteerAppointment } from "@/lib/scheduled-volunteer";
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
   CreditCard, Loader2, CheckCircle2, AlertCircle, Star, MapPin, Lock,
@@ -78,6 +79,8 @@ interface Appointment {
   type: string;
   meetingUrl?: string;
   paidAt?: string;
+  priceAmount?: number;
+  bookingSource?: string | null;
   professionalId?: string;
   psychoanalystId?: string;
   providerType?: "health" | "psychoanalyst";
@@ -871,11 +874,17 @@ export default function AppointmentsPage() {
               const canCancel  = hoursUntil > 0;
               const canReschedule = hoursUntil > 24;
               const within48h = hoursUntil > 0 && hoursUntil <= 48;
+              const isVolunteerAppt = isScheduledVolunteerAppointment(apt);
               return (
                 <div key={apt.id} id={`appt-${apt.id}`} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm flex-wrap scroll-mt-24">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-800 truncate">
+                    <p className="text-sm font-semibold text-slate-800 truncate flex items-center gap-2 flex-wrap">
                       Dr. {apt.professional?.firstName} {apt.professional?.lastName}
+                      {isVolunteerAppt && (
+                        <span className="text-[10px] font-bold uppercase tracking-wide bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                          {t("volAppt.badge")}
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-slate-500">{getProfessionLabel(lang, apt.professional?.specialty)}</p>
                   </div>
@@ -1424,7 +1433,9 @@ export default function AppointmentsPage() {
       )}
 
       {/* CANCEL MODAL */}
-      {cancelModal && (
+      {cancelModal && (() => {
+        const cancelIsVolunteer = isScheduledVolunteerAppointment(cancelModal);
+        return (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             {cancelResult ? (
@@ -1433,7 +1444,11 @@ export default function AppointmentsPage() {
                   {cancelResult.refunded ? <CheckCircle2 size={28} className="text-emerald-500" /> : <AlertTriangle size={28} className="text-amber-500" />}
                 </div>
                 <h3 className="font-bold text-slate-900 text-center text-lg">{t("appt.cancelDoneTitle")}</h3>
-                {cancelResult.refunded ? (
+                {cancelIsVolunteer ? (
+                  <p className="text-sm text-emerald-700 text-center bg-emerald-50 rounded-xl p-3">
+                    {t("volAppt.cancelDone")}
+                  </p>
+                ) : cancelResult.refunded ? (
                   <p className="text-sm text-emerald-700 text-center bg-emerald-50 rounded-xl p-3">
                     ✅ {t("appt.cancelRefundOk")}
                   </p>
@@ -1449,11 +1464,18 @@ export default function AppointmentsPage() {
                 <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
                   <AlertTriangle size={20} className="text-rose-500" /> {t("appt.cancelTitle")}
                 </h3>
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 space-y-1">
-                  <p className="font-semibold">{t("appt.refundPolicyTitle")}</p>
-                  <p>• {t("appt.refundOver24")}</p>
-                  <p>• {t("appt.refundUnder24")}</p>
-                </div>
+                {!cancelIsVolunteer && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 space-y-1">
+                    <p className="font-semibold">{t("appt.refundPolicyTitle")}</p>
+                    <p>• {t("appt.refundOver24")}</p>
+                    <p>• {t("appt.refundUnder24")}</p>
+                  </div>
+                )}
+                {cancelIsVolunteer && (
+                  <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    {t("volAppt.cancelConfirmHint")}
+                  </p>
+                )}
                 <div>
                   <label className="text-xs font-medium text-slate-600 mb-1 block">{t("appt.cancelReasonLabel")}</label>
                   <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} placeholder={t("appt.cancelReasonPlaceholder")} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-500/30" />
@@ -1472,7 +1494,8 @@ export default function AppointmentsPage() {
             )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* RESCHEDULE MODAL */}
       {rescheduleModal && (

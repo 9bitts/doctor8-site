@@ -127,6 +127,8 @@ export default async function ProfessionalAppointments() {
       intakeHealthPlanLabel: intake?.healthPlanLabel ?? null,
       intakeServiceName: intake?.serviceName ?? null,
       intakeVisitReason: intake?.visitReason ?? null,
+      bookingSource: apt.bookingSource,
+      priceAmount: apt.priceAmount,
     };
   });
 

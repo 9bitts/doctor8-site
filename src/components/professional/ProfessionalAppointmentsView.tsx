@@ -33,6 +33,7 @@ import {
   isAppointmentInVolunteerBlock,
   type VolunteerWeeklyBlock,
 } from "@/lib/availability-exceptions";
+import { isScheduledVolunteerAppointment } from "@/lib/scheduled-volunteer";
 
 export type ProfessionalAppointmentRow = {
   id: string;
@@ -50,6 +51,8 @@ export type ProfessionalAppointmentRow = {
   intakeHealthPlanLabel: string | null;
   intakeServiceName: string | null;
   intakeVisitReason: string | null;
+  bookingSource?: string | null;
+  priceAmount?: number;
 };
 
 type ViewMode = "list" | "week";
@@ -112,8 +115,10 @@ export default function ProfessionalAppointmentsView({
   );
 
   const isVoluntaryAppointment = useCallback(
-    (apt: ProfessionalAppointmentRow) =>
-      isAppointmentInVolunteerBlock(new Date(apt.scheduledAt), timeZone, volunteerBlocks),
+    (apt: ProfessionalAppointmentRow) => {
+      if (isScheduledVolunteerAppointment(apt)) return true;
+      return isAppointmentInVolunteerBlock(new Date(apt.scheduledAt), timeZone, volunteerBlocks);
+    },
     [timeZone, volunteerBlocks],
   );
 
