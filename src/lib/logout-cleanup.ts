@@ -10,10 +10,13 @@ const SESSION_STORAGE_PREFIXES = ["doctor8:hum:"] as const;
 
 const SESSION_STORAGE_EXACT_KEYS = ["doctor8.authCallback"] as const;
 
+import { HUM_RETURN_COOKIE } from "@/lib/humanitarian/origin-cookie";
+
 const SCOPE_COOKIES = [
   "doctor8_org_provider",
   "doctor8_org_professional",
   "doctor8_pro_scope",
+  HUM_RETURN_COOKIE,
 ] as const;
 
 const DRAFT_STORAGE_PREFIXES = ["doctor8:record-draft:", "doctor8:recordDraft:", "doctor8:hum:"] as const;
@@ -126,6 +129,12 @@ export function clearSensitiveClientState(userId?: string): void {
 
   for (const name of SCOPE_COOKIES) {
     expireCookie(name);
+  }
+
+  try {
+    fetch("/api/auth/clear-hum-cookies", { method: "POST", keepalive: true }).catch(() => {});
+  } catch {
+    /* ignore */
   }
 
   if (userId) {

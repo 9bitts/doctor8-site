@@ -37,6 +37,7 @@ const PUBLIC_ROUTES = [
   "/sos-venezuela",
   "/register/organization",
   "/register/organization/staff",
+  "/register/success",
   "/callback",
   "/forgot-password",
   "/reset-password",
@@ -182,6 +183,23 @@ export default auth((req) => {
   // Already-authenticated users shouldn't see the login screen — send them to
   // their dashboard so they don't get stuck on a form they don't need.
   if (pathname === "/login" && session?.user) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
+    const { role, professionalSpecialty } = session.user as {
+      role: string;
+      professionalSpecialty?: string | null;
+    };
+    return NextResponse.redirect(
+      new URL(resolveRoleHome(role, professionalSpecialty), req.url),
+    );
+  }
+
+  if (
+    session?.user
+    && (pathname === "/register" || pathname.startsWith("/register/"))
+    && pathname !== "/register/success"
+  ) {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
     }

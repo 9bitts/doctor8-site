@@ -18,6 +18,12 @@ import { notifyAdminLicenseDocumentUploaded } from "@/lib/provider-license-notif
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { isAccountVerified } from "@/lib/account-verified";
+import {
+  checkRateLimits,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 const passwordSchema = z
   .string()
@@ -139,7 +145,8 @@ async function issueVerificationEmail(opts: {
   email: string;
   firstName: string;
   language: string;
-}): Promise<void> {
+  callbackUrl?: string;
+}): Promise<boolean> {
   const token = randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const normalizedEmail = opts.email.toLowerCase();
@@ -155,7 +162,9 @@ async function issueVerificationEmail(opts: {
     token,
     language: opts.language,
     from: ANGEL_LOGIN,
+    callbackUrl: opts.callbackUrl,
   });
+  return true;
 }
 
 export async function POST(req: NextRequest) {
@@ -165,6 +174,13 @@ export async function POST(req: NextRequest) {
     if (!data) {
       return NextResponse.json({ error: fieldErrors }, { status: 400 });
     }
+
+    const ip = clientIp(req);
+    const rate = await checkRateLimits([
+      { namespace: "register-angel:email", key: data.email.toLowerCase(), ...RATE_LIMITS.authEmail },
+      { namespace: "register-angel:ip", key: ip, ...RATE_LIMITS.authIp },
+    ]);
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
 
     if (!certificate) {
       return NextResponse.json(
@@ -237,6 +253,7 @@ export async function POST(req: NextRequest) {
             email: normalizedEmail,
             firstName: existing.angelProfile?.firstName || firstName,
             language: normalizedLanguage,
+            callbackUrl: "/humanitarian/angel",
           });
         } catch (emailError) {
           console.error("[ANGEL REGISTER EMAIL RESEND]", emailError);
@@ -254,10 +271,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      return NextResponse.json(
-        { error: { email: ["Email already in use"] } },
-        { status: 409 },
-      );
+      return NextResponse.json({ success: true, existingAccount: true }, { status: 200 });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -314,14 +328,17 @@ export async function POST(req: NextRequest) {
       return newUser;
     });
 
+    let emailSent = true;
     try {
       await issueVerificationEmail({
         email: normalizedEmail,
         firstName,
         language: normalizedLanguage,
+        callbackUrl: "/humanitarian/angel",
       });
     } catch (emailError) {
       console.error("[ANGEL REGISTER EMAIL]", emailError);
+      emailSent = false;
     }
 
     try {
@@ -330,7 +347,7 @@ export async function POST(req: NextRequest) {
       console.error("[ANGEL REGISTER CERT]", certErr);
     }
 
-    return NextResponse.json({ success: true, userId: user.id }, { status: 201 });
+    return NextResponse.json({ success: true, userId: user.id, emailSent }, { status: 201 });
   } catch (error) {
     console.error("[ANGEL REGISTER]", error);
     return NextResponse.json(

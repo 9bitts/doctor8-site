@@ -169,8 +169,16 @@ export default function HumanitarianAngelPage() {
             </div>
           )}
           {status === "PENDING" && (
-            <div className="mt-2 text-left">
-              <p className="text-sm text-slate-400 mb-3">{t(lang, "angel.portal.pendingCertificate")}</p>
+            <div className="mt-2 text-left space-y-4">
+              <div className="text-center max-w-lg mx-auto">
+                <h2 className="text-lg font-semibold text-white mb-2">
+                  {t(lang, "angel.portal.pendingTitle")}
+                </h2>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  {t(lang, "angel.portal.pendingDesc")}
+                </p>
+              </div>
+              <p className="text-sm text-slate-400">{t(lang, "angel.portal.pendingCertificate")}</p>
               <div className="bg-white rounded-2xl p-4">
                 <LicenseDocumentsUpload />
               </div>
@@ -188,6 +196,18 @@ export default function HumanitarianAngelPage() {
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-white mb-2">{t(lang, "angel.portal.rejectedTitle")}</h1>
           <p className="text-slate-400 text-sm">{t(lang, "angel.portal.rejectedDesc")}</p>
+        </div>
+      </HumanitarianShell>
+    );
+  }
+
+  if (status === "NOT_ENROLLED") {
+    return (
+      <HumanitarianShell lang={lang} onLangChange={setLang} dark>
+        <div className="max-w-lg mx-auto text-center py-16 px-4">
+          <Clock className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-white mb-2">{t(lang, "angel.portal.notEnrolledTitle")}</h1>
+          <p className="text-slate-400 text-sm leading-relaxed">{t(lang, "angel.portal.notEnrolledDesc")}</p>
         </div>
       </HumanitarianShell>
     );

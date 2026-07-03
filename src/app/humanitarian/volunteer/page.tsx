@@ -130,19 +130,8 @@ export default function HumanitarianVolunteerPage() {
       }
 
       const assigned = data.currentEntry;
-      // If the volunteer just left this consult (e.g. the video failed to join),
-      // do NOT auto-redirect back into it — that traps them in a loop. Keep them
-      // on the dashboard so they can retry manually or finish the consult.
-      let leftConsult: string | null = null;
-      try { leftConsult = sessionStorage.getItem("doctor8.leftConsult"); } catch { /* ignore */ }
-      if (
-        assigned &&
-        ["CALLED", "IN_PROGRESS"].includes(assigned.status) &&
-        autoVideoRef.current !== assigned.id &&
-        leftConsult !== assigned.id
-      ) {
+      if (assigned && ["CALLED", "IN_PROGRESS"].includes(assigned.status)) {
         autoVideoRef.current = assigned.id;
-        router.push(`/video/humanitarian/${assigned.id}`);
       }
     } catch {
       const cached = userId ? loadCachedVolunteerDashboard<{
@@ -390,9 +379,12 @@ export default function HumanitarianVolunteerPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href={`/video/humanitarian/${currentEntry.id}`}
+                onClick={() => {
+                  try { sessionStorage.removeItem("doctor8.leftConsult"); } catch { /* ignore */ }
+                }}
                 className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm flex items-center justify-center gap-2"
               >
-                <Phone size={16} /> {t(lang, "hum.vol.enterConsult")}
+                <Phone size={16} /> {t(lang, "hum.vol.resumeConsult")}
               </Link>
               <button
                 type="button"

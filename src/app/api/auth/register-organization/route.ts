@@ -11,6 +11,12 @@ import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
+import {
+  checkRateLimits,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 const passwordSchema = z
   .string()
@@ -62,6 +68,14 @@ export async function POST(req: NextRequest) {
     }
 
     const parsed = data.data;
+
+    const ip = clientIp(req);
+    const rate = await checkRateLimits([
+      { namespace: "register-org:email", key: parsed.email.toLowerCase(), ...RATE_LIMITS.authEmail },
+      { namespace: "register-org:ip", key: ip, ...RATE_LIMITS.authIp },
+    ]);
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
     const cnpjDigits = stripCnpj(parsed.cnpj);
     if (!isValidCnpj(cnpjDigits)) {
       return NextResponse.json(
@@ -90,10 +104,8 @@ export async function POST(req: NextRequest) {
     ]);
 
     if (existingEmail) {
-      return NextResponse.json(
-        { error: { email: ["Email already in use"] } },
-        { status: 409 },
-      );
+      console.info("[ORG REGISTER] Duplicate email signup attempt", { email });
+      return NextResponse.json({ success: true, existingAccount: true }, { status: 200 });
     }
     if (existingCnpj) {
       return NextResponse.json(
@@ -172,6 +184,7 @@ export async function POST(req: NextRequest) {
       data: { identifier: email, token, expires },
     });
 
+    let emailSent = true;
     try {
       await sendEmailVerification({
         email,
@@ -179,12 +192,14 @@ export async function POST(req: NextRequest) {
         token,
         language: normalizedLanguage,
         from: ORGANIZATION_LOGIN,
+        callbackUrl: "/organization",
       });
     } catch (emailError) {
       console.error("[ORG REGISTER EMAIL ERROR]", emailError);
+      emailSent = false;
     }
 
-    return NextResponse.json({ success: true, userId: user.id }, { status: 201 });
+    return NextResponse.json({ success: true, userId: user.id, emailSent }, { status: 201 });
   } catch (error) {
     console.error("[ORG REGISTER ERROR]", error);
     return NextResponse.json(

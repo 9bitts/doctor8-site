@@ -17,17 +17,19 @@ export default function VerifyConfirmedClient({
   isSuccess,
   error,
   from,
+  callbackUrl,
 }: {
   lang: Lang;
   isSuccess: boolean;
   error?: "invalid" | "failed";
   from?: string;
+  callbackUrl?: string;
 }) {
   const t = (key: string) => translate(lang, key);
   const loginFrom = sanitizeLoginFrom(from) ?? MAIN_LOGIN;
   const { loginPath, accent } = resolveForgotPasswordContext(loginFrom);
   const styles = getLoginAccentStyles(accent);
-  const loginHref = buildAuthHref(loginPath);
+  const loginHref = buildAuthHref(loginPath, { callbackUrl });
 
   const title = isSuccess
     ? t("verifyConfirmed.title")

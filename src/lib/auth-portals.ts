@@ -61,11 +61,12 @@ export function buildForgotPasswordHref(opts?: {
 
 export function buildLoginHref(
   loginPath: string,
-  opts?: { resetSuccess?: boolean; callbackUrl?: string },
+  opts?: { resetSuccess?: boolean; callbackUrl?: string; registered?: boolean },
 ): string {
   const sp = new URLSearchParams();
   if (opts?.resetSuccess) sp.set("reset", "success");
   if (opts?.callbackUrl) sp.set("callbackUrl", opts.callbackUrl);
+  if (opts?.registered) sp.set("registered", "1");
   const qs = sp.toString();
   return qs ? `${loginPath}?${qs}` : loginPath;
 }
@@ -128,11 +129,32 @@ export function buildVerifyEmailHref(opts: {
   return qs ? `/verify-email?${qs}` : "/verify-email";
 }
 
-export function buildVerifyConfirmedHref(from?: string | null): string {
+export function buildVerifyConfirmedHref(
+  from?: string | null,
+  callbackUrl?: string | null,
+): string {
+  const sp = new URLSearchParams();
   const safeFrom = sanitizeLoginFrom(from);
-  return safeFrom
-    ? `/verify-email/confirmed?from=${encodeURIComponent(safeFrom)}`
-    : "/verify-email/confirmed";
+  if (safeFrom) sp.set("from", safeFrom);
+  if (callbackUrl?.trim() && callbackUrl.trim().startsWith("/") && !callbackUrl.trim().startsWith("//")) {
+    sp.set("callbackUrl", callbackUrl.trim());
+  }
+  const qs = sp.toString();
+  return qs ? `/verify-email/confirmed?${qs}` : "/verify-email/confirmed";
+}
+
+export function buildRegisterSuccessHref(opts: {
+  role: string;
+  email: string;
+  callbackUrl?: string;
+  emailSent?: boolean;
+}): string {
+  const sp = new URLSearchParams();
+  sp.set("role", opts.role);
+  sp.set("email", opts.email.trim().toLowerCase());
+  if (opts.callbackUrl) sp.set("callbackUrl", opts.callbackUrl);
+  if (opts.emailSent === false) sp.set("emailSent", "0");
+  return `/register/success?${sp.toString()}`;
 }
 
 /** Registration return-to login path — single login. */

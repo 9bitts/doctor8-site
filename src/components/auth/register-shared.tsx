@@ -18,7 +18,7 @@ import { getLoginAccentStyles } from "@/components/auth/login-shared";
 import type { LoginAccent } from "@/lib/auth-portals";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
-  buildVerifyAccountHref,
+  buildRegisterSuccessHref,
   resolveLoginPathForRegistration,
 } from "@/lib/auth-portals";
 import {
@@ -320,10 +320,11 @@ export function RegisterAccountForm({
       }
 
       router.push(
-        buildVerifyAccountHref({
+        buildRegisterSuccessHref({
+          role,
           email,
           callbackUrl: authCallback || undefined,
-          from: resolveLoginPathForRegistration(role, professionalKind),
+          emailSent: data.emailSent !== false,
         }),
       );
     } catch {

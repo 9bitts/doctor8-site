@@ -3,6 +3,7 @@ import {
   mapProfessionalPathForSpecialty,
   PSYCHOLOGIST_HOME,
 } from "./psychologist-portal";
+import { isHumanitarianPatientPath } from "./humanitarian/origin-cookie";
 
 /** Default dashboard path after login for each account role. */
 export function resolveRoleHome(
@@ -71,15 +72,22 @@ function isAuthBootstrapPath(pathname: string): boolean {
   );
 }
 
+export type SafePostLoginOptions = {
+  /** When true, callback came from humanitarian return cookie — only patients should follow it. */
+  fromHumCookie?: boolean;
+};
+
 /** Post-login destination: honor deep links only when the role may access them. */
 export function safePostLoginUrl(
   role: string | undefined | null,
   callbackUrl: string | null | undefined,
   resolvePatientUrl?: (url: string) => string,
   specialty?: string | null,
+  options?: SafePostLoginOptions,
 ): string {
   const home = resolveRoleHome(role, specialty);
   const raw = callbackUrl?.trim();
+  if (options?.fromHumCookie && role !== "PATIENT") return home;
   if (!raw) return home;
 
   let path = raw;
@@ -93,6 +101,14 @@ export function safePostLoginUrl(
 
   const pathname = path.split("?")[0];
   if (isAuthBootstrapPath(pathname)) return home;
+
+  if (
+    role !== "PATIENT"
+    && role !== "ADMIN"
+    && isHumanitarianPatientPath(pathname)
+  ) {
+    return home;
+  }
 
   if (role === "PATIENT" && resolvePatientUrl) {
     const patientPath = resolvePatientUrl(path);

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
-import { ORGANIZATION_LOGIN, buildVerifyAccountHref } from "@/lib/auth-portals";
+import { ORGANIZATION_LOGIN, buildRegisterSuccessHref } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
 import { RegisterLogo } from "@/components/auth/register-shared";
@@ -118,10 +118,11 @@ export default function RegisterOrganizationPage() {
         return;
       }
       router.push(
-        buildVerifyAccountHref({
+        buildRegisterSuccessHref({
+          role: "ORGANIZATION",
           email,
           callbackUrl: "/organization",
-          from: ORGANIZATION_LOGIN,
+          emailSent: data.emailSent !== false,
         }),
       );
     } catch {

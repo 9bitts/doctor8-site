@@ -40,12 +40,14 @@ export async function sendEmailVerification({
   token,
   language,
   from,
+  callbackUrl,
 }: {
   email: string;
   name: string;
   token: string;
   language?: string;
   from?: string;
+  callbackUrl?: string;
 }) {
   const lang = normEmailLang(language);
   const c = EMAIL_VERIFICATION[lang];
@@ -53,6 +55,13 @@ export async function sendEmailVerification({
   const safeFrom = from?.startsWith("/login") ? from : undefined;
   if (safeFrom) {
     verifyUrl = appendEmailQueryParam(verifyUrl, "from", safeFrom);
+  }
+  const safeCallback =
+    callbackUrl?.trim().startsWith("/") && !callbackUrl.trim().startsWith("//")
+      ? callbackUrl.trim()
+      : undefined;
+  if (safeCallback) {
+    verifyUrl = appendEmailQueryParam(verifyUrl, "callbackUrl", safeCallback);
   }
 
   const body = `

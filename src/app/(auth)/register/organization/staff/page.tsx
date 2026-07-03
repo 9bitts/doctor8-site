@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, AlertCircle, Building2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { translate, normalizeLang, type Lang } from "@/lib/i18n/translations";
-import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
-import { buildAuthHref } from "@/components/auth/login-shared";
+import { ORGANIZATION_LOGIN, buildLoginHref } from "@/lib/auth-portals";
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
 } from "@/components/InternationalPhoneInput";
@@ -34,7 +33,7 @@ export default function RegisterOrganizationStaffPage() {
 
   const [lang, setLang] = useState<Lang>("pt");
   const t = (key: string) => translate(lang, key);
-  const orgLoginHref = buildAuthHref(ORGANIZATION_LOGIN, {
+  const orgLoginHref = buildLoginHref(ORGANIZATION_LOGIN, {
     callbackUrl: "/organization",
   });
 
@@ -98,7 +97,7 @@ export default function RegisterOrganizationStaffPage() {
         setError(data.error?.general?.[0] || data.error?.email?.[0] || t("orgStaff.errCreate"));
         return;
       }
-      router.push(orgLoginHref);
+      router.push(buildLoginHref(ORGANIZATION_LOGIN, { callbackUrl: "/organization", registered: true }));
     } catch {
       setError(t("orgStaff.errConnection"));
     } finally {

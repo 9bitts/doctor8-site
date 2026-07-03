@@ -253,6 +253,7 @@ export function LoginAlerts({
   error,
   verified,
   passwordReset,
+  registered,
   unverifiedEmail,
   t,
   roleOnlyKey,
@@ -262,6 +263,7 @@ export function LoginAlerts({
   error: LoginErrorCode;
   verified: boolean;
   passwordReset?: boolean;
+  registered?: boolean;
   unverifiedEmail: string;
   t: (key: string) => string;
   roleOnlyKey?: string;
@@ -277,6 +279,16 @@ export function LoginAlerts({
         >
           <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" aria-hidden />
           <p className="text-emerald-300 text-sm">{t("login.passwordResetSuccess")}</p>
+        </div>
+      )}
+
+      {registered && (
+        <div
+          className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 mb-6"
+          role="status"
+        >
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" aria-hidden />
+          <p className="text-emerald-300 text-sm">{t("login.registeredSuccess")}</p>
         </div>
       )}
 

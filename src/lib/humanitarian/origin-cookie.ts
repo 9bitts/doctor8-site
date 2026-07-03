@@ -116,9 +116,15 @@ export function readClientHumReturnPath(): string | null {
   return readHumReturnPathFromCookieHeader(document.cookie);
 }
 
+/** Client cannot read httpOnly `doctor8.hum.origin` — skip-verify applies server-side only. */
 export function readClientHumOriginFlag(): boolean {
-  if (typeof document === "undefined") return false;
-  return readClientHumReturnPath() != null;
+  return false;
+}
+
+/** Expire humanitarian origin cookies on a server response (logout / login reset). */
+export function clearHumanitarianOriginCookies(response: NextResponse): void {
+  response.cookies.set(HUM_ORIGIN_COOKIE, "", { ...HUM_ORIGIN_COOKIE_OPTIONS, maxAge: 0 });
+  response.cookies.set(HUM_RETURN_COOKIE, "", { ...HUM_RETURN_COOKIE_OPTIONS, maxAge: 0 });
 }
 
 /** Server: origin flag + return path from next/headers cookies(). */

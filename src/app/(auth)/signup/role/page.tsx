@@ -271,8 +271,17 @@ function SignupRoleContent() {
           <p className="text-slate-400 text-sm mb-6">
             {authenticated && needsCompletion
               ? t("signup.role.subtitleComplete")
-              : t("signup.role.subtitle")}
+              : authenticated
+                ? t("signup.role.subtitle")
+                : t("signup.role.subtitle")}
           </p>
+
+          {!authenticated && !needsCompletion && (
+            <div className="flex items-start gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-6">
+              <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" aria-hidden />
+              <p className="text-blue-200 text-sm leading-relaxed">{t("signup.role.oauthHint")}</p>
+            </div>
+          )}
 
           {error && (
             <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">

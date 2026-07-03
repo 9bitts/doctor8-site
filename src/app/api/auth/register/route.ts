@@ -36,6 +36,12 @@ import {
   readHumReturnPathFromCookieHeader,
   resolveHumanitarianAuthCallback,
 } from "@/lib/humanitarian/origin-cookie";
+import {
+  checkRateLimits,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -175,6 +181,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const ip = clientIp(req);
+    const rate = await checkRateLimits([
+      { namespace: "register:email", key: data.data.email.toLowerCase(), ...RATE_LIMITS.authEmail },
+      { namespace: "register:ip", key: ip, ...RATE_LIMITS.authIp },
+    ]);
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
     const {
       email,
       password,
@@ -284,21 +297,20 @@ export async function POST(req: NextRequest) {
             token,
             language: normalizedLanguage || existing.language || language,
             from: resolveLoginPathForRegistration(role, professionalKind),
+            callbackUrl: effectiveCallback ?? undefined,
           });
         } catch (emailError) {
           console.error("[REGISTER EMAIL RESEND]", emailError);
         }
         return NextResponse.json(
-          { success: true, userId: existing.id, pendingVerification: true },
+          { success: true, userId: existing.id, pendingVerification: true, emailSent: true },
           { status: 200 },
         );
       }
 
       if (userHasAnyProfile(existing)) {
-        return NextResponse.json(
-          { error: { email: ["Email already in use"] } },
-          { status: 409 },
-        );
+        console.info("[REGISTER] Duplicate email signup attempt", { email: normalizedEmail });
+        return NextResponse.json({ success: true, existingAccount: true }, { status: 200 });
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
@@ -354,6 +366,7 @@ export async function POST(req: NextRequest) {
       const skipVerificationAfterResume =
         skipEmailVerification || alreadyVerified;
 
+      let emailSent = true;
       if (!skipVerificationAfterResume) {
         const token = randomBytes(32).toString("hex");
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -368,9 +381,11 @@ export async function POST(req: NextRequest) {
             token,
             language: normalizedLanguage || existing.language || language,
             from: resolveLoginPathForRegistration(role, professionalKind),
+            callbackUrl: effectiveCallback ?? undefined,
           });
         } catch (emailError) {
           console.error("[REGISTER RESUME EMAIL]", emailError);
+          emailSent = false;
         }
       }
 
@@ -386,7 +401,7 @@ export async function POST(req: NextRequest) {
           success: true,
           userId: existing.id,
           resumed: true,
-          ...(skipVerificationAfterResume ? { emailVerificationSkipped: true } : {}),
+          ...(skipVerificationAfterResume ? { emailVerificationSkipped: true } : { emailSent }),
         },
         { status: 200 },
       );
@@ -461,6 +476,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      let emailSent = true;
       try {
         await sendEmailVerification({
           email: email.toLowerCase(),
@@ -468,11 +484,21 @@ export async function POST(req: NextRequest) {
           token,
           language: normalizedLanguage || language,
           from: resolveLoginPathForRegistration(role, professionalKind),
+          callbackUrl: effectiveCallback ?? undefined,
         });
       } catch (emailError) {
         console.error("[EMAIL VERIFICATION SEND ERROR]", emailError);
-        // User can request resend from verify-email page
+        emailSent = false;
       }
+
+      return NextResponse.json(
+        {
+          success: true,
+          userId: user.id,
+          emailSent,
+        },
+        { status: 201 },
+      );
     } else if (isHumanitarianContext(effectiveCallback, originCookie)) {
       console.info("[REGISTER] Humanitarian patient signup — email verification skipped", {
         callbackUrl: effectiveCallback,

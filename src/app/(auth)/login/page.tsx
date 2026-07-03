@@ -38,7 +38,7 @@ const POST_LOGIN_CALLBACK = "/callback";
 function UnifiedLoginForm() {
   const searchParams = useSearchParams();
   const queryCallback = searchParams.get("callbackUrl") || "";
-  const callbackUrl = resolveClientAuthCallback(queryCallback);
+  const { callback: callbackUrl, fromHumCookie } = resolveClientAuthCallback(queryCallback);
   const { lang, changeLang, t } = useLoginLang(callbackUrl);
 
   const [email, setEmail] = useState("");
@@ -51,6 +51,7 @@ function UnifiedLoginForm() {
 
   const verified = searchParams.get("verified") === "true";
   const passwordReset = searchParams.get("reset") === "success";
+  const registered = searchParams.get("registered") === "1";
   const registerHref = resolveRegisterHref(null, callbackUrl || null);
   const forgotHref = buildForgotPasswordHref({
     email: email.trim() || undefined,
@@ -114,6 +115,7 @@ function UnifiedLoginForm() {
             savedCallback || callbackUrl || null,
             resolvePatientPostLoginUrl,
             session.user.professionalSpecialty,
+            { fromHumCookie },
           ),
         );
         return;
@@ -151,6 +153,7 @@ function UnifiedLoginForm() {
           error={error}
           verified={verified}
           passwordReset={passwordReset}
+          registered={registered}
           unverifiedEmail={unverifiedEmail}
           t={t}
           roleOnlyKey="login.invalid"

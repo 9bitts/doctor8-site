@@ -22,11 +22,16 @@ type ErrorCode = "invalid" | "failed";
 export default function VerifyEmailConfirmedPage({
   searchParams,
 }: {
-  searchParams: { error?: string; from?: string };
+  searchParams: { error?: string; from?: string; callbackUrl?: string };
 }) {
   const lang = detectLang();
   const error = searchParams.error as ErrorCode | undefined;
   const isSuccess = !error;
+  const rawCallback = searchParams.callbackUrl;
+  const callbackUrl =
+    rawCallback?.trim().startsWith("/") && !rawCallback.trim().startsWith("//")
+      ? rawCallback.trim()
+      : undefined;
 
   return (
     <VerifyConfirmedClient
@@ -34,6 +39,7 @@ export default function VerifyEmailConfirmedPage({
       isSuccess={isSuccess}
       error={error}
       from={sanitizeLoginFrom(searchParams.from)}
+      callbackUrl={callbackUrl}
     />
   );
 }

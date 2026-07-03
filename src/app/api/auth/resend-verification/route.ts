@@ -7,13 +7,35 @@ import { randomBytes } from "crypto";
 import { sendEmailVerification } from "@/lib/email";
 import { isAccountVerified } from "@/lib/account-verified";
 import { sanitizeLoginFrom } from "@/lib/auth-portals";
+import {
+  checkRateLimits,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
+
 export async function POST(req: NextRequest) {
   try {
-    const { email, from } = await req.json();
+    const { email, from, callbackUrl } = await req.json();
 
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
+
+    const normalizedEmail = email.toLowerCase();
+    const ip = clientIp(req);
+    const rate = await checkRateLimits([
+      { namespace: "resend-verification:email", key: normalizedEmail, ...RATE_LIMITS.authEmail },
+      { namespace: "resend-verification:ip", key: ip, ...RATE_LIMITS.authIp },
+    ]);
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
+    const safeCallback =
+      typeof callbackUrl === "string"
+      && callbackUrl.trim().startsWith("/")
+      && !callbackUrl.trim().startsWith("//")
+        ? callbackUrl.trim()
+        : undefined;
 
     const user = await db.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -68,6 +90,7 @@ export async function POST(req: NextRequest) {
       token,
       language: user.language,
       from: sanitizeLoginFrom(from),
+      callbackUrl: safeCallback,
     });
 
     return NextResponse.json({ success: true });

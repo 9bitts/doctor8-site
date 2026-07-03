@@ -17,7 +17,7 @@ import {
   RegisterLogo,
 } from "@/components/auth/register-shared";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
-import { ANGEL_LOGIN, buildVerifyAccountHref } from "@/lib/auth-portals";
+import { ANGEL_LOGIN, buildRegisterSuccessHref } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
@@ -157,10 +157,11 @@ export default function RegisterAngelPage() {
         return;
       }
       router.push(
-        buildVerifyAccountHref({
+        buildRegisterSuccessHref({
+          role: "ANGEL",
           email,
           callbackUrl: "/humanitarian/angel",
-          from: ANGEL_LOGIN,
+          emailSent: data.emailSent !== false,
         }),
       );
     } catch {

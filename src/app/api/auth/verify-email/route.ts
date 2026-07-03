@@ -18,6 +18,11 @@ function redirectConfirmedError(from: string | undefined, code: string) {
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
   const from = sanitizeLoginFrom(req.nextUrl.searchParams.get("from"));
+  const rawCallback = req.nextUrl.searchParams.get("callbackUrl");
+  const callbackUrl =
+    rawCallback?.trim().startsWith("/") && !rawCallback.trim().startsWith("//")
+      ? rawCallback.trim()
+      : undefined;
 
   if (!token) {
     return redirectConfirmedError(from, "invalid");
@@ -39,6 +44,7 @@ export async function GET(req: NextRequest) {
         email: verificationToken.identifier,
       });
       if (from) emailQs.set("from", from);
+      if (callbackUrl) emailQs.set("callbackUrl", callbackUrl);
       return redirect(`/verify-email?${emailQs.toString()}`);
     }
 
@@ -49,7 +55,7 @@ export async function GET(req: NextRequest) {
 
     await db.verificationToken.delete({ where: { token } });
 
-    return redirect(buildVerifyConfirmedHref(from));
+    return redirect(buildVerifyConfirmedHref(from, callbackUrl));
   } catch (error) {
     console.error("[VERIFY EMAIL ERROR]", error);
     return redirectConfirmedError(from, "failed");
