@@ -22,6 +22,7 @@ import {
   DEFAULT_BASE_FRACTION, DEFAULT_MERIT_FRACTION,
   DEFAULT_MIN_VALID_CONSULTS, DEFAULT_MIN_RATING,
   type ContributionInput,
+  type ContributionOutput,
 } from "@/lib/rateio";
 
 export const runtime = "nodejs";
@@ -146,7 +147,7 @@ type ExtendedContributionInput = ContributionInput & {
 
 type ExtendedContributionOutput = ContributionOutput & {
   providerType: string;
-  professionalId: string | null;
+  providerProfessionalId: string | null;
   psychoanalystId: string | null;
   integrativeTherapistId: string | null;
 };
@@ -641,7 +642,7 @@ async function computePool(month: string, currency: string) {
   const extendedOutputs: ExtendedContributionOutput[] = outputs.map((o, idx) => ({
     ...o,
     providerType: inputs[idx].providerType,
-    professionalId: inputs[idx].providerProfessionalId,
+    providerProfessionalId: inputs[idx].providerProfessionalId,
     psychoanalystId: inputs[idx].psychoanalystId,
     integrativeTherapistId: inputs[idx].integrativeTherapistId,
   }));
@@ -687,7 +688,7 @@ async function doPreview(month: string, currency: string) {
         : (p.eligByPro.get(
             providerKey({
               providerType: o.providerType,
-              professionalId: o.professionalId,
+              professionalId: o.providerProfessionalId,
               psychoanalystId: o.psychoanalystId,
               integrativeTherapistId: o.integrativeTherapistId,
             }),
@@ -790,7 +791,7 @@ async function doClose(
   for (const o of p.outputs) {
     const refs: ProviderRefFields = {
       providerType: o.providerType,
-      professionalId: o.professionalId,
+      professionalId: o.providerProfessionalId,
       psychoanalystId: o.psychoanalystId,
       integrativeTherapistId: o.integrativeTherapistId,
     };
