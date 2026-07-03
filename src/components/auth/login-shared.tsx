@@ -155,6 +155,44 @@ export async function waitForAuthenticatedSession(
   return null;
 }
 
+function sessionProfileCompleteFlag(
+  user: { profileComplete?: boolean } | null | undefined,
+): boolean {
+  return user?.profileComplete !== false;
+}
+
+/** Wait until JWT/session reflects profileComplete (not false). */
+export async function waitForProfileCompleteSession(
+  opts?: { maxAttempts?: number; delayMs?: number },
+): Promise<boolean> {
+  const maxAttempts = opts?.maxAttempts ?? 50;
+  const delayMs = opts?.delayMs ?? 200;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const fromClient = await getSession();
+      if (fromClient?.user?.id && sessionProfileCompleteFlag(fromClient.user)) {
+        return true;
+      }
+
+      const res = await fetch("/api/auth/session", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        const session = await res.json();
+        if (session?.user?.id && sessionProfileCompleteFlag(session.user)) {
+          return true;
+        }
+      }
+    } catch {
+      /* retry */
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return false;
+}
+
 /** Full navigation so middleware sees the fresh session cookie. */
 export function navigateAfterAuth(destination: string, role?: string | null) {
   markVolunteerAttendGuideForLogin(role);

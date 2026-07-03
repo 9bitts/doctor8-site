@@ -28,6 +28,7 @@ import { resolveRoleHome } from "@/lib/role-home";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import { providerDayBounds } from "@/lib/provider-day-bounds";
 import { buildProviderFinanceiroReport } from "@/lib/provider-financeiro";
+import { formatMoneyCents } from "@/lib/safe-format-currency";
 import {
   DEFAULT_TIME_ZONE,
   formatShortDate,
@@ -176,7 +177,7 @@ export default async function ProfessionalDashboard() {
         };
 
   const fmtCurrency = (cents: number) =>
-    new Intl.NumberFormat(locale, { style: "currency", currency: professional.currency }).format(cents / 100);
+    formatMoneyCents(cents, professional.currency, locale);
 
   const quickGroups = [
     {

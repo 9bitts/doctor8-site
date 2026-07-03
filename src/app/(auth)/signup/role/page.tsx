@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { signIn, useSession, getSession } from "next-auth/react";
 import {
   isProfileExemptRole,
@@ -39,6 +39,10 @@ import {
   networkErrorMessage,
   oauthIntentErrorMessage,
 } from "@/lib/auth-flow-errors";
+import {
+  navigateAfterAuth,
+  waitForProfileCompleteSession,
+} from "@/components/auth/login-shared";
 
 type RoleChoice =
   | { role: "PATIENT" }
@@ -84,7 +88,6 @@ export default function SignupRolePage() {
 }
 
 function SignupRoleContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { status: sessionStatus, update: updateSession } = useSession();
 
@@ -118,7 +121,7 @@ function SignupRoleContent() {
         const data = await res.json();
         if (data.authenticated) {
           if (isProfileExemptRole(data.role)) {
-            router.replace(resolveRoleHome(data.role));
+            navigateAfterAuth(resolveRoleHome(data.role), data.role);
             return;
           }
           setAuthenticated(true);
@@ -129,11 +132,12 @@ function SignupRoleContent() {
             }
           } else {
             const session = await getSession();
-            router.replace(
+            navigateAfterAuth(
               resolveRoleHome(
                 session?.user?.role,
                 session?.user?.professionalSpecialty,
               ),
+              session?.user?.role,
             );
             return;
           }
@@ -148,7 +152,7 @@ function SignupRoleContent() {
     if (sessionStatus !== "loading") {
       loadStatus();
     }
-  }, [sessionStatus, router]);
+  }, [sessionStatus]);
 
   function changeLang(next: Lang) {
     setLang(next);
@@ -202,7 +206,10 @@ function SignupRoleContent() {
         return;
       }
       await updateSession({ refreshProfileComplete: true });
-      router.replace(data.redirectTo || "/patient");
+      await waitForProfileCompleteSession();
+      const destination = data.redirectTo || resolveRoleHome(selected.role);
+      navigateAfterAuth(destination, selected.role);
+      return;
     } catch (err) {
       setError(isLikelyNetworkError(err) ? networkErrorMessage(lang) : t("signup.role.err.completeFailed"));
     } finally {

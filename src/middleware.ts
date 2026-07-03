@@ -218,7 +218,13 @@ export default auth((req) => {
     pathname !== "/signup/role" &&
     isAuthenticatedDashboard(pathname)
   ) {
-    if (sessionProfileIncomplete(session.user)) {
+    const { role } = session.user as { role?: string };
+    const blockIncompleteProfile =
+      sessionProfileIncomplete(session.user)
+      // Never interrupt humanitarian patient campaign flows (queue, triage, anamnese).
+      && !(role === "PATIENT" && isHumanitarianPatientPath(pathname));
+
+    if (blockIncompleteProfile) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
     }
   }
