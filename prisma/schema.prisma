@@ -905,6 +905,23 @@ model ProcessedStripeEvent {
   processedAt DateTime @default(now())
 }
 
+model PaymentRefund {
+  id              String   @id @default(cuid())
+  paymentIntentId String
+  stripeRefundId  String?  @unique
+  reason          String
+  amountCents     Int?
+  currency        String?
+  status          String   // SUCCEEDED | ALREADY_REFUNDED | FAILED
+  triggeredBy     String   // AUTO_SLOT_TAKEN | AUTO_WEBHOOK_FAIL | PATIENT_CANCEL | JIT_ORPHAN | JIT_QUEUE | OTHER
+  appointmentId   String?
+  userId          String?
+  createdAt       DateTime @default(now())
+
+  @@index([paymentIntentId])
+  @@index([createdAt])
+}
+
 // ─────────────────────────────────────────
 // MEDICAL DOCUMENTS + CARDS
 // ─────────────────────────────────────────

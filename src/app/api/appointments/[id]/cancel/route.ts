@@ -1,15 +1,10 @@
 // src/app/api/appointments/[id]/cancel/route.ts
-// Cancellation with full CDC rules:
-// - Within 7 days of booking AND before appointment: 100% refund
-// - More than 24h before appointment: 100% refund
-// - Less than 24h before appointment: no refund (policy accepted at checkout)
-// - Professional absent: 100% refund always
-// - Professional can always cancel (triggers full refund)
-
+// Cancellation: guards block past/in-progress/completed appointments.
+// When scheduledAt is still in the future, paid appointments receive a full refund.
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
+import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
@@ -17,6 +12,65 @@ import { localeOf } from "@/lib/i18n/translations";
 import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { notifyProfessionalCancelled } from "@/lib/pro-appointment-notify";
+
+const CANCEL_FRESH_SELECT = {
+  status: true,
+  scheduledAt: true,
+  durationMins: true,
+  stripePaymentId: true,
+  patientJoinedAt: true,
+  professionalJoinedAt: true,
+} as const;
+
+type CancelGuardRow = {
+  status: string;
+  scheduledAt: Date;
+  durationMins: number;
+  patientJoinedAt: Date | null;
+  professionalJoinedAt: Date | null;
+};
+
+function applyCancelStateGuards(appt: CancelGuardRow): NextResponse | null {
+  if (appt.status === "CANCELLED") {
+    return NextResponse.json({ success: true, alreadyCancelled: true });
+  }
+
+  if (appt.status === "COMPLETED") {
+    return NextResponse.json({ error: "APPOINTMENT_ALREADY_COMPLETED" }, { status: 403 });
+  }
+
+  const now = Date.now();
+  const startMs = appt.scheduledAt.getTime();
+  const endMs = startMs + appt.durationMins * 60_000;
+
+  const consultationInProgress =
+    appt.patientJoinedAt != null ||
+    appt.professionalJoinedAt != null ||
+    (now >= startMs &&
+      now < endMs &&
+      (appt.status === "PENDING" || appt.status === "CONFIRMED"));
+
+  if (consultationInProgress) {
+    return NextResponse.json({ error: "APPOINTMENT_IN_PROGRESS" }, { status: 403 });
+  }
+
+  if (now >= startMs) {
+    return NextResponse.json(
+      {
+        error: "APPOINTMENT_TIME_PASSED",
+        message:
+          "O horário desta consulta já passou. Entre em contato com o suporte para solicitar reembolso ou resolver pendências.",
+      },
+      { status: 403 },
+    );
+  }
+
+  if (appt.status !== "PENDING" && appt.status !== "CONFIRMED") {
+    return NextResponse.json({ error: "Appointment cannot be cancelled" }, { status: 400 });
+  }
+
+  return null;
+}
 
 export async function POST(
   req: NextRequest,
@@ -51,43 +105,53 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (!["PENDING", "CONFIRMED"].includes(appointment.status)) {
-    return NextResponse.json({ error: "Appointment cannot be cancelled" }, { status: 400 });
+  const freshForGuards = await db.appointment.findUnique({
+    where: { id: params.id },
+    select: CANCEL_FRESH_SELECT,
+  });
+  if (!freshForGuards) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const now        = Date.now();
-  const apptTime   = new Date(appointment.scheduledAt).getTime();
-  const paidTime   = appointment.paidAt ? new Date(appointment.paidAt).getTime() : null;
-  const hoursUntil = (apptTime - now) / 3600000;
-  const daysSincePurchase = paidTime ? (now - paidTime) / 86400000 : 999;
+  const guardResponse = applyCancelStateGuards(freshForGuards);
+  if (guardResponse) return guardResponse;
 
-  // ── Refund logic ──────────────────────────────────────────────────────────
-  // Rule 1: Professional cancels → always full refund
-  // Rule 2: Patient within 7-day CDC window AND appointment hasn't happened → full refund
-  // Rule 3: Patient cancels >24h before → full refund
-  // Rule 4: Patient cancels <24h before → no refund
-  let refunded     = false;
+  const apptTime = new Date(appointment.scheduledAt).getTime();
+  const hoursUntil = (apptTime - Date.now()) / 3600000;
+
+  // Guards guarantee scheduledAt is in the future — always full refund when paid.
+  let refunded = false;
   let refundReason = "";
 
-  const shouldRefund =
-    isProfessional ||   // Rule 1
-    (isPatient && daysSincePurchase <= 7 && hoursUntil > 0) ||  // Rule 2 CDC
-    (isPatient && hoursUntil > 24);                              // Rule 3
+  if (appointment.stripePaymentId) {
+    refundReason = isProfessional ? "professional_cancelled" : "patient_cancelled";
+    const freshBeforeRefund = await db.appointment.findUnique({
+      where: { id: params.id },
+      select: CANCEL_FRESH_SELECT,
+    });
+    if (!freshBeforeRefund) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
-  if (shouldRefund && appointment.stripePaymentId) {
-    if (isProfessional)                              refundReason = "professional_cancelled";
-    else if (daysSincePurchase <= 7 && hoursUntil > 24) refundReason = "cdc_7days";
-    else                                             refundReason = "more_than_24h";
+    const refundGuardResponse = applyCancelStateGuards(freshBeforeRefund);
+    if (refundGuardResponse) return refundGuardResponse;
 
-    try {
-      await stripe.refunds.create({
-        payment_intent: appointment.stripePaymentId,
-        reason: "requested_by_customer",
-        metadata: { refundReason, appointmentId: params.id },
-      });
+    const refundResult = await refundPaymentIntentIdempotent(
+      freshBeforeRefund.stripePaymentId ?? appointment.stripePaymentId!,
+      refundReason,
+      {
+        triggeredBy: "PATIENT_CANCEL",
+        appointmentId: params.id,
+        userId: session.user.id,
+      },
+    );
+
+    if (refundResult.error) {
+      return NextResponse.json({ error: "REFUND_FAILED" }, { status: 502 });
+    }
+
+    if (refundResult.refunded) {
       refunded = true;
-    } catch (err) {
-      console.error("[CANCEL] Refund failed:", err);
     }
   }
 
@@ -180,10 +244,9 @@ export async function POST(
   }
 
   return NextResponse.json({
-    success:       true,
+    success: true,
     refunded,
-    refundReason:  refundReason || "no_refund_policy",
-    hoursUntil:    Math.round(hoursUntil),
-    daysSincePurchase: Math.round(daysSincePurchase * 10) / 10,
+    refundReason: refundReason || (appointment.stripePaymentId ? "patient_cancelled" : "no_payment"),
+    hoursUntil: Math.round(hoursUntil),
   });
 }
