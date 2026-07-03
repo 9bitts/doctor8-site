@@ -153,6 +153,32 @@ export async function POST(
     freedAt: appointment.scheduledAt,
   }).catch((err) => console.error("[CANCEL] Slot alert notify failed:", err));
 
+  try {
+    const patientUser = await db.user.findUnique({
+      where: { id: appointment.patient.userId },
+      select: { email: true, language: true, timezone: true } as never,
+    }) as { email: string; language: string | null; timezone?: string } | null;
+    if (patientUser) {
+      const doctorName = appointment.professional
+        ? `Dr. ${appointment.professional.firstName} ${appointment.professional.lastName}`
+        : appointment.psychoanalyst
+          ? `${safeDecrypt(appointment.psychoanalyst.firstName)} ${safeDecrypt(appointment.psychoanalyst.lastName)}`
+          : "Profissional";
+      const { sendAppointmentCancelled } = await import("@/lib/email");
+      await sendAppointmentCancelled({
+        patientEmail: patientUser.email,
+        patientName: `${safeDecrypt(appointment.patient.firstName)} ${safeDecrypt(appointment.patient.lastName)}`.trim(),
+        doctorName,
+        scheduledAt: appointment.scheduledAt,
+        appointmentId: params.id,
+        language: patientUser.language ?? undefined,
+        patientTimezone: patientUser.timezone,
+      });
+    }
+  } catch (e) {
+    console.error("[CANCEL EMAIL ERROR]", e);
+  }
+
   return NextResponse.json({
     success:       true,
     refunded,

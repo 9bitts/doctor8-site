@@ -26,6 +26,13 @@ export async function GET(req: NextRequest) {
   const lang = normalizeLang(req.nextUrl.searchParams.get("lang"));
   const locale = localeOf(lang);
 
+  const patientUser = await db.user.findUnique({
+    where: { id: ctx.userId },
+    select: { timezone: true } as never,
+  });
+  const patientTz =
+    (patientUser as { timezone?: string } | null)?.timezone || DEFAULT_TIME_ZONE;
+
   const professionals = await db.professionalProfile.findMany({
     where: { verified: true },
     select: {
@@ -55,7 +62,6 @@ export async function GET(req: NextRequest) {
 
   const enriched: VolunteerProfessionalListItem[] = await Promise.all(
     withBlocks.map(async (pro) => {
-      const timeZone = pro.timezone || DEFAULT_TIME_ZONE;
       const rawDays = await getProviderAvailableDays(pro.id, "health", locale, 14, null, {
         slotMode: "volunteer",
       });
@@ -65,7 +71,7 @@ export async function GET(req: NextRequest) {
         .slice(0, 6)
         .map((slot) => ({
           datetime: slot.datetime,
-          timeLabel: formatAppointmentTimeWithLabel(new Date(slot.datetime), timeZone, locale),
+          timeLabel: formatAppointmentTimeWithLabel(new Date(slot.datetime), patientTz, locale),
         }));
 
       return {

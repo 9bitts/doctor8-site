@@ -10,6 +10,15 @@ import { audit } from "@/lib/audit";
 import { scheduleAppointmentReminders, schedulePostConsultNotesReminder, scheduleReviewRequest } from "@/lib/qstash";
 import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import {
+  AppointmentSlotTakenError,
+} from "@/lib/fulfill-consultation";
+import {
+  assertScheduledVolunteerSlotBooking,
+  VolunteerSlotBookingError,
+} from "@/lib/volunteer-slot-booking";
+import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 const schema = z.object({
@@ -54,29 +63,80 @@ export async function POST(
     }, { status: 400 });
   }
 
-  // Check new slot is available
-  const conflict = await db.appointment.findFirst({
-    where: {
-      ...(appointment.professionalId ? { professionalId: appointment.professionalId } : {}),
-      ...(appointment.psychoanalystId ? { psychoanalystId: appointment.psychoanalystId } : {}),
-      scheduledAt:    new Date(newScheduledAt),
-      status:         { in: ["CONFIRMED", "PENDING"] },
-      id:             { not: params.id },
-    },
-  });
-  if (conflict) return NextResponse.json({ error: "This slot is no longer available." }, { status: 409 });
+  const isVolunteerScheduled =
+    appointment.bookingSource === SCHEDULED_VOLUNTEER_BOOKING_SOURCE &&
+    !!appointment.professionalId;
+
+  if (isVolunteerScheduled) {
+    try {
+      await assertScheduledVolunteerSlotBooking(
+        appointment.professionalId!,
+        "health",
+        newScheduledAt,
+      );
+    } catch (e) {
+      if (e instanceof VolunteerSlotBookingError) {
+        return NextResponse.json(
+          { error: { code: e.code === "slot_unavailable" ? e.code : "slot_unavailable", general: [e.code] } },
+          { status: 409 },
+        );
+      }
+      throw e;
+    }
+  }
 
   const previousScheduledAt = appointment.scheduledAt;
+  const newScheduledDate = new Date(newScheduledAt);
 
-  await db.appointment.update({
-    where: { id: params.id },
-    data: {
-      scheduledAt: new Date(newScheduledAt),
-      remindersEpoch: { increment: 1 },
-      reminder24hSent: false,
-      reminder1hSent: false,
-    },
-  });
+  try {
+    await db.$transaction(
+      async (tx) => {
+        if (isVolunteerScheduled) {
+          await assertScheduledVolunteerSlotBooking(
+            appointment.professionalId!,
+            "health",
+            newScheduledAt,
+          );
+        }
+
+        const conflict = await tx.appointment.findFirst({
+          where: {
+            ...(appointment.professionalId ? { professionalId: appointment.professionalId } : {}),
+            ...(appointment.psychoanalystId ? { psychoanalystId: appointment.psychoanalystId } : {}),
+            scheduledAt: newScheduledDate,
+            status: { in: ["CONFIRMED", "PENDING"] },
+            id: { not: params.id },
+          },
+        });
+        if (conflict) throw new AppointmentSlotTakenError();
+
+        await tx.appointment.update({
+          where: { id: params.id },
+          data: {
+            scheduledAt: newScheduledDate,
+            remindersEpoch: { increment: 1 },
+            reminder24hSent: false,
+            reminder1hSent: false,
+          },
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  } catch (e) {
+    if (e instanceof AppointmentSlotTakenError) {
+      return NextResponse.json(
+        { error: { code: "slot_unavailable", general: ["slot_unavailable"] } },
+        { status: 409 },
+      );
+    }
+    if (e instanceof VolunteerSlotBookingError) {
+      return NextResponse.json(
+        { error: { code: "slot_unavailable", general: [e.code] } },
+        { status: 409 },
+      );
+    }
+    throw e;
+  }
 
   await audit.updateRecord(session.user.id, "Appointment", params.id);
 

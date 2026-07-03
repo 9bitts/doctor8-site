@@ -83,10 +83,17 @@ export default function VolunteerAttendGuideModal() {
 
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      window.scrollTo(0, scrollY);
     };
   }, [open]);
 
@@ -139,40 +146,42 @@ export default function VolunteerAttendGuideModal() {
   ];
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4">
+    <div className="fixed inset-0 z-[9999]">
       <button
         type="button"
         className="absolute inset-0 bg-black/60"
         aria-label={t("volguide.dismiss")}
         onClick={dismiss}
       />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="volguide-title"
-        className="relative w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-100 overflow-hidden max-h-[92dvh] sm:max-h-[90vh] flex flex-col"
-      >
-        <div className="bg-gradient-to-r from-rose-600 to-emerald-600 px-5 py-4 flex items-start gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-            <Heart size={22} className="text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 id="volguide-title" className="font-bold text-white text-lg leading-tight">
-              {t("volguide.title")}
-            </h2>
-            <p className="text-white/85 text-sm mt-1 leading-relaxed">{t("volguide.subtitle")}</p>
-          </div>
-          <button
-            type="button"
-            onClick={dismiss}
-            className="text-white/70 hover:text-white transition shrink-0 p-1"
-            aria-label={t("volguide.dismiss")}
+      <div className="absolute inset-0 overflow-y-auto overscroll-contain touch-pan-y">
+        <div className="flex min-h-full items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="volguide-title"
+            className="relative z-10 w-full sm:max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col min-h-0 max-h-[min(88dvh,calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem))]"
           >
-            <X size={20} />
-          </button>
-        </div>
+            <div className="bg-gradient-to-r from-rose-600 to-emerald-600 px-5 py-4 flex items-start gap-3 shrink-0 rounded-t-2xl">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <Heart size={22} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 id="volguide-title" className="font-bold text-white text-lg leading-tight">
+                  {t("volguide.title")}
+                </h2>
+                <p className="text-white/85 text-sm mt-1 leading-relaxed">{t("volguide.subtitle")}</p>
+              </div>
+              <button
+                type="button"
+                onClick={dismiss}
+                className="text-white/70 hover:text-white transition shrink-0 p-1"
+                aria-label={t("volguide.dismiss")}
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-        <ol className="overflow-y-auto overscroll-contain divide-y divide-slate-100 flex-1 min-h-0">
+            <ol className="overflow-y-auto overscroll-contain touch-pan-y divide-y divide-slate-100 flex-1 min-h-0">
           {steps.map((step, index) => (
             <li key={step.title} className="px-5 py-4">
               <div className="flex gap-3">
@@ -197,16 +206,18 @@ export default function VolunteerAttendGuideModal() {
               </div>
             </li>
           ))}
-        </ol>
+            </ol>
 
-        <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <button
-            type="button"
-            onClick={dismiss}
-            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition min-h-[48px]"
-          >
-            {t("volguide.dismiss")}
-          </button>
+            <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 shrink-0">
+              <button
+                type="button"
+                onClick={dismiss}
+                className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition min-h-[48px]"
+              >
+                {t("volguide.dismiss")}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>,

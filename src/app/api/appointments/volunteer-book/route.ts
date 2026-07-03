@@ -110,6 +110,12 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
+    if (e instanceof VolunteerSlotBookingError) {
+      return NextResponse.json(
+        { error: { code: e.code, general: [e.code] } },
+        { status: 409 },
+      );
+    }
     throw e;
   }
 }

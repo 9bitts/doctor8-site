@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, formatSlotCount } from "@/lib/i18n/translations";
 import { countSlotsInRange, generateSlotsInRange } from "@/lib/scheduling";
 import { validateAvailabilityBlocks, validatePaidVolunteerOverlap } from "@/lib/availability-validation";
+import { interpolate } from "@/lib/notification-i18n";
 import { DEFAULT_TIME_ZONE, listTimeZoneOptions } from "@/lib/timezone";
 import type { DateAvailabilityBlock, VolunteerWeeklyBlock } from "@/lib/availability-exceptions";
 import { Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
@@ -254,6 +255,23 @@ export default function AvailabilitySettings({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        if (Array.isArray(data.conflicts) && data.conflicts.length > 0) {
+          const lines = (
+            data.conflicts as { dateLabel: string; timeLabel: string; patientFirstName: string }[]
+          ).map((c) =>
+            interpolate(t("avail.volunteerBlockConflictItem"), {
+              date: c.dateLabel,
+              time: c.timeLabel,
+              name: c.patientFirstName,
+            }),
+          );
+          const msg = [t("avail.volunteerBlockConflictIntro"), ...lines, t("avail.volunteerBlockConflictHint")].join(
+            "\n",
+          );
+          setSaveError(msg);
+          toast.error(t("avail.volunteerBlockConflictTitle"));
+          return;
+        }
         const key = typeof data.error === "string" ? data.error : "avail.overlapError";
         setSaveError(t(key));
         toast.error(t(key));

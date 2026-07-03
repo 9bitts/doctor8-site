@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
+import { getProfessionInfo } from "@/lib/profession-label";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import {
   filterDaysForScheduledVolunteerBooking,
@@ -56,6 +57,20 @@ const BOOKING_ERROR_KEYS: Record<string, string> = {
   volunteer_limit_exceeded: "volAppt.err.limitExceeded",
   policy_required: "appt.acceptPolicyRequired",
 };
+
+function providerNamePrefix(specialty: string, t: (key: string) => string): string {
+  const typeKey = getProfessionInfo(specialty).typeKey;
+  if (typeKey === "psychologist") return t("volAppt.providerPrefix.psychologist");
+  return t("volAppt.providerPrefix.doctor");
+}
+
+function formatVolunteerProviderName(
+  pro: { firstName: string; lastName: string; specialty: string },
+  t: (key: string) => string,
+): string {
+  const prefix = providerNamePrefix(pro.specialty, t);
+  return `${prefix} ${pro.firstName} ${pro.lastName}`.trim();
+}
 
 function ProfessionalAvatar({ pro }: { pro: VolunteerProfessional }) {
   const initials = `${pro.firstName.charAt(0)}${pro.lastName.charAt(0)}`.toUpperCase();
@@ -263,7 +278,7 @@ export default function VolunteerAppointmentsClient() {
                     <ProfessionalAvatar pro={pro} />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900">
-                        Dr. {pro.firstName} {pro.lastName}
+                        {formatVolunteerProviderName(pro, t)}
                       </p>
                       <p className="text-xs text-slate-500">{getProfessionLabel(lang, pro.specialty)}</p>
                       <div className="flex flex-wrap gap-1.5 mt-2">
@@ -299,7 +314,7 @@ export default function VolunteerAppointmentsClient() {
             <ProfessionalAvatar pro={selectedPro} />
             <div>
               <p className="font-bold text-slate-900">
-                Dr. {selectedPro.firstName} {selectedPro.lastName}
+                {formatVolunteerProviderName(selectedPro, t)}
               </p>
               <p className="text-xs text-slate-500">{getProfessionLabel(lang, selectedPro.specialty)}</p>
             </div>
@@ -521,7 +536,7 @@ export default function VolunteerAppointmentsClient() {
             <div className="flex justify-between">
               <span className="text-slate-500">{t("appt.doctor")}</span>
               <span className="font-semibold">
-                Dr. {selectedPro.firstName} {selectedPro.lastName}
+                {formatVolunteerProviderName(selectedPro, t)}
               </span>
             </div>
             <div className="flex justify-between">

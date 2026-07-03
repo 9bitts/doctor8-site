@@ -166,6 +166,19 @@ export async function GET(
     );
   }
 
+  const joinNow = new Date();
+  if (isPatient && !appointment.patientJoinedAt) {
+    await db.appointment.update({
+      where: { id: appointment.id },
+      data: { patientJoinedAt: joinNow },
+    });
+  } else if (isProvider && !appointment.professionalJoinedAt) {
+    await db.appointment.update({
+      where: { id: appointment.id },
+      data: { professionalJoinedAt: joinNow },
+    });
+  }
+
   await audit.viewRecord(session.user.id, "Appointment", appointment.id);
 
   let patientRecordId: string | null = null;

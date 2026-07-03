@@ -169,3 +169,16 @@ export function isAppointmentInVolunteerBlock(
   }
   return false;
 }
+
+/** True when a scheduled instant was covered by old volunteer blocks but not by new ones. */
+export function isRemovedFromVolunteerSchedule(
+  scheduledAt: Date,
+  timeZone: string,
+  oldBlocks: VolunteerWeeklyBlock[],
+  newBlocks: VolunteerWeeklyBlock[],
+): boolean {
+  return (
+    isAppointmentInVolunteerBlock(scheduledAt, timeZone, oldBlocks) &&
+    !isAppointmentInVolunteerBlock(scheduledAt, timeZone, newBlocks)
+  );
+}

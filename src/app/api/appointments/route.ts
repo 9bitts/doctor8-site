@@ -13,6 +13,24 @@ import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { z } from "zod";
 
+const appointmentListSelect = {
+  id: true,
+  scheduledAt: true,
+  status: true,
+  type: true,
+  durationMins: true,
+  bookingSource: true,
+  professionalId: true,
+  psychoanalystId: true,
+  providerType: true,
+  patientConfirmedAt: true,
+  priceAmount: true,
+  paidAt: true,
+  meetingUrl: true,
+  chiefComplaint: true,
+  notes: true,
+} as const;
+
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -44,7 +62,8 @@ export async function GET(req: NextRequest) {
         ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
         ...(dateRange ? { scheduledAt: dateRange } : {}),
       },
-      include: {
+      select: {
+        ...appointmentListSelect,
         professional: {
           select: { firstName: true, lastName: true, specialty: true, avatarUrl: true },
         },
@@ -66,7 +85,8 @@ export async function GET(req: NextRequest) {
         ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
         ...(dateRange ? { scheduledAt: dateRange } : {}),
       },
-      include: {
+      select: {
+        ...appointmentListSelect,
         patient: { select: { firstName: true, lastName: true, avatarUrl: true } },
       },
       orderBy: { scheduledAt: upcoming ? "asc" : "desc" },
@@ -83,7 +103,8 @@ export async function GET(req: NextRequest) {
         ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
         ...(dateRange ? { scheduledAt: dateRange } : {}),
       },
-      include: {
+      select: {
+        ...appointmentListSelect,
         patient: { select: { firstName: true, lastName: true, avatarUrl: true } },
       },
       orderBy: { scheduledAt: upcoming ? "asc" : "desc" },

@@ -45,7 +45,11 @@ export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 export function buildKey(folder: string, originalName: string): string {
   const ext = (originalName.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
   const id = randomBytes(16).toString("hex");
-  const safeFolder = folder.replace(/[^a-zA-Z0-9_-]/g, "");
+  const safeFolder = folder
+    .split("/")
+    .map((segment) => segment.replace(/[^a-zA-Z0-9_-]/g, ""))
+    .filter(Boolean)
+    .join("/");
   return `${safeFolder}/${id}.${ext}`;
 }
 

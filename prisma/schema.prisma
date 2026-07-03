@@ -857,6 +857,8 @@ model Appointment {
   cancelReason     String?
 
   patientConfirmedAt DateTime?
+  patientJoinedAt    DateTime?
+  professionalJoinedAt DateTime?
 
   adminProblemAt   DateTime?
   adminProblemNote String?

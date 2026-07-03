@@ -15,6 +15,7 @@ import {
   EMAIL_PASSWORD_RESET,
   EMAIL_CHANGE,
   EMAIL_APPOINTMENT_CONFIRM,
+  EMAIL_APPOINTMENT_CANCELLED,
   EMAIL_APPOINTMENT_REMINDER,
   EMAIL_PRO_APPOINTMENT_BOOKED,
   EMAIL_PRO_APPOINTMENT_CANCELLED,
@@ -216,6 +217,54 @@ export async function sendAppointmentConfirmation({
     subject: c.subject(dateStr),
     html: emailShell(c.heading, body, lang),
     tag: "appointment-confirmation",
+  });
+}
+
+// ─── APPOINTMENT CANCELLED (patient) ──────────────────────────────────────────
+export async function sendAppointmentCancelled({
+  patientEmail,
+  patientName,
+  doctorName,
+  scheduledAt,
+  appointmentId,
+  language,
+  patientTimezone,
+}: {
+  patientEmail: string;
+  patientName: string;
+  doctorName: string;
+  scheduledAt: Date;
+  appointmentId: string;
+  language?: string;
+  patientTimezone?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_APPOINTMENT_CANCELLED[lang];
+  const locale = EMAIL_LOCALE[lang];
+  const tz = patientTimezone || DEFAULT_TIME_ZONE;
+
+  const { dateStr, timeStr } = formatEmailAppointmentDateTime(scheduledAt, tz, locale);
+  const appUrl = getAppUrl();
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(patientName)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.intro}</p>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;margin:24px 0;">
+      <table style="width:100%;font-size:14px;">
+        <tr><td style="color:#6b7280;padding:6px 0;width:140px;">${c.doctor}</td><td style="color:#1a2a3a;font-weight:600;">${doctorName}</td></tr>
+        <tr><td style="color:#6b7280;padding:6px 0;">${c.date}</td><td style="color:#1a2a3a;font-weight:600;">${dateStr}</td></tr>
+        <tr><td style="color:#6b7280;padding:6px 0;">${c.time}</td><td style="color:#1a2a3a;font-weight:600;">${timeStr}</td></tr>
+      </table>
+    </div>
+    <p style="color:#6b7280;font-size:13px;text-align:center;">
+      <a href="${appUrl}/patient/appointments?id=${appointmentId}" style="color:#0a4d6e;">${c.view}</a>
+    </p>`;
+
+  await sendTransactionalEmail({
+    to: patientEmail,
+    subject: c.subject(dateStr),
+    html: emailShell(c.heading, body, lang),
+    tag: "appointment-cancelled",
   });
 }
 

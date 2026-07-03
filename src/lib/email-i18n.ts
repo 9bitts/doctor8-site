@@ -330,6 +330,48 @@ export const EMAIL_PRO_APPOINTMENT_CANCELLED: Record<EmailLang, {
   },
 };
 
+export const EMAIL_APPOINTMENT_CANCELLED: Record<EmailLang, {
+  subject: (date: string) => string;
+  heading: string;
+  hi: (name: string) => string;
+  intro: string;
+  doctor: string;
+  date: string;
+  time: string;
+  view: string;
+}> = {
+  en: {
+    subject: (d) => `Appointment cancelled – ${d}`,
+    heading: "Your appointment was cancelled",
+    hi: (n) => `Hi <strong>${n}</strong>,`,
+    intro: "Your appointment has been cancelled. Here are the details of the cancelled visit:",
+    doctor: "Professional",
+    date: "Date",
+    time: "Time",
+    view: "View appointments",
+  },
+  pt: {
+    subject: (d) => `Consulta cancelada – ${d}`,
+    heading: "Sua consulta foi cancelada",
+    hi: (n) => `Olá <strong>${n}</strong>,`,
+    intro: "Sua consulta foi cancelada. Detalhes do horário cancelado:",
+    doctor: "Profissional",
+    date: "Data",
+    time: "Horário",
+    view: "Ver consultas",
+  },
+  es: {
+    subject: (d) => `Cita cancelada – ${d}`,
+    heading: "Su cita fue cancelada",
+    hi: (n) => `Hola <strong>${n}</strong>,`,
+    intro: "Su cita fue cancelada. Detalles del horario cancelado:",
+    doctor: "Profesional",
+    date: "Fecha",
+    time: "Hora",
+    view: "Ver citas",
+  },
+};
+
 export const EMAIL_SLOT_ALERT: Record<EmailLang, {
   subject: (provider: string) => string;
   heading: string;

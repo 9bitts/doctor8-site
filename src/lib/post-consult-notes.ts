@@ -61,7 +61,17 @@ export async function processPostConsultNotesReminder(
 ): Promise<"sent" | "skipped" | "failed"> {
   const appointment = await db.appointment.findUnique({
     where: { id: appointmentId },
-    include: {
+    select: {
+      id: true,
+      status: true,
+      notes: true,
+      scheduledAt: true,
+      durationMins: true,
+      patientJoinedAt: true,
+      professionalJoinedAt: true,
+      professionalId: true,
+      psychoanalystId: true,
+      integrativeTherapistId: true,
       patient: { select: { firstName: true, lastName: true } },
       professional: {
         select: { id: true, userId: true, firstName: true, lastName: true, specialty: true },
@@ -95,10 +105,32 @@ export async function processPostConsultNotesReminder(
   const endMs =
     appointment.scheduledAt.getTime() + appointment.durationMins * 60 * 1000;
   if (appointment.status === "CONFIRMED" && Date.now() > endMs) {
+    const patientJoined = !!appointment.patientJoinedAt;
+    const professionalJoined = !!appointment.professionalJoinedAt;
+    let nextStatus: "COMPLETED" | "NO_SHOW" = "NO_SHOW";
+
+    if (patientJoined && professionalJoined) {
+      nextStatus = "COMPLETED";
+    } else {
+      const side =
+        patientJoined && !professionalJoined
+          ? "patient_only"
+          : !patientJoined && professionalJoined
+            ? "professional_only"
+            : "neither";
+      console.log(
+        `[POST-CONSULT-NOTES] appointment ${appointmentId} NO_SHOW attendance=${side}`,
+      );
+    }
+
     await db.appointment.update({
       where: { id: appointmentId },
-      data: { status: "COMPLETED" },
+      data: { status: nextStatus },
     });
+
+    if (nextStatus === "NO_SHOW") {
+      return "skipped";
+    }
   }
 
   const patientName =

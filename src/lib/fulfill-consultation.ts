@@ -10,6 +10,10 @@ import { Prisma } from "@prisma/client";
 import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
 import { notifyProfessionalNewBooking } from "@/lib/pro-appointment-notify";
 import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
+import {
+  assertScheduledVolunteerSlotBooking,
+  VolunteerSlotBookingError,
+} from "@/lib/volunteer-slot-booking";
 
 export type ConsultationPaymentMeta = {
   userId: string;
@@ -69,6 +73,8 @@ export async function fulfillScheduledVolunteerConsultation(params: {
       acceptedCancellationPolicy: params.acceptedCancellationPolicy ? "true" : undefined,
       bookingSource: SCHEDULED_VOLUNTEER_BOOKING_SOURCE,
     },
+    revalidateBeforeCreate: () =>
+      assertScheduledVolunteerSlotBooking(params.providerId, "health", params.scheduledAt),
   });
 }
 
@@ -114,8 +120,10 @@ export async function fulfillConsultationPayment(params: {
   amount: number;
   currency: string;
   metadata: ConsultationPaymentMeta;
+  /** Re-run slot validation inside the Serializable transaction (P8b volunteer booking). */
+  revalidateBeforeCreate?: () => Promise<void>;
 }): Promise<{ appointmentId: string; created: boolean }> {
-  const { stripePaymentId, amount, currency, metadata } = params;
+  const { stripePaymentId, amount, currency, metadata, revalidateBeforeCreate } = params;
   const isVolunteerBooking = metadata.volunteerBooking === "true" || amount === 0;
   const {
     userId,
@@ -211,6 +219,10 @@ export async function fulfillConsultationPayment(params: {
         },
       });
       if (slotTaken) throw new AppointmentSlotTakenError();
+
+      if (revalidateBeforeCreate) {
+        await revalidateBeforeCreate();
+      }
 
       const createdAppointment = await tx.appointment.create({
         data: {
