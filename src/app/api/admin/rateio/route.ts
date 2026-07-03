@@ -78,11 +78,145 @@ function defaultMonth(): string {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
 }
 
+type RateioProviderType = "HEALTH" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
+
+type ProviderRefFields = {
+  providerType: string;
+  professionalId?: string | null;
+  psychoanalystId?: string | null;
+  integrativeTherapistId?: string | null;
+};
+
+function assertExactlyOneProviderId(refs: ProviderRefFields, context: string): void {
+  const present = [
+    refs.professionalId || null,
+    refs.psychoanalystId || null,
+    refs.integrativeTherapistId || null,
+  ].filter((id): id is string => !!id);
+  if (present.length !== 1) {
+    console.error("[RATEIO-INVALID-PROVIDER]", context, refs);
+    throw new Error("Rateio provider invariant violated");
+  }
+}
+
+function providerRefFromAppointment(a: {
+  providerType: RateioProviderType;
+  professionalId: string | null;
+  psychoanalystId: string | null;
+  integrativeTherapistId: string | null;
+}): ProviderRefFields {
+  return {
+    providerType: a.providerType,
+    professionalId: a.providerType === "HEALTH" ? a.professionalId : null,
+    psychoanalystId: a.providerType === "PSYCHOANALYST" ? a.psychoanalystId : null,
+    integrativeTherapistId: a.providerType === "INTEGRATIVE_THERAPIST" ? a.integrativeTherapistId : null,
+  };
+}
+
+function providerRefFromHealthProfessional(professionalId: string): ProviderRefFields {
+  return {
+    providerType: "HEALTH",
+    professionalId,
+    psychoanalystId: null,
+    integrativeTherapistId: null,
+  };
+}
+
+function validationProviderFields(refs: ProviderRefFields, context: string) {
+  assertExactlyOneProviderId(refs, context);
+  return {
+    providerType: refs.providerType,
+    professionalId: refs.professionalId ?? null,
+    psychoanalystId: refs.psychoanalystId ?? null,
+    integrativeTherapistId: refs.integrativeTherapistId ?? null,
+  };
+}
+
+function providerKey(refs: ProviderRefFields): string {
+  const id = refs.professionalId ?? refs.psychoanalystId ?? refs.integrativeTherapistId ?? "";
+  return `${refs.providerType}:${id}`;
+}
+
+type ExtendedContributionInput = ContributionInput & {
+  providerType: string;
+  providerProfessionalId: string | null;
+  psychoanalystId: string | null;
+  integrativeTherapistId: string | null;
+};
+
+type ExtendedContributionOutput = ContributionOutput & {
+  providerType: string;
+  professionalId: string | null;
+  psychoanalystId: string | null;
+  integrativeTherapistId: string | null;
+};
+
+async function avgRatingForProvider(refs: ProviderRefFields): Promise<number | null> {
+  if (refs.providerType === "PSYCHOANALYST" && refs.psychoanalystId) {
+    const agg = await db.psychoanalystReview.aggregate({
+      _avg: { rating: true },
+      where: { psychoanalystId: refs.psychoanalystId },
+    });
+    return agg._avg.rating ?? null;
+  }
+  if (refs.providerType === "HEALTH" && refs.professionalId) {
+    const agg = await db.professionalReview.aggregate({
+      _avg: { rating: true },
+      where: { professionalId: refs.professionalId },
+    });
+    return agg._avg.rating ?? null;
+  }
+  return null;
+}
+
+function poolContributionUpsertWhere(
+  poolPeriodId: string,
+  refs: ProviderRefFields,
+): Prisma.PoolContributionWhereUniqueInput {
+  assertExactlyOneProviderId(refs, "poolContributionUpsertWhere");
+  if (refs.providerType === "PSYCHOANALYST") {
+    return {
+      poolPeriodId_psychoanalystId: {
+        poolPeriodId,
+        psychoanalystId: refs.psychoanalystId as string,
+      },
+    };
+  }
+  if (refs.providerType === "INTEGRATIVE_THERAPIST") {
+    return {
+      poolPeriodId_integrativeTherapistId: {
+        poolPeriodId,
+        integrativeTherapistId: refs.integrativeTherapistId as string,
+      },
+    };
+  }
+  return {
+    poolPeriodId_professionalId: {
+      poolPeriodId,
+      professionalId: refs.professionalId as string,
+    },
+  };
+}
+
+function poolContributionCreateFields(poolPeriodId: string, refs: ProviderRefFields) {
+  assertExactlyOneProviderId(refs, "poolContributionCreateFields");
+  return {
+    poolPeriodId,
+    providerType: refs.providerType,
+    professionalId: refs.professionalId ?? null,
+    psychoanalystId: refs.psychoanalystId ?? null,
+    integrativeTherapistId: refs.integrativeTherapistId ?? null,
+  };
+}
+
 // ── Coleta de consultas candidatas do mês/moeda ───────────────────────────────
 interface Candidate {
   kind: "appt" | "jit";
   refId: string;            // appointmentId ou jitQueueId
-  professionalId: string;
+  providerType: RateioProviderType;
+  professionalId: string | null;
+  psychoanalystId: string | null;
+  integrativeTherapistId: string | null;
   professionalUserId: string | null;
   patientUserId: string | null;
   patientEmailVerified: boolean;
@@ -98,18 +232,27 @@ async function collectCandidates(month: string, currency: string): Promise<Candi
   const { from, toExclusive } = monthBounds(month);
   const out: Candidate[] = [];
 
-  // 1) Consultas agendadas pagas e concluídas
+  // 1) Consultas agendadas pagas e concluídas (todos os providerType)
   const appts = await db.appointment.findMany({
     where: {
       status: "COMPLETED",
       paidAt: { not: null, gte: from, lt: toExclusive },
       currency,
-      professionalId: { not: null },
+      OR: [
+        { professionalId: { not: null } },
+        { psychoanalystId: { not: null } },
+        { integrativeTherapistId: { not: null } },
+      ],
     },
     select: {
       id: true, priceAmount: true, currency: true, paidAt: true,
+      providerType: true,
       professionalId: true,
+      psychoanalystId: true,
+      integrativeTherapistId: true,
       professional: { select: { userId: true } },
+      psychoanalyst: { select: { userId: true } },
+      integrativeTherapist: { select: { userId: true } },
       patient: { select: { user: { select: { id: true, emailVerified: true } } } },
     },
   });
@@ -125,11 +268,22 @@ async function collectCandidates(month: string, currency: string): Promise<Candi
   const withDoc = new Set(docs.map((d) => d.appointmentId).filter(Boolean) as string[]);
 
   for (const a of appts) {
+    const refs = providerRefFromAppointment(a);
+    assertExactlyOneProviderId(refs, `collectCandidates appt=${a.id}`);
+    const professionalUserId =
+      a.providerType === "PSYCHOANALYST"
+        ? a.psychoanalyst?.userId ?? null
+        : a.providerType === "INTEGRATIVE_THERAPIST"
+          ? a.integrativeTherapist?.userId ?? null
+          : a.professional?.userId ?? null;
     out.push({
       kind: "appt",
       refId: a.id,
-      professionalId: a.professionalId as string,
-      professionalUserId: a.professional?.userId ?? null,
+      providerType: a.providerType,
+      professionalId: refs.professionalId ?? null,
+      psychoanalystId: refs.psychoanalystId ?? null,
+      integrativeTherapistId: refs.integrativeTherapistId ?? null,
+      professionalUserId,
       patientUserId: a.patient?.user?.id ?? null,
       patientEmailVerified: !!a.patient?.user?.emailVerified,
       grossCents: a.priceAmount || 0,
@@ -171,10 +325,14 @@ async function collectCandidates(month: string, currency: string): Promise<Candi
     if (q.startedAt && q.endedAt) {
       dur = Math.max(0, Math.round((q.endedAt.getTime() - q.startedAt.getTime()) / 1000));
     }
+    const jitRefs = providerRefFromHealthProfessional(q.session.professionalId);
     out.push({
       kind: "jit",
       refId: q.id,
-      professionalId: q.session.professionalId,
+      providerType: "HEALTH",
+      professionalId: jitRefs.professionalId ?? null,
+      psychoanalystId: null,
+      integrativeTherapistId: null,
       professionalUserId: q.session.professional?.userId ?? null,
       patientUserId: q.patientUser?.id ?? q.patientUserId ?? null,
       patientEmailVerified: !!q.patientUser?.emailVerified,
@@ -228,8 +386,17 @@ async function doValidate(month: string, currency: string) {
   for (const c of cands) {
     const v = evaluate(c, now);
     if (v.isValid) valid++;
+    const providerFields = validationProviderFields(
+      {
+        providerType: c.providerType,
+        professionalId: c.professionalId,
+        psychoanalystId: c.psychoanalystId,
+        integrativeTherapistId: c.integrativeTherapistId,
+      },
+      `doValidate ${c.kind}=${c.refId}`,
+    );
     const data = {
-      professionalId: c.professionalId,
+      ...providerFields,
       competenceMonth: month,
       currency,
       paymentSettled: v.paymentSettled,
@@ -426,29 +593,78 @@ async function computePool(month: string, currency: string) {
   const costUsageCents = usage._sum.amountCents ?? 0;
   const poolCents = poolCentsOf(commissionCents, costFixedCents, costUsageCents);
 
-  // Profissionais com consultas válidas no mês/moeda
-  const grouped = await db.consultationValidation.groupBy({
-    by: ["professionalId"],
+  // Profissionais com consultas válidas no mês/moeda (agrupados por provider unificado)
+  const valids = await db.consultationValidation.findMany({
     where: { competenceMonth: month, currency, isValid: true },
-    _count: { _all: true },
+    select: {
+      providerType: true,
+      professionalId: true,
+      psychoanalystId: true,
+      integrativeTherapistId: true,
+    },
   });
 
-  const inputs: ContributionInput[] = [];
-  for (const g of grouped) {
-    const agg = await db.professionalReview.aggregate({
-      _avg: { rating: true },
-      where: { professionalId: g.professionalId },
-    });
-    const avgRating = agg._avg.rating ?? null;
-    const validConsults = g._count._all;
+  const grouped = new Map<string, { refs: ProviderRefFields; count: number }>();
+  for (const v of valids) {
+    const refs: ProviderRefFields = {
+      providerType: v.providerType,
+      professionalId: v.professionalId,
+      psychoanalystId: v.psychoanalystId,
+      integrativeTherapistId: v.integrativeTherapistId,
+    };
+    assertExactlyOneProviderId(refs, "computePool groupBy");
+    const key = providerKey(refs);
+    const existing = grouped.get(key);
+    if (existing) existing.count += 1;
+    else grouped.set(key, { refs, count: 1 });
+  }
+
+  const inputs: ExtendedContributionInput[] = [];
+  for (const { refs, count } of grouped.values()) {
+    const avgRating = await avgRatingForProvider(refs);
+    const validConsults = count;
     const elig = isEligible(validConsults, avgRating);
-    inputs.push({ professionalId: g.professionalId, validConsults, avgRating, qualified: elig.qualified });
+    const profileId = refs.professionalId ?? refs.psychoanalystId ?? refs.integrativeTherapistId ?? "";
+    inputs.push({
+      providerType: refs.providerType,
+      providerProfessionalId: refs.professionalId ?? null,
+      psychoanalystId: refs.psychoanalystId ?? null,
+      integrativeTherapistId: refs.integrativeTherapistId ?? null,
+      professionalId: profileId,
+      validConsults,
+      avgRating,
+      qualified: elig.qualified,
+    });
   }
 
   const outputs = splitPool(poolCents, inputs);
-  const eligByPro = new Map(inputs.map((i) => [i.professionalId, isEligible(i.validConsults, i.avgRating)]));
+  const extendedOutputs: ExtendedContributionOutput[] = outputs.map((o, idx) => ({
+    ...o,
+    providerType: inputs[idx].providerType,
+    professionalId: inputs[idx].providerProfessionalId,
+    psychoanalystId: inputs[idx].psychoanalystId,
+    integrativeTherapistId: inputs[idx].integrativeTherapistId,
+  }));
+  const eligByPro = new Map(
+    inputs.map((i) => [
+      providerKey({
+        providerType: i.providerType,
+        professionalId: i.providerProfessionalId,
+        psychoanalystId: i.psychoanalystId,
+        integrativeTherapistId: i.integrativeTherapistId,
+      }),
+      isEligible(i.validConsults, i.avgRating),
+    ]),
+  );
 
-  return { commissionCents, costFixedCents, costUsageCents, poolCents, outputs, eligByPro };
+  return {
+    commissionCents,
+    costFixedCents,
+    costUsageCents,
+    poolCents,
+    outputs: extendedOutputs,
+    eligByPro,
+  };
 }
 
 // ── AÇÃO: preview (sem gravar) ────────────────────────────────────────────────
@@ -465,7 +681,17 @@ async function doPreview(month: string, currency: string) {
     minValidConsults: DEFAULT_MIN_VALID_CONSULTS,
     minRating: DEFAULT_MIN_RATING,
     contributions: p.outputs.map((o) => ({
-      ...o, disqualReason: o.qualified ? null : (p.eligByPro.get(o.professionalId)?.reason ?? null),
+      ...o,
+      disqualReason: o.qualified
+        ? null
+        : (p.eligByPro.get(
+            providerKey({
+              providerType: o.providerType,
+              professionalId: o.professionalId,
+              psychoanalystId: o.psychoanalystId,
+              integrativeTherapistId: o.integrativeTherapistId,
+            }),
+          )?.reason ?? null),
     })),
   };
 }
@@ -562,15 +788,21 @@ async function doClose(
   });
 
   for (const o of p.outputs) {
-    const reason = o.qualified ? null : (p.eligByPro.get(o.professionalId)?.reason ?? null);
+    const refs: ProviderRefFields = {
+      providerType: o.providerType,
+      professionalId: o.professionalId,
+      psychoanalystId: o.psychoanalystId,
+      integrativeTherapistId: o.integrativeTherapistId,
+    };
+    const reason = o.qualified ? null : (p.eligByPro.get(providerKey(refs))?.reason ?? null);
     const data = {
       validConsults: o.validConsults, ratingUsed: o.ratingUsed, qualityMult: o.qualityMult,
       score: o.score, qualified: o.qualified, disqualReason: reason,
       baseCents: o.baseCents, meritCents: o.meritCents, totalCents: o.totalCents,
     };
     await db.poolContribution.upsert({
-      where: { poolPeriodId_professionalId: { poolPeriodId: period.id, professionalId: o.professionalId } },
-      create: { poolPeriodId: period.id, professionalId: o.professionalId, ...data },
+      where: poolContributionUpsertWhere(period.id, refs),
+      create: { ...poolContributionCreateFields(period.id, refs), ...data },
       update: data,
     });
   }

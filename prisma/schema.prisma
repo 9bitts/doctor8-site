@@ -676,11 +676,11 @@ model PsychoanalystProfile {
   slotAlerts          SlotAvailabilityAlert[]   @relation("PsychoanalystSlotAlerts")
   resources           Resource[]
   humanitarianVolunteers HumanitarianVolunteer[]
+  poolContributions       PoolContribution[]
+  consultationValidations ConsultationValidation[]
 
   @@index([userId])
 }
-
-model PsychoanalystAvailabilitySlot {
   id               String              @id @default(cuid())
   psychoanalystId  String
   psychoanalyst    PsychoanalystProfile  @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
@@ -758,6 +758,8 @@ model IntegrativeTherapistProfile {
   healthPlans            IntegrativeTherapistHealthPlan[]
   practiceLocations      PracticeLocation[]              @relation("IntegrativeTherapistLocations")
   services               ProviderService[]               @relation("IntegrativeTherapistServices")
+  poolContributions      PoolContribution[]
+  consultationValidations ConsultationValidation[]
 
   @@index([userId])
 }
@@ -2854,8 +2856,14 @@ model PoolContribution {
   id               String              @id @default(cuid())
   poolPeriodId     String
   poolPeriod       PoolPeriod          @relation(fields: [poolPeriodId], references: [id], onDelete: Cascade)
-  professionalId   String
-  professional     ProfessionalProfile @relation(fields: [professionalId], references: [id])
+
+  providerType            String   @default("HEALTH")
+  professionalId          String?
+  professional            ProfessionalProfile?         @relation(fields: [professionalId], references: [id])
+  psychoanalystId         String?
+  psychoanalyst           PsychoanalystProfile?        @relation(fields: [psychoanalystId], references: [id])
+  integrativeTherapistId  String?
+  integrativeTherapist    IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id])
 
   validConsults    Int                 @default(0)
   ratingUsed       Float?
@@ -2877,7 +2885,11 @@ model PoolContribution {
   updatedAt        DateTime            @updatedAt
 
   @@unique([poolPeriodId, professionalId])
+  @@unique([poolPeriodId, psychoanalystId])
+  @@unique([poolPeriodId, integrativeTherapistId])
   @@index([professionalId])
+  @@index([psychoanalystId])
+  @@index([integrativeTherapistId])
   @@index([payoutStatus])
 }
 
@@ -2889,8 +2901,13 @@ model ConsultationValidation {
   appointmentId       String?             @unique
   jitQueueId          String?             @unique
 
-  professionalId      String
-  professional        ProfessionalProfile @relation(fields: [professionalId], references: [id])
+  providerType            String   @default("HEALTH")
+  professionalId          String?
+  professional            ProfessionalProfile?         @relation(fields: [professionalId], references: [id])
+  psychoanalystId         String?
+  psychoanalyst           PsychoanalystProfile?        @relation(fields: [psychoanalystId], references: [id])
+  integrativeTherapistId  String?
+  integrativeTherapist    IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id])
   competenceMonth     String              // "2026-06"
   currency            String              @default("BRL")
 
@@ -2916,6 +2933,8 @@ model ConsultationValidation {
   updatedAt           DateTime            @updatedAt
 
   @@index([professionalId, competenceMonth])
+  @@index([psychoanalystId, competenceMonth])
+  @@index([integrativeTherapistId, competenceMonth])
   @@index([competenceMonth, currency])
   @@index([isValid])
 }
