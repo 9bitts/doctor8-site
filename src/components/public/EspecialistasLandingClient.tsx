@@ -10,7 +10,6 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getLandingContent } from "@/lib/landing-content";
 import {
   Search,
-  MapPin,
   Stethoscope,
   Loader2,
   Menu,
@@ -19,7 +18,7 @@ import {
   Map as MapIcon,
   HeartHandshake,
 } from "lucide-react";
-import { cityToSeoSlug, buildPublicSearchConvenioPath } from "@/lib/public-slugs";
+import { buildPublicSearchConvenioPath } from "@/lib/public-slugs";
 import LandingMarketingSections from "@/components/public/LandingMarketingSections";
 import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
 import CookieBanner from "@/components/public/CookieBanner";
@@ -41,6 +40,14 @@ const sora = Sora({ subsets: ["latin"], weight: ["600", "700", "800"] });
 type SearchMode = "specialty" | "symptom" | "convenio" | "map";
 
 type SpecialtyRow = { slug: string; label: string; count: number };
+type CityRow = { slug: string; label: string; count: number };
+
+function pickDefaultCitySlug(rows: CityRow[], current: string): string {
+  if (!rows.length) return "";
+  if (current && rows.some((c) => c.slug === current)) return current;
+  const rio = rows.find((c) => c.slug === "rio-de-janeiro");
+  return rio?.slug ?? rows[0].slug;
+}
 
 function nextLang(current: Lang): Lang {
   if (current === "pt") return "en";
@@ -68,28 +75,6 @@ function modeLabel(mode: SearchMode, t: (k: string) => string): string {
   return t("symptom.modeMap");
 }
 
-function CityField({
-  city,
-  onChange,
-  placeholder,
-}: {
-  city: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-}) {
-  return (
-    <div className="relative">
-      <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-      <input
-        value={city}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-3 text-base text-slate-800 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
-      />
-    </div>
-  );
-}
-
 export default function EspecialistasLandingClient() {
   const { t, lang, setLang } = useI18n();
   const lc = getLandingContent(lang);
@@ -98,8 +83,8 @@ export default function EspecialistasLandingClient() {
   const [mode, setMode] = useState<SearchMode>("specialty");
   const [specialty, setSpecialty] = useState("");
   const [acuraSpecialty, setAcuraSpecialty] = useState("");
-  const [city, setCity] = useState("Rio de Janeiro");
-  const [acuraCity, setAcuraCity] = useState("Rio de Janeiro");
+  const [city, setCity] = useState("");
+  const [acuraCity, setAcuraCity] = useState("");
   const [symptom, setSymptom] = useState("");
   const [symptomLoading, setSymptomLoading] = useState(false);
   const [symptomError, setSymptomError] = useState("");
@@ -108,15 +93,19 @@ export default function EspecialistasLandingClient() {
   const [convenio, setConvenio] = useState("");
   const [specialties, setSpecialties] = useState<SpecialtyRow[]>([]);
   const [specialtiesLoading, setSpecialtiesLoading] = useState(true);
+  const [cities, setCities] = useState<CityRow[]>([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
   const [healthPlans, setHealthPlans] = useState<{ slug: string; name: string }[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const loadCatalogs = useCallback(async () => {
     setSpecialtiesLoading(true);
+    setCitiesLoading(true);
     try {
-      const [specRes, plansRes] = await Promise.all([
+      const [specRes, plansRes, citiesRes] = await Promise.all([
         fetch(`/api/public/specialties?lang=${encodeURIComponent(lang)}`),
         fetch("/api/public/health-plans?usedOnly=1"),
+        fetch(`/api/public/cities?lang=${encodeURIComponent(lang)}`),
       ]);
       if (specRes.ok) {
         const data = await specRes.json();
@@ -133,6 +122,21 @@ export default function EspecialistasLandingClient() {
           setAcuraSpecialty((prev) => prev || rows[0].slug);
         }
       }
+      if (citiesRes.ok) {
+        const data = await citiesRes.json();
+        const rows: CityRow[] = (data.cities || []).map(
+          (c: { slug: string; label: string; count: number }) => ({
+            slug: c.slug,
+            label: c.label,
+            count: c.count,
+          }),
+        );
+        setCities(rows);
+        if (rows.length > 0) {
+          setCity((prev) => pickDefaultCitySlug(rows, prev));
+          setAcuraCity((prev) => pickDefaultCitySlug(rows, prev));
+        }
+      }
       if (plansRes.ok) {
         const data = await plansRes.json();
         const plans = data.plans || [];
@@ -143,6 +147,7 @@ export default function EspecialistasLandingClient() {
       /* ignore */
     }
     setSpecialtiesLoading(false);
+    setCitiesLoading(false);
   }, [lang]);
 
   useEffect(() => {
@@ -155,13 +160,20 @@ export default function EspecialistasLandingClient() {
     meta: s.count > 0 ? formatProfessionCount(lang, s.count) : undefined,
   }));
 
+  const cityOptions = cities.map((c) => ({
+    value: c.slug,
+    label: c.label,
+    meta: c.count > 0 ? formatProfessionCount(lang, c.count) : undefined,
+  }));
+
+  const cityLabelForMap = cityOptions.find((c) => c.value === city)?.label ?? city;
+
   const healthPlanOptions = healthPlans.map((p) => ({
     value: p.slug,
     label: p.name,
   }));
 
-  function goSearch(esp: string, cityInput: string, acuraOnly = false) {
-    const citySlug = cityToSeoSlug(cityInput);
+  function goSearch(esp: string, citySlug: string, acuraOnly = false) {
     if (!esp || !citySlug) return;
     const qs = acuraOnly ? "?acuraVolunteers=1" : "";
     router.push(`/especialistas/${esp}/${citySlug}${qs}`);
@@ -180,10 +192,9 @@ export default function EspecialistasLandingClient() {
   function handleConvenioSearch(e: React.FormEvent) {
     e.preventDefault();
     const esp = specialty.trim();
-    const citySlug = cityToSeoSlug(city);
     const plan = convenio.trim();
-    if (!esp || !citySlug || !plan) return;
-    router.push(buildPublicSearchConvenioPath(esp, citySlug, plan));
+    if (!esp || !city || !plan) return;
+    router.push(buildPublicSearchConvenioPath(esp, city, plan));
   }
 
   async function handleSymptomSearch(e: React.FormEvent) {
@@ -336,7 +347,7 @@ export default function EspecialistasLandingClient() {
           </div>
 
           {mode === "map" ? (
-            <LandingMapPanel defaultQuery={city} />
+            <LandingMapPanel defaultQuery={cityLabelForMap} />
           ) : mode === "specialty" ? (
             <form onSubmit={handleSpecialtySearch} className={`${formShell} space-y-4`}>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -355,12 +366,22 @@ export default function EspecialistasLandingClient() {
                 </div>
                 <div>
                   <label className={fieldLabel}>{t("pubSearch.city")}</label>
-                  <CityField city={city} onChange={setCity} placeholder={t("pubSearch.cityPlaceholder")} />
+                  <LandingOptionPicker
+                    value={city}
+                    onChange={setCity}
+                    options={cityOptions}
+                    label={t("pubSearch.city")}
+                    searchable
+                    searchPlaceholder={t("pubSearch.searchCity")}
+                    emptyMessage={t("pubSearch.noCities")}
+                    loading={citiesLoading}
+                    disabled={cityOptions.length === 0}
+                  />
                 </div>
               </div>
               <button
                 type="submit"
-                disabled={!specialty || specialtiesLoading}
+                disabled={!specialty || !city || specialtiesLoading || citiesLoading}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-8 py-3.5 font-bold text-white transition hover:bg-accent-600 disabled:opacity-50"
               >
                 <Search size={18} /> {t("pubSearch.search")}
@@ -383,7 +404,17 @@ export default function EspecialistasLandingClient() {
                 </div>
                 <div>
                   <label className={fieldLabel}>{t("pubSearch.city")}</label>
-                  <CityField city={city} onChange={setCity} placeholder={t("pubSearch.cityPlaceholder")} />
+                  <LandingOptionPicker
+                    value={city}
+                    onChange={setCity}
+                    options={cityOptions}
+                    label={t("pubSearch.city")}
+                    searchable
+                    searchPlaceholder={t("pubSearch.searchCity")}
+                    emptyMessage={t("pubSearch.noCities")}
+                    loading={citiesLoading}
+                    disabled={cityOptions.length === 0}
+                  />
                 </div>
                 <div className="sm:col-span-2">
                   <label className={fieldLabel}>{t("pubSearch.healthPlan")}</label>
@@ -402,7 +433,7 @@ export default function EspecialistasLandingClient() {
               </div>
               <button
                 type="submit"
-                disabled={!convenio || !specialty}
+                disabled={!convenio || !specialty || !city}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-8 py-3.5 font-bold text-white transition hover:bg-accent-600 disabled:opacity-50"
               >
                 <Search size={18} /> {t("pubSearch.search")}
@@ -426,7 +457,17 @@ export default function EspecialistasLandingClient() {
               </div>
               <div>
                 <label className={fieldLabel}>{t("pubSearch.city")}</label>
-                <CityField city={city} onChange={setCity} placeholder={t("pubSearch.cityPlaceholder")} />
+                <LandingOptionPicker
+                  value={city}
+                  onChange={setCity}
+                  options={cityOptions}
+                  label={t("pubSearch.city")}
+                  searchable
+                  searchPlaceholder={t("pubSearch.searchCity")}
+                  emptyMessage={t("pubSearch.noCities")}
+                  loading={citiesLoading}
+                  disabled={cityOptions.length === 0}
+                />
               </div>
               {symptomError && <p className="text-xs text-red-600">{symptomError}</p>}
               {symptomMatches.length > 0 && (
@@ -438,7 +479,7 @@ export default function EspecialistasLandingClient() {
               )}
               <button
                 type="submit"
-                disabled={symptomLoading || symptom.trim().length < 2}
+                disabled={symptomLoading || symptom.trim().length < 2 || !city}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-8 py-3.5 font-bold text-white transition hover:bg-accent-600 disabled:opacity-60"
               >
                 {symptomLoading ? (
@@ -472,14 +513,20 @@ export default function EspecialistasLandingClient() {
                   searchPlaceholder={t("pubSearch.searchSpecialty")}
                   loading={specialtiesLoading}
                 />
-                <CityField
-                  city={acuraCity}
+                <LandingOptionPicker
+                  value={acuraCity}
                   onChange={setAcuraCity}
-                  placeholder={t("pubSearch.cityPlaceholder")}
+                  options={cityOptions}
+                  label={t("pubSearch.city")}
+                  searchable
+                  searchPlaceholder={t("pubSearch.searchCity")}
+                  emptyMessage={t("pubSearch.noCities")}
+                  loading={citiesLoading}
+                  disabled={cityOptions.length === 0}
                 />
                 <button
                   type="submit"
-                  disabled={!acuraSpecialty || specialtiesLoading}
+                  disabled={!acuraSpecialty || !acuraCity || specialtiesLoading || citiesLoading}
                   className="flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-sky-400 disabled:opacity-50 sm:self-end"
                 >
                   <Search size={16} /> {t("acura.vol.landingSearch")}

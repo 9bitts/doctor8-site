@@ -2,10 +2,12 @@
 
 import { db } from "@/lib/db";
 import type { Lang } from "@/lib/i18n/translations";
+import { translate } from "@/lib/i18n/translations";
 import { canonicalProfessionValue, getProfessionLabel } from "@/lib/professions";
 import { picBySlug, picLabel, PICS_PRACTICES } from "@/lib/pics/practices";
 import {
   INTEGRATIVE_SEO_SLUG,
+  cityToSeoSlug,
   isIntegrativeSearchSlug,
   seoSlugToSpecialtyLabel,
   specialtyToSeoSlug,
@@ -106,6 +108,124 @@ export async function listPublicSpecialties(lang: Lang = "pt"): Promise<PublicSp
       if (b.count !== a.count) return b.count - a.count;
       return a.label.localeCompare(b.label, lang === "en" ? "en" : "pt");
     });
+
+  return items;
+}
+
+export type PublicCityItem = {
+  slug: string;
+  label: string;
+  count: number;
+};
+
+type CityBucket = {
+  labelVotes: Map<string, number>;
+  providers: Set<string>;
+};
+
+/** Cities and regions from verified providers (clinic + practice locations). */
+export async function listPublicCities(lang: Lang = "pt"): Promise<PublicCityItem[]> {
+  const buckets = new Map<string, CityBucket>();
+  const providerHasCity = new Set<string>();
+
+  function add(providerKey: string, city: string | null | undefined) {
+    const trimmed = city?.trim();
+    if (!trimmed) return;
+    const slug = cityToSeoSlug(trimmed);
+    if (!slug || slug === "online") return;
+
+    providerHasCity.add(providerKey);
+
+    let bucket = buckets.get(slug);
+    if (!bucket) {
+      bucket = { labelVotes: new Map(), providers: new Set() };
+      buckets.set(slug, bucket);
+    }
+    bucket.providers.add(providerKey);
+    bucket.labelVotes.set(trimmed, (bucket.labelVotes.get(trimmed) || 0) + 1);
+  }
+
+  const [professionals, psychoanalysts, integrative, locations] = await Promise.all([
+    db.professionalProfile.findMany({
+      where: { verified: true },
+      select: { id: true, clinicCity: true, acceptsTeleconsult: true },
+    }),
+    db.psychoanalystProfile.findMany({
+      where: { verified: true },
+      select: { id: true, clinicCity: true, acceptsTeleconsult: true },
+    }),
+    db.integrativeTherapistProfile.findMany({
+      where: { verified: true },
+      select: { id: true, clinicCity: true, acceptsTeleconsult: true },
+    }),
+    db.practiceLocation.findMany({
+      where: {
+        OR: [
+          { professional: { verified: true } },
+          { psychoanalyst: { verified: true } },
+          { integrativeTherapist: { verified: true } },
+        ],
+      },
+      select: {
+        city: true,
+        professionalId: true,
+        psychoanalystId: true,
+        integrativeTherapistId: true,
+      },
+    }),
+  ]);
+
+  for (const p of professionals) {
+    add(`h:${p.id}`, p.clinicCity);
+  }
+  for (const p of psychoanalysts) {
+    add(`p:${p.id}`, p.clinicCity);
+  }
+  for (const p of integrative) {
+    add(`i:${p.id}`, p.clinicCity);
+  }
+  for (const loc of locations) {
+    const key = loc.professionalId
+      ? `h:${loc.professionalId}`
+      : loc.psychoanalystId
+        ? `p:${loc.psychoanalystId}`
+        : loc.integrativeTherapistId
+          ? `i:${loc.integrativeTherapistId}`
+          : null;
+    if (key) add(key, loc.city);
+  }
+
+  const onlineProviders = new Set<string>();
+  for (const p of professionals) {
+    const key = `h:${p.id}`;
+    if (!providerHasCity.has(key) && p.acceptsTeleconsult) onlineProviders.add(key);
+  }
+  for (const p of psychoanalysts) {
+    const key = `p:${p.id}`;
+    if (!providerHasCity.has(key) && p.acceptsTeleconsult) onlineProviders.add(key);
+  }
+  for (const p of integrative) {
+    const key = `i:${p.id}`;
+    if (!providerHasCity.has(key) && p.acceptsTeleconsult) onlineProviders.add(key);
+  }
+
+  const items: PublicCityItem[] = [...buckets.entries()]
+    .map(([slug, bucket]) => {
+      const label = [...bucket.labelVotes.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      return { slug, label, count: bucket.providers.size };
+    })
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label, lang === "en" ? "en" : "pt");
+    });
+
+  if (onlineProviders.size > 0) {
+    items.unshift({
+      slug: "online",
+      label: translate(lang, "pubSearch.cityOnline"),
+      count: onlineProviders.size,
+    });
+  }
 
   return items;
 }

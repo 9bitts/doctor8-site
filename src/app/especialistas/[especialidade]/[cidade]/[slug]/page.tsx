@@ -1,11 +1,11 @@
 // Public professional profile ? SEO URL: /especialistas/[especialidade]/[cidade]/[slug]
 
 import { notFound, redirect } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Video, Building2, Star, CheckCircle2, Stethoscope, Award, MapPin, ExternalLink,
 } from "lucide-react";
+import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import { cookies } from "next/headers";
 import { normalizeLang, translate } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
@@ -100,25 +100,16 @@ export default async function PublicSpecialistPage({
 
       <div className="min-h-screen bg-slate-50">
         {/* Header */}
-        <header className="bg-brand-500 text-white">
+        <header className="sticky top-0 z-20 border-b border-white/10 bg-d8-dark text-white">
           <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="inline-flex shrink-0">
-              <Image
-                src="/branding/doctor8-logo.png"
-                alt="Doctor8"
-                width={160}
-                height={44}
-                className="h-7 w-auto"
-                priority
-              />
-            </Link>
+            <BrandLogoLink href="/" variant="on-dark" size="md" />
             <div className="flex items-center gap-3 text-sm">
-              <Link href="/login" className="hover:underline opacity-90">
+              <Link href="/login" className="text-white/80 transition hover:text-white">
                 {t("pub.headerLogin")}
               </Link>
               <Link
                 href="/register"
-                className="bg-white text-brand-600 font-semibold px-4 py-2 rounded-full hover:bg-brand-50 transition"
+                className="rounded-lg bg-accent-500 px-4 py-2 font-semibold text-white transition hover:bg-accent-600"
               >
                 {t("pub.headerRegister")}
               </Link>

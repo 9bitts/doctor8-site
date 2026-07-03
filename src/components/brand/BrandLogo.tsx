@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { BRAND_LOGO_PATH } from "@/lib/brand";
+import { BRAND_LOGO_PATH, BRAND_LOGO_WHITE_PATH } from "@/lib/brand";
 
-export { BRAND_LOGO_PATH };
+export { BRAND_LOGO_PATH, BRAND_LOGO_WHITE_PATH };
 
 export type BrandLogoVariant = "on-dark" | "on-light";
 
@@ -15,15 +15,17 @@ const HEIGHT_CLASS = {
 
 function LogoImg({
   size,
+  src,
   className,
 }: {
   size: keyof typeof HEIGHT_CLASS;
+  src: string;
   className: string;
 }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={BRAND_LOGO_PATH}
+      src={src}
       alt="Doctor8"
       width={500}
       height={150}
@@ -34,7 +36,7 @@ function LogoImg({
 }
 
 export function BrandLogo({
-  variant: _variant = "on-dark",
+  variant = "on-dark",
   size = "md",
   className = "",
 }: {
@@ -43,7 +45,8 @@ export function BrandLogo({
   className?: string;
   priority?: boolean;
 }) {
-  return <LogoImg size={size} className={className} />;
+  const src = variant === "on-dark" ? BRAND_LOGO_WHITE_PATH : BRAND_LOGO_PATH;
+  return <LogoImg size={size} src={src} className={className} />;
 }
 
 export function BrandLogoLink({

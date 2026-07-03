@@ -1,9 +1,10 @@
-/** Shared Doctor8 wordmark asset path (public/). */
+/** Shared Doctor8 wordmark asset paths (public/). */
 export const BRAND_LOGO_PATH = "/branding/doctor8-logo.png";
+export const BRAND_LOGO_WHITE_PATH = "/branding/doctor8-logo-white.png";
 
-export function brandLogoAbsoluteUrl(appUrl: string): string {
+export function brandLogoAbsoluteUrl(appUrl: string, white = false): string {
   const base = appUrl.trim().replace(/\/$/, "");
-  return `${base}${BRAND_LOGO_PATH}`;
+  return `${base}${white ? BRAND_LOGO_WHITE_PATH : BRAND_LOGO_PATH}`;
 }
 
 /** HTML img for transactional emails (gradient header background). */

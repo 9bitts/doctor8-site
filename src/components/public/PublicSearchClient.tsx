@@ -204,13 +204,13 @@ export default function PublicSearchClient({
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-brand-500 text-white sticky top-0 z-20 shadow-md">
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-d8-dark text-white shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4">
             <BrandLogoLink href="/" variant="on-dark" size="md" />
             <div className="flex items-center gap-3 text-sm shrink-0">
-              <Link href="/login" className="hover:underline opacity-90">{t("pub.headerLogin")}</Link>
-              <Link href="/register" className="bg-white text-brand-600 font-semibold px-4 py-2 rounded-full">
+              <Link href="/login" className="text-white/80 transition hover:text-white">{t("pub.headerLogin")}</Link>
+              <Link href="/register" className="rounded-lg bg-accent-500 px-4 py-2 font-semibold text-white transition hover:bg-accent-600">
                 {t("pub.headerRegister")}
               </Link>
             </div>
@@ -226,7 +226,7 @@ export default function PublicSearchClient({
                 </>
               ) : null}
             </h1>
-            <p className="text-sm text-brand-100 mt-0.5">
+            <p className="text-sm text-white/60 mt-0.5">
               {loading ? "..." : t("pubSearch.resultCount").replace("{n}", String(results.length))}
             </p>
           </div>
@@ -240,7 +240,7 @@ export default function PublicSearchClient({
             type="button"
             onClick={() => toggleFilter("teleconsult")}
             className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition ${
-              filters.teleconsult ? "bg-brand-50 border-brand-300 text-brand-700" : "border-slate-200 text-slate-600"
+              filters.teleconsult ? "bg-accent-50 border-accent-300 text-accent-700" : "border-slate-200 text-slate-600"
             }`}
           >
             <Video size={13} /> {t("pubSearch.filterTele")}
@@ -249,7 +249,7 @@ export default function PublicSearchClient({
             type="button"
             onClick={() => toggleFilter("presencial")}
             className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition ${
-              filters.presencial ? "bg-brand-50 border-brand-300 text-brand-700" : "border-slate-200 text-slate-600"
+              filters.presencial ? "bg-accent-50 border-accent-300 text-accent-700" : "border-slate-200 text-slate-600"
             }`}
           >
             <Building2 size={13} /> {t("pubSearch.filterInPerson")}
@@ -258,7 +258,7 @@ export default function PublicSearchClient({
             type="button"
             onClick={() => patchFilters({ availableOnly: !filters.availableOnly })}
             className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full border transition ${
-              filters.availableOnly ? "bg-brand-50 border-brand-300 text-brand-700" : "border-slate-200 text-slate-600"
+              filters.availableOnly ? "bg-accent-50 border-accent-300 text-accent-700" : "border-slate-200 text-slate-600"
             }`}
           >
             <Clock size={13} /> {t("pubSearch.filterAvailable")}
@@ -320,7 +320,7 @@ export default function PublicSearchClient({
 
       {/* Insurance banner */}
       {plans.length > 0 && (
-        <div className="bg-brand-600 text-white">
+        <div className="border-y border-white/10 bg-d8-dark2 text-white">
           <div className="max-w-6xl mx-auto px-4 py-4">
             <p className="text-sm font-semibold flex items-center gap-2 mb-3">
               <Shield size={16} /> {t("pubSearch.insuranceTitle")}
@@ -333,8 +333,8 @@ export default function PublicSearchClient({
                   onClick={() => applyConvenio(p.slug)}
                   className={`text-xs font-medium px-3 py-1.5 rounded-full transition ${
                     filters.convenio === p.slug
-                      ? "bg-white text-brand-600"
-                      : "bg-brand-500/50 text-white hover:bg-brand-500"
+                      ? "bg-white text-d8-dark"
+                      : "bg-white/10 text-white hover:bg-white/15"
                   }`}
                 >
                   {p.name}
@@ -366,7 +366,7 @@ export default function PublicSearchClient({
                 <p className="text-sm text-slate-400 mt-2">{t("pubSearch.emptyHint")}</p>
                 <Link
                   href="/"
-                  className="inline-flex items-center gap-1 text-brand-600 font-semibold text-sm mt-4"
+                  className="inline-flex items-center gap-1 text-accent-600 font-semibold text-sm mt-4"
                 >
                   {t("pubSearch.newSearch")} <ChevronRight size={14} />
                 </Link>

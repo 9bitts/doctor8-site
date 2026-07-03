@@ -17,6 +17,7 @@ type Props = {
   searchable?: boolean;
   searchPlaceholder?: string;
   loading?: boolean;
+  emptyMessage?: string;
 };
 
 export default function LandingOptionPicker({
@@ -28,6 +29,7 @@ export default function LandingOptionPicker({
   searchable = false,
   searchPlaceholder,
   loading = false,
+  emptyMessage,
 }: Props) {
   const { t, lang } = useI18n();
   const [open, setOpen] = useState(false);
@@ -133,7 +135,7 @@ export default function LandingOptionPicker({
         >
           {filtered.length === 0 ? (
             <p className="px-3 py-8 text-center text-sm text-slate-500">
-              {t("pubSearch.noSpecialties")}
+              {emptyMessage ?? t("pubSearch.noSpecialties")}
             </p>
           ) : (
             <ul className="divide-y divide-slate-100">
