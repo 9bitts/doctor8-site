@@ -453,13 +453,13 @@ export default function EspecialistasLandingClient() {
 
           {/* AcuraBrasil volunteer search — separate block */}
           {mode !== "map" && (
-            <div className="mt-5 rounded-2xl border border-sky-300/40 bg-sky-950/40 p-5 backdrop-blur-sm">
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <HeartHandshake size={18} className="text-sky-300" />
+            <div className="mt-5 rounded-2xl border border-sky-400/35 bg-sky-900/80 p-5 text-white shadow-lg backdrop-blur-sm">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <HeartHandshake size={18} className="shrink-0 text-sky-200" aria-hidden />
                 <h2 className="text-sm font-bold text-white">{t("acura.vol.landingSectionTitle")}</h2>
-                <AcuraVolunteerBadge size="sm" showInfoIcon={false} />
+                <AcuraVolunteerBadge size="sm" showInfoIcon={false} className="[&_span]:border-sky-300/60 [&_span]:bg-white/95" />
               </div>
-              <p className="mb-4 text-xs leading-relaxed text-sky-100/90">
+              <p className="mb-4 text-sm leading-relaxed text-white/90">
                 {t("acura.vol.landingSectionDesc")}
               </p>
               <form onSubmit={handleAcuraSearch} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
