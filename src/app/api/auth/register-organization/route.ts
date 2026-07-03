@@ -115,7 +115,6 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await bcrypt.hash(parsed.password, 12);
-    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
     const normalizedLanguage =
       parsed.language === "pt" || parsed.language === "es" || parsed.language === "en"

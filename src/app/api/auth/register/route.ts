@@ -314,8 +314,6 @@ export async function POST(req: NextRequest) {
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
-      const ip = req.headers.get("x-forwarded-for") ||
-        req.headers.get("x-real-ip") || "unknown";
       const userAgent = req.headers.get("user-agent") || "unknown";
       const alreadyVerified = isAccountVerified(existing);
 
@@ -409,8 +407,6 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const ip = req.headers.get("x-forwarded-for") ||
-      req.headers.get("x-real-ip") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
 
     // Create user + profile + consents in a transaction
