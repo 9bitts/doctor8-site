@@ -131,7 +131,7 @@ export default function PublicSearchClient({
 
       const [searchRes, plansRes] = await Promise.all([
         fetch(`/api/public/search?${params}`),
-        fetch("/api/public/health-plans"),
+        fetch("/api/public/health-plans?usedOnly=1"),
       ]);
 
       if (searchRes.ok) {

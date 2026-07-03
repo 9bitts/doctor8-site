@@ -5,6 +5,11 @@ import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
 import { getProfessionLabel, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import type { ProviderType } from "@/lib/providers";
+import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
+import { picBySlug, picLabel } from "@/lib/pics/practices";
+import { INTEGRATIVE_SEO_SLUG } from "@/lib/public-slugs";
+
+export type PublicProfileProviderType = ProviderType | "integrative";
 
 export {
   APP_BASE_URL,
@@ -46,7 +51,7 @@ export function getPublicListingStatus(
 }
 
 export type PublicProfileData = {
-  providerType: ProviderType;
+  providerType: PublicProfileProviderType;
   providerId: string;
   slug: string;
   specialtySlug: string;
@@ -231,6 +236,30 @@ function mapCardToPublicProfile(
       verified: boolean;
       acuraVolunteer: boolean;
     } | null;
+    integrativeTherapist: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      picsPractices: string[];
+      bio: string | null;
+      avatarUrl: string | null;
+      trainingInstitution: string;
+      yearsOfPractice: number;
+      consultPrice: number;
+      currency: string;
+      sessionDurationMins: number;
+      acceptsTeleconsult: boolean;
+      acceptsInPerson: boolean;
+      clinicName: string | null;
+      clinicAddress: string | null;
+      clinicCity: string | null;
+      clinicState: string | null;
+      clinicCountry: string | null;
+      clinicLatitude: number | null;
+      clinicLongitude: number | null;
+      verified: boolean;
+      acuraVolunteer: boolean;
+    } | null;
   },
   reviews: { avg: number | null; count: number }
 ): PublicProfileData | null {
@@ -319,6 +348,56 @@ function mapCardToPublicProfile(
     };
   }
 
+  if (card.integrativeTherapist) {
+    const p = card.integrativeTherapist;
+    const mainPic = p.picsPractices[0] ? picBySlug(p.picsPractices[0]) : undefined;
+    const specialtyLabel = mainPic
+      ? picLabel(mainPic, "pt")
+      : INTEGRATIVE_THERAPY_SPECIALTY;
+
+    return {
+      providerType: "integrative",
+      providerId: p.id,
+      slug: card.slug,
+      specialtySlug: card.specialtySlug || INTEGRATIVE_SEO_SLUG,
+      citySlug: card.citySlug,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      specialty: specialtyLabel,
+      subspecialties: p.picsPractices
+        .map((s) => picBySlug(s))
+        .filter(Boolean)
+        .map((pic) => picLabel(pic!, "pt")),
+      bio: p.bio,
+      avatarUrl: p.avatarUrl,
+      license: null,
+      trainingInstitution: p.trainingInstitution,
+      yearsOfPractice: p.yearsOfPractice,
+      associations: [],
+      consultPrice: p.consultPrice,
+      currency: p.currency,
+      sessionDurationMins: p.sessionDurationMins,
+      acceptsTeleconsult: p.acceptsTeleconsult,
+      acceptsInPerson: p.acceptsInPerson,
+      clinicName: p.clinicName,
+      clinicAddress: p.clinicAddress,
+      clinicCity: p.clinicCity,
+      clinicState: p.clinicState,
+      clinicCountry: p.clinicCountry,
+      clinicLatitude: p.clinicLatitude,
+      clinicLongitude: p.clinicLongitude,
+      verified: p.verified,
+      headline: card.headline,
+      ratingAvg: reviews.avg,
+      ratingCount: reviews.count,
+      publicPath: buildPublicProfilePath(card),
+      googleBusinessUrl: card.googleBusinessUrl,
+      locations: [],
+      services: [],
+      acuraVolunteer: p.acuraVolunteer,
+    };
+  }
+
   return null;
 }
 
@@ -335,9 +414,11 @@ async function enrichPublicProfile(
     clinicLongitude?: number | null;
   }
 ): Promise<PublicProfileData> {
-  await ensureLegacyLocation(base.providerId, base.providerType, legacy);
-  const locations = await getPracticeLocations(base.providerId, base.providerType);
-  const services = await getProviderServices(base.providerId, base.providerType, true);
+  const practiceType =
+    base.providerType === "integrative" ? "integrative_therapist" : base.providerType;
+  await ensureLegacyLocation(base.providerId, practiceType, legacy);
+  const locations = await getPracticeLocations(base.providerId, practiceType);
+  const services = await getProviderServices(base.providerId, practiceType, true);
 
   return { ...base, locations, services };
 }
@@ -345,7 +426,33 @@ async function enrichPublicProfile(
 const cardInclude = {
   professional: true,
   psychoanalyst: true,
+  integrativeTherapist: true,
 } as const;
+
+function resolveCardProvider(card: {
+  professional: { id: string; verified: boolean } | null;
+  psychoanalyst: { id: string; verified: boolean } | null;
+  integrativeTherapist: { id: string; verified: boolean } | null;
+}): {
+  providerType: PublicProfileProviderType;
+  providerId: string;
+  legacy: Record<string, unknown>;
+} | null {
+  if (card.professional?.verified) {
+    return { providerType: "health", providerId: card.professional.id, legacy: card.professional };
+  }
+  if (card.psychoanalyst?.verified) {
+    return { providerType: "psychoanalyst", providerId: card.psychoanalyst.id, legacy: card.psychoanalyst };
+  }
+  if (card.integrativeTherapist?.verified) {
+    return {
+      providerType: "integrative",
+      providerId: card.integrativeTherapist.id,
+      legacy: card.integrativeTherapist,
+    };
+  }
+  return null;
+}
 
 /** Resolve a public profile by slug (must be approved + opted in). */
 export async function getLivePublicProfileBySlug(
@@ -357,17 +464,17 @@ export async function getLivePublicProfileBySlug(
   });
   if (!card) return null;
 
-  const profile = card.professional ?? card.psychoanalyst;
-  if (!profile?.verified) return null;
+  const resolved = resolveCardProvider(card);
+  if (!resolved) return null;
 
-  const providerType = card.professional ? "health" : "psychoanalyst";
-  const providerId = card.professional?.id ?? card.psychoanalyst!.id;
-  const reviews = await loadReviewStats(providerType, providerId);
+  const reviews =
+    resolved.providerType === "integrative"
+      ? { avg: null, count: 0 }
+      : await loadReviewStats(resolved.providerType, resolved.providerId);
   const base = mapCardToPublicProfile(card, reviews);
   if (!base) return null;
 
-  const legacy = card.professional ?? card.psychoanalyst!;
-  return enrichPublicProfile(base, legacy);
+  return enrichPublicProfile(base, resolved.legacy);
 }
 
 /** Resolve by slug without visibility checks (for redirects / preview). */
@@ -380,16 +487,17 @@ export async function getPublicProfileBySlug(
   });
   if (!card) return null;
 
-  const providerType = card.professional ? "health" : "psychoanalyst";
-  const providerId = card.professional?.id ?? card.psychoanalyst?.id;
-  if (!providerId) return null;
+  const resolved = resolveCardProvider(card);
+  if (!resolved) return null;
 
-  const reviews = await loadReviewStats(providerType, providerId);
+  const reviews =
+    resolved.providerType === "integrative"
+      ? { avg: null, count: 0 }
+      : await loadReviewStats(resolved.providerType, resolved.providerId);
   const base = mapCardToPublicProfile(card, reviews);
   if (!base) return null;
 
-  const legacy = card.professional ?? card.psychoanalyst!;
-  return enrichPublicProfile(base, legacy);
+  return enrichPublicProfile(base, resolved.legacy);
 }
 
 export function buildPhysicianJsonLd(

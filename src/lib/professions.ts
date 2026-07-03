@@ -1,6 +1,7 @@
 // Canonical profession/specialty values (stored in DB) with localized labels.
 
 import type { Lang } from "@/lib/i18n/translations";
+import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
 
 export const PSYCHOANALYSIS_SPECIALTY = "Psychoanalysis";
 
@@ -129,6 +130,11 @@ const LABELS: Record<string, Record<Lang, string>> = {
   "Veterinarian": { en: "Veterinarian", pt: "Veterinário", es: "Veterinario" },
   "Other": { en: "Other", pt: "Outro", es: "Otro" },
   [PSYCHOANALYSIS_SPECIALTY]: { en: "Psychoanalysis", pt: "Psicanálise", es: "Psicoanálisis" },
+  [INTEGRATIVE_THERAPY_SPECIALTY]: {
+    en: "Integrative & complementary therapies",
+    pt: "Terapia integrativa",
+    es: "Terapia integrativa",
+  },
 };
 
 export function getProfessionLabel(lang: Lang, value: string | null | undefined): string {

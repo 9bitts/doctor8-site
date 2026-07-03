@@ -15,12 +15,19 @@ import {
   firstAvailableSlot,
 } from "@/lib/availability-slots";
 import { getProviderServices, getPracticeLocations } from "@/lib/practice";
-import type { ProviderType } from "@/lib/providers";
 import type { DaySlots } from "@/lib/availability-slots";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
+import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
+import { picBySlug, picLabel } from "@/lib/pics/practices";
+import {
+  INTEGRATIVE_SEO_SLUG,
+  isIntegrativeSearchSlug,
+} from "@/lib/public-slugs";
+
+export type PublicProviderType = "health" | "psychoanalyst" | "integrative";
 
 export type PublicSearchResult = {
-  providerType: ProviderType;
+  providerType: PublicProviderType;
   providerId: string;
   slug: string;
   firstName: string;
@@ -73,7 +80,7 @@ export type PublicSearchOpts = {
   locale?: string;
 };
 
-async function loadReviewMap(providerType: ProviderType) {
+async function loadReviewMap(providerType: PublicProviderType) {
   if (providerType === "psychoanalyst") {
     const rows = await db.psychoanalystReview.groupBy({
       by: ["psychoanalystId"],
@@ -107,9 +114,6 @@ async function loadReviewMap(providerType: ProviderType) {
   );
 }
 
-function matchesPsychoanalystSpecialty(especialidade: string): boolean {
-  return especialidade === "psicanalista";
-}
 
 function filterAndSortResults(
   results: PublicSearchResult[],
@@ -194,8 +198,10 @@ export async function searchPublicListings(
     ? await db.healthPlan.findUnique({ where: { slug: convenio } })
     : null;
 
-  const psychoOnly = matchesPsychoanalystSpecialty(especialidade);
-  const healthOnly = !psychoOnly;
+  const psychoOnly = especialidade === "psicanalista";
+  const integrativeOnly = isIntegrativeSearchSlug(especialidade);
+  const picsFilterSlug = picBySlug(especialidade)?.slug ?? null;
+  const healthOnly = !psychoOnly && !integrativeOnly;
 
   const baseCardWhere = {
     isPublic: true,
@@ -388,6 +394,101 @@ export async function searchPublicListings(
     }
   }
 
+  if (integrativeOnly) {
+    const integrativeCards = await db.virtualCard.findMany({
+      where: {
+        isPublic: true,
+        integrativeTherapistId: { not: null },
+        integrativeTherapist: {
+          verified: true,
+          ...(picsFilterSlug ? { picsPractices: { has: picsFilterSlug } } : {}),
+          ...(teleconsult ? { acceptsTeleconsult: true } : {}),
+          ...(presencial ? { acceptsInPerson: true } : {}),
+          ...(healthPlanFilter
+            ? {
+                healthPlans: {
+                  some: { healthPlanId: healthPlanFilter.id },
+                },
+              }
+            : {}),
+        },
+        ...(includeOnline
+          ? {}
+          : { OR: [{ citySlug: cidade }, { citySlug: "online" }] }),
+      },
+      include: {
+        integrativeTherapist: {
+          include: {
+            healthPlans: { include: { healthPlan: true } },
+          },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 60,
+    });
+
+    for (const card of integrativeCards) {
+      const p = card.integrativeTherapist;
+      if (!p) continue;
+      if (!includeOnline && card.citySlug === "online" && !p.acceptsTeleconsult) continue;
+      if (!includeOnline && card.citySlug !== cidade && card.citySlug !== "online") continue;
+
+      const displaySpecialty =
+        picsFilterSlug && picBySlug(picsFilterSlug)
+          ? picLabel(picBySlug(picsFilterSlug)!, locale.slice(0, 2))
+          : INTEGRATIVE_THERAPY_SPECIALTY;
+
+      const slotDays = await getProviderAvailableDays(p.id, "integrative", locale, 14);
+      const slotPreview = buildSlotPreviewFromDays(slotDays, 4);
+      const nextSlotAt = firstAvailableSlot(slotDays);
+      const svcRows = await getProviderServices(p.id, "integrative_therapist", true);
+      const locRows = await getPracticeLocations(p.id, "integrative_therapist");
+
+      results.push({
+        providerType: "integrative",
+        providerId: p.id,
+        slug: card.slug,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        name: `${p.firstName} ${p.lastName}`.trim(),
+        specialty: displaySpecialty,
+        specialtySlug: card.specialtySlug || especialidade,
+        citySlug: card.citySlug || cityToSeoSlug(p.clinicCity),
+        avatarUrl: p.avatarUrl,
+        license: null,
+        trainingInstitution: p.trainingInstitution,
+        consultPrice: p.consultPrice,
+        currency: p.currency,
+        acceptsTeleconsult: p.acceptsTeleconsult,
+        acceptsInPerson: p.acceptsInPerson,
+        clinicCity: p.clinicCity,
+        clinicAddress: p.clinicAddress,
+        clinicLatitude: p.clinicLatitude,
+        clinicLongitude: p.clinicLongitude,
+        ratingAvg: null,
+        ratingCount: 0,
+        healthPlans: p.healthPlans.map((hp) => ({
+          name: hp.healthPlan.name,
+          slug: hp.healthPlan.slug,
+        })),
+        publicPath: buildPublicProfilePath({
+          specialtySlug: card.specialtySlug || INTEGRATIVE_SEO_SLUG,
+          citySlug: card.citySlug || cityToSeoSlug(p.clinicCity),
+          slug: card.slug,
+        }),
+        services: svcRows.slice(0, 3).map((s) => ({
+          name: s.name,
+          priceCents: s.priceCents,
+          currency: s.currency,
+        })),
+        locationCount: locRows.length,
+        slotPreview,
+        nextSlotAt,
+        acuraVolunteer: p.acuraVolunteer,
+      });
+    }
+  }
+
   return filterAndSortResults(results, { priceMax, minRating, availableOnly, acuraVolunteersOnly, sort });
 }
 
@@ -396,6 +497,23 @@ export async function countPublicListings(
   cidade: string
 ): Promise<number> {
   const includeOnline = cidade === "online";
+  const integrativeOnly = isIntegrativeSearchSlug(especialidade);
+  const picsFilterSlug = picBySlug(especialidade)?.slug ?? null;
+
+  if (integrativeOnly) {
+    return db.virtualCard.count({
+      where: {
+        isPublic: true,
+        integrativeTherapistId: { not: null },
+        integrativeTherapist: {
+          verified: true,
+          ...(picsFilterSlug ? { picsPractices: { has: picsFilterSlug } } : {}),
+        },
+        ...(includeOnline ? {} : { OR: [{ citySlug: cidade }, { citySlug: "online" }] }),
+      },
+    });
+  }
+
   return db.virtualCard.count({
     where: {
       isPublic: true,
@@ -404,6 +522,7 @@ export async function countPublicListings(
       OR: [
         { professional: { verified: true } },
         { psychoanalyst: { verified: true } },
+        { integrativeTherapist: { verified: true } },
       ],
     },
   });

@@ -1,30 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { matchSymptomQuery, type SymptomLang } from "@/lib/symptom-search";
+import {
+  checkRateLimit,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
+import { normalizeLang } from "@/lib/i18n/translations";
+import { searchSymptomsUnified } from "@/lib/symptom-search-unified";
 
-function parseLang(raw: string | null): SymptomLang {
-  if (raw === "en" || raw === "es" || raw === "pt") return raw;
-  return "pt";
-}
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const ip = clientIp(req);
+  const rate = await checkRateLimit({
+    namespace: "symptom-search:ip",
+    key: ip,
+    ...RATE_LIMITS.supportIp,
+  });
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
   const q = req.nextUrl.searchParams.get("q")?.trim() || "";
-  const lang = parseLang(req.nextUrl.searchParams.get("lang"));
+  const lang = normalizeLang(req.nextUrl.searchParams.get("lang"));
+  const useAi = req.nextUrl.searchParams.get("ai") !== "0";
 
-  if (q.length < 3) {
-    return NextResponse.json({ match: null, query: q, lang });
+  if (q.length < 2) {
+    return NextResponse.json({ query: q, lang, matches: [], aiUsed: false });
   }
 
-  const match = matchSymptomQuery(q, lang);
-  if (!match) {
-    return NextResponse.json({ match: null, query: q, lang });
-  }
+  const { matches, aiUsed } = await searchSymptomsUnified(q, lang, { useAi });
 
   return NextResponse.json({
     query: q,
     lang,
-    match: {
-      specialtySlug: match.specialtySlug,
-      matchedKeyword: match.matchedKeyword,
-    },
+    aiUsed,
+    matches,
+    match: matches[0]
+      ? {
+          specialtySlug: matches[0].specialtySlug,
+          label: matches[0].label,
+          reason: matches[0].reason,
+        }
+      : null,
   });
 }
