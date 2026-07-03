@@ -14,10 +14,12 @@ import {
   MAX_FUTURE_SCHEDULED_VOLUNTEER_APPOINTMENTS,
   SCHEDULED_VOLUNTEER_BOOKING_SOURCE,
 } from "@/lib/scheduled-volunteer";
+import type { SlotProviderType } from "@/lib/availability-slots";
 import { z } from "zod";
 
 const schema = z.object({
   professionalId: z.string(),
+  providerType: z.enum(["health", "psychoanalyst", "integrative"]).default("health"),
   scheduledAt: z.string().datetime(),
   type: z.enum(["TELECONSULT", "IN_PERSON"]),
   acceptedCancellationPolicy: z.boolean(),
@@ -45,23 +47,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { professionalId, scheduledAt, type } = parsed.data;
+  const { professionalId, scheduledAt, type, providerType } = parsed.data;
 
   try {
-    await assertScheduledVolunteerSlotBooking(professionalId, "health", scheduledAt);
+    await assertScheduledVolunteerSlotBooking(
+      professionalId,
+      providerType as SlotProviderType,
+      scheduledAt,
+    );
   } catch (e) {
     if (e instanceof VolunteerSlotBookingError) {
+      const status = e.code === "volunteer_scheduled_not_approved" ? 403 : 400;
       return NextResponse.json(
         { error: { code: e.code, general: [e.code] } },
-        { status: 400 },
+        { status },
       );
     }
     throw e;
   }
 
-  const verified = await db.professionalProfile.findUnique({
-    where: { id: professionalId, verified: true },
-  });
+  const verified = await loadVerifiedProvider(professionalId, providerType);
   if (!verified) {
     return NextResponse.json(
       { error: { code: "provider_not_found", general: ["provider_not_found"] } },
@@ -88,6 +93,7 @@ export async function POST(req: NextRequest) {
     const result = await fulfillScheduledVolunteerConsultation({
       userId: ctx.userId,
       providerId: professionalId,
+      providerType: providerType as SlotProviderType,
       scheduledAt,
       type,
       acceptedCancellationPolicy: parsed.data.acceptedCancellationPolicy,
@@ -100,7 +106,7 @@ export async function POST(req: NextRequest) {
 
     await audit.viewRecord(ctx.userId, "Appointment", result.appointmentId);
     return NextResponse.json(
-      { success: true, appointmentId: result.appointmentId },
+      { success: true, appointmentId: result.appointmentId, providerType },
       { status: result.created ? 201 : 200 },
     );
   } catch (e) {
@@ -111,11 +117,25 @@ export async function POST(req: NextRequest) {
       );
     }
     if (e instanceof VolunteerSlotBookingError) {
+      const status = e.code === "volunteer_scheduled_not_approved" ? 403 : 409;
       return NextResponse.json(
         { error: { code: e.code, general: [e.code] } },
-        { status: 409 },
+        { status },
       );
     }
     throw e;
   }
+}
+
+async function loadVerifiedProvider(
+  providerId: string,
+  providerType: z.infer<typeof schema>["providerType"],
+) {
+  if (providerType === "psychoanalyst") {
+    return db.psychoanalystProfile.findUnique({ where: { id: providerId, verified: true } });
+  }
+  if (providerType === "integrative") {
+    return db.integrativeTherapistProfile.findUnique({ where: { id: providerId, verified: true } });
+  }
+  return db.professionalProfile.findUnique({ where: { id: providerId, verified: true } });
 }

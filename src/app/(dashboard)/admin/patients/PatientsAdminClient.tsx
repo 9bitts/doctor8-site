@@ -57,6 +57,24 @@ function loadStoredAlertMinutes(): number {
 }
 
 export default function PatientsAdminClient() {
+  const [attentionItems, setAttentionItems] = useState<
+    { appointmentId: string; patientProfileId: string; patientFirstName: string; professionalName: string; scheduledAt: string; reason: string }[]
+  >([]);
+
+  const loadAttention = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/patients/attention");
+      if (res.ok) {
+        const data = await res.json();
+        setAttentionItems(data.items ?? []);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    void loadAttention();
+  }, [loadAttention]);
+
   const [filters, setFilters] = useState<PatientFiltersState>({
     ...DEFAULT_FILTERS,
     queueAlertMinutes: 30,
@@ -133,6 +151,21 @@ export default function PatientsAdminClient() {
       )}
 
       <PatientAlertsPanel alerts={data?.alerts ?? []} />
+
+      {attentionItems.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2">
+          <p className="text-sm font-semibold text-amber-900">Atencao — voluntario agendado</p>
+          <ul className="space-y-1 text-xs text-amber-800">
+            {attentionItems.slice(0, 8).map((item) => (
+              <li key={item.appointmentId}>
+                {item.patientFirstName} · {item.professionalName} ·{" "}
+                {new Date(item.scheduledAt).toLocaleString("pt-BR")} ·{" "}
+                {item.reason === "approval_revoked" ? "aprovacao revogada" : "selo Acura inativo"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <PatientConsultationsExportBar />
 

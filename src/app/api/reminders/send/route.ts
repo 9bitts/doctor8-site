@@ -19,6 +19,8 @@ import {
   buildAppointmentReminderWaMeMessage,
   resolveWhatsAppLang,
 } from "@/lib/whatsapp-i18n";
+import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
+import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 import { z } from "zod";
 import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
 
@@ -241,6 +243,20 @@ export async function POST(req: NextRequest) {
   if (type === "24h_email") {
     try {
       const { sendAppointmentReminder } = await import("@/lib/email");
+      let historyFillUrl: string | undefined;
+      const isVolunteerScheduled =
+        appointment.bookingSource === SCHEDULED_VOLUNTEER_BOOKING_SOURCE;
+      const needsHistory = isVolunteerScheduled && !appointment.psychoanalystId;
+      if (needsHistory) {
+        const profile = await db.patientProfile.findUnique({
+          where: { id: appointment.patientId },
+          select: { notes: true },
+        });
+        if (!isPatientHistoryFilled(profile?.notes)) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
+          historyFillUrl = `${appUrl}/patient/history`;
+        }
+      }
       await sendAppointmentReminder({
         patientEmail: patientUser.email,
         patientName,
@@ -251,6 +267,7 @@ export async function POST(req: NextRequest) {
         language: patientUser.language ?? undefined,
         patientTimezone,
         appointmentId,
+        historyFillUrl,
       });
       console.log(`[REMINDER] 24h email sent (user ${patientUser.id})`);
       await markSent({ reminder24hSent: true });

@@ -4,7 +4,12 @@ import { db } from "@/lib/db";
 import { scheduleAppointmentReminders, scheduleReviewRequest, schedulePostConsultNotesReminder } from "@/lib/qstash";
 import { buildAppointmentIntakePayload } from "@/lib/appointment-intake";
 import { onAppointmentBooked } from "@/lib/post-booking";
-import { ensureAnalysandForPatient, PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
+import type { ProviderType } from "@/lib/providers";
+import {
+  ensureAnalysandForPatient,
+  ensureIntegrativeClientForPatient,
+  PSYCHOANALYSIS_SPECIALTY,
+} from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { Prisma } from "@prisma/client";
 import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
@@ -15,11 +20,14 @@ import {
   VolunteerSlotBookingError,
 } from "@/lib/volunteer-slot-booking";
 
+type BookingProviderType = ProviderType | "integrative";
+
 export type ConsultationPaymentMeta = {
   userId: string;
   providerType?: string;
   professionalId?: string;
   psychoanalystId?: string;
+  integrativeTherapistId?: string;
   scheduledAt: string;
   type?: string;
   visitReason?: string;
@@ -46,6 +54,7 @@ export class AppointmentSlotTakenError extends Error {
 export async function fulfillScheduledVolunteerConsultation(params: {
   userId: string;
   providerId: string;
+  providerType?: BookingProviderType;
   scheduledAt: string;
   type: "TELECONSULT" | "IN_PERSON";
   acceptedCancellationPolicy: boolean;
@@ -55,26 +64,31 @@ export async function fulfillScheduledVolunteerConsultation(params: {
   serviceId?: string;
   serviceName?: string;
 }): Promise<{ appointmentId: string; created: boolean }> {
+  const providerType = params.providerType ?? "health";
+  const meta: ConsultationPaymentMeta = {
+    userId: params.userId,
+    providerType,
+    professionalId: providerType === "health" ? params.providerId : undefined,
+    psychoanalystId: providerType === "psychoanalyst" ? params.providerId : undefined,
+    integrativeTherapistId: providerType === "integrative" ? params.providerId : undefined,
+    scheduledAt: params.scheduledAt,
+    type: params.type,
+    visitReason: params.visitReason,
+    healthPlanSlug: params.healthPlanSlug,
+    healthPlanLabel: params.healthPlanLabel,
+    serviceId: params.serviceId,
+    serviceName: params.serviceName,
+    acceptedCancellationPolicy: params.acceptedCancellationPolicy ? "true" : undefined,
+    bookingSource: SCHEDULED_VOLUNTEER_BOOKING_SOURCE,
+  };
+
   return fulfillConsultationPayment({
     stripePaymentId: "",
     amount: 0,
     currency: "BRL",
-    metadata: {
-      userId: params.userId,
-      providerType: "health",
-      professionalId: params.providerId,
-      scheduledAt: params.scheduledAt,
-      type: params.type,
-      visitReason: params.visitReason,
-      healthPlanSlug: params.healthPlanSlug,
-      healthPlanLabel: params.healthPlanLabel,
-      serviceId: params.serviceId,
-      serviceName: params.serviceName,
-      acceptedCancellationPolicy: params.acceptedCancellationPolicy ? "true" : undefined,
-      bookingSource: SCHEDULED_VOLUNTEER_BOOKING_SOURCE,
-    },
+    metadata: meta,
     revalidateBeforeCreate: () =>
-      assertScheduledVolunteerSlotBooking(params.providerId, "health", params.scheduledAt),
+      assertScheduledVolunteerSlotBooking(params.providerId, providerType, params.scheduledAt),
   });
 }
 
@@ -137,12 +151,18 @@ export async function fulfillConsultationPayment(params: {
     bookingSource,
   } = metadata;
 
-  const providerType =
-    metadata.providerType === "psychoanalyst" ? "psychoanalyst" : "health";
+  const providerType: BookingProviderType =
+    metadata.providerType === "psychoanalyst"
+      ? "psychoanalyst"
+      : metadata.providerType === "integrative"
+        ? "integrative"
+        : "health";
   const providerId =
     providerType === "psychoanalyst"
       ? metadata.psychoanalystId || metadata.professionalId
-      : metadata.professionalId || metadata.psychoanalystId;
+      : providerType === "integrative"
+        ? metadata.integrativeTherapistId || metadata.professionalId
+        : metadata.professionalId || metadata.psychoanalystId;
 
   if (!userId || !providerId || !scheduledAt) {
     throw new Error("Missing consultation payment metadata");
@@ -167,6 +187,15 @@ export async function fulfillConsultationPayment(params: {
         providerSpecialty = PSYCHOANALYSIS_SPECIALTY;
         durationMins = psychoanalyst.sessionDurationMins;
       }
+    } else if (providerType === "integrative") {
+      const therapist = await db.integrativeTherapistProfile.findUnique({
+        where: { id: providerId },
+      });
+      if (therapist) {
+        providerName = `${therapist.firstName} ${therapist.lastName}`;
+        providerSpecialty = "Terapia integrativa";
+        durationMins = therapist.sessionDurationMins;
+      }
     } else {
       const professional = await db.professionalProfile.findUnique({
         where: { id: providerId },
@@ -185,7 +214,8 @@ export async function fulfillConsultationPayment(params: {
   const policyAccepted = metadata.acceptedCancellationPolicy === "true";
 
   const intakePayload =
-    visitReason?.trim() || healthPlanSlug || serviceId || policyAccepted
+    providerType !== "psychoanalyst" &&
+    (visitReason?.trim() || healthPlanSlug || serviceId || policyAccepted)
       ? buildAppointmentIntakePayload({
           visitReason: visitReason?.trim(),
           healthPlanSlug: planSlug,
@@ -199,7 +229,9 @@ export async function fulfillConsultationPayment(params: {
   const slotWhere =
     providerType === "psychoanalyst"
       ? { psychoanalystId: providerId }
-      : { professionalId: providerId };
+      : providerType === "integrative"
+        ? { integrativeTherapistId: providerId }
+        : { professionalId: providerId };
 
   const { appointment, created } = await db.$transaction(
     async (tx) => {
@@ -227,9 +259,15 @@ export async function fulfillConsultationPayment(params: {
       const createdAppointment = await tx.appointment.create({
         data: {
           patientId: patient.id,
-          providerType: providerType === "psychoanalyst" ? "PSYCHOANALYST" : "HEALTH",
+          providerType:
+            providerType === "psychoanalyst"
+              ? "PSYCHOANALYST"
+              : providerType === "integrative"
+                ? "INTEGRATIVE_THERAPIST"
+                : "HEALTH",
           professionalId: providerType === "health" ? providerId : null,
           psychoanalystId: providerType === "psychoanalyst" ? providerId : null,
+          integrativeTherapistId: providerType === "integrative" ? providerId : null,
           scheduledAt: new Date(scheduledAt),
           type: (type as "TELECONSULT" | "IN_PERSON") || "TELECONSULT",
           status: "CONFIRMED",
@@ -265,6 +303,21 @@ export async function fulfillConsultationPayment(params: {
       patientProfile: { firstName: patient.firstName, lastName: patient.lastName },
       patientEmail: user?.email || "",
     });
+  } else if (providerType === "integrative") {
+    await ensureIntegrativeClientForPatient({
+      integrativeTherapistId: providerId,
+      patientUserId: userId,
+      patientProfile: { firstName: patient.firstName, lastName: patient.lastName },
+      patientEmail: user?.email || "",
+    });
+    await onAppointmentBooked({
+      appointmentId: appointment.id,
+      providerType: "integrative",
+      providerId,
+      patientUserId: userId,
+      chiefComplaint: intakePayload,
+      scheduledAt: new Date(scheduledAt),
+    }).catch((e) => console.error("[POST-BOOKING]", e));
   } else {
     onAppointmentBooked({
       appointmentId: appointment.id,
@@ -315,6 +368,7 @@ export async function fulfillConsultationPayment(params: {
     scheduledAt: new Date(scheduledAt),
     professionalId: providerType === "health" ? providerId : null,
     psychoanalystId: providerType === "psychoanalyst" ? providerId : null,
+    integrativeTherapistId: providerType === "integrative" ? providerId : null,
     patientFirstName: patient.firstName,
     patientLastName: patient.lastName,
   }).catch((e) => console.error("[PRO-APPT-NOTIFY] New booking failed:", e));

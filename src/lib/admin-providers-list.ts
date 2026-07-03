@@ -5,6 +5,7 @@ import {
   angelMatchesAdminTab,
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
+import { parseAvailabilityJson } from "@/lib/availability-exceptions";
 
 export type AdminAngelRow = {
   userId: string;
@@ -39,6 +40,9 @@ export type AdminProfessionalRow = {
   isPublic: boolean;
   licenseDocCount: number;
   adminTab: AdminProviderTab;
+  hasVolunteerBlocks: boolean;
+  volunteerScheduledApproved: boolean;
+  volunteerScheduledApprovedAt: string | null;
 };
 
 export type AdminProviderRow = {
@@ -277,7 +281,16 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
     createdAt: a.createdAt.toISOString(),
   }));
 
-  const allDoctors: AdminProfessionalRow[] = healthPros.map((p) => ({
+  const allDoctors: AdminProfessionalRow[] = healthPros.map((p) => {
+    const volunteerBlocks = parseAvailabilityJson(
+      (p as { availability?: unknown }).availability,
+    ).volunteerBlocks ?? [];
+    const row = p as typeof p & {
+      availability?: unknown;
+      volunteerScheduledApproved?: boolean;
+      volunteerScheduledApprovedAt?: Date | null;
+    };
+    return {
     id: p.id,
     userId: p.userId,
     name: `${p.firstName} ${p.lastName}`.trim(),
@@ -297,7 +310,11 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
       p.verified && p.virtualCard?.isPublic && p.virtualCard.specialtySlug && p.virtualCard.citySlug
         ? buildPublicProfileUrl(p.virtualCard)
         : null,
-  }));
+    hasVolunteerBlocks: volunteerBlocks.length > 0,
+    volunteerScheduledApproved: row.volunteerScheduledApproved ?? false,
+    volunteerScheduledApprovedAt: row.volunteerScheduledApprovedAt?.toISOString() ?? null,
+  };
+  });
 
   const allAnalysts: AdminProviderRow[] = analysts.map((p) => ({
     id: p.id,

@@ -3,6 +3,8 @@
 import { db } from "@/lib/db";
 import { generateTimeSlots } from "@/lib/scheduling";
 import type { ProviderType } from "@/lib/providers";
+
+export type SlotProviderType = ProviderType | "integrative";
 import {
   applyHealthPlanSlotFilter,
   getHealthPlanSchedulingRule,
@@ -34,7 +36,7 @@ export type ProviderSlotOptions = {
 
 export async function getProviderAvailableDays(
   providerId: string,
-  providerType: ProviderType,
+  providerType: SlotProviderType,
   locale: string,
   daysAhead = 14,
   healthPlanSlug?: string | null,
@@ -56,7 +58,31 @@ export async function getProviderAvailableDays(
       },
     });
     if (!psychoanalyst || psychoanalyst.availabilitySlots.length === 0) return [];
-    if (slotMode === "volunteer") return [];
+
+    const weeklyBlocks: WeeklySlotBlock[] =
+      slotMode === "volunteer"
+        ? psychoanalyst.availabilitySlots
+            .filter((s) => s.volunteerOnly)
+            .map((s) => ({
+              dayOfWeek: s.dayOfWeek,
+              startTime: s.startTime,
+              endTime: s.endTime,
+              slotDurationMins: s.slotDurationMins,
+              slotGapMins: s.slotGapMins,
+              volunteerOnly: false,
+              isVolunteer: true,
+            }))
+        : psychoanalyst.availabilitySlots.map((s) => ({
+            dayOfWeek: s.dayOfWeek,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            slotDurationMins: s.slotDurationMins,
+            slotGapMins: s.slotGapMins,
+            volunteerOnly: s.volunteerOnly,
+            isVolunteer: false,
+          }));
+
+    if (slotMode === "volunteer" && weeklyBlocks.length === 0) return [];
 
     const timeZone =
       (psychoanalyst.user as { timezone?: string } | null)?.timezone || DEFAULT_TIME_ZONE;
@@ -75,7 +101,7 @@ export async function getProviderAvailableDays(
 
     return filterByHealthPlan(
       buildDaysFromBlocks(
-        psychoanalyst.availabilitySlots,
+        weeklyBlocks,
         bookedTimes,
         now,
         daysAhead,
@@ -86,6 +112,64 @@ export async function getProviderAvailableDays(
       providerType,
       healthPlanSlug,
       now
+    );
+  }
+
+  if (providerType === "integrative") {
+    const therapist = await db.integrativeTherapistProfile.findUnique({
+      where: { id: providerId },
+      include: {
+        user: true,
+        availabilitySlots: {
+          where: { isActive: true },
+          orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+        },
+      },
+    });
+    const parsedAvailability = parseAvailabilityJson(
+      (therapist as { availability?: unknown } | null)?.availability,
+    );
+    const dateBlocks = parsedAvailability.dateBlocks ?? [];
+    const volunteerBlocks = parsedAvailability.volunteerBlocks ?? [];
+
+    const weeklyBlocks =
+      slotMode === "volunteer"
+        ? volunteerBlocksToSlotBlocks(volunteerBlocks)
+        : (therapist?.availabilitySlots ?? []).map((s) => ({
+            dayOfWeek: s.dayOfWeek,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            slotDurationMins: s.slotDurationMins,
+            slotGapMins: s.slotGapMins,
+            volunteerOnly: false,
+            isVolunteer: false,
+          }));
+
+    if (!therapist || weeklyBlocks.length === 0) return [];
+
+    const timeZone =
+      (therapist.user as { timezone?: string } | null)?.timezone || DEFAULT_TIME_ZONE;
+
+    const bookedAppointments = await db.appointment.findMany({
+      where: {
+        integrativeTherapistId: providerId,
+        status: { in: ["CONFIRMED", "PENDING"] },
+        scheduledAt: { gte: now, lte: twoWeeksLater },
+      },
+      select: { scheduledAt: true },
+    });
+    const bookedTimes = new Set(
+      bookedAppointments.map((a) => a.scheduledAt.toISOString()),
+    );
+
+    return buildDaysFromBlocks(
+      weeklyBlocks,
+      bookedTimes,
+      now,
+      daysAhead,
+      locale,
+      timeZone,
+      dateBlocks,
     );
   }
 
@@ -206,11 +290,12 @@ function buildScheduledVolunteerWeeklyBlocks(
 async function filterByHealthPlan(
   days: DaySlots[],
   providerId: string,
-  providerType: ProviderType,
+  providerType: SlotProviderType,
   healthPlanSlug: string | null | undefined,
   now: Date
 ): Promise<DaySlots[]> {
   if (!healthPlanSlug || healthPlanSlug === "particular") return days;
+  if (providerType === "integrative") return days;
   const rule = await getHealthPlanSchedulingRule(providerId, providerType, healthPlanSlug);
   return applyHealthPlanSlotFilter(days, rule, now);
 }
@@ -286,7 +371,7 @@ export function firstAvailableSlot(days: DaySlots[]): string | null {
 /** Compact slot preview for search result cards (next N days). */
 export async function getProviderSlotPreview(
   providerId: string,
-  providerType: ProviderType,
+  providerType: SlotProviderType,
   locale: string,
   maxDays = 4
 ): Promise<DaySlots[]> {

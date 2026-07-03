@@ -4,6 +4,7 @@ import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import { getEntryStatusForAdmin } from "@/lib/humanitarian/dispatcher";
 import { poolLabel } from "@/lib/humanitarian/constants";
 import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
+import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
 import type { IntakeSummarySection } from "@/lib/humanitarian/intake-summary";
 import type {
   Appointment,
@@ -128,6 +129,7 @@ export interface PatientDetailDto {
   consultations: {
     id: string;
     kind: "humanitarian" | "appointment";
+    origin: "humanitarian" | "volunteer_scheduled" | "paid";
     professionalName: string | null;
     specialty: string | null;
     scheduledAt: string;
@@ -137,7 +139,9 @@ export interface PatientDetailDto {
     documentIds: string[];
     adminProblemAt: string | null;
     adminProblemNote: string | null;
+    canCancel: boolean;
   }[];
+  journeyHighlight: boolean;
   problemReasons: string[];
   adminNote: string | null;
   adminReviewedAt: string | null;
@@ -239,6 +243,8 @@ type EntryWithPool = HumanitarianQueueEntry & {
 };
 
 type ApptRow = Appointment & {
+  bookingSource: string | null;
+  priceAmount: number;
   professional: { firstName: string; lastName: string; specialty: string; userId: string } | null;
   psychoanalyst: { firstName: string; lastName: string; userId: string } | null;
   integrativeTherapist: { firstName: string; lastName: string; userId: string } | null;
@@ -672,6 +678,25 @@ export function buildMonitoringAlerts(contexts: PatientContext[]): MonitoringAle
   );
 }
 
+function appointmentOriginLabel(bookingSource: string | null): "volunteer_scheduled" | "paid" {
+  if (bookingSource === SCHEDULED_VOLUNTEER_BOOKING_SOURCE) return "volunteer_scheduled";
+  return "paid";
+}
+
+function appointmentTimelineTitle(
+  status: string,
+  origin: "volunteer_scheduled" | "paid",
+): string {
+  const originTag =
+    origin === "volunteer_scheduled" ? "Voluntario agendado" : "Consulta paga";
+  if (status === "COMPLETED") return `${originTag} — finalizada`;
+  if (status === "CONFIRMED") return `${originTag} — agendada`;
+  if (status === "PENDING") return `${originTag} — pendente`;
+  if (status === "NO_SHOW") return `${originTag} — nao compareceu`;
+  if (status === "CANCELLED") return `${originTag} — cancelada`;
+  return `${originTag} (${status})`;
+}
+
 function statusLabelPt(s: HumanitarianQueueStatus): string {
   const map: Record<HumanitarianQueueStatus, string> = {
     WAITING: "Na fila",
@@ -786,18 +811,15 @@ export function buildPatientTimeline(ctx: PatientContext): TimelineEvent[] {
       proName = `${a.integrativeTherapist.firstName} ${a.integrativeTherapist.lastName}`;
 
     if (a.status !== "CANCELLED") {
+      const origin = appointmentOriginLabel(a.bookingSource);
       events.push({
         id: `appt-${a.id}`,
         type: a.status === "COMPLETED" ? "consult_ended" : "consult_started",
         at: a.scheduledAt.toISOString(),
-        title:
-          a.status === "COMPLETED"
-            ? "Consulta finalizada"
-            : a.status === "CONFIRMED"
-              ? "Consulta agendada"
-              : `Consulta (${a.status})`,
+        title: appointmentTimelineTitle(a.status, origin),
         detail: proName,
         link: null,
+        meta: { origin, appointmentId: a.id },
       });
     }
     if (a.paidAt) {
@@ -1037,6 +1059,7 @@ export async function loadPatientDetail(
     consultations.push({
       id: e.id,
       kind: "humanitarian",
+      origin: "humanitarian",
       professionalName: info.name,
       specialty: poolLabel(e.pool, "pt"),
       scheduledAt: (e.startedAt ?? e.enteredAt).toISOString(),
@@ -1046,6 +1069,7 @@ export async function loadPatientDetail(
       documentIds: [],
       adminProblemAt: e.adminProblemAt?.toISOString() ?? null,
       adminProblemNote: e.adminProblemNote,
+      canCancel: false,
     });
   }
 
@@ -1066,6 +1090,7 @@ export async function loadPatientDetail(
     consultations.push({
       id: a.id,
       kind: "appointment",
+      origin: appointmentOriginLabel(a.bookingSource),
       professionalName,
       specialty,
       scheduledAt: a.scheduledAt.toISOString(),
@@ -1075,12 +1100,22 @@ export async function loadPatientDetail(
       documentIds: a.documents.map((d) => d.id),
       adminProblemAt: a.adminProblemAt?.toISOString() ?? null,
       adminProblemNote: a.adminProblemNote,
+      canCancel: ["CONFIRMED", "PENDING"].includes(a.status) && a.scheduledAt >= new Date(),
     });
   }
 
   consultations.sort(
     (a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime(),
   );
+
+  const hasHumanitarianHistory = humanitarianEntries.length > 0;
+  const hasFutureVolunteerScheduled = appointments.some(
+    (a) =>
+      a.bookingSource === SCHEDULED_VOLUNTEER_BOOKING_SOURCE &&
+      ["CONFIRMED", "PENDING"].includes(a.status) &&
+      a.scheduledAt >= new Date(),
+  );
+  const journeyHighlight = hasHumanitarianHistory && hasFutureVolunteerScheduled;
 
   const profilePhone = safeDecrypt(profile.phone);
 
@@ -1113,6 +1148,7 @@ export async function loadPatientDetail(
     liveConsult,
     timeline,
     consultations,
+    journeyHighlight,
     problemReasons: ctx.problemReasons,
     adminNote: profile.adminNote ?? null,
     adminReviewedAt: profile.adminReviewedAt?.toISOString() ?? null,

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
@@ -38,6 +39,7 @@ type Step = "browse" | "slots" | "confirm" | "done";
 
 type VolunteerProfessional = {
   id: string;
+  providerType: "health" | "psychoanalyst" | "integrative";
   firstName: string;
   lastName: string;
   specialty: string;
@@ -45,6 +47,7 @@ type VolunteerProfessional = {
   bio: string | null;
   acceptsTeleconsult: boolean;
   acceptsInPerson: boolean;
+  professionalUserId?: string;
   upcomingSlots: { datetime: string; timeLabel: string }[];
 };
 
@@ -55,21 +58,29 @@ const BOOKING_ERROR_KEYS: Record<string, string> = {
   not_free_volunteer_slot: "volAppt.err.notVolunteerSlot",
   provider_not_found: "volAppt.err.providerNotFound",
   volunteer_limit_exceeded: "volAppt.err.limitExceeded",
+  volunteer_scheduled_not_approved: "volAppt.err.notApproved",
   policy_required: "appt.acceptPolicyRequired",
 };
 
-function providerNamePrefix(specialty: string, t: (key: string) => string): string {
+function providerNamePrefix(
+  specialty: string,
+  providerType: VolunteerProfessional["providerType"],
+  t: (key: string) => string,
+): string {
+  if (providerType === "psychoanalyst") return "";
+  if (providerType === "integrative") return t("volAppt.providerPrefix.integrative");
   const typeKey = getProfessionInfo(specialty).typeKey;
   if (typeKey === "psychologist") return t("volAppt.providerPrefix.psychologist");
   return t("volAppt.providerPrefix.doctor");
 }
 
 function formatVolunteerProviderName(
-  pro: { firstName: string; lastName: string; specialty: string },
+  pro: { firstName: string; lastName: string; specialty: string; providerType: VolunteerProfessional["providerType"] },
   t: (key: string) => string,
 ): string {
-  const prefix = providerNamePrefix(pro.specialty, t);
-  return `${prefix} ${pro.firstName} ${pro.lastName}`.trim();
+  const prefix = providerNamePrefix(pro.specialty, pro.providerType, t);
+  const name = `${pro.firstName} ${pro.lastName}`.trim();
+  return prefix ? `${prefix} ${name}` : name;
 }
 
 function ProfessionalAvatar({ pro }: { pro: VolunteerProfessional }) {
@@ -157,7 +168,7 @@ export default function VolunteerAppointmentsClient() {
     setSlotsLoading(true);
     try {
       const res = await fetch(
-        `/api/professionals/${pro.id}/slots?lang=${lang}&providerType=health&volunteer=1`,
+        `/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${pro.providerType}&volunteer=1`,
       );
       if (!res.ok) {
         setError(t("volAppt.err.loadSlots"));
@@ -192,6 +203,7 @@ export default function VolunteerAppointmentsClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           professionalId: selectedPro.id,
+          providerType: selectedPro.providerType,
           scheduledAt: selectedSlot,
           type,
           acceptedCancellationPolicy: acceptedPolicy,
@@ -548,6 +560,18 @@ export default function VolunteerAppointmentsClient() {
               <span className="font-semibold text-green-700">{t("appt.volunteerFreeTotal")}</span>
             </div>
           </div>
+          {selectedPro.providerType === "psychoanalyst" ? (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 text-left">
+              <p className="font-semibold text-slate-800">{t("volAppt.noHistoryTitle")}</p>
+              <p className="text-xs mt-1">{t("volAppt.noHistoryText")}</p>
+            </div>
+          ) : (
+            <ShareHistoryPrompt
+              professionalId={selectedPro.providerType === "health" ? selectedPro.id : undefined}
+              professionalUserId={selectedPro.professionalUserId}
+              professionalName={formatVolunteerProviderName(selectedPro, t)}
+            />
+          )}
           {confirmedId && (
             <a
               href={`/api/appointments/${confirmedId}/calendar`}

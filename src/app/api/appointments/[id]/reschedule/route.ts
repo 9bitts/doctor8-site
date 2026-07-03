@@ -18,6 +18,7 @@ import {
   VolunteerSlotBookingError,
 } from "@/lib/volunteer-slot-booking";
 import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
+import type { SlotProviderType } from "@/lib/availability-slots";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
@@ -45,6 +46,7 @@ export async function POST(
       patient:      { select: { userId: true } },
       professional: { select: { id: true, firstName: true, lastName: true } },
       psychoanalyst: { select: { id: true, firstName: true, lastName: true } },
+      integrativeTherapist: { select: { id: true, firstName: true, lastName: true } },
     },
   });
 
@@ -63,22 +65,21 @@ export async function POST(
     }, { status: 400 });
   }
 
-  const isVolunteerScheduled =
-    appointment.bookingSource === SCHEDULED_VOLUNTEER_BOOKING_SOURCE &&
-    !!appointment.professionalId;
+  const volunteerProvider = resolveVolunteerScheduledProvider(appointment);
 
-  if (isVolunteerScheduled) {
+  if (volunteerProvider) {
     try {
       await assertScheduledVolunteerSlotBooking(
-        appointment.professionalId!,
-        "health",
+        volunteerProvider.id,
+        volunteerProvider.type,
         newScheduledAt,
       );
     } catch (e) {
       if (e instanceof VolunteerSlotBookingError) {
+        const status = e.code === "volunteer_scheduled_not_approved" ? 403 : 409;
         return NextResponse.json(
-          { error: { code: e.code === "slot_unavailable" ? e.code : "slot_unavailable", general: [e.code] } },
-          { status: 409 },
+          { error: { code: e.code, general: [e.code] } },
+          { status },
         );
       }
       throw e;
@@ -91,10 +92,10 @@ export async function POST(
   try {
     await db.$transaction(
       async (tx) => {
-        if (isVolunteerScheduled) {
+        if (volunteerProvider) {
           await assertScheduledVolunteerSlotBooking(
-            appointment.professionalId!,
-            "health",
+            volunteerProvider.id,
+            volunteerProvider.type,
             newScheduledAt,
           );
         }
@@ -103,6 +104,9 @@ export async function POST(
           where: {
             ...(appointment.professionalId ? { professionalId: appointment.professionalId } : {}),
             ...(appointment.psychoanalystId ? { psychoanalystId: appointment.psychoanalystId } : {}),
+            ...(appointment.integrativeTherapistId
+              ? { integrativeTherapistId: appointment.integrativeTherapistId }
+              : {}),
             scheduledAt: newScheduledDate,
             status: { in: ["CONFIRMED", "PENDING"] },
             id: { not: params.id },
@@ -130,9 +134,10 @@ export async function POST(
       );
     }
     if (e instanceof VolunteerSlotBookingError) {
+      const status = e.code === "volunteer_scheduled_not_approved" ? 403 : 409;
       return NextResponse.json(
-        { error: { code: "slot_unavailable", general: [e.code] } },
-        { status: 409 },
+        { error: { code: e.code, general: [e.code] } },
+        { status },
       );
     }
     throw e;
@@ -190,4 +195,23 @@ export async function POST(
     appointmentId: params.id,
     newScheduledAt,
   });
+}
+
+function resolveVolunteerScheduledProvider(appointment: {
+  bookingSource: string | null;
+  professionalId: string | null;
+  psychoanalystId: string | null;
+  integrativeTherapistId: string | null;
+}): { id: string; type: SlotProviderType } | null {
+  if (appointment.bookingSource !== SCHEDULED_VOLUNTEER_BOOKING_SOURCE) return null;
+  if (appointment.professionalId) {
+    return { id: appointment.professionalId, type: "health" };
+  }
+  if (appointment.psychoanalystId) {
+    return { id: appointment.psychoanalystId, type: "psychoanalyst" };
+  }
+  if (appointment.integrativeTherapistId) {
+    return { id: appointment.integrativeTherapistId, type: "integrative" };
+  }
+  return null;
 }

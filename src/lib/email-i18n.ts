@@ -447,6 +447,8 @@ export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
   body: (doctor: string, hours: number, time: string) => string;
   join: string;
   confirmPresence: string;
+  historyReminder?: string;
+  historyReminderCta?: string;
   hour: string;
   hours: string;
 }> = {
@@ -457,6 +459,8 @@ export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
     body: (d, h, t) => `You have an appointment with <strong>Dr. ${d}</strong> in <strong>${h} ${h === 1 ? "hour" : "hours"}</strong> at <strong>${t}</strong>.`,
     join: "Join Now",
     confirmPresence: "Yes, I'll be there",
+    historyReminder: "Please complete and share your medical history before the visit so your provider can prepare.",
+    historyReminderCta: "Complete medical history",
     hour: "hour",
     hours: "hours",
   },
@@ -467,6 +471,8 @@ export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
     body: (d, h, t) => `Você tem uma consulta com <strong>Dr. ${d}</strong> em <strong>${h} ${h === 1 ? "hora" : "horas"}</strong>, às <strong>${t}</strong>.`,
     join: "Entrar agora",
     confirmPresence: "Confirmo que vou",
+    historyReminder: "Complete e compartilhe seu historico medico antes da consulta para o profissional se preparar.",
+    historyReminderCta: "Preencher historico",
     hour: "hora",
     hours: "horas",
   },
@@ -477,6 +483,8 @@ export const EMAIL_APPOINTMENT_REMINDER: Record<EmailLang, {
     body: (d, h, t) => `Tienes una cita con <strong>Dr. ${d}</strong> en <strong>${h} ${h === 1 ? "hora" : "horas"}</strong>, a las <strong>${t}</strong>.`,
     join: "Unirse ahora",
     confirmPresence: "Confirmo que asistiré",
+    historyReminder: "Complete y comparta su historial medico antes de la consulta para que el profesional se prepare.",
+    historyReminderCta: "Completar historial",
     hour: "hora",
     hours: "horas",
   },

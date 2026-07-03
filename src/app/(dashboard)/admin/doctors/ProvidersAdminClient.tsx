@@ -52,6 +52,8 @@ interface ProfessionalRow {
   licenseDocCount: number;
   emissionReportCount?: number;
   adminTab?: AdminProviderTab;
+  hasVolunteerBlocks?: boolean;
+  volunteerScheduledApproved?: boolean;
 }
 
 interface ProviderRow {
@@ -419,6 +421,20 @@ export default function ProvidersAdminClient() {
     return () => clearTimeout(timer);
   }, [q, activeTab, load]);
 
+  async function toggleVolunteerScheduledApproval(row: ProfessionalRow, approved: boolean) {
+    setBusyId(row.id);
+    try {
+      const res = await fetch(`/api/admin/doctors/${row.id}/volunteer-scheduled-approval`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approved }),
+      });
+      if (res.ok) await load(q.trim());
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function toggleProfessionalVerified(row: ProfessionalRow) {
     setBusyId(row.id);
     try {
@@ -726,6 +742,7 @@ export default function ProvidersAdminClient() {
               docsBusyId={docsBusyId}
               verifyingEmailUserId={verifyingEmailUserId}
               onToggle={toggleProfessionalVerified}
+              onVolunteerApproval={toggleVolunteerScheduledApproval}
               onViewDocs={viewLicenseDocs}
               onVerifyEmail={verifyUserEmail}
             />
@@ -1014,6 +1031,7 @@ function ProfessionalList({
   docsBusyId,
   verifyingEmailUserId,
   onToggle,
+  onVolunteerApproval,
   onViewDocs,
   onVerifyEmail,
 }: {
@@ -1024,6 +1042,7 @@ function ProfessionalList({
   docsBusyId: string | null;
   verifyingEmailUserId: string | null;
   onToggle: (row: ProfessionalRow) => void;
+  onVolunteerApproval: (row: ProfessionalRow, approved: boolean) => void;
   onViewDocs: (userId: string) => void;
   onVerifyEmail: (userId: string) => void;
 }) {
@@ -1076,6 +1095,34 @@ function ProfessionalList({
                 </span>
               )}
             </p>
+            {d.hasVolunteerBlocks && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-800 border border-green-200">
+                  {t("admin.volScheduled.hasBlocks")}
+                </span>
+                <span
+                  className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                    d.volunteerScheduledApproved
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-amber-50 text-amber-800 border border-amber-200"
+                  }`}
+                >
+                  {d.volunteerScheduledApproved
+                    ? t("admin.volScheduled.approved")
+                    : t("admin.volScheduled.pending")}
+                </span>
+                <button
+                  type="button"
+                  disabled={busyId === d.id}
+                  onClick={() => onVolunteerApproval(d, !d.volunteerScheduledApproved)}
+                  className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  {d.volunteerScheduledApproved
+                    ? t("admin.volScheduled.revoke")
+                    : t("admin.volScheduled.approve")}
+                </button>
+              </div>
+            )}
             {d.publicUrl && (
               <a
                 href={d.publicUrl}

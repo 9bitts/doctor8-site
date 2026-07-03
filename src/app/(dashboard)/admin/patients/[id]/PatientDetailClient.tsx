@@ -137,6 +137,15 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
 
         <AdminViewPhoneButton userId={patient.userId} />
 
+        {patient.journeyHighlight && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-900">
+            <p className="font-semibold text-xs uppercase mb-1">Trajetoria em atencao</p>
+            <p className="text-xs">
+              Paciente com historico humanitario JIT e consulta voluntaria agendada futura — acompanhar de perto.
+            </p>
+          </div>
+        )}
+
         {patient.problemReasons.length > 0 && (
           <div className="bg-rose-50 border border-rose-100 rounded-lg px-3 py-2 text-sm text-rose-800">
             <p className="font-semibold text-xs uppercase mb-1">Alertas ativos</p>
@@ -181,7 +190,10 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-800">Consultas</h2>
-        <PatientConsultationsList consultations={patient.consultations} />
+        <PatientConsultationsList
+          consultations={patient.consultations}
+          onCancelled={() => load(true)}
+        />
       </section>
     </div>
   );

@@ -27,6 +27,7 @@ export type ProviderContext = {
 export async function resolveProviderContext(params: {
   professionalId?: string | null;
   psychoanalystId?: string | null;
+  integrativeTherapistId?: string | null;
 }): Promise<ProviderContext | null> {
   if (params.professionalId) {
     const pro = await db.professionalProfile.findUnique({
@@ -71,6 +72,25 @@ export async function resolveProviderContext(params: {
     };
   }
 
+  if (params.integrativeTherapistId) {
+    const it = await db.integrativeTherapistProfile.findUnique({
+      where: { id: params.integrativeTherapistId },
+      select: {
+        userId: true,
+        user: { select: { email: true, language: true, timezone: true } },
+      },
+    });
+    if (!it) return null;
+    return {
+      userId: it.userId,
+      email: it.user.email,
+      specialty: null,
+      timezone: it.user.timezone || DEFAULT_TIME_ZONE,
+      language: normEmailLang(it.user.language),
+      appointmentsUrl: "/integrative-therapist/appointments",
+    };
+  }
+
   return null;
 }
 
@@ -103,6 +123,7 @@ export async function notifyProfessionalNewBooking(params: {
   scheduledAt: Date;
   professionalId?: string | null;
   psychoanalystId?: string | null;
+  integrativeTherapistId?: string | null;
   patientFirstName: string;
   patientLastName: string;
 }): Promise<void> {

@@ -11,6 +11,7 @@ import {
 } from "@/lib/fulfill-consultation";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import { stripPsychoanalystAppointmentFields, isPsychoanalystAppointmentRequest } from "@/lib/appointment-provider-access";
 import { z } from "zod";
 
 const appointmentListSelect = {
@@ -116,7 +117,7 @@ export async function GET(req: NextRequest) {
 
   const normalized = (appointments as any[]).map((a) => {
     if (a.psychoanalyst && !a.professional) {
-      return {
+      const row = {
         ...a,
         providerType: "psychoanalyst",
         professional: {
@@ -127,6 +128,9 @@ export async function GET(req: NextRequest) {
         },
         psychoanalystId: a.psychoanalystId,
       };
+      return isPsychoanalystAppointmentRequest(session.user.role)
+        ? stripPsychoanalystAppointmentFields(row)
+        : row;
     }
     const row = { ...a, providerType: "health", professionalId: a.professionalId };
     if (row.patient) {

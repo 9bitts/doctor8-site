@@ -280,6 +280,7 @@ export async function sendAppointmentReminder({
   whatsappUrl,
   patientTimezone,
   appointmentId,
+  historyFillUrl,
 }: {
   patientEmail: string;
   patientName: string;
@@ -291,6 +292,7 @@ export async function sendAppointmentReminder({
   whatsappUrl?: string;
   patientTimezone?: string;
   appointmentId?: string;
+  historyFillUrl?: string;
 }) {
   const lang = normEmailLang(language);
   const c = EMAIL_APPOINTMENT_REMINDER[lang];
@@ -324,6 +326,14 @@ export async function sendAppointmentReminder({
       <div style="text-align:center;margin:16px 0;">
         <a href="${whatsappUrl}" style="background:#25D366;color:white;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;">
           WhatsApp
+        </a>
+      </div>
+    ` : ""}
+    ${historyFillUrl ? `
+      <p style="color:#6b7280;font-size:14px;margin-top:16px;">${c.historyReminder ?? ""}</p>
+      <div style="text-align:center;margin:16px 0;">
+        <a href="${historyFillUrl}" style="background:#f59e0b;color:white;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;">
+          ${c.historyReminderCta ?? c.confirmPresence}
         </a>
       </div>
     ` : ""}`;

@@ -549,6 +549,11 @@ model ProfessionalProfile {
   // AcuraBrasil volunteer badge (opt-in; shown on booking cards + public profile)
   acuraVolunteer  Boolean  @default(false)
 
+  // P8b scheduled volunteer — admin approval (gradual rollout via env flag)
+  volunteerScheduledApproved    Boolean   @default(false)
+  volunteerScheduledApprovedAt  DateTime?
+  volunteerScheduledApprovedBy  String?
+
   // Payouts (rateio) — conta Stripe Connect para receber o rateio mensal
   stripeConnectAccountId String?
 
