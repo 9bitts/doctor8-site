@@ -64,6 +64,7 @@ export async function GET() {
       patientRecordId: d.patientRecordId,
       signatureStatus: d.signatureStatus,
       whatsappNotifyStatus: d.whatsappNotifyStatus,
+      patientNotifiedAt: !!d.patientNotifiedAt,
       digitalSignature: d.digitalSignature,
       signed: d.signatureStatus === "SIGNED",
       createdAt: d.createdAt,

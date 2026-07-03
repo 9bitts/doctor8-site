@@ -1,10 +1,10 @@
 // src/app/api/professional/financeiro/rateio/route.ts
-// Dados do livro aberto + rateio para o profissional autenticado.
+// Dados do livro aberto + rateio para o profissional autenticado (health, psychoanalyst, integrative).
 // Le apenas das tabelas de rateio (PoolPeriod, PoolContribution, LedgerEntry).
 // Nenhum PHI: so valores agregados, contagens e a fatia do proprio profissional.
 
 import { NextResponse } from "next/server";
-import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
+import { requireAuth, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import {
   COMMISSION_RATE,
@@ -22,6 +22,14 @@ import {
 } from "@/lib/rateio";
 
 export const dynamic = "force-dynamic";
+
+type RateioProviderKind = "HEALTH" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
+
+type RateioProviderContext = {
+  kind: RateioProviderKind;
+  providerId: string;
+  currency: string;
+};
 
 function currentMonth(): string {
   const n = new Date();
@@ -70,9 +78,42 @@ async function resolveEffectiveRules(currency: string, month: string) {
   return defaults;
 }
 
+async function resolveRateioProvider(userId: string, role: string): Promise<RateioProviderContext | null> {
+  if (role === "PROFESSIONAL") {
+    const profile = await db.professionalProfile.findUnique({
+      where: { userId },
+      select: { id: true, currency: true },
+    });
+    if (!profile) return null;
+    return { kind: "HEALTH", providerId: profile.id, currency: profile.currency || "BRL" };
+  }
+  if (role === "PSYCHOANALYST") {
+    const profile = await db.psychoanalystProfile.findUnique({
+      where: { userId },
+      select: { id: true, currency: true },
+    });
+    if (!profile) return null;
+    return { kind: "PSYCHOANALYST", providerId: profile.id, currency: profile.currency || "BRL" };
+  }
+  if (role === "INTEGRATIVE_THERAPIST") {
+    const profile = await db.integrativeTherapistProfile.findUnique({
+      where: { userId },
+      select: { id: true, currency: true },
+    });
+    if (!profile) return null;
+    return { kind: "INTEGRATIVE_THERAPIST", providerId: profile.id, currency: profile.currency || "BRL" };
+  }
+  return null;
+}
+
+function appointmentProviderFilter(kind: RateioProviderKind, providerId: string) {
+  if (kind === "PSYCHOANALYST") return { psychoanalystId: providerId };
+  if (kind === "INTEGRATIVE_THERAPIST") return { integrativeTherapistId: providerId };
+  return { professionalId: providerId };
+}
+
 async function computeMyProgress(
-  professionalId: string,
-  currency: string,
+  provider: RateioProviderContext,
   rules: ReturnType<typeof defaultRules>,
 ) {
   const month = currentMonth();
@@ -81,10 +122,10 @@ async function computeMyProgress(
 
   const appts = await db.appointment.findMany({
     where: {
-      professionalId,
+      ...appointmentProviderFilter(provider.kind, provider.providerId),
       status: "COMPLETED",
       paidAt: { not: null, gte: from, lt: toExclusive },
-      currency,
+      currency: provider.currency,
     },
     select: { paidAt: true },
   });
@@ -100,11 +141,20 @@ async function computeMyProgress(
     }
   }
 
-  const ratingAgg = await db.professionalReview.aggregate({
-    _avg: { rating: true },
-    where: { professionalId },
-  });
-  const avgRating = ratingAgg._avg.rating ?? null;
+  let avgRating: number | null = null;
+  if (provider.kind === "HEALTH") {
+    const ratingAgg = await db.professionalReview.aggregate({
+      _avg: { rating: true },
+      where: { professionalId: provider.providerId },
+    });
+    avgRating = ratingAgg._avg.rating ?? null;
+  } else if (provider.kind === "PSYCHOANALYST") {
+    const ratingAgg = await db.psychoanalystReview.aggregate({
+      _avg: { rating: true },
+      where: { psychoanalystId: provider.providerId },
+    });
+    avgRating = ratingAgg._avg.rating ?? null;
+  }
 
   const qualified =
     validConsults >= rules.minValidConsults &&
@@ -119,20 +169,66 @@ async function computeMyProgress(
   };
 }
 
+async function findMineContribution(poolPeriodId: string, provider: RateioProviderContext) {
+  if (provider.kind === "PSYCHOANALYST") {
+    return db.poolContribution.findUnique({
+      where: {
+        poolPeriodId_psychoanalystId: {
+          poolPeriodId,
+          psychoanalystId: provider.providerId,
+        },
+      },
+      select: {
+        validConsults: true, qualified: true, disqualReason: true, qualityMult: true,
+        score: true, baseCents: true, meritCents: true, totalCents: true, payoutStatus: true,
+      },
+    });
+  }
+  if (provider.kind === "INTEGRATIVE_THERAPIST") {
+    return db.poolContribution.findUnique({
+      where: {
+        poolPeriodId_integrativeTherapistId: {
+          poolPeriodId,
+          integrativeTherapistId: provider.providerId,
+        },
+      },
+      select: {
+        validConsults: true, qualified: true, disqualReason: true, qualityMult: true,
+        score: true, baseCents: true, meritCents: true, totalCents: true, payoutStatus: true,
+      },
+    });
+  }
+  return db.poolContribution.findUnique({
+    where: {
+      poolPeriodId_professionalId: {
+        poolPeriodId,
+        professionalId: provider.providerId,
+      },
+    },
+    select: {
+      validConsults: true, qualified: true, disqualReason: true, qualityMult: true,
+      score: true, baseCents: true, meritCents: true, totalCents: true, payoutStatus: true,
+    },
+  });
+}
+
+function contributionHistoryWhere(provider: RateioProviderContext) {
+  if (provider.kind === "PSYCHOANALYST") return { psychoanalystId: provider.providerId };
+  if (provider.kind === "INTEGRATIVE_THERAPIST") return { integrativeTherapistId: provider.providerId };
+  return { professionalId: provider.providerId };
+}
+
 export async function GET() {
-  const ctx = await requireProfessionalApi();
+  const ctx = await requireAuth(["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"]);
   if (isApiError(ctx)) return ctx.error;
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId: ctx.userId },
-    select: { id: true, currency: true },
-  });
-  if (!professional) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  const provider = await resolveRateioProvider(ctx.userId, ctx.session.user.role);
+  if (!provider) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
 
-  const currency = professional.currency || "BRL";
+  const { currency } = provider;
   const month = currentMonth();
   const rules = await resolveEffectiveRules(currency, month);
-  const myProgress = await computeMyProgress(professional.id, currency, rules);
+  const myProgress = await computeMyProgress(provider, rules);
 
   const latestPeriod =
     (await db.poolPeriod.findFirst({
@@ -170,21 +266,10 @@ export async function GET() {
     where: { poolPeriodId: latestPeriod.id, qualified: true },
   });
 
-  const mineRow = await db.poolContribution.findUnique({
-    where: {
-      poolPeriodId_professionalId: {
-        poolPeriodId: latestPeriod.id,
-        professionalId: professional.id,
-      },
-    },
-    select: {
-      validConsults: true, qualified: true, disqualReason: true, qualityMult: true,
-      score: true, baseCents: true, meritCents: true, totalCents: true, payoutStatus: true,
-    },
-  });
+  const mineRow = await findMineContribution(latestPeriod.id, provider);
 
   const myContribs = await db.poolContribution.findMany({
-    where: { professionalId: professional.id },
+    where: contributionHistoryWhere(provider),
     select: {
       totalCents: true, qualified: true,
       poolPeriod: { select: { month: true, currency: true, poolCents: true, status: true } },

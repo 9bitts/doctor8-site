@@ -10,7 +10,7 @@ export default function IntegrativeTherapistFinanceiroPage() {
         apiPath="/api/integrative-therapist/financeiro"
         showPricingSettings
         showRateio
-        rateioMode="info"
+        rateioMode="full"
         stripeConnectEnabled={isStripeConnectEnabled()}
         stripeConnectMode="unavailable"
         pricingSettingsProps={{

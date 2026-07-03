@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { EmissionsSignModal, type EmissionKind, type SignTarget } from "./EmissionsSignModal";
 import WhatsappDeliverButton from "./WhatsappDeliverButton";
+import Doctor8DeliverButton from "./Doctor8DeliverButton";
 import type { Chart } from "./types";
 
 export interface SavedEmission {
@@ -20,7 +21,7 @@ interface EmissionPostSaveFlowProps {
   t: (k: string) => string;
   lang: string;
   signConfig: { configured: boolean; cpfMasked: string } | null;
-  initialStep?: "choose" | "success";
+  initialStep?: "choose" | "deliver" | "success";
   initialShareUrl?: string;
   onDone: () => void;
 }
@@ -28,7 +29,7 @@ interface EmissionPostSaveFlowProps {
 export function EmissionPostSaveFlow({
   emission, t, lang, signConfig, initialStep = "choose", initialShareUrl = "", onDone,
 }: EmissionPostSaveFlowProps) {
-  const [step, setStep] = useState<"choose" | "success">(initialStep);
+  const [step, setStep] = useState<"choose" | "deliver" | "success">(initialStep);
   const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
   const [delivering, setDelivering] = useState(false);
   const [deliverError, setDeliverError] = useState("");
@@ -39,6 +40,7 @@ export function EmissionPostSaveFlow({
   const [sendWhatsApp, setSendWhatsApp] = useState(true);
   const [whatsappStatus, setWhatsappStatus] = useState("");
   const [patientHasPhone, setPatientHasPhone] = useState(true);
+  const [doctor8Delivered, setDoctor8Delivered] = useState(initialStep === "success" && !!initialShareUrl);
 
   const patient = emission.patient;
   const savedTitleKey =
@@ -69,6 +71,7 @@ export function EmissionPostSaveFlow({
       setShareUrl(data.shareUrl || "");
       setPatientHasPhone(!!data.patient?.hasPhone);
       if (data.whatsapp?.status) setWhatsappStatus(data.whatsapp.status);
+      setDoctor8Delivered(true);
       setStep("success");
       return true;
     } catch {
@@ -120,6 +123,57 @@ export function EmissionPostSaveFlow({
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
   }
 
+  if (step === "deliver") {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+        <div className="flex flex-col items-center text-center">
+          <div className="w-14 h-14 rounded-full bg-brand-100 flex items-center justify-center mb-3">
+            <CheckCircle2 size={28} className="text-brand-500" />
+          </div>
+          <p className="font-bold text-slate-900 text-lg">{t("rx.flow.signedTitle")}</p>
+          <p className="text-slate-500 text-sm mt-1">{patient.firstName} {patient.lastName}</p>
+        </div>
+
+        <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700">
+          <p>{patient.hasAccount ? t("rx.flow.doctor8Notice") : t("rx.flow.doctor8NoticeNoAccount")}</p>
+        </div>
+
+        {deliverError && (
+          <p className="text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">{deliverError}</p>
+        )}
+
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={sendWhatsApp}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setSendWhatsApp(next);
+                if (typeof window !== "undefined") {
+                  sessionStorage.setItem("doctor8_emit_whatsapp_pref", next ? "1" : "0");
+                }
+              }}
+              className="w-4 h-4 accent-brand-500"
+            />
+            {t("wa.sendAfterDeliver")}
+          </label>
+
+          <button onClick={deliverToPatient} disabled={delivering}
+            className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
+            {delivering ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            {t("rx.flow.sendDoctor8")}
+          </button>
+
+          <button onClick={onDone} disabled={delivering}
+            className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-semibold text-sm transition">
+            {t("rx.flow.skipDeliver")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (step === "success") {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
@@ -127,16 +181,42 @@ export function EmissionPostSaveFlow({
           <div className="w-14 h-14 rounded-full bg-brand-100 flex items-center justify-center mb-3">
             <CheckCircle2 size={28} className="text-brand-500" />
           </div>
-          <p className="font-bold text-slate-900 text-lg">{t(savedTitleKey)}</p>
+          <p className="font-bold text-slate-900 text-lg">{doctor8Delivered ? t("rx.flow.deliveredDoctor8") : t(savedTitleKey)}</p>
           <p className="text-slate-500 text-sm mt-1">{patient.firstName} {patient.lastName}</p>
         </div>
 
-        {patient.hasAccount ? (
+        {doctor8Delivered && (
+          <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700 flex items-start gap-3">
+            <CheckCircle2 size={18} className="text-brand-500 shrink-0 mt-0.5" />
+            <p>{patient.hasAccount ? t("rx.flow.doctor8Notice") : t("rx.flow.doctor8NoticeNoAccount")}</p>
+          </div>
+        )}
+
+        {patient.hasAccount && doctor8Delivered ? (
           <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700 flex items-start gap-3">
             <CheckCircle2 size={18} className="text-brand-500 shrink-0 mt-0.5" />
             <p>{t("rx3.notifiedText")}</p>
           </div>
-        ) : patient.email ? (
+        ) : !doctor8Delivered && patient.hasAccount ? (
+          <div className="space-y-3">
+            <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700">
+              <p>{t("rx.flow.doctor8Notice")}</p>
+            </div>
+            <Doctor8DeliverButton
+              kind={emission.kind}
+              id={emission.id}
+              t={t}
+              sendWhatsApp={sendWhatsApp}
+              onDelivered={(data) => {
+                setShareUrl(data.shareUrl || "");
+                setPatientHasPhone(!!data.hasPhone);
+                if (data.whatsappStatus) setWhatsappStatus(data.whatsappStatus);
+                setDoctor8Delivered(true);
+              }}
+              onError={setDeliverError}
+            />
+          </div>
+        ) : !doctor8Delivered && patient.email ? (
           inviteSent ? (
             <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700">
               {t("rx3.inviteSent")} <strong>{patient.email}</strong>
@@ -153,10 +233,14 @@ export function EmissionPostSaveFlow({
               </button>
             </div>
           )
-        ) : (
+        ) : !doctor8Delivered ? (
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600">
             {t("rx3.noEmailText")}
           </div>
+        ) : null}
+
+        {deliverError && (
+          <p className="text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">{deliverError}</p>
         )}
 
         {!patientHasPhone && (
@@ -210,6 +294,10 @@ export function EmissionPostSaveFlow({
           <p className="text-xs text-slate-400 mt-2 max-w-sm">{t("rx.flow.signPrompt")}</p>
         </div>
 
+        <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-700">
+          <p>{patient.hasAccount ? t("rx.flow.doctor8Notice") : t("rx.flow.doctor8NoticeNoAccount")}</p>
+        </div>
+
         {deliverError && (
           <p className="text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">{deliverError}</p>
         )}
@@ -237,7 +325,7 @@ export function EmissionPostSaveFlow({
           <button onClick={handleSendUnsigned} disabled={delivering}
             className="w-full py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
             {delivering ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-            {t("rx.flow.sendUnsigned")}
+            {t("rx.flow.sendDoctor8")}
           </button>
         </div>
 

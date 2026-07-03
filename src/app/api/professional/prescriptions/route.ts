@@ -20,6 +20,7 @@ import { z } from "zod";
 import { AuditAction } from "@prisma/client";
 import { createNotification } from "@/lib/notifications";
 import { hasAcceptedLink } from "@/lib/patient-professional-link";
+import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 
 const medicationItemSchema = z.object({
   name: z.string().min(1),
@@ -101,6 +102,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
     documentPatientId = patient.id;
+
+    // Always link emissions to the patient's chart so they appear in Registros.
+    const ensuredRecordId = await ensurePatientRecord(ctx.professional.id, patientUserId);
+    if (ensuredRecordId) documentPatientRecordId = ensuredRecordId;
   }
 
   if (appointmentId) {
@@ -247,6 +252,7 @@ export async function GET(req: NextRequest) {
       patientRecordId: p.document?.patientRecordId ?? null,
       signatureStatus: (p as { signatureStatus?: string | null }).signatureStatus ?? null,
       whatsappNotifyStatus: (p as { whatsappNotifyStatus?: string | null }).whatsappNotifyStatus ?? null,
+      patientNotifiedAt: !!(p as { patientNotifiedAt?: Date | null }).patientNotifiedAt,
       digitalSignature: p.digitalSignature,
       signed: (p as { signatureStatus?: string | null }).signatureStatus === "SIGNED",
       document: {

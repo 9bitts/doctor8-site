@@ -38,7 +38,19 @@ export default async function PatientChartDetail({
       tags: { orderBy: { createdAt: "asc" } },
       medicalDocuments: {
         orderBy: { createdAt: "desc" },
-        include: { category: { select: { name: true, groupName: true } } },
+        include: {
+          category: { select: { name: true, groupName: true } },
+          prescriptions: {
+            select: {
+              id: true,
+              signatureStatus: true,
+              whatsappNotifyStatus: true,
+              patientNotifiedAt: true,
+              medications: true,
+            },
+            take: 1,
+          },
+        },
       },
     },
   });
@@ -72,20 +84,33 @@ export default async function PatientChartDetail({
     zipCode: record.zipCode ? safeDecrypt(record.zipCode) : "",
   };
 
-  const documents = record.medicalDocuments.map((d) => ({
-    id: d.id,
-    type: d.type as string,
-    recordKind: d.recordKind,
-    categoryName: d.category?.name ?? null,
-    categoryGroup: d.category?.groupName ?? null,
-    title: safeDecrypt(d.title),
-    content: d.content ? safeDecrypt(d.content) : null,
-    hasFile: !!d.fileUrl,
-    attachmentCount: countRecordAttachments(!!d.fileUrl, d.content ? safeDecrypt(d.content) : null),
-    createdAt: d.createdAt.toISOString(),
-    sourceDocumentId: d.sourceDocumentId ?? null,
-    canEdit: !d.sourceDocumentId,
-  }));
+  const documents = record.medicalDocuments.map((d) => {
+    const rx = d.prescriptions[0];
+    const contentRaw = d.content ? safeDecrypt(d.content) : null;
+    let medications: { name: string; dosage?: string; frequency?: string }[] | null = null;
+    if (rx?.medications && Array.isArray(rx.medications)) {
+      medications = rx.medications as { name: string; dosage?: string; frequency?: string }[];
+    }
+    return {
+      id: d.id,
+      type: d.type as string,
+      recordKind: d.recordKind,
+      categoryName: d.category?.name ?? null,
+      categoryGroup: d.category?.groupName ?? null,
+      title: safeDecrypt(d.title),
+      content: contentRaw,
+      hasFile: !!d.fileUrl,
+      attachmentCount: countRecordAttachments(!!d.fileUrl, contentRaw),
+      createdAt: d.createdAt.toISOString(),
+      sourceDocumentId: d.sourceDocumentId ?? null,
+      canEdit: !d.sourceDocumentId && d.type !== "PRESCRIPTION",
+      prescriptionId: rx?.id ?? null,
+      signatureStatus: rx?.signatureStatus ?? d.signatureStatus ?? null,
+      whatsappNotifyStatus: rx?.whatsappNotifyStatus ?? d.whatsappNotifyStatus ?? null,
+      patientNotifiedAt: !!(rx?.patientNotifiedAt ?? d.patientNotifiedAt),
+      medications,
+    };
+  });
 
   return (
     <Suspense fallback={<div className="p-8 text-center text-slate-400">...</div>}>

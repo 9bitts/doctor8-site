@@ -19,6 +19,8 @@ import {
   Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
+import { EmissionCardActions } from "@/components/professional/emissions/EmissionCardActions";
+import { EmissionsSignModal, type EmissionKind, type SignTarget } from "@/components/professional/emissions/EmissionsSignModal";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import ReferralPanel from "@/components/professional/ReferralPanel";
 import PatientChartTags, { type ChartTag } from "@/components/professional/PatientChartTags";
@@ -105,6 +107,11 @@ interface Doc {
   createdAt: string;
   sourceDocumentId?: string | null;
   canEdit?: boolean;
+  prescriptionId?: string | null;
+  signatureStatus?: string | null;
+  whatsappNotifyStatus?: string | null;
+  patientNotifiedAt?: boolean;
+  medications?: { name: string; dosage?: string; frequency?: string }[] | null;
 }
 
 type RecordFilePreview = {
@@ -113,6 +120,17 @@ type RecordFilePreview = {
   name: string;
   kind: "image" | "pdf" | "video" | "other";
 };
+
+function emissionKindFromDocType(type: string): EmissionKind | null {
+  if (type === "PRESCRIPTION") return "prescription";
+  if (type === "EXAM_REQUEST" || type === "EXAM_RESULT") return "exam";
+  if (["CERTIFICATE", "REFERRAL", "CLINICAL_NOTE", "OTHER"].includes(type)) return "document";
+  return null;
+}
+
+function isEmissionDoc(doc: Doc): boolean {
+  return emissionKindFromDocType(doc.type) !== null;
+}
 
 const CONTENT_PREVIEW_CHARS = 160;
 
@@ -301,6 +319,8 @@ export default function RecordDetailClient({
   // Share state, keyed by document id
   const [shareStatus, setShareStatus] = useState<Record<string, string>>({});
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [signConfig, setSignConfig] = useState<{ configured: boolean; cpfMasked: string } | null>(null);
+  const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
 
   // Form fields
   const [categoryId, setCategoryId] = useState("");
@@ -347,6 +367,11 @@ export default function RecordDetailClient({
           if (active && data.invite) setInviteStatus(data.invite);
         } catch { /* ignore */ }
       }
+
+      try {
+        const res = await fetch("/api/professional/digital-sign");
+        if (active) setSignConfig(await res.json());
+      } catch { /* ignore */ }
     })();
     return () => { active = false; };
   }, []);
@@ -653,6 +678,26 @@ export default function RecordDetailClient({
       setInviteMsg("error:" + t("rec.networkError"));
     }
     setInviteSending(false);
+  }
+
+  function signEmissionDoc(d: Doc) {
+    const kind = emissionKindFromDocType(d.type);
+    if (!kind) return;
+    const emissionId = kind === "prescription" ? (d.prescriptionId || d.id) : d.id;
+    setSignTarget({ kind, id: emissionId, label: d.title });
+  }
+
+  function reuseEmissionDoc(d: Doc) {
+    const kind = emissionKindFromDocType(d.type);
+    const view = kind === "prescription" ? "prescription" : kind === "exam" ? "exam" : "document";
+    const href = `${portalBase}/prescriptions?patientRecordId=${chart.id}&view=${view}`;
+    window.location.href = href;
+  }
+
+  function markEmissionDelivered(docId: string) {
+    setDocs((prev) => prev.map((doc) => (
+      doc.id === docId ? { ...doc, patientNotifiedAt: true } : doc
+    )));
   }
 
   async function handleShare(docId: string) {
@@ -1344,7 +1389,12 @@ export default function RecordDetailClient({
                 : legacyLabel(d.type);
               const status = shareStatus[d.id] || "";
               const isSharing = sharingId === d.id;
-              const displayText = d.content ? formatRecordContentForDisplay(d.content) : "";
+              const emissionKind = emissionKindFromDocType(d.type);
+              const isEmission = isEmissionDoc(d);
+              const parsedContent = d.content ? parseRecordContent(d.content) : null;
+              const displayText = d.type === "PRESCRIPTION" && d.medications?.length
+                ? d.medications.map((m, i) => `${i + 1}. ${m.name}${m.dosage ? ` — ${m.dosage}` : ""}${m.frequency ? `, ${m.frequency}` : ""}`).join("\n")
+                : d.content ? formatRecordContentForDisplay(d.content) : "";
               const isExpanded = expandedIds.has(d.id);
               const canExpand = displayText.length > CONTENT_PREVIEW_CHARS;
               const attachmentCount = d.attachmentCount ?? countRecordAttachments(d.hasFile, d.content);
@@ -1421,6 +1471,27 @@ export default function RecordDetailClient({
                   )}
 
                   {/* Actions row */}
+                  {isEmission && emissionKind ? (
+                    <EmissionCardActions
+                      kind={emissionKind}
+                      emissionId={emissionKind === "prescription" ? (d.prescriptionId || d.id) : d.id}
+                      signatureStatus={d.signatureStatus}
+                      patientNotifiedAt={d.patientNotifiedAt}
+                      whatsappNotifyStatus={d.whatsappNotifyStatus}
+                      patientName={`${chart.firstName} ${chart.lastName}`}
+                      medications={d.medications || undefined}
+                      examItems={parsedContent?.items}
+                      title={d.title}
+                      content={d.content}
+                      t={t}
+                      onCopy={() => handleCopy(d, label)}
+                      onPrint={() => handlePrint(d.id)}
+                      onReuse={() => reuseEmissionDoc(d)}
+                      onSign={canEdit ? () => signEmissionDoc(d) : undefined}
+                      onPdfError={(msg) => toast.error(msg)}
+                      onDelivered={() => markEmissionDelivered(d.id)}
+                    />
+                  ) : (
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
@@ -1498,6 +1569,7 @@ export default function RecordDetailClient({
                     </>
                     )}
                   </div>
+                  )}
                 </div>
               );
             })}
@@ -1702,6 +1774,15 @@ export default function RecordDetailClient({
             </div>
           </div>
         </div>
+      )}
+
+      {signTarget && (
+        <EmissionsSignModal
+          target={signTarget}
+          signConfig={signConfig}
+          deliverAfter
+          onClose={() => setSignTarget(null)}
+        />
       )}
 
       <ImageCompareModal

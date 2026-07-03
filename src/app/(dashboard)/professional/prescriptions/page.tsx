@@ -16,7 +16,7 @@ import {
 import { PatientNoAccountPanel } from "@/components/professional/emissions/PatientNoAccountPanel";
 import { EmissionsSignModal, RX_STYLES, type SignTarget, type EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
 import { EmissionPostSaveFlow, type SavedEmission } from "@/components/professional/emissions/EmissionPostSaveFlow";
-import WhatsappDeliverButton from "@/components/professional/emissions/WhatsappDeliverButton";
+import { EmissionCardActions } from "@/components/professional/emissions/EmissionCardActions";
 import { ExamCreateView } from "@/components/professional/emissions/ExamCreateView";
 import { DocumentCreateView } from "@/components/professional/emissions/DocumentCreateView";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
@@ -86,6 +86,7 @@ interface ClinicalDocument {
   patientRecordId?: string | null;
   signatureStatus?: string | null; digitalSignature?: string | null; signed?: boolean;
   whatsappNotifyStatus?: string | null;
+  patientNotifiedAt?: boolean;
   categoryName?: string | null;
   document?: { patient?: { firstName: string; lastName: string } | null };
 }
@@ -131,6 +132,7 @@ interface Prescription {
   digitalSignature?: string | null;
   signatureStatus?: string | null;
   whatsappNotifyStatus?: string | null;
+  patientNotifiedAt?: boolean;
   document?: { patient?: { firstName: string; lastName: string } | null };
   medications: MedItem[];
 }
@@ -151,70 +153,12 @@ function emissionKindFromDoc(type: string): EmissionKind {
   return isExamDocType(type) ? "exam" : "document";
 }
 
-function emissionShareUrl(kind: EmissionKind): string {
-  const base = typeof window !== "undefined" ? window.location.origin : "https://doctor8.app";
-  if (kind === "prescription") return `${base}/patient/prescriptions`;
-  return `${base}/patient/documents`;
-}
-
-const WHATSAPP_PREF_KEY = "doctor8_emit_whatsapp_pref";
-
-function readWhatsAppDeliverPref(): boolean {
-  if (typeof window === "undefined") return true;
-  return sessionStorage.getItem(WHATSAPP_PREF_KEY) !== "0";
-}
-
-function PdfDownloadButton({
-  url, t, onError,
-}: {
-  url: string;
-  t: (k: string) => string;
-  onError: (message: string) => void;
-}) {
-  const [loading, setLoading] = useState(false);
-
-  async function handleDownload() {
-    setLoading(true);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        onError(
-          data.error === "SIGNED_PDF_UNAVAILABLE"
-            ? t("rx.signedPdfUnavailable")
-            : t("rx.pdfDownloadError"),
-        );
-        return;
-      }
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      window.open(objectUrl, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
-    } catch {
-      onError(t("rx.pdfDownloadError"));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => void handleDownload()}
-      disabled={loading}
-      className="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold transition disabled:opacity-50"
-    >
-      {loading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
-      {t("rx.downloadPDF")}
-    </button>
-  );
-}
-
 function PrescriptionCard({
-  p, locale, t, onReuse, onSign, onPdfError,
+  p, locale, t, onReuse, onSign, onPdfError, onRefresh,
 }: {
   p: Prescription; locale: string; t: (k: string) => string;
   onReuse: () => void; onSign: () => void; onPdfError: (message: string) => void;
+  onRefresh: () => void;
 }) {
   const meds = p.medications as MedItem[];
   const signed = p.signatureStatus === "SIGNED";
@@ -253,45 +197,31 @@ function PrescriptionCard({
             {meds.length > 4 && <li className="text-xs text-slate-400">+{meds.length - 4} {t("rx.more")}</li>}
           </ol>
         </div>
-        <div className="flex flex-col gap-2 shrink-0">
-          <button onClick={onReuse}
-            className="flex items-center justify-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
-            <Copy size={13} /> {t("rx.reuse")}
-          </button>
-          {!signed && !pending && (
-            <button onClick={onSign}
-              className="flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
-              <PenLine size={13} /> {t("rx.sign")}
-            </button>
-          )}
-          <PdfDownloadButton
-            url={`/api/professional/prescriptions/${p.id}/pdf`}
-            t={t}
-            onError={onPdfError}
-          />
-          {signed && (
-            <WhatsappDeliverButton
-              kind="prescription"
-              id={p.id}
-              patientName={patientName}
-              shareUrl={emissionShareUrl("prescription")}
-              t={t}
-              defaultMessage={t("rx.flow.whatsappMessage")}
-              initialStatus={p.whatsappNotifyStatus}
-              compact
-            />
-          )}
-        </div>
       </div>
+      <EmissionCardActions
+        kind="prescription"
+        emissionId={p.id}
+        signatureStatus={p.signatureStatus}
+        patientNotifiedAt={p.patientNotifiedAt}
+        whatsappNotifyStatus={p.whatsappNotifyStatus}
+        patientName={patientName}
+        medications={meds}
+        t={t}
+        onReuse={onReuse}
+        onSign={onSign}
+        onPdfError={onPdfError}
+        onDelivered={onRefresh}
+      />
     </div>
   );
 }
 
 function ClinicalDocCard({
-  d, locale, t, onReuse, onSign, onPdfError,
+  d, locale, t, onReuse, onSign, onPdfError, onRefresh,
 }: {
   d: ClinicalDocument; locale: string; t: (k: string) => string;
   onReuse: () => void; onSign: () => void; onPdfError: (message: string) => void;
+  onRefresh: () => void;
 }) {
   const signed = d.signatureStatus === "SIGNED";
   const pending = d.signatureStatus === "PENDING";
@@ -299,7 +229,7 @@ function ClinicalDocCard({
     ? `${d.document.patient.firstName} ${d.document.patient.lastName}`
     : t("rx.patient");
   const kindLabel = isExamDocType(d.type) ? t("rx.kindExam") : t("rx.kindDocument");
-  const pdfUrl = `/api/professional/documents/${d.id}/pdf`;
+  const kind = emissionKindFromDoc(d.type);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 hover:border-brand-200 transition">
@@ -334,32 +264,23 @@ function ClinicalDocCard({
             <p className="text-xs text-slate-500 mt-2 line-clamp-2">{d.content}</p>
           )}
         </div>
-        <div className="flex flex-col gap-2 shrink-0">
-          <button onClick={onReuse}
-            className="flex items-center justify-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
-            <Copy size={13} /> {t("rx.reuse")}
-          </button>
-          {!signed && !pending && (
-            <button onClick={onSign}
-              className="flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-xl text-xs font-semibold transition">
-              <PenLine size={13} /> {t("rx.sign")}
-            </button>
-          )}
-          <PdfDownloadButton url={pdfUrl} t={t} onError={onPdfError} />
-          {signed && (
-            <WhatsappDeliverButton
-              kind={emissionKindFromDoc(d.type)}
-              id={d.id}
-              patientName={patientName}
-              shareUrl={emissionShareUrl(emissionKindFromDoc(d.type))}
-              t={t}
-              defaultMessage={t("rx.flow.whatsappMessage")}
-              initialStatus={d.whatsappNotifyStatus}
-              compact
-            />
-          )}
-        </div>
       </div>
+      <EmissionCardActions
+        kind={kind}
+        emissionId={d.id}
+        signatureStatus={d.signatureStatus}
+        patientNotifiedAt={d.patientNotifiedAt}
+        whatsappNotifyStatus={d.whatsappNotifyStatus}
+        patientName={patientName}
+        examItems={d.examItems}
+        title={d.title}
+        content={d.content}
+        t={t}
+        onReuse={onReuse}
+        onSign={onSign}
+        onPdfError={onPdfError}
+        onDelivered={onRefresh}
+      />
     </div>
   );
 }
@@ -387,7 +308,7 @@ export default function PrescriptionsPage() {
   const [reuseSource, setReuseSource] = useState<Prescription | null>(null);
 
   const [savedEmission, setSavedEmission] = useState<SavedEmission | null>(null);
-  const [postSaveStep, setPostSaveStep] = useState<"choose" | "success">("choose");
+  const [postSaveStep, setPostSaveStep] = useState<"choose" | "deliver" | "success">("choose");
   const [postSaveShareUrl, setPostSaveShareUrl] = useState("");
 
   const [charts, setCharts] = useState<Chart[]>([]);
@@ -456,42 +377,21 @@ export default function PrescriptionsPage() {
 
     if (flow === "deliver" && sign === "success" && kind && id) {
       (async () => {
-        const deliverKind = kind === "prescription" ? "prescription"
-          : kind === "exam" ? "exam" : "document";
-        try {
-          const res = await fetch("/api/professional/emissions/deliver", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              kind: deliverKind,
-              id,
-              sendWhatsApp: readWhatsAppDeliverPref(),
-            }),
-          });
-          const data = await res.json();
-          if (res.ok) {
-            toast.success(t("rx.flow.deliverSuccess"));
-            setSavedEmission({
-              kind,
-              id,
-              label: "",
-              patient: {
-                id: data.patientRecordId || "",
-                firstName: data.patient?.firstName || "",
-                lastName: data.patient?.lastName || "",
-                email: data.patient?.email || null,
-                hasAccount: !!data.patient?.hasAccount,
-              },
-            });
-            setPostSaveStep("success");
-            setPostSaveShareUrl(data.shareUrl || "");
-            fetchAll();
-          } else {
-            toast.error(typeof data.error === "string" ? data.error : t("rx.flow.deliverError"));
-          }
-        } catch {
-          toast.error(t("rx.flow.deliverError"));
-        }
+        const patient = await loadEmissionPatient(kind, id);
+        setSavedEmission({
+          kind,
+          id,
+          label: "",
+          patient: patient ?? {
+            id: "",
+            firstName: "",
+            lastName: "",
+            email: null,
+            hasAccount: false,
+          },
+        });
+        setPostSaveStep("deliver");
+        fetchAll();
         window.history.replaceState({}, "", window.location.pathname);
       })();
     } else if (sign === "processing") {
@@ -507,6 +407,57 @@ export default function PrescriptionsPage() {
       setTimeout(() => setSignResult(null), 6000);
     }
   }, []);
+
+  async function loadEmissionPatient(kind: EmissionKind, id: string): Promise<Chart | null> {
+    try {
+      const [chartsRes, rxRes, docRes] = await Promise.all([
+        fetch("/api/professional/records"),
+        kind === "prescription" ? fetch("/api/professional/prescriptions") : Promise.resolve(null),
+        kind !== "prescription" ? fetch("/api/professional/documents/issued") : Promise.resolve(null),
+      ]);
+      const chartsData = await chartsRes.json();
+      const chartsList: Chart[] = chartsData.records || [];
+
+      if (kind === "prescription" && rxRes) {
+        const rxData = await rxRes.json();
+        const p = (rxData.prescriptions || []).find((x: Prescription) => x.id === id);
+        if (!p) return null;
+        if (p.patientRecordId) {
+          return chartsList.find((c) => c.id === p.patientRecordId) || null;
+        }
+        if (p.document?.patient) {
+          const target = `${p.document.patient.firstName} ${p.document.patient.lastName}`.toLowerCase();
+          return chartsList.find((c) => `${c.firstName} ${c.lastName}`.toLowerCase() === target) || {
+            id: "",
+            firstName: p.document.patient.firstName,
+            lastName: p.document.patient.lastName,
+            email: null,
+            hasAccount: true,
+          };
+        }
+        return null;
+      }
+
+      if (docRes) {
+        const docData = await docRes.json();
+        const d = (docData.documents || []).find((x: ClinicalDocument) => x.id === id);
+        if (!d) return null;
+        if (d.patientRecordId) {
+          return chartsList.find((c) => c.id === d.patientRecordId) || null;
+        }
+        if (d.document?.patient) {
+          return {
+            id: "",
+            firstName: d.document.patient.firstName,
+            lastName: d.document.patient.lastName,
+            email: null,
+            hasAccount: true,
+          };
+        }
+      }
+    } catch { /* ignore */ }
+    return null;
+  }
 
   async function fetchAll() {
     setLoading(true);
@@ -1631,6 +1582,7 @@ export default function PrescriptionsPage() {
               onReuse={() => openReuse(p)}
               onSign={() => signPrescription(p)}
               onPdfError={(msg) => toast.error(msg)}
+              onRefresh={fetchPrescriptions}
             />
           ))}
           {showClinicalList && filteredClinical.map((d) => (
@@ -1639,6 +1591,7 @@ export default function PrescriptionsPage() {
               onReuse={() => openReuseClinical(d)}
               onSign={() => signClinicalDoc(d)}
               onPdfError={(msg) => toast.error(msg)}
+              onRefresh={fetchAll}
             />
           ))}
           {showPrescriptionList && showClinicalList && filtered.length === 0 && filteredClinical.length === 0 && (
@@ -1651,7 +1604,7 @@ export default function PrescriptionsPage() {
       ) : null}
 
       {signTarget && (
-        <EmissionsSignModal target={signTarget} signConfig={signConfig} onClose={() => setSignTarget(null)} />
+        <EmissionsSignModal target={signTarget} signConfig={signConfig} deliverAfter onClose={() => setSignTarget(null)} />
       )}
     </div>
   );

@@ -7,7 +7,7 @@ export default function PsychoanalystFinanceiroPage() {
       apiPath="/api/psychoanalyst/financeiro"
       showPricingSettings={false}
       showRateio
-      rateioMode="info"
+      rateioMode="full"
       stripeConnectEnabled={isStripeConnectEnabled()}
       stripeConnectMode="unavailable"
     />
