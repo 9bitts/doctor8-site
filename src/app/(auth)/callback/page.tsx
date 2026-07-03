@@ -16,6 +16,8 @@ import {
 import { sessionProfileIncomplete } from "@/lib/user-profile-complete";
 import { AuthLogo } from "@/components/auth/auth-logo";
 
+type CallbackFailure = "sessionTimeout" | "callbackFailed" | null;
+
 export default function CallbackPage() {
   return (
     <Suspense fallback={<LoginSuspenseFallback />}>
@@ -26,7 +28,7 @@ export default function CallbackPage() {
 
 function CallbackInner() {
   const { t } = useLoginLang();
-  const [timedOut, setTimedOut] = useState(false);
+  const [failure, setFailure] = useState<CallbackFailure>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,7 +40,7 @@ function CallbackInner() {
       if (cancelled) return;
 
       if (!session?.user?.role) {
-        setTimedOut(true);
+        setFailure("sessionTimeout");
         navigateAfterAuth(`${PATIENT_LOGIN}?error=SessionTimeout`);
         return;
       }
@@ -66,7 +68,8 @@ function CallbackInner() {
 
     finishCallback().catch(() => {
       if (!cancelled) {
-        navigateAfterAuth(`${PATIENT_LOGIN}?error=SessionTimeout`);
+        setFailure("callbackFailed");
+        navigateAfterAuth(`${PATIENT_LOGIN}?error=OAuthCallback`);
       }
     });
 
@@ -74,6 +77,13 @@ function CallbackInner() {
       cancelled = true;
     };
   }, []);
+
+  const statusMessage =
+    failure === "sessionTimeout"
+      ? t("login.sessionTimeout")
+      : failure === "callbackFailed"
+        ? t("login.callbackFailed")
+        : t("login.callbackSigningIn");
 
   return (
     <LoginPageShell accent="emerald">
@@ -83,7 +93,7 @@ function CallbackInner() {
         </div>
         <AuthLogo className="mx-auto mb-4" />
         <p className="text-slate-400 text-sm" role="status">
-          {timedOut ? t("login.genericError") : t("login.callbackSigningIn")}
+          {statusMessage}
         </p>
       </div>
     </LoginPageShell>

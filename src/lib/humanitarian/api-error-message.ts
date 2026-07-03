@@ -18,6 +18,8 @@ const ERROR_I18N_KEYS: Record<string, string> = {
   ALREADY_IN_QUEUE: "hum.err.alreadyInQueue",
   CAMPAIGN_UNAVAILABLE: "hum.err.campaignUnavailable",
   PHONE_SAVE_FAILED: "hum.err.phoneSaveFailed",
+  NOT_VERIFIED: "hum.err.notVerified",
+  NO_PROFILE: "hum.err.noProfile",
 };
 
 function extractErrorCode(body: {

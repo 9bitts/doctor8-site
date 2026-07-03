@@ -32,6 +32,13 @@ import InternationalPhoneInput, {
 import { defaultDdiForRegion, validateRegistrationPhone } from "@/lib/international-phone";
 import { mapRegisterApiErrors } from "@/lib/register-api-errors";
 import {
+  existingAccountMessage,
+  isLikelyNetworkError,
+  networkErrorMessage,
+  oauthIntentErrorMessage,
+  registerSuccessFollowUp,
+} from "@/lib/auth-flow-errors";
+import {
   canSkipHumanitarianEmailVerification,
 } from "@/lib/humanitarian/feature-flags";
 import {
@@ -222,7 +229,8 @@ export function RegisterAccountForm({
         }),
       });
       if (!intentRes.ok) {
-        setErrors({ form: [t("reg.genericError")] });
+        const intentBody = await intentRes.json().catch(() => null);
+        setErrors({ form: [oauthIntentErrorMessage(lang, intentRes.status, intentBody)] });
         setGoogleLoading(false);
         return;
       }
@@ -233,8 +241,10 @@ export function RegisterAccountForm({
       clearSensitiveClientState();
       await signOut({ redirect: false });
       await signIn("google", { callbackUrl: oauthCallback });
-    } catch {
-      setErrors({ form: [t("reg.genericError")] });
+    } catch (err) {
+      setErrors({
+        form: [isLikelyNetworkError(err) ? networkErrorMessage(lang) : t("reg.oauthIntentFailed")],
+      });
       setGoogleLoading(false);
     }
   }
@@ -278,6 +288,12 @@ export function RegisterAccountForm({
         return;
       }
 
+      const followUp = registerSuccessFollowUp(data);
+      if (followUp.kind === "existingAccount") {
+        setErrors({ email: [existingAccountMessage(lang)] });
+        return;
+      }
+
       const humanitarianSkip =
         role === "PATIENT"
         && canSkipHumanitarianEmailVerification(
@@ -311,12 +327,14 @@ export function RegisterAccountForm({
             );
             return;
           }
+          setErrors({ general: [t("reg.sessionTimeoutAfterSignup")] });
+          return;
         }
-        router.push(
-          authCallback
-            ? `/login?callbackUrl=${encodeURIComponent(authCallback)}`
-            : "/login",
-        );
+        if (signInResult?.error?.includes("EmailNotVerified")) {
+          setErrors({ general: [t("reg.verifyBeforeSignIn")] });
+          return;
+        }
+        setErrors({ general: [t("reg.signInAfterRegisterFailed")] });
         return;
       }
 
@@ -325,11 +343,13 @@ export function RegisterAccountForm({
           role,
           email,
           callbackUrl: authCallback || undefined,
-          emailSent: data.emailSent !== false,
+          emailSent: followUp.kind === "verify" ? followUp.emailSent : data.emailSent !== false,
         }),
       );
-    } catch {
-      setErrors({ general: [t("reg.genericError")] });
+    } catch (err) {
+      setErrors({
+        general: [isLikelyNetworkError(err) ? networkErrorMessage(lang) : t("reg.serverError")],
+      });
     } finally {
       setLoading(false);
     }

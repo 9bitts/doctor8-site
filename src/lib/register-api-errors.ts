@@ -13,13 +13,26 @@ function isPhoneErrorCode(value: string): value is PhoneErrorCode {
 /** Maps register API field errors to translated messages for display in forms. */
 export function mapRegisterApiErrors(
   lang: Lang,
-  payload: { code?: string; error?: Record<string, string[]> },
+  payload: { code?: string; error?: Record<string, string[]> | string },
 ): Record<string, string[]> {
   if (payload.code === "ACCOUNT_INCOMPLETE") {
     return { email: [translate(lang, "reg.accountIncomplete")] };
   }
 
-  const apiErrors = payload.error || { general: [translate(lang, "reg.regFailed")] };
+  if (payload.error === "RATE_LIMITED" || payload.code === "RATE_LIMITED") {
+    return { general: [translate(lang, "reg.rateLimited")] };
+  }
+
+  const fieldErrors =
+    payload.error && typeof payload.error === "object" && !Array.isArray(payload.error)
+      ? payload.error
+      : null;
+
+  const apiErrors = fieldErrors || { general: [translate(lang, "reg.regFailed")] };
+
+  if (apiErrors.email?.[0]?.includes("Email already in use")) {
+    apiErrors.email = [translate(lang, "reg.emailInUse")];
+  }
 
   if (apiErrors.phoneNational?.[0]) {
     const raw = apiErrors.phoneNational[0];
@@ -29,7 +42,7 @@ export function mapRegisterApiErrors(
   }
 
   if (apiErrors.general?.[0] === "Something went wrong. Please try again.") {
-    apiErrors.general = [translate(lang, "reg.genericError")];
+    apiErrors.general = [translate(lang, "reg.serverError")];
   }
 
   return apiErrors;

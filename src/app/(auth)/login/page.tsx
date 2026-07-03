@@ -124,8 +124,8 @@ function UnifiedLoginForm() {
 
       // Session cookie not ready yet — fall back to /callback (OAuth-style recovery).
       navigateAfterAuth(POST_LOGIN_CALLBACK);
-    } catch {
-      setError("generic");
+    } catch (err) {
+      setError(err instanceof TypeError ? "sessionTimeout" : "generic");
       setLoading(false);
     }
   }
@@ -139,7 +139,7 @@ function UnifiedLoginForm() {
       await signOut({ redirect: false });
       await signIn("google", { callbackUrl: POST_LOGIN_CALLBACK });
     } catch {
-      setError("generic");
+      setError("oauthFailed");
       setGoogleLoading(false);
     }
   }

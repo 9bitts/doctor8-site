@@ -37,6 +37,8 @@ export type LoginErrorCode =
   | "invalidLink"
   | "verificationFailed"
   | "generic"
+  | "sessionTimeout"
+  | "oauthFailed"
   | "psychologistOnly"
   | "roleOnly";
 
@@ -166,7 +168,16 @@ export function parseLoginError(err: string | null): LoginErrorCode {
   if (err === "InvalidVerificationLink") return "invalidLink";
   if (err === "VerificationFailed") return "verificationFailed";
   if (err === "WrongRole" || err === "AccessDenied") return "roleOnly";
-  if (err === "SessionTimeout") return "generic";
+  if (err === "SessionTimeout") return "sessionTimeout";
+  if (
+    err === "OAuthSignin"
+    || err === "OAuthCallback"
+    || err === "OAuthCreateAccount"
+    || err === "Callback"
+    || err === "Configuration"
+  ) {
+    return "oauthFailed";
+  }
   return "invalid";
 }
 
@@ -353,6 +364,20 @@ export function LoginAlerts({
               : error === "verificationFailed" ? t("login.verificationFailed")
               : t("login.genericError")}
           </p>
+        </div>
+      )}
+
+      {error === "sessionTimeout" && (
+        <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6" role="alert">
+          <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" aria-hidden />
+          <p className="text-red-300 text-sm">{t("login.sessionTimeout")}</p>
+        </div>
+      )}
+
+      {error === "oauthFailed" && (
+        <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6" role="alert">
+          <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" aria-hidden />
+          <p className="text-red-300 text-sm">{t("login.oauthFailed")}</p>
         </div>
       )}
     </>

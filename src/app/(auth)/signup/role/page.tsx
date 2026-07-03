@@ -33,6 +33,12 @@ import { defaultRegistrationRegionForLang, type RegistrationRegionCode } from "@
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { persistAuthCallback } from "@/lib/auth-callback";
 import { resolveRoleHome } from "@/lib/role-home";
+import {
+  completeSignupErrorMessage,
+  isLikelyNetworkError,
+  networkErrorMessage,
+  oauthIntentErrorMessage,
+} from "@/lib/auth-flow-errors";
 
 type RoleChoice =
   | { role: "PATIENT" }
@@ -192,13 +198,13 @@ function SignupRoleContent() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(t("reg.genericError"));
+        setError(completeSignupErrorMessage(lang, res.status, data));
         return;
       }
       await updateSession({ refreshProfileComplete: true });
       router.replace(data.redirectTo || "/patient");
-    } catch {
-      setError(t("reg.genericError"));
+    } catch (err) {
+      setError(isLikelyNetworkError(err) ? networkErrorMessage(lang) : t("signup.role.err.completeFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -226,7 +232,8 @@ function SignupRoleContent() {
         }),
       });
       if (!intentRes.ok) {
-        setError(t("reg.genericError"));
+        const intentBody = await intentRes.json().catch(() => null);
+        setError(oauthIntentErrorMessage(lang, intentRes.status, intentBody));
         setSubmitting(false);
         return;
       }
@@ -238,8 +245,8 @@ function SignupRoleContent() {
           : "/callback";
       clearSensitiveClientState();
       await signIn("google", { callbackUrl: oauthCallback });
-    } catch {
-      setError(t("reg.genericError"));
+    } catch (err) {
+      setError(isLikelyNetworkError(err) ? networkErrorMessage(lang) : t("signup.role.err.oauthIntent"));
       setSubmitting(false);
     }
   }

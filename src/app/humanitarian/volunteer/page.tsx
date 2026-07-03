@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
+import { humanitarianApiErrorMessage } from "@/lib/humanitarian/api-error-message";
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
@@ -53,10 +54,8 @@ function t(lang: Lang, key: string, params?: Record<string, string | number>) {
   return s;
 }
 
-function volunteerErrorMessage(lang: Lang, code: unknown): string {
-  if (code === "NOT_VERIFIED") return t(lang, "hum.vol.notVerified");
-  if (typeof code === "string" && code.length > 0 && code !== "Forbidden") return code;
-  return t(lang, "hum.vol.connectionError");
+function volunteerErrorMessage(lang: Lang, body: { error?: unknown; errorCode?: string; message?: string }): string {
+  return humanitarianApiErrorMessage(lang, body);
 }
 
 function poolLabel(pool: PoolRow, lang: Lang) {
@@ -96,7 +95,7 @@ export default function HumanitarianVolunteerPage() {
       );
       const data = await res.json();
       if (!res.ok) {
-        setError(volunteerErrorMessage(lang, data.error));
+        setError(volunteerErrorMessage(lang, data));
         setLoading(false);
         return;
       }
@@ -212,7 +211,7 @@ export default function HumanitarianVolunteerPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(volunteerErrorMessage(lang, data.error));
+        setError(volunteerErrorMessage(lang, data));
         setToggling(null);
         return;
       }
