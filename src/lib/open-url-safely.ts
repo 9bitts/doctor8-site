@@ -30,7 +30,7 @@ export async function openUrlAfterAsync(
     if (win) {
       win.location.href = url;
     } else {
-      // Popup was blocked anyway (rare) ù fall back to same-tab navigation
+      // Popup was blocked anyway (rare) - fall back to same-tab navigation
       // so the user still gets the file.
       window.location.href = url;
     }
