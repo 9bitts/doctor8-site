@@ -2785,6 +2785,8 @@ model LedgerEntry {
   @@index([type])
   @@index([category])
   @@index([poolPeriodId])
+  @@unique([type, appointmentId])
+  @@unique([type, jitQueueId])
 }
 
 // O pote de um mês, por moeda. Uma linha por (mês, moeda).

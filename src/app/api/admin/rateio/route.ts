@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import {
   commissionCentsOf, isOutsideRefundWindow, monthBounds, poolCentsOf,
   isEligible, splitPool, ledgerHash, SHORT_CALL_SECONDS,
@@ -26,12 +27,41 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type AuthContext =
+  | { ok: true; isAdminSession: true; adminUserId: string }
+  | { ok: true; isAdminSession: false; adminUserId: null }
+  | { ok: false; isAdminSession: false; adminUserId: null };
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isLedgerDedupError(e: unknown): boolean {
+  return (
+    e instanceof Prisma.PrismaClientKnownRequestError &&
+    (e.code === "P2002" || e.code === "P2034")
+  );
+}
+
+function logRateioDedup(context: string, detail: unknown): void {
+  console.log(`[RATEIO-DEDUP] ${context}`, detail);
+}
+
 // ── Autorização ───────────────────────────────────────────────────────────────
 async function authorize(req: NextRequest): Promise<boolean> {
+  return (await authorizeContext(req)).ok;
+}
+
+async function authorizeContext(req: NextRequest): Promise<AuthContext> {
   const secret = req.headers.get("x-cron-secret");
-  if (secret && process.env.CRON_SECRET && secret === process.env.CRON_SECRET) return true;
+  if (secret && process.env.CRON_SECRET && secret === process.env.CRON_SECRET) {
+    return { ok: true, isAdminSession: false, adminUserId: null };
+  }
   const session = await auth();
-  return session?.user?.role === "ADMIN";
+  if (session?.user?.role === "ADMIN" && session.user.id) {
+    return { ok: true, isAdminSession: true, adminUserId: session.user.id };
+  }
+  return { ok: false, isAdminSession: false, adminUserId: null };
 }
 
 function params(req: NextRequest) {
@@ -241,37 +271,71 @@ async function doLedger(month: string, currency: string) {
 
   let written = 0;
   for (const v of valids) {
-    const existing = await db.ledgerEntry.findFirst({
-      where: {
-        type: "COMMISSION_IN",
-        ...(v.appointmentId ? { appointmentId: v.appointmentId } : { jitQueueId: v.jitQueueId }),
-      },
-      select: { id: true },
-    });
-    if (existing) continue;
+    const refKey = v.appointmentId
+      ? `appt:${v.appointmentId}`
+      : `jit:${v.jitQueueId}`;
 
-    const last = await db.ledgerEntry.findFirst({
-      orderBy: { createdAt: "desc" },
-      select: { hash: true },
-    });
-    const occurredAt = v.createdAt ?? new Date();
-    const sourceRef = `commission:${v.appointmentId ? "appt" : "jit"}:${v.appointmentId ?? v.jitQueueId}`;
-    const hash = ledgerHash(last?.hash ?? null, {
-      type: "COMMISSION_IN", category: null, amountCents: v.commissionCents,
-      currency, competenceMonth: month, source: "SYSTEM", sourceRef,
-      appointmentId: v.appointmentId ?? null, jitQueueId: v.jitQueueId ?? null,
-      occurredAt: occurredAt.toISOString(),
-    });
+    try {
+      const created = await db.$transaction(
+        async (tx) => {
+          const existing = await tx.ledgerEntry.findFirst({
+            where: {
+              type: "COMMISSION_IN",
+              ...(v.appointmentId
+                ? { appointmentId: v.appointmentId }
+                : { jitQueueId: v.jitQueueId }),
+            },
+            select: { id: true },
+          });
+          if (existing) return false;
 
-    await db.ledgerEntry.create({
-      data: {
-        type: "COMMISSION_IN", category: null, amountCents: v.commissionCents,
-        currency, competenceMonth: month, source: "SYSTEM", sourceRef,
-        appointmentId: v.appointmentId ?? undefined, jitQueueId: v.jitQueueId ?? undefined,
-        prevHash: last?.hash ?? null, hash, occurredAt,
-      },
-    });
-    written++;
+          const last = await tx.ledgerEntry.findFirst({
+            orderBy: { createdAt: "desc" },
+            select: { hash: true },
+          });
+          const occurredAt = v.createdAt ?? new Date();
+          const sourceRef = `commission:${v.appointmentId ? "appt" : "jit"}:${v.appointmentId ?? v.jitQueueId}`;
+          const hash = ledgerHash(last?.hash ?? null, {
+            type: "COMMISSION_IN",
+            category: null,
+            amountCents: v.commissionCents,
+            currency,
+            competenceMonth: month,
+            source: "SYSTEM",
+            sourceRef,
+            appointmentId: v.appointmentId ?? null,
+            jitQueueId: v.jitQueueId ?? null,
+            occurredAt: occurredAt.toISOString(),
+          });
+
+          await tx.ledgerEntry.create({
+            data: {
+              type: "COMMISSION_IN",
+              category: null,
+              amountCents: v.commissionCents,
+              currency,
+              competenceMonth: month,
+              source: "SYSTEM",
+              sourceRef,
+              appointmentId: v.appointmentId ?? undefined,
+              jitQueueId: v.jitQueueId ?? undefined,
+              prevHash: last?.hash ?? null,
+              hash,
+              occurredAt,
+            },
+          });
+          return true;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+      if (created) written++;
+    } catch (e) {
+      if (isLedgerDedupError(e)) {
+        logRateioDedup(`doLedger skipped ${refKey}`, e);
+        continue;
+      }
+      throw e;
+    }
   }
   return { commissionsWritten: written };
 }
@@ -287,22 +351,67 @@ async function doCost(req: NextRequest, month: string, currency: string) {
   const source = String(body.source || "MANUAL_INVOICE");
   const occurredAt = body.occurredAt ? new Date(body.occurredAt) : new Date();
 
-  const last = await db.ledgerEntry.findFirst({ orderBy: { createdAt: "desc" }, select: { hash: true } });
-  const hash = ledgerHash(last?.hash ?? null, {
-    type, category, amountCents, currency, competenceMonth: month, source,
-    sourceRef: body.sourceRef ?? null, appointmentId: null, jitQueueId: null,
-    occurredAt: occurredAt.toISOString(),
-  });
+  const backoffs = [100, 200, 400];
 
-  const entry = await db.ledgerEntry.create({
-    data: {
-      type, category: category as any, amountCents, currency, competenceMonth: month,
-      source: source as any, sourceRef: body.sourceRef ?? null, invoiceUrl: body.invoiceUrl ?? null,
-      prevHash: last?.hash ?? null, hash, occurredAt,
-    },
-    select: { id: true, hash: true },
-  });
-  return { ok: true, entry };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const entry = await db.$transaction(
+        async (tx) => {
+          const last = await tx.ledgerEntry.findFirst({
+            orderBy: { createdAt: "desc" },
+            select: { hash: true },
+          });
+          const hash = ledgerHash(last?.hash ?? null, {
+            type,
+            category,
+            amountCents,
+            currency,
+            competenceMonth: month,
+            source,
+            sourceRef: body.sourceRef ?? null,
+            appointmentId: null,
+            jitQueueId: null,
+            occurredAt: occurredAt.toISOString(),
+          });
+
+          return tx.ledgerEntry.create({
+            data: {
+              type,
+              category: category as never,
+              amountCents,
+              currency,
+              competenceMonth: month,
+              source: source as never,
+              sourceRef: body.sourceRef ?? null,
+              invoiceUrl: body.invoiceUrl ?? null,
+              prevHash: last?.hash ?? null,
+              hash,
+              occurredAt,
+            },
+            select: { id: true, hash: true },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+      return { ok: true, entry };
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2034" &&
+        attempt < 2
+      ) {
+        await sleep(backoffs[attempt] ?? 400);
+        continue;
+      }
+      if (isLedgerDedupError(e)) {
+        logRateioDedup("doCost skipped (dedup/serialization)", e);
+        return { ok: false, deduped: true };
+      }
+      throw e;
+    }
+  }
+
+  return { error: "Falha ao gravar custo após retries de serialização" };
 }
 
 // ── Cálculo do pote (compartilhado por preview e close) ───────────────────────
@@ -362,9 +471,71 @@ async function doPreview(month: string, currency: string) {
 }
 
 // ── AÇÃO: close (grava PoolPeriod + PoolContribution, status LOCKED) ──────────
-async function doClose(month: string, currency: string) {
+type CloseOptions = {
+  force?: boolean;
+  adminUserId?: string | null;
+};
+
+type CloseResult =
+  | {
+      poolPeriodId: string;
+      month: string;
+      currency: string;
+      poolCents: number;
+      professionals: number;
+      distributedCents: number;
+    }
+  | {
+      conflict: true;
+      error: "PERIOD_ALREADY_CLOSED";
+      status: string;
+      lockedAt: string | null;
+    };
+
+async function doClose(
+  month: string,
+  currency: string,
+  opts: CloseOptions = {},
+): Promise<CloseResult> {
+  const existing = await db.poolPeriod.findUnique({
+    where: { month_currency: { month, currency } },
+  });
+
+  if (existing && existing.status !== "OPEN") {
+    if (!opts.force) {
+      return {
+        conflict: true,
+        error: "PERIOD_ALREADY_CLOSED",
+        status: existing.status,
+        lockedAt: existing.lockedAt ? existing.lockedAt.toISOString() : null,
+      };
+    }
+  }
+
   const p = await computePool(month, currency);
   const last = await db.ledgerEntry.findFirst({ orderBy: { createdAt: "desc" }, select: { hash: true } });
+
+  if (existing && existing.status !== "OPEN" && opts.force && opts.adminUserId) {
+    console.log("[RATEIO-FORCE-RECLOSE]", {
+      adminId: opts.adminUserId,
+      month,
+      currency,
+      old: {
+        status: existing.status,
+        commissionCents: existing.commissionCents,
+        costFixedCents: existing.costFixedCents,
+        costUsageCents: existing.costUsageCents,
+        poolCents: existing.poolCents,
+        lockedAt: existing.lockedAt?.toISOString() ?? null,
+      },
+      new: {
+        commissionCents: p.commissionCents,
+        costFixedCents: p.costFixedCents,
+        costUsageCents: p.costUsageCents,
+        poolCents: p.poolCents,
+      },
+    });
+  }
 
   const period = await db.poolPeriod.upsert({
     where: { month_currency: { month, currency } },
@@ -424,24 +595,67 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await authorize(req))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authCtx = await authorizeContext(req);
+  if (!authCtx.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { action, month, currency } = params(req);
   try {
     switch (action) {
-      case "validate": return NextResponse.json(await doValidate(month, currency));
-      case "ledger":   return NextResponse.json(await doLedger(month, currency));
-      case "cost":     return NextResponse.json(await doCost(req, month, currency));
-      case "close":    return NextResponse.json(await doClose(month, currency));
+      case "validate":
+        return NextResponse.json(await doValidate(month, currency));
+      case "ledger":
+        return NextResponse.json(await doLedger(month, currency));
+      case "cost":
+        return NextResponse.json(await doCost(req, month, currency));
+      case "close": {
+        const body = await req.json().catch(() => ({}));
+        const force = body.force === true;
+        if (force && !authCtx.isAdminSession) {
+          return NextResponse.json(
+            { error: "FORCE_REQUIRES_ADMIN_SESSION" },
+            { status: 403 },
+          );
+        }
+        const result = await doClose(month, currency, {
+          force,
+          adminUserId: authCtx.isAdminSession ? authCtx.adminUserId : null,
+        });
+        if ("conflict" in result && result.conflict) {
+          return NextResponse.json(
+            {
+              error: result.error,
+              status: result.status,
+              lockedAt: result.lockedAt,
+            },
+            { status: 409 },
+          );
+        }
+        return NextResponse.json(result);
+      }
       case "run": {
         const v = await doValidate(month, currency);
         const l = await doLedger(month, currency);
-        const c = await doClose(month, currency);
+        const period = await db.poolPeriod.findUnique({
+          where: { month_currency: { month, currency } },
+          select: { status: true },
+        });
+        let c:
+          | Awaited<ReturnType<typeof doClose>>
+          | { skipped: true; reason: string; status: string };
+        if (period && period.status !== "OPEN") {
+          console.log(
+            `[RATEIO-RUN] Skipping close for ${month}/${currency}: period status=${period.status}`,
+          );
+          c = { skipped: true, reason: "PERIOD_NOT_OPEN", status: period.status };
+        } else {
+          c = await doClose(month, currency);
+        }
         return NextResponse.json({ validate: v, ledger: l, close: c });
       }
       default:
         return NextResponse.json({ error: "Ação inválida. Use validate|ledger|cost|close|run" }, { status: 400 });
     }
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Erro" }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Erro";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
