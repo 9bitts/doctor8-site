@@ -1,4 +1,4 @@
-/** Default OFF — production unchanged until operator sets env var. */
+/** Default OFF - production unchanged until operator sets env var. */
 export function isVolunteerScheduledApprovalRequired(): boolean {
   const raw = process.env.VOLUNTEER_SCHEDULED_APPROVAL_REQUIRED;
   if (raw === undefined || raw === "") return false;
@@ -9,7 +9,7 @@ export function isVolunteerScheduledApprovalRequired(): boolean {
 export type VolunteerScheduledProviderKind = "health" | "psychoanalyst" | "integrative";
 
 export function isVolunteerScheduledApproved(
-  kind: VolunteerScheduledProviderKind,
+  _kind: VolunteerScheduledProviderKind,
   profile: {
     volunteerScheduledApproved?: boolean;
     verified?: boolean;
@@ -17,11 +17,7 @@ export function isVolunteerScheduledApproved(
 ): boolean {
   if (!profile?.verified) return false;
   if (!isVolunteerScheduledApprovalRequired()) return true;
-  if (kind === "health") {
-    return profile.volunteerScheduledApproved === true;
-  }
-  // Psychoanalyst / integrative: no approval field on schema — verified + acura handled elsewhere
-  return true;
+  return profile.volunteerScheduledApproved === true;
 }
 
 export class VolunteerScheduledNotApprovedError extends Error {

@@ -70,6 +70,8 @@ interface ProviderRow {
   publicUrl: string | null;
   isPublic: boolean;
   licenseDocCount: number;
+  hasVolunteerBlocks?: boolean;
+  volunteerScheduledApproved?: boolean;
 }
 
 interface AngelRow {
@@ -421,10 +423,19 @@ export default function ProvidersAdminClient() {
     return () => clearTimeout(timer);
   }, [q, activeTab, load]);
 
-  async function toggleVolunteerScheduledApproval(row: ProfessionalRow, approved: boolean) {
+  async function toggleVolunteerScheduledApproval(
+    row: { id: string },
+    approved: boolean,
+    kind: "health" | "psychoanalyst" | "integrative" = "health",
+  ) {
     setBusyId(row.id);
+    const pathByKind = {
+      health: `/api/admin/doctors/${row.id}/volunteer-scheduled-approval`,
+      psychoanalyst: `/api/admin/psychoanalysts/${row.id}/volunteer-scheduled-approval`,
+      integrative: `/api/admin/integrative-therapists/${row.id}/volunteer-scheduled-approval`,
+    };
     try {
-      const res = await fetch(`/api/admin/doctors/${row.id}/volunteer-scheduled-approval`, {
+      const res = await fetch(pathByKind[kind], {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ approved }),
@@ -742,7 +753,9 @@ export default function ProvidersAdminClient() {
               docsBusyId={docsBusyId}
               verifyingEmailUserId={verifyingEmailUserId}
               onToggle={toggleProfessionalVerified}
-              onVolunteerApproval={toggleVolunteerScheduledApproval}
+              onVolunteerApproval={(row, approved) =>
+                toggleVolunteerScheduledApproval(row, approved, "health")
+              }
               onViewDocs={viewLicenseDocs}
               onVerifyEmail={verifyUserEmail}
             />
@@ -755,6 +768,9 @@ export default function ProvidersAdminClient() {
               verifyingEmailUserId={verifyingEmailUserId}
               kind="psychoanalyst"
               onToggle={toggleProviderVerified}
+              onVolunteerApproval={(row, approved) =>
+                toggleVolunteerScheduledApproval(row, approved, "psychoanalyst")
+              }
               onViewDocs={viewLicenseDocs}
               onVerifyEmail={verifyUserEmail}
             />
@@ -767,6 +783,9 @@ export default function ProvidersAdminClient() {
               verifyingEmailUserId={verifyingEmailUserId}
               kind="integrative"
               onToggle={toggleProviderVerified}
+              onVolunteerApproval={(row, approved) =>
+                toggleVolunteerScheduledApproval(row, approved, "integrative")
+              }
               onViewDocs={viewLicenseDocs}
               onVerifyEmail={verifyUserEmail}
             />
@@ -1160,6 +1179,7 @@ function ProviderList({
   verifyingEmailUserId,
   kind,
   onToggle,
+  onVolunteerApproval,
   onViewDocs,
   onVerifyEmail,
 }: {
@@ -1169,6 +1189,7 @@ function ProviderList({
   verifyingEmailUserId: string | null;
   kind: "psychoanalyst" | "integrative";
   onToggle: (row: ProviderRow, kind: "psychoanalyst" | "integrative") => void;
+  onVolunteerApproval: (row: ProviderRow, approved: boolean) => void;
   onViewDocs: (userId: string) => void;
   onVerifyEmail: (userId: string) => void;
 }) {
@@ -1206,6 +1227,34 @@ function ProviderList({
               {p.licenseDocCount > 0 &&
                 t("admin.providers.licenseDocs").replace("{{n}}", String(p.licenseDocCount))}
             </p>
+            {p.hasVolunteerBlocks && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-800 border border-green-200">
+                  {t("admin.volScheduled.hasBlocks")}
+                </span>
+                <span
+                  className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                    p.volunteerScheduledApproved
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-amber-50 text-amber-800 border border-amber-200"
+                  }`}
+                >
+                  {p.volunteerScheduledApproved
+                    ? t("admin.volScheduled.approved")
+                    : t("admin.volScheduled.pending")}
+                </span>
+                <button
+                  type="button"
+                  disabled={busyId === p.id}
+                  onClick={() => onVolunteerApproval(p, !p.volunteerScheduledApproved)}
+                  className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  {p.volunteerScheduledApproved
+                    ? t("admin.volScheduled.revoke")
+                    : t("admin.volScheduled.approve")}
+                </button>
+              </div>
+            )}
             {p.publicUrl && (
               <a
                 href={p.publicUrl}

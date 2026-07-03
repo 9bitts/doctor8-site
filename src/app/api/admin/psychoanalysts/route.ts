@@ -19,6 +19,11 @@ export async function GET(_req: NextRequest) {
         },
       },
       virtualCard: true,
+      availabilitySlots: {
+        where: { isActive: true, volunteerOnly: true },
+        select: { id: true },
+        take: 1,
+      },
       _count: { select: { appointments: true, analysandRecords: true } },
     },
   });
@@ -42,6 +47,9 @@ export async function GET(_req: NextRequest) {
       p.verified && p.virtualCard?.isPublic && p.virtualCard.specialtySlug && p.virtualCard.citySlug
         ? buildPublicProfileUrl(p.virtualCard)
         : null,
+    hasVolunteerBlocks: p.availabilitySlots.length > 0,
+    volunteerScheduledApproved: p.volunteerScheduledApproved,
+    volunteerScheduledApprovedAt: p.volunteerScheduledApprovedAt?.toISOString() ?? null,
   }));
 
   return NextResponse.json({ providers });

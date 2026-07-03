@@ -652,6 +652,11 @@ model PsychoanalystProfile {
 
   acuraVolunteer  Boolean  @default(false)
 
+  // P8b scheduled volunteer — admin approval (gradual rollout via env flag)
+  volunteerScheduledApproved    Boolean   @default(false)
+  volunteerScheduledApprovedAt  DateTime?
+  volunteerScheduledApprovedBy  String?
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -732,6 +737,11 @@ model IntegrativeTherapistProfile {
   verifiedBy      String?
 
   acuraVolunteer  Boolean  @default(false)
+
+  // P8b scheduled volunteer — admin approval (gradual rollout via env flag)
+  volunteerScheduledApproved    Boolean   @default(false)
+  volunteerScheduledApprovedAt  DateTime?
+  volunteerScheduledApprovedBy  String?
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

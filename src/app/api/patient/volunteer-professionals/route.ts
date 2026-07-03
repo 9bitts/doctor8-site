@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
           select: { id: true },
           take: 1,
         },
-      } as never,
+      },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
     db.psychoanalystProfile.findMany({
@@ -102,6 +102,7 @@ export async function GET(req: NextRequest) {
         avatarUrl: true,
         acceptsTeleconsult: true,
         acceptsInPerson: true,
+        volunteerScheduledApproved: true,
         availabilitySlots: {
           where: { isActive: true, volunteerOnly: true },
           select: { id: true },
@@ -122,6 +123,7 @@ export async function GET(req: NextRequest) {
         acceptsTeleconsult: true,
         acceptsInPerson: true,
         availability: true,
+        volunteerScheduledApproved: true,
         availabilitySlots: { where: { isActive: true }, select: { id: true }, take: 1 },
       },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
@@ -151,13 +153,21 @@ export async function GET(req: NextRequest) {
     });
   });
 
-  const psychoCandidates = psychoanalysts.filter(
-    (p) => p.availabilitySlots.length > 0,
-  );
+  const psychoCandidates = psychoanalysts.filter((p) => {
+    if (p.availabilitySlots.length === 0) return false;
+    return isVolunteerScheduledApproved("psychoanalyst", {
+      verified: true,
+      volunteerScheduledApproved: p.volunteerScheduledApproved,
+    });
+  });
 
   const integrativeCandidates = integrativeTherapists.filter((t) => {
     const blocks = parseAvailabilityJson(t.availability).volunteerBlocks ?? [];
-    return blocks.length > 0;
+    if (blocks.length === 0) return false;
+    return isVolunteerScheduledApproved("integrative", {
+      verified: true,
+      volunteerScheduledApproved: t.volunteerScheduledApproved,
+    });
   });
 
   const enriched = (

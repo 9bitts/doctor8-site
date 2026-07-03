@@ -172,23 +172,31 @@ async function loadProviderVolunteerStatus(
   if (providerType === "psychoanalyst") {
     return db.psychoanalystProfile.findUnique({
       where: { id: providerId },
-      select: { verified: true, acuraVolunteer: true },
+      select: {
+        verified: true,
+        acuraVolunteer: true,
+        volunteerScheduledApproved: true,
+      },
     });
   }
   if (providerType === "integrative") {
     return db.integrativeTherapistProfile.findUnique({
       where: { id: providerId },
-      select: { verified: true, acuraVolunteer: true },
+      select: {
+        verified: true,
+        acuraVolunteer: true,
+        volunteerScheduledApproved: true,
+      },
     });
   }
   return db.professionalProfile.findUnique({
     where: { id: providerId },
-    select: { verified: true, acuraVolunteer: true, volunteerScheduledApproved: true } as never,
-  }) as Promise<{
-    verified: boolean;
-    acuraVolunteer: boolean;
-    volunteerScheduledApproved?: boolean;
-  } | null>;
+    select: {
+      verified: true,
+      acuraVolunteer: true,
+      volunteerScheduledApproved: true,
+    },
+  });
 }
 
 export async function assertProviderVolunteerScheduledGate(

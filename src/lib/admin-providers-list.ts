@@ -59,6 +59,9 @@ export type AdminProviderRow = {
   publicUrl: string | null;
   isPublic: boolean;
   licenseDocCount: number;
+  hasVolunteerBlocks: boolean;
+  volunteerScheduledApproved: boolean;
+  volunteerScheduledApprovedAt: string | null;
 };
 
 export type AdminIncompleteSignupRow = {
@@ -229,6 +232,11 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
               },
             },
             virtualCard: true,
+            availabilitySlots: {
+              where: { isActive: true, volunteerOnly: true },
+              select: { id: true },
+              take: 1,
+            },
             _count: { select: { appointments: true, analysandRecords: true } },
           },
         }),
@@ -316,44 +324,65 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
   };
   });
 
-  const allAnalysts: AdminProviderRow[] = analysts.map((p) => ({
-    id: p.id,
-    userId: p.userId,
-    name: `${p.firstName} ${p.lastName}`.trim(),
-    email: p.user?.email ?? null,
-    region: p.user?.region ?? null,
-    subtitle: p.trainingInstitution,
-    verified: p.verified,
-    emailVerified: !!p.user?.emailVerified,
-    appointments: p._count.appointments,
-    charts: p._count.analysandRecords,
-    isPublic: p.virtualCard?.isPublic ?? false,
-    licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
-    publicUrl:
-      p.verified && p.virtualCard?.isPublic && p.virtualCard.specialtySlug && p.virtualCard.citySlug
-        ? buildPublicProfileUrl(p.virtualCard)
-        : null,
-  }));
+  const allAnalysts: AdminProviderRow[] = analysts.map((p) => {
+    const row = p as typeof p & {
+      volunteerScheduledApproved?: boolean;
+      volunteerScheduledApprovedAt?: Date | null;
+    };
+    return {
+      id: p.id,
+      userId: p.userId,
+      name: `${p.firstName} ${p.lastName}`.trim(),
+      email: p.user?.email ?? null,
+      region: p.user?.region ?? null,
+      subtitle: p.trainingInstitution,
+      verified: p.verified,
+      emailVerified: !!p.user?.emailVerified,
+      appointments: p._count.appointments,
+      charts: p._count.analysandRecords,
+      isPublic: p.virtualCard?.isPublic ?? false,
+      licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
+      publicUrl:
+        p.verified && p.virtualCard?.isPublic && p.virtualCard.specialtySlug && p.virtualCard.citySlug
+          ? buildPublicProfileUrl(p.virtualCard)
+          : null,
+      hasVolunteerBlocks: p.availabilitySlots.length > 0,
+      volunteerScheduledApproved: row.volunteerScheduledApproved ?? false,
+      volunteerScheduledApprovedAt: row.volunteerScheduledApprovedAt?.toISOString() ?? null,
+    };
+  });
 
-  const allTherapists: AdminProviderRow[] = therapists.map((p) => ({
-    id: p.id,
-    userId: p.userId,
-    name: `${p.firstName} ${p.lastName}`.trim(),
-    email: p.user?.email ?? null,
-    region: p.user?.region ?? null,
-    subtitle: p.picsPractices.length
-      ? `${p.picsPractices.length} prática(s) PICS — ${p.trainingInstitution}`
-      : p.trainingInstitution,
-    verified: p.verified,
-    emailVerified: !!p.user?.emailVerified,
-    appointments: p._count.appointments,
-    charts: p._count.clientRecords,
-    isPublic: p.virtualCard?.isPublic ?? false,
-    licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
-    publicUrl: p.virtualCard?.slug
-      ? `${process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app"}/dr/${p.virtualCard.slug}`
-      : null,
-  }));
+  const allTherapists: AdminProviderRow[] = therapists.map((p) => {
+    const volunteerBlocks = parseAvailabilityJson(
+      (p as { availability?: unknown }).availability,
+    ).volunteerBlocks ?? [];
+    const row = p as typeof p & {
+      volunteerScheduledApproved?: boolean;
+      volunteerScheduledApprovedAt?: Date | null;
+    };
+    return {
+      id: p.id,
+      userId: p.userId,
+      name: `${p.firstName} ${p.lastName}`.trim(),
+      email: p.user?.email ?? null,
+      region: p.user?.region ?? null,
+      subtitle: p.picsPractices.length
+        ? `${p.picsPractices.length} prática(s) PICS — ${p.trainingInstitution}`
+        : p.trainingInstitution,
+      verified: p.verified,
+      emailVerified: !!p.user?.emailVerified,
+      appointments: p._count.appointments,
+      charts: p._count.clientRecords,
+      isPublic: p.virtualCard?.isPublic ?? false,
+      licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
+      publicUrl: p.virtualCard?.slug
+        ? `${process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app"}/dr/${p.virtualCard.slug}`
+        : null,
+      hasVolunteerBlocks: volunteerBlocks.length > 0,
+      volunteerScheduledApproved: row.volunteerScheduledApproved ?? false,
+      volunteerScheduledApprovedAt: row.volunteerScheduledApprovedAt?.toISOString() ?? null,
+    };
+  });
 
   return { allAngels, allDoctors, allAnalysts, allTherapists, incompleteSignups, queryErrors };
 }

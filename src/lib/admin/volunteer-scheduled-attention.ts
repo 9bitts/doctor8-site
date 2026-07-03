@@ -40,8 +40,22 @@ export async function loadVolunteerScheduledAttentionItems(): Promise<
           availability: true,
         } as never,
       },
-      psychoanalyst: { select: { firstName: true, lastName: true, acuraVolunteer: true } },
-      integrativeTherapist: { select: { firstName: true, lastName: true, acuraVolunteer: true } },
+      psychoanalyst: {
+        select: {
+          firstName: true,
+          lastName: true,
+          acuraVolunteer: true,
+          volunteerScheduledApproved: true,
+        } as never,
+      },
+      integrativeTherapist: {
+        select: {
+          firstName: true,
+          lastName: true,
+          acuraVolunteer: true,
+          volunteerScheduledApproved: true,
+        } as never,
+      },
     },
     orderBy: { scheduledAt: "asc" },
     take: 100,
@@ -66,11 +80,29 @@ export async function loadVolunteerScheduledAttentionItems(): Promise<
         reason = "approval_revoked";
       }
     } else if (apt.psychoanalyst) {
-      professionalName = `${safeDecrypt(apt.psychoanalyst.firstName)} ${safeDecrypt(apt.psychoanalyst.lastName)}`;
-      if (!apt.psychoanalyst.acuraVolunteer) reason = "acura_volunteer_off";
+      const pro = apt.psychoanalyst as {
+        firstName: string;
+        lastName: string;
+        acuraVolunteer: boolean;
+        volunteerScheduledApproved: boolean;
+      };
+      professionalName = `${safeDecrypt(pro.firstName)} ${safeDecrypt(pro.lastName)}`;
+      if (!pro.acuraVolunteer) reason = "acura_volunteer_off";
+      else if (approvalRequired && !pro.volunteerScheduledApproved) {
+        reason = "approval_revoked";
+      }
     } else if (apt.integrativeTherapist) {
-      professionalName = `${apt.integrativeTherapist.firstName} ${apt.integrativeTherapist.lastName}`;
-      if (!apt.integrativeTherapist.acuraVolunteer) reason = "acura_volunteer_off";
+      const pro = apt.integrativeTherapist as {
+        firstName: string;
+        lastName: string;
+        acuraVolunteer: boolean;
+        volunteerScheduledApproved: boolean;
+      };
+      professionalName = `${pro.firstName} ${pro.lastName}`;
+      if (!pro.acuraVolunteer) reason = "acura_volunteer_off";
+      else if (approvalRequired && !pro.volunteerScheduledApproved) {
+        reason = "approval_revoked";
+      }
     }
 
     if (!reason) continue;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { parseAvailabilityJson } from "@/lib/availability-exceptions";
 
 export async function GET(_req: NextRequest) {
   const session = await getAdminSession();
@@ -22,27 +23,33 @@ export async function GET(_req: NextRequest) {
     },
   });
 
-  const providers = profiles.map((p) => ({
-    id: p.id,
-    userId: p.userId,
-    name: `${p.firstName} ${p.lastName}`.trim(),
-    email: p.user?.email ?? null,
-    region: p.user?.region ?? null,
-    subtitle: p.picsPractices.length
-      ? `${p.picsPractices.length} prática(s) PICS — ${p.trainingInstitution}`
-      : p.trainingInstitution,
-    verified: p.verified,
-    emailVerified: !!p.user?.emailVerified,
-    verifiedAt: p.verifiedAt ? p.verifiedAt.toISOString() : null,
-    appointments: p._count.appointments,
-    charts: p._count.clientRecords,
-    createdAt: p.createdAt.toISOString(),
-    isPublic: p.virtualCard?.isPublic ?? false,
-    licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
-    publicUrl: p.virtualCard?.slug
-      ? `${process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app"}/dr/${p.virtualCard.slug}`
-      : null,
-  }));
+  const providers = profiles.map((p) => {
+    const volunteerBlocks = parseAvailabilityJson(p.availability).volunteerBlocks ?? [];
+    return {
+      id: p.id,
+      userId: p.userId,
+      name: `${p.firstName} ${p.lastName}`.trim(),
+      email: p.user?.email ?? null,
+      region: p.user?.region ?? null,
+      subtitle: p.picsPractices.length
+        ? `${p.picsPractices.length} prática(s) PICS — ${p.trainingInstitution}`
+        : p.trainingInstitution,
+      verified: p.verified,
+      emailVerified: !!p.user?.emailVerified,
+      verifiedAt: p.verifiedAt ? p.verifiedAt.toISOString() : null,
+      appointments: p._count.appointments,
+      charts: p._count.clientRecords,
+      createdAt: p.createdAt.toISOString(),
+      isPublic: p.virtualCard?.isPublic ?? false,
+      licenseDocCount: p.user?._count.providerLicenseDocuments ?? 0,
+      publicUrl: p.virtualCard?.slug
+        ? `${process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app"}/dr/${p.virtualCard.slug}`
+        : null,
+      hasVolunteerBlocks: volunteerBlocks.length > 0,
+      volunteerScheduledApproved: p.volunteerScheduledApproved,
+      volunteerScheduledApprovedAt: p.volunteerScheduledApprovedAt?.toISOString() ?? null,
+    };
+  });
 
   return NextResponse.json({ providers });
 }
