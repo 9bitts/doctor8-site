@@ -13,6 +13,12 @@ import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getIntegrativeVisitMetaByPatientUserIds } from "@/lib/integrative-appointment-meta";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
+import { providerDayBounds } from "@/lib/provider-day-bounds";
+import {
+  DEFAULT_TIME_ZONE,
+  formatShortDate,
+  formatAppointmentTimeWithLabel,
+} from "@/lib/timezone";
 
 export default async function IntegrativeTherapistDashboard() {
   const session = await auth();
@@ -30,10 +36,12 @@ export default async function IntegrativeTherapistDashboard() {
   const displayProfile = decryptIntegrativeNameFields(profile);
   await audit.viewRecord(userId, "IntegrativeTherapistProfile", profile.id);
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
+  const userRow = await db.user.findUnique({
+    where: { id: userId },
+    select: { timezone: true },
+  });
+  const providerTz = userRow?.timezone || DEFAULT_TIME_ZONE;
+  const { start: todayStart, end: todayEnd } = providerDayBounds(providerTz);
 
   const [todayCount, clientCount, upcoming, humanitarianCampaign, humanitarianVolunteer] =
     await Promise.all([
@@ -233,7 +241,8 @@ export default async function IntegrativeTherapistDashboard() {
                     {safeDecrypt(apt.patient.firstName)} {safeDecrypt(apt.patient.lastName)}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {new Date(apt.scheduledAt).toLocaleString(locale)}
+                    {formatShortDate(new Date(apt.scheduledAt), providerTz, locale)}{" "}
+                    {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), providerTz, locale)}
                   </p>
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">

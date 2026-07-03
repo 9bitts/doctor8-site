@@ -9,11 +9,13 @@ import { useState, useEffect, useRef } from "react";
 import {
   Radio, Power, PowerOff, Users, Clock, ChevronRight,
   Loader2, CheckCircle2, AlertCircle, Phone, Pause, Play,
-  Stethoscope, Settings, X,
+  Stethoscope, Settings, X, RefreshCw,
 } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
+import { useToast } from "@/components/ui/toast";
+import { DEFAULT_TIME_ZONE, formatAppointmentTimeWithLabel } from "@/lib/timezone";
 
 interface QueueEntry {
   id: string;
@@ -51,15 +53,18 @@ function formatCurrency(amountCents: number, currency: string, locale: string): 
 
 export default function JitPage() {
   const t = useT();
+  const toast = useToast();
   const { lang } = useI18n();
   const locale = localeOf(lang);
 
   const [session,  setSession]  = useState<JitSessionData | null>(null);
   const [loading,  setLoading]  = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [calling,  setCalling]  = useState(false);
   const [toggling, setToggling] = useState(false);
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
   const [error,    setError]    = useState<string | null>(null);
+  const [providerTz, setProviderTz] = useState(DEFAULT_TIME_ZONE);
 
   // Config form
   const [showConfig,   setShowConfig]   = useState(false);
@@ -78,19 +83,27 @@ export default function JitPage() {
 
   useEffect(() => {
     loadSession();
+    fetch("/api/user/timezone")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.timezone) setProviderTz(d.timezone); })
+      .catch(() => {});
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
   async function loadSession() {
+    setLoadError(false);
     try {
       const res  = await fetch("/api/jit/session");
+      if (!res.ok) { setLoadError(true); return; }
       const data = await res.json();
       setSession(data.session);
       sessionIdRef.current = data.session?.id ?? null;
       if (data.session?.status === "ONLINE" || data.session?.status === "PAUSED") {
         startPolling();
       }
-    } catch { /* ignore */ }
+    } catch {
+      setLoadError(true);
+    }
     setLoading(false);
   }
 
@@ -98,7 +111,6 @@ export default function JitPage() {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
-        // Expire no-shows using ref (avoids stale closure)
         if (sessionIdRef.current) {
           await fetch("/api/jit/queue", {
             method:  "PATCH",
@@ -107,13 +119,14 @@ export default function JitPage() {
           });
         }
         const res  = await fetch("/api/jit/session");
+        if (!res.ok) return;
         const data = await res.json();
         setSession(data.session);
         sessionIdRef.current = data.session?.id ?? null;
         if (!data.session || data.session.status === "OFFLINE") {
           clearInterval(pollRef.current);
         }
-      } catch { /* ignore */ }
+      } catch { /* retry on next cycle */ }
     }, 5000);
   }
 
@@ -146,26 +159,42 @@ export default function JitPage() {
       setShowConfig(false);
       await loadSession();
       startPolling();
-    } catch { setError(t("jit.errNetwork")); }
+      toast.success(t("jit.toast.started"));
+    } catch { setError(t("jit.errNetwork")); toast.error(t("jit.errNetwork")); }
     setCfgSaving(false);
   }
 
   async function toggleStatus(newStatus: "ONLINE" | "PAUSED" | "OFFLINE") {
     if (!session) return;
+    const prevStatus = session.status;
     setToggling(true); setError(null);
     try {
-      if (newStatus === "OFFLINE") clearInterval(pollRef.current);
       const res  = await fetch("/api/jit/session", {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ status: newStatus }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setSession(data.session);
-        sessionIdRef.current = data.session?.id ?? null;
+      if (!res.ok) {
+        setError(data.error || t("jit.errGeneric"));
+        toast.error(data.error || t("jit.errGeneric"));
+        return;
       }
-    } catch { setError(t("jit.errNetwork")); }
+      setSession(data.session);
+      sessionIdRef.current = data.session?.id ?? null;
+      if (newStatus === "OFFLINE") {
+        clearInterval(pollRef.current);
+        toast.success(t("jit.toast.offline"));
+      } else if (newStatus === "PAUSED") {
+        toast.success(t("jit.toast.paused"));
+      } else if (prevStatus === "PAUSED") {
+        toast.success(t("jit.toast.resumed"));
+        startPolling();
+      }
+    } catch {
+      setError(t("jit.errNetwork"));
+      toast.error(t("jit.errNetwork"));
+    }
     setToggling(false);
   }
 
@@ -207,11 +236,28 @@ export default function JitPage() {
   }
 
   function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString(
-      lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US",
-      { hour: "2-digit", minute: "2-digit" }
-    );
+    return formatAppointmentTimeWithLabel(new Date(iso), providerTz, locale);
   }
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 size={24} className="animate-spin text-slate-400" />
+    </div>
+  );
+
+  if (loadError) return (
+    <div className="max-w-md mx-auto mt-16 text-center space-y-4">
+      <AlertCircle size={32} className="mx-auto text-amber-500" />
+      <p className="text-sm text-slate-600">{t("jit.loadError")}</p>
+      <button
+        type="button"
+        onClick={() => { setLoading(true); void loadSession(); }}
+        className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700"
+      >
+        <RefreshCw size={14} /> {t("common.retry")}
+      </button>
+    </div>
+  );
 
   const isOnline  = session?.status === "ONLINE";
   const isPaused  = session?.status === "PAUSED";
@@ -221,12 +267,6 @@ export default function JitPage() {
   const waitingCount    = queue.filter(q => q.status === "WAITING").length;
   const inProgressEntry = queue.find(q => q.status === "IN_PROGRESS");
   const calledEntry     = queue.find(q => q.status === "CALLED");
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <Loader2 size={24} className="animate-spin text-slate-400" />
-    </div>
-  );
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -288,14 +328,14 @@ export default function JitPage() {
                 <input
                   value={cfgSpecialty}
                   onChange={(e) => setCfgSpecialty(e.target.value)}
-                  placeholder="ex.: Medicina Geral, Psicologia, Nutrição..."
+                  placeholder={t("jit.specialtyPlaceholder")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                 />
               </div>
 
               {/* Mode */}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-2">Modo de atendimento</label>
+                <label className="block text-xs font-medium text-slate-600 mb-2">{t("jit.serviceMode")}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {(["QUEUE", "SHOWCASE"] as const).map((m) => (
                     <button key={m} onClick={() => setCfgMode(m)}
@@ -323,7 +363,7 @@ export default function JitPage() {
                   <div>
                     {/* Price in REAIS — not centavos */}
                     <label className="block text-xs font-medium text-slate-600 mb-1">
-                      Valor da consulta
+                      {t("jit.consultPrice")}
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
@@ -343,7 +383,7 @@ export default function JitPage() {
                       />
                     </div>
                     <p className="text-xs text-slate-400 mt-1">
-                      Ex.: 50,00 → R$ 50,00
+                      {t("jit.priceExample")}
                     </p>
                   </div>
                   <div>
@@ -361,7 +401,7 @@ export default function JitPage() {
               {/* Preview price */}
               {!cfgFree && cfgPriceReais && parsePriceToCents(cfgPriceReais) > 0 && (
                 <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-2.5 text-sm text-brand-600">
-                  ✓ Paciente pagará <strong>{formatCurrency(parsePriceToCents(cfgPriceReais), cfgCurrency, locale)}</strong> para entrar na fila
+                  {t("jit.patientWillPay").replace("{{price}}", formatCurrency(parsePriceToCents(cfgPriceReais), cfgCurrency, locale))}
                 </div>
               )}
 
@@ -384,12 +424,12 @@ export default function JitPage() {
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowConfig(false)}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50">
-                  Cancelar
+                  {t("common.cancel")}
                 </button>
                 <button onClick={startDuty} disabled={cfgSaving || !cfgSpecialty.trim()}
                   className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2">
                   {cfgSaving
-                    ? <><Loader2 size={14} className="animate-spin" /> Iniciando...</>
+                    ? <><Loader2 size={14} className="animate-spin" /> {t("jit.starting")}</>
                     : <><Power size={14} /> {t("jit.saveStart")}</>}
                 </button>
               </div>
@@ -436,11 +476,11 @@ export default function JitPage() {
                     href={`/video/jit/${(inProgressEntry?.id || calledEntry?.id) ?? ""}`}
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm min-h-[44px]"
                   >
-                    <Phone size={16} /> Entrar na sala
+                    <Phone size={16} /> {t("jit.enterRoom")}
                   </Link>
                 )}
               </div>
-              {calledEntry?.expiresAt && <CountdownTimer expiresAt={calledEntry.expiresAt} />}
+              {calledEntry?.expiresAt && <CountdownTimer expiresAt={calledEntry.expiresAt} t={t} />}
             </div>
           )}
 
@@ -449,11 +489,13 @@ export default function JitPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="font-semibold text-slate-800">
-                  {waitingCount > 0 ? `${waitingCount} paciente${waitingCount > 1 ? "s" : ""} aguardando` : t("jit.queueEmpty")}
+                  {waitingCount > 0
+                    ? t("jit.waitingPatients").replace("{{count}}", String(waitingCount))
+                    : t("jit.queueEmpty")}
                 </p>
                 {waitingCount > 0 && (
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Espera estimada: ~{waitingCount * session.estimatedMinutesPerPatient} min
+                    {t("jit.waitEst").replace("{{minutes}}", String(waitingCount * session.estimatedMinutesPerPatient))}
                   </p>
                 )}
               </div>
@@ -495,7 +537,7 @@ export default function JitPage() {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
               <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
                 <Users size={16} className="text-slate-400" />
-                <span className="text-sm font-semibold text-slate-700">Fila de espera</span>
+                <span className="text-sm font-semibold text-slate-700">{t("jit.queueTitle")}</span>
               </div>
               <div className="divide-y divide-slate-100">
                 {queue.map((entry) => (
@@ -540,7 +582,7 @@ export default function JitPage() {
   );
 }
 
-function CountdownTimer({ expiresAt }: { expiresAt: string }) {
+function CountdownTimer({ expiresAt, t }: { expiresAt: string; t: (k: string) => string }) {
   const [secs, setSecs] = useState(() =>
     Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
   );
@@ -554,7 +596,7 @@ function CountdownTimer({ expiresAt }: { expiresAt: string }) {
   const s    = secs % 60;
   return (
     <p className={`text-xs font-semibold mt-2 ${secs < 30 ? "text-rose-600" : "text-amber-700"}`}>
-      ⏱ Expira em: {mins}:{s.toString().padStart(2, "0")}
+      {t("jit.expLabel")}: {mins}:{s.toString().padStart(2, "0")}
     </p>
   );
 }

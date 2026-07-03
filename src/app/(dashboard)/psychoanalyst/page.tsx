@@ -12,6 +12,12 @@ import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
+import { providerDayBounds } from "@/lib/provider-day-bounds";
+import {
+  DEFAULT_TIME_ZONE,
+  formatShortDate,
+  formatAppointmentTimeWithLabel,
+} from "@/lib/timezone";
 
 export default async function PsychoanalystDashboard() {
   const session = await auth();
@@ -32,12 +38,14 @@ export default async function PsychoanalystDashboard() {
 
   await audit.viewRecord(userId, "PsychoanalystProfile", profile.id);
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
+  const userRow = await db.user.findUnique({
+    where: { id: userId },
+    select: { region: true, timezone: true },
+  });
+  const providerTz = userRow?.timezone || DEFAULT_TIME_ZONE;
+  const { start: todayStart, end: todayEnd } = providerDayBounds(providerTz);
 
-  const [todayCount, analysandCount, upcoming, humanitarianCampaign, humanitarianVolunteer, subscription, userRow] = await Promise.all([
+  const [todayCount, analysandCount, upcoming, humanitarianCampaign, humanitarianVolunteer, subscription] = await Promise.all([
     db.appointment.count({
       where: {
         psychoanalystId: profile.id,
@@ -61,10 +69,6 @@ export default async function PsychoanalystDashboard() {
     db.subscription.findUnique({
       where: { userId },
       select: { status: true },
-    }),
-    db.user.findUnique({
-      where: { id: userId },
-      select: { region: true },
     }),
   ]);
 
@@ -114,7 +118,7 @@ export default async function PsychoanalystDashboard() {
         </div>
         <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
           <p className="text-xs text-slate-500">{t("pa.dash.institution")}</p>
-          <p className="text-sm font-semibold text-slate-800 mt-2 line-clamp-2">{profile.trainingInstitution || "?"}</p>
+          <p className="text-sm font-semibold text-slate-800 mt-2 line-clamp-2">{profile.trainingInstitution || t("pa.dash.institutionNone")}</p>
         </div>
       </div>
 
@@ -159,7 +163,8 @@ export default async function PsychoanalystDashboard() {
                     {safeDecrypt(apt.patient.firstName)} {safeDecrypt(apt.patient.lastName)}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {new Date(apt.scheduledAt).toLocaleString(locale)}
+                    {formatShortDate(new Date(apt.scheduledAt), providerTz, locale)}{" "}
+                    {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), providerTz, locale)}
                   </p>
                 </div>
                 {apt.type === "TELECONSULT" && (

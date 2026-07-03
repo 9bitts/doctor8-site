@@ -5,6 +5,8 @@ import {
   PenLine, Smartphone, Lock, Loader2, AlertCircle, X, ExternalLink,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
+import { usePathname } from "next/navigation";
+import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 
 export type EmissionKind = "prescription" | "exam" | "document";
 
@@ -26,6 +28,8 @@ export function EmissionsSignModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const pathname = usePathname();
+  const accountHref = mapProfessionalPathToPortal(pathname, "/professional/account#digital-sign");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -75,7 +79,7 @@ export function EmissionsSignModal({
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
             {t("digSign.modalNotConfigured")}
           </div>
-          <a href="/professional/account#digital-sign" onClick={onClose}
+          <a href={accountHref} onClick={onClose}
             className="w-full flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 rounded-xl text-sm transition">
             <ExternalLink size={14} /> {t("digSign.modalGoSettings")}
           </a>

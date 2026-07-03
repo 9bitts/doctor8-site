@@ -241,6 +241,42 @@ export default function MessagesPage() {
       setContactsLoading(false);
       return;
     }
+    if (role === "PSYCHOANALYST") {
+      if (charts.length > 0) return;
+      setContactsLoading(true);
+      try {
+        const res = await fetch("/api/psychoanalyst/analysands");
+        if (!res.ok) { setActionError(true); return; }
+        const data = await res.json();
+        setCharts((data.analysands || []).filter((r: PatientChart & { linkedUserId?: string }) => r.hasAccount && r.linkedUserId).map((r: PatientChart & { linkedUserId?: string }) => ({
+          id: r.id,
+          firstName: r.firstName,
+          lastName: r.lastName,
+          linkedUserId: r.linkedUserId ?? null,
+          hasAccount: r.hasAccount,
+        })));
+      } catch { setActionError(true); }
+      setContactsLoading(false);
+      return;
+    }
+    if (role === "INTEGRATIVE_THERAPIST") {
+      if (charts.length > 0) return;
+      setContactsLoading(true);
+      try {
+        const res = await fetch("/api/integrative-therapist/clients");
+        if (!res.ok) { setActionError(true); return; }
+        const data = await res.json();
+        setCharts((data.clients || []).filter((r: PatientChart & { linkedUserId?: string }) => r.hasAccount && r.linkedUserId).map((r: PatientChart & { linkedUserId?: string }) => ({
+          id: r.id,
+          firstName: r.firstName,
+          lastName: r.lastName,
+          linkedUserId: r.linkedUserId ?? null,
+          hasAccount: r.hasAccount,
+        })));
+      } catch { setActionError(true); }
+      setContactsLoading(false);
+      return;
+    }
     if (professionals.length > 0) return;
     setContactsLoading(true);
     try {
@@ -303,7 +339,8 @@ export default function MessagesPage() {
     || specialtyMatchesSearch(lang, p.specialty, contactSearch)
   );
 
-  const canStartNewConv = role === "PROFESSIONAL" || role === "PATIENT";
+  const isProviderRole = role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST";
+  const canStartNewConv = isProviderRole || role === "PATIENT";
 
   const formatTime = (iso: string) => {
     const date = new Date(iso);
@@ -503,7 +540,7 @@ export default function MessagesPage() {
                 <input
                   value={contactSearch}
                   onChange={(e) => setContactSearch(e.target.value)}
-                  placeholder={role === "PROFESSIONAL" ? t("msg.searchPatient") : t("msg.searchProfessional")}
+                  placeholder={isProviderRole ? t("msg.searchPatient") : t("msg.searchProfessional")}
                   className="w-full pl-8 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                   autoFocus
                 />
@@ -514,7 +551,7 @@ export default function MessagesPage() {
                 <div className="flex justify-center py-8">
                   <Loader2 size={20} className="animate-spin text-slate-400" />
                 </div>
-              ) : role === "PROFESSIONAL" ? (
+              ) : isProviderRole ? (
                 filteredCharts.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-slate-400 text-sm">

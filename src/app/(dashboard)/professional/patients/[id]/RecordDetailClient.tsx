@@ -11,6 +11,7 @@ import { useState, useEffect, useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useToast } from "@/components/ui/toast";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
@@ -244,6 +245,7 @@ export default function RecordDetailClient({
   const { data: session } = useSession();
   const userId = session?.user?.id ?? "";
   const { lang, t } = useI18n();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const consultReturnUrl = searchParams.get("returnUrl");
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
@@ -614,9 +616,11 @@ export default function RecordDetailClient({
         setReg(regDraft);
         setEditingReg(false);
         setRegMsg("saved");
+        toast.success(t("rec.regSaved"));
       }
     } catch {
       setRegMsg("error:" + t("rec.networkError"));
+      toast.error(t("rec.networkError"));
     }
     setRegSaving(false);
   }
@@ -750,6 +754,7 @@ export default function RecordDetailClient({
       const data = await res.json();
       if (!res.ok) {
         setError(typeof data.error === "string" ? data.error : t("rec.createFailed"));
+        toast.error(typeof data.error === "string" ? data.error : t("rec.createFailed"));
         setSaving(false);
         return;
       }
@@ -773,8 +778,10 @@ export default function RecordDetailClient({
       ]);
       resetForm(true);
       setShowForm(false);
+      toast.success(t("toast.saveSuccess"));
     } catch {
       setError(t("rec.networkError"));
+      toast.error(t("rec.networkError"));
     }
     setSaving(false);
   }
@@ -812,6 +819,7 @@ export default function RecordDetailClient({
       const data = await res.json();
       if (!res.ok) {
         setError(typeof data.error === "string" ? data.error : t("rec.updateFailed"));
+        toast.error(typeof data.error === "string" ? data.error : t("rec.updateFailed"));
         setSaving(false);
         return;
       }
@@ -819,8 +827,10 @@ export default function RecordDetailClient({
       setDocs((prev) => prev.map((d) => (d.id === editingDoc.id ? { ...d, ...data } : d)));
       resetForm();
       setShowForm(false);
+      toast.success(t("toast.saveSuccess"));
     } catch {
       setError(t("rec.networkError"));
+      toast.error(t("rec.networkError"));
     }
     setSaving(false);
   }

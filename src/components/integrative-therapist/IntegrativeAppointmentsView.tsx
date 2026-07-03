@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { formatAppointmentTimeWithLabel, formatShortDateWithYear, formatShortTime } from "@/lib/timezone";
 import { Calendar, ChevronLeft, ChevronRight, List, MapPin, Video } from "lucide-react";
 
 export type IntegrativeAppointmentRow = {
@@ -47,9 +48,11 @@ function sameDay(a: Date, b: Date): boolean {
 export default function IntegrativeAppointmentsView({
   appointments,
   practiceOptions,
+  timeZone,
 }: {
   appointments: IntegrativeAppointmentRow[];
   practiceOptions: PracticeOption[];
+  timeZone: string;
 }) {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
@@ -133,7 +136,8 @@ export default function IntegrativeAppointmentsView({
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-800 text-sm">{apt.patientName}</p>
           <p className="text-xs text-slate-500 mt-0.5">
-            {new Date(apt.scheduledAt).toLocaleString(locale)}
+            {formatShortDateWithYear(new Date(apt.scheduledAt), timeZone, locale)}{" "}
+            {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), timeZone, locale)}
           </p>
           {renderBadges(apt)}
         </div>
@@ -147,7 +151,7 @@ export default function IntegrativeAppointmentsView({
     );
   }
 
-  const weekLabel = `${weekStart.toLocaleDateString(locale, { day: "numeric", month: "short" })} ? ${addDays(weekStart, 6).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}`;
+  const weekLabel = `${formatShortDateWithYear(weekStart, timeZone, locale)} – ${formatShortDateWithYear(addDays(weekStart, 6), timeZone, locale)}`;
 
   return (
     <div className="space-y-4">
@@ -276,10 +280,7 @@ export default function IntegrativeAppointmentsView({
                               {apt.patientName}
                             </p>
                             <p className="text-[10px] text-slate-500">
-                              {new Date(apt.scheduledAt).toLocaleTimeString(locale, {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {formatShortTime(new Date(apt.scheduledAt), timeZone, locale)}
                             </p>
                             {apt.mainPracticeLabel && (
                               <p className="text-[9px] text-teal-700 truncate mt-0.5">

@@ -4,6 +4,7 @@
 // Memed-style prescription UI: reuse, manual add, recent carousel.
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { useToast } from "@/components/ui/toast";
@@ -20,6 +21,7 @@ import { ExamCreateView } from "@/components/professional/emissions/ExamCreateVi
 import { DocumentCreateView } from "@/components/professional/emissions/DocumentCreateView";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
+import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import type { Chart } from "@/components/professional/emissions/types";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
@@ -343,6 +345,8 @@ function ClinicalDocCard({
 export default function PrescriptionsPage() {
   const { t, lang } = useI18n();
   const toast = useToast();
+  const pathname = usePathname();
+  const accountHref = mapProfessionalPathToPortal(pathname, "/professional/account#digital-sign");
   const locale = localeOf(lang);
 
   const [view, setView] = useState<View>("hub");
@@ -1462,7 +1466,7 @@ export default function PrescriptionsPage() {
             <p className="text-sm font-semibold text-brand-700">{t("digSign.bannerTitle")}</p>
             <p className="text-xs text-brand-500 mt-1">{t("digSign.bannerDesc")}</p>
           </div>
-          <a href="/professional/account#digital-sign"
+          <a href={accountHref}
             className="text-xs font-semibold text-brand-600 border border-brand-200 px-3 py-1.5 rounded-lg hover:bg-brand-100 transition shrink-0">
             {t("digSign.configure")}
           </a>

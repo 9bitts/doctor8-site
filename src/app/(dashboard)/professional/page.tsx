@@ -28,6 +28,12 @@ import { decrypt } from "@/lib/encryption";
 import { getProfessionLabel } from "@/lib/professions";
 import { resolveRoleHome } from "@/lib/role-home";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
+import { providerDayBounds, providerMonthStart } from "@/lib/provider-day-bounds";
+import {
+  DEFAULT_TIME_ZONE,
+  formatShortDate,
+  formatAppointmentTimeWithLabel,
+} from "@/lib/timezone";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -63,18 +69,17 @@ export default async function ProfessionalDashboard() {
 
   if (!professional) redirect("/onboarding");
 
-  await audit.viewRecord(userId, "ProfessionalProfile", professional.id);
+  const providerTz = professional.timezone || DEFAULT_TIME_ZONE;
+  const { start: todayStart, end: todayEnd } = providerDayBounds(providerTz);
+  const monthStart = providerMonthStart(providerTz);
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
-  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  await audit.viewRecord(userId, "ProfessionalProfile", professional.id);
 
   const [
     completedToday,
     patientCount,
     monthEarnings,
+    upcomingCount,
     jitSession,
     sharedPending,
     unreadMessages,
@@ -100,6 +105,13 @@ export default async function ProfessionalDashboard() {
         scheduledAt: { gte: monthStart },
       },
       _sum: { priceAmount: true },
+    }),
+    db.appointment.count({
+      where: {
+        professionalId: professional.id,
+        status: { in: ["CONFIRMED", "PENDING"] },
+        scheduledAt: { gte: new Date() },
+      },
     }),
     db.jitSession.findFirst({
       where: { professionalId: professional.id },
@@ -142,7 +154,6 @@ export default async function ProfessionalDashboard() {
     !!subscription && ["active", "trialing"].includes(subscription.status);
 
   const monthEarningsTotal = monthEarnings._sum.priceAmount || 0;
-  const upcomingCount = professional.appointments.length;
   const jitOnline = jitSession?.status === "ONLINE";
   const jitPaused = jitSession?.status === "PAUSED";
   const jitWaiting = jitSession?._count.queue ?? 0;
@@ -356,11 +367,11 @@ export default async function ProfessionalDashboard() {
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                     <div className="text-left sm:text-right">
                       <p className="text-xs font-semibold text-slate-700">
-                        {new Date(apt.scheduledAt).toLocaleDateString(locale, { month: "short", day: "numeric" })}
+                        {formatShortDate(new Date(apt.scheduledAt), providerTz, locale)}
                       </p>
                       <p className="text-xs text-slate-500 flex items-center gap-1 sm:justify-end">
                         <Clock size={10} />
-                        {new Date(apt.scheduledAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
+                        {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), providerTz, locale)}
                       </p>
                     </div>
                     {canJoinVideo && (

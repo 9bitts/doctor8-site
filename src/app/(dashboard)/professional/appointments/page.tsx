@@ -12,6 +12,11 @@ import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import { decrypt } from "@/lib/encryption";
 import { resolveProfessionalPortalBaseForUser } from "@/lib/psychologist-portal";
 import AppointmentsAnchorClient from "@/components/professional/AppointmentsAnchorClient";
+import {
+  DEFAULT_TIME_ZONE,
+  formatShortDateWithYear,
+  formatAppointmentTimeWithLabel,
+} from "@/lib/timezone";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -39,6 +44,8 @@ export default async function ProfessionalAppointments() {
     where: { userId: session.user.id },
   });
   if (!professional) redirect("/onboarding");
+
+  const providerTz = professional.timezone || DEFAULT_TIME_ZONE;
 
   const portalBase = await resolveProfessionalPortalBaseForUser(session.user.id);
   const isPsychologistPortal = portalBase === "/psychologist";
@@ -193,17 +200,10 @@ export default async function ProfessionalAppointments() {
         </div>
         <div className="text-right shrink-0">
           <p className="text-xs font-semibold text-slate-700">
-            {new Date(apt.scheduledAt).toLocaleDateString(locale, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
+            {formatShortDateWithYear(new Date(apt.scheduledAt), providerTz, locale)}
           </p>
           <p className="text-xs text-slate-500">
-            {new Date(apt.scheduledAt).toLocaleTimeString(locale, {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+            {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), providerTz, locale)}
           </p>
         </div>
         <span

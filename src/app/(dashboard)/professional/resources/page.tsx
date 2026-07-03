@@ -13,6 +13,7 @@ import {
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getProfessionLabel } from "@/lib/professions";
+import { useToast } from "@/components/ui/toast";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Resource {
@@ -39,6 +40,7 @@ interface ProResult {
 // ── Component ──────────────────────────────────────────────────────────────
 export default function ResourcesPage() {
   const { lang, t } = useI18n();
+  const toast = useToast();
 
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -255,14 +257,16 @@ export default function ResourcesPage() {
         }
       );
       const data = await res.json();
-      if (!res.ok) { setFormError(data.error || t("lib.errGeneric")); setSaving(false); return; }
+      if (!res.ok) { setFormError(data.error || t("lib.errGeneric")); toast.error(data.error || t("lib.errGeneric")); setSaving(false); return; }
       if (editingId) {
         setResources((prev) => prev.map((r) => r.id === editingId ? data : r));
+        toast.success(t("toast.saveSuccess"));
       } else {
         setResources((prev) => [data, ...prev]);
+        toast.success(t("toast.saveSuccess"));
       }
       closeForm();
-    } catch { setFormError(t("rec.networkError")); }
+    } catch { setFormError(t("rec.networkError")); toast.error(t("rec.networkError")); }
     setSaving(false);
   }
 

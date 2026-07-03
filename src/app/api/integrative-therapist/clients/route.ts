@@ -35,6 +35,7 @@ export async function GET() {
       email: r.email,
       mainPractice: r.mainPractice,
       hasAccount: !!r.linkedUserId,
+      linkedUserId: r.linkedUserId,
       processStartDate: r.processStartDate?.toISOString() ?? null,
       updatedAt: r.updatedAt.toISOString(),
     })),

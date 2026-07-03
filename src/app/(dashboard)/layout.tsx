@@ -28,9 +28,11 @@ import {
   PATIENT_HUMANITARIAN_ENTRY,
   PATIENT_NAV,
   PATIENT_NAV_GROUPS,
+  PLATFORM_NAV_GROUPS_BY_PORTAL,
   PROFESSIONAL_NAV,
   PSYCHOANALYST_NAV,
   PSYCHOLOGIST_NAV,
+  type PlatformPortalId,
 } from "@/lib/platform-nav-registry";
 import { withNavIcons, type DashboardNavItem } from "@/lib/dashboard-nav-icons";
 import { ToastProvider } from "@/components/ui/toast";
@@ -41,11 +43,27 @@ import {
 
 interface NavItem extends DashboardNavItem {}
 
+function resolveProviderPortalId(role: string, isPsychologistPortal: boolean): PlatformPortalId | null {
+  if (role === "PROFESSIONAL" && isPsychologistPortal) return "PSYCHOLOGIST";
+  if (role === "PROFESSIONAL") return "PROFESSIONAL";
+  if (role === "PSYCHOANALYST") return "PSYCHOANALYST";
+  if (role === "INTEGRATIVE_THERAPIST") return "INTEGRATIVE_THERAPIST";
+  return null;
+}
+
+function messagesHrefForPortal(portalId: PlatformPortalId | null): string | null {
+  if (!portalId) return null;
+  const groups = PLATFORM_NAV_GROUPS_BY_PORTAL[portalId];
+  if (!groups) return null;
+  return groups.flatMap((g) => g.items).find((i) => i.labelKey === "nav.messages")?.href ?? null;
+}
+
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { t, lang } = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [role, setRole] = useState<string>("PATIENT");
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [role, setRole] = useState<string>("");
   const [userName, setUserName] = useState<string>("User");
   const [userId, setUserId] = useState<string>("");
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -60,12 +78,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         if (session?.user?.name) setUserName(session.user.name);
         else if (session?.user?.email) setUserName(session.user.email.split("@")[0]);
       } catch { /* keep defaults */ }
+      finally { setSessionLoaded(true); }
     }
     loadSession();
   }, []);
 
   useEffect(() => {
-    if (role !== "PATIENT" || !userId) return;
+    const providerRoles = ["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"];
+    if (!sessionLoaded || !userId || !providerRoles.includes(role)) return;
     const guardKey = `doctor8.tz.sync.${userId}`;
     if (sessionStorage.getItem(guardKey)) return;
 
@@ -99,10 +119,16 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [role, userId]);
+  }, [role, userId, sessionLoaded]);
 
   useEffect(() => {
-    if (role !== "PATIENT") return;
+    if (!sessionLoaded) return;
+    const portalId = resolveProviderPortalId(role, pathname.startsWith("/psychologist"));
+    const messagesHref =
+      role === "PATIENT"
+        ? "/patient/messages"
+        : messagesHrefForPortal(portalId);
+    if (!messagesHref) return;
 
     async function loadUnread() {
       try {
@@ -120,9 +146,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     loadUnread();
     const interval = setInterval(loadUnread, 30000);
     return () => clearInterval(interval);
-  }, [role]);
+  }, [role, sessionLoaded, pathname]);
 
   const isPsychologistPortal = pathname.startsWith("/psychologist");
+  const providerPortalId = resolveProviderPortalId(role, isPsychologistPortal);
 
   const navItems: NavItem[] =
     role === "ADMIN" ? withNavIcons(ADMIN_NAV)
@@ -132,6 +159,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     : role === "PSYCHOANALYST" ? withNavIcons(PSYCHOANALYST_NAV)
     : role === "INTEGRATIVE_THERAPIST" ? withNavIcons(INTEGRATIVE_THERAPIST_NAV)
     : withNavIcons(PATIENT_NAV);
+  const providerGroupedNav = providerPortalId
+    ? (PLATFORM_NAV_GROUPS_BY_PORTAL[providerPortalId] ?? []).map((group) => ({
+        ...group,
+        items: withNavIcons(group.items),
+      }))
+    : [];
   const roleLabel =
     role === "ORGANIZATION" ? t("role.organization")
     : isPsychologistPortal ? t("role.psychologist")
@@ -245,7 +278,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <div className="space-y-1">
-            {isPatient ? (
+            {!sessionLoaded ? (
+              <div className="px-3 py-6 space-y-3 animate-pulse">
+                <div className="h-3 bg-slate-800 rounded w-24" />
+                <div className="h-9 bg-slate-800 rounded-xl" />
+                <div className="h-9 bg-slate-800 rounded-xl" />
+                <div className="h-9 bg-slate-800 rounded-xl" />
+              </div>
+            ) : isPatient ? (
               <>
                 {renderNavLink(patientHumanitarianItem, undefined, true)}
                 {renderNavLink(patientDashboardItem)}
@@ -265,6 +305,23 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                   </div>
                 ))}
               </>
+            ) : providerGroupedNav.length > 0 ? (
+              providerGroupedNav.map((group) => (
+                <div key={group.labelKey}>
+                  <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    {t(group.labelKey)}
+                  </p>
+                  <div className="space-y-1">
+                    {group.items.map((item) =>
+                      renderNavLink(
+                        item,
+                        item.labelKey === "nav.messages" ? unreadMessages : undefined,
+                        item.labelKey === "nav.humanitarianVolunteer",
+                      ),
+                    )}
+                  </div>
+                </div>
+              ))
             ) : (
               navItems.map((item) => renderNavLink(item))
             )}

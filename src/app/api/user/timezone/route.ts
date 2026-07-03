@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { isValidIanaTimeZone } from "@/lib/timezone";
+import { isValidIanaTimeZone, DEFAULT_TIME_ZONE } from "@/lib/timezone";
 import { z } from "zod";
 
 const schema = z.object({
@@ -14,11 +14,20 @@ export async function GET() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { timezone: true } as never,
+    select: { timezone: true, role: true } as never,
   });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json({ timezone: (user as { timezone: string }).timezone });
+  let timezone = (user as { timezone: string | null }).timezone;
+  if (session.user.role === "PROFESSIONAL") {
+    const pro = await db.professionalProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { timezone: true },
+    });
+    if (pro?.timezone) timezone = pro.timezone;
+  }
+
+  return NextResponse.json({ timezone: timezone || DEFAULT_TIME_ZONE });
 }
 
 export async function PATCH(req: NextRequest) {

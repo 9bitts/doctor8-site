@@ -21,13 +21,28 @@ function safeDecrypt(v: string | null | undefined): string {
   try { return decrypt(v); } catch { return v; }
 }
 
-// Helper: display name of a user from either profile.
-function displayName(u: any): string {
+function displayName(u: {
+  role?: string;
+  patientProfile?: { firstName?: string | null; lastName?: string | null } | null;
+  professionalProfile?: { firstName?: string | null; lastName?: string | null } | null;
+  psychoanalystProfile?: { firstName?: string | null; lastName?: string | null } | null;
+  integrativeTherapistProfile?: { firstName?: string | null; lastName?: string | null } | null;
+} | null): string {
   if (!u) return "Someone";
   if (u.role === "PATIENT") {
     const first = safeDecrypt(u.patientProfile?.firstName);
     const last = safeDecrypt(u.patientProfile?.lastName);
     return `${first} ${last}`.trim() || "Patient";
+  }
+  if (u.role === "PSYCHOANALYST" && u.psychoanalystProfile) {
+    const first = safeDecrypt(u.psychoanalystProfile.firstName);
+    const last = safeDecrypt(u.psychoanalystProfile.lastName);
+    return `${first} ${last}`.trim() || "Psychoanalyst";
+  }
+  if (u.role === "INTEGRATIVE_THERAPIST" && u.integrativeTherapistProfile) {
+    const first = safeDecrypt(u.integrativeTherapistProfile.firstName);
+    const last = safeDecrypt(u.integrativeTherapistProfile.lastName);
+    return `${first} ${last}`.trim() || "Therapist";
   }
   const first = u.professionalProfile?.firstName ?? "";
   const last = u.professionalProfile?.lastName ?? "";
@@ -48,12 +63,12 @@ export async function GET(req: NextRequest) {
     const sent = await db.message.findMany({
       where: { senderId: session.user.id, deletedAt: null },
       orderBy: { createdAt: "desc" },
-      include: { receiver: { select: { id: true, role: true, patientProfile: { select: { firstName: true, lastName: true, avatarUrl: true } }, professionalProfile: { select: { firstName: true, lastName: true, avatarUrl: true } } } } },
+      include: { receiver: { select: { id: true, role: true, patientProfile: { select: { firstName: true, lastName: true, avatarUrl: true } }, professionalProfile: { select: { firstName: true, lastName: true, avatarUrl: true } }, psychoanalystProfile: { select: { firstName: true, lastName: true } }, integrativeTherapistProfile: { select: { firstName: true, lastName: true } } } } },
     });
     const received = await db.message.findMany({
       where: { receiverId: session.user.id, deletedAt: null },
       orderBy: { createdAt: "desc" },
-      include: { sender: { select: { id: true, role: true, patientProfile: { select: { firstName: true, lastName: true, avatarUrl: true } }, professionalProfile: { select: { firstName: true, lastName: true, avatarUrl: true } } } } },
+      include: { sender: { select: { id: true, role: true, patientProfile: { select: { firstName: true, lastName: true, avatarUrl: true } }, professionalProfile: { select: { firstName: true, lastName: true, avatarUrl: true } }, psychoanalystProfile: { select: { firstName: true, lastName: true } }, integrativeTherapistProfile: { select: { firstName: true, lastName: true } } } } },
     });
 
     const convMap = new Map<string, { userId: string; name: string; lastMessage: string; lastAt: Date; unread: number }>();
@@ -148,6 +163,8 @@ export async function POST(req: NextRequest) {
       role: true,
       patientProfile: { select: { firstName: true, lastName: true } },
       professionalProfile: { select: { firstName: true, lastName: true } },
+      psychoanalystProfile: { select: { firstName: true, lastName: true } },
+      integrativeTherapistProfile: { select: { firstName: true, lastName: true } },
     },
   });
   const senderName = displayName(sender);

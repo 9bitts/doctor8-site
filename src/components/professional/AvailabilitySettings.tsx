@@ -7,6 +7,7 @@ import { countSlotsInRange, generateSlotsInRange } from "@/lib/scheduling";
 import { validateAvailabilityBlocks } from "@/lib/availability-validation";
 import { DEFAULT_TIME_ZONE, listTimeZoneOptions } from "@/lib/timezone";
 import { Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 interface TimeBlock {
   id: string;
@@ -84,6 +85,7 @@ export default function AvailabilitySettings({
   onSaved,
 }: AvailabilitySettingsProps) {
   const { t, lang } = useI18n();
+  const toast = useToast();
   const locale = localeOf(lang);
 
   const TIMES = useMemo(
@@ -227,15 +229,17 @@ export default function AvailabilitySettings({
         const data = await res.json().catch(() => ({}));
         const key = typeof data.error === "string" ? data.error : "avail.overlapError";
         setSaveError(t(key));
+        toast.error(t(key));
         return;
       }
       setSaved(true);
+      toast.success(t("avail.saved"));
       setTimeout(() => setSaved(false), 3000);
       onSaved?.();
     } finally {
       setSaving(false);
     }
-  }, [schedules, timezone, apiPath, t, onSaved]);
+  }, [schedules, timezone, apiPath, t, onSaved, toast]);
 
   useEffect(() => {
     if (!autoSave || !readyRef.current) return;

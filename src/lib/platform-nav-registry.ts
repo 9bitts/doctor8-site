@@ -120,74 +120,182 @@ export const PATIENT_NAV: PlatformNavEntry[] = [
   PATIENT_HUMANITARIAN_ENTRY,
 ];
 
-export const PROFESSIONAL_NAV: PlatformNavEntry[] = [
-  { href: "/professional", labelKey: "nav.dashboard", roles: ["PROFESSIONAL"], iconKey: "LayoutDashboard" },
-  { href: "/professional/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
-  { href: "/professional/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
-  { href: "/professional/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
-  { href: "/professional/psychology", labelKey: "nav.psychologyArea", roles: ["PROFESSIONAL"], iconKey: "Brain" },
-  { href: "/professional/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
-  { href: "/professional/categories", labelKey: "nav.categories", roles: ["PROFESSIONAL"], iconKey: "Layers" },
-  { href: "/professional/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
-  { href: "/professional/prescriptions", labelKey: "nav.prescriptions", roles: ["PROFESSIONAL"], iconKey: "Stethoscope" },
-  { href: "/professional/buying-club", labelKey: "nav.buyingClub", roles: ["PROFESSIONAL"], iconKey: "ShoppingBag" },
-  { href: "/professional/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
-  { href: "/professional/jit", labelKey: "nav.jit", roles: ["PROFESSIONAL"], iconKey: "Radio" },
-  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
-  { href: "/professional/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
-  { href: "/professional/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
-  { href: "/professional/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
-  { href: "/professional/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
-  { href: "/professional/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
+function flattenNavGroups(groups: PlatformNavGroup[]): PlatformNavEntry[] {
+  return groups.flatMap((g) => g.items);
+}
+
+/** Medical professional sidebar groups — flat PROFESSIONAL_NAV is derived for support-knowledge index. */
+export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "nav.group.attendNow",
+    items: [
+      { href: "/professional", labelKey: "nav.dashboard", roles: ["PROFESSIONAL"], iconKey: "LayoutDashboard" },
+      { href: "/professional/jit", labelKey: "nav.jit", roles: ["PROFESSIONAL"], iconKey: "Radio" },
+      { href: "/professional/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+      { href: "/professional/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+    ],
+  },
+  {
+    labelKey: "nav.group.patients",
+    items: [
+      { href: "/professional/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/professional/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
+      { href: "/professional/categories", labelKey: "nav.categories", roles: ["PROFESSIONAL"], iconKey: "Layers" },
+      { href: "/professional/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
+    ],
+  },
+  {
+    labelKey: "nav.group.clinical",
+    items: [
+      { href: "/professional/prescriptions", labelKey: "nav.prescriptions", roles: ["PROFESSIONAL"], iconKey: "Stethoscope" },
+      { href: "/professional/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
+      { href: "/professional/psychology", labelKey: "nav.psychologyArea", roles: ["PROFESSIONAL"], iconKey: "Brain" },
+      { href: "/professional/buying-club", labelKey: "nav.buyingClub", roles: ["PROFESSIONAL"], iconKey: "ShoppingBag" },
+      { href: "/professional/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
+      { href: "/professional/settings/clinic", labelKey: "nav.clinicSettings", roles: ["PROFESSIONAL"], iconKey: "Building2" },
+      { href: "/professional/settings/templates", labelKey: "nav.templates", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+    ],
+  },
+  {
+    labelKey: "nav.group.accountMore",
+    items: [
+      { href: "/professional/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
+      { href: "/professional/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
+      { href: "/professional/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
+      { href: "/professional/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
+      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+    ],
+  },
 ];
 
-export const PSYCHOLOGIST_NAV: PlatformNavEntry[] = [
-  { href: "/psychologist", labelKey: "nav.dashboard", roles: ["PROFESSIONAL"], iconKey: "LayoutDashboard" },
-  { href: "/psychologist/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
-  { href: "/psychologist/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
-  { href: "/psychologist/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
-  { href: "/psychologist/sessions", labelKey: "psy.mod.sessions.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
-  { href: "/psychologist/scales", labelKey: "psy.mod.scales.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
-  { href: "/psychologist/documents", labelKey: "psy.mod.documents.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
-  { href: "/psychologist/compliance", labelKey: "psy.mod.compliance.title", roles: ["PROFESSIONAL"], iconKey: "Shield" },
-  { href: "/psychologist/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
-  { href: "/psychologist/categories", labelKey: "nav.categories", roles: ["PROFESSIONAL"], iconKey: "Layers" },
-  { href: "/psychologist/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
-  { href: "/psychologist/jit", labelKey: "nav.jit", roles: ["PROFESSIONAL"], iconKey: "Radio" },
-  { href: "/psychologist/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
-  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
-  { href: "/psychologist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
-  { href: "/psychologist/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
-  { href: "/psychologist/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
-  { href: "/psychologist/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
-  { href: "/psychologist/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
+export const PROFESSIONAL_NAV: PlatformNavEntry[] = flattenNavGroups(PROFESSIONAL_NAV_GROUPS);
+
+/** Psychologist portal sidebar groups. */
+export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "nav.group.attendNow",
+    items: [
+      { href: "/psychologist", labelKey: "nav.dashboard", roles: ["PROFESSIONAL"], iconKey: "LayoutDashboard" },
+      { href: "/psychologist/jit", labelKey: "nav.jit", roles: ["PROFESSIONAL"], iconKey: "Radio" },
+      { href: "/psychologist/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+      { href: "/psychologist/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+    ],
+  },
+  {
+    labelKey: "nav.group.patients",
+    items: [
+      { href: "/psychologist/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/psychologist/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
+      { href: "/psychologist/categories", labelKey: "nav.categories", roles: ["PROFESSIONAL"], iconKey: "Layers" },
+      { href: "/psychologist/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
+    ],
+  },
+  {
+    labelKey: "nav.group.clinical",
+    items: [
+      { href: "/psychologist/sessions", labelKey: "psy.mod.sessions.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
+      { href: "/psychologist/scales", labelKey: "psy.mod.scales.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
+      { href: "/psychologist/documents", labelKey: "psy.mod.documents.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/psychologist/compliance", labelKey: "psy.mod.compliance.title", roles: ["PROFESSIONAL"], iconKey: "Shield" },
+      { href: "/psychologist/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
+      { href: "/psychologist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.accountMore",
+    items: [
+      { href: "/psychologist/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
+      { href: "/psychologist/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
+      { href: "/psychologist/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
+      { href: "/psychologist/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
+      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+    ],
+  },
 ];
 
-export const PSYCHOANALYST_NAV: PlatformNavEntry[] = [
-  { href: "/psychoanalyst", labelKey: "nav.dashboard", roles: ["PSYCHOANALYST"], iconKey: "LayoutDashboard" },
-  { href: "/psychoanalyst/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PSYCHOANALYST"], iconKey: "Sparkles" },
-  { href: "/psychoanalyst/freud", labelKey: "pa.freud.nav", roles: ["PSYCHOANALYST"], iconKey: "Brain" },
-  { href: "/psychoanalyst/settings", labelKey: "nav.myProfile", roles: ["PSYCHOANALYST"], iconKey: "UserCog" },
-  { href: "/psychoanalyst/analysands", labelKey: "pa.nav.analysands", roles: ["PSYCHOANALYST"], iconKey: "Users" },
-  { href: "/psychoanalyst/appointments", labelKey: "nav.appointments", roles: ["PSYCHOANALYST"], iconKey: "Calendar" },
-  { href: "/psychoanalyst/resources", labelKey: "nav.library", roles: ["PSYCHOANALYST"], iconKey: "BookOpen" },
-  { href: "/psychoanalyst/financeiro", labelKey: "nav.financeiro", roles: ["PSYCHOANALYST"], iconKey: "TrendingUp" },
-  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PSYCHOANALYST"], iconKey: "Heart" },
-  { href: "/psychoanalyst/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PSYCHOANALYST"], iconKey: "Video" },
-  { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", roles: ["PSYCHOANALYST"], iconKey: "Calendar" },
-  { href: "/psychoanalyst/account", labelKey: "nav.account", roles: ["PSYCHOANALYST"], iconKey: "Settings" },
+export const PSYCHOLOGIST_NAV: PlatformNavEntry[] = flattenNavGroups(PSYCHOLOGIST_NAV_GROUPS);
+
+/** Psychoanalyst portal sidebar groups. */
+export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "nav.group.attendNow",
+    items: [
+      { href: "/psychoanalyst", labelKey: "nav.dashboard", roles: ["PSYCHOANALYST"], iconKey: "LayoutDashboard" },
+      { href: "/psychoanalyst/appointments", labelKey: "nav.appointments", roles: ["PSYCHOANALYST"], iconKey: "Calendar" },
+      { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", roles: ["PSYCHOANALYST"], iconKey: "Calendar" },
+    ],
+  },
+  {
+    labelKey: "nav.group.patients",
+    items: [
+      { href: "/psychoanalyst/analysands", labelKey: "pa.nav.analysands", roles: ["PSYCHOANALYST"], iconKey: "Users" },
+      { href: "/psychoanalyst/messages", labelKey: "nav.messages", roles: ["PSYCHOANALYST"], iconKey: "MessageSquare" },
+    ],
+  },
+  {
+    labelKey: "nav.group.clinical",
+    items: [
+      { href: "/psychoanalyst/freud", labelKey: "pa.freud.nav", roles: ["PSYCHOANALYST"], iconKey: "Brain" },
+      { href: "/psychoanalyst/resources", labelKey: "nav.library", roles: ["PSYCHOANALYST"], iconKey: "BookOpen" },
+      { href: "/psychoanalyst/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PSYCHOANALYST"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.accountMore",
+    items: [
+      { href: "/psychoanalyst/financeiro", labelKey: "nav.financeiro", roles: ["PSYCHOANALYST"], iconKey: "TrendingUp" },
+      { href: "/psychoanalyst/settings", labelKey: "nav.myProfile", roles: ["PSYCHOANALYST"], iconKey: "UserCog" },
+      { href: "/psychoanalyst/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PSYCHOANALYST"], iconKey: "Sparkles" },
+      { href: "/psychoanalyst/account", labelKey: "nav.account", roles: ["PSYCHOANALYST"], iconKey: "Settings" },
+      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PSYCHOANALYST"], iconKey: "Heart" },
+    ],
+  },
 ];
 
-export const INTEGRATIVE_THERAPIST_NAV: PlatformNavEntry[] = [
-  { href: "/integrative-therapist", labelKey: "nav.dashboard", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "LayoutDashboard" },
-  { href: "/integrative-therapist/settings", labelKey: "nav.myProfile", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "UserCog" },
-  { href: "/integrative-therapist/clients", labelKey: "it.nav.clients", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Users" },
-  { href: "/integrative-therapist/appointments", labelKey: "nav.appointments", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Calendar" },
-  { href: "/integrative-therapist/financeiro", labelKey: "nav.financeiro", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "TrendingUp" },
-  { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Heart" },
-  { href: "/integrative-therapist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Video" },
-  { href: "/integrative-therapist/settings/availability", labelKey: "nav.availability", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Calendar" },
+export const PSYCHOANALYST_NAV: PlatformNavEntry[] = flattenNavGroups(PSYCHOANALYST_NAV_GROUPS);
+
+/** Integrative therapist portal sidebar groups. */
+export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "nav.group.attendNow",
+    items: [
+      { href: "/integrative-therapist", labelKey: "nav.dashboard", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "LayoutDashboard" },
+      { href: "/integrative-therapist/appointments", labelKey: "nav.appointments", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Calendar" },
+      { href: "/integrative-therapist/settings/availability", labelKey: "nav.availability", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Calendar" },
+    ],
+  },
+  {
+    labelKey: "nav.group.patients",
+    items: [
+      { href: "/integrative-therapist/clients", labelKey: "it.nav.clients", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Users" },
+      { href: "/integrative-therapist/messages", labelKey: "nav.messages", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "MessageSquare" },
+    ],
+  },
+  {
+    labelKey: "nav.group.clinical",
+    items: [
+      { href: "/integrative-therapist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.accountMore",
+    items: [
+      { href: "/integrative-therapist/financeiro", labelKey: "nav.financeiro", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "TrendingUp" },
+      { href: "/integrative-therapist/settings", labelKey: "nav.myProfile", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "UserCog" },
+      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Heart" },
+    ],
+  },
 ];
+
+export const INTEGRATIVE_THERAPIST_NAV: PlatformNavEntry[] = flattenNavGroups(INTEGRATIVE_THERAPIST_NAV_GROUPS);
+
+/** Grouped nav for provider portals (patient uses PATIENT_NAV_GROUPS). */
+export const PLATFORM_NAV_GROUPS_BY_PORTAL: Partial<Record<PlatformPortalId, PlatformNavGroup[]>> = {
+  PROFESSIONAL: PROFESSIONAL_NAV_GROUPS,
+  PSYCHOLOGIST: PSYCHOLOGIST_NAV_GROUPS,
+  PSYCHOANALYST: PSYCHOANALYST_NAV_GROUPS,
+  INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV_GROUPS,
+};
 
 export const ORGANIZATION_NAV: PlatformNavEntry[] = [
   { href: "/organization", labelKey: "nav.dashboard", roles: ["ORGANIZATION"], iconKey: "LayoutDashboard" },

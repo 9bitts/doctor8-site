@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import { decrypt } from "@/lib/encryption";
+import { DEFAULT_TIME_ZONE } from "@/lib/timezone";
 import { picBySlug, picLabel } from "@/lib/pics/practices";
 import { getIntegrativeVisitMetaByPatientUserIds } from "@/lib/integrative-appointment-meta";
 import IntegrativeAppointmentsView from "@/components/integrative-therapist/IntegrativeAppointmentsView";
@@ -23,10 +24,11 @@ export default async function IntegrativeTherapistAppointmentsPage() {
 
   const userRow = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { language: true },
+    select: { language: true, timezone: true },
   });
   const lang: Lang = normalizeLang(userRow?.language);
   const t = (key: string) => translate(lang, key);
+  const providerTz = userRow?.timezone || DEFAULT_TIME_ZONE;
 
   const profile = await db.integrativeTherapistProfile.findUnique({
     where: { userId: session.user.id },
@@ -82,7 +84,7 @@ export default async function IntegrativeTherapistAppointmentsPage() {
         <h1 className="text-2xl font-bold text-slate-900">{t("proappt.title")}</h1>
         <p className="text-slate-500 mt-1">{t("it.dash.subtitle")}</p>
       </div>
-      <IntegrativeAppointmentsView appointments={rows} practiceOptions={practiceOptions} />
+      <IntegrativeAppointmentsView appointments={rows} practiceOptions={practiceOptions} timeZone={providerTz} />
     </div>
   );
 }

@@ -31,6 +31,7 @@ export async function GET() {
       lastName: safeDecrypt(r.lastName),
       email: r.email,
       hasAccount: !!r.linkedUserId,
+      linkedUserId: r.linkedUserId,
       processStartDate: r.processStartDate?.toISOString() ?? null,
       updatedAt: r.updatedAt.toISOString(),
     })),
