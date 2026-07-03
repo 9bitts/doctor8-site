@@ -10,6 +10,7 @@ import { sessionProfileIncomplete } from "@/lib/user-profile-complete";
 import {
   humanitarianReturnPathFromCallback,
   humanitarianReturnPathFromPathname,
+  isHumanitarianPatientPath,
   stampHumanitarianOriginOnResponse,
 } from "@/lib/humanitarian/origin-cookie";
 
@@ -381,6 +382,11 @@ export default auth((req) => {
     role !== "ADMIN"
   ) {
     return denyWrongRole();
+  }
+
+  if (role === "ANGEL" && isHumanitarianPatientPath(pathname)) {
+    const home = resolveRoleHome(role, professionalSpecialty);
+    return NextResponse.redirect(new URL(home, req.url));
   }
 
   return withPrivateCacheHeaders(NextResponse.next(), pathname, authenticated);

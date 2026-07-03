@@ -7,11 +7,13 @@ import { AuditAction } from "@prisma/client";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   auditAngelEvent,
+  computeNextContactAt,
   enforceAngelRateLimit,
   getAngelPatientDetail,
   hasActiveAngelAssignment,
   notifyAngelEscalation,
   resolveAngelAccess,
+  setAssignmentNextContactAt,
   validateAngelQueueEntry,
 } from "@/lib/humanitarian/angel";
 
@@ -24,6 +26,13 @@ const followUpSchema = z.object({
   notes: z.string().max(5000).optional(),
   needsFlags: z.array(z.string()).optional(),
   escalated: z.boolean().optional(),
+  remindInDays: z.union([
+    z.literal(3),
+    z.literal(7),
+    z.literal(15),
+    z.literal(30),
+  ]).optional(),
+  remindAt: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -124,6 +133,19 @@ export async function POST(req: NextRequest) {
       escalated,
     },
   });
+
+  const nextContactAt = computeNextContactAt({
+    remindInDays: parsed.data.remindInDays,
+    remindAt: parsed.data.remindAt,
+  });
+  if (nextContactAt) {
+    await setAssignmentNextContactAt(
+      access.campaignId,
+      session.user.id,
+      parsed.data.patientUserId,
+      nextContactAt,
+    );
+  }
 
   if (escalated) {
     const detail = await getAngelPatientDetail(

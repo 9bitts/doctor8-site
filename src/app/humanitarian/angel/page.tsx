@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
-  Heart, Loader2, Phone, MessageCircle, ChevronRight, AlertCircle, Clock, User,
+  Heart, Loader2, Phone, MessageCircle, ChevronRight, AlertCircle, Clock, User, BookOpen,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { ANGEL_LOGIN } from "@/lib/auth-portals";
@@ -18,7 +19,7 @@ import {
   loadCachedAngelDashboard,
   type AngelDashboardCachePayload,
 } from "@/lib/humanitarian/offline-draft";
-import { buildWhatsAppUrl } from "@/lib/humanitarian/angel";
+import { buildWhatsAppUrl } from "@/lib/humanitarian/angel-utils";
 import type { AngelRiskSummary } from "@/lib/humanitarian/angel-risk-summary";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
@@ -43,6 +44,17 @@ interface AvailableRow {
   consultEndedAt: string | null;
   riskSummary: AngelRiskSummary;
 }
+
+type PendencyRow = {
+  kind: "OVERDUE_REMINDER" | "NO_FIRST_CONTACT" | "HIGH_RISK_STALE";
+  patientUserId: string;
+  patientName: string;
+  priority: string;
+  poolLabel: string;
+  dueAt: string | null;
+  riskSummary: AngelRiskSummary;
+  queueEntryId: string;
+};
 
 type FollowUpRow = {
   id: string;
@@ -74,6 +86,7 @@ export default function HumanitarianAngelPage() {
   const [status, setStatus] = useState<string>("LOADING");
   const [myPatients, setMyPatients] = useState<MyPatientRow[]>([]);
   const [available, setAvailable] = useState<AvailableRow[]>([]);
+  const [pendencies, setPendencies] = useState<PendencyRow[]>([]);
   const [assignmentCount, setAssignmentCount] = useState(0);
   const [maxPatients, setMaxPatients] = useState(10);
   const [selected, setSelected] = useState<MyPatientRow | null>(null);
@@ -88,6 +101,7 @@ export default function HumanitarianAngelPage() {
     "REACHED_OK" | "NEEDS_HELP" | "NO_ANSWER" | "WRONG_NUMBER" | "ESCALATED" | "OTHER"
   >("REACHED_OK");
   const [notes, setNotes] = useState("");
+  const [remindInDays, setRemindInDays] = useState<"" | "3" | "7" | "15" | "30">("");
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState("");
 
@@ -132,6 +146,7 @@ export default function HumanitarianAngelPage() {
       setStatus(data.status || "UNKNOWN");
       setMyPatients(data.myPatients || []);
       setAvailable(data.available || []);
+      setPendencies(data.pendencies || []);
       setAssignmentCount(data.assignmentCount ?? 0);
       setMaxPatients(data.maxPatients ?? 10);
       if (userId) {
@@ -225,6 +240,15 @@ export default function HumanitarianAngelPage() {
     setSaving(false);
   }
 
+  async function openPatientFromPendency(row: PendencyRow) {
+    const match = myPatients.find((p) => p.patientUserId === row.patientUserId);
+    if (match) {
+      await openPatient(match);
+      return;
+    }
+    setError(t(lang, "angel.portal.pendencyOpenError"));
+  }
+
   async function saveFollowUp() {
     if (!selected) return;
     setSaving(true);
@@ -239,10 +263,14 @@ export default function HumanitarianAngelPage() {
           outcome,
           notes: notes || undefined,
           escalated: outcome === "ESCALATED",
+          ...(remindInDays
+            ? { remindInDays: Number(remindInDays) as 3 | 7 | 15 | 30 }
+            : {}),
         }),
       });
       if (!res.ok) throw new Error("save failed");
       setNotes("");
+      setRemindInDays("");
       setSelected(null);
       setDetail(null);
       await load();
@@ -346,6 +374,16 @@ export default function HumanitarianAngelPage() {
           </p>
         </div>
 
+        <div className="mb-4 flex justify-end">
+          <Link
+            href="/humanitarian/angel/guide"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-300 hover:text-white"
+          >
+            <BookOpen className="w-4 h-4" />
+            {t(lang, "angel.guide.link")}
+          </Link>
+        </div>
+
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm">
             {error}
@@ -354,6 +392,32 @@ export default function HumanitarianAngelPage() {
 
         {!selected ? (
           <div className="space-y-8">
+            {pendencies.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <h2 className="text-sm font-semibold text-white">{t(lang, "angel.portal.pendencies")}</h2>
+                  <span className="text-xs font-bold bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded-full">
+                    {pendencies.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {pendencies.map((p) => (
+                    <button
+                      key={`${p.kind}-${p.patientUserId}`}
+                      type="button"
+                      onClick={() => openPatientFromPendency(p)}
+                      className="w-full text-left p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 transition"
+                    >
+                      <p className="text-sm font-semibold text-white">{p.patientName}</p>
+                      <p className="text-xs text-amber-100/80 mt-0.5">
+                        {t(lang, `angel.pendency.${p.kind}`)} {sep} {t(lang, `angel.priority.${p.priority}`)}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
             <section>
               <h2 className="text-sm font-semibold text-white mb-3">{t(lang, "angel.portal.myPatients")}</h2>
               {myPatients.length === 0 ? (
@@ -533,6 +597,18 @@ export default function HumanitarianAngelPage() {
                 placeholder={t(lang, "angel.portal.notesPlaceholder")}
                 className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white text-sm resize-none mb-3"
               />
+              <label className="block text-xs text-slate-400 mb-1">{t(lang, "angel.portal.remindLabel")}</label>
+              <select
+                value={remindInDays}
+                onChange={(e) => setRemindInDays(e.target.value as typeof remindInDays)}
+                className="w-full mb-3 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white text-sm"
+              >
+                <option value="">{t(lang, "angel.portal.remindNone")}</option>
+                <option value="3">{t(lang, "angel.portal.remindDays", { n: 3 })}</option>
+                <option value="7">{t(lang, "angel.portal.remindDays", { n: 7 })}</option>
+                <option value="15">{t(lang, "angel.portal.remindDays", { n: 15 })}</option>
+                <option value="30">{t(lang, "angel.portal.remindDays", { n: 30 })}</option>
+              </select>
               <button
                 onClick={saveFollowUp}
                 disabled={saving}

@@ -19,6 +19,13 @@ import {
 import { NextResponse } from "next/server";
 
 export const MAX_PATIENTS_PER_ANGEL = 10;
+export const ANGEL_HIGH_RISK_STALE_DAYS = 5;
+export const ANGEL_NO_FIRST_CONTACT_DAYS = 3;
+
+export const ANGEL_REMIND_IN_DAYS = [3, 7, 15, 30] as const;
+export type AngelRemindInDays = (typeof ANGEL_REMIND_IN_DAYS)[number];
+
+const PRIORITY_SORT: Record<string, number> = { CRISIS: 0, URGENT: 1, ROUTINE: 2 };
 
 const ANGEL_AUDIT_RESOURCE = "HumanitarianAngelPatient";
 
@@ -361,7 +368,7 @@ export async function claimAngelPatient(
       if (existing) {
         const updated = await tx.humanitarianAngelAssignment.update({
           where: { id: existing.id },
-          data: { active: true, claimedAt: now, releasedAt: null },
+          data: { active: true, claimedAt: now, releasedAt: null, nextContactAt: null },
         });
         return updated.id;
       }
@@ -404,9 +411,338 @@ export async function releaseAngelPatient(
 
   await db.humanitarianAngelAssignment.update({
     where: { id: row.id },
-    data: { active: false, releasedAt: new Date() },
+    data: { active: false, releasedAt: new Date(), nextContactAt: null },
   });
   return true;
+}
+
+export function computeNextContactAt(opts: {
+  remindInDays?: AngelRemindInDays;
+  remindAt?: string;
+}): Date | null {
+  if (opts.remindAt) {
+    const d = new Date(opts.remindAt);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  if (opts.remindInDays) {
+    const d = new Date();
+    d.setDate(d.getDate() + opts.remindInDays);
+    return d;
+  }
+  return null;
+}
+
+export async function setAssignmentNextContactAt(
+  campaignId: string,
+  angelUserId: string,
+  patientUserId: string,
+  nextContactAt: Date | null,
+): Promise<void> {
+  await db.humanitarianAngelAssignment.updateMany({
+    where: { campaignId, angelUserId, patientUserId, active: true },
+    data: { nextContactAt },
+  });
+}
+
+export type AngelPendencyKind = "OVERDUE_REMINDER" | "NO_FIRST_CONTACT" | "HIGH_RISK_STALE";
+
+export type AngelPendencyRow = {
+  kind: AngelPendencyKind;
+  patientUserId: string;
+  patientName: string;
+  priority: string;
+  poolLabel: string;
+  dueAt: string | null;
+  riskSummary: AngelRiskSummary;
+  queueEntryId: string;
+};
+
+function sortPendencies(rows: AngelPendencyRow[]): AngelPendencyRow[] {
+  return [...rows].sort((a, b) => {
+    const pa = PRIORITY_SORT[a.priority] ?? 9;
+    const pb = PRIORITY_SORT[b.priority] ?? 9;
+    if (pa !== pb) return pa - pb;
+    const da = a.dueAt ? new Date(a.dueAt).getTime() : 0;
+    const db = b.dueAt ? new Date(b.dueAt).getTime() : 0;
+    return da - db;
+  });
+}
+
+export async function listAngelPendencies(
+  campaignId: string,
+  angelUserId: string,
+  lang: Lang,
+): Promise<AngelPendencyRow[]> {
+  const now = Date.now();
+  const noContactMs = ANGEL_NO_FIRST_CONTACT_DAYS * 24 * 60 * 60 * 1000;
+  const staleMs = ANGEL_HIGH_RISK_STALE_DAYS * 24 * 60 * 60 * 1000;
+
+  const [assignments, eligible] = await Promise.all([
+    db.humanitarianAngelAssignment.findMany({
+      where: { campaignId, angelUserId, active: true },
+      select: {
+        patientUserId: true,
+        claimedAt: true,
+        nextContactAt: true,
+      },
+    }),
+    loadEligibleEntries(campaignId, lang),
+  ]);
+
+  if (!assignments.length) return [];
+
+  const eligibleByPatient = new Map(eligible.map((e) => [e.patientUserId, e]));
+  const patientIds = assignments.map((a) => a.patientUserId);
+
+  const followUps = await db.humanitarianAngelFollowUp.findMany({
+    where: {
+      campaignId,
+      angelUserId,
+      patientUserId: { in: patientIds },
+    },
+    orderBy: { contactedAt: "desc" },
+    select: { patientUserId: true, contactedAt: true },
+  });
+
+  const lastFollowUpByPatient = new Map<string, Date>();
+  for (const f of followUps) {
+    if (!lastFollowUpByPatient.has(f.patientUserId)) {
+      lastFollowUpByPatient.set(f.patientUserId, f.contactedAt);
+    }
+  }
+
+  const rows: AngelPendencyRow[] = [];
+
+  for (const a of assignments) {
+    const entry = eligibleByPatient.get(a.patientUserId);
+    if (!entry) continue;
+
+    const base = {
+      patientUserId: a.patientUserId,
+      patientName: entry.fullName,
+      priority: entry.priority,
+      poolLabel: entry.poolLabel,
+      riskSummary: entry.riskSummary,
+      queueEntryId: entry.queueEntryId,
+    };
+
+    if (a.nextContactAt && a.nextContactAt.getTime() <= now) {
+      rows.push({
+        kind: "OVERDUE_REMINDER",
+        ...base,
+        dueAt: a.nextContactAt.toISOString(),
+      });
+    }
+
+    const lastFu = lastFollowUpByPatient.get(a.patientUserId);
+    if (!lastFu && now - a.claimedAt.getTime() > noContactMs) {
+      rows.push({
+        kind: "NO_FIRST_CONTACT",
+        ...base,
+        dueAt: a.claimedAt.toISOString(),
+      });
+    }
+
+    const highRisk = entry.priority === "CRISIS" || entry.priority === "URGENT";
+    if (highRisk) {
+      const staleRef = lastFu ?? a.claimedAt;
+      if (now - staleRef.getTime() > staleMs) {
+        rows.push({
+          kind: "HIGH_RISK_STALE",
+          ...base,
+          dueAt: staleRef.toISOString(),
+        });
+      }
+    }
+  }
+
+  return sortPendencies(rows);
+}
+
+export async function revokeAngelContactConsent(
+  patientUserId: string,
+  campaignSlug: string,
+): Promise<{ ok: true; campaignId: string } | { ok: false; code: "NOT_FOUND" }> {
+  const campaign = await db.humanitarianCampaign.findUnique({
+    where: { slug: campaignSlug },
+    select: { id: true },
+  });
+  if (!campaign) return { ok: false, code: "NOT_FOUND" };
+
+  const intake = await db.humanitarianIntake.findUnique({
+    where: {
+      campaignId_patientUserId: { campaignId: campaign.id, patientUserId },
+    },
+    select: { id: true, angelContactConsentAt: true },
+  });
+  if (!intake?.angelContactConsentAt) {
+    return { ok: false, code: "NOT_FOUND" };
+  }
+
+  const now = new Date();
+  await db.$transaction(async (tx) => {
+    await tx.humanitarianIntake.update({
+      where: { id: intake.id },
+      data: { angelContactConsentAt: null },
+    });
+    await tx.humanitarianAngelAssignment.updateMany({
+      where: { campaignId: campaign.id, patientUserId, active: true },
+      data: { active: false, releasedAt: now, nextContactAt: null },
+    });
+  });
+
+  return { ok: true, campaignId: campaign.id };
+}
+
+export type AdminAngelStatsRow = {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  approvalStatus: string;
+  enrollmentActive: boolean;
+  activeAssignments: number;
+  maxPatients: number;
+  followUpsLast30Days: number;
+  openEscalations: number;
+  lastFollowUpAt: string | null;
+};
+
+export type AdminUncoveredPatientRow = {
+  patientUserId: string;
+  firstName: string;
+  priority: string | null;
+  poolLabel: string;
+  consultEndedAt: string | null;
+};
+
+export type AdminAssignmentRow = {
+  assignmentId: string;
+  angelUserId: string;
+  angelName: string;
+  patientUserId: string;
+  patientFirstName: string;
+};
+
+export async function getAdminAngelsOverview(
+  campaignSlug: string,
+  lang: Lang,
+): Promise<{
+  angels: AdminAngelStatsRow[];
+  uncoveredPatients: AdminUncoveredPatientRow[];
+  assignments: AdminAssignmentRow[];
+} | null> {
+  const campaign = await db.humanitarianCampaign.findUnique({
+    where: { slug: campaignSlug },
+    select: { id: true },
+  });
+  if (!campaign) return null;
+
+  const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const profiles = await db.angelProfile.findMany({
+    where: { approvalStatus: "APPROVED" },
+    select: {
+      userId: true,
+      firstName: true,
+      lastName: true,
+      approvalStatus: true,
+      user: {
+        select: {
+          humanitarianAngels: {
+            where: { campaignId: campaign.id },
+            select: { active: true },
+          },
+        },
+      },
+    },
+  });
+
+  const angels: AdminAngelStatsRow[] = [];
+  for (const p of profiles) {
+    const [activeAssignments, followUpsLast30Days, openEscalations, lastFollowUp] =
+      await Promise.all([
+        db.humanitarianAngelAssignment.count({
+          where: { campaignId: campaign.id, angelUserId: p.userId, active: true },
+        }),
+        db.humanitarianAngelFollowUp.count({
+          where: {
+            campaignId: campaign.id,
+            angelUserId: p.userId,
+            contactedAt: { gte: since30 },
+          },
+        }),
+        db.humanitarianAngelFollowUp.count({
+          where: {
+            campaignId: campaign.id,
+            angelUserId: p.userId,
+            escalated: true,
+            escalationResolvedAt: null,
+          },
+        }),
+        db.humanitarianAngelFollowUp.findFirst({
+          where: { campaignId: campaign.id, angelUserId: p.userId },
+          orderBy: { contactedAt: "desc" },
+          select: { contactedAt: true },
+        }),
+      ]);
+
+    angels.push({
+      userId: p.userId,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      approvalStatus: p.approvalStatus,
+      enrollmentActive: p.user.humanitarianAngels.some((e) => e.active),
+      activeAssignments,
+      maxPatients: MAX_PATIENTS_PER_ANGEL,
+      followUpsLast30Days,
+      openEscalations,
+      lastFollowUpAt: lastFollowUp?.contactedAt.toISOString() ?? null,
+    });
+  }
+
+  const eligible = await loadEligibleEntries(campaign.id, lang);
+  const activeAssignments = await db.humanitarianAngelAssignment.findMany({
+    where: { campaignId: campaign.id, active: true },
+    select: { patientUserId: true },
+  });
+  const covered = new Set(activeAssignments.map((a) => a.patientUserId));
+
+  const uncoveredPatients: AdminUncoveredPatientRow[] = eligible
+    .filter((e) => !covered.has(e.patientUserId))
+    .map((e) => ({
+      patientUserId: e.patientUserId,
+      firstName: firstNameOnly(e.fullName),
+      priority: e.riskSummary.priority,
+      poolLabel: e.poolLabel,
+      consultEndedAt: e.consultEndedAt,
+    }));
+
+  const assignmentRows = await db.humanitarianAngelAssignment.findMany({
+    where: { campaignId: campaign.id, active: true },
+    include: {
+      angelUser: {
+        select: { angelProfile: { select: { firstName: true, lastName: true } } },
+      },
+    },
+  });
+
+  const assignments: AdminAssignmentRow[] = [];
+  for (const row of assignmentRows) {
+    const eligibleAll = eligible.find((e) => e.patientUserId === row.patientUserId);
+    const patientName = eligibleAll?.fullName ?? "Paciente";
+    const angelName = row.angelUser.angelProfile
+      ? `${row.angelUser.angelProfile.firstName} ${row.angelUser.angelProfile.lastName}`.trim()
+      : "Anjo";
+    assignments.push({
+      assignmentId: row.id,
+      angelUserId: row.angelUserId,
+      angelName,
+      patientUserId: row.patientUserId,
+      patientFirstName: firstNameOnly(patientName),
+    });
+  }
+
+  return { angels, uncoveredPatients, assignments };
 }
 
 export async function validateAngelQueueEntry(
@@ -559,10 +895,4 @@ export async function notifyAngelEscalation(params: {
       }),
     ),
   );
-}
-
-export function buildWhatsAppUrl(phone: string, message: string): string | null {
-  const digits = phone.replace(/\D/g, "");
-  if (!digits) return null;
-  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }

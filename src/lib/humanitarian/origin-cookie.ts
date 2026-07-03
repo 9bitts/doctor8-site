@@ -28,7 +28,7 @@ export function isHumanitarianPatientPath(pathname: string): boolean {
   const match = pathname.match(/^\/humanitarian\/([^/]+)/);
   if (!match) return false;
   const segment = match[1];
-  return segment !== "volunteer" && segment !== "angel";
+  return segment !== "volunteer" && segment !== "angel" && segment !== "angel-optout";
 }
 
 /** Preferred return URL when entering the flow from this pathname. */

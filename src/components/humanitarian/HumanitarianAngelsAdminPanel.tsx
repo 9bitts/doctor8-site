@@ -36,27 +36,81 @@ interface EscalationRow {
   campaignName: string;
 }
 
+interface OverviewAngel {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  approvalStatus: string;
+  enrollmentActive: boolean;
+  activeAssignments: number;
+  maxPatients: number;
+  followUpsLast30Days: number;
+  openEscalations: number;
+  lastFollowUpAt: string | null;
+}
+
+interface UncoveredPatient {
+  patientUserId: string;
+  firstName: string;
+  priority: string | null;
+  poolLabel: string;
+  consultEndedAt: string | null;
+}
+
+interface AssignmentRow {
+  assignmentId: string;
+  angelUserId: string;
+  angelName: string;
+  patientUserId: string;
+  patientFirstName: string;
+}
+
+function tp(
+  t: (key: string) => string,
+  key: string,
+  params?: Record<string, string | number>,
+): string {
+  let text = t(key);
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      text = text.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), String(v));
+    }
+  }
+  return text;
+}
+
 export default function HumanitarianAngelsAdminPanel() {
   const { lang, t } = useI18n();
   const locale = localeOf(lang);
   const [angels, setAngels] = useState<AngelRow[]>([]);
   const [escalations, setEscalations] = useState<EscalationRow[]>([]);
+  const [overviewAngels, setOverviewAngels] = useState<OverviewAngel[]>([]);
+  const [uncovered, setUncovered] = useState<UncoveredPatient[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
+  const [releasing, setReleasing] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [docsBusyId, setDocsBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [angelsRes, escRes] = await Promise.all([
+      const [angelsRes, escRes, overviewRes] = await Promise.all([
         fetch("/api/admin/humanitarian/angels"),
         fetch("/api/admin/humanitarian/angels/escalations"),
+        fetch("/api/admin/humanitarian/angels/overview"),
       ]);
       const angelsData = await angelsRes.json();
       const escData = await escRes.json();
+      const overviewData = await overviewRes.json();
       if (angelsRes.ok) setAngels(angelsData.angels || []);
       if (escRes.ok) setEscalations(escData.escalations || []);
+      if (overviewRes.ok) {
+        setOverviewAngels(overviewData.angels || []);
+        setUncovered(overviewData.uncoveredPatients || []);
+        setAssignments(overviewData.assignments || []);
+      }
     } catch { /* ignore */ }
     setLoading(false);
   }, []);
@@ -77,6 +131,20 @@ export default function HumanitarianAngelsAdminPanel() {
       await load();
     } catch { /* ignore */ }
     setActing(null);
+  }
+
+  async function adminReleasePatient(angelUserId: string, patientUserId: string) {
+    const key = `${angelUserId}:${patientUserId}`;
+    setReleasing(key);
+    try {
+      await fetch(`/api/humanitarian/angel/patients/${patientUserId}/release`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ angelUserId }),
+      });
+      await load();
+    } catch { /* ignore */ }
+    setReleasing(null);
   }
 
   async function resolveEscalation(followUpId: string) {
@@ -127,6 +195,103 @@ export default function HumanitarianAngelsAdminPanel() {
 
   return (
     <div className="mt-8 border-t border-slate-200 pt-8 space-y-8">
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 mb-4">{t("admin.providers.angelActivityTitle")}</h2>
+        {overviewAngels.length === 0 ? (
+          <p className="text-sm text-slate-500">{t("admin.providers.emptyAngels")}</p>
+        ) : (
+          <div className="space-y-2">
+            {overviewAngels.map((a) => (
+              <div key={a.userId} className="border border-slate-200 rounded-xl p-3 bg-slate-50 text-sm">
+                <p className="font-semibold text-slate-900">
+                  {a.firstName} {a.lastName}
+                  {!a.enrollmentActive && (
+                    <span className="ml-2 text-xs text-amber-700">{t("admin.providers.angelPaused")}</span>
+                  )}
+                </p>
+                <p className="text-xs text-slate-600 mt-1">
+                  {tp(t, "admin.providers.angelStatsPatients", {
+                    current: a.activeAssignments,
+                    max: a.maxPatients,
+                  })}
+                  {" · "}
+                  {tp(t, "admin.providers.angelStatsFollowUps", { n: a.followUpsLast30Days })}
+                  {" · "}
+                  {tp(t, "admin.providers.angelStatsEscalations", { n: a.openEscalations })}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {a.lastFollowUpAt
+                    ? tp(t, "admin.providers.angelStatsLastContact", {
+                        date: new Date(a.lastFollowUpAt).toLocaleDateString(locale),
+                      })
+                    : t("admin.providers.angelStatsNoContact")}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 mb-4">{t("admin.providers.uncoveredTitle")}</h2>
+        {uncovered.length === 0 ? (
+          <p className="text-sm text-slate-500">{t("admin.providers.uncoveredEmpty")}</p>
+        ) : (
+          <div className="space-y-2">
+            {uncovered.map((p) => (
+              <div
+                key={p.patientUserId}
+                className="flex flex-wrap items-center justify-between gap-2 border border-slate-200 rounded-xl p-3 bg-white text-sm"
+              >
+                <div>
+                  <p className="font-medium text-slate-900">{p.firstName}</p>
+                  <p className="text-xs text-slate-500">
+                    {p.poolLabel} · {p.priority || "ROUTINE"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 mb-4">{t("admin.providers.reassignTitle")}</h2>
+        {assignments.length === 0 ? (
+          <p className="text-sm text-slate-500">{t("admin.providers.reassignEmpty")}</p>
+        ) : (
+          <div className="space-y-2">
+            {assignments.map((row) => {
+              const key = `${row.angelUserId}:${row.patientUserId}`;
+              return (
+                <div
+                  key={row.assignmentId}
+                  className="flex flex-wrap items-center justify-between gap-2 border border-slate-200 rounded-xl p-3 bg-white text-sm"
+                >
+                  <div>
+                    <p className="font-medium text-slate-900">
+                      {row.patientFirstName} <span className="text-slate-400 font-normal">/</span> {row.angelName}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={releasing === key}
+                    onClick={() => adminReleasePatient(row.angelUserId, row.patientUserId)}
+                    className="text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                  >
+                    {releasing === key ? (
+                      <Loader2 className="w-3 h-3 animate-spin inline" />
+                    ) : (
+                      t("admin.providers.reassignAction")
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div>
         <div className="flex items-center gap-2 mb-4">
           <AlertTriangle className="w-5 h-5 text-amber-500" />

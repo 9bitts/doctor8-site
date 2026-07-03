@@ -6,6 +6,7 @@ import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   auditAngelEvent,
   listAngelDashboard,
+  listAngelPendencies,
   MAX_PATIENTS_PER_ANGEL,
   resolveAngelAccess,
 } from "@/lib/humanitarian/angel";
@@ -57,12 +58,15 @@ export async function GET(req: NextRequest) {
       emailVerified: !!user?.emailVerified,
       myPatients: [],
       available: [],
+      pendencies: [],
+      pendencyCount: 0,
       assignmentCount: 0,
       maxPatients: MAX_PATIENTS_PER_ANGEL,
     });
   }
 
   const dashboard = await listAngelDashboard(access.campaignId, session.user.id, lang);
+  const pendencies = await listAngelPendencies(access.campaignId, session.user.id, lang);
 
   await auditAngelEvent({
     userId: session.user.id,
@@ -77,6 +81,8 @@ export async function GET(req: NextRequest) {
     emailVerified: true,
     myPatients: dashboard.myPatients,
     available: dashboard.available,
+    pendencies,
+    pendencyCount: pendencies.length,
     assignmentCount: dashboard.assignmentCount,
     maxPatients: MAX_PATIENTS_PER_ANGEL,
   });

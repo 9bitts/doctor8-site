@@ -2693,6 +2693,7 @@ model HumanitarianAngelAssignment {
   active          Boolean              @default(true)
   claimedAt       DateTime             @default(now())
   releasedAt      DateTime?
+  nextContactAt   DateTime?
 
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt

@@ -26,6 +26,7 @@ import ConfirmAttendanceButton from "@/components/patient/ConfirmAttendanceButto
 import PatientPostConsultReview from "@/components/patient/PatientPostConsultReview";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
 import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
+import HumanitarianAngelOptOutCard from "@/components/humanitarian/HumanitarianAngelOptOutCard";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   getActiveCampaignForRegion,
@@ -374,6 +375,7 @@ export default async function PatientDashboard() {
               campaignSlug={humanitarianCampaign?.slug ?? VENEZUELA_CAMPAIGN_SLUG}
             />
           )}
+          <HumanitarianAngelOptOutCard lang={lang} />
         </>
       )}
 
