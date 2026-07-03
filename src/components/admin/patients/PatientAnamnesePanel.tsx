@@ -16,7 +16,9 @@ export default function PatientAnamnesePanel({
           <FileText size={18} className="text-slate-400" />
           <h2 className="text-sm font-semibold text-slate-800">Anamnese inicial</h2>
         </div>
-        <p className="text-sm text-slate-400">Este paciente ainda não preencheu a anamnese inicial.</p>
+        <p className="text-sm text-slate-400">
+          Este paciente ainda nao preencheu a anamnese inicial.
+        </p>
       </section>
     );
   }
@@ -47,10 +49,7 @@ export default function PatientAnamnesePanel({
         </div>
       </div>
 
-      <HumanitarianIntakeSummary
-        summary={anamnese}
-        lang="pt"
-      />
+      <HumanitarianIntakeSummary summary={anamnese} lang="pt" />
     </section>
   );
 }

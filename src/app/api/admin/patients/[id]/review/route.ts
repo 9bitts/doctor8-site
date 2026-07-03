@@ -1,4 +1,4 @@
-// ADMIN ONLY — save admin observation and reviewed flag on patient.
+// ADMIN ONLY - save admin observation and reviewed flag on patient.
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { createAuditLog } from "@/lib/audit";

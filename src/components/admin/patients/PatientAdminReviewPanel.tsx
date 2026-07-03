@@ -47,16 +47,16 @@ export default function PatientAdminReviewPanel({
     <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
       <div className="flex items-center gap-2">
         <ClipboardList size={18} className="text-brand-500" />
-        <h2 className="text-sm font-semibold text-slate-800">Conferùncia administrativa</h2>
+        <h2 className="text-sm font-semibold text-slate-800">Conferencia administrativa</h2>
       </div>
 
       <label className="block space-y-1.5">
-        <span className="text-xs font-semibold text-slate-500 uppercase">Observaùùo</span>
+        <span className="text-xs font-semibold text-slate-500 uppercase">Observacao</span>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={4}
-          placeholder="Anotaùùes internas sobre este paciente..."
+          placeholder="Anotacoes internas sobre este paciente..."
           className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none resize-y"
         />
       </label>
@@ -70,7 +70,7 @@ export default function PatientAdminReviewPanel({
         />
         <span className="text-sm text-slate-700 flex items-center gap-1.5">
           <CheckCircle2 size={16} className={reviewed ? "text-emerald-500" : "text-slate-300"} />
-          Jù conferido
+          Ja conferido
         </span>
       </label>
 

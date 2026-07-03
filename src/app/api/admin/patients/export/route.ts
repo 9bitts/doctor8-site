@@ -1,4 +1,4 @@
-// ADMIN ONLY — export completed consultations as CSV by date range.
+// ADMIN ONLY - export completed consultations as CSV by date range.
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   if (!consultFrom || !consultTo) {
     return NextResponse.json(
-      { error: "consultFrom e consultTo são obrigatórios" },
+      { error: "consultFrom e consultTo sao obrigatorios" },
       { status: 400 },
     );
   }
@@ -26,11 +26,11 @@ export async function GET(req: NextRequest) {
   const fromDate = new Date(consultFrom);
   const toDate = new Date(consultTo);
   if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
-    return NextResponse.json({ error: "Datas inválidas" }, { status: 400 });
+    return NextResponse.json({ error: "Datas invalidas" }, { status: 400 });
   }
   if (fromDate > toDate) {
     return NextResponse.json(
-      { error: "Data inicial deve ser anterior à data final" },
+      { error: "Data inicial deve ser anterior a data final" },
       { status: 400 },
     );
   }

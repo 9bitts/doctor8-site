@@ -21,7 +21,7 @@ export default function PatientConsultationsExportBar() {
 
   async function downloadCsv() {
     if (!consultFrom || !consultTo) {
-      setError("Informe as datas do período");
+      setError("Informe as datas do periodo");
       return;
     }
     setDownloading(true);
@@ -67,7 +67,7 @@ export default function PatientConsultationsExportBar() {
           />
         </label>
         <label className="block">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Até</span>
+          <span className="text-xs font-semibold text-slate-500 uppercase">Ate</span>
           <input
             type="date"
             value={consultTo}

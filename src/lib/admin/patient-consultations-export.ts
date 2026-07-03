@@ -119,7 +119,7 @@ export async function loadConsultationsForExport(
       e.patientUser.phone?.replace(/\D/g, "") ||
       "";
 
-    let professionalName = "Não identificado";
+    let professionalName = "Nao identificado";
     if (e.volunteer?.professional) {
       professionalName = `Dr. ${e.volunteer.professional.firstName} ${e.volunteer.professional.lastName}`;
     } else if (e.volunteer?.psychoanalyst) {
@@ -147,14 +147,14 @@ export async function loadConsultationsForExport(
     const phone =
       safeDecrypt(a.patient.phone) || a.patient.user.phone?.replace(/\D/g, "") || "";
 
-    let professionalName = "Não identificado";
+    let professionalName = "Nao identificado";
     let specialty = "";
     if (a.professional) {
       professionalName = `Dr. ${a.professional.firstName} ${a.professional.lastName}`;
       specialty = a.professional.specialty;
     } else if (a.psychoanalyst) {
       professionalName = `${a.psychoanalyst.firstName} ${a.psychoanalyst.lastName}`;
-      specialty = "Psicanálise";
+      specialty = "Psicanalise";
     } else if (a.integrativeTherapist) {
       professionalName = `${a.integrativeTherapist.firstName} ${a.integrativeTherapist.lastName}`;
       specialty = "Terapia integrativa";
