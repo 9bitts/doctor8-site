@@ -38,7 +38,7 @@ export function filterDaysForScheduledVolunteerBooking(days: DaySlots[]): DaySlo
   return days
     .map((day) => ({
       ...day,
-      slots: day.slots.filter((s) => s.isVolunteer && s.available),
+      slots: day.slots.filter((s) => (s.isVolunteer || s.volunteerOnly) && s.available),
     }))
     .filter((day) => day.slots.length > 0);
 }

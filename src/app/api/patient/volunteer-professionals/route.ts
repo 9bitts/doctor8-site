@@ -39,13 +39,18 @@ export async function GET(req: NextRequest) {
       acceptsTeleconsult: true,
       acceptsInPerson: true,
       timezone: true,
+      availabilitySlots: {
+        where: { isActive: true, volunteerOnly: true },
+        select: { id: true },
+        take: 1,
+      },
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
 
   const withBlocks = professionals.filter((pro) => {
     const blocks = parseAvailabilityJson(pro.availability).volunteerBlocks ?? [];
-    return blocks.length > 0;
+    return blocks.length > 0 || pro.availabilitySlots.length > 0;
   });
 
   const enriched: VolunteerProfessionalListItem[] = await Promise.all(

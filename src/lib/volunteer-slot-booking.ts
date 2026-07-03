@@ -110,10 +110,10 @@ export async function assertScheduledVolunteerSlotBooking(
   if (!slot.available) {
     throw new VolunteerSlotBookingError("slot_unavailable");
   }
-  if (!slot.isVolunteer || slot.volunteerOnly) {
+  if (!slot.isVolunteer && !slot.volunteerOnly) {
     throw new VolunteerSlotBookingError("not_scheduled_volunteer_slot");
   }
-  if (slot.priceCents !== 0) {
+  if ((slot.priceCents ?? 0) !== 0) {
     throw new VolunteerSlotBookingError("not_free_volunteer_slot");
   }
 }

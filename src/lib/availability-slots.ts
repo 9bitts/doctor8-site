@@ -106,7 +106,10 @@ export async function getProviderAvailableDays(
 
   const weeklyBlocks =
     slotMode === "volunteer"
-      ? volunteerBlocksToSlotBlocks(volunteerBlocks)
+      ? buildScheduledVolunteerWeeklyBlocks(
+          volunteerBlocks,
+          professional?.availabilitySlots ?? [],
+        )
       : (professional?.availabilitySlots ?? []).map((s) => ({
           dayOfWeek: s.dayOfWeek,
           startTime: s.startTime,
@@ -151,7 +154,17 @@ export async function getProviderAvailableDays(
   );
 }
 
-function volunteerBlocksToSlotBlocks(volunteerBlocks: VolunteerWeeklyBlock[]) {
+type WeeklySlotBlock = {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  slotDurationMins: number;
+  slotGapMins: number;
+  volunteerOnly: boolean;
+  isVolunteer: boolean;
+};
+
+function volunteerBlocksToSlotBlocks(volunteerBlocks: VolunteerWeeklyBlock[]): WeeklySlotBlock[] {
   return volunteerBlocks.map((b) => ({
     dayOfWeek: b.dayOfWeek,
     startTime: b.startTime,
@@ -161,6 +174,33 @@ function volunteerBlocksToSlotBlocks(volunteerBlocks: VolunteerWeeklyBlock[]) {
     volunteerOnly: false,
     isVolunteer: true,
   }));
+}
+
+/** JSON volunteerBlocks plus weekly slots flagged volunteerOnly in AvailabilitySlot. */
+function buildScheduledVolunteerWeeklyBlocks(
+  volunteerBlocks: VolunteerWeeklyBlock[],
+  availabilitySlots: {
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    slotDurationMins: number;
+    slotGapMins: number;
+    volunteerOnly: boolean;
+  }[],
+): WeeklySlotBlock[] {
+  const fromJson = volunteerBlocksToSlotBlocks(volunteerBlocks);
+  const fromFlagged = availabilitySlots
+    .filter((s) => s.volunteerOnly)
+    .map((s) => ({
+      dayOfWeek: s.dayOfWeek,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      slotDurationMins: s.slotDurationMins,
+      slotGapMins: s.slotGapMins,
+      volunteerOnly: false,
+      isVolunteer: true,
+    }));
+  return [...fromJson, ...fromFlagged];
 }
 
 async function filterByHealthPlan(
