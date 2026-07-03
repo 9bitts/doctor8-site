@@ -11,6 +11,11 @@ import {
   needsBrazilTaxId,
   type ConsultationPaymentMethod,
 } from "@/lib/stripe-payment-methods";
+import {
+  normalizeCurrency,
+  resolveProviderCurrency,
+  toStripeCurrency,
+} from "@/lib/billing-regions";
 import { z } from "zod";
 
 const schema = z.object({
@@ -30,6 +35,27 @@ const schema = z.object({
     .enum(["patient_panel", "public_profile", "public_search", "public_embed", "referral"])
     .optional(),
 });
+
+const RETURN_NOT_ELIGIBLE_MESSAGE =
+  "Retorno disponível apenas para pacientes com consulta concluída com este profissional nos últimos 30 dias.";
+
+async function getProviderUserRegion(
+  providerId: string,
+  providerType: ProviderType,
+): Promise<string | null> {
+  if (providerType === "psychoanalyst") {
+    const row = await db.psychoanalystProfile.findUnique({
+      where: { id: providerId },
+      select: { user: { select: { region: true } } },
+    });
+    return row?.user?.region ?? null;
+  }
+  const row = await db.professionalProfile.findUnique({
+    where: { id: providerId },
+    select: { user: { select: { region: true } } },
+  });
+  return row?.user?.region ?? null;
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -84,8 +110,12 @@ export async function POST(req: NextRequest) {
   });
   if (!patient || !user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
+  const providerRegion = await getProviderUserRegion(providerId, providerType as ProviderType);
+  const providerCurrency = resolveProviderCurrency(provider.currency, providerRegion);
+
   let amount = provider.consultPrice;
-  let currency = (provider.currency || "BRL").toLowerCase();
+  let chargeCurrency = providerCurrency;
+
   if (parsed.data.serviceId) {
     const svc = await db.providerService.findFirst({
       where: {
@@ -95,10 +125,50 @@ export async function POST(req: NextRequest) {
           ? { psychoanalystId: providerId }
           : { professionalId: providerId }),
       },
+      select: { priceCents: true, currency: true, isReturnService: true },
     });
+
+    if (svc?.isReturnService) {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const providerFilter =
+        providerType === "psychoanalyst"
+          ? { psychoanalystId: providerId }
+          : (providerType as string) === "integrative"
+            ? { integrativeTherapistId: providerId }
+            : { professionalId: providerId };
+      const priorCompleted = await db.appointment.findFirst({
+        where: {
+          patient: { userId: session.user.id },
+          status: "COMPLETED",
+          scheduledAt: { gte: thirtyDaysAgo },
+          ...providerFilter,
+        },
+        select: { id: true },
+      });
+      if (!priorCompleted) {
+        return NextResponse.json(
+          { error: "RETURN_NOT_ELIGIBLE", message: RETURN_NOT_ELIGIBLE_MESSAGE },
+          { status: 403 },
+        );
+      }
+    }
+
     if (svc?.priceCents != null) amount = svc.priceCents;
-    if (svc?.currency) currency = svc.currency.toLowerCase();
+    if (svc?.currency) chargeCurrency = normalizeCurrency(svc.currency);
   }
+
+  if (chargeCurrency !== providerCurrency) {
+    return NextResponse.json(
+      {
+        error: "CURRENCY_MISMATCH",
+        providerCurrency,
+        requested: chargeCurrency,
+      },
+      { status: 409 },
+    );
+  }
+
+  const currency = toStripeCurrency(chargeCurrency);
 
   if (currency !== "brl") {
     return NextResponse.json(

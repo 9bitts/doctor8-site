@@ -70,3 +70,34 @@ export const CLUB_BILLING_REGION_OPTIONS: {
 export function patientRegionMismatchMessage(): string {
   return "Para pagar na moeda escolhida, altere a região da sua conta em Conta e salve. A moeda deve ser a mesma da região do cadastro.";
 }
+
+/** ISO 4217 uppercase for comparisons and persistence. */
+export function normalizeCurrency(code: string): string {
+  return code.trim().toUpperCase();
+}
+
+/** Default charge currency from the provider's billing region. */
+export function defaultCurrencyForBillingRegion(region: string | null | undefined): string {
+  switch (parseBillingRegion(region ?? undefined)) {
+    case "BR":
+      return "BRL";
+    case "EU":
+      return "EUR";
+    default:
+      return "USD";
+  }
+}
+
+/** Provider profile currency, or region default when unset. */
+export function resolveProviderCurrency(
+  profileCurrency: string | null | undefined,
+  providerRegion: string | null | undefined,
+): string {
+  if (profileCurrency?.trim()) return normalizeCurrency(profileCurrency);
+  return defaultCurrencyForBillingRegion(providerRegion);
+}
+
+/** Stripe API expects lowercase ISO 4217. */
+export function toStripeCurrency(code: string): string {
+  return normalizeCurrency(code).toLowerCase();
+}

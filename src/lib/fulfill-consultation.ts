@@ -51,6 +51,55 @@ export class AppointmentSlotTakenError extends Error {
   }
 }
 
+async function resolveExpectedConsultationPriceCents(
+  providerType: BookingProviderType,
+  providerId: string,
+  serviceId?: string,
+): Promise<number> {
+  let consultPrice: number;
+  if (providerType === "psychoanalyst") {
+    const p = await db.psychoanalystProfile.findUnique({
+      where: { id: providerId },
+      select: { consultPrice: true },
+    });
+    if (!p) throw new Error("Provider not found");
+    consultPrice = p.consultPrice;
+  } else if (providerType === "integrative") {
+    const p = await db.integrativeTherapistProfile.findUnique({
+      where: { id: providerId },
+      select: { consultPrice: true },
+    });
+    if (!p) throw new Error("Provider not found");
+    consultPrice = p.consultPrice;
+  } else {
+    const p = await db.professionalProfile.findUnique({
+      where: { id: providerId },
+      select: { consultPrice: true },
+    });
+    if (!p) throw new Error("Provider not found");
+    consultPrice = p.consultPrice;
+  }
+
+  const trimmedServiceId = serviceId?.trim();
+  if (trimmedServiceId) {
+    const svc = await db.providerService.findFirst({
+      where: {
+        id: trimmedServiceId,
+        isActive: true,
+        ...(providerType === "psychoanalyst"
+          ? { psychoanalystId: providerId }
+          : providerType === "integrative"
+            ? { integrativeTherapistId: providerId }
+            : { professionalId: providerId }),
+      },
+      select: { priceCents: true },
+    });
+    if (svc?.priceCents != null) return svc.priceCents;
+  }
+
+  return consultPrice;
+}
+
 export async function fulfillScheduledVolunteerConsultation(params: {
   userId: string;
   providerId: string;
@@ -232,6 +281,20 @@ export async function fulfillConsultationPayment(params: {
       : providerType === "integrative"
         ? { integrativeTherapistId: providerId }
         : { professionalId: providerId };
+
+  if (!isVolunteerBooking && stripePaymentId) {
+    const expectedAmount = await resolveExpectedConsultationPriceCents(
+      providerType,
+      providerId,
+      serviceId,
+    );
+    if (amount !== expectedAmount) {
+      console.error(
+        `[FULFILL-PRICE-MISMATCH] pi=${stripePaymentId} expected=${expectedAmount} received=${amount}`,
+      );
+      throw new Error("Payment amount mismatch");
+    }
+  }
 
   let appointment: Awaited<ReturnType<typeof db.appointment.create>>;
   let created: boolean;

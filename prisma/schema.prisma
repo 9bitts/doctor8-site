@@ -1266,6 +1266,7 @@ model ProviderService {
   description     String?
   priceCents      Int?
   currency        String   @default("BRL")
+  isReturnService Boolean  @default(false)
   isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)
 

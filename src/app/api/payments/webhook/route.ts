@@ -43,7 +43,8 @@ function isPermanentFulfillmentError(e: unknown): boolean {
   return (
     msg === "Missing consultation payment metadata" ||
     msg === "Patient not found" ||
-    msg === "Provider not found"
+    msg === "Provider not found" ||
+    msg === "Payment amount mismatch"
   );
 }
 
