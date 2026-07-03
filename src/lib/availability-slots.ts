@@ -20,17 +20,27 @@ import {
   isSlotBlockedByDate,
   parseAvailabilityJson,
   type DateAvailabilityBlock,
+  type VolunteerWeeklyBlock,
 } from "@/lib/availability-exceptions";
 
 export type { DaySlots, BookableSlot } from "@/lib/appointment-slots";
+
+export type ProviderSlotMode = "paid" | "volunteer";
+
+export type ProviderSlotOptions = {
+  /** paid (default): table AvailabilitySlot only. volunteer: JSON volunteerBlocks only. */
+  slotMode?: ProviderSlotMode;
+};
 
 export async function getProviderAvailableDays(
   providerId: string,
   providerType: ProviderType,
   locale: string,
   daysAhead = 14,
-  healthPlanSlug?: string | null
+  healthPlanSlug?: string | null,
+  options: ProviderSlotOptions = {},
 ): Promise<DaySlots[]> {
+  const slotMode = options.slotMode ?? "paid";
   const now = new Date();
   const twoWeeksLater = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
 
@@ -46,6 +56,7 @@ export async function getProviderAvailableDays(
       },
     });
     if (!psychoanalyst || psychoanalyst.availabilitySlots.length === 0) return [];
+    if (slotMode === "volunteer") return [];
 
     const timeZone =
       (psychoanalyst.user as { timezone?: string } | null)?.timezone || DEFAULT_TIME_ZONE;
@@ -87,13 +98,29 @@ export async function getProviderAvailableDays(
       },
     },
   });
-  if (!professional || professional.availabilitySlots.length === 0) return [];
+  const parsedAvailability = parseAvailabilityJson(
+    (professional as { availability?: unknown } | null)?.availability,
+  );
+  const dateBlocks = parsedAvailability.dateBlocks ?? [];
+  const volunteerBlocks = parsedAvailability.volunteerBlocks ?? [];
+
+  const weeklyBlocks =
+    slotMode === "volunteer"
+      ? volunteerBlocksToSlotBlocks(volunteerBlocks)
+      : (professional?.availabilitySlots ?? []).map((s) => ({
+          dayOfWeek: s.dayOfWeek,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          slotDurationMins: s.slotDurationMins,
+          slotGapMins: s.slotGapMins,
+          volunteerOnly: s.volunteerOnly,
+          isVolunteer: false,
+        }));
+
+  if (!professional || weeklyBlocks.length === 0) return [];
 
   const timeZone =
     (professional as { timezone?: string }).timezone || DEFAULT_TIME_ZONE;
-  const dateBlocks = parseAvailabilityJson(
-    (professional as { availability?: unknown }).availability,
-  ).dateBlocks ?? [];
 
   const bookedAppointments = await db.appointment.findMany({
     where: {
@@ -109,7 +136,7 @@ export async function getProviderAvailableDays(
 
   return filterByHealthPlan(
     buildDaysFromBlocks(
-      professional.availabilitySlots,
+      weeklyBlocks,
       bookedTimes,
       now,
       daysAhead,
@@ -122,6 +149,18 @@ export async function getProviderAvailableDays(
     healthPlanSlug,
     now
   );
+}
+
+function volunteerBlocksToSlotBlocks(volunteerBlocks: VolunteerWeeklyBlock[]) {
+  return volunteerBlocks.map((b) => ({
+    dayOfWeek: b.dayOfWeek,
+    startTime: b.startTime,
+    endTime: b.endTime,
+    slotDurationMins: b.slotDuration ?? 30,
+    slotGapMins: b.slotGap ?? 0,
+    volunteerOnly: false,
+    isVolunteer: true,
+  }));
 }
 
 async function filterByHealthPlan(
@@ -144,6 +183,7 @@ function buildDaysFromBlocks(
     slotDurationMins: number;
     slotGapMins?: number;
     volunteerOnly?: boolean;
+    isVolunteer?: boolean;
   }[],
   bookedTimes: Set<string>,
   now: Date,

@@ -13,6 +13,7 @@ import ProfessionalAppointmentsView, {
   type ProfessionalAppointmentRow,
 } from "@/components/professional/ProfessionalAppointmentsView";
 import { DEFAULT_TIME_ZONE } from "@/lib/timezone";
+import { parseAvailabilityJson } from "@/lib/availability-exceptions";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -41,6 +42,8 @@ export default async function ProfessionalAppointments() {
   if (!professional) redirect("/onboarding");
 
   const providerTz = professional.timezone || DEFAULT_TIME_ZONE;
+  const volunteerBlocks =
+    parseAvailabilityJson(professional.availability).volunteerBlocks ?? [];
 
   const portalBase = await resolveProfessionalPortalBaseForUser(session.user.id);
   const isPsychologistPortal = portalBase === "/psychologist";
@@ -140,6 +143,7 @@ export default async function ProfessionalAppointments() {
         timeZone={providerTz}
         portalBase={portalBase}
         isPsychologistPortal={isPsychologistPortal}
+        volunteerBlocks={volunteerBlocks}
       />
     </div>
   );

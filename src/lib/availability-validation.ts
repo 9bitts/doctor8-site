@@ -1,4 +1,5 @@
 import { timeToMins } from "@/lib/scheduling";
+import type { VolunteerWeeklyBlock } from "@/lib/availability-exceptions";
 
 export type AvailabilityBlockInput = {
   dayOfWeek: number;
@@ -31,6 +32,38 @@ export function validateAvailabilityBlocks(blocks: AvailabilityBlockInput[]): st
       if (a.dayOfWeek !== b.dayOfWeek) continue;
       if (rangesOverlap(a.startTime, a.endTime, b.startTime, b.endTime)) {
         return "avail.overlapError";
+      }
+    }
+  }
+
+  return null;
+}
+
+/** Returns an i18n key when paid weekly blocks overlap scheduled volunteer blocks. */
+export function validatePaidVolunteerOverlap(
+  paidBlocks: AvailabilityBlockInput[],
+  volunteerBlocks: Pick<VolunteerWeeklyBlock, "dayOfWeek" | "startTime" | "endTime">[],
+): string | null {
+  for (const block of volunteerBlocks) {
+    if (timeToMins(block.endTime) <= timeToMins(block.startTime)) {
+      return "avail.invalidRange";
+    }
+  }
+
+  const volunteerOverlap = validateAvailabilityBlocks(
+    volunteerBlocks.map((b) => ({
+      dayOfWeek: b.dayOfWeek,
+      startTime: b.startTime,
+      endTime: b.endTime,
+    })),
+  );
+  if (volunteerOverlap) return volunteerOverlap;
+
+  for (const paid of paidBlocks) {
+    for (const vol of volunteerBlocks) {
+      if (paid.dayOfWeek !== vol.dayOfWeek) continue;
+      if (rangesOverlap(paid.startTime, paid.endTime, vol.startTime, vol.endTime)) {
+        return "avail.voluntaryOverlapPaid";
       }
     }
   }

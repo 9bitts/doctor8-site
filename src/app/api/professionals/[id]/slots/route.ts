@@ -17,13 +17,15 @@ export async function GET(
   const locale = localeOf(lang);
   const providerType = (req.nextUrl.searchParams.get("providerType") || "health") as ProviderType;
   const healthPlan = req.nextUrl.searchParams.get("healthPlan") || undefined;
+  const volunteerMode = req.nextUrl.searchParams.get("volunteer") === "1";
 
   const days = await getProviderAvailableDays(
     params.id,
     providerType,
     locale,
     14,
-    healthPlan
+    healthPlan,
+    { slotMode: volunteerMode ? "volunteer" : "paid" },
   );
 
   return NextResponse.json({ days });

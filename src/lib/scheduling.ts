@@ -70,6 +70,7 @@ interface AvailabilityBlock {
   slotDurationMins: number;
   slotGapMins?: number;
   volunteerOnly?: boolean;
+  isVolunteer?: boolean;
 }
 
 export function generateTimeSlots(
@@ -79,8 +80,22 @@ export function generateTimeSlots(
   bookedTimes: Set<string>,
   now: Date,
   isSlotBlocked?: (dateStr: string, slotStartTime: string) => boolean,
-): { time: string; datetime: string; available: boolean; volunteerOnly: boolean }[] {
-  const slots: { time: string; datetime: string; available: boolean; volunteerOnly: boolean }[] = [];
+): {
+  time: string;
+  datetime: string;
+  available: boolean;
+  volunteerOnly: boolean;
+  isVolunteer: boolean;
+  priceCents?: number;
+}[] {
+  const slots: {
+    time: string;
+    datetime: string;
+    available: boolean;
+    volunteerOnly: boolean;
+    isVolunteer: boolean;
+    priceCents?: number;
+  }[] = [];
 
   for (const block of blocks) {
     const gap = block.slotGapMins ?? 0;
@@ -90,6 +105,7 @@ export function generateTimeSlots(
       block.slotDurationMins,
       gap
     );
+    const isVolunteer = !!block.isVolunteer;
 
     for (const slot of generated) {
       const slotDate = zonedTimeToUtc(dateStr, slot.startTime, timeZone);
@@ -103,6 +119,8 @@ export function generateTimeSlots(
         datetime: slotDate.toISOString(),
         available: !isPast && !isBooked && !isBlocked,
         volunteerOnly: !!block.volunteerOnly,
+        isVolunteer,
+        ...(isVolunteer ? { priceCents: 0 } : {}),
       });
     }
   }

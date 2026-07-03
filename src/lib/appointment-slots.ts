@@ -2,7 +2,12 @@ export type BookableSlot = {
   time: string;
   datetime: string;
   available: boolean;
+  /** AcuraBrasil table flag — still used by the existing acura volunteer filter. */
   volunteerOnly?: boolean;
+  /** P8a scheduled voluntary care (JSON volunteerBlocks) — isolated from paid flow. */
+  isVolunteer?: boolean;
+  /** Server-side price hint for P8b free-booking validation (0 when isVolunteer). */
+  priceCents?: number;
 };
 
 export type DaySlots = {
@@ -18,12 +23,24 @@ export function filterDaysForPatientBooking(
   return days
     .map((day) => ({
       ...day,
-      slots: day.slots.map((slot) => ({
-        ...slot,
-        available: slot.available && (!options.volunteersOnly || !!slot.volunteerOnly),
-      })),
+      slots: day.slots
+        .filter((slot) => !slot.isVolunteer)
+        .map((slot) => ({
+          ...slot,
+          available: slot.available && (!options.volunteersOnly || !!slot.volunteerOnly),
+        })),
     }))
     .filter((day) => day.slots.some((s) => s.available));
+}
+
+/** P8b — only scheduled voluntary slots (?volunteer=1). */
+export function filterDaysForScheduledVolunteerBooking(days: DaySlots[]): DaySlots[] {
+  return days
+    .map((day) => ({
+      ...day,
+      slots: day.slots.filter((s) => s.isVolunteer && s.available),
+    }))
+    .filter((day) => day.slots.length > 0);
 }
 
 export function dayHasVolunteerSlots(days: DaySlots[]): boolean {

@@ -7,6 +7,7 @@ import {
   dayOfWeekForDateStr,
   DEFAULT_TIME_ZONE,
 } from "@/lib/timezone";
+import { parseAvailabilityJson } from "@/lib/availability-exceptions";
 
 type AvailabilityBlock = {
   dayOfWeek: number;
@@ -15,11 +16,14 @@ type AvailabilityBlock = {
   slotDurationMins: number;
   slotGapMins?: number;
   volunteerOnly: boolean;
+  isVolunteer?: boolean;
 };
 
 export type ResolvedBookableSlot = {
   available: boolean;
   volunteerOnly: boolean;
+  isVolunteer: boolean;
+  priceCents?: number;
 };
 
 export async function resolveSlotAtDateTime(
@@ -46,7 +50,12 @@ export async function resolveSlotAtDateTime(
   const match = slots.find((s) => s.datetime === target);
   if (!match) return null;
 
-  return { available: match.available, volunteerOnly: match.volunteerOnly };
+  return {
+    available: match.available,
+    volunteerOnly: match.volunteerOnly,
+    isVolunteer: match.isVolunteer,
+    priceCents: match.priceCents,
+  };
 }
 
 export async function assertVolunteerSlotBooking(
@@ -80,6 +89,9 @@ export async function assertPaidSlotBooking(
   scheduledAtIso: string,
 ): Promise<void> {
   const slot = await resolveSlotAtDateTime(providerId, providerType, scheduledAtIso);
+  if (slot?.isVolunteer && slot.available) {
+    throw new VolunteerSlotBookingError("scheduled_volunteer_slot_requires_free_booking");
+  }
   if (slot?.volunteerOnly && slot.available) {
     throw new VolunteerSlotBookingError("volunteer_slot_requires_free_booking");
   }
@@ -141,20 +153,38 @@ async function loadAvailabilityBlocks(
       slotDurationMins: r.slotDurationMins,
       slotGapMins: r.slotGapMins,
       volunteerOnly: r.volunteerOnly,
+      isVolunteer: false,
     }));
   }
+
+  const profile = await db.professionalProfile.findUnique({
+    where: { id: providerId },
+    select: { availability: true },
+  });
+  const volunteerBlocks = parseAvailabilityJson(profile?.availability).volunteerBlocks ?? [];
 
   const rows = await db.availabilitySlot.findMany({
     where: { professionalId: providerId, isActive: true },
   });
-  return rows.map((r) => ({
+  const paid = rows.map((r) => ({
     dayOfWeek: r.dayOfWeek,
     startTime: r.startTime,
     endTime: r.endTime,
     slotDurationMins: r.slotDurationMins,
     slotGapMins: r.slotGapMins,
     volunteerOnly: r.volunteerOnly,
+    isVolunteer: false,
   }));
+  const volunteer = volunteerBlocks.map((b) => ({
+    dayOfWeek: b.dayOfWeek,
+    startTime: b.startTime,
+    endTime: b.endTime,
+    slotDurationMins: b.slotDuration ?? 30,
+    slotGapMins: b.slotGap ?? 0,
+    volunteerOnly: false,
+    isVolunteer: true,
+  }));
+  return [...paid, ...volunteer];
 }
 
 async function loadBookedTimes(

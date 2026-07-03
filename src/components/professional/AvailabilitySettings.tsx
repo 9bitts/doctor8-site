@@ -4,9 +4,9 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, formatSlotCount } from "@/lib/i18n/translations";
 import { countSlotsInRange, generateSlotsInRange } from "@/lib/scheduling";
-import { validateAvailabilityBlocks } from "@/lib/availability-validation";
+import { validateAvailabilityBlocks, validatePaidVolunteerOverlap } from "@/lib/availability-validation";
 import { DEFAULT_TIME_ZONE, listTimeZoneOptions } from "@/lib/timezone";
-import type { DateAvailabilityBlock } from "@/lib/availability-exceptions";
+import type { DateAvailabilityBlock, VolunteerWeeklyBlock } from "@/lib/availability-exceptions";
 import { Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
@@ -52,6 +52,17 @@ function newBlock(volunteerOnly = false): TimeBlock {
     slotDuration: 30,
     slotGap: 0,
     volunteerOnly,
+  };
+}
+
+function newVolunteerBlock(dayOfWeek = 1): VolunteerWeeklyBlock {
+  return {
+    id: crypto.randomUUID(),
+    dayOfWeek,
+    startTime: "09:00",
+    endTime: "12:00",
+    slotDuration: 30,
+    slotGap: 0,
   };
 }
 
@@ -109,6 +120,7 @@ export default function AvailabilitySettings({
   const [badgeVisible, setBadgeVisible] = useState(false);
   const [timezone, setTimezone] = useState(DEFAULT_TIME_ZONE);
   const [dateBlocks, setDateBlocks] = useState<DateAvailabilityBlock[]>([]);
+  const [volunteerBlocks, setVolunteerBlocks] = useState<VolunteerWeeklyBlock[]>([]);
   const [blockStartDate, setBlockStartDate] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
   const [blockStartTime, setBlockStartTime] = useState("");
@@ -126,6 +138,7 @@ export default function AvailabilitySettings({
         setBadgeVisible(!!d.badgeVisible);
         if (d.timezone) setTimezone(d.timezone);
         if (Array.isArray(d.dateBlocks)) setDateBlocks(d.dateBlocks);
+        if (Array.isArray(d.volunteerBlocks)) setVolunteerBlocks(d.volunteerBlocks);
         if (d.slots?.length) {
           setSchedules(
             defaultSchedules().map((def) => {
@@ -228,10 +241,16 @@ export default function AvailabilitySettings({
         return;
       }
 
+      const paidVolunteerOverlap = validatePaidVolunteerOverlap(slots, volunteerBlocks);
+      if (paidVolunteerOverlap) {
+        setSaveError(t(paidVolunteerOverlap));
+        return;
+      }
+
       const res = await fetch(apiPath, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots, timezone, dateBlocks }),
+        body: JSON.stringify({ slots, timezone, dateBlocks, volunteerBlocks }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -247,7 +266,7 @@ export default function AvailabilitySettings({
     } finally {
       setSaving(false);
     }
-  }, [schedules, timezone, dateBlocks, apiPath, t, onSaved, toast]);
+  }, [schedules, timezone, dateBlocks, volunteerBlocks, apiPath, t, onSaved, toast]);
 
   useEffect(() => {
     if (!autoSave || !readyRef.current) return;
@@ -258,7 +277,7 @@ export default function AvailabilitySettings({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [schedules, timezone, dateBlocks, autoSave, persist]);
+  }, [schedules, timezone, dateBlocks, volunteerBlocks, autoSave, persist]);
 
   function addDateBlock() {
     if (!blockStartDate) return;
@@ -291,9 +310,9 @@ export default function AvailabilitySettings({
 
   function formatBlockRange(block: DateAvailabilityBlock): string {
     const end = block.endDate && block.endDate !== block.startDate ? block.endDate : null;
-    const datePart = end ? `${block.startDate} – ${end}` : block.startDate;
+    const datePart = end ? `${block.startDate} - ${end}` : block.startDate;
     if (block.startTime && block.endTime) {
-      return `${datePart} · ${formatTimeLabel(block.startTime, locale)} – ${formatTimeLabel(block.endTime, locale)}`;
+      return `${datePart} / ${formatTimeLabel(block.startTime, locale)} - ${formatTimeLabel(block.endTime, locale)}`;
     }
     return datePart;
   }
@@ -487,6 +506,136 @@ export default function AvailabilitySettings({
           className="flex items-center gap-1.5 text-xs font-semibold text-brand-500 hover:text-brand-600 transition disabled:opacity-40"
         >
           <Plus size={14} /> {t("avail.addDateBlock")}
+        </button>
+      </div>
+
+      <div className={`${embedded ? "border border-green-200 rounded-xl p-4 bg-green-50/40" : "bg-green-50/50 rounded-2xl border border-green-200 shadow-sm p-5"} space-y-4`}>
+        <div>
+          <h2 className="text-sm font-semibold text-green-900">{t("avail.voluntaryHoursTitle")}</h2>
+          <p className="text-xs text-green-800/80 mt-1">{t("avail.voluntaryHoursHelp")}</p>
+        </div>
+
+        {volunteerBlocks.length > 0 && (
+          <ul className="space-y-3">
+            {volunteerBlocks.map((block) => {
+              const count = countSlotsInRange(
+                block.startTime,
+                block.endTime,
+                block.slotDuration ?? 30,
+                block.slotGap ?? 0,
+              );
+              return (
+                <li
+                  key={block.id}
+                  className="flex items-center gap-2 flex-wrap bg-white rounded-xl p-3 border border-green-200"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-green-700 bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
+                    {t("avail.voluntaryBadge")}
+                  </span>
+                  <select
+                    value={block.dayOfWeek}
+                    onChange={(e) =>
+                      setVolunteerBlocks((prev) =>
+                        prev.map((b) =>
+                          b.id === block.id ? { ...b, dayOfWeek: Number(e.target.value) } : b,
+                        ),
+                      )
+                    }
+                    className="border border-green-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                  >
+                    {Array.from({ length: 7 }, (_, i) => (
+                      <option key={i} value={i}>
+                        {t(`day.${i}`)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-green-800/70">{t("avail.from")}</label>
+                    <select
+                      value={block.startTime}
+                      onChange={(e) =>
+                        setVolunteerBlocks((prev) =>
+                          prev.map((b) =>
+                            b.id === block.id ? { ...b, startTime: e.target.value } : b,
+                          ),
+                        )
+                      }
+                      className="border border-green-200 rounded-lg px-2 py-1.5 text-sm bg-white"
+                    >
+                      {TIMES.map((tm) => (
+                        <option key={tm.value} value={tm.value}>
+                          {tm.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-green-800/70">{t("avail.to")}</label>
+                    <select
+                      value={block.endTime}
+                      onChange={(e) =>
+                        setVolunteerBlocks((prev) =>
+                          prev.map((b) =>
+                            b.id === block.id ? { ...b, endTime: e.target.value } : b,
+                          ),
+                        )
+                      }
+                      className="border border-green-200 rounded-lg px-2 py-1.5 text-sm bg-white"
+                    >
+                      {TIMES.map((tm) => (
+                        <option key={tm.value} value={tm.value}>
+                          {tm.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-green-800/70">{t("avail.consultDuration")}</label>
+                    <select
+                      value={block.slotDuration ?? 30}
+                      onChange={(e) =>
+                        setVolunteerBlocks((prev) =>
+                          prev.map((b) =>
+                            b.id === block.id
+                              ? { ...b, slotDuration: Number(e.target.value) }
+                              : b,
+                          ),
+                        )
+                      }
+                      className="border border-green-200 rounded-lg px-2 py-1.5 text-sm bg-white"
+                    >
+                      {DURATION_OPTIONS.map((mins) => (
+                        <option key={mins} value={mins}>
+                          {t(DURATION_LABEL_KEYS[mins])}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="text-xs text-green-800 font-medium ml-auto shrink-0">
+                    {count > 0 ? formatSlotCount(lang, count) : t("avail.invalidRange")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVolunteerBlocks((prev) => prev.filter((b) => b.id !== block.id))
+                    }
+                    className="p-1.5 text-green-700/50 hover:text-red-500 transition shrink-0"
+                    title={t("avail.removeBlock")}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setVolunteerBlocks((prev) => [...prev, newVolunteerBlock()])}
+          className="flex items-center gap-1.5 text-xs font-semibold text-green-800 hover:text-green-900 transition"
+        >
+          <Plus size={14} /> {t("avail.voluntaryHoursAdd")}
         </button>
       </div>
 

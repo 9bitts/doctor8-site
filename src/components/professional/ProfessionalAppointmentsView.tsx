@@ -29,6 +29,10 @@ import {
 } from "@/lib/timezone";
 import { chartActionUrl } from "@/lib/video-chart-nav";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
+import {
+  isAppointmentInVolunteerBlock,
+  type VolunteerWeeklyBlock,
+} from "@/lib/availability-exceptions";
 
 export type ProfessionalAppointmentRow = {
   id: string;
@@ -74,11 +78,13 @@ export default function ProfessionalAppointmentsView({
   timeZone,
   portalBase,
   isPsychologistPortal,
+  volunteerBlocks = [],
 }: {
   initialAppointments: ProfessionalAppointmentRow[];
   timeZone: string;
   portalBase: string;
   isPsychologistPortal: boolean;
+  volunteerBlocks?: VolunteerWeeklyBlock[];
 }) {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
@@ -103,6 +109,12 @@ export default function ProfessionalAppointmentsView({
         },
       ]),
     ),
+  );
+
+  const isVoluntaryAppointment = useCallback(
+    (apt: ProfessionalAppointmentRow) =>
+      isAppointmentInVolunteerBlock(new Date(apt.scheduledAt), timeZone, volunteerBlocks),
+    [timeZone, volunteerBlocks],
   );
 
   const statusColors: Record<string, string> = {
@@ -325,6 +337,11 @@ export default function ProfessionalAppointmentsView({
             {t("proappt.patientConfirmed")}
           </span>
         )}
+        {isVoluntaryAppointment(apt) && (
+          <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg bg-green-50 text-green-800 border border-green-200">
+            {t("proappt.voluntaryBadge")}
+          </span>
+        )}
         {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
           <a
             href={`/video/${apt.id}`}
@@ -361,11 +378,26 @@ export default function ProfessionalAppointmentsView({
         >
           {t(`status.${apt.status}`)}
         </span>
+        {isVoluntaryAppointment(apt) && (
+          <span className="inline-block mt-1 ml-1 text-[9px] font-medium px-1.5 py-0.5 rounded bg-green-50 text-green-800 border border-green-200">
+            {t("proappt.voluntaryBadge")}
+          </span>
+        )}
       </button>
     );
   }
 
-  const weekLabel = `${formatShortDateWithYear(zonedTimeToUtc(weekStartStr, "12:00", timeZone), timeZone, locale)} ù ${formatShortDateWithYear(zonedTimeToUtc(addCalendarDays(weekStartStr, 6), "12:00", timeZone), timeZone, locale)}`;
+  const weekStartLabel = formatShortDateWithYear(
+    zonedTimeToUtc(weekStartStr, "12:00", timeZone),
+    timeZone,
+    locale,
+  );
+  const weekEndLabel = formatShortDateWithYear(
+    zonedTimeToUtc(addCalendarDays(weekStartStr, 6), "12:00", timeZone),
+    timeZone,
+    locale,
+  );
+  const weekLabel = `${weekStartLabel} - ${weekEndLabel}`;
 
   const selectedApt = selectedId ? appointments.find((a) => a.id === selectedId) : null;
 
@@ -552,7 +584,7 @@ export default function ProfessionalAppointmentsView({
                         </div>
                         <div className="p-1.5 space-y-1.5">
                           {dayApts.length === 0 ? (
-                            <p className="text-[10px] text-slate-300 text-center py-4">ù</p>
+                            <p className="text-[10px] text-slate-300 text-center py-4">-</p>
                           ) : (
                             dayApts.map(renderWeekCard)
                           )}

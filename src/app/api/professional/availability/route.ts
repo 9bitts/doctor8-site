@@ -3,13 +3,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
-import { validateAvailabilityBlocks } from "@/lib/availability-validation";
+import { validateAvailabilityBlocks, validatePaidVolunteerOverlap } from "@/lib/availability-validation";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 import { isValidIanaTimeZone, DEFAULT_TIME_ZONE } from "@/lib/timezone";
 import {
   mergeAvailabilityJson,
+  mergeVolunteerBlocksJson,
   parseAvailabilityJson,
   type DateAvailabilityBlock,
+  type VolunteerWeeklyBlock,
 } from "@/lib/availability-exceptions";
 
 export async function GET() {
@@ -38,7 +40,9 @@ export async function GET() {
   }
 
   const proTz = (professional as { timezone?: string }).timezone ?? DEFAULT_TIME_ZONE;
-  const dateBlocks = parseAvailabilityJson(professional.availability).dateBlocks ?? [];
+  const parsed = parseAvailabilityJson(professional.availability);
+  const dateBlocks = parsed.dateBlocks ?? [];
+  const volunteerBlocks = parsed.volunteerBlocks ?? [];
 
   const slots = await db.availabilitySlot.findMany({
     where: { professionalId: professional.id, isActive: true },
@@ -50,6 +54,7 @@ export async function GET() {
     badgeVisible: isAcuraVolunteerProvider(professional.verified, professional.acuraVolunteer),
     timezone: proTz,
     dateBlocks,
+    volunteerBlocks,
     slots: slots.map((s) => ({
       dayOfWeek: s.dayOfWeek,
       startTime: s.startTime,
@@ -65,7 +70,7 @@ export async function PUT(req: NextRequest) {
   const ctx = await requireProfessionalApi();
   if (isApiError(ctx)) return ctx.error;
 
-  const { slots, timezone, dateBlocks } = await req.json();
+  const { slots, timezone, dateBlocks, volunteerBlocks } = await req.json();
 
   const professional = await db.professionalProfile.findUnique({
     where: { id: ctx.professional.id },
@@ -97,6 +102,44 @@ export async function PUT(req: NextRequest) {
     });
   }
 
+  if (volunteerBlocks !== undefined) {
+    if (!Array.isArray(volunteerBlocks)) {
+      return NextResponse.json({ error: "INVALID_VOLUNTEER_BLOCKS" }, { status: 400 });
+    }
+    const normalizedVolunteer = (volunteerBlocks as VolunteerWeeklyBlock[]).map((b) => ({
+      id: b.id,
+      dayOfWeek: b.dayOfWeek,
+      startTime: b.startTime,
+      endTime: b.endTime,
+      slotDuration: b.slotDuration ?? 30,
+      slotGap: b.slotGap ?? 0,
+    }));
+
+    const currentPaid = await db.availabilitySlot.findMany({
+      where: { professionalId: professional.id, isActive: true },
+      select: { dayOfWeek: true, startTime: true, endTime: true },
+    });
+    const incomingPaid =
+      Array.isArray(slots)
+        ? (slots as { dayOfWeek: number; startTime: string; endTime: string }[])
+        : currentPaid.map((s) => ({
+            dayOfWeek: s.dayOfWeek,
+            startTime: s.startTime,
+            endTime: s.endTime,
+          }));
+
+    const overlapKey = validatePaidVolunteerOverlap(incomingPaid, normalizedVolunteer);
+    if (overlapKey) {
+      return NextResponse.json({ error: overlapKey }, { status: 400 });
+    }
+
+    const mergedVolunteer = mergeVolunteerBlocksJson(professional.availability, normalizedVolunteer);
+    await db.professionalProfile.update({
+      where: { id: professional.id },
+      data: { availability: mergedVolunteer } as never,
+    });
+  }
+
   if (!Array.isArray(slots)) {
     return NextResponse.json({ ok: true });
   }
@@ -120,6 +163,20 @@ export async function PUT(req: NextRequest) {
   const validationError = validateAvailabilityBlocks(normalized);
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400 });
+  }
+
+  const parsedAvail = parseAvailabilityJson(professional.availability);
+  const volunteerForOverlap =
+    volunteerBlocks !== undefined
+      ? (volunteerBlocks as VolunteerWeeklyBlock[]).map((b) => ({
+          dayOfWeek: b.dayOfWeek,
+          startTime: b.startTime,
+          endTime: b.endTime,
+        }))
+      : (parsedAvail.volunteerBlocks ?? []);
+  const volunteerOverlap = validatePaidVolunteerOverlap(normalized, volunteerForOverlap);
+  if (volunteerOverlap) {
+    return NextResponse.json({ error: volunteerOverlap }, { status: 400 });
   }
 
   const hasVolunteerBlocks = normalized.some((s) => s.volunteerOnly);

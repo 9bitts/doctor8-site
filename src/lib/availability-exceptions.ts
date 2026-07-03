@@ -1,7 +1,8 @@
-// Date-specific availability blocks stored in ProfessionalProfile.availability JSON.
+// Date-specific blocks and scheduled volunteer hours stored in ProfessionalProfile.availability JSON.
+// Paid weekly grid lives in AvailabilitySlot (table); volunteerBlocks[] mirrors that shape here.
 
 import { timeToMins } from "@/lib/scheduling";
-import { addCalendarDays } from "@/lib/timezone";
+import { addCalendarDays, calendarDateInTimeZone, dayOfWeekForDateStr } from "@/lib/timezone";
 
 export type DateAvailabilityBlock = {
   id: string;
@@ -12,14 +13,37 @@ export type DateAvailabilityBlock = {
   label?: string;
 };
 
-export type AvailabilityJson = {
-  dateBlocks?: DateAvailabilityBlock[];
+/** Weekly voluntary-care block (P8a) - free scheduled consultations, isolated from paid flow. */
+export type VolunteerWeeklyBlock = {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  slotDuration?: number;
+  slotGap?: number;
 };
 
+export type AvailabilityJson = {
+  dateBlocks?: DateAvailabilityBlock[];
+  volunteerBlocks?: VolunteerWeeklyBlock[];
+};
+
+function normalizeVolunteerBlock(b: VolunteerWeeklyBlock): VolunteerWeeklyBlock {
+  return {
+    id: b.id,
+    dayOfWeek: b.dayOfWeek,
+    startTime: b.startTime,
+    endTime: b.endTime,
+    slotDuration: b.slotDuration ?? 30,
+    slotGap: b.slotGap ?? 0,
+  };
+}
+
 export function parseAvailabilityJson(raw: unknown): AvailabilityJson {
-  if (!raw || typeof raw !== "object") return { dateBlocks: [] };
+  if (!raw || typeof raw !== "object") return { dateBlocks: [], volunteerBlocks: [] };
   const obj = raw as Record<string, unknown>;
   const blocks = Array.isArray(obj.dateBlocks) ? obj.dateBlocks : [];
+  const volunteerRaw = Array.isArray(obj.volunteerBlocks) ? obj.volunteerBlocks : [];
   return {
     dateBlocks: blocks
       .filter((b): b is DateAvailabilityBlock => {
@@ -35,6 +59,18 @@ export function parseAvailabilityJson(raw: unknown): AvailabilityJson {
         endTime: b.endTime || undefined,
         label: b.label || undefined,
       })),
+    volunteerBlocks: volunteerRaw
+      .filter((b): b is VolunteerWeeklyBlock => {
+        if (!b || typeof b !== "object") return false;
+        const block = b as VolunteerWeeklyBlock;
+        return (
+          typeof block.id === "string" &&
+          typeof block.dayOfWeek === "number" &&
+          typeof block.startTime === "string" &&
+          typeof block.endTime === "string"
+        );
+      })
+      .map(normalizeVolunteerBlock),
   };
 }
 
@@ -44,6 +80,17 @@ export function mergeAvailabilityJson(
 ): AvailabilityJson {
   const parsed = parseAvailabilityJson(existing);
   return { ...parsed, dateBlocks };
+}
+
+export function mergeVolunteerBlocksJson(
+  existing: unknown,
+  volunteerBlocks: VolunteerWeeklyBlock[],
+): AvailabilityJson {
+  const parsed = parseAvailabilityJson(existing);
+  return {
+    ...parsed,
+    volunteerBlocks: volunteerBlocks.map(normalizeVolunteerBlock),
+  };
 }
 
 function dateInRange(dateStr: string, startDate: string, endDate: string): boolean {
@@ -93,4 +140,32 @@ export function enumerateDatesInBlock(block: DateAvailabilityBlock): string[] {
     current = addCalendarDays(current, 1);
   }
   return dates;
+}
+
+/** True when an appointment start falls inside a scheduled volunteer weekly block. */
+export function isAppointmentInVolunteerBlock(
+  scheduledAt: Date,
+  timeZone: string,
+  volunteerBlocks: VolunteerWeeklyBlock[],
+): boolean {
+  if (volunteerBlocks.length === 0) return false;
+  const dateStr = calendarDateInTimeZone(scheduledAt, timeZone);
+  const dayOfWeek = dayOfWeekForDateStr(dateStr, timeZone);
+  const localParts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(scheduledAt);
+  const hour = Number(localParts.find((p) => p.type === "hour")?.value ?? 0);
+  const minute = Number(localParts.find((p) => p.type === "minute")?.value ?? 0);
+  const localMins = hour * 60 + minute;
+
+  for (const block of volunteerBlocks) {
+    if (block.dayOfWeek !== dayOfWeek) continue;
+    const start = timeToMins(block.startTime);
+    const end = timeToMins(block.endTime);
+    if (localMins >= start && localMins < end) return true;
+  }
+  return false;
 }
