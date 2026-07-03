@@ -77,7 +77,8 @@ export function generateTimeSlots(
   timeZone: string,
   blocks: AvailabilityBlock[],
   bookedTimes: Set<string>,
-  now: Date
+  now: Date,
+  isSlotBlocked?: (dateStr: string, slotStartTime: string) => boolean,
 ): { time: string; datetime: string; available: boolean; volunteerOnly: boolean }[] {
   const slots: { time: string; datetime: string; available: boolean; volunteerOnly: boolean }[] = [];
 
@@ -95,11 +96,12 @@ export function generateTimeSlots(
 
       const isPast = slotDate.getTime() < now.getTime() + 60 * 60 * 1000;
       const isBooked = bookedTimes.has(slotDate.toISOString());
+      const isBlocked = isSlotBlocked?.(dateStr, slot.startTime) ?? false;
 
       slots.push({
         time: slot.startTime,
         datetime: slotDate.toISOString(),
-        available: !isPast && !isBooked,
+        available: !isPast && !isBooked && !isBlocked,
         volunteerOnly: !!block.volunteerOnly,
       });
     }

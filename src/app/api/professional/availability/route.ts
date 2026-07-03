@@ -6,6 +6,11 @@ import { db } from "@/lib/db";
 import { validateAvailabilityBlocks } from "@/lib/availability-validation";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 import { isValidIanaTimeZone, DEFAULT_TIME_ZONE } from "@/lib/timezone";
+import {
+  mergeAvailabilityJson,
+  parseAvailabilityJson,
+  type DateAvailabilityBlock,
+} from "@/lib/availability-exceptions";
 
 export async function GET() {
   const ctx = await requireProfessionalApi();
@@ -18,6 +23,7 @@ export async function GET() {
       acuraVolunteer: true,
       verified: true,
       timezone: true,
+      availability: true,
     } as never,
   });
   const professional = raw as {
@@ -25,12 +31,14 @@ export async function GET() {
     acuraVolunteer: boolean;
     verified: boolean;
     timezone: string;
+    availability?: unknown;
   } | null;
   if (!professional) {
     return NextResponse.json({ slots: [], acuraVolunteer: false, badgeVisible: false, timezone: DEFAULT_TIME_ZONE });
   }
 
   const proTz = (professional as { timezone?: string }).timezone ?? DEFAULT_TIME_ZONE;
+  const dateBlocks = parseAvailabilityJson(professional.availability).dateBlocks ?? [];
 
   const slots = await db.availabilitySlot.findMany({
     where: { professionalId: professional.id, isActive: true },
@@ -41,6 +49,7 @@ export async function GET() {
     acuraVolunteer: professional.acuraVolunteer,
     badgeVisible: isAcuraVolunteerProvider(professional.verified, professional.acuraVolunteer),
     timezone: proTz,
+    dateBlocks,
     slots: slots.map((s) => ({
       dayOfWeek: s.dayOfWeek,
       startTime: s.startTime,
@@ -56,11 +65,11 @@ export async function PUT(req: NextRequest) {
   const ctx = await requireProfessionalApi();
   if (isApiError(ctx)) return ctx.error;
 
-  const { slots, timezone } = await req.json();
+  const { slots, timezone, dateBlocks } = await req.json();
 
   const professional = await db.professionalProfile.findUnique({
     where: { id: ctx.professional.id },
-    select: { id: true, acuraVolunteer: true, verified: true },
+    select: { id: true, acuraVolunteer: true, verified: true, availability: true },
   });
   if (!professional) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -72,6 +81,24 @@ export async function PUT(req: NextRequest) {
       where: { id: professional.id },
       data: { timezone } as never,
     });
+  }
+
+  if (dateBlocks !== undefined) {
+    if (!Array.isArray(dateBlocks)) {
+      return NextResponse.json({ error: "INVALID_DATE_BLOCKS" }, { status: 400 });
+    }
+    const merged = mergeAvailabilityJson(
+      professional.availability,
+      dateBlocks as DateAvailabilityBlock[],
+    );
+    await db.professionalProfile.update({
+      where: { id: professional.id },
+      data: { availability: merged } as never,
+    });
+  }
+
+  if (!Array.isArray(slots)) {
+    return NextResponse.json({ ok: true });
   }
 
   const normalized = (slots as {

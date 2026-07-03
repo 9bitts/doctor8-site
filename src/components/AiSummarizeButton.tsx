@@ -11,6 +11,7 @@ interface AiSummarizeButtonProps {
   resourceId?: string;
   className?: string;
   variant?: "default" | "compact";
+  labelKey?: string;
 }
 
 export default function AiSummarizeButton({
@@ -18,6 +19,7 @@ export default function AiSummarizeButton({
   resourceId,
   className = "",
   variant = "default",
+  labelKey = "rec.analyzeAI",
 }: AiSummarizeButtonProps) {
   const t = useT();
   const { lang } = useI18n();
@@ -70,7 +72,7 @@ export default function AiSummarizeButton({
         className={`${btnClass} ${className}`}
       >
         {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-        {loading ? t("rec.analyzing") : t("rec.analyzeAI")}
+        {loading ? t("rec.analyzing") : t(labelKey)}
       </button>
 
       {open && (

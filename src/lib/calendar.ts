@@ -12,6 +12,42 @@ function escapeIcs(text: string): string {
     .replace(/\n/g, "\\n");
 }
 
+export function buildCalendarIcs(events: {
+  appointmentId: string;
+  summary: string;
+  description?: string;
+  location?: string;
+  url?: string;
+  start: Date;
+  end: Date;
+}[]): string {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Doctor8//Appointments//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+  ];
+
+  for (const evt of events) {
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:appointment-${evt.appointmentId}@doctor8.app`,
+      `DTSTAMP:${formatIcsUtc(new Date())}`,
+      `DTSTART:${formatIcsUtc(evt.start)}`,
+      `DTEND:${formatIcsUtc(evt.end)}`,
+      `SUMMARY:${escapeIcs(evt.summary)}`,
+    );
+    if (evt.description) lines.push(`DESCRIPTION:${escapeIcs(evt.description)}`);
+    if (evt.location) lines.push(`LOCATION:${escapeIcs(evt.location)}`);
+    if (evt.url) lines.push(`URL:${evt.url}`);
+    lines.push("END:VEVENT");
+  }
+
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n");
+}
+
 export function buildAppointmentIcs(opts: {
   appointmentId: string;
   summary: string;

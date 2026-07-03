@@ -15,6 +15,12 @@ import {
   DEFAULT_TIME_ZONE,
   zonedTimeToUtc,
 } from "@/lib/timezone";
+import {
+  isFullDayBlocked,
+  isSlotBlockedByDate,
+  parseAvailabilityJson,
+  type DateAvailabilityBlock,
+} from "@/lib/availability-exceptions";
 
 export type { DaySlots, BookableSlot } from "@/lib/appointment-slots";
 
@@ -85,6 +91,9 @@ export async function getProviderAvailableDays(
 
   const timeZone =
     (professional as { timezone?: string }).timezone || DEFAULT_TIME_ZONE;
+  const dateBlocks = parseAvailabilityJson(
+    (professional as { availability?: unknown }).availability,
+  ).dateBlocks ?? [];
 
   const bookedAppointments = await db.appointment.findMany({
     where: {
@@ -105,7 +114,8 @@ export async function getProviderAvailableDays(
       now,
       daysAhead,
       locale,
-      timeZone
+      timeZone,
+      dateBlocks,
     ),
     providerId,
     providerType,
@@ -139,18 +149,28 @@ function buildDaysFromBlocks(
   now: Date,
   daysAhead: number,
   locale: string,
-  timeZone: string
+  timeZone: string,
+  dateBlocks: DateAvailabilityBlock[] = [],
 ): DaySlots[] {
   const days: DaySlots[] = [];
   const todayStr = calendarDateInTimeZone(now, timeZone);
 
   for (let i = 0; i < daysAhead; i++) {
     const dateStr = addCalendarDays(todayStr, i);
+    if (isFullDayBlocked(dateStr, dateBlocks)) continue;
+
     const dayOfWeek = dayOfWeekForDateStr(dateStr, timeZone);
     const blocksForDay = blocks.filter((slot) => slot.dayOfWeek === dayOfWeek);
     if (blocksForDay.length === 0) continue;
 
-    const slots = generateTimeSlots(dateStr, timeZone, blocksForDay, bookedTimes, now);
+    const slots = generateTimeSlots(
+      dateStr,
+      timeZone,
+      blocksForDay,
+      bookedTimes,
+      now,
+      (d, slotTime) => isSlotBlockedByDate(d, slotTime, dateBlocks),
+    );
     if (slots.some((s) => s.available)) {
       const labelDate = zonedTimeToUtc(dateStr, "12:00", timeZone);
       days.push({

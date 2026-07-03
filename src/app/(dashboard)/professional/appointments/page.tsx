@@ -4,19 +4,15 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
-import { translate, normalizeLang, localeOf, Lang } from "@/lib/i18n/translations";
-import { Calendar, Video, MapPin, FileText, ClipboardList, Pill, FlaskConical, ScrollText } from "lucide-react";
-import Link from "next/link";
-import { chartActionUrl } from "@/lib/video-chart-nav";
+import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import { decrypt } from "@/lib/encryption";
 import { resolveProfessionalPortalBaseForUser } from "@/lib/psychologist-portal";
 import AppointmentsAnchorClient from "@/components/professional/AppointmentsAnchorClient";
-import {
-  DEFAULT_TIME_ZONE,
-  formatShortDateWithYear,
-  formatAppointmentTimeWithLabel,
-} from "@/lib/timezone";
+import ProfessionalAppointmentsView, {
+  type ProfessionalAppointmentRow,
+} from "@/components/professional/ProfessionalAppointmentsView";
+import { DEFAULT_TIME_ZONE } from "@/lib/timezone";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -38,7 +34,6 @@ export default async function ProfessionalAppointments() {
   });
   const lang: Lang = normalizeLang(userRow?.language);
   const t = (key: string) => translate(lang, key);
-  const locale = localeOf(lang);
 
   const professional = await db.professionalProfile.findUnique({
     where: { userId: session.user.id },
@@ -50,13 +45,19 @@ export default async function ProfessionalAppointments() {
   const portalBase = await resolveProfessionalPortalBaseForUser(session.user.id);
   const isPsychologistPortal = portalBase === "/psychologist";
 
+  const now = new Date();
+  const rangeStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+  const rangeEnd = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
   const appointments = await db.appointment.findMany({
-    where: { professionalId: professional.id },
+    where: {
+      professionalId: professional.id,
+      scheduledAt: { gte: rangeStart, lte: rangeEnd },
+    },
     include: {
       patient: { select: { firstName: true, lastName: true } },
     },
     orderBy: { scheduledAt: "desc" },
-    take: 100,
   });
 
   const patientProfiles = await db.patientProfile.findMany({
@@ -64,7 +65,7 @@ export default async function ProfessionalAppointments() {
     select: { id: true, userId: true },
   });
   const userIdByPatientProfileId = Object.fromEntries(
-    patientProfiles.map((p) => [p.id, p.userId])
+    patientProfiles.map((p) => [p.id, p.userId]),
   );
 
   const linkedUserIds = [
@@ -82,153 +83,49 @@ export default async function ProfessionalAppointments() {
     : [];
 
   const chartIdByUserId = Object.fromEntries(
-    charts.map((c) => [c.linkedUserId!, c.id])
+    charts.map((c) => [c.linkedUserId!, c.id]),
   );
+
+  const chartIds = charts.map((c) => c.id);
+  const summarizeDocs = chartIds.length
+    ? await db.medicalDocument.findMany({
+        where: { patientRecordId: { in: chartIds } },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, patientRecordId: true },
+      })
+    : [];
+  const summarizeDocumentIdByChartId: Record<string, string> = {};
+  for (const doc of summarizeDocs) {
+    if (doc.patientRecordId && !summarizeDocumentIdByChartId[doc.patientRecordId]) {
+      summarizeDocumentIdByChartId[doc.patientRecordId] = doc.id;
+    }
+  }
 
   await audit.viewRecord(session.user.id, "Appointment", "list");
 
-  const statusColors: Record<string, string> = {
-    CONFIRMED: "bg-brand-100 text-brand-600",
-    PENDING: "bg-amber-100 text-amber-700",
-    COMPLETED: "bg-brand-100 text-brand-600",
-    CANCELLED: "bg-rose-100 text-rose-700",
-  };
-
-  const now = Date.now();
-  const upcoming = appointments.filter(
-    (a) =>
-      a.status === "CONFIRMED" &&
-      new Date(a.scheduledAt).getTime() >= now - 60 * 60 * 1000
-  );
-  const rest = appointments.filter((a) => !upcoming.includes(a));
-
-  function renderRow(apt: (typeof appointments)[0], highlightIntake = false) {
-    const firstName = safeDecrypt(apt.patient.firstName);
-    const lastName = safeDecrypt(apt.patient.lastName);
+  const rows: ProfessionalAppointmentRow[] = appointments.map((apt) => {
     const intake = parseAppointmentIntake(apt.chiefComplaint);
     const patientUserId = userIdByPatientProfileId[apt.patientId];
-    const chartId = patientUserId ? chartIdByUserId[patientUserId] : null;
+    const chartId = patientUserId ? chartIdByUserId[patientUserId] ?? null : null;
 
-    return (
-      <div
-        key={apt.id}
-        id={`appt-${apt.id}`}
-        className={`flex items-start gap-4 px-5 py-4 hover:bg-slate-50 transition scroll-mt-24 ${
-          highlightIntake && intake?.visitReason ? "bg-amber-50/40" : ""
-        } ${!apt.notes && apt.status === "COMPLETED" ? "ring-1 ring-inset ring-violet-100" : ""}`}
-      >
-        <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
-          {firstName[0]}
-          {lastName[0]}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-800 text-sm truncate">
-            {firstName} {lastName}
-          </p>
-          <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-            {apt.type === "TELECONSULT" ? (
-              <>
-                <Video size={12} /> {t("proappt.teleconsult")}
-              </>
-            ) : (
-              <>
-                <MapPin size={12} /> {t("proappt.inPerson")}
-              </>
-            )}
-          </p>
-          {intake?.healthPlanLabel && (
-            <p className="text-[11px] text-brand-600 mt-1">{intake.healthPlanLabel}</p>
-          )}
-          {intake?.serviceName && (
-            <p className="text-[11px] text-slate-600 mt-1">{intake.serviceName}</p>
-          )}
-          {intake?.visitReason && (
-            <div
-              className={`mt-2 rounded-lg p-2 ${
-                highlightIntake ? "bg-white border border-amber-200" : ""
-              }`}
-            >
-              <p className="text-[10px] font-semibold text-slate-500 uppercase flex items-center gap-1">
-                <ClipboardList size={10} /> {t("proappt.intakeLabel")}
-              </p>
-              <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-3">
-                {intake.visitReason}
-              </p>
-            </div>
-          )}
-          {chartId && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Link
-                href={`${portalBase}/patients/${chartId}`}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
-              >
-                <FileText size={11} /> {t("proappt.viewChart")}
-              </Link>
-              {!isPsychologistPortal && (
-                <>
-                  <Link
-                    href={chartActionUrl("/professional/prescriptions", chartId, {
-                      view: "prescription",
-                      returnUrl: `${portalBase}/appointments`,
-                    })}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
-                  >
-                    <Pill size={11} /> {t("chartAct.prescribe")}
-                  </Link>
-                  <Link
-                    href={chartActionUrl("/professional/prescriptions", chartId, {
-                      view: "exam",
-                      returnUrl: `${portalBase}/appointments`,
-                    })}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
-                  >
-                    <FlaskConical size={11} /> {t("chartAct.exam")}
-                  </Link>
-                  <Link
-                    href={chartActionUrl("/professional/prescriptions", chartId, {
-                      view: "document",
-                      returnUrl: `${portalBase}/appointments`,
-                    })}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
-                  >
-                    <ScrollText size={11} /> {t("chartAct.document")}
-                  </Link>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="text-right shrink-0">
-          <p className="text-xs font-semibold text-slate-700">
-            {formatShortDateWithYear(new Date(apt.scheduledAt), providerTz, locale)}
-          </p>
-          <p className="text-xs text-slate-500">
-            {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), providerTz, locale)}
-          </p>
-        </div>
-        <span
-          className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg ${
-            statusColors[apt.status] || "bg-slate-100 text-slate-600"
-          }`}
-        >
-          {t(`status.${apt.status}`)}
-        </span>
-        {apt.patientConfirmedAt && (
-          <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
-            {t("proappt.patientConfirmed")}
-          </span>
-        )}
-        {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
-          <a
-            href={`/video/${apt.id}`}
-            className="shrink-0 bg-brand-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-brand-400 transition"
-          >
-            <Video size={12} /> {t("proappt.join")}
-          </a>
-        )}
-      </div>
-    );
-  }
+    return {
+      id: apt.id,
+      scheduledAt: apt.scheduledAt.toISOString(),
+      durationMins: apt.durationMins,
+      type: apt.type,
+      status: apt.status,
+      chiefComplaint: apt.chiefComplaint,
+      notes: apt.notes,
+      patientConfirmedAt: apt.patientConfirmedAt?.toISOString() ?? null,
+      patientFirstName: safeDecrypt(apt.patient.firstName),
+      patientLastName: safeDecrypt(apt.patient.lastName),
+      chartId,
+      summarizeDocumentId: chartId ? summarizeDocumentIdByChartId[chartId] ?? null : null,
+      intakeHealthPlanLabel: intake?.healthPlanLabel ?? null,
+      intakeServiceName: intake?.serviceName ?? null,
+      intakeVisitReason: intake?.visitReason ?? null,
+    };
+  });
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -238,27 +135,12 @@ export default async function ProfessionalAppointments() {
         <p className="text-slate-500 mt-1">{t("proappt.subtitle")}</p>
       </div>
 
-      {upcoming.length > 0 && (
-        <div className="bg-white rounded-2xl border border-amber-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-amber-100 bg-amber-50/60">
-            <p className="text-sm font-semibold text-amber-900">{t("proappt.upcoming")}</p>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {upcoming.map((apt) => renderRow(apt, true))}
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        {rest.length === 0 && upcoming.length === 0 ? (
-          <div className="text-center py-16">
-            <Calendar className="mx-auto text-slate-300 mb-3" size={40} />
-            <p className="text-slate-400 text-sm">{t("proappt.empty")}</p>
-          </div>
-        ) : rest.length > 0 ? (
-          <div className="divide-y divide-slate-100">{rest.map((apt) => renderRow(apt))}</div>
-        ) : null}
-      </div>
+      <ProfessionalAppointmentsView
+        initialAppointments={rows}
+        timeZone={providerTz}
+        portalBase={portalBase}
+        isPsychologistPortal={isPsychologistPortal}
+      />
     </div>
   );
 }

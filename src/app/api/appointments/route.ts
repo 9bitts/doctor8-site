@@ -20,6 +20,16 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const upcoming = searchParams.get("upcoming") === "true";
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+
+  const dateRange =
+    fromParam || toParam
+      ? {
+          ...(fromParam ? { gte: new Date(fromParam) } : {}),
+          ...(toParam ? { lte: new Date(toParam) } : {}),
+        }
+      : undefined;
 
   let appointments;
 
@@ -32,6 +42,7 @@ export async function GET(req: NextRequest) {
         patientId: patient.id,
         ...(status ? { status: status as any } : {}),
         ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
+        ...(dateRange ? { scheduledAt: dateRange } : {}),
       },
       include: {
         professional: {
@@ -53,6 +64,7 @@ export async function GET(req: NextRequest) {
         professionalId: professional.id,
         ...(status ? { status: status as any } : {}),
         ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
+        ...(dateRange ? { scheduledAt: dateRange } : {}),
       },
       include: {
         patient: { select: { firstName: true, lastName: true, avatarUrl: true } },
@@ -69,6 +81,7 @@ export async function GET(req: NextRequest) {
         psychoanalystId: psychoanalyst.id,
         ...(status ? { status: status as any } : {}),
         ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
+        ...(dateRange ? { scheduledAt: dateRange } : {}),
       },
       include: {
         patient: { select: { firstName: true, lastName: true, avatarUrl: true } },
@@ -94,7 +107,15 @@ export async function GET(req: NextRequest) {
         psychoanalystId: a.psychoanalystId,
       };
     }
-    return { ...a, providerType: "health", professionalId: a.professionalId };
+    const row = { ...a, providerType: "health", professionalId: a.professionalId };
+    if (row.patient) {
+      row.patient = {
+        ...row.patient,
+        firstName: safeDecrypt(row.patient.firstName),
+        lastName: safeDecrypt(row.patient.lastName),
+      };
+    }
+    return row;
   });
 
   await audit.viewRecord(session.user.id, "Appointment", "list");

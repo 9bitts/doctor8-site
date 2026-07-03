@@ -6,6 +6,7 @@ import { localeOf, formatSlotCount } from "@/lib/i18n/translations";
 import { countSlotsInRange, generateSlotsInRange } from "@/lib/scheduling";
 import { validateAvailabilityBlocks } from "@/lib/availability-validation";
 import { DEFAULT_TIME_ZONE, listTimeZoneOptions } from "@/lib/timezone";
+import type { DateAvailabilityBlock } from "@/lib/availability-exceptions";
 import { Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
@@ -107,6 +108,12 @@ export default function AvailabilitySettings({
   const [saveError, setSaveError] = useState("");
   const [badgeVisible, setBadgeVisible] = useState(false);
   const [timezone, setTimezone] = useState(DEFAULT_TIME_ZONE);
+  const [dateBlocks, setDateBlocks] = useState<DateAvailabilityBlock[]>([]);
+  const [blockStartDate, setBlockStartDate] = useState("");
+  const [blockEndDate, setBlockEndDate] = useState("");
+  const [blockStartTime, setBlockStartTime] = useState("");
+  const [blockEndTime, setBlockEndTime] = useState("");
+  const [blockLabel, setBlockLabel] = useState("");
   const timeZoneOptions = useMemo(() => listTimeZoneOptions(), []);
   const readyRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -118,6 +125,7 @@ export default function AvailabilitySettings({
         const d = await res.json();
         setBadgeVisible(!!d.badgeVisible);
         if (d.timezone) setTimezone(d.timezone);
+        if (Array.isArray(d.dateBlocks)) setDateBlocks(d.dateBlocks);
         if (d.slots?.length) {
           setSchedules(
             defaultSchedules().map((def) => {
@@ -223,7 +231,7 @@ export default function AvailabilitySettings({
       const res = await fetch(apiPath, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots, timezone }),
+        body: JSON.stringify({ slots, timezone, dateBlocks }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -239,7 +247,7 @@ export default function AvailabilitySettings({
     } finally {
       setSaving(false);
     }
-  }, [schedules, timezone, apiPath, t, onSaved, toast]);
+  }, [schedules, timezone, dateBlocks, apiPath, t, onSaved, toast]);
 
   useEffect(() => {
     if (!autoSave || !readyRef.current) return;
@@ -250,7 +258,45 @@ export default function AvailabilitySettings({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [schedules, timezone, autoSave, persist]);
+  }, [schedules, timezone, dateBlocks, autoSave, persist]);
+
+  function addDateBlock() {
+    if (!blockStartDate) return;
+    const end = blockEndDate || blockStartDate;
+    if (end < blockStartDate) return;
+    if (blockStartTime && blockEndTime && blockEndTime <= blockStartTime) return;
+    if ((blockStartTime && !blockEndTime) || (!blockStartTime && blockEndTime)) return;
+
+    setDateBlocks((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        startDate: blockStartDate,
+        endDate: end !== blockStartDate ? end : undefined,
+        startTime: blockStartTime || undefined,
+        endTime: blockEndTime || undefined,
+        label: blockLabel.trim() || undefined,
+      },
+    ]);
+    setBlockStartDate("");
+    setBlockEndDate("");
+    setBlockStartTime("");
+    setBlockEndTime("");
+    setBlockLabel("");
+  }
+
+  function removeDateBlock(id: string) {
+    setDateBlocks((prev) => prev.filter((b) => b.id !== id));
+  }
+
+  function formatBlockRange(block: DateAvailabilityBlock): string {
+    const end = block.endDate && block.endDate !== block.startDate ? block.endDate : null;
+    const datePart = end ? `${block.startDate} – ${end}` : block.startDate;
+    if (block.startTime && block.endTime) {
+      return `${datePart} · ${formatTimeLabel(block.startTime, locale)} – ${formatTimeLabel(block.endTime, locale)}`;
+    }
+    return datePart;
+  }
 
   const totalWeeklySlots = schedules
     .filter((s) => s.enabled)
@@ -339,6 +385,109 @@ export default function AvailabilitySettings({
             </select>
           </div>
         )}
+      </div>
+
+      <div className={`${embedded ? "border border-slate-200 rounded-xl p-4" : "bg-white rounded-2xl border border-slate-200 shadow-sm p-5"} space-y-4`}>
+        <div>
+          <h2 className="text-sm font-semibold text-slate-800">{t("avail.blocksTitle")}</h2>
+          <p className="text-xs text-slate-500 mt-1">{t("avail.blocksHelp")}</p>
+        </div>
+
+        {dateBlocks.length > 0 && (
+          <ul className="space-y-2">
+            {dateBlocks.map((block) => (
+              <li
+                key={block.id}
+                className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">
+                    {block.label || t("avail.blockDefaultLabel")}
+                  </p>
+                  <p className="text-xs text-slate-500">{formatBlockRange(block)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeDateBlock(block.id)}
+                  className="p-1.5 text-slate-400 hover:text-red-500 transition shrink-0"
+                  title={t("avail.removeBlock")}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">{t("avail.blockStartDate")}</label>
+            <input
+              type="date"
+              value={blockStartDate}
+              onChange={(e) => setBlockStartDate(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">{t("avail.blockEndDate")}</label>
+            <input
+              type="date"
+              value={blockEndDate}
+              onChange={(e) => setBlockEndDate(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">{t("avail.blockStartTime")}</label>
+            <select
+              value={blockStartTime}
+              onChange={(e) => setBlockStartTime(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white"
+            >
+              <option value="">{t("avail.blockFullDay")}</option>
+              {TIMES.map((tm) => (
+                <option key={tm.value} value={tm.value}>
+                  {tm.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">{t("avail.blockEndTime")}</label>
+            <select
+              value={blockEndTime}
+              onChange={(e) => setBlockEndTime(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white"
+            >
+              <option value="">{t("avail.blockFullDay")}</option>
+              {TIMES.map((tm) => (
+                <option key={tm.value} value={tm.value}>
+                  {tm.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs text-slate-500 mb-1">{t("avail.blockLabel")}</label>
+            <input
+              type="text"
+              value={blockLabel}
+              onChange={(e) => setBlockLabel(e.target.value)}
+              placeholder={t("avail.blockLabelPlaceholder")}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white"
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={addDateBlock}
+          disabled={!blockStartDate}
+          className="flex items-center gap-1.5 text-xs font-semibold text-brand-500 hover:text-brand-600 transition disabled:opacity-40"
+        >
+          <Plus size={14} /> {t("avail.addDateBlock")}
+        </button>
       </div>
 
       <div className={`${embedded ? "border border-slate-200 rounded-xl" : "bg-white rounded-2xl border border-slate-200 shadow-sm"} overflow-hidden divide-y divide-slate-100`}>
