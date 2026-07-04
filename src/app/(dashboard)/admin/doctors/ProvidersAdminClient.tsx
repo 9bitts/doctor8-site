@@ -10,7 +10,6 @@ import {
   Search,
   Globe,
   ExternalLink,
-  FileText,
   Brain,
   Apple,
   Activity,
@@ -33,6 +32,7 @@ import {
   type AdminProviderTab,
 } from "@/lib/admin-provider-categories";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
+import AdminViewLicenseDocsButton from "@/components/admin/AdminViewLicenseDocsButton";
 
 interface ProfessionalRow {
   id: string;
@@ -267,7 +267,6 @@ export default function ProvidersAdminClient() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [queryErrors, setQueryErrors] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [docsBusyId, setDocsBusyId] = useState<string | null>(null);
   const [actingAngel, setActingAngel] = useState<string | null>(null);
   const [verifyingEmailUserId, setVerifyingEmailUserId] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -479,24 +478,6 @@ export default function ProvidersAdminClient() {
       /* ignore */
     }
     setBusyId(null);
-  }
-
-  async function viewLicenseDocs(userId: string) {
-    setDocsBusyId(userId);
-    try {
-      const res = await fetch(`/api/admin/providers/${userId}/license-documents`);
-      const data = await res.json();
-      if (!res.ok || !data.documents?.length) {
-        alert(data.documents?.length === 0 ? t("admin.providers.docsEmpty") : t("admin.providers.docsLoadFail"));
-        return;
-      }
-      for (const doc of data.documents) {
-        if (doc.viewUrl) window.open(doc.viewUrl, "_blank", "noopener,noreferrer");
-      }
-    } catch {
-      alert(t("admin.providers.docsLoadFail"));
-    }
-    setDocsBusyId(null);
   }
 
   async function verifyUserEmail(userId: string) {
@@ -725,10 +706,8 @@ export default function ProvidersAdminClient() {
         <AngelList
           rows={filteredAngels}
           actingAngel={actingAngel}
-          docsBusyId={docsBusyId}
           verifyingEmailUserId={verifyingEmailUserId}
           onAct={actAngel}
-          onViewDocs={viewLicenseDocs}
           onVerifyEmail={verifyUserEmail}
         />
       ) : (
@@ -737,10 +716,8 @@ export default function ProvidersAdminClient() {
             <AngelList
               rows={filteredAngels}
               actingAngel={actingAngel}
-              docsBusyId={docsBusyId}
               verifyingEmailUserId={verifyingEmailUserId}
               onAct={actAngel}
-              onViewDocs={viewLicenseDocs}
               onVerifyEmail={verifyUserEmail}
             />
           )}
@@ -750,13 +727,11 @@ export default function ProvidersAdminClient() {
               lang={lang}
               showCategoryBadge={activeTab === "todos" || !!q.trim()}
               busyId={busyId}
-              docsBusyId={docsBusyId}
               verifyingEmailUserId={verifyingEmailUserId}
               onToggle={toggleProfessionalVerified}
               onVolunteerApproval={(row, approved) =>
                 toggleVolunteerScheduledApproval(row, approved, "health")
               }
-              onViewDocs={viewLicenseDocs}
               onVerifyEmail={verifyUserEmail}
             />
           )}
@@ -764,14 +739,12 @@ export default function ProvidersAdminClient() {
             <ProviderList
               rows={filteredPsychoanalysts}
               busyId={busyId}
-              docsBusyId={docsBusyId}
               verifyingEmailUserId={verifyingEmailUserId}
               kind="psychoanalyst"
               onToggle={toggleProviderVerified}
               onVolunteerApproval={(row, approved) =>
                 toggleVolunteerScheduledApproval(row, approved, "psychoanalyst")
               }
-              onViewDocs={viewLicenseDocs}
               onVerifyEmail={verifyUserEmail}
             />
           )}
@@ -779,14 +752,12 @@ export default function ProvidersAdminClient() {
             <ProviderList
               rows={filteredIntegrativeTherapists}
               busyId={busyId}
-              docsBusyId={docsBusyId}
               verifyingEmailUserId={verifyingEmailUserId}
               kind="integrative"
               onToggle={toggleProviderVerified}
               onVolunteerApproval={(row, approved) =>
                 toggleVolunteerScheduledApproval(row, approved, "integrative")
               }
-              onViewDocs={viewLicenseDocs}
               onVerifyEmail={verifyUserEmail}
             />
           )}
@@ -799,18 +770,14 @@ export default function ProvidersAdminClient() {
 function AngelList({
   rows,
   actingAngel,
-  docsBusyId,
   verifyingEmailUserId,
   onAct,
-  onViewDocs,
   onVerifyEmail,
 }: {
   rows: AngelRow[];
   actingAngel: string | null;
-  docsBusyId: string | null;
   verifyingEmailUserId: string | null;
   onAct: (userId: string, action: "approve" | "reject") => void;
-  onViewDocs: (userId: string) => void;
   onVerifyEmail: (userId: string) => void;
 }) {
   const { lang, t } = useI18n();
@@ -878,21 +845,7 @@ function AngelList({
             </div>
             <div className="flex flex-col gap-2 shrink-0">
               <AdminViewPhoneButton userId={a.userId} />
-              {a.licenseDocCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => onViewDocs(a.userId)}
-                  disabled={docsBusyId === a.userId}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
-                >
-                  {docsBusyId === a.userId ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <FileText size={14} />
-                  )}
-                  {t("admin.providers.viewDocs").replace("{{n}}", String(a.licenseDocCount))}
-                </button>
-              )}
+              <AdminViewLicenseDocsButton userId={a.userId} licenseDocCount={a.licenseDocCount} />
               {!a.licenseDocCount && (
                 <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg text-center">
                   {t("admin.providers.angelNoCertificate")}
@@ -966,10 +919,8 @@ function ActionButtons({
   rowId,
   licenseDocCount,
   busyId,
-  docsBusyId,
   verifyingEmailUserId,
   onToggle,
-  onViewDocs,
   onVerifyEmail,
 }: {
   userId: string;
@@ -978,10 +929,8 @@ function ActionButtons({
   rowId: string;
   licenseDocCount: number;
   busyId: string | null;
-  docsBusyId: string | null;
   verifyingEmailUserId?: string | null;
   onToggle: () => void;
-  onViewDocs: (userId: string) => void;
   onVerifyEmail?: (userId: string) => void;
 }) {
   const { t } = useI18n();
@@ -1004,21 +953,7 @@ function ActionButtons({
           {t("admin.providers.verifyEmail")}
         </button>
       )}
-      {licenseDocCount > 0 && (
-        <button
-          type="button"
-          onClick={() => onViewDocs(userId)}
-          disabled={docsBusyId === userId}
-          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
-        >
-          {docsBusyId === userId ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <FileText size={14} />
-          )}
-          {t("admin.providers.viewDocs").replace("{{n}}", String(licenseDocCount))}
-        </button>
-      )}
+      <AdminViewLicenseDocsButton userId={userId} licenseDocCount={licenseDocCount} />
       <button
         type="button"
         onClick={onToggle}
@@ -1047,22 +982,18 @@ function ProfessionalList({
   lang,
   showCategoryBadge,
   busyId,
-  docsBusyId,
   verifyingEmailUserId,
   onToggle,
   onVolunteerApproval,
-  onViewDocs,
   onVerifyEmail,
 }: {
   rows: ProfessionalRow[];
   lang: string;
   showCategoryBadge?: boolean;
   busyId: string | null;
-  docsBusyId: string | null;
   verifyingEmailUserId: string | null;
   onToggle: (row: ProfessionalRow) => void;
   onVolunteerApproval: (row: ProfessionalRow, approved: boolean) => void;
-  onViewDocs: (userId: string) => void;
   onVerifyEmail: (userId: string) => void;
 }) {
   const { t } = useI18n();
@@ -1160,10 +1091,8 @@ function ProfessionalList({
             rowId={d.id}
             licenseDocCount={d.licenseDocCount}
             busyId={busyId}
-            docsBusyId={docsBusyId}
             verifyingEmailUserId={verifyingEmailUserId}
             onToggle={() => onToggle(d)}
-            onViewDocs={onViewDocs}
             onVerifyEmail={onVerifyEmail}
           />
         </div>
@@ -1175,22 +1104,18 @@ function ProfessionalList({
 function ProviderList({
   rows,
   busyId,
-  docsBusyId,
   verifyingEmailUserId,
   kind,
   onToggle,
   onVolunteerApproval,
-  onViewDocs,
   onVerifyEmail,
 }: {
   rows: ProviderRow[];
   busyId: string | null;
-  docsBusyId: string | null;
   verifyingEmailUserId: string | null;
   kind: "psychoanalyst" | "integrative";
   onToggle: (row: ProviderRow, kind: "psychoanalyst" | "integrative") => void;
   onVolunteerApproval: (row: ProviderRow, approved: boolean) => void;
-  onViewDocs: (userId: string) => void;
   onVerifyEmail: (userId: string) => void;
 }) {
   const { t } = useI18n();
@@ -1273,10 +1198,8 @@ function ProviderList({
             rowId={p.id}
             licenseDocCount={p.licenseDocCount}
             busyId={busyId}
-            docsBusyId={docsBusyId}
             verifyingEmailUserId={verifyingEmailUserId}
             onToggle={() => onToggle(p, kind)}
-            onViewDocs={onViewDocs}
             onVerifyEmail={onVerifyEmail}
           />
         </div>

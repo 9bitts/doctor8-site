@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Heart, Loader2, CheckCircle2, XCircle, Mail, FileText, AlertTriangle, Pause, Play,
+  Heart, Loader2, CheckCircle2, XCircle, Mail, AlertTriangle, Pause, Play,
 } from "lucide-react";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
+import AdminViewLicenseDocsButton from "@/components/admin/AdminViewLicenseDocsButton";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 
@@ -91,7 +92,6 @@ export default function HumanitarianAngelsAdminPanel() {
   const [acting, setActing] = useState<string | null>(null);
   const [releasing, setReleasing] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
-  const [docsBusyId, setDocsBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -158,29 +158,6 @@ export default function HumanitarianAngelsAdminPanel() {
       await load();
     } catch { /* ignore */ }
     setResolvingId(null);
-  }
-
-  async function viewLicenseDocs(userId: string) {
-    setDocsBusyId(userId);
-    try {
-      const res = await fetch(`/api/admin/providers/${userId}/license-documents`);
-      const data = await res.json();
-      if (!res.ok) {
-        alert(t("admin.providers.docsLoadFail"));
-        return;
-      }
-      const docs = data.documents || [];
-      if (!docs.length) {
-        alert(t("admin.providers.docsEmpty"));
-        return;
-      }
-      for (const doc of docs) {
-        if (doc.viewUrl) window.open(doc.viewUrl, "_blank", "noopener,noreferrer");
-      }
-    } catch {
-      alert(t("admin.providers.docsLoadFail"));
-    }
-    setDocsBusyId(null);
   }
 
   const pending = angels.filter((a) => a.approvalStatus === "PENDING");
@@ -406,19 +383,7 @@ export default function HumanitarianAngelsAdminPanel() {
                   <div className="flex flex-col gap-2 shrink-0">
                     <AdminViewPhoneButton userId={a.userId} />
                     {a.licenseDocCount > 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => viewLicenseDocs(a.userId)}
-                        disabled={docsBusyId === a.userId}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
-                      >
-                        {docsBusyId === a.userId ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <FileText size={14} />
-                        )}
-                        {t("admin.providers.viewDocs").replace("{{n}}", String(a.licenseDocCount))}
-                      </button>
+                      <AdminViewLicenseDocsButton userId={a.userId} licenseDocCount={a.licenseDocCount} />
                     ) : (
                       <span className="text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg text-center">
                         {t("admin.providers.angelNoCertificate")}
