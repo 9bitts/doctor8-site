@@ -19,7 +19,7 @@ import { audit } from "@/lib/audit";
 import { createSignatureSession } from "@/lib/lacuna";
 import { parseLacunaError } from "@/lib/lacuna-errors";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
-import { getPublicBase, buildSignReturnUrl, assertPublicSignBase } from "@/lib/sign-helpers";
+import { getPublicBase, buildSignReturnUrl, assertPublicSignBase, resolveRequestLang } from "@/lib/sign-helpers";
 
 // Garante runtime Node (pdf-lib e Buffer não rodam em edge) e tempo extra.
 export const runtime = "nodejs";
@@ -28,11 +28,6 @@ export const maxDuration = 60;
 function safeDecrypt(v: string | null | undefined): string {
   if (v == null) return "";
   try { return decrypt(v); } catch { return v; }
-}
-
-function normLang(v: string | null | undefined): Lang {
-  if (v === "pt" || v === "es") return v;
-  return "en";
 }
 
 function computeAge(dob: Date | null): number | null {
@@ -132,7 +127,7 @@ export async function POST(req: NextRequest) {
     where: { id: session.user.id },
     select: { language: true },
   });
-  const lang = normLang(viewer?.language);
+  const lang = resolveRequestLang(req, viewer?.language) as Lang;
   const locale = LOCALE[lang];
 
   // ── Resolve dados do paciente (ficha tem prioridade) ──

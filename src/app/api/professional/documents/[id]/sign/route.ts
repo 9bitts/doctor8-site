@@ -8,7 +8,7 @@ import { createSignatureSession } from "@/lib/lacuna";
 import { buildClinicalDocumentPdf } from "@/lib/clinical-document-pdf";
 import {
   computeAge, getPublicBase, buildSignReturnUrl, assertPublicSignBase,
-  isExamType, joinAddress, LOCALE, normLang,
+  isExamType, joinAddress, LOCALE, resolveRequestLang,
   parseExamContent, resolvePatient, safeDecrypt,
 } from "@/lib/sign-helpers";
 
@@ -71,7 +71,7 @@ export async function POST(
       where: { id: session.user.id },
       select: { language: true },
     });
-    const lang = normLang(viewer?.language);
+    const lang = resolveRequestLang(req, viewer?.language);
     const locale = LOCALE[lang];
 
     const patient = resolvePatient(document.patientRecord, document.patient);

@@ -47,9 +47,25 @@ export function safeDecrypt(v: string | null | undefined): string {
   try { return decrypt(v); } catch { return String(v); }
 }
 
+export const LANG_COOKIE = "doctor8.lang";
+
 export function normLang(v: string | null | undefined): SignLang {
   if (v === "pt" || v === "es") return v;
   return "en";
+}
+
+/** Resolves PDF/sign language: ?lang= → cookie → user account. */
+export function resolveRequestLang(
+  req: NextRequest,
+  userLanguage?: string | null,
+): SignLang {
+  const fromQuery = req.nextUrl.searchParams.get("lang");
+  if (fromQuery === "pt" || fromQuery === "en" || fromQuery === "es") return fromQuery;
+
+  const cookieLang = req.cookies.get(LANG_COOKIE)?.value;
+  if (cookieLang === "pt" || cookieLang === "en" || cookieLang === "es") return cookieLang;
+
+  return normLang(userLanguage);
 }
 
 export const LOCALE: Record<SignLang, string> = { en: "en-US", pt: "pt-BR", es: "es-ES" };

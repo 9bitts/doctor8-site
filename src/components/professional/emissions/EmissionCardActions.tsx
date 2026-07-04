@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   Copy, PenLine, Download, Loader2, CheckCircle2, Clock, Share2, Printer,
 } from "lucide-react";
@@ -100,11 +101,12 @@ export function EmissionCardActions({
   onPdfError?: (message: string) => void;
   onDelivered?: () => void;
 }) {
+  const { lang } = useI18n();
   const signed = signatureStatus === "SIGNED";
   const pending = signatureStatus === "PENDING";
   const pdfUrl = kind === "prescription"
-    ? `/api/professional/prescriptions/${emissionId}/pdf`
-    : `/api/professional/documents/${emissionId}/pdf`;
+    ? `/api/professional/prescriptions/${emissionId}/pdf?lang=${lang}`
+    : `/api/professional/documents/${emissionId}/pdf?lang=${lang}`;
   const shareUrl = emissionShareUrl(kind);
   const delivered = !!patientNotifiedAt;
 

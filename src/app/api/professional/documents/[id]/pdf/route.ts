@@ -7,7 +7,7 @@ import { decrypt } from "@/lib/encryption";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { buildClinicalDocumentPdf } from "@/lib/clinical-document-pdf";
 import {
-  computeAge, isExamType, joinAddress, LOCALE, normLang,
+  computeAge, isExamType, joinAddress, LOCALE, resolveRequestLang,
   parseExamContent, resolvePatient, safeDecrypt,
 } from "@/lib/sign-helpers";
 import { parseRecordContent } from "@/lib/record-content";
@@ -127,7 +127,7 @@ export async function GET(
     where: { id: session.user.id },
     select: { language: true },
   });
-  const lang = normLang(viewer?.language);
+  const lang = resolveRequestLang(req, viewer?.language);
   const locale = LOCALE[lang];
   // Use the professional who is printing (when applicable), not necessarily the record creator.
   const pro = viewerProfessional || document.professional;

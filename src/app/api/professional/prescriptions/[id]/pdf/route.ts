@@ -13,6 +13,7 @@ import { decrypt } from "@/lib/encryption";
 import { audit } from "@/lib/audit";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
+import { resolveRequestLang } from "@/lib/sign-helpers";
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION || "eu-north-1",
@@ -23,10 +24,6 @@ const s3 = new S3Client({
 });
 const BUCKET = process.env.AWS_S3_BUCKET || "doctor8-files-prod";
 
-function normLang(v: string | null | undefined): Lang {
-  if (v === "pt" || v === "es") return v;
-  return "en";
-}
 function safeDecrypt(v: string | null | undefined): string {
   if (v == null) return "";
   try { return decrypt(v); } catch { return v; }
@@ -134,7 +131,7 @@ export async function GET(
   const viewer = await db.user.findUnique({
     where: { id: session.user.id }, select: { language: true },
   });
-  const lang = normLang(viewer?.language);
+  const lang = resolveRequestLang(req, viewer?.language) as Lang;
   const locale = LOCALE[lang];
 
   const rec = prescription.document?.patientRecord;
