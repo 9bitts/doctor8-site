@@ -244,7 +244,7 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
         <li>Entendo que posso recusar ou interromper o atendimento a qualquer momento, sem perder o direito a outros cuidados de saúde.</li>
         <li>Entendo que este consentimento pode ser revogado, observadas as obrigações legais de guarda dos registros já produzidos.</li>
       </ul>
-      <p class="mt-3 text-slate-500 text-xs">Dúvidas: support@doctor8.org · Encarregado de dados (DPO): conforme <a href="/privacy" class="underline">Política de Privacidade</a>.</p>`,
+      <p class="mt-3 text-slate-500 text-xs">Dúvidas: concierge@doctor8.com.br · Encarregado de dados (DPO): conforme <a href="/privacy" class="underline">Política de Privacidade</a>.</p>`,
       en: `<ul class="list-disc pl-5 space-y-2">
         <li>I declare that I have read (or had the opportunity to read) this form, understood its information, and could ask questions before accepting.</li>
         <li>I authorize remote healthcare under the conditions described, including limited sharing of data with Angel volunteers for post-consultation follow-up in humanitarian campaigns.</li>
@@ -252,7 +252,7 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
         <li>I understand I may refuse or stop the visit at any time without losing the right to other healthcare.</li>
         <li>I understand this consent may be revoked, subject to legal obligations regarding records already created.</li>
       </ul>
-      <p class="mt-3 text-slate-500 text-xs">Questions: support@doctor8.org · Data protection contact: see <a href="/privacy" class="underline">Privacy Policy</a>.</p>`,
+      <p class="mt-3 text-slate-500 text-xs">Questions: concierge@doctor8.com.br · Data protection contact: see <a href="/privacy" class="underline">Privacy Policy</a>.</p>`,
       es: `<ul class="list-disc pl-5 space-y-2">
         <li>Declaro que leí (o tuve oportunidad de leer) este término, comprendí su información y pude hacer preguntas antes de aceptar.</li>
         <li>Autorizo la atención en salud a distancia en las condiciones descritas, incluido el intercambio limitado de datos con voluntarios Ángeles para acompañamiento post-consulta en campañas humanitarias.</li>
@@ -260,7 +260,7 @@ export const TELEMEDICINE_TCLE_SECTIONS: TcleSection[] = [
         <li>Entiendo que puedo rechazar o interrumpir la atención en cualquier momento sin perder el derecho a otros cuidados de salud.</li>
         <li>Entiendo que este consentimiento puede revocarse, observadas las obligaciones legales sobre registros ya producidos.</li>
       </ul>
-      <p class="mt-3 text-slate-500 text-xs">Consultas: support@doctor8.org · Protección de datos: ver <a href="/privacy" class="underline">Política de Privacidad</a>.</p>`,
+      <p class="mt-3 text-slate-500 text-xs">Consultas: concierge@doctor8.com.br · Protección de datos: ver <a href="/privacy" class="underline">Política de Privacidad</a>.</p>`,
     },
   },
 ];
