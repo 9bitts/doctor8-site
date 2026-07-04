@@ -108,4 +108,7 @@ export const RATE_LIMITS = {
   /** Angel volunteer write actions */
   angelAction: { limit: 30, windowMs: 60 * 60 * 1000 },
   angelActionIp: { limit: 60, windowMs: 60 * 60 * 1000 },
+  /** Partner email lookup (ACURA / SOS Venezuela) */
+  partnerEmailCheckIp: { limit: 60, windowMs: 60 * 1000 },
+  partnerEmailCheckToken: { limit: 120, windowMs: 60 * 1000 },
 } as const;
