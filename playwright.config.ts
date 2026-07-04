@@ -18,7 +18,7 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: process.env.CI
     ? {
-        command: "npm run start",
+        command: "npx next start",
         url: baseURL,
         timeout: 180_000,
         reuseExistingServer: false,
