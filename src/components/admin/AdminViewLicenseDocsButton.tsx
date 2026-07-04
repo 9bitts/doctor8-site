@@ -106,7 +106,7 @@ export default function AdminViewLicenseDocsButton({
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">
-                        {doc.label ? `${doc.label} · ` : ""}
+                        {doc.label ? `${doc.label} - ` : ""}
                         {doc.fileName}
                       </p>
                       <p className="text-xs text-slate-400">{formatBytes(doc.fileSize)}</p>
