@@ -59,6 +59,8 @@ const PUBLIC_ROUTES = [
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
   "/fhir/",        // FHIR metadata (public read)
+  "/sitemap.xml",  // Search Console / crawlers
+  "/robots.txt",
 ];
 
 function isPublicRoute(pathname: string): boolean {
