@@ -13,28 +13,29 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const cards = await db.virtualCard.findMany({
-    where: { isPublic: true },
-    include: {
-      professional: { select: { verified: true, updatedAt: true } },
-      psychoanalyst: { select: { verified: true, updatedAt: true } },
-    },
-  });
+const STATIC_PUBLIC_PATHS = [
+  "/",
+  "/privacy",
+  "/terms",
+  "/hipaa",
+  "/cookies",
+  "/tcle-telemedicina",
+  "/acura-voluntariado",
+  "/sos-venezuela",
+] as const;
 
-  const entries: MetadataRoute.Sitemap = [
-    {
-      url: APP_BASE_URL,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-  ];
+function buildProgrammaticEntries(now: Date): MetadataRoute.Sitemap {
+  const entries: MetadataRoute.Sitemap = STATIC_PUBLIC_PATHS.map((path) => ({
+    url: `${APP_BASE_URL}${path === "/" ? "" : path}`,
+    lastModified: now,
+    changeFrequency: path === "/" ? ("weekly" as const) : ("monthly" as const),
+    priority: path === "/" ? 1 : 0.5,
+  }));
 
   for (const combo of SITEMAP_SPECIALTY_CITY_COMBOS) {
     entries.push({
       url: `${APP_BASE_URL}${buildPublicSearchPath(combo.especialidade, combo.cidade)}`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: "daily",
       priority: 0.7,
     });
@@ -45,23 +46,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           combo.cidade,
           convenio
         )}`,
-        lastModified: new Date(),
+        lastModified: now,
         changeFrequency: "weekly",
         priority: 0.6,
       });
     }
   }
 
-  for (const card of cards) {
-    const profile = card.professional ?? card.psychoanalyst;
-    if (!profile?.verified) continue;
+  return entries;
+}
 
-    entries.push({
-      url: `${APP_BASE_URL}${buildPublicProfilePath(card)}`,
-      lastModified: profile.updatedAt,
-      changeFrequency: "weekly",
-      priority: 0.8,
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date();
+  const entries = buildProgrammaticEntries(now);
+
+  try {
+    const cards = await db.virtualCard.findMany({
+      where: { isPublic: true },
+      include: {
+        professional: { select: { verified: true, updatedAt: true } },
+        psychoanalyst: { select: { verified: true, updatedAt: true } },
+      },
     });
+
+    for (const card of cards) {
+      const profile = card.professional ?? card.psychoanalyst;
+      if (!profile?.verified) continue;
+
+      entries.push({
+        url: `${APP_BASE_URL}${buildPublicProfilePath(card)}`,
+        lastModified: profile.updatedAt,
+        changeFrequency: "weekly",
+        priority: 0.8,
+      });
+    }
+  } catch (error) {
+    console.error("[sitemap] profile lookup failed:", error);
   }
 
   return entries;
