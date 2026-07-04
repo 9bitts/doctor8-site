@@ -78,7 +78,7 @@ export default function PrescriptionMedItemForm({
           {med.presentation?.trim() && (
             <div>
               <label className="text-xs font-medium text-slate-600 block mb-1">
-                Apresentação
+                {"Apresenta\u00e7\u00e3o"}
               </label>
               <input
                 type="text"
@@ -108,13 +108,13 @@ export default function PrescriptionMedItemForm({
         {kind === "medication" && (
           <div className="sm:col-span-2">
             <label className="text-xs font-medium text-slate-600 block mb-1">
-              Forma farmacêutica
+              {"Forma farmac\u00eautica"}
             </label>
             <input
               type="text"
               value={med.pharmaceuticalForm || ""}
               onChange={(e) => onUpdate(index, "pharmaceuticalForm", e.target.value)}
-              placeholder="Ex.: Comprimido, Xarope (frasco)"
+              placeholder={"Ex.: Comprimido, Xarope (frasco)"}
               className="rx-inp-sm"
             />
           </div>
