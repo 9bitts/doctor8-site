@@ -1,8 +1,11 @@
 // Server-to-server: check whether an email belongs to a registered patient account.
-// Partner: ACURA Brasil / SOS Venezuela triage ù returns boolean only (LGPD).
+// Partner: ACURA Brasil / SOS Venezuela triage - returns boolean only (LGPD).
 
 import { NextRequest, NextResponse } from "next/server";
 import { AuditAction, UserRole } from "@prisma/client";
+import { z } from "zod";
+import { db } from "@/lib/db";
+import { createAuditLog } from "@/lib/audit";
 import {
   checkRateLimits,
   clientIp,

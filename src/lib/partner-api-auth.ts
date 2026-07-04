@@ -1,5 +1,5 @@
 // Server-to-server partner API authentication (Bearer token).
-// Used by external backends (e.g. ACURA Brasil) — never expose the key in the browser.
+// Used by external backends (e.g. ACURA Brasil) - never expose the key in the browser.
 
 import { timingSafeEqual } from "crypto";
 import type { NextRequest } from "next/server";
