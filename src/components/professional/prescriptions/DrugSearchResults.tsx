@@ -10,6 +10,10 @@ export type DrugSearchResult = {
   controlled: boolean;
   prescriptionType: string | null;
   ggremCode?: string | null;
+  country?: string;
+  category?: string | null;
+  pharmaceuticalForm?: string | null;
+  dosage?: string | null;
 };
 
 export type ControlInfo = {

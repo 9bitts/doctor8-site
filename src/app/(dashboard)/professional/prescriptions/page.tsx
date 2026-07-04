@@ -96,12 +96,6 @@ interface ClinicalDocument {
 type View = "hub" | "prescription" | "exam" | "document";
 type ListFilter = "all" | "prescription" | "exam" | "document";
 
-interface Drug extends DrugSearchResult {
-  country: string;
-  category: string | null;
-  pharmaceuticalForm?: string | null;
-  dosage?: string | null;
-}
 interface MedItem extends PrescriptionMedItem {}
 
 function medItemFieldErrors(m: MedItem): { name: boolean; dosage: boolean; frequency: boolean } {
@@ -323,7 +317,7 @@ export default function PrescriptionsPage() {
   const patientSearchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [drugQuery, setDrugQuery] = useState("");
-  const [drugResults, setDrugResults] = useState<Drug[]>([]);
+  const [drugResults, setDrugResults] = useState<DrugSearchResult[]>([]);
   const [drugSearching, setDrugSearching] = useState(false);
   const [drugCountry, setDrugCountry] = useState<DrugCountryCode>("BR");
   const drugDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -712,7 +706,7 @@ export default function PrescriptionsPage() {
     return () => { if (drugDebounce.current) clearTimeout(drugDebounce.current); };
   }, [drugQuery, drugCountry]);
 
-  function addDrug(drug: Drug) {
+  function addDrug(drug: DrugSearchResult) {
     const substance = drug.activeIngredient?.trim() || drug.name;
     setMedications((prev) => [...prev, {
       name: substance,
