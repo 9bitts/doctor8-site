@@ -1,9 +1,9 @@
 /**
  * Importa medicamentos venezuelanos (INHRR) no DrugCatalog.
- * PrÈ-requisito: node scripts/fetch-inhrr-ve-drugs.js
+ * Prù-requisito: node scripts/fetch-inhrr-ve-drugs.js
  * Uso: npx tsx scripts/seed-drugs-ve-inhrr.ts
  *
- * Vers„o com enriquecimento (presentation limpa, pharmaceuticalForm, dosage, searchPresentation).
+ * Versùo com enriquecimento (presentation limpa, pharmaceuticalForm, dosage, searchPresentation).
  * O script legado scripts/seed-drugs-ve-inhrr.js permanece intacto.
  */
 
@@ -34,6 +34,14 @@ function norm(s: string | null | undefined): string {
   return (s || "").toString().trim().toLowerCase();
 }
 
+function catalogKey(
+  searchName: string,
+  searchIngredient: string,
+  presentation: string,
+): string {
+  return `${norm(searchName)}|${norm(searchIngredient)}|${norm(presentation)}`;
+}
+
 function enrichFromInhrr(d: InhrrDrug) {
   const name = d.name.trim();
   const presentation = stripBrandFromPresentationEs(name);
@@ -53,9 +61,9 @@ async function main() {
     select: { searchName: true, searchIngredient: true, presentation: true },
   });
   const existingSet = new Set(
-    existing.map((e) => `${e.searchName}|${e.searchIngredient}|${e.presentation}`),
+    existing.map((e) => catalogKey(e.searchName, e.searchIngredient, e.presentation)),
   );
-  console.log(`J· existem ${existingSet.size} registros ${COUNTRY}.`);
+  console.log(`Jù existem ${existingSet.size} registros ${COUNTRY}.`);
 
   const toInsert = [];
   let skipped = 0;
@@ -65,7 +73,7 @@ async function main() {
     if (!searchName) continue;
 
     const enriched = enrichFromInhrr(d);
-    const key = `${searchName}|${norm(d.activeIngredient)}|${norm(enriched.presentation)}`;
+    const key = catalogKey(searchName, d.activeIngredient || d.name, enriched.presentation);
     if (existingSet.has(key)) {
       skipped++;
       continue;
@@ -101,7 +109,7 @@ async function main() {
   }
 
   const total = await db.drugCatalog.count({ where: { country: COUNTRY } });
-  console.log(`\nConcluÌdo. Inseridos: ${inserted}. Total VE: ${total}.`);
+  console.log(`\nConcluùdo. Inseridos: ${inserted}. Total VE: ${total}.`);
 }
 
 main()
