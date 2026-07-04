@@ -319,6 +319,7 @@ export default function PrescriptionsPage() {
   const [drugQuery, setDrugQuery] = useState("");
   const [drugResults, setDrugResults] = useState<DrugSearchResult[]>([]);
   const [drugSearching, setDrugSearching] = useState(false);
+  const [drugSearchDone, setDrugSearchDone] = useState(false);
   const [drugCountry, setDrugCountry] = useState<DrugCountryCode>("BR");
   const drugDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -560,7 +561,7 @@ export default function PrescriptionsPage() {
     setPatientQuery("");
     setImportablePatients([]);
     setPlatformMatches([]);
-    setDrugQuery(""); setDrugResults([]); setDrugCountry("BR"); setMedications([]);
+    setDrugQuery(""); setDrugResults([]); setDrugCountry("BR"); setDrugSearchDone(false); setMedications([]);
     setHighlightIncompleteMeds(false);
     setInstructions(""); setValidDays(30); setFormError("");
     setReuseSource(null);
@@ -692,16 +693,27 @@ export default function PrescriptionsPage() {
   useEffect(() => {
     if (drugDebounce.current) clearTimeout(drugDebounce.current);
     const q = drugQuery.trim();
-    if (q.length < 2) { setDrugResults([]); setDrugSearching(false); return; }
+    if (q.length < 2) { setDrugResults([]); setDrugSearching(false); setDrugSearchDone(false); return; }
     setDrugSearching(true);
+    setDrugSearchDone(false);
     drugDebounce.current = setTimeout(async () => {
       try {
         const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`;
         const res = await fetch(url);
         const d = await res.json();
-        setDrugResults(d.drugs || []);
-      } catch { setDrugResults([]); }
-      finally { setDrugSearching(false); }
+        if (!res.ok) {
+          toast.error(typeof d.error === "string" ? d.error : t("rx2.noDrugsFound"));
+          setDrugResults([]);
+        } else {
+          setDrugResults(d.drugs || []);
+        }
+      } catch {
+        toast.error(t("rx2.noDrugsFound"));
+        setDrugResults([]);
+      } finally {
+        setDrugSearching(false);
+        setDrugSearchDone(true);
+      }
     }, 300);
     return () => { if (drugDebounce.current) clearTimeout(drugDebounce.current); };
   }, [drugQuery, drugCountry]);
@@ -1216,6 +1228,7 @@ export default function PrescriptionsPage() {
                           setDrugCountry(c.code);
                           setDrugQuery("");
                           setDrugResults([]);
+                          setDrugSearchDone(false);
                         }}
                         className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
                           selected
@@ -1262,6 +1275,11 @@ export default function PrescriptionsPage() {
                   onSelect={addDrug}
                   controlInfo={controlInfo}
                 />
+              )}
+              {drugQuery.trim().length >= 2 && drugSearchDone && !drugSearching && drugResults.length === 0 && (
+                <p className="text-sm text-slate-500 px-1 py-2 border border-slate-100 rounded-xl bg-slate-50">
+                  {t("rx2.noDrugsFound")}
+                </p>
               )}
             </div>
 
