@@ -16,6 +16,22 @@ export function notifyCookieConsentChanged(): void {
   window.dispatchEvent(new Event("d8:cookie-consent"));
 }
 
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
+export function updateGoogleAnalyticsConsent(granted: boolean): void {
+  if (typeof window.gtag !== "function") return;
+  window.gtag("consent", "update", {
+    analytics_storage: granted ? "granted" : "denied",
+  });
+  if (granted) {
+    window.gtag("event", "page_view");
+  }
+}
+
 const ANALYTICS_BLOCKED_PREFIXES = [
   "/patient",
   "/professional",

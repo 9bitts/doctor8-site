@@ -2,26 +2,24 @@
 
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   allowsAnalyticsPath,
   hasAnalyticsConsent,
+  updateGoogleAnalyticsConsent,
 } from "@/lib/cookie-consent";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
 
 export default function GoogleAnalytics() {
   const pathname = usePathname();
-  const [enabled, setEnabled] = useState(false);
+  const active = Boolean(GA_ID && allowsAnalyticsPath(pathname));
 
   useEffect(() => {
-    if (!GA_ID || !allowsAnalyticsPath(pathname)) {
-      setEnabled(false);
-      return;
-    }
+    if (!active) return;
 
     function syncConsent() {
-      setEnabled(hasAnalyticsConsent());
+      updateGoogleAnalyticsConsent(hasAnalyticsConsent());
     }
 
     syncConsent();
@@ -31,9 +29,9 @@ export default function GoogleAnalytics() {
       window.removeEventListener("d8:cookie-consent", syncConsent);
       window.removeEventListener("storage", syncConsent);
     };
-  }, [pathname]);
+  }, [active, pathname]);
 
-  if (!GA_ID || !enabled || !allowsAnalyticsPath(pathname)) {
+  if (!active || !GA_ID) {
     return null;
   }
 
@@ -47,8 +45,19 @@ export default function GoogleAnalytics() {
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
+          gtag('consent', 'default', {
+            analytics_storage: 'denied',
+            ad_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied',
+            wait_for_update: 500,
+          });
           gtag('js', new Date());
-          gtag('config', '${GA_ID}', { anonymize_ip: true, allow_google_signals: false });
+          gtag('config', '${GA_ID}', {
+            anonymize_ip: true,
+            allow_google_signals: false,
+            send_page_view: false,
+          });
         `}
       </Script>
     </>
