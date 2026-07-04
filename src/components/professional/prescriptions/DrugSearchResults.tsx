@@ -10,6 +10,7 @@ export type DrugSearchResult = {
   controlled: boolean;
   prescriptionType: string | null;
   ggremCode?: string | null;
+  externalCode?: string | null;
   country?: string;
   category?: string | null;
   pharmaceuticalForm?: string | null;
@@ -69,9 +70,11 @@ export default function DrugSearchResults({
                 <p className="text-xs text-slate-500">{drug.manufacturer}</p>
               )}
               <p className="text-xs text-slate-400">{drug.presentation}</p>
-              {drug.ggremCode && (
+              {drug.ggremCode ? (
                 <p className="text-[10px] text-slate-300 font-mono">GGREM {drug.ggremCode}</p>
-              )}
+              ) : drug.externalCode ? (
+                <p className="text-[10px] text-slate-300 font-mono">CUM {drug.externalCode}</p>
+              ) : null}
             </div>
             <Plus size={16} className="text-brand-500 shrink-0 mt-1" />
           </button>

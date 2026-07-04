@@ -26,6 +26,7 @@ const LEGACY_SELECT = {
   category: true,
   controlled: true,
   prescriptionType: true,
+  externalCode: true,
 } as const;
 
 const FULL_SELECT = {

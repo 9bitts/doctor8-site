@@ -4,3 +4,7 @@ node_modules/
 tsconfig.tsbuildinfo
 playwright-report/
 test-results/
+data/cum-co/*
+!data/cum-co/README.md
+data/cmed/*.xlsx
+data/cmed/*.xls

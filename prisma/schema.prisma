@@ -2228,6 +2228,7 @@ model DrugCatalog {
 
   // CMED-specific (optional — null for ANVISA/VE/US legacy rows)
   ggremCode           String? @unique // ANVISA CÓDIGO GGREM
+  externalCode        String? // country registry code (e.g. CO CUM expedientecum-consecutivocum)
   pharmaceuticalForm  String? // e.g. Comprimido, Xarope (frasco)
   dosage              String? // e.g. 10 MG/ML — extracted from presentation
 
@@ -2235,10 +2236,12 @@ model DrugCatalog {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  @@unique([country, externalCode])
   @@index([searchName])
   @@index([searchIngredient])
   @@index([searchPresentation])
   @@index([ggremCode])
+  @@index([externalCode])
   @@index([country])
   @@index([active])
 

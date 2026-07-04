@@ -159,3 +159,56 @@ export function extractDosageEs(text: string): string | null {
   if (!last || !/\d/.test(last)) return null;
   return last;
 }
+
+/** Colombia / INVIMA forma farmaceutica labels (Spanish) ? Portuguese display form. */
+const CO_FORMA_EXTRAS: FormPattern[] = [
+  { pattern: /\bCAPSULA\s+DURA\b/i, form: "Cápsula" },
+  { pattern: /\bCAPSULA\s+BLANDA\b/i, form: "Cápsula" },
+  { pattern: /\bTABLETA\s+RECUBIERTA\b/i, form: "Comprimido" },
+  { pattern: /\bTABLETA\s+MASTICABLE\b/i, form: "Comprimido" },
+  { pattern: /\bEMULSION\s+ORAL\b/i, form: "Solução oral (frasco)" },
+  { pattern: /\bPOLVO\s+PARA\s+RECONSTITUIR\b/i, form: "Pó" },
+  { pattern: /\bPOLVO\s+PARA\s+SOLUCION\s+INYECTABLE\b/i, form: "Pó" },
+  { pattern: /\bGRAGEA\b/i, form: "Drágea" },
+  { pattern: /\bOVULO\b/i, form: "Óvulo" },
+  { pattern: /\bSUPOSITORIO\b/i, form: "Supositório" },
+  { pattern: /\bLOCION\b/i, form: "Loção" },
+  { pattern: /\bSHAMPOO\b/i, form: "Loção" },
+];
+
+function findFormMatchWithExtras(text: string, extras: FormPattern[]): FormMatch | null {
+  const normalized = normalizeForMatch(text);
+  let best: FormMatch | null = null;
+
+  for (const { pattern, form } of extras) {
+    const re = new RegExp(pattern.source, pattern.flags);
+    const match = re.exec(normalized);
+    if (!match || match.index === undefined) continue;
+
+    const candidate: FormMatch = {
+      index: match.index,
+      length: match[0].length,
+      form,
+    };
+
+    if (
+      !best
+      || candidate.index < best.index
+      || (candidate.index === best.index && candidate.length > best.length)
+    ) {
+      best = candidate;
+    }
+  }
+
+  return best;
+}
+
+export function translatePharmaceuticalFormFromEs(formaFarmaceutica: string): string {
+  const text = (formaFarmaceutica || "").trim();
+  if (!text) return "Outro";
+
+  const fromCore = extractPharmaceuticalFormEs(text);
+  if (fromCore !== "Outro") return fromCore;
+
+  return findFormMatchWithExtras(text, CO_FORMA_EXTRAS)?.form ?? "Outro";
+}
