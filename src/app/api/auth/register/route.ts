@@ -42,6 +42,7 @@ import {
   RATE_LIMITS,
   rateLimitResponse,
 } from "@/lib/rate-limit";
+import { resolveRegistrationRegionForSignup } from "@/lib/detect-registration-region";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -192,7 +193,7 @@ export async function POST(req: NextRequest) {
       email,
       password,
       role,
-      region,
+      region: submittedRegion,
       firstName,
       lastName,
       phoneDdi,
@@ -206,6 +207,17 @@ export async function POST(req: NextRequest) {
       profession,
       callbackUrl,
     } = data.data;
+
+    const normalizedLanguage = language === "pt" || language === "es" || language === "en"
+      ? language
+      : undefined;
+
+    const region = resolveRegistrationRegionForSignup({
+      explicit: submittedRegion,
+      phoneDdi,
+      language: normalizedLanguage || language,
+      headers: req.headers,
+    });
 
     const originCookie = readHumOriginFlagFromCookieHeader(req.headers.get("cookie") ?? undefined);
     const returnPath = readHumReturnPathFromCookieHeader(req.headers.get("cookie") ?? undefined);
@@ -231,10 +243,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    const normalizedLanguage = language === "pt" || language === "es" || language === "en"
-      ? language
-      : undefined;
 
     const phoneParsed = parseRegistrationPhone({ phoneDdi, phoneNational });
     if ("error" in phoneParsed) {

@@ -17,6 +17,9 @@ import { resolveDeletedAccountOnLogin } from "@/lib/account-deletion";
 import { createSignupProfile } from "@/lib/signup-profile-create";
 import type { ParsedSignupIntent } from "@/lib/oauth-signup-intent";
 import {
+  resolveRegistrationRegion,
+} from "@/lib/detect-registration-region";
+import {
   computeProfileComplete,
   isProfileExemptRole,
 } from "@/lib/user-profile-complete";
@@ -259,10 +262,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               return "/signup/role";
             }
 
-            const { role: signupRole, professionalKind, phoneE164 } = intent;
+            const { role: signupRole, professionalKind, phoneE164, region: intentRegion } = intent;
             const nameParts = (user.name || "").split(" ");
             const firstName = nameParts[0] || "";
             const lastName = nameParts.slice(1).join(" ") || "";
+            const signupRegion = resolveRegistrationRegion({
+              explicit: intentRegion,
+              phoneE164,
+            });
 
             dbUser = await db.$transaction(async (tx) => {
               const newUser = await tx.user.create({
@@ -270,7 +277,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   email: googleEmail,
                   emailVerified: new Date(),
                   role: signupRole,
-                  region: "US",
+                  region: signupRegion,
                 },
               });
 

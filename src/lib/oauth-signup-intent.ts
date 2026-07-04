@@ -1,4 +1,8 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import {
+  isValidRegistrationRegion,
+  type RegistrationRegionCode,
+} from "@/lib/registration-regions";
 
 export const OAUTH_SIGNUP_ROLE_COOKIE = "oauth_signup_role";
 export const OAUTH_SIGNUP_ROLE_MAX_AGE_SECONDS = 600;
@@ -34,11 +38,13 @@ export function createSignupRoleToken(
   role: SignupRole,
   professionalKind: SignupProfessionalKind = null,
   phoneE164: string | null = null,
+  region: RegistrationRegionCode | null = null,
 ): string {
   const exp = Math.floor(Date.now() / 1000) + OAUTH_SIGNUP_ROLE_MAX_AGE_SECONDS;
   const kind = professionalKind ?? "";
   const phone = (phoneE164 || "").replace(/\D/g, "");
-  const payload = `${role}:${kind}:${phone}:${exp}`;
+  const regionCode = region && isValidRegistrationRegion(region) ? region : "";
+  const payload = `${role}:${kind}:${phone}:${regionCode}:${exp}`;
   return `${payload}.${signPayload(payload)}`;
 }
 
@@ -46,6 +52,7 @@ export type ParsedSignupIntent = {
   role: SignupRole;
   professionalKind: SignupProfessionalKind;
   phoneE164: string | null;
+  region: RegistrationRegionCode | null;
 };
 
 export function parseSignupRoleToken(token: string | undefined): ParsedSignupIntent | null {
@@ -74,9 +81,12 @@ export function parseSignupRoleToken(token: string | undefined): ParsedSignupInt
   let role: string;
   let kind: string;
   let phone: string;
+  let region = "";
   let expStr: string;
 
-  if (parts.length === 4) {
+  if (parts.length === 5) {
+    [role, kind, phone, region, expStr] = parts;
+  } else if (parts.length === 4) {
     [role, kind, phone, expStr] = parts;
   } else if (parts.length === 3) {
     [role, kind, expStr] = parts;
@@ -98,5 +108,6 @@ export function parseSignupRoleToken(token: string | undefined): ParsedSignupInt
     role: role as SignupRole,
     professionalKind: kind === "psychologist" ? "psychologist" : null,
     phoneE164: phone || null,
+    region: isValidRegistrationRegion(region) ? region : null,
   };
 }

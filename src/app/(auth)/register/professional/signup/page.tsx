@@ -42,7 +42,19 @@ export default function RegisterProfessionalSignupPage() {
     if (r) {
       setInitialRegion(parseRegistrationRegion(r, "US"));
     } else {
-      setInitialRegion(defaultRegistrationRegionForLang(detectInitialLang()));
+      const detectedLang = detectInitialLang();
+      fetch(`/api/auth/detect-region?lang=${encodeURIComponent(detectedLang)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.region) {
+            setInitialRegion(parseRegistrationRegion(data.region, defaultRegistrationRegionForLang(detectedLang)));
+          } else {
+            setInitialRegion(defaultRegistrationRegionForLang(detectedLang));
+          }
+        })
+        .catch(() => {
+          setInitialRegion(defaultRegistrationRegionForLang(detectedLang));
+        });
     }
 
     const portalParam = params.get("portal");

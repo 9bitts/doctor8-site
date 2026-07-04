@@ -97,7 +97,7 @@ function SignupRoleContent() {
   const [authenticated, setAuthenticated] = useState(false);
   const [needsCompletion, setNeedsCompletion] = useState(false);
   const [selected, setSelected] = useState<RoleChoice>({ role: "PATIENT" });
-  const [region] = useState<RegistrationRegionCode>(() =>
+  const [region, setRegion] = useState<RegistrationRegionCode>(() =>
     defaultRegistrationRegionForLang(detectInitialLang()),
   );
   const [phone, setPhone] = useState<InternationalPhoneValue>({
@@ -112,6 +112,18 @@ function SignupRoleContent() {
 
   useEffect(() => {
     setLang(detectInitialLang());
+  }, []);
+
+  useEffect(() => {
+    fetch(`/api/auth/detect-region?lang=${encodeURIComponent(detectInitialLang())}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data?.region) return;
+        const next = data.region as RegistrationRegionCode;
+        setRegion(next);
+        setPhone((prev) => ({ ...prev, ddi: defaultDdiForRegion(next) }));
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -236,6 +248,8 @@ function SignupRoleContent() {
               : undefined,
           phoneDdi: phone.ddi,
           phoneNational: phone.nationalNumber,
+          region,
+          language: lang,
         }),
       });
       if (!intentRes.ok) {

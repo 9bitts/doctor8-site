@@ -6,12 +6,16 @@ import {
   OAUTH_SIGNUP_ROLE_MAX_AGE_SECONDS,
 } from "@/lib/oauth-signup-intent";
 import { parseRegistrationPhone } from "@/lib/international-phone";
+import { resolveRegistrationRegion } from "@/lib/detect-registration-region";
+import { REGISTRATION_REGION_CODES } from "@/lib/registration-regions";
 
 const roleSchema = z.object({
   role: z.enum(["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"]),
   professionalKind: z.enum(["psychologist"]).optional(),
   phoneDdi: z.string().min(1).max(4),
   phoneNational: z.string().min(6).max(20),
+  region: z.enum(REGISTRATION_REGION_CODES as [typeof REGISTRATION_REGION_CODES[number], ...typeof REGISTRATION_REGION_CODES[number][]]).optional(),
+  language: z.enum(["pt", "en", "es"]).optional(),
 });
 
 function cookieOptions(maxAge: number) {
@@ -43,6 +47,12 @@ export async function POST(req: NextRequest) {
     parsed.data.role,
     parsed.data.professionalKind ?? null,
     phoneParsed.e164,
+    resolveRegistrationRegion({
+      explicit: parsed.data.region,
+      phoneDdi: parsed.data.phoneDdi,
+      language: parsed.data.language,
+      headers: req.headers,
+    }),
   );
   const res = NextResponse.json({ ok: true });
   res.cookies.set(OAUTH_SIGNUP_ROLE_COOKIE, token, cookieOptions(OAUTH_SIGNUP_ROLE_MAX_AGE_SECONDS));

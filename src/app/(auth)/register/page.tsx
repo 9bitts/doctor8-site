@@ -34,11 +34,25 @@ export default function RegisterPage() {
     const r = params.get("region");
     if (r) {
       setInitialRegion(parseRegistrationRegion(r, "US"));
-    } else {
-      setInitialRegion(defaultRegistrationRegionForLang(detectInitialLang()));
+      return;
     }
 
     const langParam = params.get("lang");
+    const detectedLang = langParam ? normalizeLang(langParam) : detectInitialLang();
+
+    fetch(`/api/auth/detect-region?lang=${encodeURIComponent(detectedLang)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.region) {
+          setInitialRegion(parseRegistrationRegion(data.region, defaultRegistrationRegionForLang(detectedLang)));
+        } else {
+          setInitialRegion(defaultRegistrationRegionForLang(detectedLang));
+        }
+      })
+      .catch(() => {
+        setInitialRegion(defaultRegistrationRegionForLang(detectedLang));
+      });
+
     if (langParam) {
       const l = normalizeLang(langParam);
       setLang(l);

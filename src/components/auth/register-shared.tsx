@@ -226,6 +226,8 @@ export function RegisterAccountForm({
           professionalKind: isPsychologistSignup ? "psychologist" : undefined,
           phoneDdi: phone.ddi,
           phoneNational: phone.nationalNumber,
+          region,
+          language: lang,
         }),
       });
       if (!intentRes.ok) {
