@@ -14,8 +14,8 @@ const nextConfig = {
   // Security headers — HIPAA & GDPR requirement
   async headers() {
     const scriptSrc = isProd
-      ? "script-src 'self' 'unsafe-inline' https://js.stripe.com"
-      : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com";
+      ? "script-src 'self' 'unsafe-inline' https://js.stripe.com https://www.googletagmanager.com"
+      : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://www.googletagmanager.com";
 
     return [
       {
@@ -60,7 +60,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.stripe.com https://*.daily.co wss://*.daily.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
+              "connect-src 'self' https://api.stripe.com https://*.daily.co wss://*.daily.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com",
               "media-src 'self' https://*.daily.co blob:",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.daily.co",
             ].join("; "),

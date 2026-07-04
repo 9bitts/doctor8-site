@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getLandingContent } from "@/lib/landing-content";
+import { notifyCookieConsentChanged } from "@/lib/cookie-consent";
 
 const STORAGE_KEY = "d8_cookies";
 
@@ -24,6 +25,7 @@ export default function CookieBanner() {
 
   function dismiss(value: string) {
     try { localStorage.setItem(STORAGE_KEY, value); } catch { /* ignore */ }
+    notifyCookieConsentChanged();
     setVisible(false);
   }
 

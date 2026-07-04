@@ -15,6 +15,7 @@ import { getProLandingContent, ProLandingContent } from "@/lib/professional-land
 import { DEFAULT_VENEZUELA_POOLS } from "@/lib/humanitarian/constants";
 import { detectInitialLang, LANG_KEY } from "@/components/auth/register-shared";
 import ProPlanCta from "@/components/professional/ProPlanCta";
+import { notifyCookieConsentChanged } from "@/lib/cookie-consent";
 
 const PRO_LOGIN_HREF = "/login";
 
@@ -77,14 +78,14 @@ function CookieBanner({ c }: { c: ProLandingContent }) {
       <div className="flex shrink-0 gap-2">
         <button
           type="button"
-          onClick={() => { localStorage.setItem(COOKIE_KEY, "ok"); setVisible(false); }}
+          onClick={() => { localStorage.setItem(COOKIE_KEY, "ok"); notifyCookieConsentChanged(); setVisible(false); }}
           className="rounded-lg bg-brand-500 px-5 py-2 text-[13px] font-semibold text-white hover:bg-brand-600"
         >
           {c.cookie.accept}
         </button>
         <button
           type="button"
-          onClick={() => { localStorage.setItem(COOKIE_KEY, "no"); setVisible(false); }}
+          onClick={() => { localStorage.setItem(COOKIE_KEY, "no"); notifyCookieConsentChanged(); setVisible(false); }}
           className="rounded-lg border border-white/25 px-5 py-2 text-[13px] font-semibold text-white/70 hover:text-white"
         >
           {c.cookie.decline}

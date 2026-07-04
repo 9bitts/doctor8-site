@@ -8,6 +8,7 @@ import PwaRegister from "@/components/PwaRegister";
 import AuthSessionProvider from "@/components/AuthSessionProvider";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
 import { normalizeLang } from "@/lib/i18n/translations";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -38,6 +39,7 @@ export default function RootLayout({
           <AuthSessionProvider>
             {children}
           </AuthSessionProvider>
+          <GoogleAnalytics />
           <SupportWidget />
           <PwaRegister />
         </I18nProvider>
