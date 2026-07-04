@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
       OR: [
         { searchName: { contains: q } },
         { searchIngredient: { contains: q } },
+        { searchPresentation: { contains: q } },
       ],
     },
     select: {
@@ -44,6 +45,9 @@ export async function GET(req: NextRequest) {
       category: true,
       controlled: true,
       prescriptionType: true,
+      ggremCode: true,
+      pharmaceuticalForm: true,
+      dosage: true,
     },
     orderBy: [
       { name: "asc" },

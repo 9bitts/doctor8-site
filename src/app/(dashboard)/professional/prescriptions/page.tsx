@@ -9,8 +9,8 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { useToast } from "@/components/ui/toast";
 import {
-  Plus, Trash2, FileText, Download, Loader2, CheckCircle2, Search,
-  AlertCircle, ChevronRight, AlertTriangle, PenLine, Pill, ArrowLeft, Copy,
+  Plus, FileText, Download, Loader2, CheckCircle2, Search,
+  ChevronRight, AlertTriangle, PenLine, Pill, ArrowLeft, Copy,
   Clock, User, FlaskConical, ScrollText, LayoutTemplate, BookmarkPlus,
 } from "lucide-react";
 import { PatientNoAccountPanel } from "@/components/professional/emissions/PatientNoAccountPanel";
@@ -25,6 +25,8 @@ import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import type { Chart } from "@/components/professional/emissions/types";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
+import DrugSearchResults, { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
+import PrescriptionMedItemForm, { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 
 type ImportablePatient = {
   patientProfileId: string;
@@ -94,16 +96,13 @@ interface ClinicalDocument {
 type View = "hub" | "prescription" | "exam" | "document";
 type ListFilter = "all" | "prescription" | "exam" | "document";
 
-interface Drug {
-  id: string; name: string; activeIngredient: string; presentation: string;
-  manufacturer: string | null; country: string; category: string | null;
-  controlled: boolean; prescriptionType: string | null;
+interface Drug extends DrugSearchResult {
+  country: string;
+  category: string | null;
+  pharmaceuticalForm?: string | null;
+  dosage?: string | null;
 }
-interface MedItem {
-  name: string; dosage: string; frequency: string; duration: string; instructions: string;
-  presentation?: string; controlled?: boolean; prescriptionType?: string | null;
-  itemKind?: "medication" | "device" | "phytotherapy";
-}
+interface MedItem extends PrescriptionMedItem {}
 
 function medItemFieldErrors(m: MedItem): { name: boolean; dosage: boolean; frequency: boolean } {
   const kind = m.itemKind || "medication";
@@ -714,10 +713,17 @@ export default function PrescriptionsPage() {
   }, [drugQuery, drugCountry]);
 
   function addDrug(drug: Drug) {
+    const substance = drug.activeIngredient?.trim() || drug.name;
     setMedications((prev) => [...prev, {
-      name: `${drug.name}${drug.activeIngredient ? ` (${drug.activeIngredient})` : ""}`,
-      dosage: "", frequency: "", duration: "", instructions: "",
-      presentation: drug.presentation, controlled: drug.controlled, prescriptionType: drug.prescriptionType,
+      name: substance,
+      dosage: drug.dosage?.trim() || "",
+      frequency: "",
+      duration: "",
+      instructions: "",
+      presentation: drug.presentation,
+      pharmaceuticalForm: drug.pharmaceuticalForm?.trim() || "",
+      controlled: drug.controlled,
+      prescriptionType: drug.prescriptionType,
       itemKind: "medication",
     }]);
     setDrugQuery(""); setDrugResults([]);
@@ -773,8 +779,14 @@ export default function PrescriptionsPage() {
     setFormError("");
     try {
       const cleanMeds = medications.map((m) => ({
-        name: m.name.trim(), dosage: m.dosage || "", frequency: m.frequency || "",
-        duration: m.duration, instructions: m.instructions, itemKind: m.itemKind || "medication",
+        name: m.name.trim(),
+        dosage: m.dosage || "",
+        frequency: m.frequency || "",
+        duration: m.duration,
+        instructions: m.instructions,
+        presentation: m.presentation || "",
+        pharmaceuticalForm: m.pharmaceuticalForm || "",
+        itemKind: m.itemKind || "medication",
       }));
       const res = await fetch("/api/professional/templates/prescriptions", {
         method: "POST",
@@ -807,8 +819,14 @@ export default function PrescriptionsPage() {
     setSaving(true);
     try {
       const cleanMeds = medications.map((m) => ({
-        name: m.name.trim(), dosage: m.dosage || "", frequency: m.frequency || "",
-        duration: m.duration, instructions: m.instructions, itemKind: m.itemKind || "medication",
+        name: m.name.trim(),
+        dosage: m.dosage || "",
+        frequency: m.frequency || "",
+        duration: m.duration,
+        instructions: m.instructions,
+        presentation: m.presentation || "",
+        pharmaceuticalForm: m.pharmaceuticalForm || "",
+        itemKind: m.itemKind || "medication",
       }));
       const payload = selectedPatient
         ? { patientRecordId: selectedPatient.id, medications: cleanMeds, instructions, validDays }
@@ -1245,34 +1263,11 @@ export default function PrescriptionsPage() {
               <p className="text-xs text-slate-400 text-center -mt-2">{t("rx.manualAlways")}</p>
 
               {drugQuery.trim().length >= 2 && drugResults.length > 0 && (
-                <div className="border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-56 overflow-y-auto">
-                  {drugResults.map((drug) => {
-                    const ci = controlInfo(drug.prescriptionType);
-                    return (
-                      <button
-                        key={drug.id}
-                        type="button"
-                        onMouseDown={keepFocusOnPointerDown}
-                        onClick={() => addDrug(drug)}
-                        className="w-full flex items-start gap-3 px-4 py-3 hover:bg-brand-50 transition text-left"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-800 text-sm flex items-center gap-2 flex-wrap">
-                            {drug.name}
-                            {drug.controlled && ci && (
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${ci.tarja === "preta" ? "bg-slate-800 text-white" : "bg-red-100 text-red-600"}`}>
-                                {ci.label}
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-xs text-slate-500">{drug.activeIngredient}</p>
-                          <p className="text-xs text-slate-400">{drug.presentation}</p>
-                        </div>
-                        <Plus size={16} className="text-brand-500 shrink-0 mt-1" />
-                      </button>
-                    );
-                  })}
-                </div>
+                <DrugSearchResults
+                  results={drugResults}
+                  onSelect={addDrug}
+                  controlInfo={controlInfo}
+                />
               )}
             </div>
 
@@ -1291,7 +1286,6 @@ export default function PrescriptionsPage() {
               ) : (
                 <div className="space-y-3">
                   {medications.map((med, index) => {
-                    const ci = controlInfo(med.prescriptionType);
                     const kind = med.itemKind || "medication";
                     const kindLabel = kind === "device" ? t("rx.itemKind.device")
                       : kind === "phytotherapy" ? t("rx.itemKind.phytotherapy") : null;
@@ -1299,71 +1293,19 @@ export default function PrescriptionsPage() {
                     const itemInvalid = !isMedItemValid(med);
                     const showErrors = highlightIncompleteMeds && itemInvalid;
                     return (
-                      <div key={index} className={`rounded-xl p-4 space-y-3 border ${
-                        showErrors
-                          ? "bg-rose-50/60 border-rose-300 ring-1 ring-rose-200"
-                          : "bg-slate-50 border-slate-200"
-                      }`}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0 space-y-2">
-                            {kindLabel && (
-                              <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-50 text-accent-700 border border-accent-200">
-                                {kindLabel}
-                              </span>
-                            )}
-                            <label className={`text-xs font-medium block mb-1 ${
-                              showErrors && fieldErrors.name ? "text-rose-700" : "text-slate-600"
-                            }`}>{t("rx2.manualName")}</label>
-                            <input type="text" value={med.name}
-                              onChange={(e) => updateMedication(index, "name", e.target.value)}
-                              placeholder={t("rx2.manualNamePlaceholder")}
-                              className={`rx-inp-sm${rxFieldClass(showErrors && fieldErrors.name)}`} />
-                            {med.controlled && ci && (
-                              <p className="text-[11px] text-red-700 bg-red-50 rounded-md px-2 py-1 inline-flex items-center gap-1">
-                                <AlertCircle size={11} />{ci.receita}
-                              </p>
-                            )}
-                          </div>
-                          <button onClick={() => removeMedication(index)} className="text-red-400 hover:text-red-600 shrink-0 p-1">
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                        <div className="grid sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className={`text-xs font-medium block mb-1 ${
-                              showErrors && fieldErrors.dosage ? "text-rose-700" : "text-slate-600"
-                            }`}>
-                              {t("rx2.dosageLabel")}{kind === "medication" ? " *" : ` (${t("rx.fieldOptional")})`}
-                            </label>
-                            <input type="text" value={med.dosage} onChange={(e) => updateMedication(index, "dosage", e.target.value)} placeholder={t("rx.medDosagePlaceholder")} className={`rx-inp-sm${rxFieldClass(showErrors && fieldErrors.dosage)}`} />
-                          </div>
-                          <div>
-                            <label className={`text-xs font-medium block mb-1 ${
-                              showErrors && fieldErrors.frequency ? "text-rose-700" : "text-slate-600"
-                            }`}>
-                              {t("rx2.frequencyLabel")}{kind === "medication" ? " *" : ` (${t("rx.fieldOptional")})`}
-                            </label>
-                            <select value={med.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} className={`rx-inp-sm${rxFieldClass(showErrors && fieldErrors.frequency)}`}>
-                              <option value="">{t("med.freqSelect")}</option>
-                              <option value="Once daily">{t("med.freqOnce")}</option>
-                              <option value="Twice daily">{t("med.freqTwice")}</option>
-                              <option value="Three times daily">{t("med.freqThree")}</option>
-                              <option value="Every 8 hours">{t("med.freq8h")}</option>
-                              <option value="Every 12 hours">{t("med.freq12h")}</option>
-                              <option value="As needed">{t("med.freqAsNeeded")}</option>
-                              <option value="Weekly">{t("med.freqWeekly")}</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.durationLabel")}</label>
-                            <input type="text" value={med.duration} onChange={(e) => updateMedication(index, "duration", e.target.value)} placeholder={t("rx.medDurationPlaceholder")} className="rx-inp-sm" />
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx2.instructionsLabel")}</label>
-                            <input type="text" value={med.instructions} onChange={(e) => updateMedication(index, "instructions", e.target.value)} placeholder={t("rx.medInstructionsPlaceholder")} className="rx-inp-sm" />
-                          </div>
-                        </div>
-                      </div>
+                      <PrescriptionMedItemForm
+                        key={index}
+                        med={med}
+                        index={index}
+                        showErrors={showErrors}
+                        fieldErrors={fieldErrors}
+                        kindLabel={kindLabel}
+                        controlInfo={controlInfo(med.prescriptionType)}
+                        onUpdate={updateMedication}
+                        onRemove={removeMedication}
+                        t={t}
+                        rxFieldClass={rxFieldClass}
+                      />
                     );
                   })}
                 </div>

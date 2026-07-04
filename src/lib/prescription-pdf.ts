@@ -27,8 +27,13 @@ export interface PrescriptionPdfData {
   todayText: string;
   validUntilText: string;
   medications: {
-    name: string; dosage: string; frequency: string;
-    duration?: string; instructions?: string;
+    name: string;
+    dosage: string;
+    frequency: string;
+    duration?: string;
+    instructions?: string;
+    presentation?: string;
+    pharmaceuticalForm?: string;
   }[];
   instructions: string;
   // Assinatura (se já assinada)
@@ -42,6 +47,7 @@ const L: Record<Lang, Record<string, string>> = {
     patientAge: "Age", patientCpf: "Tax ID (CPF)", yearsOld: "years",
     prescriptionDate: "Prescription Date", validUntil: "Valid Until", noExpiry: "No expiry",
     dosage: "Dosage", frequency: "Frequency", duration: "Duration", instructions: "Instructions",
+    presentation: "Presentation", pharmaceuticalForm: "Pharmaceutical form",
     generalInstructions: "General Instructions", digitalId: "Digital Prescription ID",
     digitalSignature: "Digitally signed (ICP-Brasil)",
     confidential: "CONFIDENTIAL — Protected health information.",
@@ -52,6 +58,7 @@ const L: Record<Lang, Record<string, string>> = {
     patientAge: "Idade", patientCpf: "CPF", yearsOld: "anos",
     prescriptionDate: "Data da prescrição", validUntil: "Válida até", noExpiry: "Sem validade",
     dosage: "Dosagem", frequency: "Frequência", duration: "Duração", instructions: "Instruções",
+    presentation: "Apresentação", pharmaceuticalForm: "Forma farmacêutica",
     generalInstructions: "Instruções gerais", digitalId: "ID da prescrição digital",
     digitalSignature: "Assinado digitalmente (ICP-Brasil)",
     confidential: "CONFIDENCIAL — Informação de saúde protegida.",
@@ -62,6 +69,7 @@ const L: Record<Lang, Record<string, string>> = {
     patientAge: "Edad", patientCpf: "CPF", yearsOld: "años",
     prescriptionDate: "Fecha de la receta", validUntil: "Válida hasta", noExpiry: "Sin caducidad",
     dosage: "Dosis", frequency: "Frecuencia", duration: "Duración", instructions: "Instrucciones",
+    presentation: "Presentación", pharmaceuticalForm: "Forma farmacéutica",
     generalInstructions: "Instrucciones generales", digitalId: "ID de la receta digital",
     digitalSignature: "Firmado digitalmente (ICP-Brasil)",
     confidential: "CONFIDENCIAL — Información de salud protegida.",
@@ -207,7 +215,10 @@ export async function buildPrescriptionPdf(
   const maxW = A4.w - margin * 2 - 20;
   data.medications.forEach((med, i) => {
     ensureSpace(80);
-    text(page, `${i + 1}. ${med.name}`, margin, y, 13, fontBold, BLUE);
+    const title = med.presentation
+      ? `${i + 1}. ${med.name} — ${med.presentation}`
+      : `${i + 1}. ${med.name}`;
+    text(page, title, margin, y, 13, fontBold, BLUE);
     y -= 18;
     const detail = (label: string, value: string) => {
       if (!value) return;
@@ -218,6 +229,7 @@ export async function buildPrescriptionPdf(
         y -= 15;
       }
     };
+    if (med.pharmaceuticalForm) detail(tr.pharmaceuticalForm, med.pharmaceuticalForm);
     detail(tr.dosage, med.dosage);
     detail(tr.frequency, med.frequency);
     if (med.duration) detail(tr.duration, med.duration);

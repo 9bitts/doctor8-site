@@ -9,6 +9,9 @@ const medicationItemSchema = z.object({
   frequency: z.string().min(1),
   duration: z.string().optional(),
   instructions: z.string().optional(),
+  presentation: z.string().optional(),
+  pharmaceuticalForm: z.string().optional(),
+  itemKind: z.enum(["medication", "device", "phytotherapy"]).optional(),
 });
 
 const createSchema = z.object({

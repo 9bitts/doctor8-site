@@ -2224,6 +2224,12 @@ model DrugCatalog {
   // Normalized lowercase fields for fast case-insensitive search
   searchName      String   // lowercase of name
   searchIngredient String  // lowercase of activeIngredient
+  searchPresentation String? // lowercase presentation without accents (CMED search)
+
+  // CMED-specific (optional — null for ANVISA/VE/US legacy rows)
+  ggremCode           String? @unique // ANVISA CÓDIGO GGREM
+  pharmaceuticalForm  String? // e.g. Comprimido, Xarope (frasco)
+  dosage              String? // e.g. 10 MG/ML — extracted from presentation
 
   active          Boolean  @default(true)
   createdAt       DateTime @default(now())
@@ -2231,6 +2237,8 @@ model DrugCatalog {
 
   @@index([searchName])
   @@index([searchIngredient])
+  @@index([searchPresentation])
+  @@index([ggremCode])
   @@index([country])
   @@index([active])
 

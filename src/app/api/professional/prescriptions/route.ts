@@ -28,6 +28,8 @@ const medicationItemSchema = z.object({
   frequency: z.string().optional(),
   duration: z.string().optional(),
   instructions: z.string().optional(),
+  presentation: z.string().optional(),
+  pharmaceuticalForm: z.string().optional(),
   itemKind: z.enum(["medication", "device", "phytotherapy"]).optional(),
 }).superRefine((item, ctx) => {
   const kind = item.itemKind || "medication";
