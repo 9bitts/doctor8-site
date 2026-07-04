@@ -8,3 +8,9 @@ data/cum-co/*
 !data/cum-co/README.md
 data/cmed/*.xlsx
 data/cmed/*.xls
+
+android/app/build/
+android/.gradle/
+android/build/
+*.jks
+*.keystore
