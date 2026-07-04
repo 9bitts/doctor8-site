@@ -25,6 +25,15 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
     scheduleMinute: 0,
     timezone: "America/Sao_Paulo",
   },
+  {
+    id: "treinamento-doctor8",
+    titleKey: "meetRoom.doctor8.title",
+    subjectKey: "meetRoom.doctor8.subject",
+    audienceKey: "meetRoom.doctor8.audience",
+    scheduleHour: 19,
+    scheduleMinute: 30,
+    timezone: "America/Sao_Paulo",
+  },
 ];
 
 export function getMeetingRoomInvitePath(roomId: string): string {
@@ -53,12 +62,19 @@ export function normalizeMeetUrl(raw: string | null | undefined): string | null 
   return `https://${url.replace(/^\/+/, "")}`;
 }
 
+const MEETING_ROOM_URL_BY_ID: Record<string, string | undefined> = {
+  "nise-yamaguchi": process.env.NEXT_PUBLIC_MEETING_ROOM_NISE_URL,
+  "treinamento-doctor8": process.env.NEXT_PUBLIC_MEETING_ROOM_DOCTOR8_URL,
+};
+
+const MEETING_ROOM_URL_FALLBACK: Record<string, string> = {
+  "treinamento-doctor8": "https://meet.google.com/kbe-vkof-xza",
+};
+
 export function getMeetingRoomMeetUrl(roomId: string): string | null {
-  if (roomId === "nise-yamaguchi") {
-    const url =
-      process.env.NEXT_PUBLIC_MEETING_ROOM_NISE_URL?.trim() ||
-      process.env.GOOGLE_MEET_DEFAULT_URL?.trim();
-    return normalizeMeetUrl(url);
-  }
-  return null;
+  const url =
+    MEETING_ROOM_URL_BY_ID[roomId]?.trim() ||
+    MEETING_ROOM_URL_FALLBACK[roomId] ||
+    (roomId === "nise-yamaguchi" ? process.env.GOOGLE_MEET_DEFAULT_URL?.trim() : undefined);
+  return normalizeMeetUrl(url);
 }
