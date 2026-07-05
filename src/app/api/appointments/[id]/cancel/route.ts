@@ -89,13 +89,20 @@ export async function POST(
       patient:      { select: { userId: true, firstName: true, lastName: true } },
       professional: { select: { userId: true, firstName: true, lastName: true } },
       psychoanalyst: { select: { userId: true, firstName: true, lastName: true } },
+      integrativeTherapist: { select: { userId: true, firstName: true, lastName: true } },
     },
   });
 
   if (!appointment) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const providerUserId = appointment.professional?.userId ?? appointment.psychoanalyst?.userId;
-  const provider = appointment.professional ?? appointment.psychoanalyst;
+  const providerUserId =
+    appointment.professional?.userId ??
+    appointment.psychoanalyst?.userId ??
+    appointment.integrativeTherapist?.userId;
+  const provider =
+    appointment.professional ??
+    appointment.psychoanalyst ??
+    appointment.integrativeTherapist;
 
   const isPatient      = appointment.patient.userId === session.user.id;
   const isProfessional = providerUserId === session.user.id;
@@ -173,7 +180,7 @@ export async function POST(
   const cancellerName = isPatient
     ? `${safeDecrypt(appointment.patient.firstName)} ${safeDecrypt(appointment.patient.lastName)}`.trim()
     : provider
-      ? appointment.psychoanalyst
+      ? appointment.psychoanalyst || appointment.integrativeTherapist
         ? `${safeDecrypt(provider.firstName)} ${safeDecrypt(provider.lastName)}`
         : `${appointment.professional ? "Dr. " : ""}${provider.firstName} ${provider.lastName}`
       : "Provider";
@@ -184,6 +191,7 @@ export async function POST(
       scheduledAt: appointment.scheduledAt,
       professionalId: appointment.professionalId,
       psychoanalystId: appointment.psychoanalystId,
+      integrativeTherapistId: appointment.integrativeTherapistId,
       patientFirstName: appointment.patient.firstName,
       patientLastName: appointment.patient.lastName,
     }).catch(() => {});
@@ -227,7 +235,9 @@ export async function POST(
         ? `Dr. ${appointment.professional.firstName} ${appointment.professional.lastName}`
         : appointment.psychoanalyst
           ? `${safeDecrypt(appointment.psychoanalyst.firstName)} ${safeDecrypt(appointment.psychoanalyst.lastName)}`
-          : "Profissional";
+          : appointment.integrativeTherapist
+            ? `${safeDecrypt(appointment.integrativeTherapist.firstName)} ${safeDecrypt(appointment.integrativeTherapist.lastName)}`
+            : "Profissional";
       const { sendAppointmentCancelled } = await import("@/lib/email");
       await sendAppointmentCancelled({
         patientEmail: patientUser.email,

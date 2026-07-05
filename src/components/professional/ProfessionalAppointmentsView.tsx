@@ -34,6 +34,7 @@ import {
   type VolunteerWeeklyBlock,
 } from "@/lib/availability-exceptions";
 import { isScheduledVolunteerAppointment } from "@/lib/scheduled-volunteer";
+import { ProCancelAppointmentButton } from "@/components/professional/ProfessionalCancelAppointmentModal";
 
 export type ProfessionalAppointmentRow = {
   id: string;
@@ -46,6 +47,8 @@ export type ProfessionalAppointmentRow = {
   patientConfirmedAt: string | null;
   patientFirstName: string;
   patientLastName: string;
+  patientUserId: string | null;
+  patientPhone: string | null;
   chartId: string | null;
   summarizeDocumentId: string | null;
   intakeHealthPlanLabel: string | null;
@@ -355,6 +358,24 @@ export default function ProfessionalAppointmentsView({
             <Video size={12} /> {t("proappt.join")}
           </a>
         )}
+        <ProCancelAppointmentButton
+          appointment={{
+            id: apt.id,
+            scheduledAt: apt.scheduledAt,
+            status: apt.status,
+            patientFirstName: apt.patientFirstName,
+            patientLastName: apt.patientLastName,
+            patientUserId: apt.patientUserId,
+            patientPhone: apt.patientPhone,
+          }}
+          portalBase={portalBase}
+          timeZone={timeZone}
+          onCancelled={(id) => {
+            setAppointments((prev) =>
+              prev.map((row) => (row.id === id ? { ...row, status: "CANCELLED" } : row)),
+            );
+          }}
+        />
       </div>
     );
   }

@@ -179,6 +179,7 @@ export async function notifyProfessionalCancelled(params: {
   scheduledAt: Date;
   professionalId?: string | null;
   psychoanalystId?: string | null;
+  integrativeTherapistId?: string | null;
   patientFirstName: string;
   patientLastName: string;
 }): Promise<void> {

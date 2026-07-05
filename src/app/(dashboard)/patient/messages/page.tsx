@@ -9,6 +9,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
+import { MESSAGE_DRAFT_STORAGE_KEY } from "@/lib/pro-cancel-appointment";
 import { Send, Search, Loader2, MessageSquare, ArrowLeft, Plus, X, Users, AlertCircle, RefreshCw } from "lucide-react";
 
 interface Conversation {
@@ -105,6 +106,21 @@ export default function MessagesPage() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (!activeConv) return;
+    try {
+      const raw = sessionStorage.getItem(MESSAGE_DRAFT_STORAGE_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as { userId?: string; text?: string };
+      if (draft.userId === activeConv.userId && draft.text) {
+        setNewMessage(draft.text);
+        sessionStorage.removeItem(MESSAGE_DRAFT_STORAGE_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [activeConv]);
 
   useEffect(() => {
     if (activeConv) {

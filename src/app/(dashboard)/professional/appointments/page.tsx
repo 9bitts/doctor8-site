@@ -58,21 +58,13 @@ export default async function ProfessionalAppointments() {
       scheduledAt: { gte: rangeStart, lte: rangeEnd },
     },
     include: {
-      patient: { select: { firstName: true, lastName: true } },
+      patient: { select: { firstName: true, lastName: true, userId: true, phone: true } },
     },
     orderBy: { scheduledAt: "desc" },
   });
 
-  const patientProfiles = await db.patientProfile.findMany({
-    where: { id: { in: appointments.map((a) => a.patientId) } },
-    select: { id: true, userId: true },
-  });
-  const userIdByPatientProfileId = Object.fromEntries(
-    patientProfiles.map((p) => [p.id, p.userId]),
-  );
-
   const linkedUserIds = [
-    ...new Set(patientProfiles.map((p) => p.userId).filter(Boolean)),
+    ...new Set(appointments.map((a) => a.patient.userId).filter(Boolean)),
   ] as string[];
 
   const charts = linkedUserIds.length
@@ -108,7 +100,7 @@ export default async function ProfessionalAppointments() {
 
   const rows: ProfessionalAppointmentRow[] = appointments.map((apt) => {
     const intake = parseAppointmentIntake(apt.chiefComplaint);
-    const patientUserId = userIdByPatientProfileId[apt.patientId];
+    const patientUserId = apt.patient.userId;
     const chartId = patientUserId ? chartIdByUserId[patientUserId] ?? null : null;
 
     return {
@@ -122,6 +114,8 @@ export default async function ProfessionalAppointments() {
       patientConfirmedAt: apt.patientConfirmedAt?.toISOString() ?? null,
       patientFirstName: safeDecrypt(apt.patient.firstName),
       patientLastName: safeDecrypt(apt.patient.lastName),
+      patientUserId,
+      patientPhone: safeDecrypt(apt.patient.phone) || null,
       chartId,
       summarizeDocumentId: chartId ? summarizeDocumentIdByChartId[chartId] ?? null : null,
       intakeHealthPlanLabel: intake?.healthPlanLabel ?? null,

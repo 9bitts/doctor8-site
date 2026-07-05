@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { formatAppointmentTimeWithLabel, formatShortDateWithYear, formatShortTime } from "@/lib/timezone";
 import { Calendar, ChevronLeft, ChevronRight, List, MapPin, Video } from "lucide-react";
+import { ProCancelAppointmentButton } from "@/components/professional/ProfessionalCancelAppointmentModal";
 
 export type IntegrativeAppointmentRow = {
   id: string;
@@ -12,6 +13,10 @@ export type IntegrativeAppointmentRow = {
   status: string;
   type: string;
   patientName: string;
+  patientFirstName: string;
+  patientLastName: string;
+  patientUserId: string | null;
+  patientPhone: string | null;
   visitType: "first" | "return";
   mainPractice: string | null;
   mainPracticeLabel: string | null;
@@ -46,7 +51,7 @@ function sameDay(a: Date, b: Date): boolean {
 }
 
 export default function IntegrativeAppointmentsView({
-  appointments,
+  appointments: initialAppointments,
   practiceOptions,
   timeZone,
 }: {
@@ -59,6 +64,7 @@ export default function IntegrativeAppointmentsView({
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [practiceFilter, setPracticeFilter] = useState("");
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [appointments, setAppointments] = useState(initialAppointments);
 
   const statusColors: Record<string, string> = {
     CONFIRMED: "bg-teal-100 text-teal-700",
@@ -108,22 +114,43 @@ export default function IntegrativeAppointmentsView({
   }
 
   function renderActions(apt: IntegrativeAppointmentRow) {
-    if (apt.status !== "CONFIRMED") return null;
     return (
-      <a
-        href={
-          apt.type === "TELECONSULT"
-            ? `/video/${apt.id}`
-            : `/integrative-therapist/consult/${apt.id}`
-        }
-        className={`text-xs font-bold text-white px-3 py-2 rounded-xl shrink-0 ${
-          apt.type === "TELECONSULT"
-            ? "bg-teal-500 hover:bg-teal-600"
-            : "bg-slate-800 hover:bg-slate-700"
-        }`}
-      >
-        {apt.type === "TELECONSULT" ? t("proappt.join") : t("it.consult.start")}
-      </a>
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
+        {apt.status === "CONFIRMED" && (
+          <a
+            href={
+              apt.type === "TELECONSULT"
+                ? `/video/${apt.id}`
+                : `/integrative-therapist/consult/${apt.id}`
+            }
+            className={`text-xs font-bold text-white px-3 py-2 rounded-xl ${
+              apt.type === "TELECONSULT"
+                ? "bg-teal-500 hover:bg-teal-600"
+                : "bg-slate-800 hover:bg-slate-700"
+            }`}
+          >
+            {apt.type === "TELECONSULT" ? t("proappt.join") : t("it.consult.start")}
+          </a>
+        )}
+        <ProCancelAppointmentButton
+          appointment={{
+            id: apt.id,
+            scheduledAt: apt.scheduledAt,
+            status: apt.status,
+            patientFirstName: apt.patientFirstName,
+            patientLastName: apt.patientLastName,
+            patientUserId: apt.patientUserId,
+            patientPhone: apt.patientPhone,
+          }}
+          portalBase="/integrative-therapist"
+          timeZone={timeZone}
+          onCancelled={(id) => {
+            setAppointments((prev) =>
+              prev.map((row) => (row.id === id ? { ...row, status: "CANCELLED" } : row)),
+            );
+          }}
+        />
+      </div>
     );
   }
 

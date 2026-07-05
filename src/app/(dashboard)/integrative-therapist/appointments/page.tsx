@@ -45,7 +45,7 @@ export default async function IntegrativeTherapistAppointmentsPage() {
       integrativeTherapistId: profile.id,
       scheduledAt: { gte: rangeStart, lte: rangeEnd },
     },
-    include: { patient: { select: { firstName: true, lastName: true, userId: true } } },
+    include: { patient: { select: { firstName: true, lastName: true, userId: true, phone: true } } },
     orderBy: { scheduledAt: "desc" },
   });
 
@@ -71,6 +71,10 @@ export default async function IntegrativeTherapistAppointmentsPage() {
       status: apt.status,
       type: apt.type,
       patientName: `${safeDecrypt(apt.patient.firstName)} ${safeDecrypt(apt.patient.lastName)}`.trim(),
+      patientFirstName: safeDecrypt(apt.patient.firstName),
+      patientLastName: safeDecrypt(apt.patient.lastName),
+      patientUserId: apt.patient.userId,
+      patientPhone: safeDecrypt(apt.patient.phone) || null,
       visitType: meta?.visitType ?? ("first" as const),
       mainPractice,
       mainPracticeLabel: p ? picLabel(p, lang) : mainPractice,
