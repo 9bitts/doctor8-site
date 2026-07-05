@@ -11,6 +11,7 @@ import NotificationBell from "@/components/NotificationBell";
 import PushSubscribe from "@/components/PushSubscribe";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import EightBetaLink from "@/components/EightBetaLink";
 import OrganizationScopeSwitcher from "@/components/organization/OrganizationScopeSwitcher";
 import ProfessionalScopeSwitcher from "@/components/professional/ProfessionalScopeSwitcher";
 import { resolveLoginPathForSession } from "@/lib/auth-portals";
@@ -369,6 +370,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 ml-auto shrink-0">
             {isOrganization && <OrganizationScopeSwitcher />}
             {isProfessional && <ProfessionalScopeSwitcher />}
+            <EightBetaLink />
             <LanguageSwitcher variant="header" />
             <NotificationBell />
             <div className={`w-8 h-8 rounded-xl ${headerAvatar} flex items-center justify-center text-white text-sm font-bold`}>
