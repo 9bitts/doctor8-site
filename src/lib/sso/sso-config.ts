@@ -11,6 +11,7 @@ export function getOpenIdConfiguration() {
     userinfo_endpoint: `${base}/api/oauth/userinfo`,
     jwks_uri: `${base}/.well-known/jwks.json`,
     response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code"],
     subject_types_supported: ["public"],
     id_token_signing_alg_values_supported: ["RS256"],
     scopes_supported: ["openid", "email", "profile"],

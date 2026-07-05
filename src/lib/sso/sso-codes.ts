@@ -10,6 +10,8 @@ type StoredCodeMeta = {
   redirectUri: string;
   scope: string;
   nonce?: string | null;
+  codeChallenge?: string | null;
+  codeChallengeMethod?: string | null;
 };
 
 function encodeMeta(meta: StoredCodeMeta): string {

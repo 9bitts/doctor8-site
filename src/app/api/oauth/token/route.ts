@@ -3,6 +3,7 @@ import { getSsoClient, verifySsoClientSecret } from "@/lib/sso/sso-clients";
 import { consumeSsoAuthorizationCode } from "@/lib/sso/sso-codes";
 import { ACCESS_TOKEN_TTL_SEC, issueAccessToken, issueIdToken } from "@/lib/sso/sso-jwt";
 import { getSsoUserClaims } from "@/lib/sso/sso-userinfo";
+import { verifyPkce } from "@/lib/sso/sso-pkce";
 
 async function parseBody(req: NextRequest): Promise<URLSearchParams> {
   const contentType = req.headers.get("content-type") ?? "";
@@ -56,6 +57,16 @@ export async function POST(req: NextRequest) {
   const meta = await consumeSsoAuthorizationCode(code, clientId, redirectUri);
   if (!meta) {
     return NextResponse.json({ error: "invalid_grant" }, { status: 400 });
+  }
+
+  const codeVerifier = body.get("code_verifier");
+  if (meta.codeChallenge) {
+    if (!codeVerifier || meta.codeChallengeMethod !== "S256") {
+      return NextResponse.json({ error: "invalid_grant" }, { status: 400 });
+    }
+    if (!verifyPkce(codeVerifier, meta.codeChallenge)) {
+      return NextResponse.json({ error: "invalid_grant" }, { status: 400 });
+    }
   }
 
   const claims = await getSsoUserClaims(meta.userId);

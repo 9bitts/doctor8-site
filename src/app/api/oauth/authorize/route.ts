@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
   const responseType = sp.get("response_type");
   const scope = sp.get("scope") || "openid email profile";
   const nonce = sp.get("nonce");
+  const codeChallenge = sp.get("code_challenge");
+  const codeChallengeMethod = sp.get("code_challenge_method");
 
   if (!clientId || !getSsoClient(clientId)) {
     return NextResponse.json({ error: "invalid_client" }, { status: 400 });
@@ -73,6 +75,8 @@ export async function GET(req: NextRequest) {
     redirectUri,
     scope,
     nonce,
+    codeChallenge,
+    codeChallengeMethod,
   });
 
   const callback = new URL(redirectUri);

@@ -11,24 +11,44 @@ type KeyPair = {
 
 let cachedKeys: KeyPair | null = null;
 
+function normalizePem(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.includes("\\n")) {
+    return trimmed.replace(/\\n/g, "\n");
+  }
+  return trimmed;
+}
+
 function loadKeyPair(): KeyPair {
   if (cachedKeys) return cachedKeys;
 
-  const pem = process.env.SSO_OAUTH_PRIVATE_KEY?.trim();
-  if (pem) {
-    const privateKey = crypto.createPrivateKey(pem);
-    const publicKey = crypto.createPublicKey(privateKey);
-    const jwk = publicKey.export({ format: "jwk" }) as JsonWebKey;
-    cachedKeys = {
-      privateKey,
-      publicJwk: {
-        ...jwk,
-        kid: KID,
-        use: "sig",
-        alg: "RS256",
-      },
-    };
-    return cachedKeys;
+  const rawPem = process.env.SSO_OAUTH_PRIVATE_KEY?.trim();
+  if (rawPem) {
+    try {
+      const pem = normalizePem(rawPem);
+      const privateKey = crypto.createPrivateKey(pem);
+      const publicKey = crypto.createPublicKey(privateKey);
+      const jwk = publicKey.export({ format: "jwk" }) as JsonWebKey;
+      cachedKeys = {
+        privateKey,
+        publicJwk: {
+          ...jwk,
+          kid: KID,
+          use: "sig",
+          alg: "RS256",
+        },
+      };
+      return cachedKeys;
+    } catch (err) {
+      console.error("[sso] SSO_OAUTH_PRIVATE_KEY inválida:", err);
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("SSO_OAUTH_PRIVATE_KEY inválida em produção");
+      }
+    }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SSO_OAUTH_PRIVATE_KEY é obrigatória em produção");
   }
 
   const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
@@ -45,11 +65,7 @@ function loadKeyPair(): KeyPair {
     },
   };
 
-  if (process.env.NODE_ENV !== "production") {
-    console.warn(
-      "[sso] SSO_OAUTH_PRIVATE_KEY não configurada — usando chave RSA efêmera (dev only)."
-    );
-  }
+  console.warn("[sso] SSO_OAUTH_PRIVATE_KEY não configurada — chave efêmera (dev only).");
 
   return cachedKeys;
 }

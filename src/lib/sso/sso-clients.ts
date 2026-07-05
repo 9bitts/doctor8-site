@@ -49,5 +49,5 @@ export function verifySsoClientSecret(clientId: string, secret: string | null | 
   if (!secret) return false;
   const client = getSsoClient(clientId);
   if (!client) return false;
-  return client.clientSecret === secret;
+  return client.clientSecret.trim() === secret.trim();
 }
