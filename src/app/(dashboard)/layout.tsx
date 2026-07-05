@@ -40,6 +40,7 @@ import {
 import { withNavIcons, type DashboardNavItem } from "@/lib/dashboard-nav-icons";
 import { ToastProvider } from "@/components/ui/toast";
 import { isValidIanaTimeZone } from "@/lib/timezone";
+import { hasAnyNaturalMedicinePractice } from "@/lib/natural-medicine/config";
 import {
   User, Settings, LogOut, Menu, X, ChevronRight,
 } from "lucide-react";
@@ -70,6 +71,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState<string>("User");
   const [userId, setUserId] = useState<string>("");
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [showNaturalMedicineNav, setShowNaturalMedicineNav] = useState(true);
 
   useEffect(() => {
     async function loadSession() {
@@ -170,6 +172,20 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [role, sessionLoaded, pathname]);
 
+  useEffect(() => {
+    if (role !== "INTEGRATIVE_THERAPIST" || !sessionLoaded) {
+      setShowNaturalMedicineNav(true);
+      return;
+    }
+    fetch("/api/integrative-therapist/profile")
+      .then((r) => r.json())
+      .then((data) => {
+        const practices = data?.profile?.picsPractices ?? [];
+        setShowNaturalMedicineNav(hasAnyNaturalMedicinePractice(practices));
+      })
+      .catch(() => setShowNaturalMedicineNav(false));
+  }, [role, sessionLoaded]);
+
   const isPsychologistPortal = pathname.startsWith("/psychologist");
   const providerPortalId = resolveProviderPortalId(role, isPsychologistPortal);
 
@@ -184,8 +200,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const providerGroupedNav = providerPortalId
     ? (PLATFORM_NAV_GROUPS_BY_PORTAL[providerPortalId] ?? []).map((group) => ({
         ...group,
-        items: withNavIcons(group.items),
-      }))
+        items: withNavIcons(group.items).filter(
+          (item) =>
+            !item.href.includes("/medicina-natural") || showNaturalMedicineNav,
+        ),
+      })).filter((group) => group.items.length > 0)
     : [];
   const roleLabel =
     role === "ORGANIZATION" ? t("role.organization")

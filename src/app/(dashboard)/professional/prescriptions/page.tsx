@@ -27,6 +27,7 @@ import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 import DrugSearchResults, { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
 import PrescriptionMedItemForm, { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
+import { phytotherapyProductByValue } from "@/lib/pics/reference-library/phytotherapy-products";
 
 type ImportablePatient = {
   patientProfileId: string;
@@ -362,6 +363,24 @@ export default function PrescriptionsPage() {
           setView("prescription");
         }
       })();
+    }
+
+    if (params.get("add") === "phytotherapy" && !patientRecordId) {
+      setView("prescription");
+      setMedications((prev) => {
+        if (prev.some((m) => m.itemKind === "phytotherapy")) return prev;
+        return [
+          ...prev,
+          {
+            name: "",
+            dosage: "",
+            frequency: "",
+            duration: "",
+            instructions: "",
+            itemKind: "phytotherapy" as const,
+          },
+        ];
+      });
     }
 
     const sign = params.get("sign");
@@ -764,6 +783,23 @@ export default function PrescriptionsPage() {
   function removeMedication(index: number) { setMedications((prev) => prev.filter((_, i) => i !== index)); }
   function updateMedication(index: number, field: keyof MedItem, value: string) {
     setMedications((prev) => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
+  }
+
+  function selectPhytoProduct(index: number, productId: string) {
+    const product = phytotherapyProductByValue(productId);
+    setMedications((prev) =>
+      prev.map((m, i) =>
+        i === index
+          ? {
+              ...m,
+              phytoProductId: productId,
+              name: product && productId !== "other" && productId !== "planta_medicinal"
+                ? t(product.labelKey)
+                : m.name,
+            }
+          : m,
+      ),
+    );
   }
 
   function applyRxTemplate(tpl: RxTemplate) {
@@ -1314,6 +1350,7 @@ export default function PrescriptionsPage() {
                         kindLabel={kindLabel}
                         controlInfo={controlInfo(med.prescriptionType)}
                         onUpdate={updateMedication}
+                        onPhytoProductSelect={selectPhytoProduct}
                         onRemove={removeMedication}
                         t={t}
                         rxFieldClass={rxFieldClass}

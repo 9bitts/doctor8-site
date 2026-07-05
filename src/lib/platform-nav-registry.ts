@@ -156,6 +156,7 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.clinical",
     items: [
       { href: "/professional/prescriptions", labelKey: "nav.prescriptions", roles: ["PROFESSIONAL"], iconKey: "Stethoscope" },
+      { href: "/professional/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["PROFESSIONAL"], iconKey: "Leaf" },
       { href: "/professional/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/professional/psychology", labelKey: "nav.psychologyArea", roles: ["PROFESSIONAL"], iconKey: "Brain" },
       { href: "/professional/buying-club", labelKey: "nav.buyingClub", roles: ["PROFESSIONAL"], iconKey: "ShoppingBag" },
@@ -282,6 +283,7 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
   {
     labelKey: "nav.group.clinical",
     items: [
+      { href: "/integrative-therapist/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Leaf" },
       { href: "/integrative-therapist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Video" },
     ],
   },

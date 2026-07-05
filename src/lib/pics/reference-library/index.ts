@@ -1,11 +1,13 @@
 import type { Lang } from "@/lib/i18n/translations";
 import { translate } from "@/lib/i18n/translations";
+import { BACH_ESSENCE_GROUPS, BACH_RESCUE_KEYS } from "./florais-bach";
 import { PHYTOTHERAPY_REFERENCE_PRODUCTS } from "./phytotherapy-products";
 
 export type ReferenceSectionId =
   | "phyto_formulary"
   | "tea_preparation"
   | "phyto_safety"
+  | "phyto_forms"
   | "homeo_care"
   | "acu_care"
   | "medit_care"
@@ -18,6 +20,7 @@ export type ReferenceSectionId =
   | "reflex_care"
   | "music_care"
   | "florais_care"
+  | "bach_essences"
   | "ayur_care"
   | "hypno_care"
   | "antro_care"
@@ -43,7 +46,12 @@ export interface ReferenceSection {
   products?: typeof PHYTOTHERAPY_REFERENCE_PRODUCTS;
 }
 
-const SHARED_PHYTO: ReferenceSectionId[] = ["phyto_formulary", "tea_preparation", "phyto_safety"];
+const SHARED_PHYTO: ReferenceSectionId[] = [
+  "phyto_formulary",
+  "phyto_forms",
+  "tea_preparation",
+  "phyto_safety",
+];
 
 const SECTIONS_BY_PRACTICE: Record<string, ReferenceSectionId[]> = {
   fitoterapia: SHARED_PHYTO,
@@ -58,7 +66,7 @@ const SECTIONS_BY_PRACTICE: Record<string, ReferenceSectionId[]> = {
   biodanca: ["biodanca_care"],
   reflexoterapia: ["reflex_care"],
   musicoterapia: ["music_care"],
-  terapia_florais: ["florais_care"],
+  terapia_florais: ["florais_care", "bach_essences"],
   ayurveda: ["ayur_care"],
   hipnoterapia: ["hypno_care"],
   antroposofia: ["antro_care"],
@@ -100,6 +108,16 @@ const SECTION_DEFS: Record<ReferenceSectionId, Omit<ReferenceSection, "id">> = {
       "it.ref.safety.3",
       "it.ref.safety.4",
       "it.ref.safety.5",
+    ],
+  },
+  phyto_forms: {
+    titleKey: "it.ref.phytoForms",
+    bodyKeys: [
+      "it.ref.phytoForms.1",
+      "it.ref.phytoForms.2",
+      "it.ref.phytoForms.3",
+      "it.ref.phytoForms.4",
+      "it.ref.phytoForms.5",
     ],
   },
   homeo_care: {
@@ -158,6 +176,10 @@ const SECTION_DEFS: Record<ReferenceSectionId, Omit<ReferenceSection, "id">> = {
   florais_care: {
     titleKey: "it.ref.floraisCare",
     bodyKeys: ["it.ref.florais.1", "it.ref.florais.2", "it.ref.florais.3"],
+  },
+  bach_essences: {
+    titleKey: "it.ref.bach.title",
+    bodyKeys: [],
   },
   ayur_care: {
     titleKey: "it.ref.ayurCare",
@@ -231,12 +253,33 @@ export function getReferenceSections(practiceSlug: string): ReferenceSection[] {
 }
 
 export function renderReferenceSectionBody(section: ReferenceSection, lang: Lang): string[] {
+  if (section.id === "bach_essences") {
+    const lines: string[] = [translate(lang, "it.ref.bach.intro")];
+    for (const group of BACH_ESSENCE_GROUPS) {
+      lines.push("");
+      lines.push(translate(lang, group.groupKey));
+      for (const key of group.essenceKeys) {
+        lines.push(`  • ${translate(lang, key)}`);
+      }
+    }
+    lines.push("");
+    lines.push(translate(lang, "it.ref.bach.rescueTitle"));
+    for (const key of BACH_RESCUE_KEYS) {
+      lines.push(`  • ${translate(lang, key)}`);
+    }
+    return lines;
+  }
+
   if (section.products?.length) {
-    return section.products.map((p) => {
+    const productLines = section.products.map((p) => {
       const name = translate(lang, p.labelKey);
       const indication = translate(lang, p.indicationKey);
       return `- ${name}: ${indication}`;
     });
+    if (section.id === "phyto_formulary") {
+      return [translate(lang, "it.ref.phyto.renameNote"), "", ...productLines];
+    }
+    return productLines;
   }
   return section.bodyKeys.map((k) => translate(lang, k));
 }

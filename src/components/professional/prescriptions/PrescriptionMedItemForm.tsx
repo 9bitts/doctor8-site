@@ -1,4 +1,8 @@
 import { AlertCircle, Trash2 } from "lucide-react";
+import {
+  PHYTOTHERAPY_REFERENCE_PRODUCTS,
+  phytotherapyProductByValue,
+} from "@/lib/pics/reference-library/phytotherapy-products";
 
 export type PrescriptionMedItem = {
   name: string;
@@ -11,6 +15,7 @@ export type PrescriptionMedItem = {
   controlled?: boolean;
   prescriptionType?: string | null;
   itemKind?: "medication" | "device" | "phytotherapy";
+  phytoProductId?: string;
 };
 
 export type ControlInfo = {
@@ -27,6 +32,7 @@ interface PrescriptionMedItemFormProps {
   kindLabel: string | null;
   controlInfo: ControlInfo;
   onUpdate: (index: number, field: keyof PrescriptionMedItem, value: string) => void;
+  onPhytoProductSelect?: (index: number, productId: string) => void;
   onRemove: (index: number) => void;
   t: (key: string) => string;
   rxFieldClass: (invalid: boolean) => string;
@@ -40,6 +46,7 @@ export default function PrescriptionMedItemForm({
   kindLabel,
   controlInfo: ci,
   onUpdate,
+  onPhytoProductSelect,
   onRemove,
   t,
   rxFieldClass,
@@ -60,6 +67,30 @@ export default function PrescriptionMedItemForm({
             <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-50 text-accent-700 border border-accent-200">
               {kindLabel}
             </span>
+          )}
+          {kind === "phytotherapy" && onPhytoProductSelect && (
+            <div>
+              <label className="text-xs font-medium text-slate-600 block mb-1">
+                {t("rx.phytoProductSelect")}
+              </label>
+              <select
+                value={med.phytoProductId || ""}
+                onChange={(e) => onPhytoProductSelect(index, e.target.value)}
+                className="rx-inp-sm"
+              >
+                <option value="">{t("rx.phytoProductPlaceholder")}</option>
+                {PHYTOTHERAPY_REFERENCE_PRODUCTS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {t(p.labelKey)}
+                  </option>
+                ))}
+              </select>
+              {med.phytoProductId && phytotherapyProductByValue(med.phytoProductId) && (
+                <p className="text-[11px] text-teal-700 mt-1 leading-relaxed">
+                  {t(phytotherapyProductByValue(med.phytoProductId)!.indicationKey)}
+                </p>
+              )}
+            </div>
           )}
           <label
             className={`text-xs font-medium block mb-1 ${
@@ -117,6 +148,27 @@ export default function PrescriptionMedItemForm({
               placeholder={"Ex.: Comprimido, Xarope (frasco)"}
               className="rx-inp-sm"
             />
+          </div>
+        )}
+        {kind === "phytotherapy" && (
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-slate-600 block mb-1">
+              {t("it.tpl.phyto.presentation")}
+            </label>
+            <select
+              value={med.pharmaceuticalForm || ""}
+              onChange={(e) => onUpdate(index, "pharmaceuticalForm", e.target.value)}
+              className="rx-inp-sm"
+            >
+              <option value="">{t("med.freqSelect")}</option>
+              <option value="capsula">{t("it.tpl.phyto.pres.capsula")}</option>
+              <option value="comprimido">{t("it.tpl.phyto.pres.comprimido")}</option>
+              <option value="tintura">{t("it.tpl.phyto.pres.tintura")}</option>
+              <option value="cha">{t("it.tpl.phyto.pres.cha")}</option>
+              <option value="xarope">{t("it.tpl.phyto.pres.xarope")}</option>
+              <option value="gel">{t("it.tpl.phyto.pres.gel")}</option>
+              <option value="po">{t("it.tpl.phyto.pres.po")}</option>
+            </select>
           </div>
         )}
         <div>
