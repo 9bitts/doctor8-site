@@ -17,6 +17,8 @@ import {
   type ProCancelAppointmentTarget,
 } from "@/lib/pro-cancel-appointment";
 
+type ConfirmAction = "whatsapp" | "doctor";
+
 type Props = {
   appointment: ProCancelAppointmentTarget;
   portalBase: string;
@@ -37,6 +39,7 @@ export default function ProfessionalCancelAppointmentModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
   const patientName = `${appointment.patientFirstName} ${appointment.patientLastName}`.trim();
   const scheduledAt = new Date(appointment.scheduledAt);
@@ -61,20 +64,11 @@ export default function ProfessionalCancelAppointmentModal({
     ? `${portalBase}/messages?with=${appointment.patientUserId}`
     : null;
 
-  function openDoctorMessage() {
-    if (!messagesHref) return;
-    try {
-      sessionStorage.setItem(
-        MESSAGE_DRAFT_STORAGE_KEY,
-        JSON.stringify({ userId: appointment.patientUserId, text: rescheduleMessage }),
-      );
-    } catch {
-      /* ignore */
-    }
-    window.location.href = messagesHref;
-  }
-
-  async function confirmCancel() {
+  async function executeCancel(opts?: {
+    showDone?: boolean;
+    afterSuccess?: () => void;
+    sendPatientNotify?: boolean;
+  }) {
     setLoading(true);
     setError(null);
     try {
@@ -84,6 +78,7 @@ export default function ProfessionalCancelAppointmentModal({
         body: JSON.stringify({
           reason: cancelReason.trim() || "Professional requested cancellation",
           cancelledByProfessional: true,
+          sendPatientNotify: opts?.sendPatientNotify !== false,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -96,21 +91,112 @@ export default function ProfessionalCancelAppointmentModal({
         } else {
           setError(t("proappt.cancelError"));
         }
-        return;
+        return false;
       }
-      setDone(true);
       onCancelled(appointment.id);
+      opts?.afterSuccess?.();
+      if (opts?.showDone !== false) {
+        setDone(true);
+      }
+      return true;
     } catch {
       setError(t("proappt.cancelError"));
+      return false;
     } finally {
       setLoading(false);
     }
   }
 
+  async function confirmDirectCancel() {
+    await executeCancel({ showDone: true, sendPatientNotify: true });
+  }
+
+  async function confirmActionCancel() {
+    if (!confirmAction) return;
+
+    const action = confirmAction;
+    await executeCancel({
+      showDone: false,
+      sendPatientNotify: false,
+      afterSuccess: () => {
+        if (action === "whatsapp" && whatsappUrl) {
+          window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+          onClose();
+          return;
+        }
+        if (action === "doctor" && messagesHref) {
+          try {
+            sessionStorage.setItem(
+              MESSAGE_DRAFT_STORAGE_KEY,
+              JSON.stringify({ userId: appointment.patientUserId, text: rescheduleMessage }),
+            );
+          } catch {
+            /* ignore */
+          }
+          window.location.href = messagesHref;
+        }
+      },
+    });
+  }
+
+  function handleWhatsAppClick() {
+    if (!whatsappUrl) return;
+    setConfirmAction("whatsapp");
+    setError(null);
+  }
+
+  function handleDoctorMessageClick() {
+    if (!messagesHref) return;
+    setConfirmAction("doctor");
+    setError(null);
+  }
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-        {done ? (
+        {confirmAction ? (
+          <>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                <AlertTriangle size={20} className="text-amber-500 shrink-0" />
+                {t("proappt.cancelSureTitle")}
+              </h3>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-slate-400 hover:text-slate-600 shrink-0"
+                aria-label={t("appt.back")}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-sm text-slate-700">{t("proappt.cancelSureQuestion")}</p>
+            {error && (
+              <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-3">
+                {error}
+              </p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm"
+              >
+                {t("proappt.cancelSureNo")}
+              </button>
+              <button
+                type="button"
+                onClick={confirmActionCancel}
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+                {t("proappt.cancelSureYes")}
+              </button>
+            </div>
+          </>
+        ) : done ? (
           <>
             <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto bg-emerald-100">
               <CheckCircle2 size={28} className="text-emerald-500" />
@@ -149,15 +235,14 @@ export default function ProfessionalCancelAppointmentModal({
               <p className="text-xs text-slate-600 whitespace-pre-wrap">{rescheduleMessage}</p>
               <div className="flex flex-col sm:flex-row gap-2 pt-1">
                 {whatsappUrl ? (
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={handleWhatsAppClick}
                     className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white text-sm font-semibold transition"
                   >
                     <MessageCircle size={16} />
                     {t("proappt.cancelWhatsapp")}
-                  </a>
+                  </button>
                 ) : (
                   <p className="flex-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                     {t("wa.noPhone")}
@@ -166,7 +251,7 @@ export default function ProfessionalCancelAppointmentModal({
                 {messagesHref ? (
                   <button
                     type="button"
-                    onClick={openDoctorMessage}
+                    onClick={handleDoctorMessageClick}
                     className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-brand-200 bg-white text-brand-700 hover:bg-brand-50 text-sm font-semibold transition"
                   >
                     <MessageCircle size={16} />
@@ -209,7 +294,7 @@ export default function ProfessionalCancelAppointmentModal({
               </button>
               <button
                 type="button"
-                onClick={confirmCancel}
+                onClick={confirmDirectCancel}
                 disabled={loading}
                 className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >

@@ -12,6 +12,7 @@ import { localeOf } from "@/lib/i18n/translations";
 import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { notifyProfessionalCancelled } from "@/lib/pro-appointment-notify";
+import { sendPatientCancelChatMessage } from "@/lib/pro-cancel-patient-notify";
 
 const CANCEL_FRESH_SELECT = {
   status: true,
@@ -85,6 +86,7 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
   const reason = body.reason || "Patient requested cancellation";
   const cancelledByPro = body.cancelledByProfessional === true;
+  const sendPatientNotify = body.sendPatientNotify !== false;
 
   const appointment = await db.appointment.findUnique({
     where: { id: params.id },
@@ -202,10 +204,10 @@ export async function POST(
       patientFirstName: appointment.patient.firstName,
       patientLastName: appointment.patient.lastName,
     }).catch(() => {});
-  } else {
+  } else if (sendPatientNotify) {
     const cancelCopy = storedNotificationText(
       "notif.apptCancelled.title",
-      "notif.apptCancelled.body",
+      isProfessional ? "notif.apptCancelledProReschedule.body" : "notif.apptCancelled.body",
       {
         name: cancellerName,
         date: new Date(appointment.scheduledAt).toLocaleDateString(localeOf("en")),
@@ -220,10 +222,27 @@ export async function POST(
         appointmentId: params.id,
         refunded,
         titleKey: "notif.apptCancelled.title",
-        bodyKey: "notif.apptCancelled.body",
+        bodyKey: isProfessional ? "notif.apptCancelledProReschedule.body" : "notif.apptCancelled.body",
         bodyParams: { name: cancellerName, scheduledAt: appointment.scheduledAt.toISOString() },
       },
     }).catch(() => {});
+
+    if (isProfessional && appointment.patient.userId) {
+      const patientUser = await db.user.findUnique({
+        where: { id: appointment.patient.userId },
+        select: { language: true, timezone: true },
+      });
+      const patientFirstName = safeDecrypt(appointment.patient.firstName);
+      await sendPatientCancelChatMessage({
+        patientUserId: appointment.patient.userId,
+        providerUserId: session.user.id,
+        providerName: cancellerName,
+        patientFirstName,
+        scheduledAt: appointment.scheduledAt,
+        patientLang: patientUser?.language,
+        patientTimezone: patientUser?.timezone,
+      }).catch((err) => console.error("[CANCEL] Patient chat message failed:", err));
+    }
   }
 
   notifySlotAlerts({
@@ -237,7 +256,7 @@ export async function POST(
       where: { id: appointment.patient.userId },
       select: { email: true, language: true, timezone: true } as never,
     }) as { email: string; language: string | null; timezone?: string } | null;
-    if (patientUser) {
+    if (patientUser && sendPatientNotify) {
       const doctorName = appointment.professional
         ? `Dr. ${appointment.professional.firstName} ${appointment.professional.lastName}`
         : appointment.psychoanalyst
