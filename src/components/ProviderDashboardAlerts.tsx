@@ -10,10 +10,14 @@ import {
   resolveProviderSettingsHref,
 } from "@/lib/provider-registration-complete";
 
+import type { RegistrationChecklistKey } from "@/lib/provider-registration-complete";
+
 type RegistrationStatus = {
   applicable: boolean;
   complete: boolean;
-  verified: boolean;
+  verified?: boolean;
+  checklist?: Partial<Record<RegistrationChecklistKey, boolean>>;
+  missing?: RegistrationChecklistKey[];
 };
 
 export default function ProviderDashboardAlerts({ role }: { role: string }) {
@@ -30,7 +34,7 @@ export default function ProviderDashboardAlerts({ role }: { role: string }) {
 
     async function load() {
       try {
-        const res = await fetch("/api/provider/registration-status");
+        const res = await fetch("/api/user/registration-status");
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled) setStatus(data);
@@ -50,7 +54,13 @@ export default function ProviderDashboardAlerts({ role }: { role: string }) {
   const settingsHref = resolveProviderSettingsHref(role, pathname);
 
   if (!status.complete) {
-    return <ProviderIncompleteRegistrationCard settingsHref={settingsHref} />;
+    return (
+      <ProviderIncompleteRegistrationCard
+        settingsHref={settingsHref}
+        checklist={status.checklist}
+        missing={status.missing}
+      />
+    );
   }
 
   if (!status.verified) {

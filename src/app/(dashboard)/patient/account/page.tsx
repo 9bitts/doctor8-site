@@ -24,6 +24,11 @@ import {
 import Link from "next/link";
 import PushNotificationSettings from "@/components/PushNotificationSettings";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
+import IncompleteSectionHighlight, {
+  incompleteFieldClass,
+  incompleteInputClass,
+} from "@/components/IncompleteSectionHighlight";
+import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
 import type { DataResidencyInfo } from "@/lib/data-residency";
 import { DEFAULT_TIME_ZONE, listTimeZoneOptions } from "@/lib/timezone";
 
@@ -99,6 +104,20 @@ export default function AccountPage() {
   const [timezoneSaved, setTimezoneSaved] = useState(false);
   const [timezoneError, setTimezoneError] = useState("");
   const timeZoneOptions = listTimeZoneOptions();
+
+  const { patientChecklist, refresh: refreshRegistration } = useRegistrationChecklist();
+  const missingName = patientChecklist?.name === false;
+  const missingDob = patientChecklist?.dateOfBirth === false;
+  const missingAddress = patientChecklist?.address === false;
+  const profileSectionIncomplete = missingName || missingDob || missingAddress;
+
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (!hash) return;
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [profileLoading]);
 
   const isPasswordValid = PASSWORD_RULES.every((r) => r.test(newPwd));
   const passwordsMatch = newPwd === confirmPwd;
@@ -181,6 +200,7 @@ export default function AccountPage() {
       }
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 5000);
+      await refreshRegistration();
     } catch {
       setProfileError(t("acct.errGeneric"));
     } finally {
@@ -430,6 +450,10 @@ export default function AccountPage() {
       </div>
 
       {/* P1-e: Personal data */}
+      <IncompleteSectionHighlight
+        id="patient-personal-data"
+        incomplete={profileSectionIncomplete}
+      >
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
         <div>
           <h2 className="font-semibold text-slate-800 flex items-center gap-2">
@@ -468,21 +492,21 @@ export default function AccountPage() {
           </div>
         ) : (
           <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div id="patient-name" className="grid grid-cols-2 gap-3 scroll-mt-24">
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.firstName")}</label>
-                <input value={profile.firstName} onChange={(e) => setField("firstName", e.target.value)} className={inputClass} />
+                <label className={`block text-sm font-medium mb-1.5 ${incompleteFieldClass(missingName)}`}>{t("pat.firstName")}</label>
+                <input value={profile.firstName} onChange={(e) => setField("firstName", e.target.value)} className={incompleteInputClass(missingName, inputClass)} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.lastName")}</label>
-                <input value={profile.lastName} onChange={(e) => setField("lastName", e.target.value)} className={inputClass} />
+                <label className={`block text-sm font-medium mb-1.5 ${incompleteFieldClass(missingName)}`}>{t("pat.lastName")}</label>
+                <input value={profile.lastName} onChange={(e) => setField("lastName", e.target.value)} className={incompleteInputClass(missingName, inputClass)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.dob")}</label>
-                <input type="date" value={profile.dateOfBirth} onChange={(e) => setField("dateOfBirth", e.target.value)} className={inputClass} />
+              <div id="patient-dateOfBirth" className="scroll-mt-24">
+                <label className={`block text-sm font-medium mb-1.5 ${incompleteFieldClass(missingDob)}`}>{t("pat.dob")}</label>
+                <input type="date" value={profile.dateOfBirth} onChange={(e) => setField("dateOfBirth", e.target.value)} className={incompleteInputClass(missingDob, inputClass)} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.sex")}</label>
@@ -508,15 +532,15 @@ export default function AccountPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.address")}</label>
-              <input value={profile.addressLine1} onChange={(e) => setField("addressLine1", e.target.value)} placeholder={t("pat.addressPlaceholder")} className={inputClass} />
+            <div id="patient-address" className="scroll-mt-24">
+              <label className={`block text-sm font-medium mb-1.5 ${incompleteFieldClass(missingAddress)}`}>{t("pat.address")}</label>
+              <input value={profile.addressLine1} onChange={(e) => setField("addressLine1", e.target.value)} placeholder={t("pat.addressPlaceholder")} className={incompleteInputClass(missingAddress, inputClass)} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.city")}</label>
-                <input value={profile.city} onChange={(e) => setField("city", e.target.value)} className={inputClass} />
+                <label className={`block text-sm font-medium mb-1.5 ${incompleteFieldClass(missingAddress)}`}>{t("pat.city")}</label>
+                <input value={profile.city} onChange={(e) => setField("city", e.target.value)} className={incompleteInputClass(missingAddress, inputClass)} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-1.5">{t("pat.state")}</label>
@@ -546,6 +570,7 @@ export default function AccountPage() {
           </form>
         )}
       </div>
+      </IncompleteSectionHighlight>
 
       {/* Change password */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">

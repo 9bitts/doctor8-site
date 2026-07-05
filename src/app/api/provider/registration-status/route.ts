@@ -21,5 +21,7 @@ export async function GET() {
     applicable: true,
     complete: status.complete,
     verified: status.verified,
+    checklist: status.checklist,
+    missing: status.missing,
   });
 }

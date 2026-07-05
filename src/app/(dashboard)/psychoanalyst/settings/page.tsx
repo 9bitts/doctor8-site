@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
+import IncompleteSectionHighlight from "@/components/IncompleteSectionHighlight";
+import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
+import { registrationChecklistHash } from "@/lib/provider-registration-complete";
 import { Loader2, CheckCircle2, Video, Building2, DollarSign } from "lucide-react";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
@@ -39,6 +43,19 @@ export default function PsychoanalystSettingsPage() {
   const [sessionDurationMins, setSessionDurationMins] = useState("50");
   const [clinicCity, setClinicCity] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
+
+  const { providerChecklist, refresh: refreshRegistration } = useRegistrationChecklist();
+  const missingProfessionalData = providerChecklist?.professionalData === false;
+  const missingDocuments = providerChecklist?.verificationDocuments === false;
+  const missingCareSettings = providerChecklist?.careSettings === false;
+
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (!hash) return;
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [loading]);
 
   useEffect(() => {
     async function load() {
@@ -115,6 +132,7 @@ export default function PsychoanalystSettingsPage() {
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      await refreshRegistration();
     } finally {
       setSaving(false);
     }
@@ -139,9 +157,18 @@ export default function PsychoanalystSettingsPage() {
 
       <PublicListingSettings apiPath="/api/psychoanalyst/public-profile" />
       <HealthPlansSettings apiPath="/api/psychoanalyst/health-plans" />
-      <PracticeSettings apiPath="/api/psychoanalyst/practice" />
-      <LicenseDocumentsUpload />
+      <IncompleteSectionHighlight
+        id={registrationChecklistHash("careSettings")}
+        incomplete={missingCareSettings}
+      >
+        <PracticeSettings apiPath="/api/psychoanalyst/practice" />
+      </IncompleteSectionHighlight>
+      <LicenseDocumentsUpload incomplete={missingDocuments} />
 
+      <IncompleteSectionHighlight
+        id={registrationChecklistHash("professionalData")}
+        incomplete={missingProfessionalData}
+      >
       <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-sm">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -242,6 +269,7 @@ export default function PsychoanalystSettingsPage() {
           {saving ? t("avail.saving") : saved ? t("avail.saved") : t("common.save")}
         </button>
       </div>
+      </IncompleteSectionHighlight>
 
       <OrganizationJoinSettings
         listEndpoint="/api/psychoanalyst/organization"

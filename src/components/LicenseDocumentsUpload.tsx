@@ -28,7 +28,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function LicenseDocumentsUpload() {
+export default function LicenseDocumentsUpload({ incomplete = false }: { incomplete?: boolean }) {
   const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
@@ -116,11 +116,27 @@ export default function LicenseDocumentsUpload() {
   const atLimit = documents.length >= maxDocuments;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+    <div
+      id="registration-verification-documents"
+      className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 scroll-mt-24 ${
+        incomplete
+          ? "border-2 border-red-400 ring-1 ring-red-200/80 bg-red-50/30"
+          : "border border-slate-100"
+      }`}
+    >
       <div>
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Award size={18} className="text-brand-500 shrink-0" />
+        <h2
+          className={`font-semibold flex items-center gap-2 ${
+            incomplete ? "text-red-700" : "text-slate-800"
+          }`}
+        >
+          <Award size={18} className={incomplete ? "text-red-500 shrink-0" : "text-brand-500 shrink-0"} />
           {t("licenseDocs.title")}
+          {incomplete && (
+            <span className="text-[10px] font-semibold text-red-600 uppercase tracking-wide ml-1">
+              {t("reg.incompleteSection")}
+            </span>
+          )}
         </h2>
         <p className="text-sm text-slate-500 mt-1">{t("licenseDocs.subtitle")}</p>
         <p className="text-xs text-slate-400 mt-1">{t("licenseDocs.types")}</p>

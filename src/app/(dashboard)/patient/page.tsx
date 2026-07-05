@@ -11,7 +11,7 @@ import { getUserLang } from "@/lib/i18n/server-lang";
 import { getProfessionLabel } from "@/lib/professions";
 import {
   Calendar, Pill, AlertCircle, Radio, Stethoscope,
-  Clock, ChevronRight, AlertTriangle, MessageSquare,
+  Clock, ChevronRight, MessageSquare,
   Heart, Video, MapPin,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +27,8 @@ import PatientPostConsultReview from "@/components/patient/PatientPostConsultRev
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
 import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
 import HumanitarianAngelOptOutCard from "@/components/humanitarian/HumanitarianAngelOptOutCard";
+import PatientIncompleteRegistrationCard from "@/components/PatientIncompleteRegistrationCard";
+import { computePatientRegistrationStatus } from "@/lib/patient-registration-complete";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   getActiveCampaignForRegion,
@@ -102,10 +104,14 @@ export default async function PatientDashboard() {
     ["firstName", "lastName"]
   );
 
-  const hasName = !!(decrypted.firstName && decrypted.lastName);
-  const hasDob = !!patient.dateOfBirth;
-  const hasAddress = !!(safeDecrypt(patient.addressLine1) || (patient.city || ""));
-  const profileIncomplete = !hasName || !hasDob || !hasAddress;
+  const patientRegistration = computePatientRegistrationStatus({
+    firstName: patient.firstName,
+    lastName: patient.lastName,
+    dateOfBirth: patient.dateOfBirth,
+    addressLine1: patient.addressLine1,
+    city: patient.city,
+  });
+  const profileIncomplete = !patientRegistration.complete;
   const historyIncomplete = !isPatientHistoryFilled(patient.notes);
 
   const [
@@ -462,19 +468,10 @@ export default async function PatientDashboard() {
       )}
 
       {pendingBanner === "profile" && (
-        <Link
-          href="/patient/account"
-          className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition"
-        >
-          <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-900">{t("pdash.completeProfile.title")}</p>
-            <p className="text-xs text-amber-700 mt-0.5">{t("pdash.completeProfile.text")}</p>
-            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-900">
-              {t("pdash.completeProfile.action")} <ChevronRight size={13} />
-            </span>
-          </div>
-        </Link>
+        <PatientIncompleteRegistrationCard
+          checklist={patientRegistration.checklist}
+          missing={patientRegistration.missing}
+        />
       )}
 
       {pendingBanner === "history" && (

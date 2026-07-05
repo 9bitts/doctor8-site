@@ -1,10 +1,46 @@
 import { db } from "@/lib/db";
 import type { UserRole } from "@prisma/client";
 
+export type RegistrationChecklistKey =
+  | "professionalData"
+  | "verificationDocuments"
+  | "careSettings";
+
+export type RegistrationChecklist = Record<RegistrationChecklistKey, boolean>;
+
 export type ProviderRegistrationStatus = {
   complete: boolean;
   verified: boolean;
+  checklist: RegistrationChecklist;
+  missing: RegistrationChecklistKey[];
 };
+
+export const REGISTRATION_CHECKLIST_KEYS: RegistrationChecklistKey[] = [
+  "professionalData",
+  "verificationDocuments",
+  "careSettings",
+];
+
+export function registrationChecklistHash(key: RegistrationChecklistKey): string {
+  return `registration-${key}`;
+}
+
+function buildChecklistStatus(checklist: RegistrationChecklist): Pick<
+  ProviderRegistrationStatus,
+  "complete" | "checklist" | "missing"
+> {
+  const missing = REGISTRATION_CHECKLIST_KEYS.filter((key) => !checklist[key]);
+  return {
+    checklist,
+    missing,
+    complete: missing.length === 0,
+  };
+}
+
+async function hasVerificationDocuments(userId: string): Promise<boolean> {
+  const count = await db.providerLicenseDocument.count({ where: { userId } });
+  return count > 0;
+}
 
 export function isProfessionalRegistrationComplete(profile: {
   firstName: string | null;
@@ -93,6 +129,7 @@ export async function getProviderRegistrationStatus(
     const profile = await db.professionalProfile.findUnique({
       where: { userId },
       select: {
+        id: true,
         firstName: true,
         lastName: true,
         licenseNumber: true,
@@ -102,9 +139,30 @@ export async function getProviderRegistrationStatus(
       },
     });
     if (!profile) return null;
+
+    const [hasDocuments, availCount] = await Promise.all([
+      hasVerificationDocuments(userId),
+      db.availabilitySlot.count({
+        where: { professionalId: profile.id, isActive: true },
+      }),
+    ]);
+
+    const professionalData = Boolean(
+      profile.firstName?.trim() &&
+        profile.lastName?.trim() &&
+        profile.licenseNumber?.trim() &&
+        profile.specialty?.trim(),
+    );
+    const careSettings = (profile.consultPrice ?? 0) > 0 && availCount > 0;
+    const checklist: RegistrationChecklist = {
+      professionalData,
+      verificationDocuments: hasDocuments,
+      careSettings,
+    };
+
     return {
-      complete: isProfessionalRegistrationComplete(profile),
       verified: profile.verified,
+      ...buildChecklistStatus(checklist),
     };
   }
 
@@ -123,9 +181,25 @@ export async function getProviderRegistrationStatus(
       },
     });
     if (!profile) return null;
+
+    const hasDocuments = await hasVerificationDocuments(userId);
+    const professionalData = Boolean(
+      profile.firstName?.trim() &&
+        profile.lastName?.trim() &&
+        profile.trainingInstitution?.trim() &&
+        profile.personalAnalysisDone &&
+        profile.theoreticalStudyDone &&
+        profile.clinicalSupervision,
+    );
+    const checklist: RegistrationChecklist = {
+      professionalData,
+      verificationDocuments: hasDocuments,
+      careSettings: (profile.consultPrice ?? 0) > 0,
+    };
+
     return {
-      complete: isPsychoanalystRegistrationComplete(profile),
       verified: profile.verified,
+      ...buildChecklistStatus(checklist),
     };
   }
 
@@ -142,9 +216,23 @@ export async function getProviderRegistrationStatus(
       },
     });
     if (!profile) return null;
+
+    const hasDocuments = await hasVerificationDocuments(userId);
+    const professionalData = Boolean(
+      profile.firstName?.trim() &&
+        profile.lastName?.trim() &&
+        profile.trainingInstitution?.trim() &&
+        profile.picsPractices.length > 0,
+    );
+    const checklist: RegistrationChecklist = {
+      professionalData,
+      verificationDocuments: hasDocuments,
+      careSettings: (profile.consultPrice ?? 0) > 0,
+    };
+
     return {
-      complete: isIntegrativeTherapistRegistrationComplete(profile),
       verified: profile.verified,
+      ...buildChecklistStatus(checklist),
     };
   }
 
@@ -162,9 +250,25 @@ export async function getProviderRegistrationStatus(
       },
     });
     if (!profile) return null;
+
+    const hasDocuments = await hasVerificationDocuments(userId);
+    const professionalData = Boolean(
+      profile.firstName?.trim() &&
+        profile.lastName?.trim() &&
+        profile.phone?.trim() &&
+        profile.profession?.trim() &&
+        profile.volunteerHelp?.trim() &&
+        profile.languages.length > 0,
+    );
+    const checklist: RegistrationChecklist = {
+      professionalData,
+      verificationDocuments: hasDocuments,
+      careSettings: true,
+    };
+
     return {
-      complete: isAngelRegistrationComplete(profile),
       verified: profile.approvalStatus === "APPROVED",
+      ...buildChecklistStatus(checklist),
     };
   }
 
@@ -183,7 +287,7 @@ export function resolveProviderSettingsHref(
 }
 
 export function isProviderSettingsPath(pathname: string, role?: string): boolean {
-  if (role === "ANGEL") return false;
+  if (role === "ANGEL") return pathname.startsWith("/humanitarian/angel");
   return (
     pathname.startsWith("/professional/settings") ||
     pathname.startsWith("/psychologist/settings") ||

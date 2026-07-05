@@ -14,6 +14,8 @@ import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import CvUpload from "@/components/CvUpload";
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
 import ProfileSettingsSection from "@/components/professional/ProfileSettingsSection";
+import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
+import { registrationChecklistHash } from "@/lib/provider-registration-complete";
 import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
 import AvailabilitySettings from "@/components/professional/AvailabilitySettings";
 import DigitalSignSettings from "@/components/professional/DigitalSignSettings";
@@ -98,6 +100,11 @@ export default function ProfessionalSettings() {
   const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("US");
   const regionReadyRef = useRef(false);
 
+  const { providerChecklist, refresh: refreshRegistration } = useRegistrationChecklist();
+  const missingProfessionalData = providerChecklist?.professionalData === false;
+  const missingDocuments = providerChecklist?.verificationDocuments === false;
+  const missingCareSettings = providerChecklist?.careSettings === false;
+
   const refreshSectionStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/professional/profile-sections-status");
@@ -112,8 +119,9 @@ export default function ProfessionalSettings() {
           doctorConnection: !!data.doctorConnection,
         });
       }
+      await refreshRegistration();
     } catch { /* ignore */ }
-  }, []);
+  }, [refreshRegistration]);
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
@@ -130,6 +138,9 @@ export default function ProfessionalSettings() {
       "section-public-details": "publicDetails",
       "section-health-plans": "healthPlans",
       "section-practice": "practice",
+      [registrationChecklistHash("professionalData")]: "credentials",
+      [registrationChecklistHash("verificationDocuments")]: "credentials",
+      [registrationChecklistHash("careSettings")]: "consultation",
     };
     const sectionKey = map[hash];
     if (sectionKey) {
@@ -355,11 +366,12 @@ export default function ProfessionalSettings() {
 
       {/* Identity */}
       <ProfileSettingsSection
-        id="section-identity"
+        id={registrationChecklistHash("professionalData")}
         title={t("set.photoIdentity")}
         description={t("set.sectionIdentityDesc")}
         icon={<User size={18} />}
         complete={sectionStatus.identity}
+        incomplete={missingProfessionalData}
         open={openSections.identity}
         onToggle={() => toggleSection("identity")}
       >
@@ -425,6 +437,7 @@ export default function ProfessionalSettings() {
         description={t("set.sectionCredentialsDesc")}
         icon={<Award size={18} />}
         complete={sectionStatus.credentials}
+        incomplete={missingProfessionalData || missingDocuments}
         open={openSections.credentials}
         onToggle={() => toggleSection("credentials")}
       >
@@ -495,18 +508,19 @@ export default function ProfessionalSettings() {
               />
             </div>
           </div>
-          <LicenseDocumentsUpload />
+          <LicenseDocumentsUpload incomplete={missingDocuments} />
           {showCvUpload && <CvUpload />}
         </div>
       </ProfileSettingsSection>
 
       {/* Consultation pricing */}
       <ProfileSettingsSection
-        id="section-consultation"
+        id={registrationChecklistHash("careSettings")}
         title={t("set.consultation")}
         description={t("it.settings.pricingDesc")}
         icon={<DollarSign size={18} />}
         complete={sectionStatus.consultation}
+        incomplete={missingCareSettings}
         open={openSections.consultation}
         onToggle={() => toggleSection("consultation")}
       >
@@ -520,6 +534,7 @@ export default function ProfessionalSettings() {
         description={t("avail.subtitle")}
         icon={<Calendar size={18} />}
         complete={sectionStatus.availability}
+        incomplete={missingCareSettings}
         open={openSections.availability}
         onToggle={() => toggleSection("availability")}
       >

@@ -16,6 +16,9 @@ import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
+import IncompleteSectionHighlight from "@/components/IncompleteSectionHighlight";
+import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
+import { registrationChecklistHash } from "@/lib/provider-registration-complete";
 import {
   parseRegistrationRegion,
   type RegistrationRegionCode,
@@ -63,6 +66,19 @@ export default function IntegrativeTherapistSettingsPage() {
   const [regionSaving, setRegionSaving] = useState(false);
   const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");
+
+  const { providerChecklist, refresh: refreshRegistration } = useRegistrationChecklist();
+  const missingProfessionalData = providerChecklist?.professionalData === false;
+  const missingDocuments = providerChecklist?.verificationDocuments === false;
+  const missingCareSettings = providerChecklist?.careSettings === false;
+
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (!hash) return;
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [loading]);
 
   useEffect(() => {
     async function load() {
@@ -208,6 +224,7 @@ export default function IntegrativeTherapistSettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       router.refresh();
+      await refreshRegistration();
     } finally {
       setSaving(false);
     }
@@ -295,8 +312,29 @@ export default function IntegrativeTherapistSettingsPage() {
 
       <PublicListingSettings apiPath="/api/integrative-therapist/public-profile" />
       <HealthPlansSettings apiPath="/api/integrative-therapist/health-plans" />
-      <PracticeSettings apiPath="/api/integrative-therapist/practice" />
+      <IncompleteSectionHighlight
+        id={registrationChecklistHash("careSettings")}
+        incomplete={missingCareSettings}
+        className="space-y-4"
+      >
+        {missingCareSettings && (
+          <div className="bg-white rounded-2xl border border-red-200 p-4 shadow-sm">
+            <p className="text-sm text-red-700">{t("it.settings.pricingNote")}</p>
+            <Link
+              href="/integrative-therapist/financeiro"
+              className="mt-2 inline-flex text-sm font-semibold text-teal-700 underline"
+            >
+              {t("nav.financeiro")} →
+            </Link>
+          </div>
+        )}
+        <PracticeSettings apiPath="/api/integrative-therapist/practice" />
+      </IncompleteSectionHighlight>
 
+      <IncompleteSectionHighlight
+        id={registrationChecklistHash("professionalData")}
+        incomplete={missingProfessionalData}
+      >
       <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
           <User size={18} className="text-teal-500" />
@@ -433,6 +471,7 @@ export default function IntegrativeTherapistSettingsPage() {
           {t("it.settings.picsSelected")}: {selectedPractices.length}
         </p>
       </section>
+      </IncompleteSectionHighlight>
 
       <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
@@ -470,7 +509,7 @@ export default function IntegrativeTherapistSettingsPage() {
         </div>
       </section>
 
-      <LicenseDocumentsUpload />
+      <LicenseDocumentsUpload incomplete={missingDocuments} />
 
       <OrganizationJoinSettings
         listEndpoint="/api/integrative-therapist/organization"
