@@ -253,6 +253,9 @@ export default auth((req) => {
   // FHIR SMART discovery (no PHI)
   if (pathname.startsWith("/api/fhir/smart/")) return NextResponse.next();
 
+  // SSO OIDC for eight — route handler redirects unauthenticated users to /login
+  if (pathname.startsWith("/api/oauth/")) return NextResponse.next();
+
   // CNPJ lookup during registration
   if (pathname.startsWith("/api/cnpj/")) return NextResponse.next();
 
