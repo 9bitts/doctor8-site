@@ -76,6 +76,7 @@ function isPublicApi(pathname: string): boolean {
     pathname.startsWith("/api/auth")
     || pathname.startsWith("/api/public/")
     || pathname.startsWith("/api/fhir/smart/")
+    || pathname.startsWith("/api/oauth/")
     || pathname.startsWith("/api/cnpj/")
     || pathname.startsWith("/api/buying-club/public")
     || pathname.startsWith("/api/support")
