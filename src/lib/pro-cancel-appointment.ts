@@ -1,4 +1,5 @@
-import { interpolate, Lang, translate } from "@/lib/i18n/translations";
+import { Lang, translate } from "@/lib/i18n/translations";
+import { interpolate } from "@/lib/notification-i18n";
 import { formatWhatsAppDateTime } from "@/lib/whatsapp-i18n";
 
 export type ProCancelAppointmentTarget = {
