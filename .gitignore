@@ -14,3 +14,6 @@ android/.gradle/
 android/build/
 *.jks
 *.keystore
+
+doctor8-sso-private.pem
+*.pem
