@@ -157,7 +157,18 @@ const sharingPt = `
 `;
 
 const transferPt = `
-<p>Não. A INFO8 possui sua sede no Brasil e os nossos Planos, Produtos, Serviços e Experiências são destinados às pessoas localizadas no Brasil, aplicando-se, portanto, as leis brasileiras relacionadas à proteção de Dados Pessoais.</p>
+<p>Sim. A INFO8 possui sua sede no Brasil e os nossos Planos, Produtos, Serviços e Experiências são destinados às pessoas localizadas no Brasil, aplicando-se, portanto, as leis brasileiras relacionadas à proteção de Dados Pessoais. Contudo, alguns dos nossos prestadores de serviço estão localizados fora do Brasil, e determinados Dados Pessoais podem ser transferidos internacionalmente para viabilizar funcionalidades da plataforma, sempre com base legal adequada (execução de contrato, consentimento ou legítimo interesse, conforme a LGPD) e mediante cláusulas contratuais e padrões de segurança compatíveis. Os principais casos são:</p>
+<ul class="list-disc pl-5 space-y-1 mt-3">
+  <li><strong>Assistência por Inteligência Artificial:</strong> quando o USUÁRIO PROFISSIONAL DE SAÚDE utiliza recursos de resumo de documentos ou apoio à elaboração de notas de consulta, trechos de texto (podendo incluir nome do paciente e conteúdo clínico) e, quando aplicável, áudio da consulta, são processados por provedores de IA situados nos Estados Unidos (Anthropic e OpenAI), exclusivamente para gerar o resultado solicitado pelo profissional.</li>
+  <li><strong>Armazenamento de arquivos:</strong> documentos clínicos e arquivos enviados à plataforma podem ser armazenados em servidores da Amazon Web Services (AWS) localizados no Brasil, Estados Unidos ou União Europeia, a depender da região de atendimento do usuário.</li>
+  <li><strong>Processamento de pagamentos:</strong> dados necessários ao processamento de pagamentos são tratados pela Stripe, empresa com operação internacional.</li>
+  <li><strong>Videochamadas:</strong> as chamadas de teleconsulta são intermediadas pela plataforma Daily.co, com infraestrutura internacional.</li>
+</ul>
+<p class="mt-3">Em todos os casos, adotamos criptografia em trânsito e, para dados clínicos sensíveis, criptografia em repouso, além de contratos com nossos fornecedores que preveem obrigações de confidencialidade e segurança.</p>
+`;
+
+const aiPt = `
+<p>Utilizamos ferramentas de Inteligência Artificial para apoiar USUÁRIOS PROFISSIONAIS DE SAÚDE na elaboração de notas de consulta e resumos de documentos clínicos, e para responder dúvidas gerais de suporte ao usuário. Essas ferramentas são fornecidas pela Anthropic e, para transcrição de áudio, pela OpenAI. O uso dessas funcionalidades pelo USUÁRIO PROFISSIONAL DE SAÚDE é sempre precedido de consentimento explícito no momento do uso. Os dados enviados a essas ferramentas são utilizados exclusivamente para gerar o resultado solicitado.</p>
 `;
 
 const rightsPt = `
@@ -254,6 +265,14 @@ export const privacySections = [
       es: "4. ¿INFO8 transfiere Datos Personales a otros países?",
     },
     content: tri(transferPt),
+  },
+  {
+    title: {
+      pt: "Utilização de Inteligência Artificial",
+      en: "Use of Artificial Intelligence",
+      es: "Uso de Inteligencia Artificial",
+    },
+    content: tri(aiPt),
   },
   {
     title: {
