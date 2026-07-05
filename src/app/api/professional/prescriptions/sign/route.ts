@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Só o profissional dono pode assinar
-  if (prescription.professional.userId !== session.user.id) {
+  if (!prescription?.professional || prescription.professional.userId !== session.user.id) {
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 

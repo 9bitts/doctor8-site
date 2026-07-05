@@ -197,7 +197,7 @@ export function buildVideoChartLinks(
       dental: null as string | null,
       evolution: null as string | null,
       diagnoses: null as string | null,
-      prescribe: null as string | null,
+      prescribe: chartActionUrl("/integrative-therapist/prescriptions", chartId, { view: "prescription", returnUrl }),
       exam: null as string | null,
       document: null as string | null,
       psychSession: null as string | null,

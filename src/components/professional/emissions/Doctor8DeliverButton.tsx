@@ -12,6 +12,7 @@ type Props = {
   t: (k: string) => string;
   size?: "card" | "full";
   sendWhatsApp?: boolean;
+  apiBase?: string;
   onDelivered?: (data: { shareUrl?: string; hasPhone?: boolean; whatsappStatus?: string }) => void;
   onError?: (message: string) => void;
   initialDelivered?: boolean;
@@ -23,6 +24,7 @@ export default function Doctor8DeliverButton({
   t,
   size = "card",
   sendWhatsApp = false,
+  apiBase = "/api/professional",
   onDelivered,
   onError,
   initialDelivered = false,
@@ -35,7 +37,7 @@ export default function Doctor8DeliverButton({
     try {
       const deliverKind = kind === "prescription" ? "prescription"
         : kind === "exam" ? "exam" : "document";
-      const res = await fetch("/api/professional/emissions/deliver", {
+      const res = await fetch(`${apiBase}/emissions/deliver`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind: deliverKind, id, sendWhatsApp }),

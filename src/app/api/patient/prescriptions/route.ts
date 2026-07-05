@@ -22,6 +22,7 @@ export async function GET() {
     where: { document: { patientId: patientProfileId } },
     include: {
       professional: { select: { firstName: true, lastName: true, specialty: true } },
+      integrativeTherapist: { select: { firstName: true, lastName: true, trainingInstitution: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 100,
@@ -47,10 +48,17 @@ export async function GET() {
       isExpired,
       isExpiringSoon,
       whatsappNotifyStatus: p.whatsappNotifyStatus,
-      doctor: {
-        name: `${p.professional.firstName} ${p.professional.lastName}`.trim(),
-        specialty: p.professional.specialty || "",
-      },
+      doctor: p.professional
+        ? {
+            name: `${p.professional.firstName} ${p.professional.lastName}`.trim(),
+            specialty: p.professional.specialty || "",
+          }
+        : p.integrativeTherapist
+          ? {
+              name: `${p.integrativeTherapist.firstName} ${p.integrativeTherapist.lastName}`.trim(),
+              specialty: "Fitoterapia",
+            }
+          : { name: "—", specialty: "" },
     };
   });
 

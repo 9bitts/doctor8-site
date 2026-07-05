@@ -24,12 +24,19 @@ interface EmissionPostSaveFlowProps {
   initialStep?: "choose" | "deliver" | "success";
   initialShareUrl?: string;
   onDone: () => void;
+  /** Skip digital signature step — go straight to deliver */
+  deliveryOnly?: boolean;
+  apiBase?: string;
 }
 
 export function EmissionPostSaveFlow({
   emission, t, lang, signConfig, initialStep = "choose", initialShareUrl = "", onDone,
+  deliveryOnly = false,
+  apiBase = "/api/professional",
 }: EmissionPostSaveFlowProps) {
-  const [step, setStep] = useState<"choose" | "deliver" | "success">(initialStep);
+  const [step, setStep] = useState<"choose" | "deliver" | "success">(
+    deliveryOnly && initialStep === "choose" ? "deliver" : initialStep,
+  );
   const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
   const [delivering, setDelivering] = useState(false);
   const [deliverError, setDeliverError] = useState("");
@@ -54,7 +61,7 @@ export function EmissionPostSaveFlow({
     try {
       const deliverKind = emission.kind === "prescription" ? "prescription"
         : emission.kind === "exam" ? "exam" : "document";
-      const res = await fetch("/api/professional/emissions/deliver", {
+      const res = await fetch(`${apiBase}/emissions/deliver`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,7 +105,7 @@ export function EmissionPostSaveFlow({
     setInviteSending(true);
     setInviteError("");
     try {
-      const res = await fetch(`/api/professional/records/${patient.id}/invite`, {
+      const res = await fetch(`${apiBase}/records/${patient.id}/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ language: lang }),
@@ -208,6 +215,7 @@ export function EmissionPostSaveFlow({
               t={t}
               size="full"
               sendWhatsApp={sendWhatsApp}
+              apiBase={apiBase}
               onDelivered={(data) => {
                 setShareUrl(data.shareUrl || "");
                 setPatientHasPhone(!!data.hasPhone);

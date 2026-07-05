@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
         })
       : null;
 
-  if (!prescription || prescription.professional.userId !== session.user.id) {
+  if (!prescription?.professional || prescription.professional.userId !== session.user.id) {
     console.error("[CALLBACK] receita nao encontrada ou sem permissao");
     return redirectTo(req, "error");
   }

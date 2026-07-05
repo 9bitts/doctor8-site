@@ -20,14 +20,19 @@ import { EmissionCardActions } from "@/components/professional/emissions/Emissio
 import { ExamCreateView } from "@/components/professional/emissions/ExamCreateView";
 import { DocumentCreateView } from "@/components/professional/emissions/DocumentCreateView";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
-import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
+import { readChartDeepLink } from "@/lib/video-chart-nav";
 import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import type { Chart } from "@/components/professional/emissions/types";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 import DrugSearchResults, { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
 import PrescriptionMedItemForm, { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
-import { phytotherapyProductByValue } from "@/lib/pics/reference-library/phytotherapy-products";
+import { phytotherapyProductByValue, PHYTOTHERAPY_REFERENCE_PRODUCTS } from "@/lib/pics/reference-library/phytotherapy-products";
+import {
+  getPrescriptionsPortalConfig,
+  apiPath,
+  type PrescriptionsPortalId,
+} from "@/lib/prescriptions-portal-config";
 
 type ImportablePatient = {
   patientProfileId: string;
@@ -148,11 +153,11 @@ function emissionKindFromDoc(type: string): EmissionKind {
 }
 
 function PrescriptionCard({
-  p, locale, t, onReuse, onSign, onPdfError, onRefresh,
+  p, locale, t, onReuse, onSign, onPdfError, onRefresh, apiBase, hideSign,
 }: {
   p: Prescription; locale: string; t: (k: string) => string;
   onReuse: () => void; onSign: () => void; onPdfError: (message: string) => void;
-  onRefresh: () => void;
+  onRefresh: () => void; apiBase: string; hideSign?: boolean;
 }) {
   const meds = p.medications as MedItem[];
   const signed = p.signatureStatus === "SIGNED";
@@ -202,9 +207,11 @@ function PrescriptionCard({
         medications={meds}
         t={t}
         onReuse={onReuse}
-        onSign={onSign}
+        onSign={hideSign ? undefined : onSign}
         onPdfError={onPdfError}
         onDelivered={onRefresh}
+        apiBase={apiBase}
+        hideSign={hideSign}
       />
     </div>
   );
@@ -283,7 +290,12 @@ export default function PrescriptionsPage() {
   const { t, lang } = useI18n();
   const toast = useToast();
   const pathname = usePathname();
-  const accountHref = mapProfessionalPathToPortal(pathname, "/professional/account#digital-sign");
+  const portal: PrescriptionsPortalId = pathname.startsWith("/integrative-therapist")
+    ? "integrative-therapist"
+    : "professional";
+  const cfg = getPrescriptionsPortalConfig(portal);
+  const api = (suffix: string) => apiPath(cfg, suffix);
+  const accountHref = mapProfessionalPathToPortal(pathname, cfg.accountSignHref);
   const locale = localeOf(lang);
 
   const [view, setView] = useState<View>("hub");
@@ -340,8 +352,14 @@ export default function PrescriptionsPage() {
   const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    if (cfg.prescriptionsOnly && (view === "exam" || view === "document")) {
+      setView("hub");
+    }
+  }, [cfg.prescriptionsOnly, view]);
+
+  useEffect(() => {
     fetchAll();
-    loadSignConfig();
+    if (!cfg.skipDigitalSign) loadSignConfig();
     void loadCharts();
     const params = new URLSearchParams(window.location.search);
     const { patientRecordId, returnUrl, view: viewParam } = readChartDeepLink();
@@ -352,12 +370,14 @@ export default function PrescriptionsPage() {
     if (patientRecordId) {
       (async () => {
         await loadCharts();
-        const chart = await fetchChartById(patientRecordId);
+        const recordsRes = await fetch(api("/records"));
+        const recordsData = await recordsRes.json();
+        const chart = (recordsData.records || []).find((c: Chart) => c.id === patientRecordId) || null;
         if (!chart) return;
         setSelectedPatient(chart as Chart);
         setReusePatient(chart as Chart);
         const v = viewParam as View | null;
-        if (v === "prescription" || v === "exam" || v === "document") {
+        if (v === "prescription" || (!cfg.prescriptionsOnly && (v === "exam" || v === "document"))) {
           setView(v);
         } else {
           setView("prescription");
@@ -424,9 +444,9 @@ export default function PrescriptionsPage() {
   async function loadEmissionPatient(kind: EmissionKind, id: string): Promise<Chart | null> {
     try {
       const [chartsRes, rxRes, docRes] = await Promise.all([
-        fetch("/api/professional/records"),
-        kind === "prescription" ? fetch("/api/professional/prescriptions") : Promise.resolve(null),
-        kind !== "prescription" ? fetch("/api/professional/documents/issued") : Promise.resolve(null),
+        fetch(api("/records")),
+        kind === "prescription" ? fetch(api("/prescriptions")) : Promise.resolve(null),
+        kind !== "prescription" && !cfg.prescriptionsOnly ? fetch(api("/documents/issued")) : Promise.resolve(null),
       ]);
       const chartsData = await chartsRes.json();
       const chartsList: Chart[] = chartsData.records || [];
@@ -475,16 +495,26 @@ export default function PrescriptionsPage() {
   async function fetchAll() {
     setLoading(true);
     try {
-      const [rxRes, docRes, tplRes] = await Promise.all([
-        fetch("/api/professional/prescriptions"),
-        fetch("/api/professional/documents/issued"),
-        fetch("/api/professional/templates/prescriptions"),
-      ]);
+      const requests: Promise<Response>[] = [
+        fetch(api("/prescriptions")),
+        fetch(api("/templates/prescriptions")),
+      ];
+      if (!cfg.prescriptionsOnly) {
+        requests.splice(1, 0, fetch(api("/documents/issued")));
+      }
+      const results = await Promise.all(requests);
+      const rxRes = results[0];
+      const tplRes = results[cfg.prescriptionsOnly ? 1 : 2];
+      const docRes = cfg.prescriptionsOnly ? null : results[1];
       const rxData = await rxRes.json();
-      const docData = await docRes.json();
       const tplData = await tplRes.json();
       setPrescriptions(rxData.prescriptions || []);
-      setClinicalDocs(docData.documents || []);
+      if (docRes) {
+        const docData = await docRes.json();
+        setClinicalDocs(docData.documents || []);
+      } else {
+        setClinicalDocs([]);
+      }
       if (tplRes.ok) setRxTemplates(tplData.templates || []);
     } finally { setLoading(false); }
   }
@@ -493,7 +523,7 @@ export default function PrescriptionsPage() {
 
   async function loadSignConfig() {
     try {
-      const res = await fetch("/api/professional/digital-sign");
+      const res = await fetch(api("/digital-sign"));
       setSignConfig(await res.json());
     } catch { /* ignore */ }
   }
@@ -501,7 +531,7 @@ export default function PrescriptionsPage() {
   async function searchPatients(q: string) {
     setChartsLoading(true);
     try {
-      const res = await fetch(`/api/professional/records/search?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`${api("/records/search")}?q=${encodeURIComponent(q)}`);
       const d = await res.json();
       if (res.ok) {
         setCharts(d.records || []);
@@ -519,7 +549,7 @@ export default function PrescriptionsPage() {
   async function importPatientChart(item: ImportablePatient) {
     setImportingPatientId(item.patientProfileId);
     try {
-      const res = await fetch("/api/professional/records/import", {
+      const res = await fetch(api("/records/import"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ patientProfileId: item.patientProfileId }),
@@ -549,7 +579,7 @@ export default function PrescriptionsPage() {
   async function requestPatientLink(match: PlatformMatch) {
     setRequestingLinkId(match.patientUserId);
     try {
-      const res = await fetch("/api/professional/patient-links", {
+      const res = await fetch(api("/patient-links"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ patientUserId: match.patientUserId }),
@@ -591,7 +621,7 @@ export default function PrescriptionsPage() {
 
   function handleEmissionSaved(emission: SavedEmission) {
     setSavedEmission(emission);
-    setPostSaveStep("choose");
+    setPostSaveStep(cfg.skipDigitalSign ? "deliver" : "choose");
     setPostSaveShareUrl("");
     fetchAll();
   }
@@ -628,7 +658,7 @@ export default function PrescriptionsPage() {
   }
 
   async function resolvePatientChart(patientRecordId?: string | null, patient?: { firstName: string; lastName: string } | null) {
-    const recordsRes = await fetch("/api/professional/records");
+    const recordsRes = await fetch(api("/records"));
     const recordsData = await recordsRes.json();
     const records: Chart[] = recordsData.records || [];
     setCharts(records);
@@ -681,7 +711,7 @@ export default function PrescriptionsPage() {
     setMedications(meds);
     if (p.instructions) setInstructions(p.instructions);
 
-    const recordsRes = await fetch("/api/professional/records");
+    const recordsRes = await fetch(api("/records"));
     const recordsData = await recordsRes.json();
     const records: Chart[] = recordsData.records || [];
     setCharts(records);
@@ -717,14 +747,33 @@ export default function PrescriptionsPage() {
     setDrugSearchDone(false);
     drugDebounce.current = setTimeout(async () => {
       try {
-        const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`;
-        const res = await fetch(url);
-        const d = await res.json();
-        if (!res.ok) {
-          toast.error(typeof d.error === "string" ? d.error : t("rx2.noDrugsFound"));
-          setDrugResults([]);
+        if (cfg.phytoOnly) {
+          const matches = PHYTOTHERAPY_REFERENCE_PRODUCTS.filter((p) => {
+            const label = t(p.labelKey).toLowerCase();
+            return label.includes(q.toLowerCase()) || p.value.includes(q.toLowerCase());
+          }).map((p) => ({
+            id: p.value,
+            name: t(p.labelKey),
+            activeIngredient: t(p.labelKey),
+            dosage: "",
+            presentation: "",
+            pharmaceuticalForm: "",
+            manufacturer: "",
+            controlled: false,
+            prescriptionType: null,
+          }));
+          setDrugResults(matches);
+          if (matches.length === 0) toast.error(t("rx2.noDrugsFound"));
         } else {
-          setDrugResults(d.drugs || []);
+          const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`;
+          const res = await fetch(url);
+          const d = await res.json();
+          if (!res.ok) {
+            toast.error(typeof d.error === "string" ? d.error : t("rx2.noDrugsFound"));
+            setDrugResults([]);
+          } else {
+            setDrugResults(d.drugs || []);
+          }
         }
       } catch {
         toast.error(t("rx2.noDrugsFound"));
@@ -735,7 +784,7 @@ export default function PrescriptionsPage() {
       }
     }, 300);
     return () => { if (drugDebounce.current) clearTimeout(drugDebounce.current); };
-  }, [drugQuery, drugCountry]);
+  }, [drugQuery, drugCountry, cfg.phytoOnly]);
 
   function addDrug(drug: DrugSearchResult) {
     const substance = drug.activeIngredient?.trim() || drug.name;
@@ -749,7 +798,7 @@ export default function PrescriptionsPage() {
       pharmaceuticalForm: drug.pharmaceuticalForm?.trim() || "",
       controlled: drug.controlled,
       prescriptionType: drug.prescriptionType,
-      itemKind: "medication",
+      itemKind: cfg.phytoOnly ? "phytotherapy" as const : "medication",
     }]);
     setDrugQuery(""); setDrugResults([]);
   }
@@ -764,7 +813,7 @@ export default function PrescriptionsPage() {
     setMedications((prev) => [...prev, {
       name: name || "",
       dosage: "", frequency: "", duration: "", instructions: "",
-      itemKind: "medication",
+      itemKind: cfg.phytoOnly ? "phytotherapy" : "medication",
     }]);
     setDrugQuery(""); setDrugResults([]);
   }
@@ -830,7 +879,7 @@ export default function PrescriptionsPage() {
         pharmaceuticalForm: m.pharmaceuticalForm || "",
         itemKind: m.itemKind || "medication",
       }));
-      const res = await fetch("/api/professional/templates/prescriptions", {
+      const res = await fetch(api("/templates/prescriptions"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -871,9 +920,9 @@ export default function PrescriptionsPage() {
         itemKind: m.itemKind || "medication",
       }));
       const payload = selectedPatient
-        ? { patientRecordId: selectedPatient.id, medications: cleanMeds, instructions, validDays }
+        ? { [cfg.patientRecordField]: selectedPatient.id, medications: cleanMeds, instructions, validDays }
         : { patientUserId: platformTarget!.patientUserId, medications: cleanMeds, instructions, validDays };
-      const res = await fetch("/api/professional/prescriptions", {
+      const res = await fetch(api("/prescriptions"), {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -939,6 +988,8 @@ export default function PrescriptionsPage() {
           initialStep={postSaveStep}
           initialShareUrl={postSaveShareUrl}
           onDone={finishPostSave}
+          deliveryOnly={cfg.skipDigitalSign}
+          apiBase={cfg.apiBase}
         />
         <style>{RX_STYLES}</style>
       </div>
@@ -1114,7 +1165,7 @@ export default function PrescriptionsPage() {
                               <ChevronRight size={16} className="text-slate-300 shrink-0" />
                             </button>
                           ))}
-                          {importablePatients.map((item) => (
+                          {!cfg.prescriptionsOnly && importablePatients.map((item) => (
                             <button
                               key={item.patientProfileId}
                               type="button"
@@ -1138,7 +1189,7 @@ export default function PrescriptionsPage() {
                               )}
                             </button>
                           ))}
-                          {platformMatches.map((match) => (
+                          {!cfg.prescriptionsOnly && platformMatches.map((match) => (
                             <div
                               key={match.patientProfileId}
                               className="px-4 py-3 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-center gap-2"
@@ -1252,64 +1303,77 @@ export default function PrescriptionsPage() {
             <div className={`bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4 ${drugQuery.trim().length >= 2 && drugResults.length > 0 ? "relative z-50" : ""}`}>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-800">{t("rx2.addItem")}</label>
-                <p className="text-xs text-slate-500">{t("rx2.countryPick")}</p>
-                <div className="flex flex-wrap gap-2">
-                  {DRUG_COUNTRIES.map((c) => {
-                    const selected = drugCountry === c.code;
-                    return (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => {
-                          setDrugCountry(c.code);
-                          setDrugQuery("");
-                          setDrugResults([]);
-                          setDrugSearchDone(false);
-                        }}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
-                          selected
-                            ? "border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-brand-500/20"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-brand-200 hover:bg-brand-50/50"
-                        }`}
-                        aria-pressed={selected}
-                      >
-                        <span className="text-lg leading-none" aria-hidden>{c.flag}</span>
-                        {t(c.labelKey)}
-                      </button>
-                    );
-                  })}
-                </div>
+                {cfg.phytoOnly ? (
+                  <p className="text-xs text-slate-500">{t("rx.addPhytotherapy")}</p>
+                ) : (
+                  <>
+                    <p className="text-xs text-slate-500">{t("rx2.countryPick")}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {DRUG_COUNTRIES.map((c) => {
+                        const selected = drugCountry === c.code;
+                        return (
+                          <button
+                            key={c.code}
+                            type="button"
+                            onClick={() => {
+                              setDrugCountry(c.code);
+                              setDrugQuery("");
+                              setDrugResults([]);
+                              setDrugSearchDone(false);
+                            }}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                              selected
+                                ? "border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-brand-500/20"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-brand-200 hover:bg-brand-50/50"
+                            }`}
+                            aria-pressed={selected}
+                          >
+                            <span className="text-lg leading-none" aria-hidden>{c.flag}</span>
+                            {t(c.labelKey)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="relative">
                 <Pill size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" />
                 <input type="text" value={drugQuery} onChange={(e) => setDrugQuery(e.target.value)}
-                  placeholder={t("rx2.searchDrug")} className="rx-inp rx-inp-pl-10" />
+                  placeholder={cfg.phytoOnly ? t("rx.phytoProductSelect") : t("rx2.searchDrug")} className="rx-inp rx-inp-pl-10" />
                 {drugSearching && <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />}
               </div>
 
-              {/* Always visible manual add */}
               <button type="button" onClick={addManual}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 hover:bg-brand-50 text-brand-600 font-semibold text-sm transition">
                 <Plus size={16} /> {t("rx2.addManual")}
               </button>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <button type="button" onClick={() => addSpecialItem("device")}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm transition">
-                  <Plus size={14} /> {t("rx.addDevice")}
-                </button>
+              {!cfg.phytoOnly && (
+                <div className="grid sm:grid-cols-2 gap-2">
+                  <button type="button" onClick={() => addSpecialItem("device")}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm transition">
+                    <Plus size={14} /> {t("rx.addDevice")}
+                  </button>
+                  <button type="button" onClick={() => addSpecialItem("phytotherapy")}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 font-medium text-sm transition">
+                    <Plus size={14} /> {t("rx.addPhytotherapy")}
+                  </button>
+                </div>
+              )}
+              {cfg.phytoOnly && (
                 <button type="button" onClick={() => addSpecialItem("phytotherapy")}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 font-medium text-sm transition">
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 font-medium text-sm transition">
                   <Plus size={14} /> {t("rx.addPhytotherapy")}
                 </button>
-              </div>
+              )}
               <p className="text-xs text-slate-400 text-center -mt-2">{t("rx.manualAlways")}</p>
 
               {drugQuery.trim().length >= 2 && drugResults.length > 0 && (
                 <DrugSearchResults
                   results={drugResults}
                   onSelect={addDrug}
-                  controlInfo={controlInfo}
+                  controlInfo={cfg.phytoOnly ? () => null : controlInfo}
                 />
               )}
               {drugQuery.trim().length >= 2 && drugSearchDone && !drugSearching && drugResults.length === 0 && (
@@ -1444,7 +1508,7 @@ export default function PrescriptionsPage() {
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800">{t("rx.signError")}</div>
       )}
 
-      {signConfig && !signConfig.configured && (
+      {signConfig && !signConfig.configured && !cfg.skipDigitalSign && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex items-start gap-3">
           <PenLine size={18} className="text-brand-500 shrink-0 mt-0.5" />
           <div className="flex-1">
@@ -1458,13 +1522,15 @@ export default function PrescriptionsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className={`grid grid-cols-1 ${cfg.prescriptionsOnly ? "" : "sm:grid-cols-3"} gap-3`}>
         <button onClick={openCreate}
           className="text-left p-4 rounded-2xl border border-accent-100 bg-gradient-to-br from-brand-50 to-accent-50/40 hover:border-accent-200 transition">
           <Pill size={20} className="text-accent-500 mb-2" />
           <p className="font-semibold text-brand-900 text-sm">{t("rx.createAction")}</p>
-          <p className="text-xs text-brand-500/80 mt-0.5">{t("rx.createActionDesc")}</p>
+          <p className="text-xs text-brand-500/80 mt-0.5">{cfg.phytoOnly ? t("rx.addPhytotherapy") : t("rx.createActionDesc")}</p>
         </button>
+        {!cfg.prescriptionsOnly && (
+          <>
         <button onClick={openExamCreate}
           className="text-left p-4 rounded-2xl border border-brand-100 bg-white hover:bg-brand-50/40 transition">
           <FlaskConical size={20} className="text-brand-500 mb-2" />
@@ -1477,9 +1543,11 @@ export default function PrescriptionsPage() {
           <p className="font-semibold text-slate-800 text-sm">{t("rx.documentAction")}</p>
           <p className="text-xs text-slate-500 mt-0.5">{t("rx.documentActionDesc")}</p>
         </button>
+          </>
+        )}
       </div>
 
-      {/* Filter tabs */}
+      {!cfg.prescriptionsOnly && (
       <div className="flex gap-2 overflow-x-auto pb-1">
         {(["all", "prescription", "exam", "document"] as ListFilter[]).map((f) => (
           <button key={f} onClick={() => { setListFilter(f); setShowAllHistory(true); }}
@@ -1490,6 +1558,7 @@ export default function PrescriptionsPage() {
           </button>
         ))}
       </div>
+      )}
 
       {/* Recent carousel */}
       {!loading && !showAllHistory && (recentPrescriptions.length > 0 || recentClinical.length > 0) && (
@@ -1574,6 +1643,8 @@ export default function PrescriptionsPage() {
               onSign={() => signPrescription(p)}
               onPdfError={(msg) => toast.error(msg)}
               onRefresh={fetchPrescriptions}
+              apiBase={cfg.apiBase}
+              hideSign={cfg.skipDigitalSign}
             />
           ))}
           {showClinicalList && filteredClinical.map((d) => (
@@ -1594,7 +1665,7 @@ export default function PrescriptionsPage() {
         </div>
       ) : null}
 
-      {signTarget && (
+      {signTarget && !cfg.skipDigitalSign && (
         <EmissionsSignModal target={signTarget} signConfig={signConfig} deliverAfter onClose={() => setSignTarget(null)} />
       )}
     </div>

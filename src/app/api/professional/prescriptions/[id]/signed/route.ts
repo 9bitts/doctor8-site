@@ -31,7 +31,7 @@ export async function GET(
   if (prescription.signatureStatus !== "SIGNED" || !prescription.signedFileUrl)
     return new NextResponse("Prescription is not signed yet", { status: 409 });
 
-  const isProfessional = prescription.professional.userId === session.user.id;
+  const isProfessional = prescription.professional?.userId === session.user.id;
   const isPatient = prescription.document?.patientId
     ? !!(await db.patientProfile.findFirst({
         where: { userId: session.user.id, id: prescription.document.patientId },

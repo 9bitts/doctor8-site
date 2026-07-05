@@ -762,6 +762,8 @@ model IntegrativeTherapistProfile {
   services               ProviderService[]               @relation("IntegrativeTherapistServices")
   poolContributions      PoolContribution[]
   consultationValidations ConsultationValidation[]
+  prescriptions          Prescription[]
+  prescriptionTemplates  PrescriptionTemplate[]
 
   @@index([userId])
 }
@@ -1055,8 +1057,10 @@ model Prescription {
   id               String              @id @default(cuid())
   documentId       String?
   document         MedicalDocument?    @relation(fields: [documentId], references: [id])
-  professionalId   String
-  professional     ProfessionalProfile @relation(fields: [professionalId], references: [id])
+  professionalId   String?
+  professional     ProfessionalProfile? @relation(fields: [professionalId], references: [id])
+  integrativeTherapistId String?
+  integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id])
 
   // @encrypted — all PHI
   medications      Json    // [{name, dosage, frequency, duration, instructions}]
@@ -1076,6 +1080,7 @@ model Prescription {
   createdAt        DateTime @default(now())
 
   @@index([professionalId])
+  @@index([integrativeTherapistId])
 }
 
 // ─────────────────────────────────────────
@@ -1967,8 +1972,10 @@ model DocumentTemplate {
 
 model PrescriptionTemplate {
   id             String   @id @default(cuid())
-  professionalId String
-  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  professionalId String?
+  professional   ProfessionalProfile? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  integrativeTherapistId String?
+  integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
 
   name           String
   medications    Json
@@ -1979,6 +1986,7 @@ model PrescriptionTemplate {
   updatedAt      DateTime @updatedAt
 
   @@index([professionalId])
+  @@index([integrativeTherapistId])
 }
 
 model PatientRecordTag {

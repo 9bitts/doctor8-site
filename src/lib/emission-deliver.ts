@@ -283,3 +283,135 @@ export async function deliverEmissionToPatient(
     whatsapp,
   };
 }
+
+export async function deliverIntegrativeTherapistEmissionToPatient(
+  therapistUserId: string,
+  kind: EmissionDeliverKind,
+  id: string,
+  opts?: { sendWhatsApp?: boolean; whatsappMessage?: string; forceWhatsapp?: boolean },
+): Promise<DeliverResult | { error: string; status: number }> {
+  if (kind !== "prescription") {
+    return { error: "Not supported", status: 400 };
+  }
+
+  const therapist = await db.integrativeTherapistProfile.findUnique({
+    where: { userId: therapistUserId },
+  });
+  if (!therapist) return { error: "No profile", status: 404 };
+
+  const providerName = `${therapist.firstName} ${therapist.lastName}`.trim();
+
+  async function maybeWhatsApp(
+    prescriptionId: string,
+    clientRecord: { phone?: string | null } | null | undefined,
+    profile: { phone?: string | null } | null | undefined,
+  ) {
+    if (!opts?.sendWhatsApp) return undefined;
+    const wa = await sendEmissionWhatsApp({
+      kind: "prescription",
+      prescriptionId,
+      doctorName: providerName,
+      force: opts.forceWhatsapp,
+      customMessage: opts.whatsappMessage,
+    });
+    return { status: wa.status, error: wa.error, waMeUrl: wa.waMeUrl };
+  }
+
+  const prescription = await db.prescription.findUnique({
+    where: { id },
+    include: {
+      document: {
+        include: {
+          integrativeClientRecord: {
+            select: { id: true, firstName: true, lastName: true, email: true, linkedUserId: true, phone: true },
+          },
+          patient: { select: { userId: true, firstName: true, lastName: true, phone: true } },
+        },
+      },
+    },
+  });
+
+  if (!prescription || prescription.integrativeTherapistId !== therapist.id) {
+    return { error: "Not found", status: 404 };
+  }
+
+  const record = prescription.document?.integrativeClientRecord;
+  const profile = prescription.document?.patient;
+  const firstName = record ? safeDecrypt(record.firstName) : profile ? safeDecrypt(profile.firstName) : "";
+  const lastName = record ? safeDecrypt(record.lastName) : profile ? safeDecrypt(profile.lastName) : "";
+  const linkedUserId = record?.linkedUserId || profile?.userId || null;
+  const notifyEmail = record?.email || null;
+
+  if (prescription.patientNotifiedAt) {
+    return {
+      delivered: false,
+      alreadyDelivered: true,
+      patientRecordId: record?.id || null,
+      patient: {
+        firstName,
+        lastName,
+        email: notifyEmail,
+        hasAccount: !!linkedUserId,
+        hasPhone: !!(record?.phone || profile?.phone),
+      },
+      shareUrl: shareUrl(!!linkedUserId, "prescription"),
+    };
+  }
+
+  if (linkedUserId) {
+    const keys = EMISSION_NOTIF_KEYS.prescription;
+    const copy = storedNotificationText(keys.titleKey, keys.bodyKey, { doctor: providerName });
+    try {
+      await createNotification({
+        userId: linkedUserId,
+        title: copy.title,
+        body: copy.body,
+        type: "system",
+        data: {
+          prescriptionId: prescription.id,
+          documentId: prescription.documentId,
+          titleKey: keys.titleKey,
+          bodyKey: keys.bodyKey,
+          bodyParams: { doctor: providerName },
+        },
+      });
+    } catch (e) {
+      console.error("[DELIVER] IT prescription notification failed:", e);
+    }
+    if (notifyEmail) {
+      try {
+        const u = await db.user.findUnique({ where: { id: linkedUserId }, select: { language: true } });
+        await sendPrescriptionNotification({
+          patientEmail: notifyEmail,
+          patientName: firstName || "—",
+          doctorName: providerName,
+          language: u?.language,
+        });
+      } catch (e) {
+        console.error("[DELIVER] IT prescription email failed:", e);
+      }
+    }
+  }
+
+  await db.prescription.update({
+    where: { id },
+    data: { patientNotifiedAt: new Date() },
+  });
+
+  const whatsapp = await maybeWhatsApp(prescription.id, record, profile);
+
+  return {
+    delivered: true,
+    alreadyDelivered: false,
+    patientRecordId: record?.id || null,
+    patient: {
+      firstName,
+      lastName,
+      email: notifyEmail,
+      hasAccount: !!linkedUserId,
+      hasPhone: !!(record?.phone || profile?.phone),
+    },
+    shareUrl: shareUrl(!!linkedUserId, "prescription"),
+    whatsapp,
+  };
+}

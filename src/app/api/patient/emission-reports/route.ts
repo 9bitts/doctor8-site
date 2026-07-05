@@ -114,6 +114,7 @@ export async function GET() {
 
   const alerts = [];
   for (const rx of prescriptions) {
+    if (!rx.professional) continue;
     const proUserId = rx.professional.userId;
     const linked = await hasAcceptedLink(ctx.userId, proUserId);
     if (linked) continue;

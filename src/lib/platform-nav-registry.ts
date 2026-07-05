@@ -283,7 +283,7 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
   {
     labelKey: "nav.group.clinical",
     items: [
-      { href: "/integrative-therapist/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Leaf" },
+      { href: "/integrative-therapist/prescriptions", labelKey: "nav.prescriptions", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Stethoscope" },
       { href: "/integrative-therapist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Video" },
     ],
   },

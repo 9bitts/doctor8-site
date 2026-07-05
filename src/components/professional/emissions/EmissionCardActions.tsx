@@ -79,6 +79,8 @@ export function EmissionCardActions({
   onPrint,
   onPdfError,
   onDelivered,
+  apiBase = "/api/professional",
+  hideSign = false,
 }: {
   kind: EmissionKind;
   emissionId: string;
@@ -100,13 +102,15 @@ export function EmissionCardActions({
   onPrint?: () => void;
   onPdfError?: (message: string) => void;
   onDelivered?: () => void;
+  apiBase?: string;
+  hideSign?: boolean;
 }) {
   const { lang } = useI18n();
   const signed = signatureStatus === "SIGNED";
   const pending = signatureStatus === "PENDING";
   const pdfUrl = kind === "prescription"
-    ? `/api/professional/prescriptions/${emissionId}/pdf?lang=${lang}`
-    : `/api/professional/documents/${emissionId}/pdf?lang=${lang}`;
+    ? `${apiBase}/prescriptions/${emissionId}/pdf?lang=${lang}`
+    : `${apiBase}/documents/${emissionId}/pdf?lang=${lang}`;
   const shareUrl = emissionShareUrl(kind);
   const delivered = !!patientNotifiedAt;
 
@@ -143,7 +147,7 @@ export function EmissionCardActions({
         </button>
       )}
 
-      {!signed && !pending && onSign && (
+      {!hideSign && !signed && !pending && onSign && (
         <button type="button" onClick={onSign} className={`${EMISSION_BTN_NEUTRAL} text-brand-600 border-brand-200 bg-brand-50`}>
           <PenLine size={14} /> {t("rx.sign")}
         </button>
@@ -180,6 +184,7 @@ export function EmissionCardActions({
             id={emissionId}
             t={t}
             size="card"
+            apiBase={apiBase}
             initialDelivered={delivered}
             onDelivered={() => onDelivered?.()}
             onError={onPdfError}
