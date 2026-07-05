@@ -79,8 +79,6 @@ function audioFileExtension(mime: string): string {
   return "webm";
 }
 
-const recordingSupported = typeof MediaRecorder !== "undefined";
-
 export type ConsultNotesAssistantHandle = {
   isRecording: () => boolean;
   isProcessing: () => boolean;
@@ -127,6 +125,11 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
 
   const [consent, setConsent] = useState(false);
   const [autoSaveOnLeave, setAutoSaveOnLeave] = useState(true);
+  const [recordingSupported, setRecordingSupported] = useState(false);
+
+  useEffect(() => {
+    setRecordingSupported(typeof MediaRecorder !== "undefined");
+  }, []);
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");

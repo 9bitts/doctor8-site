@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart, Loader2, X, AlertCircle, Sparkles } from "lucide-react";
 import { readApiJson, apiErrorMessage } from "@/lib/api-client";
@@ -30,13 +30,18 @@ export default function ClubDoctorBanner({ subscribed, defaultRegion }: Props) {
   const { t } = useI18n();
   const profileRegion = parseBillingRegion(defaultRegion, "US");
 
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(DISMISS_KEY) === "1";
-  });
+  const [dismissed, setDismissed] = useState(false);
   const [region, setRegion] = useState<BillingRegion>(profileRegion);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(DISMISS_KEY) === "1") setDismissed(true);
+    } catch (err) {
+      console.warn("localStorage unavailable:", err);
+    }
+  }, []);
 
   if (subscribed || dismissed) return null;
 
@@ -74,7 +79,11 @@ export default function ClubDoctorBanner({ subscribed, defaultRegion }: Props) {
   }
 
   function dismiss() {
-    localStorage.setItem(DISMISS_KEY, "1");
+    try {
+      localStorage.setItem(DISMISS_KEY, "1");
+    } catch (err) {
+      console.warn("localStorage unavailable:", err);
+    }
     setDismissed(true);
   }
 

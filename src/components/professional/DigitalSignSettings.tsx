@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
   PenLine, Smartphone, Loader2, CheckCircle2, AlertCircle, FlaskConical, Lock,
@@ -27,7 +27,8 @@ function formatCpfInput(value: string): string {
 
 export type DigitalSignSettingsProps = {
   embedded?: boolean;
-  onConfiguredChange?: (configured: boolean) => void;
+  /** Called when configured status changes (e.g. to refresh section badges). */
+  onConfiguredChange?: () => void;
 };
 
 export default function DigitalSignSettings({
@@ -50,6 +51,13 @@ export default function DigitalSignSettings({
   const [success, setSuccess] = useState(false);
   const [testMsg, setTestMsg] = useState<{ tone: "success" | "error" | "warning"; text: string } | null>(null);
 
+  const onConfiguredChangeRef = useRef(onConfiguredChange);
+  const configuredRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    onConfiguredChangeRef.current = onConfiguredChange;
+  }, [onConfiguredChange]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -58,14 +66,19 @@ export default function DigitalSignSettings({
         const data = await res.json();
         setConfig(data);
         if (data.provider === "VIDaaS") setProvider("VIDaaS");
-        onConfiguredChange?.(!!data.configured);
+        else if (data.provider === "BirdID") setProvider("BirdID");
+        const configured = !!data.configured;
+        if (configuredRef.current !== configured) {
+          configuredRef.current = configured;
+          onConfiguredChangeRef.current?.();
+        }
       }
     } catch { /* ignore */ }
     setLoading(false);
-  }, [onConfiguredChange]);
+  }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   useEffect(() => {
@@ -126,10 +139,18 @@ export default function DigitalSignSettings({
     setTestMsg(null);
     setTesting(true);
     try {
-      const res = await fetch("/api/professional/digital-sign/test", { method: "POST" });
+      const res = await fetch("/api/professional/digital-sign/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ returnTo: scrollPath }),
+      });
       const data = await res.json();
       if (!res.ok || !data.redirectUrl) {
-        setTestMsg({ tone: "error", text: data.error || t("digSign.testError") });
+        const code = typeof data.code === "string" ? data.code : "";
+        if (code === "LACUNA_QUOTA") setTestMsg({ tone: "error", text: t("digSign.errQuota") });
+        else if (code === "LACUNA_CPF") setTestMsg({ tone: "error", text: t("digSign.errCpf") });
+        else if (code === "LACUNA_CERTIFICATE") setTestMsg({ tone: "error", text: t("digSign.errCertificate") });
+        else setTestMsg({ tone: "error", text: data.error || t("digSign.testError") });
         return;
       }
       window.location.href = data.redirectUrl;
@@ -150,8 +171,6 @@ export default function DigitalSignSettings({
           <p className="text-sm text-slate-500 mt-1">{t("digSign.subtitle")}</p>
         </div>
       )}
-      {embedded && <p className="text-sm text-slate-500">{t("digSign.subtitle")}</p>}
-
       <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 space-y-2">
         <p className="text-sm font-semibold text-brand-700 flex items-center gap-2">
           <Smartphone size={15} /> {t("digSign.howTitle")}

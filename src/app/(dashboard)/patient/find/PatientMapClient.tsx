@@ -218,24 +218,7 @@ export default function PatientMapClient() {
   }, [t]);
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      loadProfessionals(undefined, undefined, "São Paulo, Brazil", specialty, radiusKm);
-      return;
-    }
-    setGeoLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setCenter(c);
-        loadProfessionals(c.lat, c.lng, undefined, specialty, radiusKm);
-        setGeoLoading(false);
-      },
-      () => {
-        loadProfessionals(undefined, undefined, "São Paulo, Brazil", specialty, radiusKm);
-        setGeoLoading(false);
-      },
-      { timeout: 8000, maximumAge: 300000 }
-    );
+    loadProfessionals(undefined, undefined, "São Paulo, Brazil", specialty, radiusKm);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

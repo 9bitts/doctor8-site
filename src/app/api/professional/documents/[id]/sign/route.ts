@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { createSignatureSession } from "@/lib/lacuna";
+import { parseLacunaError } from "@/lib/lacuna-errors";
 import { buildClinicalDocumentPdf } from "@/lib/clinical-document-pdf";
 import {
   computeAge, getPublicBase, buildSignReturnUrl, assertPublicSignBase,
@@ -126,12 +127,22 @@ export async function POST(
 
     console.log("[DOC SIGN] returnUrl:", returnUrl);
 
-    const lacuna = await createSignatureSession({
-      pdfBytes,
-      fileName: `documento-${document.id.slice(0, 8)}.pdf`,
-      returnUrl,
-      cpf: proCpf,
-    });
+    let lacuna;
+    try {
+      lacuna = await createSignatureSession({
+        pdfBytes,
+        fileName: `documento-${document.id.slice(0, 8)}.pdf`,
+        returnUrl,
+        cpf: proCpf,
+      });
+    } catch (e) {
+      console.error("[DOC SIGN] erro ao criar sessão de assinatura:", e);
+      const code = parseLacunaError(e);
+      return NextResponse.json(
+        { error: "Serviço de assinatura digital indisponível no momento. Tente novamente em instantes.", code },
+        { status: 502 },
+      );
+    }
 
     await db.medicalDocument.update({
       where: { id: document.id },

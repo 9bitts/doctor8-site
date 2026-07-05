@@ -79,7 +79,7 @@ export default function PatientMapView({
     const el = containerRef.current;
     if (!el || mapRef.current) return;
 
-    const map = L.map(el, { scrollWheelZoom: true }).setView(
+    const map = L.map(el, { scrollWheelZoom: false }).setView(
       [mapCenter.lat, mapCenter.lng],
       12,
     );

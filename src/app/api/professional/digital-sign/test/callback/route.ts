@@ -6,8 +6,18 @@ import { getPublicBase } from "@/lib/sign-helpers";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-function redirectAccount(req: NextRequest, signTest: string) {
-  const url = new URL(`${getPublicBase(req)}/professional/account`);
+function safeReturnPath(returnTo: string | null): string {
+  if (!returnTo) return "/professional/account";
+  const path = returnTo.split("?")[0].split("#")[0];
+  if (!path.startsWith("/professional/") && !path.startsWith("/psychologist/")) {
+    return "/professional/account";
+  }
+  return path;
+}
+
+function redirectAfterTest(req: NextRequest, signTest: string) {
+  const returnTo = safeReturnPath(req.nextUrl.searchParams.get("returnTo"));
+  const url = new URL(`${getPublicBase(req)}${returnTo}`);
   url.hash = "digital-sign";
   url.searchParams.set("signTest", signTest);
   return NextResponse.redirect(url);
@@ -21,20 +31,20 @@ export async function GET(req: NextRequest) {
 
   const signatureSessionId = req.nextUrl.searchParams.get("signatureSessionId") || "";
   if (!signatureSessionId) {
-    return redirectAccount(req, "cancelled");
+    return redirectAfterTest(req, "cancelled");
   }
 
   try {
     const lacuna = await getSignatureSession(signatureSessionId);
     const status = (lacuna.status || "").toLowerCase();
     if (status === "completed") {
-      return redirectAccount(req, "success");
+      return redirectAfterTest(req, "success");
     }
     if (status.includes("cancel")) {
-      return redirectAccount(req, "cancelled");
+      return redirectAfterTest(req, "cancelled");
     }
-    return redirectAccount(req, "error");
+    return redirectAfterTest(req, "error");
   } catch {
-    return redirectAccount(req, "error");
+    return redirectAfterTest(req, "error");
   }
 }

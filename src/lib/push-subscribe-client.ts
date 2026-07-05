@@ -1,5 +1,45 @@
 /** Client-side Web Push registration ? shared by PushSubscribe and permission prompts. */
 
+type PushLang = "pt" | "en" | "es";
+
+const PUSH_IOS_ALT: Record<PushLang, string> = {
+  pt: "No iPhone/iPad, notificações push só funcionam com o app instalado na Tela de Início. Enquanto isso, ative lembretes por e-mail e WhatsApp nas configurações da sua conta.",
+  en: "On iPhone/iPad, push notifications only work when the app is added to your Home Screen. Until then, enable email and WhatsApp reminders in your account settings.",
+  es: "En iPhone/iPad, las notificaciones push solo funcionan con la app en la Pantalla de inicio. Mientras tanto, active recordatorios por correo y WhatsApp en la configuración de su cuenta.",
+};
+
+function normalizePushLang(lang?: string): PushLang {
+  if (lang?.startsWith("pt")) return "pt";
+  if (lang?.startsWith("es")) return "es";
+  return "en";
+}
+
+/** True when running in Mobile Safari tab (not standalone PWA). Push is unavailable there. */
+export function isIosSafariBrowserTab(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent;
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (!isIOS) return false;
+  const nav = window.navigator as Navigator & { standalone?: boolean };
+  const standalone = nav.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+  return !standalone;
+}
+
+export function isWebPushSupported(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window
+  );
+}
+
+export function pushIosAlternativeMessage(lang?: string): string {
+  return PUSH_IOS_ALT[normalizePushLang(lang)];
+}
+
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");

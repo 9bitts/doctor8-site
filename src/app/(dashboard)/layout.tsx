@@ -90,11 +90,20 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     const providerRoles = ["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"];
     if (!sessionLoaded || !userId || !providerRoles.includes(role)) return;
     const guardKey = `doctor8.tz.sync.${userId}`;
-    if (sessionStorage.getItem(guardKey)) return;
+    try {
+      if (sessionStorage.getItem(guardKey)) return;
+    } catch (err) {
+      console.warn("sessionStorage unavailable:", err);
+      return;
+    }
 
     const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!isValidIanaTimeZone(browserTz)) {
-      sessionStorage.setItem(guardKey, "1");
+      try {
+        sessionStorage.setItem(guardKey, "1");
+      } catch (err) {
+        console.warn("sessionStorage unavailable:", err);
+      }
       return;
     }
 
@@ -105,7 +114,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         if (!res.ok || cancelled) return;
         const data = await res.json();
         if (data.timezone === browserTz) {
-          sessionStorage.setItem(guardKey, "1");
+          try {
+            sessionStorage.setItem(guardKey, "1");
+          } catch (err) {
+            console.warn("sessionStorage unavailable:", err);
+          }
           return;
         }
         await fetch("/api/user/timezone", {
@@ -113,7 +126,13 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ timezone: browserTz }),
         });
-        if (!cancelled) sessionStorage.setItem(guardKey, "1");
+        if (!cancelled) {
+          try {
+            sessionStorage.setItem(guardKey, "1");
+          } catch (err) {
+            console.warn("sessionStorage unavailable:", err);
+          }
+        }
       } catch {
         /* silent — retry on next session */
       }

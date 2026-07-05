@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Bell, BellOff, Loader2 } from "lucide-react";
-import { useT } from "@/lib/i18n/I18nProvider";
+import { useT, useI18n } from "@/lib/i18n/I18nProvider";
+import { isIosSafariBrowserTab, isWebPushSupported, pushIosAlternativeMessage } from "@/lib/push-subscribe-client";
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -13,17 +14,23 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return out;
 }
 
-type PushState = "unsupported" | "disabled" | "prompt" | "granted" | "denied" | "server_off";
+type PushState = "unsupported" | "ios_browser" | "disabled" | "prompt" | "granted" | "denied" | "server_off";
 
 export default function PushNotificationSettings() {
   const t = useT();
+  const { lang } = useI18n();
   const [state, setState] = useState<PushState>("prompt");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+    if (isIosSafariBrowserTab()) {
+      setState("ios_browser");
+      setLoading(false);
+      return;
+    }
+    if (!isWebPushSupported()) {
       setState("unsupported");
       setLoading(false);
       return;
@@ -106,7 +113,17 @@ export default function PushNotificationSettings() {
     );
   }
 
-  if (state === "unsupported") return null;
+  if (state === "unsupported" || state === "ios_browser") {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <Bell size={18} className="text-brand-500" />
+          <h2 className="font-bold text-slate-900">{t("push.settingsTitle")}</h2>
+        </div>
+        <p className="text-sm text-amber-700">{pushIosAlternativeMessage(lang)}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-3">

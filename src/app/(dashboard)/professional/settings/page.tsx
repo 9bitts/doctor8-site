@@ -123,6 +123,7 @@ export default function ProfessionalSettings() {
       "section-consultation": "consultation",
       "section-availability": "availability",
       "section-digital-sign": "digitalSign",
+      "digital-sign": "digitalSign",
       "section-doctor-connection": "doctorConnection",
       "section-clinic": "clinic",
       "section-region": "region",
@@ -134,7 +135,8 @@ export default function ProfessionalSettings() {
     if (sectionKey) {
       setOpenSections((prev) => ({ ...prev, [sectionKey]: true }));
       requestAnimationFrame(() => {
-        document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        const el = document.getElementById(hash) || document.getElementById("digital-sign");
+        el?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     }
   }, []);
@@ -536,7 +538,7 @@ export default function ProfessionalSettings() {
           onToggle={() => toggleSection("digitalSign")}
           optional
         >
-          <DigitalSignSettings embedded onConfiguredChange={() => refreshSectionStatus()} />
+          <DigitalSignSettings embedded onConfiguredChange={refreshSectionStatus} />
         </ProfileSettingsSection>
       )}
 

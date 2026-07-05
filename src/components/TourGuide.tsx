@@ -46,10 +46,14 @@ export default function TourGuide({ steps, texts, lang, storageKey, onComplete }
   const t = (key: string) => texts[key]?.[l] ?? texts[key]?.["en"] ?? key;
 
   useEffect(() => {
-    const done = localStorage.getItem(storageKey);
-    if (!done) {
-      const timer = setTimeout(() => startTour(), 800);
-      return () => clearTimeout(timer);
+    try {
+      const done = localStorage.getItem(storageKey);
+      if (!done) {
+        const timer = setTimeout(() => startTour(), 800);
+        return () => clearTimeout(timer);
+      }
+    } catch (err) {
+      console.warn("localStorage unavailable:", err);
     }
   }, [storageKey]);
 
@@ -114,7 +118,11 @@ export default function TourGuide({ steps, texts, lang, storageKey, onComplete }
   function finish() {
     setActive(false);
     setVisible(false);
-    localStorage.setItem(storageKey, "done");
+    try {
+      localStorage.setItem(storageKey, "done");
+    } catch (err) {
+      console.warn("localStorage unavailable:", err);
+    }
     onComplete?.();
   }
 

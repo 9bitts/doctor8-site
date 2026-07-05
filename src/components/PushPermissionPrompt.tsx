@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell, Loader2, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { requestPushPermissionAndSubscribe } from "@/lib/push-subscribe-client";
+import { requestPushPermissionAndSubscribe, isIosSafariBrowserTab, isWebPushSupported, pushIosAlternativeMessage } from "@/lib/push-subscribe-client";
 
 type Context = "booking" | "jit";
 
@@ -14,14 +14,17 @@ type Props = {
 
 function canPrompt(): boolean {
   if (typeof window === "undefined") return false;
-  if (!("Notification" in window)) return false;
+  if (isIosSafariBrowserTab()) return true;
+  if (!isWebPushSupported()) return false;
   return Notification.permission === "default";
 }
 
 export default function PushPermissionPrompt({ context, userId }: Props) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const iosAlt = isIosSafariBrowserTab();
+  const pushSupported = isWebPushSupported();
 
   useEffect(() => {
     if (!canPrompt()) return;
@@ -38,6 +41,7 @@ export default function PushPermissionPrompt({ context, userId }: Props) {
 
   const titleKey = context === "booking" ? "push.prompt.booking.title" : "push.prompt.jit.title";
   const descKey = context === "booking" ? "push.prompt.booking.desc" : "push.prompt.jit.desc";
+  const showEnable = pushSupported && !iosAlt;
 
   async function enable() {
     setLoading(true);
@@ -67,17 +71,21 @@ export default function PushPermissionPrompt({ context, userId }: Props) {
       </div>
       <div className="flex-1 min-w-0 space-y-2">
         <p className="text-sm font-semibold text-slate-800">{t(titleKey)}</p>
-        <p className="text-xs text-slate-600 leading-relaxed">{t(descKey)}</p>
+        <p className="text-xs text-slate-600 leading-relaxed">
+          {iosAlt || !pushSupported ? pushIosAlternativeMessage(lang) : t(descKey)}
+        </p>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={enable}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"
-          >
-            {loading ? <Loader2 size={12} className="animate-spin" /> : <Bell size={12} />}
-            {t("push.prompt.enable")}
-          </button>
+          {showEnable && (
+            <button
+              type="button"
+              onClick={enable}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"
+            >
+              {loading ? <Loader2 size={12} className="animate-spin" /> : <Bell size={12} />}
+              {t("push.prompt.enable")}
+            </button>
+          )}
           <button
             type="button"
             onClick={dismiss}
