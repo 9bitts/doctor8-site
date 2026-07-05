@@ -11,6 +11,7 @@ import {
   type PicCategory,
 } from "@/lib/pics/practices";
 import PracticeSettings from "@/components/PracticeSettings";
+import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
@@ -315,21 +316,16 @@ export default function IntegrativeTherapistSettingsPage() {
       <IncompleteSectionHighlight
         id={registrationChecklistHash("careSettings")}
         incomplete={missingCareSettings}
-        className="space-y-4"
       >
-        {missingCareSettings && (
-          <div className="bg-white rounded-2xl border border-red-200 p-4 shadow-sm">
-            <p className="text-sm text-red-700">{t("it.settings.pricingNote")}</p>
-            <Link
-              href="/integrative-therapist/financeiro"
-              className="mt-2 inline-flex text-sm font-semibold text-teal-700 underline"
-            >
-              {t("nav.financeiro")} →
-            </Link>
-          </div>
-        )}
-        <PracticeSettings apiPath="/api/integrative-therapist/practice" />
+        <ConsultPricingSettings
+          consultServicesApiPath="/api/integrative-therapist/consult-services"
+          showSessionDuration
+          accent="teal"
+          onSaved={refreshRegistration}
+        />
       </IncompleteSectionHighlight>
+
+      <PracticeSettings apiPath="/api/integrative-therapist/practice" />
 
       <IncompleteSectionHighlight
         id={registrationChecklistHash("professionalData")}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requirePsychoanalyst } from "@/lib/psychoanalyst-api";
 import {
+  ensureDefaultServiceFromLegacyPrice,
   ensureLegacyLocation,
   getPracticeLocations,
   getProviderServices,
@@ -20,6 +21,7 @@ export async function GET() {
   if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await ensureLegacyLocation(profile.id, "psychoanalyst", profile);
+  await ensureDefaultServiceFromLegacyPrice(profile.id, "psychoanalyst", profile);
   const locations = await getPracticeLocations(profile.id, "psychoanalyst");
   const services = await getProviderServices(profile.id, "psychoanalyst");
 
@@ -33,10 +35,11 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json();
   const locations = Array.isArray(body.locations) ? body.locations : [];
-  const services = Array.isArray(body.services) ? body.services : [];
 
   await savePracticeLocations(psychoanalyst.id, "psychoanalyst", locations);
-  await saveProviderServices(psychoanalyst.id, "psychoanalyst", services);
+  if (Array.isArray(body.services)) {
+    await saveProviderServices(psychoanalyst.id, "psychoanalyst", body.services);
+  }
 
   return NextResponse.json({ ok: true });
 }

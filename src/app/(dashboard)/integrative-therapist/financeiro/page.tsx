@@ -14,8 +14,7 @@ export default function IntegrativeTherapistFinanceiroPage() {
         stripeConnectEnabled={isStripeConnectEnabled()}
         stripeConnectMode="unavailable"
         pricingSettingsProps={{
-          profileApiPath: "/api/integrative-therapist/profile",
-          pricingPatchPath: "/api/integrative-therapist/profile/pricing",
+          consultServicesApiPath: "/api/integrative-therapist/consult-services",
           showSessionDuration: true,
           accent: "teal",
         }}

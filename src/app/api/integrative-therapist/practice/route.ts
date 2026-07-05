@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireIntegrativeTherapist } from "@/lib/integrative-therapist-api";
 import {
+  ensureDefaultServiceFromLegacyPrice,
   ensureLegacyLocation,
   getPracticeLocations,
   getProviderServices,
@@ -20,6 +21,7 @@ export async function GET() {
   if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await ensureLegacyLocation(profile.id, "integrative_therapist", profile);
+  await ensureDefaultServiceFromLegacyPrice(profile.id, "integrative_therapist", profile);
   const locations = await getPracticeLocations(profile.id, "integrative_therapist");
   const services = await getProviderServices(profile.id, "integrative_therapist");
 
@@ -33,10 +35,11 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json();
   const locations = Array.isArray(body.locations) ? body.locations : [];
-  const services = Array.isArray(body.services) ? body.services : [];
 
   await savePracticeLocations(therapist.id, "integrative_therapist", locations);
-  await saveProviderServices(therapist.id, "integrative_therapist", services);
+  if (Array.isArray(body.services)) {
+    await saveProviderServices(therapist.id, "integrative_therapist", body.services);
+  }
 
   return NextResponse.json({ ok: true });
 }

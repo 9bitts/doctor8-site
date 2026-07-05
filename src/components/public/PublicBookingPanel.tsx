@@ -86,8 +86,13 @@ export default function PublicBookingPanel({
 
   useEffect(() => {
     const { service } = readUrlParams();
-    setSelectedServiceId(resolveServiceId(service));
-  }, [resolveServiceId]);
+    const resolved = resolveServiceId(service);
+    if (resolved) {
+      setSelectedServiceId(resolved);
+    } else if (activeServices.length === 1) {
+      setSelectedServiceId(activeServices[0].id);
+    }
+  }, [resolveServiceId, activeServices]);
 
   useEffect(() => {
     function onServiceSelect(e: Event) {
@@ -130,6 +135,10 @@ export default function PublicBookingPanel({
   const selectedService = activeServices.find((s) => s.id === selectedServiceId) ?? null;
   const displayPriceCents = selectedService?.priceCents ?? profile.consultPrice;
   const displayCurrency = selectedService?.currency || profile.currency;
+  const displayPriceLabel =
+    selectedService?.priceCents === 0
+      ? t("consultServices.volunteerPrice")
+      : fmtPrice(displayPriceCents, displayCurrency, locale);
 
   const bookParams = new URLSearchParams({
     pro: profile.providerId,
@@ -152,7 +161,7 @@ export default function PublicBookingPanel({
           {t("pub.bookTitle")}
         </h2>
         <p className={`font-bold text-brand-600 ${embed ? "text-sm" : "text-sm"}`}>
-          {fmtPrice(displayPriceCents, displayCurrency, locale)}
+          {displayPriceLabel}
         </p>
       </div>
 
@@ -165,13 +174,20 @@ export default function PublicBookingPanel({
             value={selectedServiceId ?? ""}
             onChange={(e) => setSelectedServiceId(e.target.value || null)}
             className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            required={activeServices.length > 1}
           >
-            <option value="">{t("pub.defaultService")}</option>
+            {activeServices.length > 1 && (
+              <option value="" disabled>
+                {t("pub.selectServiceRequired")}
+              </option>
+            )}
             {activeServices.map((svc) => (
               <option key={svc.id} value={svc.id}>
                 {svc.name}
                 {svc.priceCents != null
-                  ? ` — ${fmtPrice(svc.priceCents, svc.currency || profile.currency, locale)}`
+                  ? svc.priceCents === 0
+                    ? ` — ${t("consultServices.volunteerPrice")}`
+                    : ` — ${fmtPrice(svc.priceCents, svc.currency || profile.currency, locale)}`
                   : ""}
               </option>
             ))}

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { decryptPsychoanalystNameFields, requirePsychoanalyst } from "@/lib/psychoanalyst-api";
+import { getProviderServices, hasActiveConsultServices } from "@/lib/practice";
 
 export async function GET() {
   const ctx = await requirePsychoanalyst();
@@ -49,11 +50,18 @@ export async function POST(req: NextRequest) {
     clinicZip,
   } = body;
 
-  if (!firstName || !lastName || !trainingInstitution || consultPrice == null) {
+  if (!firstName || !lastName || !trainingInstitution) {
     return NextResponse.json(
-      { error: "Missing required fields: name, training institution and price." },
-      { status: 400 }
+      { error: "Missing required fields: name and training institution." },
+      { status: 400 },
     );
+  }
+
+  const existing = await db.psychoanalystProfile.findUnique({
+    where: { id: psychoanalyst.id },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const assocArray = Array.isArray(associations)
@@ -62,14 +70,15 @@ export async function POST(req: NextRequest) {
       ? associations.split(",").map((s: string) => s.trim()).filter(Boolean)
       : [];
 
+  const services = await getProviderServices(psychoanalyst.id, "psychoanalyst", true);
   const isComplete = Boolean(
     firstName &&
       lastName &&
       trainingInstitution &&
-      Number(consultPrice) > 0 &&
+      hasActiveConsultServices(services) &&
       personalAnalysisDone &&
       theoreticalStudyDone &&
-      clinicalSupervision
+      clinicalSupervision,
   );
 
   const data = {
@@ -85,11 +94,14 @@ export async function POST(req: NextRequest) {
     publications: publications || null,
     otherRegulatedProfession: otherRegulatedProfession || null,
     bio: bio || null,
-    consultPrice: Number(consultPrice),
-    currency: currency || "USD",
-    acceptsTeleconsult: Boolean(acceptsTeleconsult),
-    acceptsInPerson: Boolean(acceptsInPerson),
-    sessionDurationMins: Number(sessionDurationMins) || 50,
+    consultPrice: consultPrice != null ? Number(consultPrice) : existing.consultPrice,
+    currency: currency || existing.currency,
+    acceptsTeleconsult:
+      acceptsTeleconsult !== undefined ? Boolean(acceptsTeleconsult) : existing.acceptsTeleconsult,
+    acceptsInPerson:
+      acceptsInPerson !== undefined ? Boolean(acceptsInPerson) : existing.acceptsInPerson,
+    sessionDurationMins:
+      sessionDurationMins != null ? Number(sessionDurationMins) || 50 : existing.sessionDurationMins,
     avatarUrl: avatarUrl || null,
     clinicName: clinicName || null,
     clinicAddress: clinicAddress || null,

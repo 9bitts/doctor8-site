@@ -26,6 +26,83 @@ export type ProviderServiceDto = {
   sortOrder: number;
 };
 
+type ProfilePricingFields = {
+  consultPrice: number;
+  currency: string;
+  acceptsTeleconsult?: boolean;
+  acceptsInPerson?: boolean;
+  sessionDurationMins?: number;
+};
+
+async function updateProfilePricing(
+  providerId: string,
+  providerType: ProviderPracticeType,
+  data: Partial<ProfilePricingFields>,
+) {
+  if (providerType === "health") {
+    await db.professionalProfile.update({ where: { id: providerId }, data });
+    return;
+  }
+  if (providerType === "psychoanalyst") {
+    await db.psychoanalystProfile.update({ where: { id: providerId }, data });
+    return;
+  }
+  await db.integrativeTherapistProfile.update({ where: { id: providerId }, data });
+}
+
+/** Creates a default service row from legacy single consultPrice when none exist. */
+export async function ensureDefaultServiceFromLegacyPrice(
+  providerId: string,
+  providerType: ProviderPracticeType,
+  legacy: { consultPrice: number; currency: string },
+): Promise<void> {
+  const existing = await db.providerService.count({
+    where: providerWhere(providerId, providerType),
+  });
+  if (existing > 0) return;
+  if (!legacy.consultPrice || legacy.consultPrice <= 0) return;
+
+  await db.providerService.create({
+    data: {
+      ...providerWhere(providerId, providerType),
+      name: "Consulta",
+      description: null,
+      priceCents: Math.round(legacy.consultPrice),
+      currency: legacy.currency || "BRL",
+      isActive: true,
+      sortOrder: 0,
+    },
+  });
+}
+
+/** Keeps profile.consultPrice in sync with the lowest priced active service (legacy compat). */
+export async function syncConsultPriceFromServices(
+  providerId: string,
+  providerType: ProviderPracticeType,
+): Promise<void> {
+  const services = await getProviderServices(providerId, providerType, true);
+  const named = services.filter((s) => s.name.trim());
+  if (named.length === 0) {
+    await updateProfilePricing(providerId, providerType, { consultPrice: 0 });
+    return;
+  }
+
+  const withPrice = named.filter((s) => s.priceCents != null);
+  const primary =
+    withPrice.find((s) => (s.priceCents ?? 0) > 0) ??
+    withPrice[0] ??
+    named[0];
+
+  await updateProfilePricing(providerId, providerType, {
+    consultPrice: primary.priceCents ?? 0,
+    currency: primary.currency || "BRL",
+  });
+}
+
+export function hasActiveConsultServices(services: ProviderServiceDto[]): boolean {
+  return services.some((s) => s.isActive && s.name.trim().length > 0);
+}
+
 type LegacyAddress = {
   clinicName?: string | null;
   clinicAddress?: string | null;
@@ -169,17 +246,20 @@ export async function saveProviderServices(
 
   await db.providerService.deleteMany({ where });
 
-  if (services.length === 0) return;
+  const valid = services.filter((s) => s.name.trim());
+  if (valid.length > 0) {
+    await db.providerService.createMany({
+      data: valid.map((svc, i) => ({
+        ...where,
+        name: svc.name.trim(),
+        description: svc.description?.trim() || null,
+        priceCents: svc.priceCents,
+        currency: svc.currency || "BRL",
+        isActive: svc.isActive ?? true,
+        sortOrder: svc.sortOrder ?? i,
+      })),
+    });
+  }
 
-  await db.providerService.createMany({
-    data: services.map((svc, i) => ({
-      ...where,
-      name: svc.name,
-      description: svc.description,
-      priceCents: svc.priceCents,
-      currency: svc.currency || "BRL",
-      isActive: svc.isActive ?? true,
-      sortOrder: svc.sortOrder ?? i,
-    })),
-  });
+  await syncConsultPriceFromServices(providerId, providerType);
 }

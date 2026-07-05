@@ -516,6 +516,8 @@ export default function AppointmentsPage() {
       }
       if (preselectService && services.some((s) => s.id === preselectService)) {
         setSelectedServiceId(preselectService);
+      } else if (services.length === 1) {
+        setSelectedServiceId(services[0].id);
       }
       await loadSlots(pro, preselectSlot, "particular");
     } finally { setSlotsLoading(false); }
@@ -805,7 +807,10 @@ export default function AppointmentsPage() {
   const canPay = selectedSlotIsVolunteer
     ? acceptedPolicy
     : acceptedPolicy && (usesHostedCheckout || (stripeLoaded && cardComplete));
-  const summaryPriceLabel = selectedSlotIsVolunteer ? t("appt.volunteerFreeTotal") : priceDisplay;
+  const summaryPriceLabel =
+    selectedSlotIsVolunteer || selectedService?.priceCents === 0
+      ? t("appt.volunteerFreeTotal")
+      : priceDisplay;
 
   // Tips per step
   const tipKey = step === "payment" ? APPT_TIP_KEYS.payment : APPT_TIP_KEYS[step];
@@ -1222,10 +1227,22 @@ export default function AppointmentsPage() {
                   value={selectedServiceId}
                   onChange={(e) => setSelectedServiceId(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  required={providerServices.length > 1}
                 >
-                  <option value="">{t("appt.serviceDefault")}</option>
+                  {providerServices.length > 1 && (
+                    <option value="" disabled>
+                      {t("pub.selectServiceRequired")}
+                    </option>
+                  )}
                   {providerServices.map((svc) => (
-                    <option key={svc.id} value={svc.id}>{svc.name}</option>
+                    <option key={svc.id} value={svc.id}>
+                      {svc.name}
+                      {svc.priceCents != null
+                        ? svc.priceCents === 0
+                          ? ` — ${t("consultServices.volunteerPrice")}`
+                          : ` — ${new Intl.NumberFormat(locale, { style: "currency", currency: svc.currency || checkoutCurrency }).format(svc.priceCents / 100)}`
+                        : ""}
+                    </option>
                   ))}
                 </select>
               </div>

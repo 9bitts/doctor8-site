@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { getProviderServices, hasActiveConsultServices } from "@/lib/practice";
 
 export async function GET() {
   const ctx = await requireProfessionalApi();
@@ -43,6 +44,8 @@ export async function GET() {
     where: { professionalId: profile.id, isActive: true },
   });
 
+  const services = await getProviderServices(profile.id, "health", true);
+
   const subscription = await db.subscription.findFirst({
     where: {
       userId: ctx.userId,
@@ -53,7 +56,7 @@ export async function GET() {
 
   const identity = !!(profile.firstName && profile.lastName && (profile.avatarUrl || profile.bio));
   const credentials = !!(profile.firstName && profile.lastName && profile.licenseNumber && profile.specialty);
-  const consultation = (profile.consultPrice ?? 0) > 0;
+  const consultation = hasActiveConsultServices(services);
   const availability = availCount > 0;
   const digitalSign = !!profile.digitalSignCpf;
   const doctorConnection = !!subscription;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import {
+  ensureDefaultServiceFromLegacyPrice,
   ensureLegacyLocation,
   getPracticeLocations,
   getProviderServices,
@@ -19,6 +20,7 @@ export async function GET() {
   if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await ensureLegacyLocation(profile.id, "health", profile);
+  await ensureDefaultServiceFromLegacyPrice(profile.id, "health", profile);
   const locations = await getPracticeLocations(profile.id, "health");
   const services = await getProviderServices(profile.id, "health");
 
@@ -36,10 +38,11 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json();
   const locations = Array.isArray(body.locations) ? body.locations : [];
-  const services = Array.isArray(body.services) ? body.services : [];
 
   await savePracticeLocations(profile.id, "health", locations);
-  await saveProviderServices(profile.id, "health", services);
+  if (Array.isArray(body.services)) {
+    await saveProviderServices(profile.id, "health", body.services);
+  }
 
   return NextResponse.json({ ok: true });
 }

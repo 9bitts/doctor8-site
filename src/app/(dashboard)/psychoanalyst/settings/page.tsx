@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
 import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
@@ -11,9 +11,8 @@ import OrganizationJoinSettings from "@/components/organization/OrganizationJoin
 import IncompleteSectionHighlight from "@/components/IncompleteSectionHighlight";
 import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
 import { registrationChecklistHash } from "@/lib/provider-registration-complete";
-import { Loader2, CheckCircle2, Video, Building2, DollarSign } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 
-const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/40";
 
@@ -36,11 +35,6 @@ export default function PsychoanalystSettingsPage() {
   const [publications, setPublications] = useState("");
   const [otherRegulatedProfession, setOtherRegulatedProfession] = useState("");
   const [bio, setBio] = useState("");
-  const [price, setPrice] = useState("");
-  const [currency, setCurrency] = useState("USD");
-  const [acceptsTeleconsult, setAcceptsTeleconsult] = useState(true);
-  const [acceptsInPerson, setAcceptsInPerson] = useState(false);
-  const [sessionDurationMins, setSessionDurationMins] = useState("50");
   const [clinicCity, setClinicCity] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
 
@@ -77,11 +71,6 @@ export default function PsychoanalystSettingsPage() {
             setPublications(p.publications || "");
             setOtherRegulatedProfession(p.otherRegulatedProfession || "");
             setBio(p.bio || "");
-            setPrice(p.consultPrice ? String(p.consultPrice / 100) : "");
-            setCurrency(p.currency || "USD");
-            setAcceptsTeleconsult(p.acceptsTeleconsult ?? true);
-            setAcceptsInPerson(p.acceptsInPerson ?? false);
-            setSessionDurationMins(String(p.sessionDurationMins || 50));
             setClinicCity(p.clinicCity || "");
             setClinicCountry(p.clinicCountry || "");
           }
@@ -95,7 +84,7 @@ export default function PsychoanalystSettingsPage() {
 
   async function handleSave() {
     setError("");
-    if (!firstName || !lastName || !trainingInstitution || !price) {
+    if (!firstName || !lastName || !trainingInstitution) {
       setError(t("pa.settings.errRequired"));
       return;
     }
@@ -117,11 +106,6 @@ export default function PsychoanalystSettingsPage() {
           publications,
           otherRegulatedProfession,
           bio,
-          consultPrice: Math.round(Number(price) * 100),
-          currency,
-          acceptsTeleconsult,
-          acceptsInPerson,
-          sessionDurationMins: Number(sessionDurationMins),
           clinicCity,
           clinicCountry,
         }),
@@ -161,8 +145,15 @@ export default function PsychoanalystSettingsPage() {
         id={registrationChecklistHash("careSettings")}
         incomplete={missingCareSettings}
       >
-        <PracticeSettings apiPath="/api/psychoanalyst/practice" />
+        <ConsultPricingSettings
+          consultServicesApiPath="/api/psychoanalyst/consult-services"
+          showSessionDuration
+          accent="brand"
+          onSaved={refreshRegistration}
+        />
       </IncompleteSectionHighlight>
+
+      <PracticeSettings apiPath="/api/psychoanalyst/practice" />
       <LicenseDocumentsUpload incomplete={missingDocuments} />
 
       <IncompleteSectionHighlight
@@ -224,28 +215,6 @@ export default function PsychoanalystSettingsPage() {
         <div>
           <label className="text-xs font-medium text-slate-600">{t("pa.settings.bio")}</label>
           <textarea className={`${inputClass} min-h-[80px]`} value={bio} onChange={(e) => setBio(e.target.value)} />
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-4">
-          <div>
-            <label className="text-xs font-medium text-slate-600 flex items-center gap-1"><DollarSign size={12} /> {t("pa.settings.price")}</label>
-            <input className={inputClass} value={price} onChange={(e) => setPrice(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("set.currency")}</label>
-            <select className={inputClass} value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("pa.settings.sessionMins")}</label>
-            <input type="number" min={30} max={120} className={inputClass} value={sessionDurationMins} onChange={(e) => setSessionDurationMins(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 text-sm"><Video size={14} /><input type="checkbox" checked={acceptsTeleconsult} onChange={(e) => setAcceptsTeleconsult(e.target.checked)} />{t("appt.online")}</label>
-          <label className="flex items-center gap-2 text-sm"><Building2 size={14} /><input type="checkbox" checked={acceptsInPerson} onChange={(e) => setAcceptsInPerson(e.target.checked)} />{t("appt.inPerson")}</label>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">

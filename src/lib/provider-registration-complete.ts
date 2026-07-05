@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import type { UserRole } from "@prisma/client";
+import { getProviderServices, hasActiveConsultServices } from "@/lib/practice";
 
 export type RegistrationChecklistKey =
   | "professionalData"
@@ -140,11 +141,12 @@ export async function getProviderRegistrationStatus(
     });
     if (!profile) return null;
 
-    const [hasDocuments, availCount] = await Promise.all([
+    const [hasDocuments, availCount, services] = await Promise.all([
       hasVerificationDocuments(userId),
       db.availabilitySlot.count({
         where: { professionalId: profile.id, isActive: true },
       }),
+      getProviderServices(profile.id, "health", true),
     ]);
 
     const professionalData = Boolean(
@@ -153,7 +155,8 @@ export async function getProviderRegistrationStatus(
         profile.licenseNumber?.trim() &&
         profile.specialty?.trim(),
     );
-    const careSettings = (profile.consultPrice ?? 0) > 0 && availCount > 0;
+    const hasServices = hasActiveConsultServices(services);
+    const careSettings = hasServices && availCount > 0;
     const checklist: RegistrationChecklist = {
       professionalData,
       verificationDocuments: hasDocuments,
@@ -170,6 +173,7 @@ export async function getProviderRegistrationStatus(
     const profile = await db.psychoanalystProfile.findUnique({
       where: { userId },
       select: {
+        id: true,
         firstName: true,
         lastName: true,
         trainingInstitution: true,
@@ -183,6 +187,7 @@ export async function getProviderRegistrationStatus(
     if (!profile) return null;
 
     const hasDocuments = await hasVerificationDocuments(userId);
+    const services = await getProviderServices(profile.id, "psychoanalyst", true);
     const professionalData = Boolean(
       profile.firstName?.trim() &&
         profile.lastName?.trim() &&
@@ -194,7 +199,7 @@ export async function getProviderRegistrationStatus(
     const checklist: RegistrationChecklist = {
       professionalData,
       verificationDocuments: hasDocuments,
-      careSettings: (profile.consultPrice ?? 0) > 0,
+      careSettings: hasActiveConsultServices(services),
     };
 
     return {
@@ -207,6 +212,7 @@ export async function getProviderRegistrationStatus(
     const profile = await db.integrativeTherapistProfile.findUnique({
       where: { userId },
       select: {
+        id: true,
         firstName: true,
         lastName: true,
         trainingInstitution: true,
@@ -218,6 +224,7 @@ export async function getProviderRegistrationStatus(
     if (!profile) return null;
 
     const hasDocuments = await hasVerificationDocuments(userId);
+    const services = await getProviderServices(profile.id, "integrative_therapist", true);
     const professionalData = Boolean(
       profile.firstName?.trim() &&
         profile.lastName?.trim() &&
@@ -227,7 +234,7 @@ export async function getProviderRegistrationStatus(
     const checklist: RegistrationChecklist = {
       professionalData,
       verificationDocuments: hasDocuments,
-      careSettings: (profile.consultPrice ?? 0) > 0,
+      careSettings: hasActiveConsultServices(services),
     };
 
     return {

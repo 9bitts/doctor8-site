@@ -50,13 +50,14 @@ export default function PublicServicesList({
   }
 
   const visible = services.filter((s) => s.isActive);
-  const [first, ...rest] = visible;
 
   function ServiceRow({ svc }: { svc: ProviderServiceDto }) {
     const price =
-      svc.priceCents != null
-        ? fmtPrice(svc.priceCents, svc.currency || currency, locale)
-        : t("pubPhase3.priceUnavailable");
+      svc.priceCents === 0
+        ? t("consultServices.volunteerPrice")
+        : svc.priceCents != null
+          ? fmtPrice(svc.priceCents, svc.currency || currency, locale)
+          : t("pubPhase3.priceUnavailable");
 
     if (!interactive) {
       return (
@@ -82,13 +83,9 @@ export default function PublicServicesList({
   return (
     <div className="border-t border-slate-100 pt-4 space-y-3">
       <p className="text-sm font-semibold text-slate-800">{t("pubPhase3.servicesTitle")}</p>
-      {first && <ServiceRow svc={first} />}
-      {rest.slice(0, 4).map((svc) => (
+      {visible.map((svc) => (
         <ServiceRow key={svc.id} svc={svc} />
       ))}
-      {rest.length > 4 && (
-        <p className="text-xs text-brand-600 font-medium">{t("pubPhase3.moreServices")}</p>
-      )}
     </div>
   );
 }
