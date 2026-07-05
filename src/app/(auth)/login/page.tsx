@@ -137,7 +137,7 @@ function UnifiedLoginForm() {
     try {
       clearSensitiveClientState();
       await signOut({ redirect: false });
-      await signIn("google", { callbackUrl: POST_LOGIN_CALLBACK });
+      await signIn("google", { callbackUrl: callbackUrl || POST_LOGIN_CALLBACK });
     } catch {
       setError("oauthFailed");
       setGoogleLoading(false);

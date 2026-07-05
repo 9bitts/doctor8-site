@@ -4,7 +4,7 @@
 
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { isPathAllowedForRole, resolveRoleHome } from "@/lib/role-home";
+import { isPathAllowedForRole, resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
 import { resolveLoginPathForPathname } from "@/lib/auth-portals";
 import { sessionProfileIncomplete } from "@/lib/user-profile-complete";
 import {
@@ -187,6 +187,7 @@ export default auth((req) => {
 
   // Already-authenticated users shouldn't see the login screen — send them to
   // their dashboard so they don't get stuck on a form they don't need.
+  // Exception: honor ?callbackUrl= (e.g. SSO OAuth resume for eight).
   if (pathname === "/login" && session?.user) {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
@@ -195,9 +196,21 @@ export default auth((req) => {
       role: string;
       professionalSpecialty?: string | null;
     };
-    return NextResponse.redirect(
-      new URL(resolveRoleHome(role, professionalSpecialty), req.url),
-    );
+    const home = resolveRoleHome(role, professionalSpecialty);
+    const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl?.trim()) {
+      const destination = safePostLoginUrl(
+        role,
+        callbackUrl,
+        undefined,
+        professionalSpecialty,
+      );
+      if (destination !== home) {
+        const target = destination.startsWith("/") ? destination : `/${destination}`;
+        return NextResponse.redirect(new URL(target, req.url));
+      }
+    }
+    return NextResponse.redirect(new URL(home, req.url));
   }
 
   if (
