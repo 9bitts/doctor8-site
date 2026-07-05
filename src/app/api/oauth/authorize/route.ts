@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { EIGHT_SSO_ROLES, ssoAppUrl } from "@/lib/sso/sso-config";
 import { getSsoClient, isSsoRedirectUriAllowed } from "@/lib/sso/sso-clients";
 import { createSsoAuthorizationCode } from "@/lib/sso/sso-codes";
@@ -59,7 +60,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  if (!EIGHT_SSO_ROLES.has(session.user.role)) {
+  const dbUser = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+  const role = dbUser?.role ?? session.user.role;
+
+  if (!role || !EIGHT_SSO_ROLES.has(role)) {
     return oauthError(
       redirectUri,
       clientId,
