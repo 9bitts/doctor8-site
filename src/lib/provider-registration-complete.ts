@@ -286,7 +286,7 @@ export function resolveProviderSettingsHref(
   role: string,
   pathname: string,
 ): string {
-  if (role === "ANGEL") return "/humanitarian/angel";
+  if (role === "ANGEL") return "/admin/patients";
   if (role === "PSYCHOANALYST") return "/psychoanalyst/settings";
   if (role === "INTEGRATIVE_THERAPIST") return "/integrative-therapist/settings";
   if (pathname.startsWith("/psychologist")) return "/psychologist/settings";
@@ -294,7 +294,12 @@ export function resolveProviderSettingsHref(
 }
 
 export function isProviderSettingsPath(pathname: string, role?: string): boolean {
-  if (role === "ANGEL") return pathname.startsWith("/humanitarian/angel");
+  if (role === "ANGEL") {
+    return (
+      pathname.startsWith("/admin/patients")
+      || pathname.startsWith("/admin/angel")
+    );
+  }
   return (
     pathname.startsWith("/professional/settings") ||
     pathname.startsWith("/psychologist/settings") ||

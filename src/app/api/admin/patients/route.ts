@@ -1,6 +1,6 @@
-// ADMIN ONLY — patient monitoring list with filters, counters and alerts.
+// ADMIN + ANGEL — patient monitoring list with filters, counters and alerts.
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminSession } from "@/lib/admin";
+import { getPatientAdminSession } from "@/lib/admin";
 import {
   buildMonitoringAlerts,
   buildMonitoringCounters,
@@ -40,7 +40,7 @@ function parseFilters(req: NextRequest): PatientListFilters {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getAdminSession();
+  const session = await getPatientAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const filters = parseFilters(req);

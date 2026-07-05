@@ -1,6 +1,6 @@
-// ADMIN ONLY ? reveal phone numbers for support (audited PHI access).
+// ADMIN + ANGEL — reveal phone numbers for support (audited PHI access).
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminSession } from "@/lib/admin";
+import { getPatientAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
@@ -21,7 +21,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const session = await getAdminSession();
+  const session = await getPatientAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const user = await db.user.findUnique({
@@ -40,6 +40,10 @@ export async function GET(
   });
 
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (session.user.role === "ANGEL" && user.role !== "PATIENT") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const accountPhone = decryptProfilePhone(user.phone);
   const profileSources: { label: string; phone: string }[] = [];

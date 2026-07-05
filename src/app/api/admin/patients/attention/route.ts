@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getPatientAdminSession } from "@/lib/admin";
 import { loadVolunteerScheduledAttentionItems } from "@/lib/admin/volunteer-scheduled-attention";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
+  const session = await getPatientAdminSession();
+  if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

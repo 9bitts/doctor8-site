@@ -24,6 +24,7 @@ export default async function OnboardingPage({
   if (role === "INTEGRATIVE_THERAPIST") redirect("/integrative-therapist/settings");
   if (role === "ORGANIZATION") redirect("/organization/settings");
   if (role === "ADMIN") redirect("/admin");
+  if (role === "ANGEL") redirect("/admin/patients");
 
   redirect("/patient/account");
 }

@@ -26,7 +26,7 @@ function homeHrefForRole(
   isVolunteer: boolean,
   isAngel: boolean,
 ): string {
-  if (isAngel) return "/humanitarian/angel";
+  if (isAngel) return "/admin/patients";
   if (!isVolunteer) return "/patient";
   if (!role) return "/patient";
   if (role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST") {
@@ -141,7 +141,7 @@ export default function HumanitarianShell({
           <nav className="flex items-center gap-1 pb-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-1 px-1">
             {navLink(campaignHref, !isVolunteer && !isAngel, t("hum.shell.patient"), <User size={15} />)}
             {navLink("/humanitarian/volunteer", isVolunteer, t("hum.shell.volunteer"), <Stethoscope size={15} />)}
-            {navLink("/humanitarian/angel", isAngel, t("angel.shell.nav"), <Heart size={15} />)}
+            {navLink("/admin/angel", isAngel, t("angel.shell.nav"), <Heart size={15} />)}
             {navLink(accountHref, false, t("hum.shell.home"), <Home size={15} />)}
             <a
               href={HUMANITARIAN_LANDING_URL}
