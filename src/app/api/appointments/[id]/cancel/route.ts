@@ -30,7 +30,10 @@ type CancelGuardRow = {
   professionalJoinedAt: Date | null;
 };
 
-function applyCancelStateGuards(appt: CancelGuardRow): NextResponse | null {
+function applyCancelStateGuards(
+  appt: CancelGuardRow,
+  opts?: { allowPastForProfessional?: boolean },
+): NextResponse | null {
   if (appt.status === "CANCELLED") {
     return NextResponse.json({ success: true, alreadyCancelled: true });
   }
@@ -54,7 +57,7 @@ function applyCancelStateGuards(appt: CancelGuardRow): NextResponse | null {
     return NextResponse.json({ error: "APPOINTMENT_IN_PROGRESS" }, { status: 403 });
   }
 
-  if (now >= startMs) {
+  if (!opts?.allowPastForProfessional && now >= startMs) {
     return NextResponse.json(
       {
         error: "APPOINTMENT_TIME_PASSED",
@@ -120,17 +123,19 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const guardResponse = applyCancelStateGuards(freshForGuards);
+  const allowPastForProfessional = cancelledByPro && isProfessional;
+  const guardResponse = applyCancelStateGuards(freshForGuards, { allowPastForProfessional });
   if (guardResponse) return guardResponse;
 
   const apptTime = new Date(appointment.scheduledAt).getTime();
   const hoursUntil = (apptTime - Date.now()) / 3600000;
+  const isFutureAppointment = apptTime > Date.now();
 
-  // Guards guarantee scheduledAt is in the future — always full refund when paid.
+  // Full refund when paid and the appointment is still in the future.
   let refunded = false;
   let refundReason = "";
 
-  if (appointment.stripePaymentId) {
+  if (appointment.stripePaymentId && isFutureAppointment) {
     refundReason = isProfessional ? "professional_cancelled" : "patient_cancelled";
     const freshBeforeRefund = await db.appointment.findUnique({
       where: { id: params.id },
@@ -140,7 +145,9 @@ export async function POST(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const refundGuardResponse = applyCancelStateGuards(freshBeforeRefund);
+    const refundGuardResponse = applyCancelStateGuards(freshBeforeRefund, {
+      allowPastForProfessional: false,
+    });
     if (refundGuardResponse) return refundGuardResponse;
 
     const refundResult = await refundPaymentIntentIdempotent(

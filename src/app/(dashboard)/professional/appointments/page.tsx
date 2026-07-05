@@ -116,6 +116,8 @@ export default async function ProfessionalAppointments() {
       patientLastName: safeDecrypt(apt.patient.lastName),
       patientUserId,
       patientPhone: safeDecrypt(apt.patient.phone) || null,
+      patientJoinedAt: apt.patientJoinedAt?.toISOString() ?? null,
+      professionalJoinedAt: apt.professionalJoinedAt?.toISOString() ?? null,
       chartId,
       summarizeDocumentId: chartId ? summarizeDocumentIdByChartId[chartId] ?? null : null,
       intakeHealthPlanLabel: intake?.healthPlanLabel ?? null,

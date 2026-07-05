@@ -49,6 +49,8 @@ export type ProfessionalAppointmentRow = {
   patientLastName: string;
   patientUserId: string | null;
   patientPhone: string | null;
+  patientJoinedAt: string | null;
+  professionalJoinedAt: string | null;
   chartId: string | null;
   summarizeDocumentId: string | null;
   intakeHealthPlanLabel: string | null;
@@ -233,51 +235,94 @@ export default function ProfessionalAppointmentsView({
       <div
         key={apt.id}
         id={`appt-${apt.id}`}
-        className={`flex items-start gap-4 px-5 py-4 hover:bg-slate-50 transition scroll-mt-24 ${
+        className={`px-5 py-4 hover:bg-slate-50 transition scroll-mt-24 ${
           highlightIntake && apt.intakeVisitReason ? "bg-amber-50/40" : ""
         } ${!apt.notes && apt.status === "COMPLETED" ? "ring-1 ring-inset ring-violet-100" : ""}`}
       >
-        <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
-          {firstName[0]}
-          {lastName[0]}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-800 text-sm truncate">
-            {firstName} {lastName}
-          </p>
-          <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-            {apt.type === "TELECONSULT" ? (
-              <>
-                <Video size={12} /> {t("proappt.teleconsult")}
-              </>
-            ) : (
-              <>
-                <MapPin size={12} /> {t("proappt.inPerson")}
-              </>
-            )}
-          </p>
-          {apt.intakeHealthPlanLabel && (
-            <p className="text-[11px] text-brand-600 mt-1">{apt.intakeHealthPlanLabel}</p>
-          )}
-          {apt.intakeServiceName && (
-            <p className="text-[11px] text-slate-600 mt-1">{apt.intakeServiceName}</p>
-          )}
-          {apt.intakeVisitReason && (
-            <div
-              className={`mt-2 rounded-lg p-2 ${
-                highlightIntake ? "bg-white border border-amber-200" : ""
-              }`}
-            >
-              <p className="text-[10px] font-semibold text-slate-500 uppercase flex items-center gap-1">
-                <ClipboardList size={10} /> {t("proappt.intakeLabel")}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
+          <div className="flex items-start gap-4 flex-1 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
+              {firstName[0]}
+              {lastName[0]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-slate-800 text-sm truncate">
+                {firstName} {lastName}
               </p>
-              <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-3">
-                {apt.intakeVisitReason}
+              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                {apt.type === "TELECONSULT" ? (
+                  <>
+                    <Video size={12} /> {t("proappt.teleconsult")}
+                  </>
+                ) : (
+                  <>
+                    <MapPin size={12} /> {t("proappt.inPerson")}
+                  </>
+                )}
+              </p>
+              {apt.intakeHealthPlanLabel && (
+                <p className="text-[11px] text-brand-600 mt-1">{apt.intakeHealthPlanLabel}</p>
+              )}
+              {apt.intakeServiceName && (
+                <p className="text-[11px] text-slate-600 mt-1">{apt.intakeServiceName}</p>
+              )}
+              {apt.intakeVisitReason && (
+                <div
+                  className={`mt-2 rounded-lg p-2 ${
+                    highlightIntake ? "bg-white border border-amber-200" : ""
+                  }`}
+                >
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase flex items-center gap-1">
+                    <ClipboardList size={10} /> {t("proappt.intakeLabel")}
+                  </p>
+                  <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-3">
+                    {apt.intakeVisitReason}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end shrink-0">
+            <div className="text-right">
+              <p className="text-xs font-semibold text-slate-700">
+                {formatShortDateWithYear(new Date(apt.scheduledAt), timeZone, locale)}
+              </p>
+              <p className="text-xs text-slate-500">
+                {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), timeZone, locale)}
               </p>
             </div>
-          )}
+            <span
+              className={`text-xs font-medium px-2.5 py-1 rounded-lg ${
+                statusColors[apt.status] || "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {t(`status.${apt.status}`)}
+            </span>
+            {apt.patientConfirmedAt && (
+              <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
+                {t("proappt.patientConfirmed")}
+              </span>
+            )}
+            {isVoluntaryAppointment(apt) && (
+              <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-green-50 text-green-800 border border-green-200">
+                {t("proappt.voluntaryBadge")}
+              </span>
+            )}
+            {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
+              <a
+                href={`/video/${apt.id}`}
+                className="bg-brand-500 text-white rounded-xl px-3 py-2 text-xs font-bold inline-flex items-center gap-1 hover:bg-brand-400 transition"
+              >
+                <Video size={12} /> {t("proappt.join")}
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-2 ml-0 sm:ml-[3.75rem] flex flex-wrap gap-2 items-center">
           {chartId && (
-            <div className="mt-2 flex flex-wrap gap-2 items-center">
+            <>
               <Link
                 href={`${portalBase}/patients/${chartId}`}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
@@ -322,60 +367,31 @@ export default function ProfessionalAppointmentsView({
                   </Link>
                 </>
               )}
-            </div>
+            </>
           )}
+          <ProCancelAppointmentButton
+            appointment={{
+              id: apt.id,
+              scheduledAt: apt.scheduledAt,
+              durationMins: apt.durationMins,
+              status: apt.status,
+              patientFirstName: apt.patientFirstName,
+              patientLastName: apt.patientLastName,
+              patientUserId: apt.patientUserId,
+              patientPhone: apt.patientPhone,
+              patientJoinedAt: apt.patientJoinedAt,
+              professionalJoinedAt: apt.professionalJoinedAt,
+            }}
+            portalBase={portalBase}
+            timeZone={timeZone}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-lg hover:bg-rose-100 transition"
+            onCancelled={(id) => {
+              setAppointments((prev) =>
+                prev.map((row) => (row.id === id ? { ...row, status: "CANCELLED" } : row)),
+              );
+            }}
+          />
         </div>
-        <div className="text-right shrink-0">
-          <p className="text-xs font-semibold text-slate-700">
-            {formatShortDateWithYear(new Date(apt.scheduledAt), timeZone, locale)}
-          </p>
-          <p className="text-xs text-slate-500">
-            {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), timeZone, locale)}
-          </p>
-        </div>
-        <span
-          className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg ${
-            statusColors[apt.status] || "bg-slate-100 text-slate-600"
-          }`}
-        >
-          {t(`status.${apt.status}`)}
-        </span>
-        {apt.patientConfirmedAt && (
-          <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
-            {t("proappt.patientConfirmed")}
-          </span>
-        )}
-        {isVoluntaryAppointment(apt) && (
-          <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg bg-green-50 text-green-800 border border-green-200">
-            {t("proappt.voluntaryBadge")}
-          </span>
-        )}
-        {apt.type === "TELECONSULT" && apt.status === "CONFIRMED" && (
-          <a
-            href={`/video/${apt.id}`}
-            className="shrink-0 bg-brand-500 text-white rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1 hover:bg-brand-400 transition"
-          >
-            <Video size={12} /> {t("proappt.join")}
-          </a>
-        )}
-        <ProCancelAppointmentButton
-          appointment={{
-            id: apt.id,
-            scheduledAt: apt.scheduledAt,
-            status: apt.status,
-            patientFirstName: apt.patientFirstName,
-            patientLastName: apt.patientLastName,
-            patientUserId: apt.patientUserId,
-            patientPhone: apt.patientPhone,
-          }}
-          portalBase={portalBase}
-          timeZone={timeZone}
-          onCancelled={(id) => {
-            setAppointments((prev) =>
-              prev.map((row) => (row.id === id ? { ...row, status: "CANCELLED" } : row)),
-            );
-          }}
-        />
       </div>
     );
   }
