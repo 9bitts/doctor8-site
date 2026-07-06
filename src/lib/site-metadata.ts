@@ -21,13 +21,13 @@ export function buildRootMetadata(overrides?: Partial<Metadata>): Metadata {
       siteName: "Doctor8",
       type: "website",
       locale: "pt_BR",
-      images: [{ url: "/branding/doctor8-logo.png", width: 512, height: 512, alt: "Doctor8" }],
+      images: [{ url: "/branding/og-image.png", width: 1024, height: 537, alt: "Doctor8" }],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: SITE_TITLE,
       description: SITE_DESCRIPTION,
-      images: ["/branding/doctor8-logo.png"],
+      images: ["/branding/og-image.png"],
     },
     ...overrides,
   };
