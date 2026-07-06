@@ -9,14 +9,13 @@ import AuthSessionProvider from "@/components/AuthSessionProvider";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
 import { normalizeLang } from "@/lib/i18n/translations";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import { buildRootMetadata } from "@/lib/site-metadata";
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-export const metadata: Metadata = {
-  title: "Doctor8 — Secure Health Platform",
-  description: "HIPAA & GDPR compliant telehealth platform",
+export const metadata: Metadata = buildRootMetadata({
   robots: { index: false, follow: false },
-};
+});
 
 export const viewport: Viewport = {
   width: "device-width",

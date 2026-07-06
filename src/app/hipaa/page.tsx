@@ -180,9 +180,9 @@ export default function HipaaPage() {
     <LegalLayout
       title={{ pt: "Aviso de Práticas de Privacidade HIPAA", en: "HIPAA Notice of Privacy Practices", es: "Aviso de Prácticas de Privacidad HIPAA" }}
       subtitle={{
-        pt: "Doctor8 · Conformidade com o Health Insurance Portability and Accountability Act (EUA)",
-        en: "Doctor8 · Health Insurance Portability and Accountability Act Compliance",
-        es: "Doctor8 · Cumplimiento con el Health Insurance Portability and Accountability Act (EE.UU.)",
+        pt: "Doctor8 · Aviso ao titular conforme o HIPAA (EUA)",
+        en: "Doctor8 · HIPAA Notice of Privacy Practices (US)",
+        es: "Doctor8 · Aviso al titular conforme al HIPAA (EE.UU.)",
       }}
       lastUpdated="Janeiro de 2026"
       badge="HIPAA"

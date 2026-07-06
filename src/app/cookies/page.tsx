@@ -1,12 +1,12 @@
 // src/app/cookies/page.tsx
-// Política de Cookies — LGPD + GDPR compliant
+// Política de Cookies — LGPD + GDPR
 // Trilingual: PT / EN / ES
 
 import LegalLayout from "@/components/LegalLayout";
 
 export const metadata = {
   title: "Política de Cookies | Cookie Policy | Doctor8",
-  description: "Política de Cookies da Doctor8 — LGPD e GDPR compliant.",
+  description: "Política de Cookies da Doctor8 — alinhada aos princípios LGPD e GDPR.",
   robots: { index: true, follow: true },
 };
 
@@ -90,9 +90,9 @@ export default function CookiesPage() {
     <LegalLayout
       title={{ pt: "Política de Cookies", en: "Cookie Policy", es: "Política de Cookies" }}
       subtitle={{
-        pt: "Doctor8 · Conforme LGPD e GDPR",
-        en: "Doctor8 · LGPD and GDPR Compliant",
-        es: "Doctor8 · Conforme con LGPD y GDPR",
+        pt: "Doctor8 · Princípios LGPD e GDPR",
+        en: "Doctor8 · LGPD and GDPR Principles",
+        es: "Doctor8 · Principios LGPD y GDPR",
       }}
       lastUpdated="Janeiro de 2026"
       badge="Cookies"

@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Doctor8",
     short_name: "Doctor8",
-    description: "HIPAA & GDPR compliant telehealth platform",
+    description: "Teleconsulta online. Arquitetura alinhada aos princípios LGPD e HIPAA.",
     start_url: "/patient",
     scope: "/",
     display: "standalone",

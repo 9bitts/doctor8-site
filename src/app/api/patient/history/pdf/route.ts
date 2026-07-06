@@ -138,7 +138,7 @@ export async function GET() {
 
 <div class="footer">
   This record was self-reported by the patient and may not reflect a complete clinical history.
-  Doctor8 is a HIPAA &amp; GDPR compliant platform. doctor8.app
+  Doctor8 &middot; doctor8.app
 </div>
 
 <script>

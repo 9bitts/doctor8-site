@@ -87,8 +87,8 @@ const pt: LandingContent = {
     disclaimer: "*Para assinantes do Club Doctor residentes em MG com conta Cemig",
   },
   lgpd: {
-    title: "Seus dados protegidos \u00b7 LGPD & HIPAA",
-    body: "A Doctor8 \u00e9 plenamente compat\u00edvel com a Lei Geral de Prote\u00e7\u00e3o de Dados (LGPD) e com o HIPAA americano. Suas informa\u00e7\u00f5es m\u00e9dicas s\u00e3o criptografadas e jamais compartilhadas sem seu consentimento.",
+    title: "Seus dados protegidos \u00b7 princ\u00edpios LGPD e HIPAA",
+    body: "A Doctor8 foi desenvolvida seguindo os princ\u00edpios da Lei Geral de Prote\u00e7\u00e3o de Dados (LGPD) e do HIPAA americano. Suas informa\u00e7\u00f5es m\u00e9dicas s\u00e3o criptografadas e jamais compartilhadas sem seu consentimento. D\u00favidas? Fale com nosso DPO: dpo@doctor8.org",
   },
   cta: {
     titleEm: "Cuide da sua sa\u00fade", titleRest: " de onde voc\u00ea estiver",
@@ -96,7 +96,7 @@ const pt: LandingContent = {
     primary: "Criar conta gr\u00e1tis", secondary: "Club Doctor \u2014 R$34,90/m\u00eas",
   },
   footer: {
-    desc: "Plataforma de sa\u00fade digital para pacientes e profissionais. Conforme LGPD e HIPAA. Atua\u00e7\u00e3o no Brasil, EUA, Europa e Venezuela.",
+    desc: "Plataforma de sa\u00fade digital para pacientes e profissionais. Arquitetura alinhada aos princ\u00edpios LGPD e HIPAA. Atua\u00e7\u00e3o no Brasil, EUA, Europa e Venezuela.",
     services: "Servi\u00e7os", professionals: "Profissionais", legal: "Legal",
     serviceLinks: ["Especialidades", "Club Doctor", "Cannabis Medicinal", "Doctor Energy"],
     proLinks: ["Cadastre-se como profissional", "Entrar como médico"],
@@ -189,8 +189,8 @@ const en: LandingContent = {
     disclaimer: "*For Club Doctor subscribers in MG with a Cemig account",
   },
   lgpd: {
-    title: "Your data protected \u00b7 LGPD & HIPAA",
-    body: "Doctor8 is fully compliant with Brazil's LGPD and the US HIPAA. Your medical information is encrypted and never shared without your consent.",
+    title: "Your data protected \u00b7 LGPD & HIPAA principles",
+    body: "Doctor8 was built following the principles of Brazil's LGPD and US HIPAA. Your medical information is encrypted and never shared without your consent. Questions? Contact our DPO: dpo@doctor8.org",
   },
   cta: {
     titleEm: "Take care of your health", titleRest: " from anywhere",
@@ -198,7 +198,7 @@ const en: LandingContent = {
     primary: "Create free account", secondary: "Club Doctor \u2014 R$34.90/month",
   },
   footer: {
-    desc: "Digital health platform for patients and professionals. LGPD and HIPAA compliant. Operating in Brazil, US, Europe and Venezuela.",
+    desc: "Digital health platform for patients and professionals. Architecture aligned with LGPD and HIPAA principles. Operating in Brazil, US, Europe and Venezuela.",
     services: "Services", professionals: "Professionals", legal: "Legal",
     serviceLinks: ["Specialties", "Club Doctor", "Medical Cannabis", "Doctor Energy"],
     proLinks: ["Register as professional", "Sign in as doctor"],
@@ -280,6 +280,10 @@ const es: LandingContent = {
     conditionsHeader: "Condiciones tratadas",
     tags: ["Dolor cr\u00f3nico", "Ansiedad", "Epilepsia", "Insomnio", "Fibromialgia", "PTSD", "TEA", "TDAH", "Espasticidad", "Enfermedades autoinmunes", "Parkinson", "Oncolog\u00eda (Soporte)", "Alzheimer", "+ otras"],
   },
+  lgpd: {
+    title: "Tus datos protegidos \u00b7 principios LGPD e HIPAA",
+    body: "Doctor8 fue desarrollada siguiendo los principios de la LGPD brasile\u00f1a y del HIPAA estadounidense. Tu informaci\u00f3n m\u00e9dica est\u00e1 cifrada y nunca se comparte sin tu consentimiento. \u00bfPreguntas? Contacta a nuestro DPO: dpo@doctor8.org",
+  },
   cta: {
     titleEm: "Cuida tu salud", titleRest: " desde donde est\u00e9s",
     sub: "Reg\u00edstrate gratis y agenda tu primera consulta hoy.",
@@ -287,7 +291,7 @@ const es: LandingContent = {
   },
   footer: {
     ...en.footer,
-    desc: "Plataforma de salud digital para pacientes y profesionales. Conforme LGPD y HIPAA. Brasil, EE.UU., Europa y Venezuela.",
+    desc: "Plataforma de salud digital para pacientes y profesionales. Arquitectura alineada a los principios LGPD e HIPAA. Brasil, EE.UU., Europa y Venezuela.",
     proDoctorLogin: "Iniciar sesión como médico",
     proPsychologistLogin: "Iniciar sesión como psicólogo",
     proPsychoanalystLogin: "Iniciar sesión como psicanalista",

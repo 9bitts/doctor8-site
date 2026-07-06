@@ -139,10 +139,14 @@ export function emailFooter(lang: EmailLang): string {
     lang === "pt" ? "Política de Privacidade" :
     lang === "es" ? "Política de Privacidad" :
     "Privacy Policy";
+  const tagline =
+    lang === "pt" ? "Arquitetura alinhada aos princ\u00edpios LGPD e GDPR" :
+    lang === "es" ? "Arquitectura alineada a los principios LGPD y GDPR" :
+    "Architecture aligned with LGPD and GDPR principles";
   const appUrl = getAppUrl();
   return `
     <p style="text-align:center;color:#9ca3af;font-size:11px;margin-top:20px;">
-      Doctor8 &middot; HIPAA &amp; GDPR Compliant &middot;
+      Doctor8 &middot; ${tagline} &middot;
       <a href="${appUrl}/privacy" style="color:#9ca3af;">${privacy}</a>
     </p>`;
 }

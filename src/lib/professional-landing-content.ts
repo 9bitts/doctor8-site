@@ -197,8 +197,8 @@ const pt: ProLandingContent = {
   },
   trust: [
     "Registrado no CFM",
-    "LGPD Compliant",
-    "HIPAA Certified",
+    "Princípios LGPD",
+    "Princípios HIPAA",
     "Brasil · EUA · Europa",
     "Criptografia de ponta a ponta",
     "Prescrições com validade legal",
@@ -378,8 +378,8 @@ const pt: ProLandingContent = {
     ],
   },
   lgpd: {
-    title: "Conformidade com LGPD e HIPAA — porque seus pacientes confiam a você os dados mais sensíveis da vida deles",
-    body: "A Doctor8 está em total conformidade com a Lei Geral de Proteção de Dados (LGPD) e com o HIPAA americano. Todos os dados são armazenados com criptografia de ponta a ponta. Questões? Fale com nosso DPO: dpo@doctor8.org",
+    title: "Proteção de dados de saúde — princípios LGPD e HIPAA",
+    body: "A Doctor8 foi desenvolvida seguindo os princípios da Lei Geral de Proteção de Dados (LGPD) e do HIPAA americano. Os dados são armazenados com criptografia e controles de acesso. Questões? Fale com nosso DPO: dpo@doctor8.org",
   },
   ctaFinal: {
     title: "Pronto para",
@@ -389,7 +389,7 @@ const pt: ProLandingContent = {
     secondary: "Falar com a equipe",
   },
   footer: {
-    desc: "Plataforma de telemedicina para profissionais de saúde. Registrada no CFM. Conforme LGPD e HIPAA. Atende Brasil, EUA e Europa.",
+    desc: "Plataforma de telemedicina para profissionais de saúde. Registrada no CFM. Arquitetura alinhada aos princípios LGPD e HIPAA. Atende Brasil, EUA e Europa.",
     platform: "Plataforma",
     patients: "Pacientes",
     legal: "Legal",
@@ -617,7 +617,7 @@ const en: ProLandingContent = {
     link: "Learn more about SOS Venezuela",
     professionsTitle: "Specialties in volunteer care",
   },
-  trust: ["CFM registered", "LGPD Compliant", "HIPAA Certified", "Brazil · USA · Europe", "End-to-end encryption", "Legally valid prescriptions"],
+  trust: ["CFM registered", "LGPD principles", "HIPAA principles", "Brazil · USA · Europe", "End-to-end encryption", "Legally valid prescriptions"],
   features: {
     eyebrow: "Features",
     title: "One platform.\nSix essential tools.",
@@ -691,12 +691,12 @@ const en: ProLandingContent = {
     ],
   },
   lgpd: {
-    title: "LGPD and HIPAA compliance — because your patients trust you with the most sensitive data of their lives",
-    body: "Doctor8 is fully compliant with Brazil's LGPD and US HIPAA. All data is stored with end-to-end encryption. Questions? Contact our DPO: dpo@doctor8.org",
+    title: "Health data protection — LGPD and HIPAA principles",
+    body: "Doctor8 was built following the principles of Brazil's LGPD and US HIPAA. Data is stored with encryption and access controls. Questions? Contact our DPO: dpo@doctor8.org",
   },
   ctaFinal: { title: "Ready to", titleEm: "simplify", sub: "your clinical practice?", primary: "Sign up for free", secondary: "Talk to our team" },
   footer: {
-    desc: "Telehealth platform for health professionals. CFM registered. LGPD and HIPAA compliant. Serves Brazil, USA and Europe.",
+    desc: "Telehealth platform for health professionals. CFM registered. Architecture aligned with LGPD and HIPAA principles. Serves Brazil, USA and Europe.",
     platform: "Platform", patients: "Patients", legal: "Legal",
     platformLinks: ["Features", "How it works", "Prescriptions", "Schedule", "Pricing"],
     patientLinks: ["Club Doctor", "Book appointment", "Medical Cannabis", "Doctor Energy"],
@@ -763,7 +763,7 @@ const es: ProLandingContent = {
     link: "Más sobre SOS Venezuela",
     professionsTitle: "Especialidades en atención voluntaria",
   },
-  trust: ["Registrado en CFM", "LGPD Compliant", "HIPAA Certified", "Brasil · EE.UU. · Europa", "Cifrado de extremo a extremo", "Prescripciones con validez legal"],
+  trust: ["Registrado en CFM", "Principios LGPD", "Principios HIPAA", "Brasil · EE.UU. · Europa", "Cifrado de extremo a extremo", "Prescripciones con validez legal"],
   features: {
     eyebrow: "Funcionalidades",
     title: "Una plataforma.\nSeis herramientas esenciales.",
@@ -837,12 +837,12 @@ const es: ProLandingContent = {
     ],
   },
   lgpd: {
-    title: "Cumplimiento LGPD e HIPAA — porque tus pacientes te confían los datos más sensibles de sus vidas",
-    body: "Doctor8 cumple totalmente con la LGPD brasileña y el HIPAA estadounidense. Todos los datos se almacenan con cifrado de extremo a extremo. ¿Preguntas? Contacta a nuestro DPO: dpo@doctor8.org",
+    title: "Protección de datos de salud — principios LGPD e HIPAA",
+    body: "Doctor8 fue desarrollada siguiendo los principios de la LGPD brasileña y del HIPAA estadounidense. Los datos se almacenan con cifrado y controles de acceso. ¿Preguntas? Contacta a nuestro DPO: dpo@doctor8.org",
   },
   ctaFinal: { title: "¿Listo para", titleEm: "simplificar", sub: "tu prática clínica?", primary: "Regístrate gratis", secondary: "Hablar con el equipo" },
   footer: {
-    desc: "Plataforma de telemedicina para profesionales de salud. Registrada en CFM. Conforme LGPD e HIPAA. Atiende Brasil, EE.UU. y Europa.",
+    desc: "Plataforma de telemedicina para profesionales de salud. Registrada en CFM. Arquitectura alineada a los principios LGPD e HIPAA. Atiende Brasil, EE.UU. y Europa.",
     platform: "Plataforma", patients: "Pacientes", legal: "Legal",
     platformLinks: ["Funcionalidades", "Cómo funciona", "Prescripciones", "Agenda", "Planes"],
     patientLinks: ["Club Doctor", "Agendar consulta", "Cannabis Medicinal", "Doctor Energy"],

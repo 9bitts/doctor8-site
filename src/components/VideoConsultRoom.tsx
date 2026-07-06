@@ -77,7 +77,7 @@ const T: Record<string, Record<Lang, string>> = {
   roomError:      { pt: "Não foi possível abrir a sala de vídeo.", en: "Could not open the video room.", es: "No se pudo abrir la sala de video." },
   connError:      { pt: "Erro de conexão. Tente novamente.", en: "Connection error. Please try again.", es: "Error de conexión. Inténtalo de nuevo." },
   consultation:   { pt: "Consulta com", en: "Consultation with", es: "Consulta con" },
-  encrypted:      { pt: "Criptografado · HIPAA & LGPD", en: "Encrypted · HIPAA & LGPD", es: "Cifrado · HIPAA & LGPD" },
+  encrypted:      { pt: "Criptografado · privacidade de saúde", en: "Encrypted · health data privacy", es: "Cifrado · privacidad de salud" },
   patientChart:   { pt: "Ficha do Paciente", en: "Patient Chart", es: "Ficha del Paciente" },
   quickNote:      { pt: "Anotação rápida", en: "Quick note", es: "Nota rápida" },
   notePlaceholder:{ pt: "Digite a anotação clínica...", en: "Type clinical note...", es: "Escribe la nota clínica..." },
