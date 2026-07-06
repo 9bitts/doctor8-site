@@ -14,7 +14,11 @@ import NurseSaeTabs from "./NurseSaeTabs";
 
 export type NurseChart = { id: string; firstName: string; lastName: string };
 
-export type NurseModuleId = "sae" | "scales" | "carePlan" | "intake" | "monitoring";
+import SbarModule from "./SbarModule";
+import MedCheckModule from "./MedCheckModule";
+import MedPrescriptionModule from "./MedPrescriptionModule";
+
+export type NurseModuleId = "sae" | "scales" | "carePlan" | "intake" | "monitoring" | "sbar" | "medCheck" | "medRx";
 
 export default function NurseChartWorkspace({
   titleKey,
@@ -71,6 +75,12 @@ export default function NurseChartWorkspace({
         return <IntakeFormsModule chart={chart} />;
       case "monitoring":
         return <MonitoringReviewModule chart={chart} />;
+      case "sbar":
+        return <SbarModule chart={chart} />;
+      case "medCheck":
+        return <MedCheckModule chart={chart} />;
+      case "medRx":
+        return <MedPrescriptionModule chart={chart} />;
     }
   }
 

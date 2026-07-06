@@ -16,6 +16,9 @@ const NURSE_MODULES = [
   { href: "/enfermeiro/sae", icon: ClipboardList, labelKey: "nurse.mod.sae.title", color: "bg-rose-100 text-rose-700" },
   { href: "/enfermeiro/escalas", icon: BarChart3, labelKey: "nurse.mod.scales.title", color: "bg-pink-100 text-pink-700" },
   { href: "/enfermeiro/prescricao", icon: FileText, labelKey: "nurse.mod.carePlan.title", color: "bg-red-100 text-red-700" },
+  { href: "/enfermeiro/medicamentos", icon: FileText, labelKey: "nurse.mod.medRx.title", color: "bg-amber-100 text-amber-800" },
+  { href: "/enfermeiro/checagem", icon: ClipboardList, labelKey: "nurse.mod.medCheck.title", color: "bg-orange-100 text-orange-800" },
+  { href: "/enfermeiro/sbar", icon: MessageSquare, labelKey: "nurse.mod.sbar.title", color: "bg-violet-100 text-violet-800" },
   { href: "/enfermeiro/monitoramento", icon: Activity, labelKey: "nurse.mod.monitoring.title", color: "bg-rose-100 text-rose-700" },
 ] as const;
 

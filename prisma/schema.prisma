@@ -98,6 +98,29 @@ enum NursingScaleType {
   GLASGOW
 }
 
+enum NursingSbarStatus {
+  DRAFT
+  SENT
+}
+
+enum NursingMedCheckSource {
+  MEDICAL_PRESCRIPTION
+  NURSING_MEDICATION_PRESCRIPTION
+}
+
+enum NursingMedCheckResult {
+  APPROVED
+  DIVERGENCE
+  NOT_ADMINISTERED
+}
+
+enum NursingMedicationRxStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+}
+
 enum PatientRecordTagKind {
   ALLERGY
   MEDICATION
@@ -628,6 +651,9 @@ model ProfessionalProfile {
   nursingCarePlans       NursingCarePlan[]
   nursingScaleEntries    NursingScaleEntry[]
   nursingIntakeForms     NursingIntakeForm[]
+  nursingSbarReports     NursingSbarReport[]
+  nursingMedChecks       NursingMedCheck[]       @relation("NurseMedChecks")
+  nursingMedicationRx    NursingMedicationPrescription[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -1545,6 +1571,9 @@ model PatientRecord {
   nursingScaleEntries    NursingScaleEntry[]
   nursingIntakeForms     NursingIntakeForm[]
   nursingMonitoring      NursingMonitoringEntry[]
+  nursingSbarReports     NursingSbarReport[]
+  nursingMedChecks       NursingMedCheck[]
+  nursingMedicationRx    NursingMedicationPrescription[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -2283,6 +2312,76 @@ model NursingMonitoringEntry {
 
   @@index([patientRecordId, recordedAt])
   @@index([patientUserId])
+}
+
+model NursingSbarReport {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  appointmentId   String?
+
+  situation       String            @db.Text
+  background      String            @db.Text
+  assessment      String            @db.Text
+  recommendation  String            @db.Text
+  recipientNote   String?
+  status          NursingSbarStatus @default(DRAFT)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([patientRecordId, createdAt])
+  @@index([professionalId])
+}
+
+model NursingMedCheck {
+  id                       String              @id @default(cuid())
+  patientRecordId          String
+  patientRecord            PatientRecord       @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  nurseId                  String
+  nurse                    ProfessionalProfile @relation("NurseMedChecks", fields: [nurseId], references: [id], onDelete: Cascade)
+
+  sourceType               NursingMedCheckSource
+  medicalPrescriptionId    String?
+  nursingMedPrescriptionId String?
+
+  medicationName           String
+  medicationSnapshot       Json
+  sixRights                Json
+  result                   NursingMedCheckResult
+  divergenceReason         String?             @db.Text
+  notes                    String?             @db.Text
+  checkedAt                DateTime            @default(now())
+  createdAt                DateTime            @default(now())
+
+  @@index([patientRecordId, checkedAt])
+  @@index([nurseId])
+  @@index([medicalPrescriptionId])
+  @@index([nursingMedPrescriptionId])
+}
+
+model NursingMedicationPrescription {
+  id              String                    @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord             @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile       @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  medications     Json
+  instructions    String?                   @db.Text
+  validUntil      DateTime?
+  cofenCategory   String?
+  licenseSnapshot String?
+  status          NursingMedicationRxStatus @default(ACTIVE)
+
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([patientRecordId, createdAt])
+  @@index([professionalId])
+  @@index([status])
 }
 
 // ────────────────────────────────────────────

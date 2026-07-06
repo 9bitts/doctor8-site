@@ -41,8 +41,7 @@ export const DEFAULT_VENEZUELA_POOLS: {
     volunteerRoles: ["PROFESSIONAL"],
     specialtyHints: [
       "general", "clínica", "clinica", "medicina", "médico", "medico", "family",
-      "enferm", "nurse", "doula", "parteira", "midwife", "obstet", "médic",
-      "gestante", "gestantes", "grávida", "gravida", "acompanhante", "parto",
+      "médic", "gestante", "gestantes", "grávida", "gravida", "acompanhante", "parto",
       "matern", "obstetr",
     ],
   },

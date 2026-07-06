@@ -49,6 +49,9 @@ export default function NursePatientChartPanel({ chartId }: { chartId: string })
     { href: `${base}/sae`, label: t("nurse.mod.sae.title") },
     { href: `${base}/escalas`, label: t("nurse.mod.scales.title") },
     { href: `${base}/prescricao`, label: t("nurse.mod.carePlan.title") },
+    { href: `${base}/medicamentos`, label: t("nurse.mod.medRx.title") },
+    { href: `${base}/checagem`, label: t("nurse.mod.medCheck.title") },
+    { href: `${base}/sbar`, label: t("nurse.mod.sbar.title") },
     { href: `${base}/monitoramento`, label: t("nurse.mod.monitoring.title") },
   ];
 

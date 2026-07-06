@@ -106,6 +106,9 @@ const T: Record<string, Record<Lang, string>> = {
   nurseScales:    { pt: "Escalas clínicas", en: "Clinical scales", es: "Escalas clínicas" },
   nurseCarePlan:  { pt: "Prescrição de cuidados", en: "Care prescription", es: "Prescripción de cuidados" },
   nurseMonitoring:{ pt: "Monitoramento", en: "Monitoring", es: "Monitoreo" },
+  nurseSbar:      { pt: "SBAR / Passagem", en: "SBAR handoff", es: "SBAR / Traspaso" },
+  nurseMedCheck:  { pt: "Checagem técnica", en: "Med check", es: "Chequeo técnico" },
+  nurseMedRx:     { pt: "Prescrição medicamentosa", en: "Nursing med Rx", es: "Prescripción medicamentosa" },
   nutriAnamnesis: { pt: "Anamnese alimentar", en: "Food anamnesis", es: "Anamnesis alimentaria" },
   nutriAnthropometry: { pt: "Antropometria", en: "Anthropometry", es: "Antropometría" },
   nutriMealPlans: { pt: "Planos alimentares", en: "Meal plans", es: "Planes alimentarios" },
@@ -1019,6 +1022,36 @@ export default function VideoConsultRoom({
                           className="flex items-center justify-center gap-1.5 text-xs font-medium text-rose-200 bg-rose-900/50 hover:bg-rose-900/70 py-2 rounded-lg transition"
                         >
                           <Activity size={13} /> {t("nurseMonitoring")}
+                        </a>
+                      )}
+                      {chartLinks.nurseSbar && (
+                        <a
+                          href={chartLinks.nurseSbar}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-violet-200 bg-violet-900/50 hover:bg-violet-900/70 py-2 rounded-lg transition"
+                        >
+                          <MessageCircle size={13} /> {t("nurseSbar")}
+                        </a>
+                      )}
+                      {chartLinks.nurseMedCheck && (
+                        <a
+                          href={chartLinks.nurseMedCheck}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-orange-200 bg-orange-900/50 hover:bg-orange-900/70 py-2 rounded-lg transition"
+                        >
+                          <ShieldCheck size={13} /> {t("nurseMedCheck")}
+                        </a>
+                      )}
+                      {chartLinks.nurseMedRx && (
+                        <a
+                          href={chartLinks.nurseMedRx}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-amber-200 bg-amber-900/50 hover:bg-amber-900/70 py-2 rounded-lg transition"
+                        >
+                          <Pill size={13} /> {t("nurseMedRx")}
                         </a>
                       )}
                       {chartLinks.nutriAnamnesis && (
