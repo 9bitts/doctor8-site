@@ -1,21 +1,27 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Search, User } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
+import AnthropometryModule from "./AnthropometryModule";
+import MealPlanModule from "./MealPlanModule";
+import IntakeFormsModule from "./IntakeFormsModule";
+import FoodDiaryReviewModule from "./FoodDiaryReviewModule";
 
 export type NutritionChart = { id: string; firstName: string; lastName: string };
+
+export type NutritionModuleId = "anthropometry" | "mealPlans" | "intake" | "foodDiary";
 
 export default function NutritionChartWorkspace({
   titleKey,
   descKey,
-  children,
+  module,
 }: {
   titleKey: string;
   descKey: string;
-  children: (chart: NutritionChart) => ReactNode;
+  module: NutritionModuleId;
 }) {
   const { t } = useI18n();
   const [charts, setCharts] = useState<NutritionChart[]>([]);
@@ -50,6 +56,19 @@ export default function NutritionChartWorkspace({
         `${c.firstName} ${c.lastName}`.toLowerCase().includes(query.toLowerCase()),
       )
     : charts.slice(0, 10);
+
+  function renderModule(chart: NutritionChart) {
+    switch (module) {
+      case "anthropometry":
+        return <AnthropometryModule chart={chart} />;
+      case "mealPlans":
+        return <MealPlanModule chart={chart} />;
+      case "intake":
+        return <IntakeFormsModule chart={chart} />;
+      case "foodDiary":
+        return <FoodDiaryReviewModule chart={chart} />;
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
@@ -119,7 +138,7 @@ export default function NutritionChartWorkspace({
         )}
       </div>
 
-      {selected && children(selected)}
+      {selected && renderModule(selected)}
     </div>
   );
 }
