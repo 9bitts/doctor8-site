@@ -2,6 +2,7 @@ node_modules/
 .next/
 .env
 tsconfig.tsbuildinfo
+ANALISE_DOCTOR8.md
 playwright-report/
 test-results/
 data/cum-co/*
@@ -12,6 +13,7 @@ data/cmed/*.xls
 android/app/build/
 android/.gradle/
 android/build/
+android/.idea/
 *.jks
 *.keystore
 
