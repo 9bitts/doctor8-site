@@ -262,7 +262,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               return "/signup/role";
             }
 
-            const { role: signupRole, professionalKind, phoneE164, region: intentRegion } = intent;
+            const {
+              role: signupRole,
+              professionalKind,
+              profession,
+              phoneE164,
+              region: intentRegion,
+            } = intent;
             const nameParts = (user.name || "").split(" ");
             const firstName = nameParts[0] || "";
             const lastName = nameParts.slice(1).join(" ") || "";
@@ -285,6 +291,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 userId: newUser.id,
                 role: signupRole,
                 professionalKind,
+                profession,
                 firstName,
                 lastName,
                 avatarUrl: user.image || null,

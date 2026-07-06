@@ -200,8 +200,12 @@ export function RegisterAccountForm({
 
   const isProfessional = role === "PROFESSIONAL";
   const isPsychologistSignup = isProfessional && professionalKind === "psychologist";
+  const isNutritionistSignup = professionSlug === "nutricionista";
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
+
+  const oauthProfession =
+    professionSlug && !isPsychologistSignup ? professionSlug : undefined;
 
   function effectiveAuthCallback(): string {
     const fromCookie = resolveHumanitarianAuthCallback(null, {
@@ -224,6 +228,7 @@ export function RegisterAccountForm({
         body: JSON.stringify({
           role,
           professionalKind: isPsychologistSignup ? "psychologist" : undefined,
+          profession: oauthProfession,
           phoneDdi: phone.ddi,
           phoneNational: phone.nationalNumber,
           region,
@@ -239,7 +244,9 @@ export function RegisterAccountForm({
       persistAuthCallback(effectiveAuthCallback());
       const oauthCallback = isPsychologistSignup
         ? "/callback?portal=psychologist"
-        : "/callback";
+        : isNutritionistSignup
+          ? "/callback?portal=nutritionist"
+          : "/callback";
       clearSensitiveClientState();
       await signOut({ redirect: false });
       await signIn("google", { callbackUrl: oauthCallback });
@@ -446,7 +453,17 @@ export function RegisterAccountForm({
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
         )}
-        {isProfessional ? t("reg.googlePro") : isPsychologistSignup ? t("reg.googlePsychologist") : isPsychoanalyst ? t("reg.googlePsychoanalyst") : isIntegrativeTherapist ? t("reg.googleIntegrative") : t("reg.googlePatient")}
+        {isNutritionistSignup
+          ? t("reg.googleNutritionist")
+          : isPsychologistSignup
+            ? t("reg.googlePsychologist")
+            : isProfessional
+              ? t("reg.googlePro")
+              : isPsychoanalyst
+                ? t("reg.googlePsychoanalyst")
+                : isIntegrativeTherapist
+                  ? t("reg.googleIntegrative")
+                  : t("reg.googlePatient")}
       </button>
 
       <div className="flex items-center gap-4 mb-4">

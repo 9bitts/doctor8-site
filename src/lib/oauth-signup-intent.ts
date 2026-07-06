@@ -15,6 +15,20 @@ export type SignupRole =
 
 export type SignupProfessionalKind = "psychologist" | null;
 
+/** Profession slugs stored in OAuth intent (excludes psicologo — uses professionalKind). */
+export const OAUTH_PROFESSION_SLUGS = [
+  "medico",
+  "fisioterapeuta",
+  "nutricionista",
+  "cuidados_paliativos",
+] as const;
+
+export type OAuthProfessionSlug = (typeof OAUTH_PROFESSION_SLUGS)[number];
+
+export function isOAuthProfessionSlug(slug: string): slug is OAuthProfessionSlug {
+  return (OAUTH_PROFESSION_SLUGS as readonly string[]).includes(slug);
+}
+
 const VALID_ROLES = new Set<string>([
   "PATIENT",
   "PROFESSIONAL",
@@ -23,6 +37,7 @@ const VALID_ROLES = new Set<string>([
 ]);
 
 const VALID_KINDS = new Set<string>(["", "psychologist"]);
+const VALID_PROFESSIONS = new Set<string>(["", ...OAUTH_PROFESSION_SLUGS]);
 
 function signingSecret(): string {
   const secret = process.env.AUTH_SECRET;
@@ -39,18 +54,21 @@ export function createSignupRoleToken(
   professionalKind: SignupProfessionalKind = null,
   phoneE164: string | null = null,
   region: RegistrationRegionCode | null = null,
+  profession: OAuthProfessionSlug | null = null,
 ): string {
   const exp = Math.floor(Date.now() / 1000) + OAUTH_SIGNUP_ROLE_MAX_AGE_SECONDS;
   const kind = professionalKind ?? "";
+  const prof = profession ?? "";
   const phone = (phoneE164 || "").replace(/\D/g, "");
   const regionCode = region && isValidRegistrationRegion(region) ? region : "";
-  const payload = `${role}:${kind}:${phone}:${regionCode}:${exp}`;
+  const payload = `${role}:${kind}:${prof}:${phone}:${regionCode}:${exp}`;
   return `${payload}.${signPayload(payload)}`;
 }
 
 export type ParsedSignupIntent = {
   role: SignupRole;
   professionalKind: SignupProfessionalKind;
+  profession: OAuthProfessionSlug | null;
   phoneE164: string | null;
   region: RegistrationRegionCode | null;
 };
@@ -80,11 +98,14 @@ export function parseSignupRoleToken(token: string | undefined): ParsedSignupInt
 
   let role: string;
   let kind: string;
+  let profession = "";
   let phone: string;
   let region = "";
   let expStr: string;
 
-  if (parts.length === 5) {
+  if (parts.length === 6) {
+    [role, kind, profession, phone, region, expStr] = parts;
+  } else if (parts.length === 5) {
     [role, kind, phone, region, expStr] = parts;
   } else if (parts.length === 4) {
     [role, kind, phone, expStr] = parts;
@@ -103,10 +124,12 @@ export function parseSignupRoleToken(token: string | undefined): ParsedSignupInt
   if (!Number.isFinite(exp) || exp < Math.floor(Date.now() / 1000)) return null;
   if (!VALID_ROLES.has(role)) return null;
   if (!VALID_KINDS.has(kind)) return null;
+  if (!VALID_PROFESSIONS.has(profession)) return null;
 
   return {
     role: role as SignupRole,
     professionalKind: kind === "psychologist" ? "psychologist" : null,
+    profession: isOAuthProfessionSlug(profession) ? profession : null,
     phoneE164: phone || null,
     region: isValidRegistrationRegion(region) ? region : null,
   };

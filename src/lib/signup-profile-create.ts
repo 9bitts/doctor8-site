@@ -1,8 +1,22 @@
 import type { Prisma } from "@prisma/client";
 import { encrypt } from "@/lib/encryption";
-import type { SignupRole } from "@/lib/oauth-signup-intent";
+import type { OAuthProfessionSlug, SignupRole } from "@/lib/oauth-signup-intent";
+import { isProfessionSignupSlug, PROFESSION_SIGNUP } from "@/lib/profession-signup";
 
 type Tx = Prisma.TransactionClient;
+
+function resolveProfessionalSpecialty(opts: {
+  professionalKind?: "psychologist" | null;
+  profession?: OAuthProfessionSlug | null;
+}): string {
+  if (opts.professionalKind === "psychologist") return "Psychologist";
+  const slug = opts.profession;
+  if (slug && isProfessionSignupSlug(slug)) {
+    const cfg = PROFESSION_SIGNUP[slug];
+    if (cfg.role === "PROFESSIONAL") return cfg.specialty ?? "";
+  }
+  return "";
+}
 
 export async function createSignupProfile(
   tx: Tx,
@@ -10,12 +24,13 @@ export async function createSignupProfile(
     userId: string;
     role: SignupRole;
     professionalKind?: "psychologist" | null;
+    profession?: OAuthProfessionSlug | null;
     firstName: string;
     lastName: string;
     avatarUrl?: string | null;
   },
 ): Promise<void> {
-  const { userId, role, professionalKind, firstName, lastName, avatarUrl } = opts;
+  const { userId, role, professionalKind, profession, firstName, lastName, avatarUrl } = opts;
 
   if (role === "PROFESSIONAL") {
     await tx.professionalProfile.create({
@@ -25,7 +40,7 @@ export async function createSignupProfile(
         lastName,
         avatarUrl: avatarUrl ?? null,
         licenseNumber: "",
-        specialty: professionalKind === "psychologist" ? "Psychologist" : "",
+        specialty: resolveProfessionalSpecialty({ professionalKind, profession }),
         consultPrice: 0,
       },
     });

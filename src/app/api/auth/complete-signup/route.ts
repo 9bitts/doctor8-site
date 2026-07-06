@@ -9,9 +9,12 @@ import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { parseRegistrationPhone } from "@/lib/international-phone";
 import { resolveRoleHome } from "@/lib/role-home";
 
+import { OAUTH_PROFESSION_SLUGS } from "@/lib/oauth-signup-intent";
+
 const completeSchema = z.object({
   role: z.enum(["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"]),
   professionalKind: z.enum(["psychologist"]).optional(),
+  profession: z.enum(OAUTH_PROFESSION_SLUGS).optional(),
   firstName: z.string().max(100).optional(),
   lastName: z.string().max(100).optional(),
   phoneDdi: z.string().min(1).max(4).optional(),
@@ -51,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Account already complete" }, { status: 409 });
   }
 
-  const { role, professionalKind, firstName, lastName, phoneDdi, phoneNational } = parsed.data;
+  const { role, professionalKind, profession, firstName, lastName, phoneDdi, phoneNational } = parsed.data;
 
   let phoneE164: string | null = null;
   if (phoneDdi && phoneNational) {
@@ -78,6 +81,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       role,
       professionalKind: professionalKind ?? null,
+      profession: profession ?? null,
       firstName: profileFirstName,
       lastName: profileLastName,
     });
