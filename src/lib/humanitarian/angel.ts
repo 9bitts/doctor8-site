@@ -9,6 +9,11 @@ import { storedNotificationText } from "@/lib/notification-i18n";
 import type { Lang } from "@/lib/i18n/translations";
 import type { IdentificationData } from "@/lib/humanitarian/anamnese";
 import type { AngelApprovalStatus } from "@prisma/client";
+import {
+  loadAngelPatientJourney,
+  loadAngelPatientJourneySummaries,
+  type AngelPatientFlow,
+} from "@/lib/humanitarian/angel-patient-journey";
 import type { NextRequest } from "next/server";
 import {
   checkRateLimits,
@@ -237,6 +242,7 @@ export type AngelMyPatientRow = {
   riskSummary: AngelRiskSummary;
   lastFollowUp: { contactedAt: string; outcome: string } | null;
   queueEntryId: string;
+  flow: AngelPatientFlow;
 };
 
 export type AngelAvailablePatientRow = {
@@ -246,6 +252,7 @@ export type AngelAvailablePatientRow = {
   poolLabel: string;
   consultEndedAt: string | null;
   riskSummary: AngelRiskSummary;
+  flow: AngelPatientFlow;
 };
 
 export async function listAngelDashboard(
@@ -274,10 +281,28 @@ export async function listAngelDashboard(
     activeAssignments.filter((a) => a.angelUserId === angelUserId).map((a) => a.patientUserId),
   );
 
+  const allPatientIds = eligible.map((e) => e.patientUserId);
+  const flowSummaries = await loadAngelPatientJourneySummaries(campaignId, allPatientIds);
+
+  const defaultFlow: AngelPatientFlow = {
+    currentStep: "care",
+    intakeStatus: null,
+    triageComplete: false,
+    tcleComplete: false,
+    anamneseComplete: false,
+    activeQueueStatus: null,
+    hasCompletedConsult: false,
+    consultationCount: 0,
+    hasReferral: false,
+    hasUpcomingAppointment: false,
+    nextAppointmentAt: null,
+  };
+
   const myPatients: AngelMyPatientRow[] = [];
   const available: AngelAvailablePatientRow[] = [];
 
   for (const e of eligible) {
+    const flow = flowSummaries.get(e.patientUserId) ?? defaultFlow;
     if (myPatientIds.has(e.patientUserId)) {
       myPatients.push({
         patientUserId: e.patientUserId,
@@ -289,6 +314,7 @@ export async function listAngelDashboard(
         riskSummary: e.riskSummary,
         lastFollowUp: e.lastFollowUp,
         queueEntryId: e.queueEntryId,
+        flow,
       });
     } else if (!assignedPatient.has(e.patientUserId)) {
       available.push({
@@ -298,6 +324,7 @@ export async function listAngelDashboard(
         poolLabel: e.poolLabel,
         consultEndedAt: e.consultEndedAt,
         riskSummary: e.riskSummary,
+        flow,
       });
     }
   }
@@ -784,35 +811,29 @@ export async function getAngelPatientDetail(
   });
   if (!intake?.angelContactConsentAt) return null;
 
-  const entries = await db.humanitarianQueueEntry.findMany({
-    where: { campaignId, patientUserId, status: "DONE" },
-    orderBy: { endedAt: "desc" },
-    include: {
-      pool: { select: { slug: true, labelPt: true, labelEn: true, labelEs: true } },
-    },
-  });
-
-  const followUps = await db.humanitarianAngelFollowUp.findMany({
-    where: { campaignId, patientUserId },
-    orderBy: { contactedAt: "desc" },
-    include: {
-      angelUser: {
-        select: { angelProfile: { select: { firstName: true, lastName: true } } },
+  const [journey, followUps, patient] = await Promise.all([
+    loadAngelPatientJourney(campaignId, patientUserId, lang),
+    db.humanitarianAngelFollowUp.findMany({
+      where: { campaignId, patientUserId },
+      orderBy: { contactedAt: "desc" },
+      include: {
+        angelUser: {
+          select: { angelProfile: { select: { firstName: true, lastName: true } } },
+        },
       },
-    },
-  });
-
-  const patient = await db.user.findUnique({
-    where: { id: patientUserId },
-    select: { patientProfile: { select: { firstName: true, lastName: true } } },
-  });
+    }),
+    db.user.findUnique({
+      where: { id: patientUserId },
+      select: { patientProfile: { select: { firstName: true, lastName: true } } },
+    }),
+  ]);
 
   const idData =
     decryptIdentificationData(
       (intake.identificationData ?? null) as IdentificationData | null,
     ) ?? ({} as IdentificationData);
 
-  const latestEntry = entries[0];
+  const latestDone = journey.consultations.find((c) => c.status === "DONE");
 
   return {
     patientUserId,
@@ -820,15 +841,11 @@ export async function getAngelPatientDetail(
       ? `${safeDecrypt(patient.patientProfile.firstName)} ${safeDecrypt(patient.patientProfile.lastName)}`.trim()
       : idData.fullName || "Paciente",
     phone: idData.phone || "",
-    riskSummary: buildAngelRiskSummary(intake, lang, latestEntry?.priority ?? null),
-    consultations: entries.map((e) => ({
-      id: e.id,
-      poolSlug: e.pool.slug,
-      poolLabel:
-        lang === "pt" ? e.pool.labelPt : lang === "en" ? e.pool.labelEn : e.pool.labelEs,
-      priority: e.priority,
-      endedAt: e.endedAt?.toISOString() ?? null,
-    })),
+    riskSummary: buildAngelRiskSummary(intake, lang, latestDone?.priority ?? null),
+    flow: journey.flow,
+    consultations: journey.consultations,
+    referrals: journey.referrals,
+    appointments: journey.appointments,
     followUps: followUps.map((f) => {
       const angelName = f.angelUser.angelProfile
         ? `${f.angelUser.angelProfile.firstName} ${f.angelUser.angelProfile.lastName}`.trim()
@@ -851,7 +868,7 @@ export async function getAngelPatientDetail(
       }
       return base;
     }),
-    queueEntryId: latestEntry?.id ?? null,
+    queueEntryId: latestDone?.id ?? journey.consultations[0]?.id ?? null,
   };
 }
 

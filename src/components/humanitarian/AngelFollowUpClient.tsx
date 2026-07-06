@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Heart, Loader2, Phone, MessageCircle, ChevronRight, AlertCircle, Clock, User, BookOpen,
+  Stethoscope, ArrowRightLeft, Calendar,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { ANGEL_LOGIN } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { localeOf } from "@/lib/i18n/translations";
 import AngelRiskBadge from "@/components/humanitarian/AngelRiskBadge";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 import {
@@ -20,6 +22,15 @@ import {
 import { buildWhatsAppUrl } from "@/lib/humanitarian/angel-utils";
 import type { AngelRiskSummary } from "@/lib/humanitarian/angel-risk-summary";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
+import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
+import { isHumanitarianPhoneGateEnabled } from "@/lib/humanitarian/feature-flags";
+import type { HumanitarianFlowStep } from "@/lib/humanitarian/patient-flow";
+import type {
+  AngelAppointmentRow,
+  AngelConsultationRow,
+  AngelPatientFlow,
+  AngelReferralRow,
+} from "@/lib/humanitarian/angel-patient-journey";
 
 interface MyPatientRow {
   patientUserId: string;
@@ -31,6 +42,7 @@ interface MyPatientRow {
   riskSummary: AngelRiskSummary;
   lastFollowUp: { contactedAt: string; outcome: string } | null;
   queueEntryId: string;
+  flow: AngelPatientFlow;
 }
 
 interface AvailableRow {
@@ -40,6 +52,7 @@ interface AvailableRow {
   poolLabel: string;
   consultEndedAt: string | null;
   riskSummary: AngelRiskSummary;
+  flow: AngelPatientFlow;
 }
 
 type PendencyRow = {
@@ -80,9 +93,198 @@ function firstNameFromFull(name: string): string {
   return name.trim().split(/\s+/)[0] || name;
 }
 
+function formatShortDateTime(iso: string, locale: string): string {
+  return new Date(iso).toLocaleString(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function flowStepLabel(t: (key: string) => string, step: HumanitarianFlowStep): string {
+  if (step === "waiting") return t("angel.flow.waiting");
+  if (step === "consult") return t("angel.flow.consult");
+  return t(`hum.flow.${step}`);
+}
+
+function AngelFlowBadges({
+  flow,
+  t,
+  locale,
+}: {
+  flow: AngelPatientFlow;
+  t: (key: string) => string;
+  locale: string;
+}) {
+  const badges: string[] = [];
+  if (flow.consultationCount > 0) {
+    badges.push(tParams(t, "angel.portal.badge.consultDone", { n: flow.consultationCount }));
+  }
+  if (flow.hasReferral) badges.push(t("angel.portal.badge.referred"));
+  if (flow.hasUpcomingAppointment && flow.nextAppointmentAt) {
+    badges.push(
+      tParams(t, "angel.portal.badge.scheduled", {
+        date: formatShortDateTime(flow.nextAppointmentAt, locale),
+      }),
+    );
+  }
+  if (flow.activeQueueStatus === "IN_PROGRESS") {
+    badges.push(t("angel.portal.badge.inConsult"));
+  } else if (flow.activeQueueStatus) {
+    badges.push(t("angel.portal.badge.inQueue"));
+  }
+  if (!badges.length) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {badges.map((label) => (
+        <span
+          key={label}
+          className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200"
+        >
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function AngelPatientJourneyPanel({
+  flow,
+  consultations,
+  referrals,
+  appointments,
+  t,
+  lang,
+  locale,
+  sep,
+}: {
+  flow: AngelPatientFlow;
+  consultations: AngelConsultationRow[];
+  referrals: AngelReferralRow[];
+  appointments: AngelAppointmentRow[];
+  t: (key: string) => string;
+  lang: "pt" | "en" | "es";
+  locale: string;
+  sep: string;
+}) {
+  const phoneGate = isHumanitarianPhoneGateEnabled();
+  const upcoming = appointments.filter(
+    (a) => ["CONFIRMED", "PENDING"].includes(a.status) && new Date(a.scheduledAt) >= new Date(),
+  );
+  const past = appointments.filter(
+    (a) => !upcoming.some((u) => u.id === a.id),
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-3">{t("angel.portal.journeyTitle")}</h3>
+        <HumanitarianFlowStepper
+          lang={lang}
+          current={flow.currentStep}
+          phoneGateEnabled={phoneGate}
+        />
+        <p className="text-xs text-slate-500 mt-3">
+          {t("angel.portal.listSeparator")} {flowStepLabel(t, flow.currentStep)}
+          {flow.activeQueueStatus
+            ? ` ${sep} ${t(`angel.queueStatus.${flow.activeQueueStatus}`)}`
+            : ""}
+        </p>
+      </div>
+
+      <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+          <Stethoscope className="w-4 h-4 text-rose-500" />
+          {t("angel.portal.consultationsTitle")}
+        </h3>
+        {consultations.length === 0 ? (
+          <p className="text-xs text-slate-400">{t("angel.portal.noConsultations")}</p>
+        ) : (
+          <div className="space-y-2">
+            {consultations.map((c) => (
+              <div key={c.id} className="text-xs border-l-2 border-emerald-300 pl-3 py-1">
+                <p className="text-slate-800 font-medium">
+                  {c.poolLabel} {sep} {t(`angel.queueStatus.${c.status}`)}
+                </p>
+                {c.professionalName && (
+                  <p className="text-slate-600 mt-0.5">
+                    {tParams(t, "angel.portal.consultWith", { name: c.professionalName })}
+                  </p>
+                )}
+                <p className="text-slate-400 mt-0.5">
+                  {c.endedAt
+                    ? formatShortDateTime(c.endedAt, locale)
+                    : c.startedAt
+                      ? formatShortDateTime(c.startedAt, locale)
+                      : formatShortDateTime(c.enteredAt, locale)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+          <ArrowRightLeft className="w-4 h-4 text-rose-500" />
+          {t("angel.portal.referralsTitle")}
+        </h3>
+        {referrals.length === 0 ? (
+          <p className="text-xs text-slate-400">{t("angel.portal.noReferrals")}</p>
+        ) : (
+          <div className="space-y-2">
+            {referrals.map((r) => (
+              <div key={r.id} className="text-xs border-l-2 border-blue-300 pl-3 py-1">
+                <p className="text-slate-800 font-medium">{r.specialty}</p>
+                {r.fromDoctor && (
+                  <p className="text-slate-600 mt-0.5">
+                    {tParams(t, "angel.portal.referralFrom", { name: r.fromDoctor })}
+                    {r.targetDoctor
+                      ? ` ${tParams(t, "angel.portal.referralTo", { name: r.targetDoctor })}`
+                      : ""}
+                  </p>
+                )}
+                <p className="text-slate-400 mt-0.5">{formatShortDateTime(r.createdAt, locale)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-rose-500" />
+          {t("angel.portal.appointmentsTitle")}
+        </h3>
+        {appointments.length === 0 ? (
+          <p className="text-xs text-slate-400">{t("angel.portal.noAppointments")}</p>
+        ) : (
+          <div className="space-y-2">
+            {[...upcoming, ...past].map((a) => (
+              <div key={a.id} className="text-xs border-l-2 border-violet-300 pl-3 py-1">
+                <p className="text-slate-800 font-medium">
+                  {a.providerName}
+                  {a.specialty ? ` (${a.specialty})` : ""}
+                </p>
+                <p className="text-slate-600 mt-0.5">
+                  {formatShortDateTime(a.scheduledAt, locale)} {sep}{" "}
+                  {t(`angel.apptStatus.${a.status}`)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AngelFollowUpClient() {
   const router = useRouter();
   const { t, lang } = useI18n();
+  const locale = localeOf(lang);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("LOADING");
   const [myPatients, setMyPatients] = useState<MyPatientRow[]>([]);
@@ -94,6 +296,10 @@ export default function AngelFollowUpClient() {
   const [detail, setDetail] = useState<{
     followUps: FollowUpRow[];
     riskSummary: AngelRiskSummary;
+    flow: AngelPatientFlow;
+    consultations: AngelConsultationRow[];
+    referrals: AngelReferralRow[];
+    appointments: AngelAppointmentRow[];
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [claimingId, setClaimingId] = useState<string | null>(null);
@@ -186,6 +392,10 @@ export default function AngelFollowUpClient() {
     return data.patient as {
       followUps: FollowUpRow[];
       riskSummary: AngelRiskSummary;
+      flow: AngelPatientFlow;
+      consultations: AngelConsultationRow[];
+      referrals: AngelReferralRow[];
+      appointments: AngelAppointmentRow[];
     };
   }
 
@@ -431,6 +641,7 @@ export default function AngelFollowUpClient() {
                       <div className="mt-2">
                         <AngelRiskBadge summary={p.riskSummary} lang={lang} compact />
                       </div>
+                      <AngelFlowBadges flow={p.flow} t={t} locale={locale} />
                     </div>
                     <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
                   </button>
@@ -463,6 +674,7 @@ export default function AngelFollowUpClient() {
                       <div className="mt-2">
                         <AngelRiskBadge summary={p.riskSummary} lang={lang} compact />
                       </div>
+                      <AngelFlowBadges flow={p.flow} t={t} locale={locale} />
                     </div>
                     <button
                       type="button"
@@ -532,6 +744,19 @@ export default function AngelFollowUpClient() {
               </div>
             )}
           </div>
+
+          {(detail || selected.flow) && (
+            <AngelPatientJourneyPanel
+              flow={detail?.flow ?? selected.flow}
+              consultations={detail?.consultations ?? []}
+              referrals={detail?.referrals ?? []}
+              appointments={detail?.appointments ?? []}
+              t={t}
+              lang={lang}
+              locale={locale}
+              sep={sep}
+            />
+          )}
 
           {detail && detail.followUps.length > 0 && (
             <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
