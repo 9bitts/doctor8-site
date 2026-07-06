@@ -13,9 +13,24 @@ export type MeetingRoomConfig = {
   scheduleHour: number;
   scheduleMinute: number;
   timezone: string;
+  /** Optional Google Meet dial-in line (shown on room card and share text). */
+  dialIn?: string;
+  /** Optional tel.meet URL with more phone numbers. */
+  phoneNumbersUrl?: string;
 };
 
 export const MEETING_ROOMS: MeetingRoomConfig[] = [
+  {
+    id: "alianca-pela-vida",
+    titleKey: "meetRoom.alianca.title",
+    subjectKey: "meetRoom.alianca.subject",
+    audienceKey: "meetRoom.alianca.audience",
+    scheduleHour: 20,
+    scheduleMinute: 0,
+    timezone: "America/Sao_Paulo",
+    dialIn: "(DE) +49 30 300195060 · PIN: 525 174 424 8791#",
+    phoneNumbersUrl: "https://tel.meet/knj-ohde-eih?pin=5251744248791",
+  },
   {
     id: "nise-yamaguchi",
     titleKey: "meetRoom.nise.title",
@@ -63,11 +78,13 @@ export function normalizeMeetUrl(raw: string | null | undefined): string | null 
 }
 
 const MEETING_ROOM_URL_BY_ID: Record<string, string | undefined> = {
+  "alianca-pela-vida": process.env.NEXT_PUBLIC_MEETING_ROOM_ALIANCA_PELA_VIDA_URL,
   "nise-yamaguchi": process.env.NEXT_PUBLIC_MEETING_ROOM_NISE_URL,
   "treinamento-doctor8": process.env.NEXT_PUBLIC_MEETING_ROOM_DOCTOR8_URL,
 };
 
 const MEETING_ROOM_URL_FALLBACK: Record<string, string> = {
+  "alianca-pela-vida": "https://meet.google.com/knj-ohde-eih",
   "treinamento-doctor8": "https://meet.google.com/kbe-vkof-xza",
 };
 

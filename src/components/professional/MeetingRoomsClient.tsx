@@ -43,16 +43,22 @@ const STATUS_STYLES = {
 
 function shareMessage(
   t: (key: string) => string,
+  room: RoomWithUrl,
   roomTitle: string,
   subject: string,
-  meetUrl: string,
-  portalUrl: string,
 ): string {
-  return t("meetRooms.shareMessage")
+  let text = t("meetRooms.shareMessage")
     .replace("{{title}}", roomTitle)
     .replace("{{subject}}", subject)
-    .replace("{{meetUrl}}", meetUrl)
-    .replace("{{portalUrl}}", portalUrl);
+    .replace("{{meetUrl}}", room.meetUrl!)
+    .replace("{{portalUrl}}", room.inviteUrl);
+  if (room.dialIn) {
+    text += `\n\n${t("meetRooms.dialIn")}: ${room.dialIn}`;
+  }
+  if (room.phoneNumbersUrl) {
+    text += `\n${t("meetRooms.otherPhones")}: ${room.phoneNumbersUrl}`;
+  }
+  return text;
 }
 
 export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) {
@@ -118,7 +124,7 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
           const roomTitle = t(room.titleKey);
           const subject = t(room.subjectKey);
           const audience = t(room.audienceKey);
-          const shareText = shareMessage(t, roomTitle, subject, room.meetUrl!, room.inviteUrl);
+          const shareText = shareMessage(t, room, roomTitle, subject);
 
           return (
             <article
@@ -187,6 +193,25 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
                       <span className="font-semibold">Google Meet</span>
                     </span>
                   </div>
+                  {room.dialIn && (
+                    <div className="sm:col-span-2 text-slate-700 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
+                      <span className="text-slate-500">{t("meetRooms.dialIn")}: </span>
+                      <span className="font-semibold">{room.dialIn}</span>
+                      {room.phoneNumbersUrl && (
+                        <>
+                          {" · "}
+                          <a
+                            href={room.phoneNumbersUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-600 hover:text-brand-700 font-semibold underline underline-offset-2"
+                          >
+                            {t("meetRooms.otherPhones")}
+                          </a>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {room.meetUrl ? (
