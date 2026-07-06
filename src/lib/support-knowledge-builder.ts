@@ -17,6 +17,7 @@ const PORTAL_LABELS: Record<PlatformPortalId, string> = {
   INTEGRATIVE_THERAPIST: "Integrative therapist portal (/integrative-therapist)",
   ORGANIZATION: "Clinic / organization portal (/organization)",
   ADMIN: "Admin portal (/admin ? ADMIN role only)",
+  ANGEL: "Angel volunteer portal (/admin/patients, /admin/angel ? ANGEL role)",
 };
 
 export function buildGeneratedNavKnowledge(): string {

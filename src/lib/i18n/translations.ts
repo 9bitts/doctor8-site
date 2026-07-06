@@ -5585,6 +5585,7 @@ const pt: LocaleDict = {
   "map.profession.psychoanalyst": "Psicanalista",
   "role.admin": "Administrador",
   "role.angel": "Anjo · acompanhamento",
+  "common.signOut": "Sair",
   "common.language": "Idioma",
   "common.save": "Salvar",
   "common.cancel": "Cancelar",
