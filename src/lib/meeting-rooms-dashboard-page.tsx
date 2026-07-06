@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { resolveRoleHome } from "@/lib/role-home";
-import { resolveProfessionalPortalBaseForUser } from "@/lib/psychologist-portal";
+import { resolveHealthProfessionalPortalBaseForUser } from "@/lib/nutritionist-portal";
 import MeetingRoomsClient from "@/components/professional/MeetingRoomsClient";
 import {
   MEETING_ROOMS,
@@ -40,7 +40,7 @@ export async function meetingRoomsHomeForSession(user: {
   if (user.role === "PSYCHOANALYST") return "/psychoanalyst/meeting-rooms";
   if (user.role === "INTEGRATIVE_THERAPIST") return "/integrative-therapist/meeting-rooms";
   if (user.role === "PROFESSIONAL") {
-    const base = await resolveProfessionalPortalBaseForUser(user.id);
+    const base = await resolveHealthProfessionalPortalBaseForUser(user.id);
     return `${base}/meeting-rooms`;
   }
   return null;

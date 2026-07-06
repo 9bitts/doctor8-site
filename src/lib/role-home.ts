@@ -3,6 +3,11 @@ import {
   mapProfessionalPathForSpecialty,
   PSYCHOLOGIST_HOME,
 } from "./psychologist-portal";
+import {
+  mapProfessionalPathForNutritionistSpecialty,
+  NUTRITIONIST_HOME,
+} from "./nutritionist-portal";
+import { isNutritionistSpecialty } from "./profession-label";
 import { isHumanitarianPatientPath } from "./humanitarian/origin-cookie";
 
 /** Default dashboard path after login for each account role. */
@@ -14,7 +19,9 @@ export function resolveRoleHome(
     case "ADMIN":
       return "/admin";
     case "PROFESSIONAL":
-      return isPsychologistSpecialty(specialty) ? PSYCHOLOGIST_HOME : "/professional";
+      if (isPsychologistSpecialty(specialty)) return PSYCHOLOGIST_HOME;
+      if (isNutritionistSpecialty(specialty)) return NUTRITIONIST_HOME;
+      return "/professional";
     case "PSYCHOANALYST":
       return "/psychoanalyst";
     case "INTEGRATIVE_THERAPIST":
@@ -35,6 +42,7 @@ const ROLE_ROUTE_CHECKS: { prefix: string; roles: string[] }[] = [
   { prefix: "/admin", roles: ["ADMIN"] },
   { prefix: "/professional", roles: ["PROFESSIONAL", "ADMIN"] },
   { prefix: "/psychologist", roles: ["PROFESSIONAL", "ADMIN"] },
+  { prefix: "/nutricionista", roles: ["PROFESSIONAL", "ADMIN"] },
   { prefix: "/psychoanalyst", roles: ["PSYCHOANALYST", "ADMIN"] },
   { prefix: "/integrative-therapist", roles: ["INTEGRATIVE_THERAPIST", "ADMIN"] },
   { prefix: "/patient", roles: ["PATIENT", "ADMIN"] },
@@ -122,6 +130,12 @@ export function safePostLoginUrl(
   if (isPathAllowedForRole(pathname, role)) {
     if (role === "PROFESSIONAL" && isPsychologistSpecialty(specialty)) {
       return mapProfessionalPathForSpecialty(specialty, path.startsWith("/") ? path : `/${path}`);
+    }
+    if (role === "PROFESSIONAL" && isNutritionistSpecialty(specialty)) {
+      return mapProfessionalPathForNutritionistSpecialty(
+        specialty,
+        path.startsWith("/") ? path : `/${path}`,
+      );
     }
     return path.startsWith("/") ? path : `/${path}`;
   }

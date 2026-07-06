@@ -7,7 +7,7 @@ import { audit } from "@/lib/audit";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import { decrypt } from "@/lib/encryption";
-import { resolveProfessionalPortalBaseForUser } from "@/lib/psychologist-portal";
+import { resolveHealthProfessionalPortalBaseForUser } from "@/lib/nutritionist-portal";
 import AppointmentsAnchorClient from "@/components/professional/AppointmentsAnchorClient";
 import ProfessionalAppointmentsView, {
   type ProfessionalAppointmentRow,
@@ -45,7 +45,7 @@ export default async function ProfessionalAppointments() {
   const volunteerBlocks =
     parseAvailabilityJson(professional.availability).volunteerBlocks ?? [];
 
-  const portalBase = await resolveProfessionalPortalBaseForUser(session.user.id);
+  const portalBase = await resolveHealthProfessionalPortalBaseForUser(session.user.id);
   const isPsychologistPortal = portalBase === "/psychologist";
 
   const now = new Date();

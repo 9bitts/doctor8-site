@@ -57,6 +57,7 @@ export type PlatformPortalId =
   | "PATIENT"
   | "PROFESSIONAL"
   | "PSYCHOLOGIST"
+  | "NUTRITIONIST"
   | "PSYCHOANALYST"
   | "INTEGRATIVE_THERAPIST"
   | "ORGANIZATION"
@@ -109,6 +110,7 @@ export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/patient/medications", labelKey: "nav.medications", roles: ["PATIENT"], iconKey: "Pill" },
       { href: "/patient/resources", labelKey: "nav.doctorResources", roles: ["PATIENT"], iconKey: "BookOpen" },
       { href: "/patient/integrative-care", labelKey: "nav.integrativeCare", roles: ["PATIENT"], iconKey: "Leaf" },
+      { href: "/patient/nutrition", labelKey: "nav.nutrition", roles: ["PATIENT"], iconKey: "BarChart3" },
     ],
   },
   {
@@ -226,6 +228,47 @@ export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
 
 export const PSYCHOLOGIST_NAV: PlatformNavEntry[] = flattenNavGroups(PSYCHOLOGIST_NAV_GROUPS);
 
+/** Nutritionist portal — aligned with Dietbox / WebDiet / Nutrium workflows. */
+export const NUTRITIONIST_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "nav.group.attendNow",
+    items: [
+      { href: "/nutricionista", labelKey: "nav.dashboard", roles: ["PROFESSIONAL"], iconKey: "LayoutDashboard" },
+      { href: "/nutricionista/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+      { href: "/nutricionista/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+    ],
+  },
+  {
+    labelKey: "nav.group.patients",
+    items: [
+      { href: "/nutricionista/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/nutricionista/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
+      { href: "/nutricionista/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
+    ],
+  },
+  {
+    labelKey: "nav.group.clinical",
+    items: [
+      { href: "/nutricionista/anamnese", labelKey: "nutri.mod.anamnese.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
+      { href: "/nutricionista/antropometria", labelKey: "nutri.mod.anthropometry.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
+      { href: "/nutricionista/planos", labelKey: "nutri.mod.mealPlans.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/nutricionista/diario", labelKey: "nutri.mod.foodDiary.title", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
+      { href: "/nutricionista/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.accountMore",
+    items: [
+      { href: "/nutricionista/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
+      { href: "/nutricionista/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
+      { href: "/nutricionista/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
+      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+    ],
+  },
+];
+
+export const NUTRITIONIST_NAV: PlatformNavEntry[] = flattenNavGroups(NUTRITIONIST_NAV_GROUPS);
+
 /** Psychoanalyst portal sidebar groups. */
 export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
   {
@@ -306,6 +349,7 @@ export const INTEGRATIVE_THERAPIST_NAV: PlatformNavEntry[] = flattenNavGroups(IN
 export const PLATFORM_NAV_GROUPS_BY_PORTAL: Partial<Record<PlatformPortalId, PlatformNavGroup[]>> = {
   PROFESSIONAL: PROFESSIONAL_NAV_GROUPS,
   PSYCHOLOGIST: PSYCHOLOGIST_NAV_GROUPS,
+  NUTRITIONIST: NUTRITIONIST_NAV_GROUPS,
   PSYCHOANALYST: PSYCHOANALYST_NAV_GROUPS,
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV_GROUPS,
 };
@@ -352,6 +396,7 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   PATIENT: PATIENT_NAV,
   PROFESSIONAL: PROFESSIONAL_NAV,
   PSYCHOLOGIST: PSYCHOLOGIST_NAV,
+  NUTRITIONIST: NUTRITIONIST_NAV,
   PSYCHOANALYST: PSYCHOANALYST_NAV,
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV,
   ORGANIZATION: ORGANIZATION_NAV,

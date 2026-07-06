@@ -18,7 +18,9 @@ export default async function OnboardingPage({
   const role = session.user.role;
 
   if (role === "PROFESSIONAL") {
-    redirect(portal === "psychologist" ? "/psychologist/settings" : "/professional/settings");
+    if (portal === "psychologist") redirect("/psychologist/settings");
+    if (portal === "nutritionist") redirect("/nutricionista/settings");
+    redirect("/professional/settings");
   }
   if (role === "PSYCHOANALYST") redirect("/psychoanalyst/settings");
   if (role === "INTEGRATIVE_THERAPIST") redirect("/integrative-therapist/settings");

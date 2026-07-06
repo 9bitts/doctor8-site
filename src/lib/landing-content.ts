@@ -24,7 +24,7 @@ export type LandingContent = {
     desc: string; services: string; professionals: string; legal: string;
     serviceLinks: string[]; proLinks: string[]; legalLinks: string[];
     proDoctorLogin: string; proPsychologistLogin: string;
-    proPsychoanalystLogin: string; proIntegrativeLogin: string;
+    proPsychoanalystLogin: string; proIntegrativeLogin: string; proNutritionistLogin: string;
     proOrganizationLogin: string; proAngelLogin: string;
     copyright: string;
   };
@@ -104,6 +104,7 @@ const pt: LandingContent = {
     proPsychologistLogin: "Entrar como psicólogo",
     proPsychoanalystLogin: "Entrar como psicanalista",
     proIntegrativeLogin: "Terapeuta integrativo",
+    proNutritionistLogin: "Nutricionista",
     proOrganizationLogin: "Clínica / CNPJ",
     proAngelLogin: "Anjo voluntário",
     legalLinks: ["Pol\u00edtica de Privacidade", "Termos de Uso", "LGPD", "DPO"],
@@ -206,6 +207,7 @@ const en: LandingContent = {
     proPsychologistLogin: "Sign in as psychologist",
     proPsychoanalystLogin: "Sign in as psychoanalyst",
     proIntegrativeLogin: "Integrative therapist",
+    proNutritionistLogin: "Nutritionist",
     proOrganizationLogin: "Clinic / organization",
     proAngelLogin: "Angel volunteer",
     legalLinks: ["Privacy Policy", "Terms of Service", "LGPD", "DPO"],
@@ -296,6 +298,7 @@ const es: LandingContent = {
     proPsychologistLogin: "Iniciar sesión como psicólogo",
     proPsychoanalystLogin: "Iniciar sesión como psicanalista",
     proIntegrativeLogin: "Terapeuta integrativo",
+    proNutritionistLogin: "Nutricionista",
     proOrganizationLogin: "Clínica / CNPJ",
     proAngelLogin: "Voluntario anjo",
     copyright: "\u00a9 2026 Doctor8. Todos los derechos reservados.",

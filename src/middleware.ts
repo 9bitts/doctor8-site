@@ -25,9 +25,20 @@ const LEGACY_LOGIN_PATHS = [
   "/login/psicologo",
   "/login/psicanalista",
   "/login/terapeuta-integrativo",
+  "/login/nutricionista",
   "/login/organizacao",
   "/login/anjo",
 ];
+
+const LEGACY_LOGIN_PORTAL: Record<string, string> = {
+  "/login/medico": "doctor",
+  "/login/psicologo": "psychologist",
+  "/login/psicanalista": "psychoanalyst",
+  "/login/terapeuta-integrativo": "integrative",
+  "/login/nutricionista": "nutritionist",
+  "/login/organizacao": "organization",
+  "/login/anjo": "angel",
+};
 
 // Public routes — no login required
 const PUBLIC_ROUTES = [
@@ -98,6 +109,7 @@ function isPrivateApi(pathname: string): boolean {
 const PATIENT_ROUTES = ["/patient"];
 const PROFESSIONAL_ROUTES = ["/professional"];
 const PSYCHOLOGIST_ROUTES = ["/psychologist"];
+const NUTRITIONIST_ROUTES = ["/nutricionista"];
 const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
 const INTEGRATIVE_THERAPIST_ROUTES = ["/integrative-therapist"];
 const ORGANIZATION_ROUTES = ["/organization"];
@@ -110,6 +122,7 @@ const AUTHENTICATED_DASHBOARD_PREFIXES = [
   ...PATIENT_ROUTES,
   ...PROFESSIONAL_ROUTES,
   ...PSYCHOLOGIST_ROUTES,
+  ...NUTRITIONIST_ROUTES,
   ...PSYCHOANALYST_ROUTES,
   ...INTEGRATIVE_THERAPIST_ROUTES,
   ...ORGANIZATION_ROUTES,
@@ -179,10 +192,12 @@ export default auth((req) => {
     }
   }
 
-  // Redirect legacy per-role login URLs to the unified login (preserve query).
+  // Redirect legacy per-role login URLs to the unified login (preserve query + portal hint).
   if (LEGACY_LOGIN_PATHS.includes(pathname)) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
+    const portal = LEGACY_LOGIN_PORTAL[pathname];
+    if (portal) url.searchParams.set("portal", portal);
     return NextResponse.redirect(url);
   }
 

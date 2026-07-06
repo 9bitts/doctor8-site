@@ -22,6 +22,13 @@ export function isPsychologist(specialty: string | null | undefined): boolean {
   return getProfessionInfo(specialty).typeKey === "psychologist";
 }
 
+export function isNutritionistSpecialty(specialty: string | null | undefined): boolean {
+  if (!specialty?.trim()) return false;
+  const s = specialty.trim();
+  if (s === "Nutrition") return true;
+  return getProfessionInfo(s).typeKey === "nutritionist";
+}
+
 export function getProfessionInfo(specialty: string): ProfessionInfo {
   const s = specialty.trim();
   if (PSYCHOLOGY.has(s)) return { typeKey: "psychologist", councilKey: "crp" };

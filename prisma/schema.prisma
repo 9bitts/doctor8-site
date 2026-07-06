@@ -71,6 +71,21 @@ enum DocumentType {
   OTHER
 }
 
+enum NutritionIntakeStatus {
+  PENDING
+  COMPLETED
+}
+
+enum NutritionMealType {
+  BREAKFAST
+  MORNING_SNACK
+  LUNCH
+  AFTERNOON_SNACK
+  DINNER
+  SUPPER
+  OTHER
+}
+
 enum PatientRecordTagKind {
   ALLERGY
   MEDICATION
@@ -593,6 +608,9 @@ model ProfessionalProfile {
   vaccinationsRecorded  PatientVaccination[]
   odontogramsRecorded   PatientOdontogram[]
   audiogramsRecorded    PatientAudiogram[]
+  nutritionAnthropometry NutritionAnthropometryEntry[]
+  nutritionMealPlans     NutritionMealPlan[]
+  nutritionIntakeForms   NutritionIntakeForm[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -1500,6 +1518,10 @@ model PatientRecord {
   audiograms         PatientAudiogram[]
   colleagueShares  PatientRecordShare[]
   chartInvites     PatientChartInvite[]
+  nutritionAnthropometry NutritionAnthropometryEntry[]
+  nutritionMealPlans     NutritionMealPlan[]
+  nutritionIntakeForms   NutritionIntakeForm[]
+  nutritionFoodDiary     NutritionFoodDiaryEntry[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -2046,6 +2068,89 @@ model ClinicalMetricSnapshot {
   createdAt       DateTime      @default(now())
 
   @@index([patientRecordId, recordedAt])
+}
+
+// ────────────────────────────────────────────
+// NUTRITION — anthropometry, meal plans, intake, food diary
+// ────────────────────────────────────────────
+
+model NutritionAnthropometryEntry {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  recordedAt      DateTime          @default(now())
+  weightKg        Float?
+  heightCm        Float?
+  bmi             Float?
+  waistCm         Float?
+  hipCm           Float?
+  armCm           Float?
+  thighCm         Float?
+  bodyFatPercent  Float?
+  notes           String?           @db.Text
+
+  createdAt       DateTime          @default(now())
+
+  @@index([patientRecordId, recordedAt])
+  @@index([professionalId])
+}
+
+model NutritionMealPlan {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  title           String
+  notes           String?           @db.Text
+  dailyKcalTarget Float?
+  meals           Json
+
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+}
+
+model NutritionIntakeForm {
+  id              String                @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord         @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  appointmentId   String?
+
+  status          NutritionIntakeStatus @default(PENDING)
+  responses       Json?
+  sentAt          DateTime              @default(now())
+  completedAt     DateTime?
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+  @@index([status])
+}
+
+model NutritionFoodDiaryEntry {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  patientUserId   String
+
+  mealType        NutritionMealType
+  description     String            @db.Text
+  recordedAt      DateTime          @default(now())
+  hydrationMl     Int?
+
+  createdAt       DateTime          @default(now())
+
+  @@index([patientRecordId, recordedAt])
+  @@index([patientUserId])
 }
 
 // ────────────────────────────────────────────

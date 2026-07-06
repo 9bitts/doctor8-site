@@ -49,6 +49,9 @@ export function buildProfessionalSignupHref(
     params.set("role", "INTEGRATIVE_THERAPIST");
   } else if (slug === "psicologo") {
     params.set("portal", "psychologist");
+  } else if (slug === "nutricionista") {
+    params.set("portal", "nutritionist");
+    params.set("profession", "nutricionista");
   } else {
     params.set("role", "PROFESSIONAL");
     params.set("profession", slug);

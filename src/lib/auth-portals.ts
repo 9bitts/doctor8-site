@@ -12,6 +12,7 @@ export const DOCTOR_LOGIN = LOGIN;
 export const PSYCHOLOGIST_LOGIN = LOGIN;
 export const PSYCHOANALYST_LOGIN = LOGIN;
 export const INTEGRATIVE_THERAPIST_LOGIN = LOGIN;
+export const NUTRITIONIST_LOGIN = LOGIN;
 export const ORGANIZATION_LOGIN = LOGIN;
 export const ANGEL_LOGIN = LOGIN;
 
@@ -22,6 +23,8 @@ export const PSYCHOANALYST_REGISTER =
   "/register/professional/signup?role=PSYCHOANALYST";
 export const INTEGRATIVE_REGISTER =
   "/register/professional/signup?role=INTEGRATIVE_THERAPIST";
+export const NUTRITIONIST_REGISTER =
+  "/register/professional/signup?portal=nutritionist&profession=nutricionista";
 export const ORGANIZATION_REGISTER = "/register/organization";
 export const ANGEL_REGISTER = "/register/angel";
 

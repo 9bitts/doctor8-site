@@ -32,12 +32,17 @@ import {
   waitForAuthenticatedSession,
   type LoginErrorCode,
 } from "@/components/auth/login-shared";
+import {
+  LoginProfessionalPortals,
+  loginTaglineForPortal,
+} from "@/components/auth/LoginProfessionalPortals";
 
 const POST_LOGIN_CALLBACK = "/callback";
 
 function UnifiedLoginForm() {
   const searchParams = useSearchParams();
   const queryCallback = searchParams.get("callbackUrl") || "";
+  const portal = searchParams.get("portal");
   const { callback: callbackUrl, fromHumCookie } = resolveClientAuthCallback(queryCallback);
   const { lang, changeLang, t } = useLoginLang(callbackUrl);
 
@@ -147,7 +152,10 @@ function UnifiedLoginForm() {
   return (
     <LoginPageShell accent="emerald">
       <LoginLanguageSelector lang={lang} onChange={changeLang} accent="emerald" />
-      <LoginHeader tagline={t("login.unifiedTagline")} accent="emerald" />
+      <LoginHeader
+        tagline={loginTaglineForPortal(portal, t) ?? t("login.unifiedTagline")}
+        accent="emerald"
+      />
 
       <LoginCard>
         <LoginAlerts
@@ -215,6 +223,8 @@ function UnifiedLoginForm() {
             </Link>
           </div>
         </div>
+
+        <LoginProfessionalPortals t={t} callbackUrl={callbackUrl || undefined} />
       </LoginCard>
     </LoginPageShell>
   );
