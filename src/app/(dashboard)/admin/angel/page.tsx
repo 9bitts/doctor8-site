@@ -1,12 +1,11 @@
-// src/app/(dashboard)/admin/patients/page.tsx
 import { getPatientAdminSession } from "@/lib/admin";
 import { redirect } from "next/navigation";
-import PatientsAdminClient from "./PatientsAdminClient";
+import AngelFollowUpClient from "@/components/humanitarian/AngelFollowUpClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPatientsPage() {
+export default async function AdminAngelPage() {
   const session = await getPatientAdminSession();
   if (!session) redirect("/login");
-  return <PatientsAdminClient />;
+  return <AngelFollowUpClient />;
 }

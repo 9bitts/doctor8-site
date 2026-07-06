@@ -22,7 +22,7 @@ export function resolveRoleHome(
     case "ORGANIZATION":
       return "/organization";
     case "ANGEL":
-      return "/humanitarian/angel";
+      return "/admin/patients";
     case "PATIENT":
     default:
       return "/patient";
@@ -30,6 +30,8 @@ export function resolveRoleHome(
 }
 
 const ROLE_ROUTE_CHECKS: { prefix: string; roles: string[] }[] = [
+  { prefix: "/admin/patients", roles: ["ADMIN", "ANGEL"] },
+  { prefix: "/admin/angel", roles: ["ADMIN", "ANGEL"] },
   { prefix: "/admin", roles: ["ADMIN"] },
   { prefix: "/professional", roles: ["PROFESSIONAL", "ADMIN"] },
   { prefix: "/psychologist", roles: ["PROFESSIONAL", "ADMIN"] },

@@ -60,7 +60,8 @@ export type PlatformPortalId =
   | "PSYCHOANALYST"
   | "INTEGRATIVE_THERAPIST"
   | "ORGANIZATION"
-  | "ADMIN";
+  | "ADMIN"
+  | "ANGEL";
 
 export type PublicRouteEntry = {
   href: string;
@@ -340,6 +341,12 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/rateio", labelKey: "nav.adminRateio", roles: ["ADMIN"], iconKey: "PieChart" },
 ];
 
+/** Angel volunteers — patient monitoring + follow-up (subset of admin). */
+export const ANGEL_NAV: PlatformNavEntry[] = [
+  { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ANGEL"], iconKey: "Users" },
+  { href: "/admin/angel", labelKey: "angel.nav.followUp", roles: ["ANGEL"], iconKey: "Heart" },
+];
+
 /** All dashboard portals ? keys match role resolution in layout. */
 export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]> = {
   PATIENT: PATIENT_NAV,
@@ -349,6 +356,7 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV,
   ORGANIZATION: ORGANIZATION_NAV,
   ADMIN: ADMIN_NAV,
+  ANGEL: ANGEL_NAV,
 };
 
 /** Public / auth routes not in dashboard sidebar ? included in support knowledge. */
@@ -362,7 +370,7 @@ export const PLATFORM_PUBLIC_ROUTES: PublicRouteEntry[] = [
   { href: "/urgent", description: "Paid urgent care queue (patient)" },
   { href: "/humanitarian/volunteer", description: "Humanitarian volunteer dashboard (professionals)" },
   { href: "/anfiteatro/nise-yamaguchi", description: "Virtual amphitheater invite — register as professional to join meeting rooms" },
-  { href: "/humanitarian/angel", description: "Angel volunteer area" },
+  { href: "/admin/angel", description: "Angel volunteer follow-up dashboard" },
 ];
 
 export function allPlatformNavEntries(): PlatformNavEntry[] {

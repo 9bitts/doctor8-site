@@ -3,6 +3,7 @@
 // HIPAA: enforces session timeout and role-based access
 
 import { auth } from "@/lib/auth";
+import { isAngelDashboardPath } from "@/lib/admin";
 import { NextResponse } from "next/server";
 import { isPathAllowedForRole, resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
 import { resolveLoginPathForPathname } from "@/lib/auth-portals";
@@ -340,7 +341,11 @@ export default auth((req) => {
   }
 
   // Role-based protection
-  if (ADMIN_ROUTES.some((r) => pathname.startsWith(r)) && role !== "ADMIN") {
+  if (
+    ADMIN_ROUTES.some((r) => pathname.startsWith(r))
+    && role !== "ADMIN"
+    && !(role === "ANGEL" && isAngelDashboardPath(pathname))
+  ) {
     return denyWrongRole();
   }
 

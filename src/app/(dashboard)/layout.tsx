@@ -24,6 +24,7 @@ import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
 import VolunteerAttendGuideModal from "@/components/VolunteerAttendGuideModal";
 import {
   ADMIN_NAV,
+  ANGEL_NAV,
   INTEGRATIVE_THERAPIST_NAV,
   ORGANIZATION_NAV,
   PATIENT_DASHBOARD_ENTRY,
@@ -191,6 +192,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
   const navItems: NavItem[] =
     role === "ADMIN" ? withNavIcons(ADMIN_NAV)
+    : role === "ANGEL" ? withNavIcons(ANGEL_NAV)
     : role === "ORGANIZATION" ? withNavIcons(ORGANIZATION_NAV)
     : isPsychologistPortal ? withNavIcons(PSYCHOLOGIST_NAV)
     : role === "PROFESSIONAL" ? withNavIcons(PROFESSIONAL_NAV)
@@ -213,12 +215,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     : role === "PSYCHOANALYST" ? t("role.psychoanalyst")
     : role === "INTEGRATIVE_THERAPIST" ? t("role.integrativeTherapist")
     : role === "ADMIN" ? t("role.admin")
+    : role === "ANGEL" ? t("role.angel")
     : t("role.patient");
   const isProfessional = role === "PROFESSIONAL" && !isPsychologistPortal;
   const isPsychologist = isPsychologistPortal;
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
   const isOrganization = role === "ORGANIZATION";
+  const isAngel = role === "ANGEL";
   const isPatient = role === "PATIENT";
   const patientDashboardItem = withNavIcons([PATIENT_DASHBOARD_ENTRY])[0];
   const patientHumanitarianItem = withNavIcons([PATIENT_HUMANITARIAN_ENTRY])[0];
@@ -227,7 +231,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     ...group,
     items: withNavIcons(group.items),
   }));
-  const navActive = isOrganization
+  const navActive = isAngel
+    ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+    : isOrganization
     ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
     : isPsychologist
       ? "bg-violet-500/10 text-violet-400 border border-violet-500/20"
@@ -238,9 +244,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       : isIntegrativeTherapist
         ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
         : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-  const avatarBg = isOrganization ? "bg-indigo-500/20" : isPsychologist ? "bg-violet-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
-  const avatarIcon = isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
-  const headerAvatar = isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
+  const avatarBg = isAngel ? "bg-rose-500/20" : isOrganization ? "bg-indigo-500/20" : isPsychologist ? "bg-violet-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
+  const avatarIcon = isAngel ? "text-rose-400" : isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
+  const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal);
 
   function renderNavLink(item: NavItem, badge?: number, accentRed = false) {
@@ -367,7 +373,13 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                 </div>
               ))
             ) : (
-              navItems.map((item) => renderNavLink(item))
+              navItems.map((item) =>
+                renderNavLink(
+                  item,
+                  undefined,
+                  item.labelKey === "angel.nav.followUp",
+                ),
+              )
             )}
           </div>
         </nav>

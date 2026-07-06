@@ -1,4 +1,4 @@
-import { getAdminSession } from "@/lib/admin";
+import { getPatientAdminSession } from "@/lib/admin";
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import PatientDetailClient from "./PatientDetailClient";
@@ -10,7 +10,7 @@ export default async function AdminPatientDetailPage({
 }: {
   params: { id: string };
 }) {
-  const session = await getAdminSession();
+  const session = await getPatientAdminSession();
   if (!session) redirect("/login");
 
   const exists = await db.patientProfile.findUnique({
