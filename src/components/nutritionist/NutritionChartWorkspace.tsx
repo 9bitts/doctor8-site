@@ -9,10 +9,11 @@ import AnthropometryModule from "./AnthropometryModule";
 import MealPlanModule from "./MealPlanModule";
 import IntakeFormsModule from "./IntakeFormsModule";
 import FoodDiaryReviewModule from "./FoodDiaryReviewModule";
+import NutritionAnamneseTabs from "./NutritionAnamneseTabs";
 
 export type NutritionChart = { id: string; firstName: string; lastName: string };
 
-export type NutritionModuleId = "anthropometry" | "mealPlans" | "intake" | "foodDiary";
+export type NutritionModuleId = "anthropometry" | "mealPlans" | "intake" | "foodDiary" | "anamnesis";
 
 export default function NutritionChartWorkspace({
   titleKey,
@@ -65,6 +66,8 @@ export default function NutritionChartWorkspace({
         return <MealPlanModule chart={chart} />;
       case "intake":
         return <IntakeFormsModule chart={chart} />;
+      case "anamnesis":
+        return <NutritionAnamneseTabs chart={chart} />;
       case "foodDiary":
         return <FoodDiaryReviewModule chart={chart} />;
     }

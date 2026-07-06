@@ -17,6 +17,7 @@ const createSchema = z.object({
   thighCm: z.number().positive().optional(),
   bodyFatPercent: z.number().min(0).max(100).optional(),
   notes: z.string().max(5000).optional(),
+  context: z.enum(["ADULT", "PREGNANT", "PEDIATRIC"]).optional(),
   recordedAt: z.string().datetime().optional(),
 });
 
@@ -49,6 +50,7 @@ export async function GET(
       thighCm: e.thighCm,
       bodyFatPercent: e.bodyFatPercent,
       notes: e.notes,
+      context: e.context,
     })),
   });
 }
@@ -88,6 +90,7 @@ export async function POST(
       thighCm: d.thighCm ?? null,
       bodyFatPercent: d.bodyFatPercent ?? null,
       notes: d.notes ?? null,
+      context: d.context ?? "ADULT",
     },
   });
 
@@ -112,6 +115,7 @@ export async function POST(
       thighCm: entry.thighCm,
       bodyFatPercent: entry.bodyFatPercent,
       notes: entry.notes,
+      context: entry.context,
     },
     { status: 201 },
   );

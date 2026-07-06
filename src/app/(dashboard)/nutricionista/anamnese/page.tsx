@@ -5,7 +5,7 @@ export default function NutritionAnamnesePage() {
     <NutritionChartWorkspace
       titleKey="nutri.mod.anamnese.title"
       descKey="nutri.mod.anamnese.pageDesc"
-      module="intake"
+      module="anamnesis"
     />
   );
 }

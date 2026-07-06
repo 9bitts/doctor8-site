@@ -85,6 +85,7 @@ export default function AnthropometryModule({ chart }: { chart: NutritionChart }
     thighCm: "",
     bodyFatPercent: "",
     notes: "",
+    context: "ADULT",
   });
 
   async function load() {
@@ -125,6 +126,7 @@ export default function AnthropometryModule({ chart }: { chart: NutritionChart }
           thighCm: num(form.thighCm),
           bodyFatPercent: num(form.bodyFatPercent),
           notes: form.notes || undefined,
+          context: form.context as "ADULT" | "PREGNANT" | "PEDIATRIC",
         }),
       });
       if (!res.ok) {
@@ -141,6 +143,7 @@ export default function AnthropometryModule({ chart }: { chart: NutritionChart }
         thighCm: "",
         bodyFatPercent: "",
         notes: "",
+        context: "ADULT",
       });
       await load();
     } catch {
@@ -202,6 +205,18 @@ export default function AnthropometryModule({ chart }: { chart: NutritionChart }
               {t("nutri.anthro.addEntry")}
             </h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <label className="block space-y-1 sm:col-span-2 lg:col-span-4">
+                <span className="text-xs font-medium text-slate-600">{t("nutri.anthro.context")}</span>
+                <select
+                  value={form.context}
+                  onChange={(e) => setForm((f) => ({ ...f, context: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                >
+                  <option value="ADULT">{t("nutri.anthro.context.adult")}</option>
+                  <option value="PREGNANT">{t("nutri.anthro.context.pregnant")}</option>
+                  <option value="PEDIATRIC">{t("nutri.anthro.context.pediatric")}</option>
+                </select>
+              </label>
               {field("weightKg", "nutri.anthro.weight")}
               {field("heightCm", "nutri.anthro.height")}
               {field("waistCm", "nutri.anthro.waist")}

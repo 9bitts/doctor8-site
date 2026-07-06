@@ -611,6 +611,7 @@ model ProfessionalProfile {
   nutritionAnthropometry NutritionAnthropometryEntry[]
   nutritionMealPlans     NutritionMealPlan[]
   nutritionIntakeForms   NutritionIntakeForm[]
+  nutritionFoodAnamnesis NutritionFoodAnamnesis[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -1521,6 +1522,7 @@ model PatientRecord {
   nutritionAnthropometry NutritionAnthropometryEntry[]
   nutritionMealPlans     NutritionMealPlan[]
   nutritionIntakeForms   NutritionIntakeForm[]
+  nutritionFoodAnamnesis NutritionFoodAnamnesis[]
   nutritionFoodDiary     NutritionFoodDiaryEntry[]
 
   createdAt       DateTime @default(now())
@@ -2091,6 +2093,7 @@ model NutritionAnthropometryEntry {
   thighCm         Float?
   bodyFatPercent  Float?
   notes           String?           @db.Text
+  context         String?           @default("ADULT")
 
   createdAt       DateTime          @default(now())
 
@@ -2146,11 +2149,27 @@ model NutritionFoodDiaryEntry {
   description     String            @db.Text
   recordedAt      DateTime          @default(now())
   hydrationMl     Int?
+  photoKey        String?
 
   createdAt       DateTime          @default(now())
 
   @@index([patientRecordId, recordedAt])
   @@index([patientUserId])
+}
+
+model NutritionFoodAnamnesis {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  data            Json
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([patientRecordId])
+  @@index([professionalId])
 }
 
 // ────────────────────────────────────────────

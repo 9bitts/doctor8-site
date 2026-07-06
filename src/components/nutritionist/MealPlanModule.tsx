@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, FileDown, ShoppingCart } from "lucide-react";
+import type { Lang } from "@/lib/i18n/translations";
+import { defaultMealNames } from "@/lib/nutrition/meal-labels";
+import { NUTRITION_RECIPES } from "@/lib/nutrition/recipes";
+import type { ShoppingItem } from "@/lib/nutrition/shopping-list";
 import type { TacoFood } from "@/lib/nutrition/taco-foods";
 import { macrosForPortion } from "@/lib/nutrition/taco-foods";
 import type { MealPlanItem, MealPlanMeal } from "@/lib/nutrition/meal-plan-types";
@@ -19,17 +23,20 @@ type SavedPlan = {
 
 const DEFAULT_MEALS = ["Café da manhã", "Almoço", "Jantar"];
 
+function emptyMeals(lang: Lang): MealPlanMeal[] {
+  return defaultMealNames(lang).map((name) => ({ name, items: [] }));
+}
+
 export default function MealPlanModule({ chart }: { chart: NutritionChart }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [plans, setPlans] = useState<SavedPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const [dailyKcalTarget, setDailyKcalTarget] = useState("");
-  const [meals, setMeals] = useState<MealPlanMeal[]>(
-    DEFAULT_MEALS.map((name) => ({ name, items: [] })),
-  );
+  const [meals, setMeals] = useState<MealPlanMeal[]>(emptyMeals(lang as Lang));
+  const [shopping, setShopping] = useState<ShoppingItem[] | null>(null);
   const [foodQuery, setFoodQuery] = useState("");
   const [foods, setFoods] = useState<TacoFood[]>([]);
   const [activeMealIdx, setActiveMealIdx] = useState(0);
@@ -112,7 +119,7 @@ export default function MealPlanModule({ chart }: { chart: NutritionChart }) {
       }
       setTitle("");
       setDailyKcalTarget("");
-      setMeals(DEFAULT_MEALS.map((name) => ({ name, items: [] })));
+      setMeals(emptyMeals(lang as Lang));
       await loadPlans();
     } catch {
       setError(t("nutri.error"));
@@ -238,6 +245,19 @@ export default function MealPlanModule({ chart }: { chart: NutritionChart }) {
         </button>
       </div>
 
+      <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
+        <h3 className="font-semibold text-slate-900 mb-2">{t("nutri.recipes.title")}</h3>
+        <ul className="grid sm:grid-cols-3 gap-2 text-sm">
+          {NUTRITION_RECIPES.map((r) => (
+            <li key={r.id} className="rounded-xl bg-white border border-slate-100 p-3">
+              <p className="font-medium text-slate-800">{t(r.nameKey)}</p>
+              <p className="text-xs text-slate-500 mt-1">{t(r.descKey)}</p>
+              <p className="text-xs text-amber-700 mt-2">{r.prepMinutes} min</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 font-semibold text-slate-900">
           {t("nutri.meal.plans")}
@@ -250,10 +270,37 @@ export default function MealPlanModule({ chart }: { chart: NutritionChart }) {
               const planTotals = sumMealPlanMacros(p.meals as MealPlanMeal[]);
               return (
                 <li key={p.id} className="px-4 py-3 text-sm">
-                  <div className="font-medium text-slate-800">{p.title}</div>
-                  <div className="text-slate-500 mt-1">
-                    {new Date(p.createdAt).toLocaleDateString()} · {Math.round(planTotals.kcal)} kcal
-                    {p.dailyKcalTarget ? ` / meta ${p.dailyKcalTarget}` : ""}
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-slate-800">{p.title}</div>
+                      <div className="text-slate-500 mt-1">
+                        {new Date(p.createdAt).toLocaleDateString()} · {Math.round(planTotals.kcal)} kcal
+                        {p.dailyKcalTarget ? ` / meta ${p.dailyKcalTarget}` : ""}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <a
+                        href={`/api/nutritionist/charts/${chart.id}/meal-plans/${p.id}/pdf?lang=${lang}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-amber-700 hover:underline"
+                      >
+                        <FileDown size={12} /> PDF
+                      </a>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const res = await fetch(
+                            `/api/nutritionist/charts/${chart.id}/meal-plans/${p.id}/shopping-list`,
+                          );
+                          const data = await res.json();
+                          setShopping(data.items || []);
+                        }}
+                        className="inline-flex items-center gap-1 text-xs text-amber-700 hover:underline"
+                      >
+                        <ShoppingCart size={12} /> {t("nutri.shopping.list")}
+                      </button>
+                    </div>
                   </div>
                 </li>
               );
@@ -261,6 +308,23 @@ export default function MealPlanModule({ chart }: { chart: NutritionChart }) {
           </ul>
         )}
       </div>
+
+      {shopping && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <h3 className="font-semibold text-slate-900 mb-2">{t("nutri.shopping.list")}</h3>
+          <ul className="text-sm space-y-1">
+            {shopping.map((s) => (
+              <li key={s.foodName} className="flex justify-between border-b border-slate-50 py-1">
+                <span>{s.foodName}</span>
+                <span className="text-slate-500">{Math.round(s.totalPortionG)}g</span>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={() => setShopping(null)} className="text-xs text-slate-500 mt-3 hover:underline">
+            {t("common.cancel")}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

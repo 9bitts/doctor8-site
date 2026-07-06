@@ -16,7 +16,7 @@ import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film,
-  Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear,
+  Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear, Utensils,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { EmissionCardActions } from "@/components/professional/emissions/EmissionCardActions";
@@ -32,6 +32,7 @@ import GrowthCurvePanel from "@/components/professional/GrowthCurvePanel";
 import OdontogramPanel from "@/components/professional/OdontogramPanel";
 import AudiogramPanel from "@/components/professional/AudiogramPanel";
 import ClinicalCalculators from "@/components/professional/ClinicalCalculators";
+import NutritionPatientChartPanel from "@/components/nutritionist/NutritionPatientChartPanel";
 import ImageCompareModal from "@/components/professional/ImageCompareModal";
 import ChartSharePanel from "@/components/professional/ChartSharePanel";
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
@@ -259,6 +260,7 @@ export default function RecordDetailClient({
   const isOwner = chartAccess === "owner";
   const canEdit = !readOnly && chartAccess !== "view";
   const pathname = usePathname();
+  const isNutritionistPortal = pathname.startsWith("/nutricionista");
   const portalBase = mapProfessionalPathToPortal(pathname, "/professional");
   const { data: session } = useSession();
   const userId = session?.user?.id ?? "";
@@ -268,7 +270,7 @@ export default function RecordDetailClient({
   const consultReturnUrl = searchParams.get("returnUrl");
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
-  const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio">("records");
+  const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition">("records");
   const [recordFilter, setRecordFilter] = useState<RecordTimelineFilter>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
@@ -1293,6 +1295,9 @@ export default function RecordDetailClient({
           { id: "growth" as const, label: t("chartTab.growth"), icon: LineChart },
           { id: "dental" as const, label: t("chartTab.dental"), icon: Grid3X3 },
           { id: "audio" as const, label: t("chartTab.audio"), icon: Ear },
+          ...(isNutritionistPortal
+            ? [{ id: "nutrition" as const, label: t("nav.nutrition"), icon: Utensils }]
+            : []),
         ]).map((tab) => (
           <button
             key={tab.id}
@@ -1324,6 +1329,9 @@ export default function RecordDetailClient({
       )}
       {chartTab === "audio" && (
         <AudiogramPanel chartId={chart.id} readOnly={!canEdit} />
+      )}
+      {chartTab === "nutrition" && isNutritionistPortal && (
+        <NutritionPatientChartPanel chartId={chart.id} />
       )}
 
       {chartTab === "records" && (

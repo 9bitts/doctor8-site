@@ -19,7 +19,7 @@ import {
   ALLOWED_MIME,
   MAX_UPLOAD_BYTES,
 } from "@/lib/s3";
-import { isAllowedUploadFolder, normalizeUploadFolder, patientDocsFolder } from "@/lib/upload-folders";
+import { isAllowedUploadFolder, normalizeUploadFolder, patientDocsFolder, nutritionDiaryFolder } from "@/lib/upload-folders";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
   // key is ownership-verifiable (prevents cross-patient fileKey injection).
   if (folder === "patient-docs") {
     folder = patientDocsFolder(session.user.id);
+  }
+  if (folder === "nutrition-diary") {
+    folder = nutritionDiaryFolder(session.user.id);
   }
 
   if (!isAllowedUploadFolder(folder)) {

@@ -17,6 +17,7 @@ const createSchema = z.object({
   ]),
   description: z.string().min(1).max(5000),
   hydrationMl: z.number().int().min(0).max(10000).optional(),
+  photoKey: z.string().max(500).optional(),
   recordedAt: z.string().datetime().optional(),
 });
 
@@ -44,6 +45,7 @@ export async function GET(req: NextRequest) {
       mealType: e.mealType,
       description: e.description,
       hydrationMl: e.hydrationMl,
+      photoKey: e.photoKey,
       recordedAt: e.recordedAt.toISOString(),
     })),
   });
@@ -69,6 +71,7 @@ export async function POST(req: NextRequest) {
       mealType: parsed.data.mealType,
       description: parsed.data.description,
       hydrationMl: parsed.data.hydrationMl ?? null,
+      photoKey: parsed.data.photoKey ?? null,
       recordedAt: parsed.data.recordedAt ? new Date(parsed.data.recordedAt) : undefined,
     },
   });

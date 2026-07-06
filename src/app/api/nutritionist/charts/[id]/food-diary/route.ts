@@ -41,6 +41,7 @@ export async function GET(
       mealType: e.mealType,
       description: e.description,
       hydrationMl: e.hydrationMl,
+      photoKey: e.photoKey,
       recordedAt: e.recordedAt.toISOString(),
     })),
   });
