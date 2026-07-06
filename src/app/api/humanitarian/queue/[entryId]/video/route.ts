@@ -11,7 +11,7 @@ import { isVolunteerOnEntry } from "@/lib/humanitarian/volunteer-eligibility";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { promoteHumanitarianEntryToInProgress } from "@/lib/humanitarian/dispatcher";
 import { ensureIntegrativeClientForPatient } from "@/lib/providers";
-import { providerPanelFromSpecialty } from "@/lib/video-chart-nav";
+import { providerPanelFromSpecialty, type ProviderChartPanel } from "@/lib/video-chart-nav";
 
 export const runtime = "nodejs";
 
@@ -155,7 +155,7 @@ export async function GET(
   let patientRecordId: string | null = null;
   let analysandRecordId: string | null = null;
   let integrativeClientRecordId: string | null = null;
-  let providerPanel: "professional" | "psychologist" | "psychoanalyst" | "integrative_therapist" = "professional";
+  let providerPanel: ProviderChartPanel = "professional";
 
   const vol = entry.volunteer;
 

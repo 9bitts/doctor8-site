@@ -16,7 +16,7 @@ import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film,
-  Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear, Utensils,
+  Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { EmissionCardActions } from "@/components/professional/emissions/EmissionCardActions";
@@ -33,6 +33,7 @@ import OdontogramPanel from "@/components/professional/OdontogramPanel";
 import AudiogramPanel from "@/components/professional/AudiogramPanel";
 import ClinicalCalculators from "@/components/professional/ClinicalCalculators";
 import NutritionPatientChartPanel from "@/components/nutritionist/NutritionPatientChartPanel";
+import NursePatientChartPanel from "@/components/nurse/NursePatientChartPanel";
 import ImageCompareModal from "@/components/professional/ImageCompareModal";
 import ChartSharePanel from "@/components/professional/ChartSharePanel";
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
@@ -261,6 +262,7 @@ export default function RecordDetailClient({
   const canEdit = !readOnly && chartAccess !== "view";
   const pathname = usePathname();
   const isNutritionistPortal = pathname.startsWith("/nutricionista");
+  const isNursePortal = pathname.startsWith("/enfermeiro");
   const portalBase = mapProfessionalPathToPortal(pathname, "/professional");
   const { data: session } = useSession();
   const userId = session?.user?.id ?? "";
@@ -270,7 +272,7 @@ export default function RecordDetailClient({
   const consultReturnUrl = searchParams.get("returnUrl");
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
-  const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition">("records");
+  const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition" | "nursing">("records");
   const [recordFilter, setRecordFilter] = useState<RecordTimelineFilter>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
@@ -391,14 +393,17 @@ export default function RecordDetailClient({
   }, [searchParams, initialDocuments]);
 
   useEffect(() => {
-    const tab = searchParams.get("tab");
+    const tab = searchParams.get("tab") ?? searchParams.get("view");
     const validTabs = new Set([
       "records", "evolution", "diagnoses", "vaccines", "growth", "dental", "audio",
+      "nutrition", "nursing",
     ]);
     if (tab && validTabs.has(tab)) {
+      if (tab === "nutrition" && !isNutritionistPortal) return;
+      if (tab === "nursing" && !isNursePortal) return;
       setChartTab(tab as typeof chartTab);
     }
-  }, [searchParams]);
+  }, [searchParams, isNutritionistPortal, isNursePortal]);
 
   useEffect(() => {
     const recordId = searchParams.get("recordId");
@@ -1298,6 +1303,9 @@ export default function RecordDetailClient({
           ...(isNutritionistPortal
             ? [{ id: "nutrition" as const, label: t("nav.nutrition"), icon: Utensils }]
             : []),
+          ...(isNursePortal
+            ? [{ id: "nursing" as const, label: t("nav.nursing"), icon: HeartPulse }]
+            : []),
         ]).map((tab) => (
           <button
             key={tab.id}
@@ -1332,6 +1340,9 @@ export default function RecordDetailClient({
       )}
       {chartTab === "nutrition" && isNutritionistPortal && (
         <NutritionPatientChartPanel chartId={chart.id} />
+      )}
+      {chartTab === "nursing" && isNursePortal && (
+        <NursePatientChartPanel chartId={chart.id} />
       )}
 
       {chartTab === "records" && (

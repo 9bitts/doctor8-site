@@ -14,9 +14,7 @@ import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { appointmentJoinWindow } from "@/lib/appointment-join-window";
-import { providerPanelFromSpecialty } from "@/lib/video-chart-nav";
-
-type ProviderPanel = "professional" | "psychologist" | "psychoanalyst" | "integrative_therapist";
+import { providerPanelFromSpecialty, type ProviderChartPanel } from "@/lib/video-chart-nav";
 
 function providerUserIdFromAppointment(appointment: {
   professional?: { userId: string } | null;
@@ -184,7 +182,7 @@ export async function GET(
   let patientRecordId: string | null = null;
   let analysandRecordId: string | null = null;
   let integrativeClientRecordId: string | null = null;
-  let providerPanel: ProviderPanel = "professional";
+  let providerPanel: ProviderChartPanel = "professional";
 
   if (isProvider && appointment.professional) {
     patientRecordId = await ensurePatientRecord(

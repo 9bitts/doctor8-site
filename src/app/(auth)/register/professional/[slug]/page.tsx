@@ -13,6 +13,7 @@ export async function generateStaticParams() {
     { slug: "terapeuta_integrativo" },
     { slug: "fisioterapeuta" },
     { slug: "nutricionista" },
+    { slug: "enfermeiro" },
     { slug: "cuidados_paliativos" },
   ];
 }

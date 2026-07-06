@@ -7,7 +7,8 @@ import {
   mapProfessionalPathForNutritionistSpecialty,
   NUTRITIONIST_HOME,
 } from "./nutritionist-portal";
-import { isNutritionistSpecialty } from "./profession-label";
+import { mapProfessionalPathForNurseSpecialty, NURSE_HOME } from "./nurse-portal";
+import { isNutritionistSpecialty, isNurseSpecialty } from "./profession-label";
 import { isHumanitarianPatientPath } from "./humanitarian/origin-cookie";
 
 /** Default dashboard path after login for each account role. */
@@ -21,6 +22,7 @@ export function resolveRoleHome(
     case "PROFESSIONAL":
       if (isPsychologistSpecialty(specialty)) return PSYCHOLOGIST_HOME;
       if (isNutritionistSpecialty(specialty)) return NUTRITIONIST_HOME;
+      if (isNurseSpecialty(specialty)) return NURSE_HOME;
       return "/professional";
     case "PSYCHOANALYST":
       return "/psychoanalyst";
@@ -43,6 +45,7 @@ const ROLE_ROUTE_CHECKS: { prefix: string; roles: string[] }[] = [
   { prefix: "/professional", roles: ["PROFESSIONAL", "ADMIN"] },
   { prefix: "/psychologist", roles: ["PROFESSIONAL", "ADMIN"] },
   { prefix: "/nutricionista", roles: ["PROFESSIONAL", "ADMIN"] },
+  { prefix: "/enfermeiro", roles: ["PROFESSIONAL", "ADMIN"] },
   { prefix: "/psychoanalyst", roles: ["PSYCHOANALYST", "ADMIN"] },
   { prefix: "/integrative-therapist", roles: ["INTEGRATIVE_THERAPIST", "ADMIN"] },
   { prefix: "/patient", roles: ["PATIENT", "ADMIN"] },
@@ -133,6 +136,12 @@ export function safePostLoginUrl(
     }
     if (role === "PROFESSIONAL" && isNutritionistSpecialty(specialty)) {
       return mapProfessionalPathForNutritionistSpecialty(
+        specialty,
+        path.startsWith("/") ? path : `/${path}`,
+      );
+    }
+    if (role === "PROFESSIONAL" && isNurseSpecialty(specialty)) {
+      return mapProfessionalPathForNurseSpecialty(
         specialty,
         path.startsWith("/") ? path : `/${path}`,
       );

@@ -1,25 +1,35 @@
 // Deep links from an active video consult ? patient chart / emissions, with return URL.
 
 import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
+import { isNutritionistSpecialty, isNurseSpecialty } from "@/lib/profession-label";
 
 export type VideoConsultKind = "appointment" | "jit" | "humanitarian";
 
 export type ProviderChartPanel =
   | "professional"
   | "psychologist"
+  | "nutritionist"
+  | "nurse"
   | "psychoanalyst"
   | "integrative_therapist";
 
 export function providerPanelFromSpecialty(
   specialty: string | null | undefined,
 ): ProviderChartPanel {
-  return isPsychologistSpecialty(specialty) ? "psychologist" : "professional";
+  if (isPsychologistSpecialty(specialty)) return "psychologist";
+  if (isNutritionistSpecialty(specialty)) return "nutritionist";
+  if (isNurseSpecialty(specialty)) return "nurse";
+  return "professional";
 }
 
 export function providerAppointmentsPath(panel: ProviderChartPanel): string {
   switch (panel) {
     case "psychologist":
       return "/psychologist/appointments";
+    case "nutritionist":
+      return "/nutricionista/appointments";
+    case "nurse":
+      return "/enfermeiro/appointments";
     case "psychoanalyst":
       return "/psychoanalyst/appointments";
     case "integrative_therapist":
@@ -37,6 +47,10 @@ export function providerPatientsPath(panel: ProviderChartPanel, chartId: string)
   switch (panel) {
     case "psychologist":
       return `/psychologist/patients/${chartId}`;
+    case "nutritionist":
+      return `/nutricionista/patients/${chartId}`;
+    case "nurse":
+      return `/enfermeiro/patients/${chartId}`;
     case "psychoanalyst":
       return `/psychoanalyst/analysands/${chartId}`;
     case "integrative_therapist":
@@ -144,11 +158,73 @@ export function chartTabUrl(
   return withReturn(providerPatientsPath(panel, chartId), returnUrl, { tab });
 }
 
+const emptySpecialtyLinks = () => ({
+  nurseSae: null as string | null,
+  nurseScales: null as string | null,
+  nurseCarePlan: null as string | null,
+  nurseMonitoring: null as string | null,
+  nutriAnamnesis: null as string | null,
+  nutriAnthropometry: null as string | null,
+  nutriMealPlans: null as string | null,
+  nutriFoodDiary: null as string | null,
+});
+
 export function buildVideoChartLinks(
   chartId: string,
   returnUrl: string,
   panel: ProviderChartPanel = "professional",
 ) {
+  if (panel === "nutritionist") {
+    const base = providerPatientsPath(panel, chartId);
+    return {
+      fullChart: withReturn(base, returnUrl, { tab: "nutrition" }),
+      addRecord: withReturn(base, returnUrl, { newRecord: "1" }),
+      recordUrl: (recordId: string) => chartRecordUrl(chartId, returnUrl, recordId, panel),
+      vaccines: null as string | null,
+      dental: null as string | null,
+      evolution: chartTabUrl(chartId, returnUrl, "evolution", panel),
+      diagnoses: null as string | null,
+      prescribe: null as string | null,
+      exam: null as string | null,
+      document: null as string | null,
+      psychSession: null as string | null,
+      psychScale: null as string | null,
+      psychDocument: null as string | null,
+      ...emptySpecialtyLinks(),
+      nutriAnamnesis: chartActionUrl("/nutricionista/anamnese", chartId, { returnUrl }),
+      nutriAnthropometry: chartActionUrl("/nutricionista/antropometria", chartId, { returnUrl }),
+      nutriMealPlans: chartActionUrl("/nutricionista/planos", chartId, { returnUrl }),
+      nutriFoodDiary: chartActionUrl("/nutricionista/diario", chartId, { returnUrl }),
+    };
+  }
+
+  if (panel === "nurse") {
+    const base = providerPatientsPath(panel, chartId);
+    return {
+      fullChart: withReturn(base, returnUrl, { tab: "nursing" }),
+      addRecord: withReturn(base, returnUrl, { newRecord: "1" }),
+      recordUrl: (recordId: string) => chartRecordUrl(chartId, returnUrl, recordId, panel),
+      vaccines: null as string | null,
+      dental: null as string | null,
+      evolution: chartTabUrl(chartId, returnUrl, "evolution", panel),
+      diagnoses: null as string | null,
+      prescribe: null as string | null,
+      exam: null as string | null,
+      document: null as string | null,
+      psychSession: null as string | null,
+      psychScale: null as string | null,
+      psychDocument: null as string | null,
+      nurseSae: chartActionUrl("/enfermeiro/sae", chartId, { returnUrl }),
+      nurseScales: chartActionUrl("/enfermeiro/escalas", chartId, { returnUrl }),
+      nurseCarePlan: chartActionUrl("/enfermeiro/prescricao", chartId, { returnUrl }),
+      nurseMonitoring: chartActionUrl("/enfermeiro/monitoramento", chartId, { returnUrl }),
+      nutriAnamnesis: null as string | null,
+      nutriAnthropometry: null as string | null,
+      nutriMealPlans: null as string | null,
+      nutriFoodDiary: null as string | null,
+    };
+  }
+
   if (panel === "psychologist") {
     const base = providerPatientsPath(panel, chartId);
     return {
@@ -165,6 +241,7 @@ export function buildVideoChartLinks(
       psychSession: chartActionUrl("/psychologist/sessions", chartId, { view: "create", returnUrl }),
       psychScale: chartActionUrl("/psychologist/scales", chartId, { view: "apply", returnUrl }),
       psychDocument: chartActionUrl("/psychologist/documents", chartId, { returnUrl }),
+      ...emptySpecialtyLinks(),
     };
   }
 
@@ -184,6 +261,7 @@ export function buildVideoChartLinks(
       psychSession: null as string | null,
       psychScale: null as string | null,
       psychDocument: null as string | null,
+      ...emptySpecialtyLinks(),
     };
   }
 
@@ -203,6 +281,7 @@ export function buildVideoChartLinks(
       psychSession: null as string | null,
       psychScale: null as string | null,
       psychDocument: null as string | null,
+      ...emptySpecialtyLinks(),
     };
   }
 
@@ -220,5 +299,6 @@ export function buildVideoChartLinks(
     psychSession: chartActionUrl("/professional/psychology/sessions", chartId, { view: "create", returnUrl }),
     psychScale: chartActionUrl("/professional/psychology/scales", chartId, { view: "apply", returnUrl }),
     psychDocument: chartActionUrl("/professional/psychology/documents", chartId, { returnUrl }),
+    ...emptySpecialtyLinks(),
   };
 }

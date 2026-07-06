@@ -9,6 +9,7 @@ import {
   ChevronRight, ChevronLeft, FileText, Plus, Send, Stethoscope,
   Pill, X, CheckCircle2, ClipboardList, PhoneOff, FlaskConical,
   ScrollText, BarChart3, ExternalLink, MessageCircle, Syringe, Activity,
+  HeartPulse, BookOpen,
 } from "lucide-react";
 import ConsultNotesAssistant, { ConsultNotesAssistantHandle } from "@/components/professional/ConsultNotesAssistant";
 import IntegrativeConsultPanel from "@/components/integrative-therapist/IntegrativeConsultPanel";
@@ -30,7 +31,7 @@ export interface VideoConsultData {
   patientRecordId: string | null;
   analysandRecordId?: string | null;
   integrativeClientRecordId?: string | null;
-  providerPanel?: "professional" | "psychologist" | "psychoanalyst" | "integrative_therapist";
+  providerPanel?: "professional" | "psychologist" | "nutritionist" | "nurse" | "psychoanalyst" | "integrative_therapist";
   patientUserId: string;
   scheduledAt: string;
   durationMins: number;
@@ -101,6 +102,16 @@ const T: Record<string, Record<Lang, string>> = {
   psychSession:   { pt: "Nota de sessão (psi)", en: "Session note (psych)", es: "Nota de sesión (psi)" },
   psychScale:     { pt: "Aplicar escala", en: "Apply scale", es: "Aplicar escala" },
   psychDocument:  { pt: "Documento (psi)", en: "Document (psych)", es: "Documento (psi)" },
+  nurseSae:       { pt: "SAE / Processo", en: "Nursing process (SAE)", es: "SAE / Proceso" },
+  nurseScales:    { pt: "Escalas clínicas", en: "Clinical scales", es: "Escalas clínicas" },
+  nurseCarePlan:  { pt: "Prescrição de cuidados", en: "Care prescription", es: "Prescripción de cuidados" },
+  nurseMonitoring:{ pt: "Monitoramento", en: "Monitoring", es: "Monitoreo" },
+  nutriAnamnesis: { pt: "Anamnese alimentar", en: "Food anamnesis", es: "Anamnesis alimentaria" },
+  nutriAnthropometry: { pt: "Antropometria", en: "Anthropometry", es: "Antropometría" },
+  nutriMealPlans: { pt: "Planos alimentares", en: "Meal plans", es: "Planes alimentarios" },
+  nutriFoodDiary: { pt: "Diário alimentar", en: "Food diary", es: "Diario alimentario" },
+  nursingChart:   { pt: "Módulo enfermagem", en: "Nursing module", es: "Módulo enfermería" },
+  nutritionChart: { pt: "Módulo nutrição", en: "Nutrition module", es: "Módulo nutrición" },
   chartActions:   { pt: "Ações na ficha deste paciente", en: "Actions for this patient", es: "Acciones en la ficha de este paciente" },
   openRecord:     { pt: "Ver na ficha", en: "View in chart", es: "Ver en la ficha" },
   noChart:        { pt: "Vinculando ficha do paciente...", en: "Linking patient chart...", es: "Vinculando ficha del paciente..." },
@@ -635,6 +646,8 @@ export default function VideoConsultRoom({
   const panel = data.providerPanel ?? "professional";
   const isPsychoanalyst = panel === "psychoanalyst";
   const isIntegrative = panel === "integrative_therapist";
+  const isNurse = panel === "nurse";
+  const isNutritionist = panel === "nutritionist";
   const returnUrl = videoReturnPath(data);
   const chartLinks = chartId ? buildVideoChartLinks(chartId, returnUrl, panel) : null;
 
@@ -966,6 +979,86 @@ export default function VideoConsultRoom({
                           className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-200 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg transition"
                         >
                           <Stethoscope size={13} /> {t("diagnoses")}
+                        </a>
+                      )}
+                      {chartLinks.nurseSae && (
+                        <a
+                          href={chartLinks.nurseSae}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-rose-200 bg-rose-900/50 hover:bg-rose-900/70 py-2 rounded-lg transition"
+                        >
+                          <ClipboardList size={13} /> {t("nurseSae")}
+                        </a>
+                      )}
+                      {chartLinks.nurseScales && (
+                        <a
+                          href={chartLinks.nurseScales}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-rose-200 bg-rose-900/50 hover:bg-rose-900/70 py-2 rounded-lg transition"
+                        >
+                          <BarChart3 size={13} /> {t("nurseScales")}
+                        </a>
+                      )}
+                      {chartLinks.nurseCarePlan && (
+                        <a
+                          href={chartLinks.nurseCarePlan}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-rose-200 bg-rose-900/50 hover:bg-rose-900/70 py-2 rounded-lg transition"
+                        >
+                          <HeartPulse size={13} /> {t("nurseCarePlan")}
+                        </a>
+                      )}
+                      {chartLinks.nurseMonitoring && (
+                        <a
+                          href={chartLinks.nurseMonitoring}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-rose-200 bg-rose-900/50 hover:bg-rose-900/70 py-2 rounded-lg transition"
+                        >
+                          <Activity size={13} /> {t("nurseMonitoring")}
+                        </a>
+                      )}
+                      {chartLinks.nutriAnamnesis && (
+                        <a
+                          href={chartLinks.nutriAnamnesis}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-amber-200 bg-amber-900/50 hover:bg-amber-900/70 py-2 rounded-lg transition"
+                        >
+                          <ClipboardList size={13} /> {t("nutriAnamnesis")}
+                        </a>
+                      )}
+                      {chartLinks.nutriAnthropometry && (
+                        <a
+                          href={chartLinks.nutriAnthropometry}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-amber-200 bg-amber-900/50 hover:bg-amber-900/70 py-2 rounded-lg transition"
+                        >
+                          <BarChart3 size={13} /> {t("nutriAnthropometry")}
+                        </a>
+                      )}
+                      {chartLinks.nutriMealPlans && (
+                        <a
+                          href={chartLinks.nutriMealPlans}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-amber-200 bg-amber-900/50 hover:bg-amber-900/70 py-2 rounded-lg transition"
+                        >
+                          <FileText size={13} /> {t("nutriMealPlans")}
+                        </a>
+                      )}
+                      {chartLinks.nutriFoodDiary && (
+                        <a
+                          href={chartLinks.nutriFoodDiary}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-amber-200 bg-amber-900/50 hover:bg-amber-900/70 py-2 rounded-lg transition col-span-2"
+                        >
+                          <BookOpen size={13} /> {t("nutriFoodDiary")}
                         </a>
                       )}
                     </div>

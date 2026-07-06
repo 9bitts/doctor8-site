@@ -12,6 +12,7 @@ export const PROFESSION_SIGNUP: Record<
   terapeuta_integrativo: { role: "INTEGRATIVE_THERAPIST", specialty: null },
   fisioterapeuta: { role: "PROFESSIONAL", specialty: "Physiotherapist" },
   nutricionista: { role: "PROFESSIONAL", specialty: "Nutritionist" },
+  enfermeiro: { role: "PROFESSIONAL", specialty: "Nurse" },
   cuidados_paliativos: { role: "PROFESSIONAL", specialty: "General Practice" },
 };
 
@@ -52,6 +53,9 @@ export function buildProfessionalSignupHref(
   } else if (slug === "nutricionista") {
     params.set("portal", "nutritionist");
     params.set("profession", "nutricionista");
+  } else if (slug === "enfermeiro") {
+    params.set("portal", "nurse");
+    params.set("profession", "enfermeiro");
   } else {
     params.set("role", "PROFESSIONAL");
     params.set("profession", slug);

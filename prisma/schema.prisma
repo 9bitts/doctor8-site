@@ -86,6 +86,18 @@ enum NutritionMealType {
   OTHER
 }
 
+enum NursingIntakeStatus {
+  PENDING
+  COMPLETED
+}
+
+enum NursingScaleType {
+  BRADEN
+  MORSE
+  PAIN
+  GLASGOW
+}
+
 enum PatientRecordTagKind {
   ALLERGY
   MEDICATION
@@ -612,6 +624,10 @@ model ProfessionalProfile {
   nutritionMealPlans     NutritionMealPlan[]
   nutritionIntakeForms   NutritionIntakeForm[]
   nutritionFoodAnamnesis NutritionFoodAnamnesis[]
+  nursingAssessments     NursingAssessment[]
+  nursingCarePlans       NursingCarePlan[]
+  nursingScaleEntries    NursingScaleEntry[]
+  nursingIntakeForms     NursingIntakeForm[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -1524,6 +1540,11 @@ model PatientRecord {
   nutritionIntakeForms   NutritionIntakeForm[]
   nutritionFoodAnamnesis NutritionFoodAnamnesis[]
   nutritionFoodDiary     NutritionFoodDiaryEntry[]
+  nursingAssessments     NursingAssessment[]
+  nursingCarePlans       NursingCarePlan[]
+  nursingScaleEntries    NursingScaleEntry[]
+  nursingIntakeForms     NursingIntakeForm[]
+  nursingMonitoring      NursingMonitoringEntry[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -2170,6 +2191,98 @@ model NutritionFoodAnamnesis {
 
   @@index([patientRecordId])
   @@index([professionalId])
+}
+
+// ────────────────────────────────────────────
+// NURSING — SAE, scales, care plans, intake, monitoring
+// ────────────────────────────────────────────
+
+model NursingAssessment {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  data            Json
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+}
+
+model NursingCarePlan {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  title           String
+  diagnoses       Json
+  interventions   Json
+  notes           String?           @db.Text
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+}
+
+model NursingScaleEntry {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  scaleType       NursingScaleType
+  score           Float
+  details         Json?
+  recordedAt      DateTime          @default(now())
+  notes           String?           @db.Text
+
+  createdAt       DateTime          @default(now())
+
+  @@index([patientRecordId, recordedAt])
+  @@index([professionalId])
+}
+
+model NursingIntakeForm {
+  id              String                @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord         @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile   @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  appointmentId   String?
+
+  status          NursingIntakeStatus   @default(PENDING)
+  responses       Json?
+  sentAt          DateTime              @default(now())
+  completedAt     DateTime?
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+  @@index([status])
+}
+
+model NursingMonitoringEntry {
+  id              String        @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  patientUserId   String
+
+  symptoms        String        @db.Text
+  severity        Int?
+  notes           String?       @db.Text
+  recordedAt      DateTime      @default(now())
+
+  createdAt       DateTime      @default(now())
+
+  @@index([patientRecordId, recordedAt])
+  @@index([patientUserId])
 }
 
 // ────────────────────────────────────────────

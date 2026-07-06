@@ -8,7 +8,9 @@ const NUTRITION = new Set(["Nutritionist", "Dietitian"]);
 
 const PHYSIO = new Set(["Physiotherapist", "Physical Therapist", "Occupational Therapist"]);
 
-const NURSING = new Set(["Nurse", "Nursing"]);
+const NURSING = new Set([
+  "Nurse", "Nursing", "Nurse Practitioner", "Midwife", "Obstetric Nurse",
+]);
 
 const DENTISTRY = new Set(["Dentist", "Dental Surgeon"]);
 
@@ -27,6 +29,11 @@ export function isNutritionistSpecialty(specialty: string | null | undefined): b
   const s = specialty.trim();
   if (s === "Nutrition") return true;
   return getProfessionInfo(s).typeKey === "nutritionist";
+}
+
+export function isNurseSpecialty(specialty: string | null | undefined): boolean {
+  if (!specialty?.trim()) return false;
+  return getProfessionInfo(specialty.trim()).typeKey === "nurse";
 }
 
 export function getProfessionInfo(specialty: string): ProfessionInfo {

@@ -58,6 +58,7 @@ export type PlatformPortalId =
   | "PROFESSIONAL"
   | "PSYCHOLOGIST"
   | "NUTRITIONIST"
+  | "NURSE"
   | "PSYCHOANALYST"
   | "INTEGRATIVE_THERAPIST"
   | "ORGANIZATION"
@@ -111,6 +112,7 @@ export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/patient/resources", labelKey: "nav.doctorResources", roles: ["PATIENT"], iconKey: "BookOpen" },
       { href: "/patient/integrative-care", labelKey: "nav.integrativeCare", roles: ["PATIENT"], iconKey: "Leaf" },
       { href: "/patient/nutrition", labelKey: "nav.nutrition", roles: ["PATIENT"], iconKey: "BarChart3" },
+      { href: "/patient/nursing", labelKey: "nav.nursing", roles: ["PATIENT"], iconKey: "Heart" },
     ],
   },
   {
@@ -269,6 +271,47 @@ export const NUTRITIONIST_NAV_GROUPS: PlatformNavGroup[] = [
 
 export const NUTRITIONIST_NAV: PlatformNavEntry[] = flattenNavGroups(NUTRITIONIST_NAV_GROUPS);
 
+/** Nurse portal — SAE, scales, care plans, monitoring. */
+export const NURSE_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "nav.group.attendNow",
+    items: [
+      { href: "/enfermeiro", labelKey: "nav.dashboard", roles: ["PROFESSIONAL"], iconKey: "LayoutDashboard" },
+      { href: "/enfermeiro/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+      { href: "/enfermeiro/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+    ],
+  },
+  {
+    labelKey: "nav.group.patients",
+    items: [
+      { href: "/enfermeiro/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/enfermeiro/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
+      { href: "/enfermeiro/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
+    ],
+  },
+  {
+    labelKey: "nav.group.clinical",
+    items: [
+      { href: "/enfermeiro/sae", labelKey: "nurse.mod.sae.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
+      { href: "/enfermeiro/escalas", labelKey: "nurse.mod.scales.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
+      { href: "/enfermeiro/prescricao", labelKey: "nurse.mod.carePlan.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/enfermeiro/monitoramento", labelKey: "nurse.mod.monitoring.title", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+      { href: "/enfermeiro/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.accountMore",
+    items: [
+      { href: "/enfermeiro/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
+      { href: "/enfermeiro/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
+      { href: "/enfermeiro/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
+      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+    ],
+  },
+];
+
+export const NURSE_NAV: PlatformNavEntry[] = flattenNavGroups(NURSE_NAV_GROUPS);
+
 /** Psychoanalyst portal sidebar groups. */
 export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
   {
@@ -350,6 +393,7 @@ export const PLATFORM_NAV_GROUPS_BY_PORTAL: Partial<Record<PlatformPortalId, Pla
   PROFESSIONAL: PROFESSIONAL_NAV_GROUPS,
   PSYCHOLOGIST: PSYCHOLOGIST_NAV_GROUPS,
   NUTRITIONIST: NUTRITIONIST_NAV_GROUPS,
+  NURSE: NURSE_NAV_GROUPS,
   PSYCHOANALYST: PSYCHOANALYST_NAV_GROUPS,
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV_GROUPS,
 };
@@ -397,6 +441,7 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   PROFESSIONAL: PROFESSIONAL_NAV,
   PSYCHOLOGIST: PSYCHOLOGIST_NAV,
   NUTRITIONIST: NUTRITIONIST_NAV,
+  NURSE: NURSE_NAV,
   PSYCHOANALYST: PSYCHOANALYST_NAV,
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV,
   ORGANIZATION: ORGANIZATION_NAV,
