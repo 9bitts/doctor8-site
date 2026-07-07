@@ -515,6 +515,16 @@ model User {
   emissionReportsAsPatient             ProfessionalEmissionReport[] @relation("EmissionReportPatient")
   emissionReportsAsProfessional        ProfessionalEmissionReport[] @relation("EmissionReportProfessional")
 
+  // Course marketplace — admin grants partner instructors upload access
+  courseCreatorApproved    Boolean   @default(false)
+  courseCreatorApprovedAt  DateTime?
+  courseCreatorApprovedBy  String?
+
+  coursesInstructed        Course[]              @relation("CourseInstructor")
+  courseEnrollments        CourseEnrollment[]
+  coursePurchases          CoursePurchase[]
+  courseConnectionRedemptions CourseConnectionRedemption[]
+
   @@index([email])
   @@index([role])
   @@index([region])
@@ -3968,4 +3978,166 @@ model WhatsAppDeliveryLog {
 
   @@index([messageId])
   @@index([createdAt])
+}
+
+// ─────────────────────────────────────────
+// COURSE MARKETPLACE
+// ─────────────────────────────────────────
+
+enum CourseStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum CourseProfession {
+  MEDICINE
+  NURSING
+  PHARMACY
+  PSYCHOLOGY
+  NUTRITION
+  DENTISTRY
+  INTEGRATIVE
+  PSYCHOANALYSIS
+  GENERAL
+}
+
+enum CourseEnrollmentSource {
+  PURCHASE
+  DOCTOR_CONNECTION
+  FREE
+  ADMIN
+}
+
+model Course {
+  id               String           @id @default(cuid())
+  slug             String           @unique
+  instructorUserId String
+  instructor       User             @relation("CourseInstructor", fields: [instructorUserId], references: [id], onDelete: Cascade)
+
+  title            String
+  description      String?
+  shortDescription String?
+  thumbnailKey     String?
+  profession       CourseProfession @default(GENERAL)
+  specialty        String?
+
+  status           CourseStatus     @default(DRAFT)
+  priceCents       Int              @default(0)
+  currency         String           @default("BRL")
+  commissionPercent Int             @default(30)
+  workloadHours    Float?
+
+  publishedAt      DateTime?
+  rejectedReason   String?
+
+  modules          CourseModule[]
+  enrollments      CourseEnrollment[]
+  purchases        CoursePurchase[]
+  connectionRedemptions CourseConnectionRedemption[]
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([instructorUserId])
+  @@index([status])
+  @@index([profession])
+}
+
+model CourseModule {
+  id        String         @id @default(cuid())
+  courseId  String
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  sortOrder Int            @default(0)
+  lessons   CourseLesson[]
+
+  @@index([courseId])
+}
+
+model CourseLesson {
+  id           String   @id @default(cuid())
+  moduleId     String
+  module       CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  videoKey     String?
+  videoUrl     String?
+  durationSecs Int?
+  sortOrder    Int      @default(0)
+  isPreview    Boolean  @default(false)
+
+  progress     CourseLessonProgress[]
+
+  @@index([moduleId])
+}
+
+model CourseEnrollment {
+  id              String                 @id @default(cuid())
+  courseId        String
+  course          Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source          CourseEnrollmentSource
+  purchaseId      String?                @unique
+  purchase        CoursePurchase?        @relation(fields: [purchaseId], references: [id])
+  progressPercent Float                  @default(0)
+  completedAt     DateTime?
+  enrolledAt      DateTime               @default(now())
+
+  lessonProgress  CourseLessonProgress[]
+  connectionRedemption CourseConnectionRedemption?
+
+  @@unique([courseId, userId])
+  @@index([userId])
+}
+
+model CourseLessonProgress {
+  id           String           @id @default(cuid())
+  enrollmentId String
+  enrollment   CourseEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       CourseLesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  watchedSecs  Int              @default(0)
+  completed    Boolean          @default(false)
+  completedAt  DateTime?
+
+  @@unique([enrollmentId, lessonId])
+}
+
+model CoursePurchase {
+  id                    String            @id @default(cuid())
+  courseId              String
+  course                Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  buyerUserId           String
+  buyer                 User              @relation(fields: [buyerUserId], references: [id], onDelete: Cascade)
+  amountCents           Int
+  currency              String
+  platformFeeCents      Int
+  instructorPayoutCents Int
+  stripePaymentIntentId String?           @unique
+  stripeCheckoutSessionId String?         @unique
+  status                String            @default("pending")
+  enrollment            CourseEnrollment?
+  createdAt             DateTime          @default(now())
+
+  @@index([buyerUserId])
+  @@index([courseId])
+}
+
+model CourseConnectionRedemption {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String
+  course       Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  periodMonth  String
+  enrollmentId String           @unique
+  enrollment   CourseEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  redeemedAt   DateTime         @default(now())
+
+  @@unique([userId, periodMonth])
+  @@index([userId])
 }

@@ -40,7 +40,8 @@ export type NavIconKey =
   | "Plug"
   | "ScrollText"
   | "PieChart"
-  | "Video";
+  | "Video"
+  | "GraduationCap";
 
 export type PlatformNavEntry = {
   href: string;
@@ -169,6 +170,8 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/professional/florais", labelKey: "nav.florais", roles: ["PROFESSIONAL"], iconKey: "Flower2" },
       { href: "/professional/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["PROFESSIONAL"], iconKey: "Leaf" },
       { href: "/professional/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
+      { href: "/professional/courses", labelKey: "nav.courses", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
+      { href: "/professional/courses/learn", labelKey: "nav.myCourses", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/professional/psychology", labelKey: "nav.psychologyArea", roles: ["PROFESSIONAL"], iconKey: "Brain" },
       { href: "/professional/buying-club", labelKey: "nav.buyingClub", roles: ["PROFESSIONAL"], iconKey: "ShoppingBag" },
       { href: "/professional/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
@@ -222,6 +225,8 @@ export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/psychologist/settings/calendar", labelKey: "psy.gcal.title", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
       { href: "/psychologist/compliance", labelKey: "psy.mod.compliance.title", roles: ["PROFESSIONAL"], iconKey: "Shield" },
       { href: "/psychologist/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
+      { href: "/psychologist/courses", labelKey: "nav.courses", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
+      { href: "/professional/courses/learn", labelKey: "nav.myCourses", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/psychologist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
     ],
   },
@@ -529,6 +534,7 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
   { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ADMIN"], iconKey: "Users" },
   { href: "/admin/payments", labelKey: "nav.adminPayments", roles: ["ADMIN"], iconKey: "CreditCard" },
+  { href: "/admin/courses", labelKey: "nav.adminCourses", roles: ["ADMIN"], iconKey: "BookOpen" },
   { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", roles: ["ADMIN"], iconKey: "Radio" },
   { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", roles: ["ADMIN"], iconKey: "Heart" },
   { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", roles: ["ADMIN"], iconKey: "ShoppingBag" },
@@ -568,6 +574,7 @@ export const PLATFORM_PUBLIC_ROUTES: PublicRouteEntry[] = [
   { href: "/forgot-password", description: "Password reset request" },
   { href: "/reset-password", description: "Set new password from email link" },
   { href: "/urgent", description: "Paid urgent care queue (patient)" },
+  { href: "/cursos", description: "Course marketplace for healthcare professionals" },
   { href: "/humanitarian/volunteer", description: "Humanitarian volunteer dashboard (professionals)" },
   { href: "/anfiteatro/nise-yamaguchi", description: "Virtual amphitheater invite — register as professional to join meeting rooms" },
   { href: "/admin/angel", description: "Angel volunteer follow-up dashboard" },

@@ -13,6 +13,10 @@ import {
   AppointmentSlotTakenError,
   type ConsultationPaymentMeta,
 } from "@/lib/fulfill-consultation";
+import {
+  fulfillCoursePurchase,
+  type CoursePaymentMeta,
+} from "@/lib/fulfill-course-purchase";
 import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
 import { isClubPriceId } from "@/lib/stripe-payment-methods";
 import { createNotification } from "@/lib/notifications";
@@ -182,6 +186,28 @@ async function isClubSubscription(stripeSubscriptionId: string): Promise<boolean
   }
 }
 
+async function fulfillCourseCheckoutSession(sessionId: string) {
+  const checkout = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["payment_intent"],
+  });
+  if (checkout.metadata?.kind !== "course_purchase") return;
+
+  const paymentIntent =
+    typeof checkout.payment_intent === "string"
+      ? await stripe.paymentIntents.retrieve(checkout.payment_intent)
+      : checkout.payment_intent;
+
+  if (!paymentIntent || paymentIntent.status !== "succeeded") return;
+
+  await fulfillCoursePurchase({
+    stripePaymentId: paymentIntent.id,
+    stripeCheckoutSessionId: checkout.id,
+    amount: paymentIntent.amount,
+    currency: paymentIntent.currency,
+    metadata: checkout.metadata as CoursePaymentMeta,
+  });
+}
+
 async function fulfillConsultationCheckoutSession(sessionId: string, event: Stripe.Event) {
   const checkout = await stripe.checkout.sessions.retrieve(sessionId, {
     expand: ["payment_intent"],
@@ -248,6 +274,13 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
       } catch (e) {
         await handleConsultationFulfillmentError(e, intent.id, event);
       }
+    } else if (meta.kind === "course_purchase" && meta.userId && meta.courseId) {
+      await fulfillCoursePurchase({
+        stripePaymentId: intent.id,
+        amount: intent.amount,
+        currency: intent.currency,
+        metadata: meta as CoursePaymentMeta,
+      });
     }
     return;
   }
@@ -270,6 +303,9 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
         }
         throw e;
       }
+    }
+    if (cs.mode === "payment" && cs.metadata?.kind === "course_purchase") {
+      await fulfillCourseCheckoutSession(cs.id);
     }
     return;
   }
@@ -364,6 +400,9 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
           throw e;
         }
       }
+    }
+    if (cs.mode === "payment" && cs.metadata?.kind === "course_purchase" && cs.payment_status === "paid") {
+      await fulfillCourseCheckoutSession(cs.id);
     }
 
     if (cs.mode === "subscription") {

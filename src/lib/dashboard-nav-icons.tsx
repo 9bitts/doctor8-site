@@ -6,7 +6,7 @@ import {
   LayoutDashboard, FileText, Pill, Calendar, MessageSquare,
   UserCog, ClipboardList, Users, Inbox, Layers, CreditCard,
   BookOpen, Radio, TrendingUp, MapPin, ShoppingBag, Brain, BarChart3,
-  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart, Leaf, FlaskConical, Flower2, Plug, ScrollText, PieChart, Settings, Stethoscope, Building2, Video,
+  Shield, Briefcase, FileSpreadsheet, Receipt, Package, Megaphone, Sparkles, Heart, Leaf, FlaskConical, Flower2, Plug, ScrollText, PieChart, Settings, Stethoscope, Building2, Video, GraduationCap,
 } from "lucide-react";
 
 export interface DashboardNavItem extends PlatformNavEntry {
@@ -50,6 +50,7 @@ const ICONS: Record<NavIconKey, ReactNode> = {
   ScrollText: <ScrollText size={18} />,
   PieChart: <PieChart size={18} />,
   Video: <Video size={18} />,
+  GraduationCap: <GraduationCap size={18} />,
 };
 
 export function withNavIcons(entries: PlatformNavEntry[]): DashboardNavItem[] {

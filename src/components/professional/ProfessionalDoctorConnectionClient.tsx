@@ -60,6 +60,7 @@ const PLAN_FEATURES = [
   "pro.doctorConnection.plan.payments",
   "pro.doctorConnection.plan.jit",
   "pro.doctorConnection.plan.support",
+  "pro.doctorConnection.plan.courses",
 ] as const;
 
 type Props = {

@@ -52,6 +52,7 @@ const PLAN_FEATURES = [
   "pa.doctorConnection.plan.expert",
   "pa.doctorConnection.plan.ai",
   "pa.doctorConnection.plan.support",
+  "pa.doctorConnection.plan.courses",
 ] as const;
 
 type Props = {
