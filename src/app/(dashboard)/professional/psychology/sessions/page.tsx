@@ -8,6 +8,7 @@ import { psychologistHubHref } from "@/lib/psychologist-portal";
 import { localeOf, type Lang } from "@/lib/i18n/translations";
 import { SESSION_FORMATS, type SessionFormat } from "@/lib/psychology-templates";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
+import AiPsychologyDraftButton from "@/components/psychologist/AiPsychologyDraftButton";
 import {
   ArrowLeft, ClipboardList, Loader2, Save, User, Search, Clock, CheckCircle2,
   Copy, Printer, Pencil, Share2, Mail, AlertCircle,
@@ -63,6 +64,7 @@ export default function PsychologySessionsPage() {
   const [format, setFormat] = useState<SessionFormat>("DAP");
   const [fields, setFields] = useState<Record<string, string>>({});
   const [duration, setDuration] = useState(50);
+  const [rawNotes, setRawNotes] = useState("");
   const [editingNote, setEditingNote] = useState<SessionNote | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -132,6 +134,7 @@ export default function PsychologySessionsPage() {
     setFormat("DAP");
     setDuration(50);
     setFields({});
+    setRawNotes("");
     setEditingNote(null);
     setError("");
     setPatientQuery("");
@@ -457,6 +460,27 @@ export default function PsychologySessionsPage() {
             />
             <span className="text-sm text-slate-400">min</span>
           </div>
+
+          {!isEdit && (
+            <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/50 p-4 space-y-3">
+              <label className="text-sm font-semibold text-slate-700">{t("psy.ai.rawNotes")}</label>
+              <textarea
+                value={rawNotes}
+                onChange={(e) => setRawNotes(e.target.value)}
+                placeholder={t("psy.ai.rawNotesPlaceholder")}
+                rows={4}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white"
+              />
+              <AiPsychologyDraftButton
+                format={format}
+                rawNotes={rawNotes}
+                durationMins={duration}
+                patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined}
+                onDraft={(draft) => setFields((prev) => ({ ...prev, ...draft }))}
+                disabled={!selectedPatient}
+              />
+            </div>
+          )}
 
           {formatDef.fields.map((f) => (
             <div key={f.key}>

@@ -71,6 +71,8 @@ const PUBLIC_ROUTES = [
   "/especialistas/", // public professional directory + profiles
   "/embed/",       // embeddable booking widget (iframe)
   "/share/",     // shared medical records (token-based)
+  "/anamnese-psi/", // psychology digital anamnesis (token-based)
+  "/compliance/",   // public compliance pages
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -311,7 +313,10 @@ export default auth((req) => {
   // Token-based shared records (no session)
   if (pathname.startsWith("/api/shared/")) return NextResponse.next();
 
-  // Redirect to login if not authenticated (pages only — APIs return JSON)
+  // Google Calendar OAuth callback (state token validates professional)
+  if (pathname.startsWith("/api/professional/google-calendar/callback")) return NextResponse.next();
+
+  // Redirect to login if not authenticated
   if (!session?.user) {
     if (pathname.startsWith("/api/")) {
       return withPrivateCacheHeaders(

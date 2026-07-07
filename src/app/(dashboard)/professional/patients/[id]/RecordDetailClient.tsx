@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/toast";
 import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
-  Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film,
+  Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film, Download,
   Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
@@ -263,6 +263,7 @@ export default function RecordDetailClient({
   const canEdit = !readOnly && chartAccess !== "view";
   const pathname = usePathname();
   const isNutritionistPortal = pathname.startsWith("/nutricionista");
+  const isPsychologistPortal = pathname.startsWith("/psychologist");
   const isNursePortal = pathname.startsWith("/enfermeiro");
   const isPharmacistPortal = pathname.startsWith("/farmaceutico");
   const portalBase = mapProfessionalPathToPortal(pathname, "/professional");
@@ -1002,6 +1003,16 @@ export default function RecordDetailClient({
                     <ExternalLink size={13} /> {t("rec.verConv")}
                   </a>
                 )}
+              </div>
+            )}
+            {isPsychologistPortal && (
+              <div className="mt-3">
+                <a
+                  href={`/api/professional/records/${chart.id}/export-pdf`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-lg transition"
+                >
+                  <Download size={13} /> {t("psy.exportChart")}
+                </a>
               </div>
             )}
             {canEdit && isOwner && (

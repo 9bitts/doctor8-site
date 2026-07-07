@@ -43,6 +43,12 @@ enum PatientChartInviteStatus {
   FAILED
 }
 
+enum PsychologyAnamnesisStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -675,6 +681,8 @@ model ProfessionalProfile {
   chartSharesCreated    PatientRecordShare[] @relation("ChartSharesCreated")
   chartSharesReceived   PatientRecordShare[] @relation("ChartSharesReceived")
   chartInvitesSent      PatientChartInvite[]
+  psychologyAnamnesisInvites PsychologyAnamnesisInvite[]
+  googleCalendar        ProfessionalGoogleCalendar?
   vaccinationsRecorded  PatientVaccination[]
   odontogramsRecorded   PatientOdontogram[]
   audiogramsRecorded    PatientAudiogram[]
@@ -989,6 +997,8 @@ model Appointment {
   adminProblemAt   DateTime?
   adminProblemNote String?
   adminProblemById String?
+
+  googleCalendarEventId String?
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -1603,6 +1613,7 @@ model PatientRecord {
   audiograms         PatientAudiogram[]
   colleagueShares  PatientRecordShare[]
   chartInvites     PatientChartInvite[]
+  psychologyAnamnesisInvites PsychologyAnamnesisInvite[]
   nutritionAnthropometry NutritionAnthropometryEntry[]
   nutritionMealPlans     NutritionMealPlan[]
   nutritionIntakeForms   NutritionIntakeForm[]
@@ -1649,6 +1660,42 @@ model PatientChartInvite {
   @@index([patientRecordId])
   @@index([email])
   @@index([sentByProfessionalId])
+}
+
+model PsychologyAnamnesisInvite {
+  id              String                    @id @default(cuid())
+  token           String                    @unique @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord             @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile       @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  status          PsychologyAnamnesisStatus @default(PENDING)
+  responses       String?                   @db.Text // @encrypted JSON
+  expiresAt       DateTime
+  completedAt     DateTime?
+  createdAt       DateTime                  @default(now())
+
+  @@index([token])
+  @@index([patientRecordId])
+  @@index([professionalId])
+  @@index([status])
+}
+
+model ProfessionalGoogleCalendar {
+  id               String              @id @default(cuid())
+  professionalId   String              @unique
+  professional     ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  refreshToken     String              // @encrypted
+  accessToken      String?             // @encrypted
+  tokenExpiresAt   DateTime?
+  calendarId       String              @default("primary")
+  syncEnabled      Boolean             @default(true)
+  externalBusyBlocks Json?             // [{ start, end }] from Google pull
+  lastSyncedAt     DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([professionalId])
 }
 
 // ────────────────────────────────────────────

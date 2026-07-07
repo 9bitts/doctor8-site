@@ -455,6 +455,13 @@ export function buildScalePayload(
   responses: number[],
   score: number,
   interpretation: { levelPt: string; levelEn: string; levelEs: string },
+  risk?: {
+    level: string;
+    flags: string[];
+    messagePt: string;
+    messageEn: string;
+    messageEs: string;
+  } | null,
 ) {
   return {
     psychologyScale: true,
@@ -462,5 +469,6 @@ export function buildScalePayload(
     responses,
     score,
     interpretation,
+    risk: risk ?? null,
   };
 }

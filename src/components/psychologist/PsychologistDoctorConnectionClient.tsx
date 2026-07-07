@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
+import PsychologyPlansSection from "@/components/psychologist/PsychologyPlansSection";
 import {
   LayoutDashboard, UserCog, Users, ClipboardList, BarChart3, FileText,
   Shield, Inbox, Layers, Calendar, Radio, BookOpen, Heart, TrendingUp,
@@ -22,6 +23,8 @@ const BENEFIT_SECTIONS: { titleKey: string; items: BenefitItem[] }[] = [
     titleKey: "psy.doctorConnection.section.clinical",
     items: [
       { href: "/psychologist/sessions", icon: ClipboardList, titleKey: "psy.mod.sessions.title", descKey: "psy.doctorConnection.sessions", color: "bg-violet-100 text-violet-600" },
+      { href: "/psychologist/anamnesis", icon: ClipboardList, titleKey: "psy.mod.anamnesis.title", descKey: "psy.doctorConnection.anamnesis", color: "bg-fuchsia-100 text-fuchsia-600" },
+      { href: "/psychologist/chart-chat", icon: MessageSquare, titleKey: "psy.mod.chartChat.title", descKey: "psy.doctorConnection.chartChat", color: "bg-violet-100 text-violet-600" },
       { href: "/psychologist/scales", icon: BarChart3, titleKey: "psy.mod.scales.title", descKey: "psy.doctorConnection.scales", color: "bg-indigo-100 text-indigo-600" },
       { href: "/psychologist/documents", icon: FileText, titleKey: "psy.mod.documents.title", descKey: "psy.doctorConnection.documents", color: "bg-sky-100 text-sky-600" },
       { href: "/psychologist/compliance", icon: Shield, titleKey: "psy.mod.compliance.title", descKey: "psy.doctorConnection.compliance", color: "bg-emerald-100 text-emerald-600" },
@@ -36,6 +39,7 @@ const BENEFIT_SECTIONS: { titleKey: string; items: BenefitItem[] }[] = [
       { href: "/psychologist/appointments", icon: Calendar, titleKey: "nav.appointments", descKey: "psy.doctorConnection.appointments", color: "bg-violet-100 text-violet-600" },
       { href: "/psychologist/jit", icon: Radio, titleKey: "nav.jit", descKey: "psy.doctorConnection.jit", color: "bg-brand-50 text-brand-600" },
       { href: "/psychologist/settings/availability", icon: Calendar, titleKey: "nav.availability", descKey: "psy.doctorConnection.availability", color: "bg-violet-100 text-violet-600" },
+      { href: "/psychologist/settings/calendar", icon: Calendar, titleKey: "psy.gcal.title", descKey: "psy.doctorConnection.gcal", color: "bg-sky-100 text-sky-600" },
       { href: "/psychologist/messages", icon: MessageSquare, titleKey: "nav.messages", descKey: "psy.doctorConnection.messages", color: "bg-slate-100 text-slate-600" },
     ],
   },
@@ -64,9 +68,10 @@ const PLAN_FEATURES = [
 type Props = {
   subscribed: boolean;
   defaultRegion?: string;
+  patientCount?: number;
 };
 
-export default function PsychologistDoctorConnectionClient({ subscribed, defaultRegion }: Props) {
+export default function PsychologistDoctorConnectionClient({ subscribed, defaultRegion, patientCount = 0 }: Props) {
   const { t } = useI18n();
 
   return (
@@ -103,6 +108,8 @@ export default function PsychologistDoctorConnectionClient({ subscribed, default
           ))}
         </ul>
       </section>
+
+      <PsychologyPlansSection subscribed={subscribed} patientCount={patientCount} />
 
       <DoctorConnectionBanner
         subscribed={subscribed}

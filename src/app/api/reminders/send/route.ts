@@ -26,7 +26,7 @@ import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
 
 const schema = z.object({
   appointmentId: z.string(),
-  type: z.enum(["24h_email", "3h_email", "3h_whatsapp", "bell", "review_request"]),
+  type: z.enum(["24h_email", "24h_whatsapp", "3h_email", "3h_whatsapp", "bell", "review_request"]),
   remindersEpoch: z.number().int().nonnegative().optional(),
 });
 
@@ -275,6 +275,63 @@ export async function POST(req: NextRequest) {
       console.error("[REMINDER] 24h email failed:", e);
       await logQStashJob({ appointmentId, jobType: type, status: "failed", detail: String(e) });
       return NextResponse.json({ error: "Email failed" }, { status: 500 });
+    }
+  }
+
+  // ── 24h WHATSAPP ───────────────────────────────────────────────────────────
+  if (type === "24h_whatsapp") {
+    const rawPhone = appointment.patient.phone ? safeDecrypt(appointment.patient.phone) : null;
+    if (rawPhone) {
+      let apiSent = false;
+      if (isWhatsAppConfigured()) {
+        const result = await sendAppointmentReminderWhatsApp({
+          toPhone: rawPhone,
+          patientName,
+          doctorName,
+          scheduledAt,
+          meetingUrl: joinUrl,
+          language: waLang,
+          patientTimezone,
+        });
+        if (result.ok) {
+          apiSent = true;
+          console.log(`[REMINDER] 24h WhatsApp API sent (user ${patientUser.id}), id=${result.messageId}`);
+        } else if (!result.skipped) {
+          console.error(`[REMINDER] 24h WhatsApp API failed: ${result.error}`);
+        }
+      }
+
+      if (!apiSent) {
+        const phone = rawPhone.replace(/\D/g, "");
+        const message = buildAppointmentReminderWaMeMessage({
+          patientName,
+          doctorName,
+          scheduledAt,
+          meetingUrl: joinUrl,
+          lang: waLang,
+          patientTimezone,
+        });
+        const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
+        const reminderCopy = storedNotificationText(
+          "notif.apptReminder.title",
+          "notif.apptReminder.bodyTomorrow",
+          { doctor: doctorName },
+        );
+        await createNotification({
+          userId: patientUser.id,
+          title: reminderCopy.title,
+          body: reminderCopy.body,
+          type: "appointment_reminder",
+          data: {
+            appointmentId,
+            link: `/patient/appointments?id=${appointmentId}`,
+            whatsappUrl: waUrl,
+            titleKey: "notif.apptReminder.title",
+            bodyKey: "notif.apptReminder.bodyTomorrow",
+            bodyParams: { doctor: doctorName },
+          },
+        }).catch(() => {});
+      }
     }
   }
 

@@ -447,6 +447,12 @@ export async function fulfillConsultationPayment(params: {
     console.error("[QSTASH POST-CONSULT SCHEDULE ERROR]", e);
   });
 
+  if (providerType === "health" && providerId) {
+    import("@/lib/google-calendar-sync")
+      .then((m) => m.syncAppointmentToGoogleCalendar(appointment.id))
+      .catch((e) => console.error("[GCAL-SYNC]", e));
+  }
+
   notifyProfessionalNewBooking({
     appointmentId: appointment.id,
     scheduledAt: new Date(scheduledAt),

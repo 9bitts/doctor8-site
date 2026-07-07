@@ -184,6 +184,10 @@ export async function POST(
 
   await audit.updateRecord(session.user.id, "Appointment", params.id);
 
+  import("@/lib/google-calendar-sync")
+    .then((m) => m.syncAppointmentToGoogleCalendar(params.id))
+    .catch(() => {});
+
   // Notify the other party
   const notifyUserId = isPatient ? providerUserId! : appointment.patient.userId;
   const cancellerName = isPatient

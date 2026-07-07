@@ -4,6 +4,7 @@
 
 import { Receiver } from "@upstash/qstash";
 import { db } from "@/lib/db";
+import { isPsychology24hWhatsAppEnabled } from "@/lib/psychology-feature-flags";
 
 const QSTASH_URL = process.env.QSTASH_URL || "https://qstash-us-east-1.upstash.io";
 const QSTASH_TOKEN = process.env.QSTASH_TOKEN || "";
@@ -11,7 +12,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org";
 
 interface ScheduleReminderParams {
   appointmentId: string;
-  type: "24h_email" | "3h_whatsapp" | "3h_email" | "bell" | "review_request";
+  type: "24h_email" | "24h_whatsapp" | "3h_whatsapp" | "3h_email" | "bell" | "review_request";
   delaySeconds: number;
   remindersEpoch: number;
 }
@@ -100,6 +101,9 @@ export async function scheduleAppointmentReminders(
   if (delay24h > 60) {
     promises.push(scheduleReminder({ appointmentId, type: "24h_email", delaySeconds: delay24h, remindersEpoch }));
     promises.push(scheduleReminder({ appointmentId, type: "bell", delaySeconds: delay24h, remindersEpoch }));
+    if (isPsychology24hWhatsAppEnabled()) {
+      promises.push(scheduleReminder({ appointmentId, type: "24h_whatsapp", delaySeconds: delay24h, remindersEpoch }));
+    }
   }
 
   if (delay3h > 60) {

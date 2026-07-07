@@ -7,12 +7,17 @@ import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import {
   Brain, Users, Calendar, Video, FileText, ClipboardList,
   BarChart3, Shield, ArrowRight, MessageSquare, BookOpen,
+  ClipboardPlus, Receipt,
 } from "lucide-react";
 
 const MODULES = [
   { path: "/professional/psychology/sessions", icon: ClipboardList, color: "bg-violet-100 text-violet-600", key: "psy.mod.sessions" },
+  { path: "/professional/psychology/anamnesis", icon: ClipboardPlus, color: "bg-fuchsia-100 text-fuchsia-600", key: "psy.mod.anamnesis" },
+  { path: "/professional/psychology/chart-chat", icon: MessageSquare, color: "bg-violet-100 text-violet-600", key: "psy.mod.chartChat" },
   { path: "/professional/psychology/scales", icon: BarChart3, color: "bg-indigo-100 text-indigo-600", key: "psy.mod.scales" },
   { path: "/professional/psychology/documents", icon: FileText, color: "bg-sky-100 text-sky-600", key: "psy.mod.documents" },
+  { path: "/professional/psychology/receita-saude", icon: Receipt, color: "bg-amber-100 text-amber-700", key: "psy.mod.receita" },
+  { path: "/professional/psychology/settings/calendar", icon: Calendar, color: "bg-sky-100 text-sky-600", key: "psy.gcal" },
   { path: "/professional/psychology/compliance", icon: Shield, color: "bg-emerald-100 text-emerald-600", key: "psy.mod.compliance" },
 ] as const;
 

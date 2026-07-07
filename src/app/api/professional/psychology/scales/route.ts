@@ -5,6 +5,8 @@ import { encrypt } from "@/lib/encryption";
 import { getScale, scoreScale, type ScaleId } from "@/lib/psychology-scales";
 import { buildScalePayload } from "@/lib/psychology-templates";
 import { parsePsychologyContent, requirePsychologist, safeDecrypt } from "@/lib/psychology-api";
+import { assessScaleRisk } from "@/lib/psychology-risk";
+import { isPsychologyRiskAlertsEnabled } from "@/lib/psychology-feature-flags";
 
 const createSchema = z.object({
   patientRecordId: z.string(),
@@ -39,6 +41,7 @@ export async function GET() {
         scaleId: content.scaleId as string,
         score: content.score as number,
         interpretation: content.interpretation as { levelPt: string; levelEn: string; levelEs: string },
+        risk: content.risk as { level: string; messagePt: string } | null,
         createdAt: d.createdAt.toISOString(),
         patientRecordId: d.patientRecordId,
         patientName: d.patientRecord
@@ -73,7 +76,16 @@ export async function POST(req: NextRequest) {
 
   const score = scoreScale(d.scaleId as ScaleId, d.responses);
   const interpretation = scale.interpret(score);
-  const payload = buildScalePayload(d.scaleId, d.responses, score, interpretation);
+  const risk = isPsychologyRiskAlertsEnabled()
+    ? assessScaleRisk(d.scaleId as ScaleId, d.responses, score)
+    : null;
+  const payload = buildScalePayload(
+    d.scaleId,
+    d.responses,
+    score,
+    interpretation,
+    risk && risk.level !== "none" ? risk : null,
+  );
   const title = `${scale.namePt} — score ${score}`;
 
   const doc = await db.medicalDocument.create({
@@ -92,6 +104,7 @@ export async function POST(req: NextRequest) {
     scaleId: d.scaleId,
     score,
     interpretation,
+    risk: risk && risk.level !== "none" ? risk : null,
     createdAt: doc.createdAt.toISOString(),
   }, { status: 201 });
 }

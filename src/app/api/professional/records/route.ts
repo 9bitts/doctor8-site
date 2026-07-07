@@ -99,7 +99,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const ctx = await requireProfessionalApi();
   if (isApiError(ctx)) return ctx.error;
-  const { professional } = ctx;
+  const { professional, userId } = ctx;
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -107,6 +107,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const d = parsed.data;
+
+  const proFull = await db.professionalProfile.findUnique({
+    where: { id: professional.id },
+    select: { specialty: true },
+  });
+  if (proFull) {
+    const { assertCanAddPsychologyPatient } = await import("@/lib/psychology-plan-limits");
+    const { isPsychologistSpecialty } = await import("@/lib/psychologist-portal");
+    if (isPsychologistSpecialty(proFull.specialty)) {
+      const gate = await assertCanAddPsychologyPatient(userId, professional.id, proFull.specialty);
+      if (!gate.ok) {
+        return NextResponse.json(
+          { code: gate.code, limit: gate.limit, current: gate.current },
+          { status: 402 },
+        );
+      }
+    }
+  }
 
   if (!d.forceDuplicate) {
     const duplicates = await findPossibleDuplicateCharts(

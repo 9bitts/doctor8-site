@@ -154,6 +154,10 @@ export async function POST(
     appointment.durationMins,
   ).catch(() => {});
 
+  import("@/lib/google-calendar-sync")
+    .then((m) => m.syncAppointmentToGoogleCalendar(params.id))
+    .catch(() => {});
+
   notifySlotAlerts({
     professionalId: appointment.professionalId,
     psychoanalystId: appointment.psychoanalystId,

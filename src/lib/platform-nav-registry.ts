@@ -213,8 +213,12 @@ export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.clinical",
     items: [
       { href: "/psychologist/sessions", labelKey: "psy.mod.sessions.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
+      { href: "/psychologist/anamnesis", labelKey: "psy.mod.anamnesis.title", roles: ["PROFESSIONAL"], iconKey: "FileSpreadsheet" },
       { href: "/psychologist/scales", labelKey: "psy.mod.scales.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
       { href: "/psychologist/documents", labelKey: "psy.mod.documents.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/psychologist/receita-saude", labelKey: "psy.mod.receita.title", roles: ["PROFESSIONAL"], iconKey: "Receipt" },
+      { href: "/psychologist/chart-chat", labelKey: "psy.mod.chartChat.title", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
+      { href: "/psychologist/settings/calendar", labelKey: "psy.gcal.title", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
       { href: "/psychologist/compliance", labelKey: "psy.mod.compliance.title", roles: ["PROFESSIONAL"], iconKey: "Shield" },
       { href: "/psychologist/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/psychologist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },

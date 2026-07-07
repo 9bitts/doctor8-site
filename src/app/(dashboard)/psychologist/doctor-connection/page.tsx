@@ -9,7 +9,12 @@ export default async function PsychologistDoctorConnectionPage() {
   if (!session?.user) redirect(PSYCHOLOGIST_LOGIN);
   if (session.user.role !== "PROFESSIONAL") redirect("/patient");
 
-  const [subscription, userRow] = await Promise.all([
+  const professional = await db.professionalProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true },
+  });
+
+  const [subscription, userRow, patientCount] = await Promise.all([
     db.subscription.findUnique({
       where: { userId: session.user.id },
       select: { status: true },
@@ -18,6 +23,9 @@ export default async function PsychologistDoctorConnectionPage() {
       where: { id: session.user.id },
       select: { region: true },
     }),
+    professional
+      ? db.patientRecord.count({ where: { professionalId: professional.id } })
+      : Promise.resolve(0),
   ]);
 
   const hasActiveSubscription =
@@ -27,6 +35,7 @@ export default async function PsychologistDoctorConnectionPage() {
     <PsychologistDoctorConnectionClient
       subscribed={hasActiveSubscription}
       defaultRegion={userRow?.region || session.user.region}
+      patientCount={patientCount}
     />
   );
 }

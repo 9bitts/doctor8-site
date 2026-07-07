@@ -10,13 +10,14 @@ import { PSYCHOLOGY_SCALES, type ScaleId } from "@/lib/psychology-scales";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import {
-  ArrowLeft, BarChart3, Loader2, Save, User, Search, CheckCircle2,
+  ArrowLeft, BarChart3, Loader2, Save, User, Search, CheckCircle2, AlertTriangle,
 } from "lucide-react";
 
 interface Chart { id: string; firstName: string; lastName: string; }
 interface ScaleApp {
   id: string; scaleId: string; score: number; patientName: string; createdAt: string;
   interpretation: { levelPt: string; levelEn: string; levelEs: string };
+  risk?: { level: string; messagePt: string; messageEn: string; messageEs: string } | null;
 }
 
 export default function PsychologyScalesPage() {
@@ -36,6 +37,7 @@ export default function PsychologyScalesPage() {
   const [responses, setResponses] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [lastRisk, setLastRisk] = useState<ScaleApp["risk"]>(null);
   const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
   const [lockPatient, setLockPatient] = useState(false);
 
@@ -121,11 +123,13 @@ export default function PsychologyScalesPage() {
       });
       if (res.ok) {
         const data = await res.json();
+        setLastRisk(data.risk || null);
         setApplications((prev) => [{
           id: data.id,
           scaleId: data.scaleId,
           score: data.score,
           interpretation: data.interpretation,
+          risk: data.risk,
           patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
           createdAt: data.createdAt,
         }, ...prev]);
@@ -282,6 +286,12 @@ export default function PsychologyScalesPage() {
               <div>
                 <p className="font-semibold text-slate-800">{a.patientName}</p>
                 <p className="text-sm text-slate-500 mt-0.5">{a.scaleId} — {t("psy.scales.score")} {a.score} ({interpLevel(a)})</p>
+                {a.risk && a.risk.level !== "none" && (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1 mt-2 flex items-start gap-1 max-w-md">
+                    <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+                    {lang === "en" ? a.risk.messageEn : lang === "es" ? a.risk.messageEs : a.risk.messagePt}
+                  </p>
+                )}
                 <p className="text-xs text-slate-400 mt-1">
                   {new Date(a.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" })}
                 </p>

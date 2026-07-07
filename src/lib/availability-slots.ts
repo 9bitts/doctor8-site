@@ -24,6 +24,10 @@ import {
   type DateAvailabilityBlock,
   type VolunteerWeeklyBlock,
 } from "@/lib/availability-exceptions";
+import {
+  slotOverlapsExternalBlock,
+  type ExternalBusyBlock,
+} from "@/lib/google-calendar-sync";
 
 export type { DaySlots, BookableSlot } from "@/lib/appointment-slots";
 
@@ -180,6 +184,7 @@ export async function getProviderAvailableDays(
         where: { isActive: true },
         orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
       },
+      googleCalendar: { select: { externalBusyBlocks: true } },
     },
   });
   const parsedAvailability = parseAvailabilityJson(
@@ -221,6 +226,8 @@ export async function getProviderAvailableDays(
     bookedAppointments.map((a) => a.scheduledAt.toISOString())
   );
 
+  const externalBlocks = (professional.googleCalendar?.externalBusyBlocks as ExternalBusyBlock[] | null) ?? [];
+
   return filterByHealthPlan(
     buildDaysFromBlocks(
       weeklyBlocks,
@@ -230,6 +237,7 @@ export async function getProviderAvailableDays(
       locale,
       timeZone,
       dateBlocks,
+      externalBlocks,
     ),
     providerId,
     providerType,
@@ -316,6 +324,7 @@ function buildDaysFromBlocks(
   locale: string,
   timeZone: string,
   dateBlocks: DateAvailabilityBlock[] = [],
+  externalBusyBlocks: ExternalBusyBlock[] = [],
 ): DaySlots[] {
   const days: DaySlots[] = [];
   const todayStr = calendarDateInTimeZone(now, timeZone);
@@ -335,7 +344,14 @@ function buildDaysFromBlocks(
       bookedTimes,
       now,
       (d, slotTime) => isSlotBlockedByDate(d, slotTime, dateBlocks),
-    );
+    ).map((slot) => {
+      if (!slot.available || externalBusyBlocks.length === 0) return slot;
+      const duration = blocksForDay[0]?.slotDurationMins ?? 30;
+      if (slotOverlapsExternalBlock(slot.datetime, duration, externalBusyBlocks)) {
+        return { ...slot, available: false };
+      }
+      return slot;
+    });
     if (slots.some((s) => s.available)) {
       const labelDate = zonedTimeToUtc(dateStr, "12:00", timeZone);
       days.push({
