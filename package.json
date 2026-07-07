@@ -13,6 +13,8 @@
     "postinstall": "prisma generate",
     "start": "node scripts/railway-start.mjs",
     "migrate:recover": "node scripts/migrate-recover.mjs",
+    "migrate:repair": "node scripts/migrate-repair-rolled-back.mjs",
+    "migrate:dentistry": "node scripts/migrate-apply-dentistry.mjs",
     "migrate:org-api-auth": "node scripts/migrate-org-api-auth.mjs",
     "migrate:professional-api-auth": "node scripts/migrate-professional-api-auth.mjs",
     "lint": "next lint",
