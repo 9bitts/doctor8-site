@@ -296,11 +296,23 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-fuchsia-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal || isNutritionistPortal || isNursePortal || isPharmacistPortal || isDentistPortal);
 
+  function isNavItemActive(href: string): boolean {
+    if (pathname === href) return true;
+    const portalRoots = [
+      "/odontologo", "/professional", "/psychologist", "/nutricionista",
+      "/enfermeiro", "/farmaceutico", "/psychoanalyst", "/integrative-therapist",
+      "/patient", "/organization", "/admin", "/angel",
+    ];
+    if (portalRoots.includes(href)) return false;
+    return pathname.startsWith(`${href}/`);
+  }
+
   function renderNavLink(item: NavItem, badge?: number, accentRed = false) {
-    const isActive = pathname === item.href ||
-      (item.href !== `/${role.toLowerCase()}` && pathname.startsWith(item.href));
+    const isActive = isNavItemActive(item.href);
     const redActive = "bg-red-500/10 text-red-400 border border-red-500/20";
     const redIdle = "text-red-500 hover:text-red-400 hover:bg-red-500/10";
+    const dentistActive = "bg-fuchsia-600 text-white border border-fuchsia-400/70 shadow-md shadow-fuchsia-950/40 [&_svg]:text-white";
+    const dentistIdle = "text-slate-300 hover:text-white hover:bg-fuchsia-500/15";
     return (
       <Link
         key={item.href}
@@ -309,10 +321,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         className={`
           flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
           ${isActive
-            ? (accentRed ? redActive : navActive)
-            : (accentRed ? redIdle : isDentist
-              ? "text-slate-400 hover:text-fuchsia-100 hover:bg-fuchsia-500/10"
-              : "text-slate-400 hover:text-white hover:bg-slate-800")}
+            ? (accentRed ? redActive : isDentist ? dentistActive : navActive)
+            : (accentRed ? redIdle : isDentist ? dentistIdle : "text-slate-400 hover:text-white hover:bg-slate-800")}
         `}
       >
         {item.icon}
