@@ -12,6 +12,7 @@ export type NavIconKey =
   | "Sparkles"
   | "Stethoscope"
   | "FlaskConical"
+  | "Flower2"
   | "Calendar"
   | "Users"
   | "Leaf"
@@ -164,6 +165,7 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/professional/prescriptions", labelKey: "nav.prescriptions", roles: ["PROFESSIONAL"], iconKey: "Stethoscope" },
       { href: "/professional/chas-medicinais", labelKey: "nav.medicinalTeas", roles: ["PROFESSIONAL"], iconKey: "FlaskConical" },
+      { href: "/professional/florais", labelKey: "nav.florais", roles: ["PROFESSIONAL"], iconKey: "Flower2" },
       { href: "/professional/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["PROFESSIONAL"], iconKey: "Leaf" },
       { href: "/professional/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/professional/psychology", labelKey: "nav.psychologyArea", roles: ["PROFESSIONAL"], iconKey: "Brain" },
@@ -423,6 +425,7 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/integrative-therapist/prescriptions", labelKey: "nav.prescriptions", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Stethoscope" },
       { href: "/integrative-therapist/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Leaf" },
       { href: "/integrative-therapist/chas-medicinais", labelKey: "nav.medicinalTeas", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "FlaskConical" },
+      { href: "/integrative-therapist/florais", labelKey: "nav.florais", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Flower2" },
       { href: "/integrative-therapist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Video" },
     ],
   },

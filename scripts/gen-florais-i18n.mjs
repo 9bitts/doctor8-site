@@ -312,6 +312,72 @@ pt["nm.practice.florais.banner"] = "Essências florais são altamente diluídas.
 en["nm.practice.florais.banner"] = "Flower essences are highly dilute. Focus on emotional and energetic picture. Do not replace medical care when indicated.";
 es["nm.practice.florais.banner"] = "Las esencias florales son muy diluidas. Enfoque en el cuadro emocional y energético.";
 
+const catalogKeys = {
+  "fl.hub.eyebrow": ["Terapia floral", "Floral therapy"],
+  "fl.hub.title": ["Encontre o floral certo para o seu equilíbrio emocional", "Find the right essence for emotional balance"],
+  "fl.hub.lead": [
+    "Biblioteca completa de Florais de Bach, essências Saint Germain e fórmulas compostas — com indicações emocionais para consulta e prescrição.",
+    "Full library of Bach essences, Saint Germain essences and compound formulas — with emotional indications for consultation and prescribing.",
+  ],
+  "fl.hub.navBiblioteca": ["Biblioteca completa", "Full library"],
+  "fl.hub.navModelos": ["Modelos de prescrição", "Prescription templates"],
+  "fl.hub.navPrescrever": ["Prescrever floral", "Prescribe essence"],
+  "fl.hub.navBack": ["Voltar aos florais", "Back to essences"],
+  "fl.hub.searchPlaceholder": ["Buscar por emoção: ansiedade, medo, sono, estresse...", "Search by emotion: anxiety, fear, sleep, stress..."],
+  "fl.hub.searchClear": ["Limpar busca", "Clear search"],
+  "fl.hub.statBach": ["Essências Bach", "Bach essences"],
+  "fl.hub.statSG": ["Essências Saint Germain", "Saint Germain essences"],
+  "fl.hub.statFormulas": ["Fórmulas compostas SG", "SG compound formulas"],
+  "fl.hub.statTotal": ["Itens no catálogo", "Catalog items"],
+  "fl.hub.catalogEyebrow": ["Catálogo de florais", "Essence catalog"],
+  "fl.hub.catalogTitle": ["Todos os florais, por indicação", "All essences by indication"],
+  "fl.hub.catalogHint": ["Toque em um item para ver detalhes e prescrever.", "Tap an item for details and prescribing."],
+  "fl.hub.noResults": ["Nenhum floral encontrado para esta busca.", "No essences found for this search."],
+  "fl.hub.verFloral": ["Ver floral", "View essence"],
+  "fl.hub.verTodos": ["Ver biblioteca completa", "View full library"],
+  "fl.hub.infoEyebrow": ["Como usar", "How to use"],
+  "fl.hub.infoTitle": ["Guia rápido da terapia floral", "Quick guide to floral therapy"],
+  "fl.hub.info1Title": ["Bach — 38 essências", "Bach — 38 essences"],
+  "fl.hub.info1Text": ["Organizadas em 7 grupos emocionais (negativo → positivo). Rescue para emergências.", "Organized in 7 emotional groups (negative → positive). Rescue for emergencies."],
+  "fl.hub.info2Title": ["Saint Germain", "Saint Germain"],
+  "fl.hub.info2Text": ["Essências bioenergéticas e 16 fórmulas compostas para quadros específicos.", "Bioenergetic essences and 16 compound formulas for specific pictures."],
+  "fl.hub.info3Title": ["Posologia usual", "Usual posology"],
+  "fl.hub.info3Text": ["4 gotas, 4 vezes ao dia, sob a língua ou diluídas em água.", "4 drops, 4 times daily, under tongue or in water."],
+  "fl.hub.info4Title": ["Prescrição integrada", "Integrated prescribing"],
+  "fl.hub.info4Text": ["Na ficha do floral, use \"Prescrever\" para abrir uma receita com o item já selecionado.", "On the essence page, use \"Prescribe\" to open a prescription with the item pre-selected."],
+  "fl.hub.disclaimer": [
+    "Essências florais são altamente diluídas e complementares. Não substituem avaliação médica ou psiquiátrica quando indicada.",
+    "Flower essences are highly dilute and complementary. They do not replace medical or psychiatric evaluation when indicated.",
+  ],
+  "fl.bib.tag": ["Biblioteca", "Library"],
+  "fl.bib.title": ["Biblioteca completa de florais", "Complete essence library"],
+  "fl.bib.lead": ["Navegue por Bach, Rescue, Saint Germain e fórmulas compostas.", "Browse Bach, Rescue, Saint Germain and compound formulas."],
+  "fl.bib.searchPlaceholder": ["Buscar essência ou indicação...", "Search essence or indication..."],
+  "fl.detail.notFound": ["Floral não encontrado.", "Essence not found."],
+  "fl.detail.negativo": ["Estado negativo", "Negative state"],
+  "fl.detail.positivo": ["Estado positivo", "Positive state"],
+  "fl.detail.indicacao": ["Indicação", "Indication"],
+  "fl.detail.posologia": ["Posologia", "Posology"],
+  "fl.detail.prescrever": ["Prescrever este floral", "Prescribe this essence"],
+  "fl.cat.bach": ["Florais de Bach", "Bach essences"],
+  "fl.cat.bach_rescue": ["Rescue / emergência", "Rescue / emergency"],
+  "fl.cat.saint_germain": ["Essências Saint Germain", "Saint Germain essences"],
+  "fl.cat.saint_germain_formula": ["Fórmulas Saint Germain", "Saint Germain formulas"],
+  "fl.tag.ansiedade": ["Ansiedade", "Anxiety"],
+  "fl.tag.medo": ["Medo", "Fear"],
+  "fl.tag.sono": ["Sono", "Sleep"],
+  "fl.tag.estresse": ["Estresse", "Stress"],
+  "fl.tag.panico": ["Pânico", "Panic"],
+  "fl.tag.protecao": ["Proteção", "Protection"],
+  "fl.tag.depressao": ["Depressão", "Depression"],
+  "fl.tag.estudante": ["Estudante", "Student"],
+};
+for (const [k, [p, e]] of Object.entries(catalogKeys)) {
+  pt[k] = p;
+  en[k] = e;
+  es[k] = e;
+}
+
 const tmplKeys = {
   "nm.mod.floralTemplates.title": ["Modelos de prescrição floral", "Floral prescription templates"],
   "nm.mod.floralTemplates.subtitle": ["Combinações sugeridas e modelos salvos para reutilizar em consultas.", "Suggested blends and saved models to reuse in consultations."],

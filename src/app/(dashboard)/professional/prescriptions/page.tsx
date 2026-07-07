@@ -357,6 +357,7 @@ export default function PrescriptionsPage() {
   const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
   const [pendingStarterId, setPendingStarterId] = useState<string | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [pendingFloralProductId, setPendingFloralProductId] = useState<string | null>(null);
   const [floralOnlyMode, setFloralOnlyMode] = useState(false);
 
   useEffect(() => {
@@ -416,10 +417,13 @@ export default function PrescriptionsPage() {
       setFloralOnlyMode(true);
       const starter = params.get("starter");
       const templateId = params.get("templateId");
+      const floralProduct = params.get("floralProduct");
       if (starter) {
         setPendingStarterId(starter);
       } else if (templateId) {
         setPendingTemplateId(templateId);
+      } else if (floralProduct && floralProductByValue(floralProduct)) {
+        setPendingFloralProductId(floralProduct);
       } else {
         setMedications((prev) => {
           if (prev.some((m) => m.itemKind === "floral")) return prev;
@@ -497,6 +501,29 @@ export default function PrescriptionsPage() {
       setPendingTemplateId(null);
     }
   }, [pendingTemplateId, rxTemplates]);
+
+  useEffect(() => {
+    if (!pendingFloralProductId) return;
+    const product = floralProductByValue(pendingFloralProductId);
+    if (!product) {
+      setPendingFloralProductId(null);
+      return;
+    }
+    setMedications([
+      {
+        name: t(product.labelKey),
+        dosage: "4 gotas, 4x/dia",
+        frequency: "",
+        duration: "",
+        instructions: "",
+        itemKind: "floral",
+        floralProductId: pendingFloralProductId,
+      },
+    ]);
+    setView("prescription");
+    setFloralOnlyMode(true);
+    setPendingFloralProductId(null);
+  }, [pendingFloralProductId, t]);
 
   async function loadEmissionPatient(kind: EmissionKind, id: string): Promise<Chart | null> {
     try {
