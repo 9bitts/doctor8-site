@@ -5,41 +5,8 @@ import {
   PSYCHOANALYSIS_SPECIALTY,
 } from "@/lib/professions";
 
-const PROFESSION_GROUP_TAB: Record<string, AdminProviderTab> = {
-  "set.profGroup.medical": "medicos",
-  "set.profGroup.psychology": "psicologos",
-  "set.profGroup.nutrition": "nutricionistas",
-  "set.profGroup.rehab": "fisioterapeutas",
-  "set.profGroup.nursing": "enfermeiros",
-  "set.profGroup.dentistry": "medicos",
-  "set.profGroup.other": "outros",
-};
-
-const INTEGRATIVE_OTHER_PROFESSIONS = new Set([
-  "Acupuncturist (non-medical)",
-  "Naturopath",
-]);
-
-function tabFromCanonicalProfession(raw: string): AdminProviderTab | null {
-  const canonical = canonicalProfessionValue(raw);
-  if (!canonical) return null;
-  if (canonical === PSYCHOANALYSIS_SPECIALTY || canonical === "Psychoanalyst") {
-    return "psicanalistas";
-  }
-  if (INTEGRATIVE_OTHER_PROFESSIONS.has(canonical)) return "terapeutas";
-  if (canonical === "Pharmacist") return "farmaceuticos";
-
-  for (const group of PROFESSION_GROUPS) {
-    if (!group.options.includes(canonical)) continue;
-    return PROFESSION_GROUP_TAB[group.groupKey] ?? "outros";
-  }
-  return null;
-}
-
-export type AdminProviderTab =
-  | "pendentes"
-  | "incompletos"
-  | "todos"
+/** Profession categories that mirror signup/login portals (no catch-all "outros"). */
+export type AdminProfessionCategory =
   | "medicos"
   | "psicologos"
   | "nutricionistas"
@@ -47,9 +14,41 @@ export type AdminProviderTab =
   | "enfermeiros"
   | "farmaceuticos"
   | "psicanalistas"
-  | "terapeutas"
-  | "anjos"
-  | "outros";
+  | "terapeutas";
+
+export type AdminProviderTab =
+  | "pendentes"
+  | "incompletos"
+  | "todos"
+  | AdminProfessionCategory
+  | "anjos";
+
+const PROFESSION_GROUP_TAB: Record<string, AdminProfessionCategory> = {
+  "set.profGroup.medical": "medicos",
+  "set.profGroup.psychology": "psicologos",
+  "set.profGroup.nutrition": "nutricionistas",
+  "set.profGroup.rehab": "fisioterapeutas",
+  "set.profGroup.nursing": "enfermeiros",
+  "set.profGroup.dentistry": "medicos",
+};
+
+const OTHER_GROUP_CANONICAL_TAB: Record<string, AdminProfessionCategory> = {
+  Pharmacist: "farmaceuticos",
+  "Biomedical Scientist": "medicos",
+  "Physical Educator / Personal Trainer": "fisioterapeutas",
+  "Social Worker (Health)": "terapeutas",
+  Optometrist: "medicos",
+  Podiatrist: "medicos",
+  "Acupuncturist (non-medical)": "terapeutas",
+  Naturopath: "terapeutas",
+  Veterinarian: "medicos",
+  Other: "medicos",
+};
+
+const INTEGRATIVE_OTHER_PROFESSIONS = new Set([
+  "Acupuncturist (non-medical)",
+  "Naturopath",
+]);
 
 export const ADMIN_PROVIDER_TABS: { id: AdminProviderTab }[] = [
   { id: "pendentes" },
@@ -64,7 +63,6 @@ export const ADMIN_PROVIDER_TABS: { id: AdminProviderTab }[] = [
   { id: "psicanalistas" },
   { id: "terapeutas" },
   { id: "anjos" },
-  { id: "outros" },
 ];
 
 function normalizeProfessionText(value: string | null | undefined): string {
@@ -85,7 +83,7 @@ function isPsychologistSpecialtyValue(specialty: string | null | undefined): boo
 
 function tabFromProfessionInfoType(
   typeKey: ReturnType<typeof getProfessionInfo>["typeKey"],
-): AdminProviderTab | null {
+): AdminProfessionCategory | null {
   switch (typeKey) {
     case "psychologist":
       return "psicologos";
@@ -105,20 +103,47 @@ function tabFromProfessionInfoType(
   }
 }
 
-/** Infer admin tab from profession/specialty text alone. Empty → outros (license / parent resolver decides). */
-export function resolveAdminTabFromProfessionText(
+function tabFromCanonicalProfession(raw: string): AdminProfessionCategory | null {
+  const canonical = canonicalProfessionValue(raw);
+  if (!canonical) return null;
+  if (canonical === PSYCHOANALYSIS_SPECIALTY || canonical === "Psychoanalyst") {
+    return "psicanalistas";
+  }
+  if (INTEGRATIVE_OTHER_PROFESSIONS.has(canonical)) return "terapeutas";
+  if (canonical in OTHER_GROUP_CANONICAL_TAB) {
+    return OTHER_GROUP_CANONICAL_TAB[canonical];
+  }
+
+  for (const group of PROFESSION_GROUPS) {
+    if (!group.options.includes(canonical)) continue;
+    return PROFESSION_GROUP_TAB[group.groupKey] ?? null;
+  }
+  return null;
+}
+
+/**
+ * Strict profession classification from specialty text alone.
+ * Returns null when the text does not map to a known health profession
+ * (e.g. angels who list "Contador" as their volunteer profession).
+ */
+export function classifyProfessionCategory(
   specialty: string | null | undefined,
-): AdminProviderTab {
+): AdminProfessionCategory | null {
   const raw = (specialty ?? "").trim();
   const s = normalizeProfessionText(specialty);
-  if (!s) return "outros";
+  if (!s) return null;
 
   if (s.includes("nutricion")) return "nutricionistas";
   if (s.includes("fisioterap")) return "fisioterapeutas";
   if (s.includes("psicanal")) return "psicanalistas";
   if (s.includes("terapeuta integrativ")) return "terapeutas";
   if (isPsychologistSpecialtyValue(specialty)) return "psicologos";
-  if (s.includes("enferm") || s.includes("nurse") || s.includes("midwife") || s.includes("obstetric nurse")) {
+  if (
+    s.includes("enferm") ||
+    s.includes("nurse") ||
+    s.includes("midwife") ||
+    s.includes("obstetric nurse")
+  ) {
     return "enfermeiros";
   }
   if (s.includes("farmac") || s.includes("pharm")) return "farmaceuticos";
@@ -165,13 +190,13 @@ export function resolveAdminTabFromProfessionText(
     return "terapeutas";
   }
 
-  return "outros";
+  return null;
 }
 
 /** Infer tab from license prefix when specialty is empty or ambiguous. */
 export function inferAdminTabFromLicense(
   licenseNumber: string | null | undefined,
-): AdminProviderTab | null {
+): AdminProfessionCategory | null {
   const lic = (licenseNumber ?? "").trim().toUpperCase();
   if (!lic) return null;
   if (/\bCRM\b|\bCRO\b|CRM[\s/-]|CRO[\s/-]/.test(lic)) return "medicos";
@@ -185,33 +210,37 @@ export function inferAdminTabFromLicense(
 
 /**
  * Single source of truth for which admin tab a professional belongs to.
- * Explicit specialty wins over license prefix (fixes CRP + médico misclassification).
+ * Every PROFESSIONAL signup maps to a portal category; default is médicos.
  */
 export function resolveAdminTabForProfessional(
   specialty: string | null | undefined,
   licenseNumber?: string | null,
-): AdminProviderTab {
-  const s = normalizeProfessionText(specialty);
-
-  if (!s) {
-    return inferAdminTabFromLicense(licenseNumber) ?? "medicos";
-  }
-
-  const fromSpecialty = resolveAdminTabFromProfessionText(specialty);
-  if (fromSpecialty !== "outros") return fromSpecialty;
+): AdminProfessionCategory {
+  const classified = classifyProfessionCategory(specialty);
+  if (classified) return classified;
 
   const fromLicense = inferAdminTabFromLicense(licenseNumber);
   if (fromLicense) return fromLicense;
 
-  return fromSpecialty;
+  return "medicos";
+}
+
+/** @deprecated Use classifyProfessionCategory — kept for internal angel matching. */
+export function resolveAdminTabFromProfessionText(
+  specialty: string | null | undefined,
+): AdminProfessionCategory | null {
+  return classifyProfessionCategory(specialty);
 }
 
 export function angelMatchesAdminTab(
   angel: { profession: string | null },
   tab: AdminProviderTab,
 ): boolean {
-  if (tab === "pendentes" || tab === "anjos" || tab === "todos" || tab === "incompletos") return false;
-  return resolveAdminTabFromProfessionText(angel.profession) === tab;
+  if (tab === "pendentes" || tab === "anjos" || tab === "todos" || tab === "incompletos") {
+    return false;
+  }
+  const category = classifyProfessionCategory(angel.profession);
+  return category !== null && category === tab;
 }
 
 export function matchesAdminProviderTab(
@@ -219,6 +248,8 @@ export function matchesAdminProviderTab(
   specialty: string | null | undefined,
   licenseNumber?: string | null,
 ): boolean {
-  if (tab === "pendentes" || tab === "anjos" || tab === "todos" || tab === "incompletos") return false;
+  if (tab === "pendentes" || tab === "anjos" || tab === "todos" || tab === "incompletos") {
+    return false;
+  }
   return resolveAdminTabForProfessional(specialty, licenseNumber) === tab;
 }

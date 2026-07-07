@@ -96,7 +96,6 @@ const ADMIN_PROVIDER_TAB_IDS: AdminProviderTab[] = [
   "psicanalistas",
   "terapeutas",
   "anjos",
-  "outros",
 ];
 
 const ACTIVE_USER = { deletedAt: null } as const;

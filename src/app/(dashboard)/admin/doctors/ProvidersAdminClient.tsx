@@ -15,7 +15,6 @@ import {
   Activity,
   Leaf,
   Heart,
-  Users,
   Mail,
   Clock,
   LayoutList,
@@ -114,7 +113,6 @@ const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
   psicanalistas: <Brain size={14} />,
   terapeutas: <Leaf size={14} />,
   anjos: <Heart size={14} />,
-  outros: <Users size={14} />,
 };
 
 function providerTabLabel(tab: AdminProviderTab, t: (key: TranslationKey | string) => string): string {
@@ -180,9 +178,6 @@ function computeLegacyTabCounts(
       angels.filter((a) => angelMatchesAdminTab(a, "terapeutas")).length +
       doctors.filter((d) => matchesDoctorTab("terapeutas", d.specialty, d.licenseNumber)).length +
       integrativeTherapists.length,
-    outros:
-      angels.filter((a) => angelMatchesAdminTab(a, "outros")).length +
-      doctors.filter((d) => matchesDoctorTab("outros", d.specialty, d.licenseNumber)).length,
   };
 }
 

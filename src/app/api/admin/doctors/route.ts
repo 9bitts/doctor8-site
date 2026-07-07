@@ -19,7 +19,6 @@ const VALID_CATEGORIES = new Set<string>([
   "farmaceuticos",
   "psicanalistas",
   "terapeutas",
-  "outros",
 ]);
 
 export async function GET(req: NextRequest) {
