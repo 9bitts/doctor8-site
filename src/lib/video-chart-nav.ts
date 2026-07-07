@@ -1,7 +1,7 @@
 // Deep links from an active video consult ? patient chart / emissions, with return URL.
 
 import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
-import { isNutritionistSpecialty, isNurseSpecialty } from "@/lib/profession-label";
+import { isNutritionistSpecialty, isNurseSpecialty, isPharmacistSpecialty } from "@/lib/profession-label";
 
 export type VideoConsultKind = "appointment" | "jit" | "humanitarian";
 
@@ -10,6 +10,7 @@ export type ProviderChartPanel =
   | "psychologist"
   | "nutritionist"
   | "nurse"
+  | "pharmacist"
   | "psychoanalyst"
   | "integrative_therapist";
 
@@ -19,6 +20,7 @@ export function providerPanelFromSpecialty(
   if (isPsychologistSpecialty(specialty)) return "psychologist";
   if (isNutritionistSpecialty(specialty)) return "nutritionist";
   if (isNurseSpecialty(specialty)) return "nurse";
+  if (isPharmacistSpecialty(specialty)) return "pharmacist";
   return "professional";
 }
 
@@ -30,6 +32,8 @@ export function providerAppointmentsPath(panel: ProviderChartPanel): string {
       return "/nutricionista/appointments";
     case "nurse":
       return "/enfermeiro/appointments";
+    case "pharmacist":
+      return "/farmaceutico/appointments";
     case "psychoanalyst":
       return "/psychoanalyst/appointments";
     case "integrative_therapist":
@@ -51,6 +55,8 @@ export function providerPatientsPath(panel: ProviderChartPanel, chartId: string)
       return `/nutricionista/patients/${chartId}`;
     case "nurse":
       return `/enfermeiro/patients/${chartId}`;
+    case "pharmacist":
+      return `/farmaceutico/patients/${chartId}`;
     case "psychoanalyst":
       return `/psychoanalyst/analysands/${chartId}`;
     case "integrative_therapist":
@@ -166,17 +172,40 @@ const emptySpecialtyLinks = () => ({
   nurseSbar: null as string | null,
   nurseMedCheck: null as string | null,
   nurseMedRx: null as string | null,
+  pharmaMedReview: null as string | null,
+  pharmaReconciliation: null as string | null,
+  pharmaMonitoring: null as string | null,
+  pharmaRx: null as string | null,
+  pharmaEducation: null as string | null,
+  pharmaDispensing: null as string | null,
+  pharmaInteractions: null as string | null,
   nutriAnamnesis: null as string | null,
   nutriAnthropometry: null as string | null,
   nutriMealPlans: null as string | null,
   nutriFoodDiary: null as string | null,
 });
 
+export type VideoChartLinks = ReturnType<typeof emptySpecialtyLinks> & {
+  fullChart: string;
+  addRecord: string;
+  recordUrl: (recordId: string) => string;
+  vaccines: string | null;
+  dental: string | null;
+  evolution: string | null;
+  diagnoses: string | null;
+  prescribe: string | null;
+  exam: string | null;
+  document: string | null;
+  psychSession: string | null;
+  psychScale: string | null;
+  psychDocument: string | null;
+};
+
 export function buildVideoChartLinks(
   chartId: string,
   returnUrl: string,
   panel: ProviderChartPanel = "professional",
-) {
+): VideoChartLinks {
   if (panel === "nutritionist") {
     const base = providerPatientsPath(panel, chartId);
     return {
@@ -217,6 +246,7 @@ export function buildVideoChartLinks(
       psychSession: null as string | null,
       psychScale: null as string | null,
       psychDocument: null as string | null,
+      ...emptySpecialtyLinks(),
       nurseSae: chartActionUrl("/enfermeiro/sae", chartId, { returnUrl }),
       nurseScales: chartActionUrl("/enfermeiro/escalas", chartId, { returnUrl }),
       nurseCarePlan: chartActionUrl("/enfermeiro/prescricao", chartId, { returnUrl }),
@@ -228,6 +258,33 @@ export function buildVideoChartLinks(
       nutriAnthropometry: null as string | null,
       nutriMealPlans: null as string | null,
       nutriFoodDiary: null as string | null,
+    };
+  }
+
+  if (panel === "pharmacist") {
+    const base = providerPatientsPath(panel, chartId);
+    return {
+      fullChart: withReturn(base, returnUrl, { tab: "pharmacy" }),
+      addRecord: withReturn(base, returnUrl, { newRecord: "1" }),
+      recordUrl: (recordId: string) => chartRecordUrl(chartId, returnUrl, recordId, panel),
+      vaccines: null as string | null,
+      dental: null as string | null,
+      evolution: chartTabUrl(chartId, returnUrl, "evolution", panel),
+      diagnoses: null as string | null,
+      prescribe: null as string | null,
+      exam: null as string | null,
+      document: null as string | null,
+      psychSession: null as string | null,
+      psychScale: null as string | null,
+      psychDocument: null as string | null,
+      ...emptySpecialtyLinks(),
+      pharmaMedReview: chartActionUrl("/farmaceutico/revisao", chartId, { returnUrl }),
+      pharmaReconciliation: chartActionUrl("/farmaceutico/conciliacao", chartId, { returnUrl }),
+      pharmaMonitoring: chartActionUrl("/farmaceutico/monitoramento", chartId, { returnUrl }),
+      pharmaRx: chartActionUrl("/farmaceutico/prescricao", chartId, { returnUrl }),
+      pharmaEducation: chartActionUrl("/farmaceutico/educacao", chartId, { returnUrl }),
+      pharmaDispensing: chartActionUrl("/farmaceutico/dispensacao", chartId, { returnUrl }),
+      pharmaInteractions: chartActionUrl("/farmaceutico/interacoes", chartId, { returnUrl }),
     };
   }
 

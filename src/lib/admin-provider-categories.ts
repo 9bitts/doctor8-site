@@ -90,6 +90,8 @@ function tabFromProfessionInfoType(
       return "fisioterapeutas";
     case "nurse":
       return "outros";
+    case "pharmacist":
+      return "outros";
     case "dentist":
     case "doctor":
       return "medicos";
@@ -112,6 +114,7 @@ export function resolveAdminTabFromProfessionText(
   if (s.includes("terapeuta integrativ")) return "terapeutas";
   if (isPsychologistSpecialtyValue(specialty)) return "psicologos";
   if (s.includes("enferm") || s.includes("nurse")) return "outros";
+  if (s.includes("farmac") || s.includes("pharm")) return "outros";
 
   const fromProfessionGroups = tabFromCanonicalProfession(raw);
   if (fromProfessionGroups) return fromProfessionGroups;
@@ -169,6 +172,7 @@ export function inferAdminTabFromLicense(
   if (/\bCRN\b|CRN[\s/-]/.test(lic)) return "nutricionistas";
   if (/\bCREFITO\b|CREFITO[\s/-]/.test(lic)) return "fisioterapeutas";
   if (/\bCOREN\b|COREN[\s/-]/.test(lic)) return "outros";
+  if (/\bCRF\b|CRF[\s/-]/.test(lic)) return "outros";
   return null;
 }
 

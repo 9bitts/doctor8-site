@@ -13,6 +13,7 @@ export const PROFESSION_SIGNUP: Record<
   fisioterapeuta: { role: "PROFESSIONAL", specialty: "Physiotherapist" },
   nutricionista: { role: "PROFESSIONAL", specialty: "Nutritionist" },
   enfermeiro: { role: "PROFESSIONAL", specialty: "Nurse" },
+  farmaceutico: { role: "PROFESSIONAL", specialty: "Pharmacist" },
   cuidados_paliativos: { role: "PROFESSIONAL", specialty: "General Practice" },
 };
 
@@ -56,6 +57,9 @@ export function buildProfessionalSignupHref(
   } else if (slug === "enfermeiro") {
     params.set("portal", "nurse");
     params.set("profession", "enfermeiro");
+  } else if (slug === "farmaceutico") {
+    params.set("portal", "pharmacist");
+    params.set("profession", "farmaceutico");
   } else {
     params.set("role", "PROFESSIONAL");
     params.set("profession", slug);

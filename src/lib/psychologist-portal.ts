@@ -1,5 +1,8 @@
 import { isPsychologist } from "@/lib/profession-label";
 import { db } from "@/lib/db";
+import { nursePortalBase, mapProfessionalPathToNursePortal } from "@/lib/nurse-portal";
+import { nutritionistPortalBase, mapProfessionalPathToNutritionistPortal } from "@/lib/nutritionist-portal";
+import { pharmacistPortalBase, mapProfessionalPathToPharmacistPortal } from "@/lib/pharmacist-portal";
 
 export const PSYCHOLOGIST_LOGIN = "/login";
 export const PSYCHOLOGIST_HOME = "/psychologist";
@@ -66,6 +69,15 @@ export function mapProfessionalPathToPortal(
   if (!professionalPath.startsWith("/professional")) return professionalPath;
   if (professionalPortalBase(pathname) === "/psychologist") {
     return mapProfessionalPathToPsychologist(professionalPath);
+  }
+  if (nursePortalBase(pathname) === "/enfermeiro") {
+    return mapProfessionalPathToNursePortal(pathname, professionalPath);
+  }
+  if (nutritionistPortalBase(pathname) === "/nutricionista") {
+    return mapProfessionalPathToNutritionistPortal(pathname, professionalPath);
+  }
+  if (pharmacistPortalBase(pathname) === "/farmaceutico") {
+    return mapProfessionalPathToPharmacistPortal(pathname, professionalPath);
   }
   return professionalPath;
 }

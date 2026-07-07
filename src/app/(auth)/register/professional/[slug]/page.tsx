@@ -14,6 +14,7 @@ export async function generateStaticParams() {
     { slug: "fisioterapeuta" },
     { slug: "nutricionista" },
     { slug: "enfermeiro" },
+    { slug: "farmaceutico" },
     { slug: "cuidados_paliativos" },
   ];
 }

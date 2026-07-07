@@ -21,6 +21,7 @@ export const OAUTH_PROFESSION_SLUGS = [
   "fisioterapeuta",
   "nutricionista",
   "enfermeiro",
+  "farmaceutico",
   "cuidados_paliativos",
 ] as const;
 

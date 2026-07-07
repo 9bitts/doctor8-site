@@ -143,7 +143,7 @@ export function RegisterAccountForm({
 }: {
   role: RegisterRole;
   professionalKind?: "psychologist";
-  professionSlug?: "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "cuidados_paliativos";
+  professionSlug?: "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "cuidados_paliativos";
   lang: Lang;
   callbackUrl: string;
   initialRegion?: Region;
@@ -202,6 +202,7 @@ export function RegisterAccountForm({
   const isPsychologistSignup = isProfessional && professionalKind === "psychologist";
   const isNutritionistSignup = professionSlug === "nutricionista";
   const isNurseSignup = professionSlug === "enfermeiro";
+  const isPharmacistSignup = professionSlug === "farmaceutico";
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
 
@@ -249,6 +250,8 @@ export function RegisterAccountForm({
           ? "/callback?portal=nutritionist"
           : isNurseSignup
             ? "/callback?portal=nurse"
+            : isPharmacistSignup
+              ? "/callback?portal=pharmacist"
             : "/callback";
       clearSensitiveClientState();
       await signOut({ redirect: false });
@@ -460,6 +463,8 @@ export function RegisterAccountForm({
           ? t("reg.googleNutritionist")
           : isNurseSignup
             ? t("reg.googleNurse")
+            : isPharmacistSignup
+              ? t("reg.googlePharmacist")
             : isPsychologistSignup
             ? t("reg.googlePsychologist")
             : isProfessional

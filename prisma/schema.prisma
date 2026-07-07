@@ -121,6 +121,41 @@ enum NursingMedicationRxStatus {
   EXPIRED
 }
 
+enum PharmacyIntakeStatus {
+  PENDING
+  COMPLETED
+}
+
+enum PharmacyPrescriptionStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+}
+
+enum PharmacyDispensingStatus {
+  VALIDATED
+  DISPENSED
+  PARTIAL
+  REJECTED
+}
+
+enum PharmacyEducationType {
+  MEDICATION
+  DISEASE
+  LIFESTYLE
+  ADHERENCE
+  OTHER
+}
+
+enum PharmacyInteractionSeverity {
+  NONE
+  MINOR
+  MODERATE
+  MAJOR
+  CONTRAINDICATED
+}
+
 enum PatientRecordTagKind {
   ALLERGY
   MEDICATION
@@ -654,6 +689,13 @@ model ProfessionalProfile {
   nursingSbarReports     NursingSbarReport[]
   nursingMedChecks       NursingMedCheck[]       @relation("NurseMedChecks")
   nursingMedicationRx    NursingMedicationPrescription[]
+  pharmacyIntakeForms    PharmacyIntakeForm[]
+  pharmacyMedReviews     PharmacyMedReview[]
+  pharmacyReconciliations PharmacyReconciliation[]
+  pharmacyPrescriptions  PharmacyPrescription[]
+  pharmacyEducationSessions PharmacyEducationSession[]
+  pharmacyDispensingRecords PharmacyDispensingRecord[]
+  pharmacyInteractionChecks PharmacyInteractionCheck[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -1574,6 +1616,14 @@ model PatientRecord {
   nursingSbarReports     NursingSbarReport[]
   nursingMedChecks       NursingMedCheck[]
   nursingMedicationRx    NursingMedicationPrescription[]
+  pharmacyIntakeForms    PharmacyIntakeForm[]
+  pharmacyMedReviews     PharmacyMedReview[]
+  pharmacyReconciliations PharmacyReconciliation[]
+  pharmacyMonitoring     PharmacyMonitoringEntry[]
+  pharmacyPrescriptions  PharmacyPrescription[]
+  pharmacyEducationSessions PharmacyEducationSession[]
+  pharmacyDispensingRecords PharmacyDispensingRecord[]
+  pharmacyInteractionChecks PharmacyInteractionCheck[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -2382,6 +2432,171 @@ model NursingMedicationPrescription {
   @@index([patientRecordId, createdAt])
   @@index([professionalId])
   @@index([status])
+}
+
+// ────────────────────────────────────────────
+// PHARMACY — telepharmacy (CFF 727): review, reconciliation, monitoring, Rx
+// ────────────────────────────────────────────
+
+model PharmacyIntakeForm {
+  id              String                @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord         @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile   @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  appointmentId   String?
+
+  status          PharmacyIntakeStatus  @default(PENDING)
+  responses       Json?
+  sentAt          DateTime              @default(now())
+  completedAt     DateTime?
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+  @@index([status])
+}
+
+model PharmacyMedReview {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  medications     Json
+  problems        Json
+  recommendations String?           @db.Text
+  adherenceNotes  String?           @db.Text
+  followUpAt      DateTime?
+  reviewedAt      DateTime          @default(now())
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([patientRecordId, reviewedAt])
+  @@index([professionalId])
+}
+
+model PharmacyReconciliation {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  sourceContext   String
+  medicationsBefore Json
+  medicationsAfter  Json
+  discrepancies   Json
+  notes           String?           @db.Text
+  reconciledAt    DateTime          @default(now())
+
+  createdAt       DateTime          @default(now())
+
+  @@index([patientRecordId, reconciledAt])
+  @@index([professionalId])
+}
+
+model PharmacyMonitoringEntry {
+  id              String        @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  patientUserId   String
+
+  metricType      String
+  value           String
+  unit            String?
+  medicationName  String?
+  notes           String?       @db.Text
+  recordedAt      DateTime      @default(now())
+
+  createdAt       DateTime      @default(now())
+
+  @@index([patientRecordId, recordedAt])
+  @@index([patientUserId])
+}
+
+model PharmacyPrescription {
+  id              String                    @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord             @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile       @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  medications     Json
+  instructions    String?                   @db.Text
+  validUntil      DateTime?
+  licenseSnapshot String?
+  status          PharmacyPrescriptionStatus @default(ACTIVE)
+
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([patientRecordId, createdAt])
+  @@index([professionalId])
+  @@index([status])
+}
+
+model PharmacyEducationSession {
+  id              String              @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord       @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  topic           String
+  educationType   PharmacyEducationType @default(MEDICATION)
+  content         String              @db.Text
+  materials       Json?
+  patientFeedback String?
+  durationMin     Int?
+  conductedAt     DateTime            @default(now())
+
+  createdAt       DateTime            @default(now())
+
+  @@index([patientRecordId, conductedAt])
+  @@index([professionalId])
+}
+
+model PharmacyDispensingRecord {
+  id                  String                  @id @default(cuid())
+  patientRecordId     String
+  patientRecord       PatientRecord           @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  pharmacistId        String
+  pharmacist          ProfessionalProfile     @relation(fields: [pharmacistId], references: [id], onDelete: Cascade)
+
+  prescriptionId      String?
+  prescriptionSnapshot Json
+  medicationsDispensed Json
+  status              PharmacyDispensingStatus
+  validationNotes     String?                 @db.Text
+  rejectionReason     String?                 @db.Text
+  dispensedAt         DateTime                @default(now())
+
+  createdAt           DateTime                @default(now())
+
+  @@index([patientRecordId, dispensedAt])
+  @@index([pharmacistId])
+  @@index([prescriptionId])
+}
+
+model PharmacyInteractionCheck {
+  id              String                    @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord             @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile       @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  medications     Json
+  interactions    Json
+  maxSeverity     PharmacyInteractionSeverity @default(NONE)
+  recommendations String?                   @db.Text
+  checkedAt       DateTime                  @default(now())
+
+  createdAt       DateTime                  @default(now())
+
+  @@index([patientRecordId, checkedAt])
+  @@index([professionalId])
 }
 
 // ────────────────────────────────────────────

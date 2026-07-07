@@ -31,7 +31,7 @@ export interface VideoConsultData {
   patientRecordId: string | null;
   analysandRecordId?: string | null;
   integrativeClientRecordId?: string | null;
-  providerPanel?: "professional" | "psychologist" | "nutritionist" | "nurse" | "psychoanalyst" | "integrative_therapist";
+  providerPanel?: "professional" | "psychologist" | "nutritionist" | "nurse" | "pharmacist" | "psychoanalyst" | "integrative_therapist";
   patientUserId: string;
   scheduledAt: string;
   durationMins: number;
@@ -113,8 +113,16 @@ const T: Record<string, Record<Lang, string>> = {
   nutriAnthropometry: { pt: "Antropometria", en: "Anthropometry", es: "Antropometría" },
   nutriMealPlans: { pt: "Planos alimentares", en: "Meal plans", es: "Planes alimentarios" },
   nutriFoodDiary: { pt: "Diário alimentar", en: "Food diary", es: "Diario alimentario" },
+  pharmaMedReview: { pt: "Revisão medicamentosa", en: "Medication review", es: "Revisión medicamentosa" },
+  pharmaReconciliation: { pt: "Conciliação", en: "Reconciliation", es: "Conciliación" },
+  pharmaMonitoring: { pt: "Monitorização", en: "Monitoring", es: "Monitorización" },
+  pharmaRx: { pt: "Prescrição farmacêutica", en: "Pharmaceutical Rx", es: "Prescripción farmacéutica" },
+  pharmaEducation: { pt: "Educação em saúde", en: "Health education", es: "Educación en salud" },
+  pharmaDispensing: { pt: "Dispensação", en: "Dispensing", es: "Dispensación" },
+  pharmaInteractions: { pt: "Interações", en: "Interactions", es: "Interacciones" },
   nursingChart:   { pt: "Módulo enfermagem", en: "Nursing module", es: "Módulo enfermería" },
   nutritionChart: { pt: "Módulo nutrição", en: "Nutrition module", es: "Módulo nutrición" },
+  pharmacyChart:  { pt: "Módulo farmácia", en: "Pharmacy module", es: "Módulo farmacia" },
   chartActions:   { pt: "Ações na ficha deste paciente", en: "Actions for this patient", es: "Acciones en la ficha de este paciente" },
   openRecord:     { pt: "Ver na ficha", en: "View in chart", es: "Ver en la ficha" },
   noChart:        { pt: "Vinculando ficha do paciente...", en: "Linking patient chart...", es: "Vinculando ficha del paciente..." },
@@ -1092,6 +1100,76 @@ export default function VideoConsultRoom({
                           className="flex items-center justify-center gap-1.5 text-xs font-medium text-amber-200 bg-amber-900/50 hover:bg-amber-900/70 py-2 rounded-lg transition col-span-2"
                         >
                           <BookOpen size={13} /> {t("nutriFoodDiary")}
+                        </a>
+                      )}
+                      {chartLinks.pharmaMedReview && (
+                        <a
+                          href={chartLinks.pharmaMedReview}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-teal-200 bg-teal-900/50 hover:bg-teal-900/70 py-2 rounded-lg transition"
+                        >
+                          <ClipboardList size={13} /> {t("pharmaMedReview")}
+                        </a>
+                      )}
+                      {chartLinks.pharmaReconciliation && (
+                        <a
+                          href={chartLinks.pharmaReconciliation}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-teal-200 bg-teal-900/50 hover:bg-teal-900/70 py-2 rounded-lg transition"
+                        >
+                          <FileText size={13} /> {t("pharmaReconciliation")}
+                        </a>
+                      )}
+                      {chartLinks.pharmaMonitoring && (
+                        <a
+                          href={chartLinks.pharmaMonitoring}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-teal-200 bg-teal-900/50 hover:bg-teal-900/70 py-2 rounded-lg transition"
+                        >
+                          <Activity size={13} /> {t("pharmaMonitoring")}
+                        </a>
+                      )}
+                      {chartLinks.pharmaRx && (
+                        <a
+                          href={chartLinks.pharmaRx}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-teal-200 bg-teal-900/50 hover:bg-teal-900/70 py-2 rounded-lg transition"
+                        >
+                          <Pill size={13} /> {t("pharmaRx")}
+                        </a>
+                      )}
+                      {chartLinks.pharmaEducation && (
+                        <a
+                          href={chartLinks.pharmaEducation}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-teal-200 bg-teal-900/50 hover:bg-teal-900/70 py-2 rounded-lg transition"
+                        >
+                          <BookOpen size={13} /> {t("pharmaEducation")}
+                        </a>
+                      )}
+                      {chartLinks.pharmaDispensing && (
+                        <a
+                          href={chartLinks.pharmaDispensing}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-teal-200 bg-teal-900/50 hover:bg-teal-900/70 py-2 rounded-lg transition"
+                        >
+                          <ShieldCheck size={13} /> {t("pharmaDispensing")}
+                        </a>
+                      )}
+                      {chartLinks.pharmaInteractions && (
+                        <a
+                          href={chartLinks.pharmaInteractions}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 text-xs font-medium text-orange-200 bg-orange-900/50 hover:bg-orange-900/70 py-2 rounded-lg transition col-span-2"
+                        >
+                          <FlaskConical size={13} /> {t("pharmaInteractions")}
                         </a>
                       )}
                     </div>

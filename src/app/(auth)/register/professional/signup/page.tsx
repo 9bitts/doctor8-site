@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import {
-  Stethoscope, LogIn, Brain, Building2, ArrowLeft, Leaf, Heart, Utensils, HeartPulse,
+  Stethoscope, LogIn, Brain, Building2, ArrowLeft, Leaf, Heart, Utensils, HeartPulse, Pill,
 } from "lucide-react";
 import { parseRegistrationRegion, defaultRegistrationRegionForLang } from "@/lib/registration-regions";
 import { ANGEL_REGISTER, LOGIN, ORGANIZATION_REGISTER } from "@/lib/auth-portals";
@@ -22,7 +22,7 @@ import {
 } from "@/components/auth/register-shared";
 import { isProfessionSignupSlug, PROFESSION_SIGNUP } from "@/lib/profession-signup";
 
-type ProRole = "PROFESSIONAL" | "PSYCHOLOGIST" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST" | "NUTRITIONIST" | "NURSE";
+type ProRole = "PROFESSIONAL" | "PSYCHOLOGIST" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST" | "NUTRITIONIST" | "NURSE" | "PHARMACIST";
 
 export default function RegisterProfessionalSignupPage() {
   const [callbackUrl, setCallbackUrl] = useState("");
@@ -31,7 +31,7 @@ export default function RegisterProfessionalSignupPage() {
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<ProRole>("PROFESSIONAL");
   const [professionSlug, setProfessionSlug] = useState<
-    "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "cuidados_paliativos" | undefined
+    "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "cuidados_paliativos" | undefined
   >(undefined);
 
   useEffect(() => {
@@ -69,6 +69,10 @@ export default function RegisterProfessionalSignupPage() {
       setRole("NURSE");
       setProfessionSlug("enfermeiro");
       setStep(2);
+    } else if (portalParam === "pharmacist") {
+      setRole("PHARMACIST");
+      setProfessionSlug("farmaceutico");
+      setStep(2);
     }
 
     const roleParam = params.get("role");
@@ -90,7 +94,7 @@ export default function RegisterProfessionalSignupPage() {
         setRole("PROFESSIONAL");
         if (professionParam !== "psicologo") {
           setProfessionSlug(
-            professionParam as "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "cuidados_paliativos",
+            professionParam as "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "cuidados_paliativos",
           );
         }
         setStep(2);
@@ -120,6 +124,8 @@ export default function RegisterProfessionalSignupPage() {
       setProfessionSlug("nutricionista");
     } else if (r === "NURSE") {
       setProfessionSlug("enfermeiro");
+    } else if (r === "PHARMACIST") {
+      setProfessionSlug("farmaceutico");
     } else if (r !== "PROFESSIONAL") {
       setProfessionSlug(undefined);
     }
@@ -267,6 +273,19 @@ export default function RegisterProfessionalSignupPage() {
                 </div>
               </button>
 
+              <button
+                onClick={() => chooseRole("PHARMACIST")}
+                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-teal-500 hover:bg-teal-500/10 transition text-left group"
+              >
+                <div className="w-14 h-14 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0 group-hover:bg-teal-500/20 transition">
+                  <Pill className="w-7 h-7 text-teal-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-base">{t("reg.imPharmacist")}</p>
+                  <p className="text-slate-300 text-sm mt-0.5">{t("reg.imPharmacistDesc")}</p>
+                </div>
+              </button>
+
               <Link
                 href={orgHref}
                 className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-indigo-500 hover:bg-indigo-500/10 transition text-left group"
@@ -286,9 +305,14 @@ export default function RegisterProfessionalSignupPage() {
         {step === 2 && (
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
             <RegisterAccountForm
-              role={role === "PSYCHOLOGIST" || role === "NUTRITIONIST" || role === "NURSE" ? "PROFESSIONAL" : role as RegisterRole}
+              role={role === "PSYCHOLOGIST" || role === "NUTRITIONIST" || role === "NURSE" || role === "PHARMACIST" ? "PROFESSIONAL" : role as RegisterRole}
               professionalKind={role === "PSYCHOLOGIST" ? "psychologist" : undefined}
-              professionSlug={role === "NUTRITIONIST" ? "nutricionista" : role === "NURSE" ? "enfermeiro" : professionSlug}
+              professionSlug={
+                role === "NUTRITIONIST" ? "nutricionista"
+                  : role === "NURSE" ? "enfermeiro"
+                  : role === "PHARMACIST" ? "farmaceutico"
+                  : professionSlug
+              }
               lang={lang}
               callbackUrl={callbackUrl}
               initialRegion={initialRegion}

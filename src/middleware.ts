@@ -27,6 +27,7 @@ const LEGACY_LOGIN_PATHS = [
   "/login/terapeuta-integrativo",
   "/login/nutricionista",
   "/login/enfermeiro",
+  "/login/farmaceutico",
   "/login/organizacao",
   "/login/anjo",
 ];
@@ -38,6 +39,7 @@ const LEGACY_LOGIN_PORTAL: Record<string, string> = {
   "/login/terapeuta-integrativo": "integrative",
   "/login/nutricionista": "nutritionist",
   "/login/enfermeiro": "nurse",
+  "/login/farmaceutico": "pharmacist",
   "/login/organizacao": "organization",
   "/login/anjo": "angel",
 };
@@ -113,6 +115,7 @@ const PROFESSIONAL_ROUTES = ["/professional"];
 const PSYCHOLOGIST_ROUTES = ["/psychologist"];
 const NUTRITIONIST_ROUTES = ["/nutricionista"];
 const NURSE_ROUTES = ["/enfermeiro"];
+const PHARMACIST_ROUTES = ["/farmaceutico"];
 const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
 const INTEGRATIVE_THERAPIST_ROUTES = ["/integrative-therapist"];
 const ORGANIZATION_ROUTES = ["/organization"];
@@ -127,6 +130,7 @@ const AUTHENTICATED_DASHBOARD_PREFIXES = [
   ...PSYCHOLOGIST_ROUTES,
   ...NUTRITIONIST_ROUTES,
   ...NURSE_ROUTES,
+  ...PHARMACIST_ROUTES,
   ...PSYCHOANALYST_ROUTES,
   ...INTEGRATIVE_THERAPIST_ROUTES,
   ...ORGANIZATION_ROUTES,

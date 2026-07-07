@@ -21,6 +21,7 @@ export default async function OnboardingPage({
     if (portal === "psychologist") redirect("/psychologist/settings");
     if (portal === "nutritionist") redirect("/nutricionista/settings");
     if (portal === "nurse") redirect("/enfermeiro/settings");
+    if (portal === "pharmacist") redirect("/farmaceutico/settings");
     redirect("/professional/settings");
   }
   if (role === "PSYCHOANALYST") redirect("/psychoanalyst/settings");

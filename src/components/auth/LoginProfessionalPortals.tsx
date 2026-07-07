@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Stethoscope, Brain, Leaf, Utensils, HeartPulse } from "lucide-react";
+import { Stethoscope, Brain, Leaf, Utensils, HeartPulse, Pill } from "lucide-react";
 import { buildAuthHref } from "@/components/auth/login-shared";
 
 type PortalLink = {
@@ -48,6 +48,12 @@ const PORTAL_LINKS: PortalLink[] = [
     icon: HeartPulse,
     className: "text-slate-400 hover:text-rose-300",
   },
+  {
+    href: "/login?portal=pharmacist",
+    labelKey: "login.proPharmacistPortal",
+    icon: Pill,
+    className: "text-slate-400 hover:text-teal-300",
+  },
 ];
 
 export function loginTaglineForPortal(
@@ -65,6 +71,8 @@ export function loginTaglineForPortal(
       return t("login.nutritionistTagline");
     case "nurse":
       return t("login.nurseTagline");
+    case "pharmacist":
+      return t("login.pharmacistTagline");
     case "doctor":
       return t("login.doctorTagline");
     default:

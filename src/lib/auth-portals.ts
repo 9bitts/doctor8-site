@@ -27,6 +27,8 @@ export const NUTRITIONIST_REGISTER =
   "/register/professional/signup?portal=nutritionist&profession=nutricionista";
 export const NURSE_REGISTER =
   "/register/professional/signup?portal=nurse&profession=enfermeiro";
+export const PHARMACIST_REGISTER =
+  "/register/professional/signup?portal=pharmacist&profession=farmaceutico";
 export const ORGANIZATION_REGISTER = "/register/organization";
 export const ANGEL_REGISTER = "/register/angel";
 

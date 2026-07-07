@@ -59,6 +59,7 @@ export type PlatformPortalId =
   | "PSYCHOLOGIST"
   | "NUTRITIONIST"
   | "NURSE"
+  | "PHARMACIST"
   | "PSYCHOANALYST"
   | "INTEGRATIVE_THERAPIST"
   | "ORGANIZATION"
@@ -113,6 +114,7 @@ export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/patient/integrative-care", labelKey: "nav.integrativeCare", roles: ["PATIENT"], iconKey: "Leaf" },
       { href: "/patient/nutrition", labelKey: "nav.nutrition", roles: ["PATIENT"], iconKey: "BarChart3" },
       { href: "/patient/nursing", labelKey: "nav.nursing", roles: ["PATIENT"], iconKey: "Heart" },
+      { href: "/patient/pharmacy", labelKey: "nav.pharmacy", roles: ["PATIENT"], iconKey: "Pill" },
     ],
   },
   {
@@ -315,6 +317,50 @@ export const NURSE_NAV_GROUPS: PlatformNavGroup[] = [
 
 export const NURSE_NAV: PlatformNavEntry[] = flattenNavGroups(NURSE_NAV_GROUPS);
 
+/** Pharmacist portal — telepharmacy (CFF 727). */
+export const PHARMACIST_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "nav.group.attendNow",
+    items: [
+      { href: "/farmaceutico", labelKey: "nav.dashboard", roles: ["PROFESSIONAL"], iconKey: "LayoutDashboard" },
+      { href: "/farmaceutico/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+      { href: "/farmaceutico/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+    ],
+  },
+  {
+    labelKey: "nav.group.patients",
+    items: [
+      { href: "/farmaceutico/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/farmaceutico/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
+      { href: "/farmaceutico/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
+    ],
+  },
+  {
+    labelKey: "nav.group.clinical",
+    items: [
+      { href: "/farmaceutico/revisao", labelKey: "pharma.mod.medReview.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
+      { href: "/farmaceutico/conciliacao", labelKey: "pharma.mod.reconciliation.title", roles: ["PROFESSIONAL"], iconKey: "FileSpreadsheet" },
+      { href: "/farmaceutico/monitoramento", labelKey: "pharma.mod.monitoring.title", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+      { href: "/farmaceutico/prescricao", labelKey: "pharma.mod.pharmaRx.title", roles: ["PROFESSIONAL"], iconKey: "Pill" },
+      { href: "/farmaceutico/educacao", labelKey: "pharma.mod.education.title", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
+      { href: "/farmaceutico/dispensacao", labelKey: "pharma.mod.dispensing.title", roles: ["PROFESSIONAL"], iconKey: "Shield" },
+      { href: "/farmaceutico/interacoes", labelKey: "pharma.mod.interactions.title", roles: ["PROFESSIONAL"], iconKey: "FlaskConical" },
+      { href: "/farmaceutico/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.accountMore",
+    items: [
+      { href: "/farmaceutico/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
+      { href: "/farmaceutico/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
+      { href: "/farmaceutico/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
+      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+    ],
+  },
+];
+
+export const PHARMACIST_NAV: PlatformNavEntry[] = flattenNavGroups(PHARMACIST_NAV_GROUPS);
+
 /** Psychoanalyst portal sidebar groups. */
 export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
   {
@@ -375,6 +421,7 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.clinical",
     items: [
       { href: "/integrative-therapist/prescriptions", labelKey: "nav.prescriptions", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Stethoscope" },
+      { href: "/integrative-therapist/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Leaf" },
       { href: "/integrative-therapist/chas-medicinais", labelKey: "nav.medicinalTeas", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "FlaskConical" },
       { href: "/integrative-therapist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Video" },
     ],
@@ -397,6 +444,7 @@ export const PLATFORM_NAV_GROUPS_BY_PORTAL: Partial<Record<PlatformPortalId, Pla
   PSYCHOLOGIST: PSYCHOLOGIST_NAV_GROUPS,
   NUTRITIONIST: NUTRITIONIST_NAV_GROUPS,
   NURSE: NURSE_NAV_GROUPS,
+  PHARMACIST: PHARMACIST_NAV_GROUPS,
   PSYCHOANALYST: PSYCHOANALYST_NAV_GROUPS,
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV_GROUPS,
 };
@@ -445,6 +493,7 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   PSYCHOLOGIST: PSYCHOLOGIST_NAV,
   NUTRITIONIST: NUTRITIONIST_NAV,
   NURSE: NURSE_NAV,
+  PHARMACIST: PHARMACIST_NAV,
   PSYCHOANALYST: PSYCHOANALYST_NAV,
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV,
   ORGANIZATION: ORGANIZATION_NAV,

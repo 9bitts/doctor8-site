@@ -17,6 +17,7 @@ export type HumanitarianPoolSlug =
   | "fisioterapeuta"
   | "nutricionista"
   | "enfermeiro"
+  | "farmaceutico"
   | "cuidados_paliativos";
 
 export const VENEZUELA_CAMPAIGN_SLUG = "venezuela-terremoto-2026";
@@ -106,12 +107,22 @@ export const DEFAULT_VENEZUELA_POOLS: {
     specialtyHints: ["enferm", "nurse", "nursing", "midwife", "parteira", "obstet"],
   },
   {
+    slug: "farmaceutico",
+    labelEs: "Farmacéutico(a)",
+    labelPt: "Farmacêutico(a)",
+    labelEn: "Pharmacist",
+    maxWaiting: 120,
+    sortOrder: 8,
+    volunteerRoles: ["PROFESSIONAL"],
+    specialtyHints: ["farmac", "pharm", "pharmacist"],
+  },
+  {
     slug: "cuidados_paliativos",
     labelEs: "Cuidados paliativos",
     labelPt: "Cuidados paliativos",
     labelEn: "Palliative care",
     maxWaiting: 80,
-    sortOrder: 8,
+    sortOrder: 9,
     volunteerRoles: ["PROFESSIONAL"],
     specialtyHints: ["paliativ", "palliat", "hospice", "cuidados"],
   },
