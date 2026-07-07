@@ -38,6 +38,8 @@ export interface PrescriptionPdfData {
   instructions: string;
   // Assinatura (se já assinada)
   signed?: boolean;
+  /** Optional council compliance line (CFO, CFF, etc.) */
+  councilComplianceLine?: string | null;
 }
 
 const L: Record<Lang, Record<string, string>> = {
@@ -51,6 +53,7 @@ const L: Record<Lang, Record<string, string>> = {
     generalInstructions: "General Instructions", digitalId: "Digital Prescription ID",
     digitalSignature: "Digitally signed (ICP-Brasil)",
     confidential: "CONFIDENTIAL — Protected health information.",
+    cfoCompliance: "Issued per CFO Resolution 278/2025 and applicable dental practice regulations.",
   },
   pt: {
     tagline: "Plataforma Digital de Saúde Segura",
@@ -62,6 +65,7 @@ const L: Record<Lang, Record<string, string>> = {
     generalInstructions: "Instruções gerais", digitalId: "ID da prescrição digital",
     digitalSignature: "Assinado digitalmente (ICP-Brasil)",
     confidential: "CONFIDENCIAL — Informação de saúde protegida.",
+    cfoCompliance: "Documento emitido conforme Resolucao CFO 278/2025 e normas vigentes do exercicio odontologico.",
   },
   es: {
     tagline: "Plataforma Digital de Salud Segura",
@@ -73,6 +77,7 @@ const L: Record<Lang, Record<string, string>> = {
     generalInstructions: "Instrucciones generales", digitalId: "ID de la receta digital",
     digitalSignature: "Firmado digitalmente (ICP-Brasil)",
     confidential: "CONFIDENCIAL — Información de salud protegida.",
+    cfoCompliance: "Documento emitido conforme Resolucion CFO 278/2025 y normativa odontologica vigente.",
   },
 };
 
@@ -296,9 +301,14 @@ export async function buildPrescriptionPdf(
   const conf = tr.confidential;
   const confW = font.widthOfTextAtSize(sanitize(conf), 8);
   text(page, conf, (A4.w - confW) / 2, confY, 8, font, LIGHTGRAY);
+  if (data.councilComplianceLine) {
+    const cfo = sanitize(data.councilComplianceLine);
+    const cfoW = font.widthOfTextAtSize(cfo, 7);
+    text(page, cfo, (A4.w - cfoW) / 2, confY - 11, 7, font, LIGHTGRAY);
+  }
   const idLine = `ID: ${data.prescriptionId} · Doctor8 · doctor8.org`;
   const idW = font.widthOfTextAtSize(sanitize(idLine), 7);
-  text(page, idLine, (A4.w - idW) / 2, confY - 11, 7, font, LIGHTGRAY);
+  text(page, idLine, (A4.w - idW) / 2, confY - (data.councilComplianceLine ? 22 : 11), 7, font, LIGHTGRAY);
 
   return await pdf.save();
 }

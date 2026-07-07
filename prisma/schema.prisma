@@ -227,6 +227,11 @@ enum TissGuideStatus {
   CANCELLED
 }
 
+enum TissGuideType {
+  CONSULTA
+  ODONTO
+}
+
 enum TissBatchStatus {
   OPEN
   SENT
@@ -1954,6 +1959,7 @@ model TissGuide {
   appointmentId   String?
   professionalId  String
   guideNumber     String?
+  guideType       TissGuideType   @default(CONSULTA)
   procedureCode   String          @default("10101012")
   procedureName   String          @default("Consulta em consultorio")
   amountCents     Int

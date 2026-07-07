@@ -1,7 +1,10 @@
-// Minimal TISS 4.01 XML export for consulta guides (batch)
+// Minimal TISS 4.01 XML export for consulta and odonto guides (batch)
+
+export type TissGuideType = "CONSULTA" | "ODONTO";
 
 export type TissGuideExport = {
   guideNumber: string;
+  guideType: TissGuideType;
   procedureCode: string;
   procedureName: string;
   amountCents: number;
@@ -10,7 +13,7 @@ export type TissGuideExport = {
   cardNumber?: string | null;
   serviceDate: Date;
   professionalName: string;
-  professionalCrm?: string | null;
+  professionalCouncilNumber?: string | null;
 };
 
 export type TissBatchExportContext = {
@@ -42,18 +45,16 @@ function fmtMoney(cents: number): string {
   return (cents / 100).toFixed(2);
 }
 
-export function buildTissBatchXml(ctx: TissBatchExportContext): string {
-  const guidesXml = ctx.guides
-    .map(
-      (g, i) => `
-    <guiaConsulta numeroGuiaPrestador="${esc(g.guideNumber || `G${i + 1}`)}">
+function buildConsultaGuideXml(g: TissGuideExport, index: number): string {
+  return `
+    <guiaConsulta numeroGuiaPrestador="${esc(g.guideNumber || `G${index + 1}`)}">
       <dadosBeneficiario>
         <numeroCarteira>${esc(g.cardNumber || "")}</numeroCarteira>
         <nomeBeneficiario>${esc(g.patientName)}</nomeBeneficiario>
       </dadosBeneficiario>
       <dadosContratadoExecutante>
         <nomeContratado>${esc(g.professionalName)}</nomeContratado>
-        <numeroConselhoProfissional>${esc(g.professionalCrm || "")}</numeroConselhoProfissional>
+        <numeroConselhoProfissional>${esc(g.professionalCouncilNumber || "")}</numeroConselhoProfissional>
       </dadosContratadoExecutante>
       <dadosAtendimento>
         <dataAtendimento>${fmtDate(g.serviceDate)}</dataAtendimento>
@@ -63,7 +64,35 @@ export function buildTissBatchXml(ctx: TissBatchExportContext): string {
           <valorProcedimento>${fmtMoney(g.amountCents)}</valorProcedimento>
         </procedimento>
       </dadosAtendimento>
-    </guiaConsulta>`,
+    </guiaConsulta>`;
+}
+
+function buildOdontoGuideXml(g: TissGuideExport, index: number): string {
+  return `
+    <guiaTratamentoOdontologico numeroGuiaPrestador="${esc(g.guideNumber || `G${index + 1}`)}">
+      <dadosBeneficiario>
+        <numeroCarteira>${esc(g.cardNumber || "")}</numeroCarteira>
+        <nomeBeneficiario>${esc(g.patientName)}</nomeBeneficiario>
+      </dadosBeneficiario>
+      <dadosContratadoExecutante>
+        <nomeContratado>${esc(g.professionalName)}</nomeContratado>
+        <numeroConselhoProfissional>${esc(g.professionalCouncilNumber || "")}</numeroConselhoProfissional>
+      </dadosContratadoExecutante>
+      <dataAtendimento>${fmtDate(g.serviceDate)}</dataAtendimento>
+      <procedimentosExecutados>
+        <procedimentoExecutado>
+          <codigoProcedimento>${esc(g.procedureCode)}</codigoProcedimento>
+          <descricaoProcedimento>${esc(g.procedureName)}</descricaoProcedimento>
+          <valorProcedimento>${fmtMoney(g.amountCents)}</valorProcedimento>
+        </procedimentoExecutado>
+      </procedimentosExecutados>
+    </guiaTratamentoOdontologico>`;
+}
+
+export function buildTissBatchXml(ctx: TissBatchExportContext): string {
+  const guidesXml = ctx.guides
+    .map((g, i) =>
+      g.guideType === "ODONTO" ? buildOdontoGuideXml(g, i) : buildConsultaGuideXml(g, i),
     )
     .join("\n");
 

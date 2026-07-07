@@ -14,6 +14,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { getSignatureSession, getSignedLocation, downloadSignedPdf } from "@/lib/lacuna";
+import { professionalPortalBaseFromSpecialty } from "@/lib/psychologist-portal";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 // pdf-lib/Buffer/S3 exigem runtime Node; o download + upload pode demorar.
@@ -42,8 +43,14 @@ function publicBase(req: NextRequest): string {
   ).replace(/\/+$/, "");
 }
 
-function redirectTo(req: NextRequest, status: string, opts?: { flow?: string; kind?: string; id?: string }) {
-  const url = new URL(`${publicBase(req)}/professional/prescriptions`);
+function redirectTo(
+  req: NextRequest,
+  status: string,
+  specialty: string,
+  opts?: { flow?: string; kind?: string; id?: string },
+) {
+  const base = professionalPortalBaseFromSpecialty(specialty);
+  const url = new URL(`${publicBase(req)}${base}/prescriptions`);
   url.searchParams.set("sign", status);
   if (opts?.flow === "deliver" && status === "success" && opts.kind && opts.id) {
     url.searchParams.set("flow", "deliver");
@@ -77,9 +84,10 @@ export async function GET(req: NextRequest) {
 
   if (!prescription?.professional || prescription.professional.userId !== session.user.id) {
     console.error("[CALLBACK] receita nao encontrada ou sem permissao");
-    return redirectTo(req, "error");
+    return redirectTo(req, "error", "General Practice");
   }
   prescriptionId = prescription.id;
+  const proSpecialty = prescription.professional.specialty;
 
   // Sem signatureSessionId: tratamos como cancelamento defensivo.
   if (!signatureSessionId) {
@@ -87,7 +95,7 @@ export async function GET(req: NextRequest) {
       where: { id: prescriptionId },
       data: { signatureStatus: "CANCELLED" },
     });
-    return redirectTo(req, "cancelled");
+    return redirectTo(req, "cancelled", proSpecialty);
   }
 
   // Consulta a sessão na Lacuna
@@ -100,7 +108,7 @@ export async function GET(req: NextRequest) {
       where: { id: prescriptionId },
       data: { signatureStatus: "ERROR" },
     });
-    return redirectTo(req, "error");
+    return redirectTo(req, "error", proSpecialty);
   }
 
   const status = (lacunaSession.status || "").toLowerCase();
@@ -112,7 +120,7 @@ export async function GET(req: NextRequest) {
       where: { id: prescriptionId },
       data: { signatureStatus: "CANCELLED" },
     });
-    return redirectTo(req, "cancelled");
+    return redirectTo(req, "cancelled", proSpecialty);
   }
 
   // Ainda processando (background) — o PDF pode não estar pronto ainda.
@@ -121,7 +129,7 @@ export async function GET(req: NextRequest) {
       where: { id: prescriptionId },
       data: { signatureStatus: "PENDING" },
     });
-    return redirectTo(req, "processing");
+    return redirectTo(req, "processing", proSpecialty);
   }
 
   // Qualquer status que não seja "completed" a esta altura = inesperado
@@ -131,7 +139,7 @@ export async function GET(req: NextRequest) {
       where: { id: prescriptionId },
       data: { signatureStatus: "ERROR" },
     });
-    return redirectTo(req, "error");
+    return redirectTo(req, "error", proSpecialty);
   }
 
   // Concluída — baixa o PDF assinado
@@ -142,7 +150,7 @@ export async function GET(req: NextRequest) {
       where: { id: prescriptionId },
       data: { signatureStatus: "ERROR" },
     });
-    return redirectTo(req, "error");
+    return redirectTo(req, "error", proSpecialty);
   }
 
   let signedBytes: Buffer;
@@ -155,7 +163,7 @@ export async function GET(req: NextRequest) {
       where: { id: prescriptionId },
       data: { signatureStatus: "ERROR" },
     });
-    return redirectTo(req, "error");
+    return redirectTo(req, "error", proSpecialty);
   }
 
   // Salva no S3
@@ -174,7 +182,7 @@ export async function GET(req: NextRequest) {
       where: { id: prescriptionId },
       data: { signatureStatus: "ERROR" },
     });
-    return redirectTo(req, "error");
+    return redirectTo(req, "error", proSpecialty);
   }
 
   // Atualiza a prescrição
@@ -194,7 +202,7 @@ export async function GET(req: NextRequest) {
 
   console.log("[CALLBACK] assinatura concluida com sucesso");
   const deliverAfter = req.nextUrl.searchParams.get("deliverAfter") === "1";
-  return redirectTo(req, "success", deliverAfter
+  return redirectTo(req, "success", proSpecialty, deliverAfter
     ? { flow: "deliver", kind: "prescription", id: prescriptionId }
     : undefined);
 }

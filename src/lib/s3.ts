@@ -36,6 +36,8 @@ export const ALLOWED_MIME = [
   "video/mp4",
   "video/quicktime",
   "video/webm",
+  "application/dicom",
+  "application/octet-stream",
 ];
 
 // Max upload size: 50 MB (videos can be large; we cap to control storage cost).

@@ -16,9 +16,11 @@ import {
   sendAppointmentReminderWhatsApp,
 } from "@/lib/whatsapp";
 import {
-  buildAppointmentReminderWaMeMessage,
-  resolveWhatsAppLang,
-} from "@/lib/whatsapp-i18n";
+  buildAppointmentReminderWaMeMessageForAppointment,
+  buildAppointmentReminderSmsBody,
+} from "@/lib/appointment-reminder-copy";
+import { sendAppointmentReminderSms } from "@/lib/sms";
+import { resolveWhatsAppLang } from "@/lib/whatsapp-i18n";
 import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
 import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 import { z } from "zod";
@@ -26,7 +28,7 @@ import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
 
 const schema = z.object({
   appointmentId: z.string(),
-  type: z.enum(["24h_email", "24h_whatsapp", "3h_email", "3h_whatsapp", "bell", "review_request"]),
+  type: z.enum(["24h_email", "24h_whatsapp", "24h_sms", "3h_email", "3h_whatsapp", "3h_sms", "bell", "review_request"]),
   remindersEpoch: z.number().int().nonnegative().optional(),
 });
 
@@ -238,6 +240,7 @@ export async function POST(req: NextRequest) {
   const joinUrl = appointment.type === "TELECONSULT"
     ? teleconsultJoinUrl(appointmentId, appointment.meetingUrl)
     : appointment.meetingUrl ?? undefined;
+  const providerSpecialty = appointment.professional?.specialty ?? null;
 
   // ── 24h EMAIL ──────────────────────────────────────────────────────────────
   if (type === "24h_email") {
@@ -303,13 +306,16 @@ export async function POST(req: NextRequest) {
 
       if (!apiSent) {
         const phone = rawPhone.replace(/\D/g, "");
-        const message = buildAppointmentReminderWaMeMessage({
+        const message = buildAppointmentReminderWaMeMessageForAppointment({
           patientName,
           doctorName,
           scheduledAt,
           meetingUrl: joinUrl,
           lang: waLang,
           patientTimezone,
+          specialty: providerSpecialty,
+          appointmentType: appointment.type,
+          hoursUntil: 24,
         });
         const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
         const reminderCopy = storedNotificationText(
@@ -342,13 +348,16 @@ export async function POST(req: NextRequest) {
       let whatsappUrl: string | undefined;
       if (rawPhone) {
         const phone = rawPhone.replace(/\D/g, "");
-        const message = buildAppointmentReminderWaMeMessage({
+        const message = buildAppointmentReminderWaMeMessageForAppointment({
           patientName,
           doctorName,
           scheduledAt,
           meetingUrl: joinUrl,
           lang: waLang,
           patientTimezone,
+          specialty: providerSpecialty,
+          appointmentType: appointment.type,
+          hoursUntil: 3,
         });
         whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
       }
@@ -376,13 +385,16 @@ export async function POST(req: NextRequest) {
     const rawPhone = appointment.patient.phone ? safeDecrypt(appointment.patient.phone) : null;
     if (rawPhone) {
       const phone = rawPhone.replace(/\D/g, "");
-      const message = buildAppointmentReminderWaMeMessage({
+      const message = buildAppointmentReminderWaMeMessageForAppointment({
         patientName,
         doctorName,
         scheduledAt,
         meetingUrl: joinUrl,
         lang: waLang,
         patientTimezone,
+        specialty: providerSpecialty,
+        appointmentType: appointment.type,
+        hoursUntil: 3,
       });
       const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
 
@@ -430,6 +442,32 @@ export async function POST(req: NextRequest) {
         console.log(`[REMINDER] 3h WhatsApp fallback notification (user ${patientUser.id})`);
       }
       await markSent({ reminder1hSent: true });
+    }
+  }
+
+  // ── 24h / 3h SMS ───────────────────────────────────────────────────────────
+  if (type === "24h_sms" || type === "3h_sms") {
+    const rawPhone = appointment.patient.phone ? safeDecrypt(appointment.patient.phone) : null;
+    if (rawPhone) {
+      const hours = type === "24h_sms" ? 24 : 3;
+      const body = buildAppointmentReminderSmsBody({
+        patientName,
+        doctorName,
+        scheduledAt,
+        lang: waLang,
+        patientTimezone,
+        specialty: providerSpecialty,
+        appointmentType: appointment.type,
+        hoursUntil: hours,
+      });
+      const result = await sendAppointmentReminderSms({ toPhone: rawPhone, body });
+      if (result.ok) {
+        console.log(`[REMINDER] ${type} SMS sent (user ${patientUser.id})`);
+        if (type === "24h_sms") await markSent({ reminder24hSent: true });
+        else await markSent({ reminder1hSent: true });
+      } else if (!result.skipped) {
+        console.error(`[REMINDER] ${type} SMS failed:`, result.error);
+      }
     }
   }
 

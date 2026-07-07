@@ -46,6 +46,9 @@ export async function GET(req: NextRequest) {
         orgHealthPlanId: g.orgHealthPlanId,
         operatorName: g.orgHealthPlan.operatorName,
         guideNumber: g.guideNumber,
+        guideType: g.guideType,
+        procedureCode: g.procedureCode,
+        procedureName: g.procedureName,
         amountCents: g.amountCents,
         patientName: g.patientName,
         cardNumber: g.cardNumber,
@@ -68,6 +71,9 @@ const createSchema = z.object({
   amountCents: z.number().int().positive(),
   serviceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   appointmentId: z.string().optional(),
+  guideType: z.enum(["CONSULTA", "ODONTO"]).optional(),
+  procedureCode: z.string().optional(),
+  procedureName: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -90,6 +96,12 @@ export async function POST(req: NextRequest) {
   const count = await db.tissGuide.count({ where: { organizationId: ctx.organizationId } });
   const guideNumber = `G${String(count + 1).padStart(6, "0")}`;
 
+  const guideType = parsed.data.guideType ?? "CONSULTA";
+  const defaultProc =
+    guideType === "ODONTO"
+      ? { code: "81000030", name: "Consulta odontologica" }
+      : { code: "10101012", name: "Consulta em consultorio" };
+
   const guide = await db.tissGuide.create({
     data: {
       organizationId: ctx.organizationId,
@@ -102,6 +114,9 @@ export async function POST(req: NextRequest) {
       serviceDate: dateOnlyRangeInTz(parsed.data.serviceDate, ORG_REPORT_TZ).start,
       appointmentId: parsed.data.appointmentId,
       guideNumber,
+      guideType,
+      procedureCode: parsed.data.procedureCode ?? defaultProc.code,
+      procedureName: parsed.data.procedureName ?? defaultProc.name,
     },
   });
 

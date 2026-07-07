@@ -9,6 +9,8 @@ function fmt(c: number, locale: string) {
   return new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" }).format(c / 100);
 }
 
+import { DENTAL_PROCEDURES } from "@/lib/dentistry/procedures";
+
 type Tab = "convenios" | "guias" | "lotes";
 
 export default function OrganizationConveniosPage() {
@@ -17,12 +19,21 @@ export default function OrganizationConveniosPage() {
   const [tab, setTab] = useState<Tab>("convenios");
   const [loading, setLoading] = useState(true);
   const [plans, setPlans] = useState<{ id: string; operatorName: string; ansRegistry: string | null; active: boolean }[]>([]);
-  const [guides, setGuides] = useState<{ id: string; guideNumber: string | null; patientName: string; amountCents: number; status: string; operatorName: string; batchId: string | null }[]>([]);
+  const [guides, setGuides] = useState<{ id: string; guideNumber: string | null; guideType?: string; procedureName?: string; patientName: string; amountCents: number; status: string; operatorName: string; batchId: string | null }[]>([]);
   const [batches, setBatches] = useState<{ id: string; batchNumber: string; operatorName: string; totalAmountCents: number; status: string; guideCount: number }[]>([]);
   const [professionals, setProfessionals] = useState<{ professionalId: string; name: string }[]>([]);
 
   const [newPlan, setNewPlan] = useState({ operatorName: "", ansRegistry: "", contractNumber: "" });
-  const [newGuide, setNewGuide] = useState({ orgHealthPlanId: "", professionalId: "", patientName: "", cardNumber: "", amount: "", serviceDate: "" });
+  const [newGuide, setNewGuide] = useState({
+    orgHealthPlanId: "",
+    professionalId: "",
+    patientName: "",
+    cardNumber: "",
+    amount: "",
+    serviceDate: "",
+    guideType: "CONSULTA" as "CONSULTA" | "ODONTO",
+    procedureCode: "10101012",
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,6 +67,7 @@ export default function OrganizationConveniosPage() {
   async function addGuide(e: React.FormEvent) {
     e.preventDefault();
     const amountCents = Math.round(parseFloat(newGuide.amount.replace(",", ".")) * 100);
+    const proc = DENTAL_PROCEDURES.find((p) => p.code === newGuide.procedureCode);
     await fetch("/api/organization/tiss/guides", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -66,9 +78,21 @@ export default function OrganizationConveniosPage() {
         cardNumber: newGuide.cardNumber || undefined,
         amountCents,
         serviceDate: newGuide.serviceDate,
+        guideType: newGuide.guideType,
+        procedureCode: newGuide.procedureCode,
+        procedureName: proc ? t(proc.nameKey) : undefined,
       }),
     });
-    setNewGuide({ orgHealthPlanId: "", professionalId: "", patientName: "", cardNumber: "", amount: "", serviceDate: "" });
+    setNewGuide({
+      orgHealthPlanId: "",
+      professionalId: "",
+      patientName: "",
+      cardNumber: "",
+      amount: "",
+      serviceDate: "",
+      guideType: "CONSULTA",
+      procedureCode: "10101012",
+    });
     await load();
   }
 
@@ -163,6 +187,30 @@ export default function OrganizationConveniosPage() {
                 <option value="">{t("org.convenios.selectProfessional")}</option>
                 {professionals.map((p) => <option key={p.professionalId} value={p.professionalId}>{p.name}</option>)}
               </select>
+              <select
+                value={newGuide.guideType}
+                onChange={(e) => {
+                  const guideType = e.target.value as "CONSULTA" | "ODONTO";
+                  setNewGuide({
+                    ...newGuide,
+                    guideType,
+                    procedureCode: guideType === "ODONTO" ? "81000030" : "10101012",
+                  });
+                }}
+                className="border rounded-xl px-3 py-2 text-sm"
+              >
+                <option value="CONSULTA">{t("dental.tiss.guideConsulta")}</option>
+                <option value="ODONTO">{t("dental.tiss.guideOdonto")}</option>
+              </select>
+              <select
+                value={newGuide.procedureCode}
+                onChange={(e) => setNewGuide({ ...newGuide, procedureCode: e.target.value })}
+                className="border rounded-xl px-3 py-2 text-sm sm:col-span-2"
+              >
+                {(newGuide.guideType === "ODONTO" ? DENTAL_PROCEDURES : [{ code: "10101012", nameKey: "dental.tiss.procConsulta", defaultPriceCents: 0, category: "preventive" as const }]).map((p) => (
+                  <option key={p.code} value={p.code}>{p.code} — {t(p.nameKey)}</option>
+                ))}
+              </select>
               <input required placeholder={t("org.convenios.patientNamePlaceholder")} value={newGuide.patientName} onChange={(e) => setNewGuide({ ...newGuide, patientName: e.target.value })}
                 className="border rounded-xl px-3 py-2 text-sm" />
               <input placeholder={t("org.convenios.cardPlaceholder")} value={newGuide.cardNumber} onChange={(e) => setNewGuide({ ...newGuide, cardNumber: e.target.value })}
@@ -177,7 +225,7 @@ export default function OrganizationConveniosPage() {
           <div className="bg-white rounded-2xl border divide-y">
             {guides.map((g) => (
               <div key={g.id} className="px-5 py-3 flex justify-between text-sm">
-                <span>{g.guideNumber} - {g.patientName} ({g.operatorName})</span>
+                <span>{g.guideNumber} - {g.patientName} ({g.operatorName}) {g.guideType === "ODONTO" ? "· Odonto" : ""}</span>
                 <span className="font-medium">{fmt(g.amountCents, locale)} · {g.status}</span>
               </div>
             ))}

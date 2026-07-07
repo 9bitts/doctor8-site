@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (!ALLOWED_MIME.includes(file.type)) {
+  if (!ALLOWED_MIME.includes(file.type) && !file.name.toLowerCase().endsWith(".dcm")) {
     return NextResponse.json(
-      { error: "File type not allowed. Use PDF, image, or video." },
+      { error: "File type not allowed. Use PDF, image, video, or DICOM." },
       { status: 400 }
     );
   }
@@ -65,7 +65,10 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(arrayBuffer);
 
   const key = buildKey(folder, file.name);
-  await uploadToS3({ key, body: buffer, contentType: file.type });
+  const contentType = file.name.toLowerCase().endsWith(".dcm")
+    ? "application/dicom"
+    : file.type;
+  await uploadToS3({ key, body: buffer, contentType });
 
   return NextResponse.json({
     key,

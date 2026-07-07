@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { buildTissBatchXml } from "@/lib/tiss-export";
+import { formatLicense, getProfessionInfo } from "@/lib/profession-label";
 
 export async function GET(
   _req: NextRequest,
@@ -23,7 +24,7 @@ export async function GET(
   const profIds = [...new Set(batch.guides.map((g) => g.professionalId))];
   const professionals = await db.professionalProfile.findMany({
     where: { id: { in: profIds } },
-    select: { id: true, firstName: true, lastName: true, licenseNumber: true },
+    select: { id: true, firstName: true, lastName: true, licenseNumber: true, licenseState: true, specialty: true },
   });
   const profMap = new Map(professionals.map((p) => [p.id, p]));
 
@@ -39,8 +40,10 @@ export async function GET(
     tissVersion: batch.orgHealthPlan.tissVersion,
     guides: batch.guides.map((g) => {
       const prof = profMap.get(g.professionalId);
+      const council = prof ? getProfessionInfo(prof.specialty).councilKey : "crm";
       return {
         guideNumber: g.guideNumber || g.id,
+        guideType: g.guideType,
         procedureCode: g.procedureCode,
         procedureName: g.procedureName,
         amountCents: g.amountCents,
@@ -49,7 +52,9 @@ export async function GET(
         cardNumber: g.cardNumber,
         serviceDate: g.serviceDate,
         professionalName: prof ? `${prof.firstName} ${prof.lastName}` : "Profissional",
-        professionalCrm: prof?.licenseNumber,
+        professionalCouncilNumber: prof?.licenseNumber
+          ? formatLicense(prof.licenseNumber, prof.licenseState, council)
+          : null,
       };
     }),
   });

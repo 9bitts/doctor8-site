@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Plus, Upload } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import DicomViewer from "./DicomViewer";
 import type { DentistChart } from "./DentistChartWorkspace";
+
+function isDicomKey(key: string): boolean {
+  return key.toLowerCase().endsWith(".dcm");
+}
 
 type Photo = {
   id: string;
@@ -84,9 +89,12 @@ export default function ClinicalPhotosModule({ chart }: { chart: DentistChart })
   }
 
   function renderPhotoCard(photo: Photo) {
+    const dicom = isDicomKey(photo.storageKey);
     return (
       <div key={photo.id} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-        {photo.imageUrl ? (
+        {dicom && photo.imageUrl ? (
+          <DicomViewer url={photo.imageUrl} />
+        ) : photo.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={photo.imageUrl}
@@ -156,7 +164,7 @@ export default function ClinicalPhotosModule({ chart }: { chart: DentistChart })
         <input
           ref={fileRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic"
+          accept="image/jpeg,image/png,image/webp,image/heic,.dcm,application/dicom"
           onChange={onFileChange}
           className="hidden"
         />

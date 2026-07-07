@@ -120,6 +120,73 @@ export async function sendOtpSms(opts: {
   return { ok: true };
 }
 
+export async function sendAppointmentReminderSms(opts: {
+  toPhone: string;
+  body: string;
+}): Promise<{ ok: boolean; error?: SmsErrorCode; skipped?: boolean; detail?: string }> {
+  if (!isSmsConfigured()) {
+    return { ok: false, skipped: true, error: "SMS_UNAVAILABLE" };
+  }
+
+  if (isAwsSnsConfigured()) {
+    const to = normalizeSmsPhone(opts.toPhone);
+    if (!to) return { ok: false, error: "INVALID_PHONE" };
+    const { PublishCommand, SNSClient } = await import("@aws-sdk/client-sns");
+    const client = new SNSClient({
+      region: process.env.AWS_REGION || "eu-north-1",
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
+    try {
+      await client.send(new PublishCommand({
+        PhoneNumber: `+${to}`,
+        Message: opts.body,
+      }));
+      return { ok: true };
+    } catch (e) {
+      console.error("[SNS SMS] Reminder failed:", e);
+      return { ok: false, error: "SEND_FAILED" };
+    }
+  }
+
+  const auth = twilioAuthHeader();
+  const from = process.env.TWILIO_SMS_FROM?.trim();
+  const sid = process.env.TWILIO_ACCOUNT_SID?.trim();
+  if (!auth || !sid || !from) {
+    return { ok: false, skipped: true, error: "SMS_UNAVAILABLE" };
+  }
+
+  const to = normalizeSmsPhone(opts.toPhone);
+  if (!to) return { ok: false, error: "INVALID_PHONE" };
+
+  const params = new URLSearchParams({
+    To: `+${to}`,
+    From: from.startsWith("+") ? from : `+${from}`,
+    Body: opts.body,
+  });
+
+  const res = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: auth,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    },
+  );
+
+  const data = (await res.json().catch(() => ({}))) as { message?: string };
+  if (!res.ok) {
+    console.error("[TWILIO SMS] Reminder failed:", data.message || `HTTP ${res.status}`);
+    return { ok: false, error: "SEND_FAILED", detail: data.message };
+  }
+  return { ok: true };
+}
+
 export async function startTwilioVerification(
   toPhone: string,
 ): Promise<{ ok: boolean; error?: SmsErrorCode; skipped?: boolean; detail?: string }> {

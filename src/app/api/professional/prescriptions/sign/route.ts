@@ -19,6 +19,7 @@ import { audit } from "@/lib/audit";
 import { createSignatureSession } from "@/lib/lacuna";
 import { parseLacunaError } from "@/lib/lacuna-errors";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
+import { formatLicense, getProfessionInfo, isDentistSpecialty } from "@/lib/profession-label";
 import { getPublicBase, buildSignReturnUrl, assertPublicSignBase, resolveRequestLang } from "@/lib/sign-helpers";
 
 // Garante runtime Node (pdf-lib e Buffer não rodam em edge) e tempo extra.
@@ -172,7 +173,12 @@ export async function POST(req: NextRequest) {
     pdfBytes = await buildPrescriptionPdf({
       lang,
       proFirstName: pro.firstName, proLastName: pro.lastName,
-      proSpecialty: pro.specialty, proLicense: pro.licenseNumber,
+      proSpecialty: pro.specialty,
+      proLicense: formatLicense(
+        pro.licenseNumber,
+        pro.licenseState,
+        getProfessionInfo(pro.specialty).councilKey,
+      ),
       clinicAddressFull,
       patientName,
       patientAge: computeAge(patientDob),
@@ -183,6 +189,13 @@ export async function POST(req: NextRequest) {
       medications: meds,
       instructions: prescription.instructions ? safeDecrypt(prescription.instructions) : "",
       signed: false,
+      councilComplianceLine: isDentistSpecialty(pro.specialty)
+        ? (lang === "en"
+          ? "Issued per CFO Resolution 278/2025 and applicable dental practice regulations."
+          : lang === "es"
+            ? "Documento emitido conforme Resolucion CFO 278/2025 y normativa odontologica vigente."
+            : "Documento emitido conforme Resolucao CFO 278/2025 e normas vigentes do exercicio odontologico.")
+        : null,
     });
   } catch (e) {
     console.error("[SIGN] erro ao gerar PDF:", e);
