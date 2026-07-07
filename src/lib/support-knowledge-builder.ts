@@ -16,6 +16,7 @@ const PORTAL_LABELS: Record<PlatformPortalId, string> = {
   NUTRITIONIST: "Nutritionist portal (/nutricionista)",
   NURSE: "Nurse portal (/enfermeiro)",
   PHARMACIST: "Pharmacist portal (/farmaceutico)",
+  DENTIST: "Dentist portal (/odontologo)",
   PSYCHOANALYST: "Psychoanalyst portal (/psychoanalyst)",
   INTEGRATIVE_THERAPIST: "Integrative therapist portal (/integrative-therapist)",
   ORGANIZATION: "Clinic / organization portal (/organization)",
