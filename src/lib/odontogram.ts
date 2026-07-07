@@ -33,6 +33,20 @@ export const ODONTOGRAM_ARCHES: { labelKey: string; teeth: number[] }[] = [
   },
 ];
 
+/** Deciduous dentition (FDI) — upper and lower arches. */
+export const DECIDUOUS_ODONTOGRAM_ARCHES: { labelKey: string; teeth: number[] }[] = [
+  {
+    labelKey: "odonto.arch.upperDeciduous",
+    teeth: [55, 54, 53, 52, 51, 61, 62, 63, 64, 65],
+  },
+  {
+    labelKey: "odonto.arch.lowerDeciduous",
+    teeth: [85, 84, 83, 82, 81, 71, 72, 73, 74, 75],
+  },
+];
+
+export type DentitionType = "PERMANENT" | "DECIDUOUS" | "MIXED";
+
 export const ODONTOGRAM_CONDITIONS: OdontogramCondition[] = [
   "HEALTHY",
   "CARIES",

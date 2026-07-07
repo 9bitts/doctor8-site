@@ -119,6 +119,7 @@ const PSYCHOLOGIST_ROUTES = ["/psychologist"];
 const NUTRITIONIST_ROUTES = ["/nutricionista"];
 const NURSE_ROUTES = ["/enfermeiro"];
 const PHARMACIST_ROUTES = ["/farmaceutico"];
+const DENTIST_ROUTES = ["/odontologo"];
 const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
 const INTEGRATIVE_THERAPIST_ROUTES = ["/integrative-therapist"];
 const ORGANIZATION_ROUTES = ["/organization"];
@@ -134,6 +135,7 @@ const AUTHENTICATED_DASHBOARD_PREFIXES = [
   ...NUTRITIONIST_ROUTES,
   ...NURSE_ROUTES,
   ...PHARMACIST_ROUTES,
+  ...DENTIST_ROUTES,
   ...PSYCHOANALYST_ROUTES,
   ...INTEGRATIVE_THERAPIST_ROUTES,
   ...ORGANIZATION_ROUTES,

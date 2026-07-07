@@ -277,6 +277,49 @@ enum OdontogramCondition {
   TO_EXTRACT
 }
 
+enum DentitionType {
+  PERMANENT
+  DECIDUOUS
+  MIXED
+}
+
+enum DentalAnamnesisStatus {
+  PENDING
+  COMPLETED
+}
+
+enum DentalTreatmentPlanStatus {
+  DRAFT
+  PRESENTED
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum DentalProstheticStatus {
+  ORDERED
+  IN_LAB
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum OrthodonticStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum DentalPhotoCategory {
+  INTRAORAL
+  EXTRAORAL
+  RADIOGRAPH
+  BEFORE
+  AFTER
+  OTHER
+}
+
 enum ClinicalRecordKind {
   ANAMNESIS
   EVOLUTION
@@ -704,6 +747,13 @@ model ProfessionalProfile {
   pharmacyEducationSessions PharmacyEducationSession[]
   pharmacyDispensingRecords PharmacyDispensingRecord[]
   pharmacyInteractionChecks PharmacyInteractionCheck[]
+  dentalAnamnesis          DentalAnamnesis[]
+  dentalTreatmentPlans     DentalTreatmentPlan[]
+  dentalProstheticOrders   DentalProstheticOrder[]
+  orthodonticRecords       OrthodonticRecord[]
+  dentalClinicalPhotos     DentalClinicalPhoto[]
+  dentalChairs             DentalChair[]
+  periodontogramsRecorded  PatientPeriodontogram[]
 
   // Rateio (livro aberto / profit-sharing)
   poolContributions       PoolContribution[]
@@ -985,6 +1035,10 @@ model Appointment {
   remindersEpoch   Int     @default(0)
 
   bookingSource    String?  // patient_panel | public_profile | public_search
+
+  // Dental clinic — optional chair assignment
+  dentalChairId    String?
+  dentalChair      DentalChair? @relation(fields: [dentalChairId], references: [id], onDelete: SetNull)
 
   cancelledAt      DateTime?
   cancelledBy      String?
@@ -1635,6 +1689,12 @@ model PatientRecord {
   pharmacyEducationSessions PharmacyEducationSession[]
   pharmacyDispensingRecords PharmacyDispensingRecord[]
   pharmacyInteractionChecks PharmacyInteractionCheck[]
+  dentalAnamnesis          DentalAnamnesis[]
+  dentalTreatmentPlans     DentalTreatmentPlan[]
+  dentalProstheticOrders   DentalProstheticOrder[]
+  orthodonticRecords       OrthodonticRecord[]
+  dentalClinicalPhotos     DentalClinicalPhoto[]
+  periodontograms          PatientPeriodontogram[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -2684,8 +2744,10 @@ model PatientOdontogram {
   patientRecordId String        @unique
   patientRecord   PatientRecord @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
 
+  dentitionType   DentitionType @default(PERMANENT)
   // JSON map: FDI tooth number -> { condition, surfaces?, notes? }
   teeth           Json          @default("{}")
+  deciduousTeeth  Json          @default("{}")
   generalNotes    String?       @db.Text
 
   recordedById    String?
@@ -2695,6 +2757,172 @@ model PatientOdontogram {
   updatedAt       DateTime      @updatedAt
 
   @@index([patientRecordId])
+}
+
+model PatientPeriodontogram {
+  id              String            @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  // JSON: tooth -> { sites: { MB, B, DB, ML, L, DL: { depth, bleeding, plaque } }, mobility, recession }
+  teeth           Json              @default("{}")
+  notes           String?           @db.Text
+  recordedAt      DateTime          @default(now())
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([patientRecordId, recordedAt])
+  @@index([professionalId])
+}
+
+model DentalAnamnesis {
+  id              String                @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord         @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile   @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  status          DentalAnamnesisStatus @default(PENDING)
+  responses       Json?
+  tcleSignedAt    DateTime?
+  completedAt     DateTime?
+
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+}
+
+model DentalTreatmentPlan {
+  id              String                    @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord             @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile       @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  title           String                    @default("Plano de tratamento")
+  status          DentalTreatmentPlanStatus @default(DRAFT)
+  totalAmountCents Int                      @default(0)
+  discountCents   Int                       @default(0)
+  notes           String?                   @db.Text
+  approvedAt      DateTime?
+  patientApproved Boolean                   @default(false)
+
+  items           DentalTreatmentPlanItem[]
+
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+  @@index([status])
+}
+
+model DentalTreatmentPlanItem {
+  id              String              @id @default(cuid())
+  planId          String
+  plan            DentalTreatmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  procedureCode   String
+  description     String
+  toothNumbers    Json                @default("[]")
+  surfaces        Json?
+  unitPriceCents  Int                 @default(0)
+  quantity        Int                 @default(1)
+  completed       Boolean             @default(false)
+  sortOrder       Int                 @default(0)
+
+  createdAt       DateTime            @default(now())
+
+  @@index([planId])
+}
+
+model DentalProstheticOrder {
+  id              String               @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord        @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile  @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  labName         String
+  description     String
+  toothNumbers    Json                 @default("[]")
+  status          DentalProstheticStatus @default(ORDERED)
+  orderedAt       DateTime             @default(now())
+  expectedAt      DateTime?
+  deliveredAt     DateTime?
+  notes           String?              @db.Text
+
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+  @@index([status])
+}
+
+model OrthodonticRecord {
+  id                String            @id @default(cuid())
+  patientRecordId   String
+  patientRecord     PatientRecord     @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId    String
+  professional      ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  applianceType     String            @default("fixed")
+  status            OrthodonticStatus @default(ACTIVE)
+  startDate         DateTime?
+  estimatedEndDate  DateTime?
+  lastMaintenanceAt DateTime?
+  nextMaintenanceAt DateTime?
+  alignerNumber     Int?
+  notes             String?           @db.Text
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([patientRecordId])
+  @@index([professionalId])
+  @@index([status])
+}
+
+model DentalClinicalPhoto {
+  id              String              @id @default(cuid())
+  patientRecordId String
+  patientRecord   PatientRecord       @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  storageKey      String
+  category        DentalPhotoCategory @default(INTRAORAL)
+  toothNumbers    Json?
+  caption         String?
+  takenAt         DateTime            @default(now())
+
+  createdAt       DateTime            @default(now())
+
+  @@index([patientRecordId, takenAt])
+  @@index([professionalId])
+}
+
+model DentalChair {
+  id              String              @id @default(cuid())
+  professionalId  String
+  professional    ProfessionalProfile   @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  name            String
+  sortOrder       Int                 @default(0)
+  active          Boolean             @default(true)
+
+  appointments    Appointment[]
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([professionalId])
 }
 
 // ────────────────────────────────────────────

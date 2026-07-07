@@ -18,6 +18,7 @@ export type HumanitarianPoolSlug =
   | "nutricionista"
   | "enfermeiro"
   | "farmaceutico"
+  | "dentista"
   | "cuidados_paliativos";
 
 export const VENEZUELA_CAMPAIGN_SLUG = "venezuela-terremoto-2026";

@@ -14,6 +14,7 @@ export const PROFESSION_SIGNUP: Record<
   nutricionista: { role: "PROFESSIONAL", specialty: "Nutritionist" },
   enfermeiro: { role: "PROFESSIONAL", specialty: "Nurse" },
   farmaceutico: { role: "PROFESSIONAL", specialty: "Pharmacist" },
+  dentista: { role: "PROFESSIONAL", specialty: "Dentist (General)" },
   cuidados_paliativos: { role: "PROFESSIONAL", specialty: "General Practice" },
 };
 
@@ -60,6 +61,9 @@ export function buildProfessionalSignupHref(
   } else if (slug === "farmaceutico") {
     params.set("portal", "pharmacist");
     params.set("profession", "farmaceutico");
+  } else if (slug === "dentista") {
+    params.set("portal", "dentist");
+    params.set("profession", "dentista");
   } else {
     params.set("role", "PROFESSIONAL");
     params.set("profession", slug);

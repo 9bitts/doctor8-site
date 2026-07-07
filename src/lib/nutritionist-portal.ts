@@ -1,4 +1,4 @@
-import { isNutritionistSpecialty, isNurseSpecialty } from "@/lib/profession-label";
+import { isNutritionistSpecialty, isNurseSpecialty, isDentistSpecialty } from "@/lib/profession-label";
 import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
 import { db } from "@/lib/db";
 
@@ -77,7 +77,7 @@ export function mapProfessionalPathForNutritionistSpecialty(
 /** Resolves health professional portal from profile specialty. */
 export async function resolveHealthProfessionalPortalBaseForUser(
   userId: string,
-): Promise<"/psychologist" | "/nutricionista" | "/enfermeiro" | "/professional"> {
+): Promise<"/psychologist" | "/nutricionista" | "/enfermeiro" | "/odontologo" | "/professional"> {
   const profile = await db.professionalProfile.findUnique({
     where: { userId },
     select: { specialty: true },
@@ -86,5 +86,6 @@ export async function resolveHealthProfessionalPortalBaseForUser(
   if (isPsychologistSpecialty(profile.specialty)) return "/psychologist";
   if (isNutritionistSpecialty(profile.specialty)) return "/nutricionista";
   if (isNurseSpecialty(profile.specialty)) return "/enfermeiro";
+  if (isDentistSpecialty(profile.specialty)) return "/odontologo";
   return "/professional";
 }

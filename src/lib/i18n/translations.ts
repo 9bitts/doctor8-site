@@ -12,6 +12,7 @@ import {
   floraisReferenceEs,
   floraisReferencePt,
 } from "./florais-reference-i18n";
+import { dentalEn, dentalEs, dentalPt } from "./dental-i18n";
 
 export type Lang = "pt" | "en" | "es";
 
@@ -3885,6 +3886,10 @@ const en = {
   "it.ref.medit.1": "Start with 5–10 minutes daily in a quiet place.",
   "it.ref.medit.2": "Focus on natural breathing; return gently when the mind wanders.",
   "it.ref.medit.3": "Avoid forcing; consistency matters more than duration.",
+  "it.ref.breathCare": "Breathwork — home practice",
+  "it.ref.breath.1": "Practice in a quiet, comfortable place with an empty stomach when possible.",
+  "it.ref.breath.2": "Start with gentle techniques; stop if you feel dizzy or uncomfortable.",
+  "it.ref.breath.3": "Consistency matters more than intensity — short daily sessions are ideal.",
   "it.ref.yogaCare": "Yoga — home practice",
   "it.ref.yoga.1": "Practice on an empty stomach or 2–3 hours after meals.",
   "it.ref.yoga.2": "Stop if you feel pain; adapt postures to your limits.",
@@ -3904,6 +3909,14 @@ const en = {
   "it.tpl.medit.frequencyHint": "e.g. daily 10 min, 3x/week",
   "it.tpl.medit.posture": "Posture tips",
   "it.tpl.medit.timeOfDay": "Best time of day",
+  "it.tpl.breath.currentState": "Current emotional/mental state",
+  "it.tpl.breath.pattern": "Observed breathing pattern",
+  "it.tpl.breath.technique": "Technique taught",
+  "it.tpl.breath.duration": "Session duration (minutes)",
+  "it.tpl.breath.frequency": "Home practice frequency",
+  "it.tpl.breath.frequencyHint": "e.g. daily 10 min, 3x/week",
+  "it.tpl.breath.contraindications": "Contraindications / cautions",
+  "it.tpl.breath.integration": "Integration notes",
   "it.tpl.yoga.limitations": "Limitations / contraindications",
   "it.tpl.yoga.goals": "Session goals",
   "it.tpl.yoga.practices": "Practices / asanas taught",
@@ -9131,6 +9144,10 @@ const pt: LocaleDict = {
   "it.ref.medit.1": "Comece com 5–10 minutos diários em local tranquilo.",
   "it.ref.medit.2": "Foque na respiração natural; retorne suavemente quando a mente dispersar.",
   "it.ref.medit.3": "Evite forçar; a regularidade importa mais que a duração.",
+  "it.ref.breathCare": "Breathwork — prática em casa",
+  "it.ref.breath.1": "Pratique em local tranquilo e confortável, de preferência com estômago vazio.",
+  "it.ref.breath.2": "Comece com técnicas suaves; interrompa se sentir tontura ou desconforto.",
+  "it.ref.breath.3": "A regularidade importa mais que a intensidade — sessões curtas diárias são ideais.",
   "it.ref.yogaCare": "Yoga — prática em casa",
   "it.ref.yoga.1": "Pratique em jejum ou 2–3 horas após refeições.",
   "it.ref.yoga.2": "Interrompa se sentir dor; adapte as posturas aos seus limites.",
@@ -9150,6 +9167,14 @@ const pt: LocaleDict = {
   "it.tpl.medit.frequencyHint": "ex.: diário 10 min, 3x/semana",
   "it.tpl.medit.posture": "Orientações de postura",
   "it.tpl.medit.timeOfDay": "Melhor horário do dia",
+  "it.tpl.breath.currentState": "Estado emocional/mental atual",
+  "it.tpl.breath.pattern": "Padrão respiratório observado",
+  "it.tpl.breath.technique": "Técnica ensinada",
+  "it.tpl.breath.duration": "Duração da sessão (minutos)",
+  "it.tpl.breath.frequency": "Frequência da prática em casa",
+  "it.tpl.breath.frequencyHint": "ex.: diário 10 min, 3x/semana",
+  "it.tpl.breath.contraindications": "Contraindicações / cuidados",
+  "it.tpl.breath.integration": "Notas de integração",
   "it.tpl.yoga.limitations": "Limitações / contraindicações",
   "it.tpl.yoga.goals": "Objetivos da sessão",
   "it.tpl.yoga.practices": "Práticas / asanas ensinadas",
@@ -14365,6 +14390,10 @@ const es: LocaleDict = {
   "it.ref.medit.1": "Comience con 5–10 minutos diarios en un lugar tranquilo.",
   "it.ref.medit.2": "Enfoque en la respiración natural; vuelva suavemente cuando la mente divague.",
   "it.ref.medit.3": "Evite forzar; la constancia importa más que la duración.",
+  "it.ref.breathCare": "Breathwork — práctica en casa",
+  "it.ref.breath.1": "Practique en un lugar tranquilo y cómodo, preferiblemente con el estómago vacío.",
+  "it.ref.breath.2": "Comience con técnicas suaves; deténgase si siente mareo o malestar.",
+  "it.ref.breath.3": "La constancia importa más que la intensidad — sesiones cortas diarias son ideales.",
   "it.ref.yogaCare": "Yoga — práctica en casa",
   "it.ref.yoga.1": "Practique en ayunas o 2–3 horas después de comer.",
   "it.ref.yoga.2": "Deténgase si siente dolor; adapte las posturas a sus límites.",
@@ -14384,6 +14413,14 @@ const es: LocaleDict = {
   "it.tpl.medit.frequencyHint": "ej.: diario 10 min, 3x/semana",
   "it.tpl.medit.posture": "Consejos de postura",
   "it.tpl.medit.timeOfDay": "Mejor hora del día",
+  "it.tpl.breath.currentState": "Estado emocional/mental actual",
+  "it.tpl.breath.pattern": "Patrón respiratorio observado",
+  "it.tpl.breath.technique": "Técnica enseñada",
+  "it.tpl.breath.duration": "Duración de la sesión (minutos)",
+  "it.tpl.breath.frequency": "Frecuencia de práctica en casa",
+  "it.tpl.breath.frequencyHint": "ej.: diario 10 min, 3x/semana",
+  "it.tpl.breath.contraindications": "Contraindicaciones / precauciones",
+  "it.tpl.breath.integration": "Notas de integración",
   "it.tpl.yoga.limitations": "Limitaciones / contraindicaciones",
   "it.tpl.yoga.goals": "Objetivos de la sesión",
   "it.tpl.yoga.practices": "Prácticas / asanas enseñadas",
@@ -15763,9 +15800,9 @@ const es: LocaleDict = {
 };
 
 export const dictionaries: Record<Lang, LocaleDict> = {
-  en: { ...en, ...naturalMedicineEn, ...floraisReferenceEn } as LocaleDict,
-  pt: { ...pt, ...naturalMedicinePt, ...floraisReferencePt },
-  es: { ...es, ...naturalMedicineEs, ...floraisReferenceEs },
+  en: { ...en, ...naturalMedicineEn, ...floraisReferenceEn, ...dentalEn } as LocaleDict,
+  pt: { ...pt, ...naturalMedicinePt, ...floraisReferencePt, ...dentalPt },
+  es: { ...es, ...naturalMedicineEs, ...floraisReferenceEs, ...dentalEs },
 };
 
 export function translate(lang: Lang, key: TranslationKey): string;

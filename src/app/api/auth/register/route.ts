@@ -81,6 +81,7 @@ const registerSchema = z.object({
     "nutricionista",
     "enfermeiro",
     "farmaceutico",
+    "dentista",
     "cuidados_paliativos",
   ] as const).optional(),
   callbackUrl: z.string().optional(),
@@ -93,7 +94,7 @@ type RegisterProfileInput = {
   lastName: string;
   email: string;
   professionalKind?: "psychologist";
-  profession?: "medico" | "psicologo" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "cuidados_paliativos";
+  profession?: "medico" | "psicologo" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "dentista" | "cuidados_paliativos";
 };
 
 async function createRegisterProfile(

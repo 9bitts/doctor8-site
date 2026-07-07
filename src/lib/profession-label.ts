@@ -14,7 +14,10 @@ const NURSING = new Set([
 
 const PHARMACY = new Set(["Pharmacist", "Clinical Pharmacist", "Pharmacy"]);
 
-const DENTISTRY = new Set(["Dentist", "Dental Surgeon"]);
+const DENTISTRY = new Set([
+  "Dentist", "Dental Surgeon", "Dentist (General)", "Orthodontist", "Endodontist",
+  "Periodontist", "Oral and Maxillofacial Surgeon", "Pediatric Dentist", "Dentista",
+]);
 
 export interface ProfessionInfo {
   typeKey:    "doctor" | "psychologist" | "nutritionist" | "physiotherapist" | "nurse" | "pharmacist" | "dentist" | "professional";
@@ -41,6 +44,11 @@ export function isNurseSpecialty(specialty: string | null | undefined): boolean 
 export function isPharmacistSpecialty(specialty: string | null | undefined): boolean {
   if (!specialty?.trim()) return false;
   return getProfessionInfo(specialty.trim()).typeKey === "pharmacist";
+}
+
+export function isDentistSpecialty(specialty: string | null | undefined): boolean {
+  if (!specialty?.trim()) return false;
+  return getProfessionInfo(specialty.trim()).typeKey === "dentist";
 }
 
 export function getProfessionInfo(specialty: string): ProfessionInfo {

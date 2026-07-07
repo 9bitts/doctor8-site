@@ -29,6 +29,8 @@ export const NURSE_REGISTER =
   "/register/professional/signup?portal=nurse&profession=enfermeiro";
 export const PHARMACIST_REGISTER =
   "/register/professional/signup?portal=pharmacist&profession=farmaceutico";
+export const DENTIST_REGISTER =
+  "/register/professional/signup?portal=dentist&profession=dentista";
 export const ORGANIZATION_REGISTER = "/register/organization";
 export const ANGEL_REGISTER = "/register/angel";
 

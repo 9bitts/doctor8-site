@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { nursePortalBase, mapProfessionalPathToNursePortal } from "@/lib/nurse-portal";
 import { nutritionistPortalBase, mapProfessionalPathToNutritionistPortal } from "@/lib/nutritionist-portal";
 import { pharmacistPortalBase, mapProfessionalPathToPharmacistPortal } from "@/lib/pharmacist-portal";
+import { dentistPortalBase, mapProfessionalPathToDentistPortal } from "@/lib/dentist-portal";
 
 export const PSYCHOLOGIST_LOGIN = "/login";
 export const PSYCHOLOGIST_HOME = "/psychologist";
@@ -78,6 +79,9 @@ export function mapProfessionalPathToPortal(
   }
   if (pharmacistPortalBase(pathname) === "/farmaceutico") {
     return mapProfessionalPathToPharmacistPortal(pathname, professionalPath);
+  }
+  if (dentistPortalBase(pathname) === "/odontologo") {
+    return mapProfessionalPathToDentistPortal(pathname, professionalPath);
   }
   return professionalPath;
 }

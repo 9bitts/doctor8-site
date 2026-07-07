@@ -61,6 +61,7 @@ export type PlatformPortalId =
   | "NUTRITIONIST"
   | "NURSE"
   | "PHARMACIST"
+  | "DENTIST"
   | "PSYCHOANALYST"
   | "INTEGRATIVE_THERAPIST"
   | "ORGANIZATION"
@@ -367,6 +368,54 @@ export const PHARMACIST_NAV_GROUPS: PlatformNavGroup[] = [
 
 export const PHARMACIST_NAV: PlatformNavEntry[] = flattenNavGroups(PHARMACIST_NAV_GROUPS);
 
+/** Dentist portal — odontogram, periodontogram, treatment plans, prosthetics, ortho. */
+export const DENTIST_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "nav.group.attendNow",
+    items: [
+      { href: "/odontologo", labelKey: "nav.dashboard", roles: ["PROFESSIONAL"], iconKey: "LayoutDashboard" },
+      { href: "/odontologo/jit", labelKey: "nav.jit", roles: ["PROFESSIONAL"], iconKey: "Radio" },
+      { href: "/odontologo/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+      { href: "/odontologo/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+      { href: "/odontologo/cadeiras", labelKey: "dental.mod.chairs.title", roles: ["PROFESSIONAL"], iconKey: "Building2" },
+    ],
+  },
+  {
+    labelKey: "nav.group.patients",
+    items: [
+      { href: "/odontologo/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/odontologo/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
+      { href: "/odontologo/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
+    ],
+  },
+  {
+    labelKey: "nav.group.clinical",
+    items: [
+      { href: "/odontologo/anamnese", labelKey: "dental.mod.anamnesis.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
+      { href: "/odontologo/odontograma", labelKey: "dental.mod.odontogram.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/odontologo/periodontograma", labelKey: "dental.mod.periodontogram.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
+      { href: "/odontologo/plano-tratamento", labelKey: "dental.mod.treatmentPlan.title", roles: ["PROFESSIONAL"], iconKey: "FileSpreadsheet" },
+      { href: "/odontologo/protese", labelKey: "dental.mod.prosthetic.title", roles: ["PROFESSIONAL"], iconKey: "Package" },
+      { href: "/odontologo/ortodontia", labelKey: "dental.mod.orthodontics.title", roles: ["PROFESSIONAL"], iconKey: "Layers" },
+      { href: "/odontologo/fotos", labelKey: "dental.mod.photos.title", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
+      { href: "/odontologo/prescriptions", labelKey: "nav.prescriptions", roles: ["PROFESSIONAL"], iconKey: "Stethoscope" },
+      { href: "/odontologo/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.accountMore",
+    items: [
+      { href: "/odontologo/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
+      { href: "/odontologo/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
+      { href: "/odontologo/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
+      { href: "/odontologo/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
+      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
+    ],
+  },
+];
+
+export const DENTIST_NAV: PlatformNavEntry[] = flattenNavGroups(DENTIST_NAV_GROUPS);
+
 /** Psychoanalyst portal sidebar groups. */
 export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
   {
@@ -452,6 +501,7 @@ export const PLATFORM_NAV_GROUPS_BY_PORTAL: Partial<Record<PlatformPortalId, Pla
   NUTRITIONIST: NUTRITIONIST_NAV_GROUPS,
   NURSE: NURSE_NAV_GROUPS,
   PHARMACIST: PHARMACIST_NAV_GROUPS,
+  DENTIST: DENTIST_NAV_GROUPS,
   PSYCHOANALYST: PSYCHOANALYST_NAV_GROUPS,
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV_GROUPS,
 };
@@ -501,6 +551,7 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   NUTRITIONIST: NUTRITIONIST_NAV,
   NURSE: NURSE_NAV,
   PHARMACIST: PHARMACIST_NAV,
+  DENTIST: DENTIST_NAV,
   PSYCHOANALYST: PSYCHOANALYST_NAV,
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV,
   ORGANIZATION: ORGANIZATION_NAV,

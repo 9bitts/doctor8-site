@@ -1,7 +1,7 @@
 // Deep links from an active video consult ? patient chart / emissions, with return URL.
 
 import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
-import { isNutritionistSpecialty, isNurseSpecialty, isPharmacistSpecialty } from "@/lib/profession-label";
+import { isNutritionistSpecialty, isNurseSpecialty, isPharmacistSpecialty, isDentistSpecialty } from "@/lib/profession-label";
 
 export type VideoConsultKind = "appointment" | "jit" | "humanitarian";
 
@@ -11,6 +11,7 @@ export type ProviderChartPanel =
   | "nutritionist"
   | "nurse"
   | "pharmacist"
+  | "dentist"
   | "psychoanalyst"
   | "integrative_therapist";
 
@@ -21,6 +22,7 @@ export function providerPanelFromSpecialty(
   if (isNutritionistSpecialty(specialty)) return "nutritionist";
   if (isNurseSpecialty(specialty)) return "nurse";
   if (isPharmacistSpecialty(specialty)) return "pharmacist";
+  if (isDentistSpecialty(specialty)) return "dentist";
   return "professional";
 }
 
@@ -34,6 +36,8 @@ export function providerAppointmentsPath(panel: ProviderChartPanel): string {
       return "/enfermeiro/appointments";
     case "pharmacist":
       return "/farmaceutico/appointments";
+    case "dentist":
+      return "/odontologo/appointments";
     case "psychoanalyst":
       return "/psychoanalyst/appointments";
     case "integrative_therapist":
@@ -44,7 +48,9 @@ export function providerAppointmentsPath(panel: ProviderChartPanel): string {
 }
 
 export function providerJitPath(panel: ProviderChartPanel): string {
-  return panel === "psychologist" ? "/psychologist/jit" : "/professional/jit";
+  if (panel === "psychologist") return "/psychologist/jit";
+  if (panel === "dentist") return "/odontologo/jit";
+  return "/professional/jit";
 }
 
 export function providerPatientsPath(panel: ProviderChartPanel, chartId: string): string {
@@ -57,6 +63,8 @@ export function providerPatientsPath(panel: ProviderChartPanel, chartId: string)
       return `/enfermeiro/patients/${chartId}`;
     case "pharmacist":
       return `/farmaceutico/patients/${chartId}`;
+    case "dentist":
+      return `/odontologo/patients/${chartId}`;
     case "psychoanalyst":
       return `/psychoanalyst/analysands/${chartId}`;
     case "integrative_therapist":
