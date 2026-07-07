@@ -82,6 +82,15 @@ export default function TreatmentPlanModule({ chart }: { chart: DentistChart }) 
     load();
   }
 
+  async function presentPlan(planId: string) {
+    await fetch(`/api/dentist/charts/${chart.id}/treatment-plans/${planId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "PRESENTED" }),
+    });
+    load();
+  }
+
   const formatBRL = (cents: number) =>
     (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -100,14 +109,26 @@ export default function TreatmentPlanModule({ chart }: { chart: DentistChart }) 
                   </p>
                 </div>
                 {!plan.patientApproved && plan.status !== "APPROVED" && (
-                  <button
-                    type="button"
-                    onClick={() => approvePlan(plan.id)}
-                    className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline"
-                  >
-                    <CheckCircle size={14} />
-                    {t("dental.plan.approve")}
-                  </button>
+                  <div className="flex flex-col items-end gap-1">
+                    {(plan.status === "DRAFT" || plan.status === "PRESENTED") && (
+                      <button
+                        type="button"
+                        onClick={() => presentPlan(plan.id)}
+                        disabled={plan.status === "PRESENTED"}
+                        className="inline-flex items-center gap-1 text-xs text-sky-700 hover:underline disabled:opacity-50"
+                      >
+                        {t("dental.plan.present")}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => approvePlan(plan.id)}
+                      className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline"
+                    >
+                      <CheckCircle size={14} />
+                      {t("dental.plan.approve")}
+                    </button>
+                  </div>
                 )}
               </div>
               <ul className="mt-2 text-xs text-slate-600 space-y-1">

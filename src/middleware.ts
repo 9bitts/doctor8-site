@@ -28,6 +28,7 @@ const LEGACY_LOGIN_PATHS = [
   "/login/nutricionista",
   "/login/enfermeiro",
   "/login/farmaceutico",
+  "/login/odontologo",
   "/login/organizacao",
   "/login/anjo",
 ];
@@ -40,6 +41,7 @@ const LEGACY_LOGIN_PORTAL: Record<string, string> = {
   "/login/nutricionista": "nutritionist",
   "/login/enfermeiro": "nurse",
   "/login/farmaceutico": "pharmacist",
+  "/login/odontologo": "dentist",
   "/login/organizacao": "organization",
   "/login/anjo": "angel",
 };

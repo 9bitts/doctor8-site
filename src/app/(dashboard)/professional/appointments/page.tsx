@@ -8,6 +8,7 @@ import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import { decrypt } from "@/lib/encryption";
 import { resolveHealthProfessionalPortalBaseForUser } from "@/lib/nutritionist-portal";
+import { isDentistSpecialty } from "@/lib/profession-label";
 import AppointmentsAnchorClient from "@/components/professional/AppointmentsAnchorClient";
 import ProfessionalAppointmentsView, {
   type ProfessionalAppointmentRow,
@@ -47,6 +48,15 @@ export default async function ProfessionalAppointments() {
 
   const portalBase = await resolveHealthProfessionalPortalBaseForUser(session.user.id);
   const isPsychologistPortal = portalBase === "/psychologist";
+  const isDentistPortal = isDentistSpecialty(professional.specialty);
+
+  const dentalChairs = isDentistPortal
+    ? await db.dentalChair.findMany({
+        where: { professionalId: professional.id, active: true },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        select: { id: true, name: true },
+      })
+    : [];
 
   const now = new Date();
   const rangeStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
@@ -59,6 +69,7 @@ export default async function ProfessionalAppointments() {
     },
     include: {
       patient: { select: { firstName: true, lastName: true, userId: true, phone: true } },
+      dentalChair: { select: { id: true, name: true } },
     },
     orderBy: { scheduledAt: "desc" },
   });
@@ -125,6 +136,8 @@ export default async function ProfessionalAppointments() {
       intakeVisitReason: intake?.visitReason ?? null,
       bookingSource: apt.bookingSource,
       priceAmount: apt.priceAmount,
+      dentalChairId: apt.dentalChairId,
+      dentalChairName: apt.dentalChair?.name ?? null,
     };
   });
 
@@ -141,6 +154,8 @@ export default async function ProfessionalAppointments() {
         timeZone={providerTz}
         portalBase={portalBase}
         isPsychologistPortal={isPsychologistPortal}
+        isDentistPortal={isDentistPortal}
+        dentalChairs={dentalChairs}
         volunteerBlocks={volunteerBlocks}
       />
     </div>

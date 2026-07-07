@@ -32,6 +32,24 @@ export const PHARMACIST_REGISTER =
 export const DENTIST_REGISTER =
   "/register/professional/signup?portal=dentist&profession=dentista";
 export const ORGANIZATION_REGISTER = "/register/organization";
+
+/** Registration URL when user arrived via ?portal= on the unified login screen. */
+export function resolveProfessionalRegisterForPortal(portal: string | null | undefined): string {
+  switch (portal) {
+    case "psychologist":
+      return PSYCHOLOGIST_REGISTER;
+    case "nutritionist":
+      return NUTRITIONIST_REGISTER;
+    case "nurse":
+      return NURSE_REGISTER;
+    case "pharmacist":
+      return PHARMACIST_REGISTER;
+    case "dentist":
+      return DENTIST_REGISTER;
+    default:
+      return PROFESSIONAL_REGISTER;
+  }
+}
 export const ANGEL_REGISTER = "/register/angel";
 
 /** Unauthenticated redirect target — always the unified login. */

@@ -1,16 +1,35 @@
-import { isPsychologist } from "@/lib/profession-label";
+import {
+  isPsychologist,
+  isNutritionistSpecialty,
+  isNurseSpecialty,
+  isPharmacistSpecialty,
+  isDentistSpecialty,
+} from "@/lib/profession-label";
 import { db } from "@/lib/db";
 import { nursePortalBase, mapProfessionalPathToNursePortal } from "@/lib/nurse-portal";
 import { nutritionistPortalBase, mapProfessionalPathToNutritionistPortal } from "@/lib/nutritionist-portal";
 import { pharmacistPortalBase, mapProfessionalPathToPharmacistPortal } from "@/lib/pharmacist-portal";
-import { dentistPortalBase, mapProfessionalPathToDentistPortal } from "@/lib/dentist-portal";
+import {
+  dentistPortalBase,
+  mapProfessionalPathToDentistPortal,
+  mapProfessionalPathForDentistSpecialty,
+} from "@/lib/dentist-portal";
+import { mapProfessionalPathForNutritionistSpecialty } from "@/lib/nutritionist-portal";
+import { mapProfessionalPathForNurseSpecialty } from "@/lib/nurse-portal";
+import { mapProfessionalPathForPharmacistSpecialty } from "@/lib/pharmacist-portal";
 
 export const PSYCHOLOGIST_LOGIN = "/login";
 export const PSYCHOLOGIST_HOME = "/psychologist";
 export const PSYCHOLOGIST_REGISTER =
   "/register/professional/signup?portal=psychologist";
 
-export type ProfessionalPortalBase = "/psychologist" | "/professional";
+export type ProfessionalPortalBase =
+  | "/psychologist"
+  | "/nutricionista"
+  | "/enfermeiro"
+  | "/farmaceutico"
+  | "/odontologo"
+  | "/professional";
 
 /** Longest-prefix map from /professional/* to /psychologist/* (order matters). */
 export const PROFESSIONAL_TO_PSYCHOLOGIST_PATHS: [string, string][] = [
@@ -101,7 +120,12 @@ export async function resolveProfessionalPortalBaseForUser(
 export function professionalPortalBaseFromSpecialty(
   specialty: string | null | undefined,
 ): ProfessionalPortalBase {
-  return isPsychologistSpecialty(specialty) ? "/psychologist" : "/professional";
+  if (isPsychologistSpecialty(specialty)) return "/psychologist";
+  if (isNutritionistSpecialty(specialty)) return "/nutricionista";
+  if (isNurseSpecialty(specialty)) return "/enfermeiro";
+  if (isPharmacistSpecialty(specialty)) return "/farmaceutico";
+  if (isDentistSpecialty(specialty)) return "/odontologo";
+  return "/professional";
 }
 
 /** Rewrites /professional/* paths to the portal for this specialty (or keeps path). */
@@ -110,8 +134,12 @@ export function mapProfessionalPathForSpecialty(
   professionalPath: string,
 ): string {
   if (!professionalPath.startsWith("/professional")) return professionalPath;
-  if (!isPsychologistSpecialty(specialty)) return professionalPath;
-  return mapProfessionalPathToPsychologist(professionalPath);
+  if (isPsychologistSpecialty(specialty)) return mapProfessionalPathToPsychologist(professionalPath);
+  if (isNutritionistSpecialty(specialty)) return mapProfessionalPathForNutritionistSpecialty(specialty, professionalPath);
+  if (isNurseSpecialty(specialty)) return mapProfessionalPathForNurseSpecialty(specialty, professionalPath);
+  if (isPharmacistSpecialty(specialty)) return mapProfessionalPathForPharmacistSpecialty(specialty, professionalPath);
+  if (isDentistSpecialty(specialty)) return mapProfessionalPathForDentistSpecialty(specialty, professionalPath);
+  return professionalPath;
 }
 
 export function psychologistHubHref(pathname: string): string {

@@ -1,7 +1,6 @@
 // Maps in-app notification type + data to a dashboard route (or external URL).
 
 import {
-  isPsychologistSpecialty,
   mapProfessionalPathForSpecialty,
   professionalPortalBaseFromSpecialty,
 } from "@/lib/psychologist-portal";
@@ -66,7 +65,6 @@ export function resolveNotificationHref(
   const d = parseNotificationData(data);
   const isPro = role === "PROFESSIONAL";
   const portal = proPortal(role, professionalSpecialty);
-  const isPsych = isPro && isPsychologistSpecialty(professionalSpecialty);
 
   if (typeof d.link === "string" && d.link.startsWith("/")) {
     return mapProPath(role, professionalSpecialty, d.link);
@@ -159,7 +157,7 @@ export function resolveNotificationHref(
       }
       if (typeof d.prescriptionId === "string") {
         return isPro
-          ? (isPsych ? "/psychologist/documents" : "/professional/prescriptions")
+          ? `${proPortal(role, professionalSpecialty)}/prescriptions`
           : "/patient/prescriptions";
       }
       if (typeof d.documentId === "string") {

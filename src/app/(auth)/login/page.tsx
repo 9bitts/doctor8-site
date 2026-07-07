@@ -15,6 +15,7 @@ import {
   PROFESSIONAL_REGISTER,
   ANGEL_REGISTER,
   buildForgotPasswordHref,
+  resolveProfessionalRegisterForPortal,
 } from "@/lib/auth-portals";
 import {
   useLoginLang,
@@ -57,7 +58,14 @@ function UnifiedLoginForm() {
   const verified = searchParams.get("verified") === "true";
   const passwordReset = searchParams.get("reset") === "success";
   const registered = searchParams.get("registered") === "1";
-  const registerHref = resolveRegisterHref(null, callbackUrl || null);
+  const registerHref = resolveRegisterHref(
+    resolveProfessionalRegisterForPortal(portal),
+    callbackUrl || null,
+  );
+  const professionalSignupHref = resolveRegisterHref(
+    resolveProfessionalRegisterForPortal(portal),
+    callbackUrl || null,
+  );
   const forgotHref = buildForgotPasswordHref({
     email: email.trim() || undefined,
     from: PATIENT_LOGIN,
@@ -208,7 +216,7 @@ function UnifiedLoginForm() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs">
             <Link
-              href={PROFESSIONAL_REGISTER}
+              href={professionalSignupHref}
               className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition"
             >
               <Stethoscope size={14} aria-hidden />

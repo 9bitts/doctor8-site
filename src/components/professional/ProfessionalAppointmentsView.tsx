@@ -58,6 +58,8 @@ export type ProfessionalAppointmentRow = {
   intakeVisitReason: string | null;
   bookingSource?: string | null;
   priceAmount?: number;
+  dentalChairId?: string | null;
+  dentalChairName?: string | null;
 };
 
 type ViewMode = "list" | "week";
@@ -86,12 +88,16 @@ export default function ProfessionalAppointmentsView({
   timeZone,
   portalBase,
   isPsychologistPortal,
+  isDentistPortal = false,
+  dentalChairs = [],
   volunteerBlocks = [],
 }: {
   initialAppointments: ProfessionalAppointmentRow[];
   timeZone: string;
   portalBase: string;
   isPsychologistPortal: boolean;
+  isDentistPortal?: boolean;
+  dentalChairs?: { id: string; name: string }[];
   volunteerBlocks?: VolunteerWeeklyBlock[];
 }) {
   const { t, lang } = useI18n();
@@ -226,6 +232,27 @@ export default function ProfessionalAppointmentsView({
 
   const displayDayStrs = isMobileDay && viewMode === "week" ? [mobileDayStr] : weekDayStrs;
 
+  async function assignChair(appointmentId: string, dentalChairId: string | null) {
+    const res = await fetch(`/api/dentist/appointments/${appointmentId}/chair`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dentalChairId: dentalChairId || null }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    setAppointments((prev) =>
+      prev.map((row) =>
+        row.id === appointmentId
+          ? {
+              ...row,
+              dentalChairId: data.dentalChairId,
+              dentalChairName: data.dentalChairName,
+            }
+          : row,
+      ),
+    );
+  }
+
   function renderRow(apt: ProfessionalAppointmentRow, highlightIntake = false) {
     const firstName = apt.patientFirstName;
     const lastName = apt.patientLastName;
@@ -278,6 +305,23 @@ export default function ProfessionalAppointmentsView({
                   <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-3">
                     {apt.intakeVisitReason}
                   </p>
+                </div>
+              )}
+              {isDentistPortal && apt.type === "IN_PERSON" && dentalChairs.length > 0 && (
+                <div className="mt-2">
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase">
+                    {t("dental.appt.chair")}
+                  </label>
+                  <select
+                    value={apt.dentalChairId || ""}
+                    onChange={(e) => assignChair(apt.id, e.target.value || null)}
+                    className="mt-1 block w-full max-w-xs rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700"
+                  >
+                    <option value="">{t("dental.appt.noChair")}</option>
+                    {dentalChairs.map((chair) => (
+                      <option key={chair.id} value={chair.id}>{chair.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>

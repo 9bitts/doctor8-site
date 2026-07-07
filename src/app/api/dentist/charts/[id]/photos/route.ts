@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import { getSignedReadUrl } from "@/lib/s3";
 import { requireDentalChartAccess, requireDentistProfessional } from "@/lib/dentistry/dentistry-api";
 
 const createSchema = z.object({
@@ -28,7 +29,19 @@ export async function GET(
     orderBy: { takenAt: "desc" },
   });
 
-  return NextResponse.json({ photos });
+  const withUrls = await Promise.all(
+    photos.map(async (photo) => {
+      let imageUrl: string | null = null;
+      try {
+        imageUrl = await getSignedReadUrl(photo.storageKey, 900);
+      } catch {
+        imageUrl = null;
+      }
+      return { ...photo, imageUrl };
+    }),
+  );
+
+  return NextResponse.json({ photos: withUrls });
 }
 
 export async function POST(
