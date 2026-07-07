@@ -56,30 +56,84 @@ export type CnpjLookupResult = {
   addressZip?: string;
 };
 
+const LOOKUP_TIMEOUT_MS = 8000;
+
+async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function fromBrasilApi(data: Record<string, unknown>, digits: string): CnpjLookupResult {
+  return {
+    cnpj: digits,
+    razaoSocial: String(data.razao_social || data.nome_fantasia || ""),
+    nomeFantasia: String(data.nome_fantasia || data.razao_social || ""),
+    addressStreet: data.logradouro ? String(data.logradouro) : undefined,
+    addressNumber: data.numero ? String(data.numero) : undefined,
+    addressComplement: data.complemento ? String(data.complemento) : undefined,
+    addressNeighborhood: data.bairro ? String(data.bairro) : undefined,
+    addressCity: data.municipio ? String(data.municipio) : undefined,
+    addressState: data.uf ? String(data.uf) : undefined,
+    addressZip: data.cep ? String(data.cep).replace(/\D/g, "") : undefined,
+  };
+}
+
+async function lookupBrasilApi(digits: string): Promise<CnpjLookupResult | null> {
+  const res = await fetchWithTimeout(`https://brasilapi.com.br/api/cnpj/v1/${digits}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const razao = String(data.razao_social || data.nome_fantasia || "");
+  if (!razao) return null;
+  return fromBrasilApi(data, digits);
+}
+
+async function lookupCnpjWs(digits: string): Promise<CnpjLookupResult | null> {
+  const res = await fetchWithTimeout(`https://publica.cnpj.ws/cnpj/${digits}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const est = data.estabelecimento as Record<string, unknown> | undefined;
+  const razao = String(data.razao_social || est?.nome_fantasia || "");
+  if (!razao) return null;
+  return {
+    cnpj: digits,
+    razaoSocial: razao,
+    nomeFantasia: String(est?.nome_fantasia || data.razao_social || razao),
+    addressStreet: est?.logradouro ? String(est.logradouro) : undefined,
+    addressNumber: est?.numero ? String(est.numero) : undefined,
+    addressComplement: est?.complemento ? String(est.complemento) : undefined,
+    addressNeighborhood: est?.bairro ? String(est.bairro) : undefined,
+    addressCity: (est?.cidade as { nome?: string } | undefined)?.nome,
+    addressState: (est?.estado as { sigla?: string } | undefined)?.sigla,
+    addressZip: est?.cep ? String(est.cep).replace(/\D/g, "") : undefined,
+  };
+}
+
 export async function lookupCnpj(cnpj: string): Promise<CnpjLookupResult | null> {
   const digits = stripCnpj(cnpj);
   if (!isValidCnpj(digits)) return null;
 
   try {
-    const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`, {
-      next: { revalidate: 86400 },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-
-    return {
-      cnpj: digits,
-      razaoSocial: data.razao_social || data.nome_fantasia || "",
-      nomeFantasia: data.nome_fantasia || data.razao_social || "",
-      addressStreet: data.logradouro || undefined,
-      addressNumber: data.numero || undefined,
-      addressComplement: data.complemento || undefined,
-      addressNeighborhood: data.bairro || undefined,
-      addressCity: data.municipio || undefined,
-      addressState: data.uf || undefined,
-      addressZip: data.cep?.replace(/\D/g, "") || undefined,
-    };
-  } catch {
-    return null;
+    const primary = await lookupBrasilApi(digits);
+    if (primary) return primary;
+  } catch (err) {
+    console.warn("[CNPJ] BrasilAPI failed:", err instanceof Error ? err.message : err);
   }
+
+  try {
+    const fallback = await lookupCnpjWs(digits);
+    if (fallback) return fallback;
+  } catch (err) {
+    console.warn("[CNPJ] cnpj.ws fallback failed:", err instanceof Error ? err.message : err);
+  }
+
+  return null;
 }

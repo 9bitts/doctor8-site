@@ -23,7 +23,10 @@ export async function GET(req: NextRequest) {
 
   const result = await lookupCnpj(digits);
   if (!result) {
-    return NextResponse.json({ error: "CNPJ não encontrado" }, { status: 404 });
+    return NextResponse.json(
+      { error: "CNPJ não encontrado", code: "LOOKUP_UNAVAILABLE", cnpjValid: true },
+      { status: 404 },
+    );
   }
 
   return NextResponse.json(result);

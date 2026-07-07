@@ -31,6 +31,7 @@ export default function EmpresasCadastroPage() {
   const t = (key: string) => translate(lang, key);
 
   const [step, setStep] = useState<1 | 2>(1);
+  const [manualMode, setManualMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -64,19 +65,43 @@ export default function EmpresasCadastroPage() {
       const res = await fetch(`/api/cnpj/lookup?cnpj=${digits}`);
       const data = await res.json();
       if (!res.ok) {
-        setErrors({ cnpj: ["CNPJ não encontrado"] });
+        if (isValidCnpj(digits)) {
+          setErrors({
+            cnpj: [
+              "Não foi possível consultar a Receita Federal agora. Você pode continuar preenchendo os dados manualmente.",
+            ],
+          });
+        } else {
+          setErrors({ cnpj: ["CNPJ não encontrado"] });
+        }
         return;
       }
       setRazaoSocial(data.razaoSocial || "");
       setNomeFantasia(data.nomeFantasia || data.razaoSocial || "");
       setAddressCity(data.addressCity || "");
       setAddressState(data.addressState || "");
+      setManualMode(false);
       setStep(2);
     } catch {
       setErrors({ general: ["Erro ao consultar CNPJ"] });
     } finally {
       setLookupLoading(false);
     }
+  }
+
+  function continueManually() {
+    const digits = stripCnpj(cnpj);
+    if (!isValidCnpj(digits)) {
+      setErrors({ cnpj: ["CNPJ inválido"] });
+      return;
+    }
+    setManualMode(true);
+    setRazaoSocial("");
+    setNomeFantasia("");
+    setAddressCity("");
+    setAddressState("");
+    setErrors({});
+    setStep(2);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -86,6 +111,11 @@ export default function EmpresasCadastroPage() {
     const phoneCheck = validateRegistrationPhone(phone.ddi, phone.nationalNumber);
     if (!phoneCheck.ok) {
       setErrors({ phoneNational: ["Telefone inválido"] });
+      return;
+    }
+
+    if (!razaoSocial.trim() || !nomeFantasia.trim()) {
+      setErrors({ general: ["Informe razão social e nome fantasia da empresa."] });
       return;
     }
 
@@ -182,16 +212,64 @@ export default function EmpresasCadastroPage() {
                 </div>
                 {errors.cnpj && <p className="text-red-400 text-xs mt-1">{errors.cnpj[0]}</p>}
               </label>
+              {errors.cnpj && isValidCnpj(stripCnpj(cnpj)) && (
+                <button
+                  type="button"
+                  onClick={continueManually}
+                  className="w-full py-2.5 rounded-lg border border-sky-500/40 text-sky-300 text-sm hover:bg-sky-500/10"
+                >
+                  Continuar com preenchimento manual
+                </button>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="rounded-lg bg-sky-500/10 border border-sky-500/20 p-3 text-sm text-sky-100 flex gap-2">
                 <Building2 size={16} className="shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium">{nomeFantasia}</p>
-                  <p className="text-sky-200/70 text-xs">{cnpj}</p>
+                  {manualMode ? (
+                    <p className="text-sky-200/80 text-xs">Preenchimento manual · {cnpj}</p>
+                  ) : (
+                    <>
+                      <p className="font-medium">{nomeFantasia}</p>
+                      <p className="text-sky-200/70 text-xs">{cnpj}</p>
+                    </>
+                  )}
                 </div>
               </div>
+
+              {manualMode && (
+                <div className="space-y-3">
+                  <input
+                    required
+                    value={razaoSocial}
+                    onChange={(e) => setRazaoSocial(e.target.value)}
+                    placeholder="Razão social"
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                  />
+                  <input
+                    required
+                    value={nomeFantasia}
+                    onChange={(e) => setNomeFantasia(e.target.value)}
+                    placeholder="Nome fantasia"
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      value={addressCity}
+                      onChange={(e) => setAddressCity(e.target.value)}
+                      placeholder="Cidade"
+                      className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                    />
+                    <input
+                      value={addressState}
+                      onChange={(e) => setAddressState(e.target.value.toUpperCase().slice(0, 2))}
+                      placeholder="UF"
+                      className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -288,7 +366,7 @@ export default function EmpresasCadastroPage() {
 
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={() => { setStep(1); setManualMode(false); }}
                 className="w-full text-sm text-slate-400 hover:text-white flex items-center justify-center gap-1"
               >
                 <ArrowLeft size={14} /> Voltar ao CNPJ
