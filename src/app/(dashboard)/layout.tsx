@@ -283,7 +283,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     : isPharmacist
       ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
     : isDentist
-      ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+      ? "bg-fuchsia-500/20 text-fuchsia-100 border border-fuchsia-400/45 shadow-sm shadow-fuchsia-500/10"
     : isProfessional
     ? "bg-brand-500/10 text-brand-400 border border-brand-500/20"
     : isPsychoanalyst
@@ -291,9 +291,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       : isIntegrativeTherapist
         ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
         : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-  const avatarBg = isAngel ? "bg-rose-500/20" : isOrganization ? "bg-indigo-500/20" : isPsychologist ? "bg-violet-500/20" : isNutritionist ? "bg-amber-500/20" : isNurse ? "bg-rose-500/20" : isPharmacist ? "bg-teal-500/20" : isDentist ? "bg-sky-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
-  const avatarIcon = isAngel ? "text-rose-400" : isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isNutritionist ? "text-amber-400" : isNurse ? "text-rose-400" : isPharmacist ? "text-teal-400" : isDentist ? "text-sky-400" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
-  const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-sky-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
+  const avatarBg = isAngel ? "bg-rose-500/20" : isOrganization ? "bg-indigo-500/20" : isPsychologist ? "bg-violet-500/20" : isNutritionist ? "bg-amber-500/20" : isNurse ? "bg-rose-500/20" : isPharmacist ? "bg-teal-500/20" : isDentist ? "bg-fuchsia-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
+  const avatarIcon = isAngel ? "text-rose-400" : isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isNutritionist ? "text-amber-400" : isNurse ? "text-rose-400" : isPharmacist ? "text-teal-400" : isDentist ? "text-fuchsia-300" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
+  const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-fuchsia-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal || isNutritionistPortal || isNursePortal || isPharmacistPortal || isDentistPortal);
 
   function renderNavLink(item: NavItem, badge?: number, accentRed = false) {
@@ -310,7 +310,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
           ${isActive
             ? (accentRed ? redActive : navActive)
-            : (accentRed ? redIdle : "text-slate-400 hover:text-white hover:bg-slate-800")}
+            : (accentRed ? redIdle : isDentist
+              ? "text-slate-400 hover:text-fuchsia-100 hover:bg-fuchsia-500/10"
+              : "text-slate-400 hover:text-white hover:bg-slate-800")}
         `}
       >
         {item.icon}

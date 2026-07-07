@@ -79,15 +79,15 @@ export default async function DentistDashboard() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       <div className="flex items-start gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-sky-100 flex items-center justify-center shrink-0">
-          <Smile size={28} className="text-sky-600" />
+        <div className="w-14 h-14 rounded-2xl bg-fuchsia-100 flex items-center justify-center shrink-0">
+          <Smile size={28} className="text-fuchsia-600" />
         </div>
         <div>
           <p className="text-slate-500 text-sm">{t(greetingKey())}</p>
           <h1 className="text-2xl font-bold text-slate-900">
             {professional.firstName} {professional.lastName}
           </h1>
-          <p className="text-sky-700 text-sm font-medium mt-1">{professionLabel}</p>
+          <p className="text-fuchsia-700 text-sm font-medium mt-1">{professionLabel}</p>
           <p className="text-slate-500 text-sm mt-1">{t("dental.dashboard.subtitle")}</p>
         </div>
       </div>
@@ -99,14 +99,14 @@ export default async function DentistDashboard() {
             <Link
               key={mod.href}
               href={mod.href}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-sky-300 transition group"
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-fuchsia-300 transition group"
             >
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${mod.color}`}>
                 <Icon size={20} />
               </div>
               <p className="font-semibold text-slate-900 text-sm">{t(mod.labelKey)}</p>
               <p className="text-xs text-slate-500 mt-1 line-clamp-2">{t(`${mod.labelKey}.desc`)}</p>
-              <ChevronRight size={14} className="mt-3 text-slate-300 group-hover:text-sky-500 transition" />
+              <ChevronRight size={14} className="mt-3 text-slate-300 group-hover:text-fuchsia-500 transition" />
             </Link>
           );
         })}
@@ -133,7 +133,7 @@ export default async function DentistDashboard() {
         <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-slate-900">{t("dental.dashboard.upcoming")}</h2>
-            <Link href="/odontologo/appointments" className="text-sm text-sky-600 hover:text-sky-700 font-medium">
+            <Link href="/odontologo/appointments" className="text-sm text-fuchsia-600 hover:text-fuchsia-700 font-medium">
               {t("dental.dashboard.viewAll")}
             </Link>
           </div>
@@ -143,7 +143,7 @@ export default async function DentistDashboard() {
             <ul className="space-y-3">
               {professional.appointments.map((apt) => (
                 <li key={apt.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
-                  <Calendar size={16} className="text-sky-600 shrink-0" />
+                  <Calendar size={16} className="text-fuchsia-600 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-slate-900 truncate">
                       {apt.patient.firstName} {apt.patient.lastName}
@@ -166,7 +166,7 @@ export default async function DentistDashboard() {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
           <div>
-            <p className="text-3xl font-bold text-sky-600">{patientCount}</p>
+            <p className="text-3xl font-bold text-fuchsia-600">{patientCount}</p>
             <p className="text-sm text-slate-500">{t("dental.dashboard.patients")}</p>
           </div>
           <div className="border-t border-slate-100 pt-4 space-y-2">
@@ -176,7 +176,7 @@ export default async function DentistDashboard() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="flex items-center gap-2 text-sm text-slate-600 hover:text-sky-700 transition"
+                  className="flex items-center gap-2 text-sm text-slate-600 hover:text-fuchsia-700 transition"
                 >
                   <Icon size={14} />
                   {t(link.labelKey)}

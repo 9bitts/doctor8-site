@@ -66,7 +66,7 @@ export default function DentistChartWorkspace({
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <Link
         href="/odontologo"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-sky-700 transition"
+        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-fuchsia-700 transition"
       >
         <ArrowLeft size={14} />
         {t("dental.backToDashboard")}
@@ -80,15 +80,15 @@ export default function DentistChartWorkspace({
       <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
         <label className="text-sm font-medium text-slate-700">{t("dental.selectPatient")}</label>
         {selected ? (
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-sky-50 border border-sky-200 px-4 py-3">
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-fuchsia-50 border border-fuchsia-200 px-4 py-3">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
-              <User size={16} className="text-sky-600" />
+              <User size={16} className="text-fuchsia-600" />
               {selected.firstName} {selected.lastName}
             </div>
             <button
               type="button"
               onClick={() => setSelected(null)}
-              className="text-xs text-sky-700 hover:underline"
+              className="text-xs text-fuchsia-700 hover:underline"
             >
               {t("dental.changePatient")}
             </button>
@@ -107,7 +107,7 @@ export default function DentistChartWorkspace({
             </div>
             {loading ? (
               <div className="flex justify-center py-6">
-                <Loader2 className="animate-spin text-sky-500" size={22} />
+                <Loader2 className="animate-spin text-fuchsia-500" size={22} />
               </div>
             ) : filtered.length === 0 ? (
               <p className="text-sm text-slate-500 py-4 text-center">{t("dental.noPatients")}</p>
@@ -118,7 +118,7 @@ export default function DentistChartWorkspace({
                     <button
                       type="button"
                       onClick={() => setSelected(c)}
-                      className="w-full text-left px-2 py-2.5 text-sm hover:bg-sky-50 rounded-lg transition"
+                      className="w-full text-left px-2 py-2.5 text-sm hover:bg-fuchsia-50 rounded-lg transition"
                     >
                       {c.firstName} {c.lastName}
                     </button>
