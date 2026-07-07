@@ -178,28 +178,25 @@ export default function CoursesLandingClient() {
             className="rounded-2xl border border-white/20 bg-white/95 p-2 shadow-2xl shadow-black/20 backdrop-blur-sm"
           >
             <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1">
-                <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-d8-muted"
-                  size={20}
-                />
+              <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl bg-d8-off/60 px-4">
+                <Search className="shrink-0 text-d8-muted" size={20} aria-hidden />
                 <input
                   type="search"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Buscar curso, especialidade ou tema..."
-                  className="w-full rounded-xl border-0 bg-transparent py-3.5 pl-12 pr-4 text-base text-d8-dark placeholder:text-d8-muted focus:outline-none focus:ring-0"
+                  className="min-w-0 flex-1 border-0 bg-transparent py-3.5 text-base text-d8-dark placeholder:text-d8-muted focus:outline-none focus:ring-0 [&::-webkit-search-cancel-button]:hidden"
                 />
               </div>
               <button
                 type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent-500 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-accent-600"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent-500 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-accent-600"
               >
-                <Search size={18} />
+                <Search size={18} aria-hidden />
                 Buscar
               </button>
             </div>
-            <div className="mt-2 flex flex-wrap gap-1.5 px-2 pb-1">
+            <div className="mt-2 flex gap-1.5 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {PROFESSIONS.map((p) => (
                 <button
                   key={p.value}
@@ -208,7 +205,7 @@ export default function CoursesLandingClient() {
                     setProfession(p.value);
                     setTimeout(scrollToCatalog, 100);
                   }}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition ${
                     profession === p.value
                       ? "bg-brand-500 text-white"
                       : "bg-d8-off text-d8-muted hover:bg-brand-50 hover:text-brand-700"
@@ -501,12 +498,17 @@ export default function CoursesLandingClient() {
 
       {/* ── CTA instrutores ── */}
       <section className="px-4 py-16 sm:px-6">
-        <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 to-brand-900 px-6 py-12 text-center text-white sm:px-12">
-          <GraduationCap className="mx-auto text-white/80" size={40} />
-          <h2 className="mt-4 text-2xl font-extrabold sm:text-3xl">
+        <div
+          className="mx-auto max-w-6xl overflow-hidden rounded-3xl px-6 py-12 text-center sm:px-12"
+          style={{
+            background: "linear-gradient(135deg, #155a73 0%, #114a5e 50%, #0a2d3a 100%)",
+          }}
+        >
+          <GraduationCap className="mx-auto text-white" size={40} strokeWidth={1.5} />
+          <h2 className="mt-4 text-2xl font-extrabold text-white sm:text-3xl">
             É especialista e quer publicar seu curso?
           </h2>
-          <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-white/75 sm:text-base">
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-white/90 sm:text-base">
             A Doctor8 conecta você a milhares de profissionais de saúde. Você produz o conteúdo;
             nós cuidamos da vitrine, pagamentos e distribuição.
           </p>
