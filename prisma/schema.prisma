@@ -1330,6 +1330,13 @@ model VirtualCard {
   website         String?
   googleBusinessUrl String?
   socialLinks     Json?
+  whatsappNumber  String?
+  coverImageUrl   String?
+  galleryImages   Json?
+  videoUrl        String?
+  themePreset     String                @default("default")
+  accentColor     String?
+  contentBlocks   Json?
   isPublic        Boolean               @default(false)
 
   profileEvents   PublicProfileEvent[]

@@ -6,8 +6,10 @@ import Link from "next/link";
 import { Loader2, AlertCircle, Building2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { EMPLOYER_LOGIN, buildLoginHref } from "@/lib/auth-portals";
 import InternationalPhoneInput, { type InternationalPhoneValue } from "@/components/InternationalPhoneInput";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export default function RegisterEmployerStaffPage() {
+  const { lang } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
@@ -118,7 +120,7 @@ export default function RegisterEmployerStaffPage() {
               <input required value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Nome" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" />
               <input required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Sobrenome" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" />
             </div>
-            <InternationalPhoneInput value={phone} onChange={setPhone} />
+            <InternationalPhoneInput lang={lang} region="BR" value={phone} onChange={setPhone} />
             <div className="relative">
               <input
                 required

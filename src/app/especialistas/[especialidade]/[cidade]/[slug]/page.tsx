@@ -22,6 +22,15 @@ import PublicReviewsSection from "@/components/public/PublicReviewsSection";
 import PublicProfileTracker from "@/components/public/PublicProfileTracker";
 import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
+import {
+  PublicDoctorImageTheme,
+  PublicDoctorImageCover,
+  PublicDoctorImageSocial,
+  PublicDoctorImageGallery,
+  PublicDoctorImageVideo,
+  PublicDoctorImageBlocks,
+} from "@/components/public/PublicDoctorImageContent";
+import { resolveAccentColor } from "@/lib/doctor-image";
 
 export async function generateMetadata({
   params,
@@ -89,6 +98,10 @@ export default async function PublicSpecialistPage({
 
   const currency = profile.currency || "BRL";
   const showAcuraBadge = isAcuraVolunteerProvider(profile.verified, profile.acuraVolunteer);
+  const accent = resolveAccentColor(
+    profile.doctorImage.themePreset,
+    profile.doctorImage.accentColor
+  );
 
   return (
     <>
@@ -98,6 +111,7 @@ export default async function PublicSpecialistPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
+      <PublicDoctorImageTheme doctorImage={profile.doctorImage}>
       <div className="min-h-screen bg-slate-50">
         {/* Header */}
         <header className="sticky top-0 z-20 border-b border-white/10 bg-d8-dark text-white">
@@ -121,6 +135,7 @@ export default async function PublicSpecialistPage({
           <div className="grid lg:grid-cols-[1fr_340px_280px] gap-5">
             {/* Left ? profile info */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+              <PublicDoctorImageCover coverImageUrl={profile.doctorImage.coverImageUrl} />
               <div className="flex items-start gap-4">
                 {profile.avatarUrl ? (
                   <img
@@ -140,7 +155,9 @@ export default async function PublicSpecialistPage({
                       <CheckCircle2 size={18} className="text-brand-500 shrink-0" />
                     )}
                   </div>
-                  <p className="text-brand-600 font-medium mt-0.5">{specialtyLabel}</p>
+                  <p className="font-medium mt-0.5" style={{ color: accent }}>
+                    {specialtyLabel}
+                  </p>
                   {showAcuraBadge && (
                     <div className="mt-2">
                       <AcuraVolunteerBadge size="md" />
@@ -156,7 +173,10 @@ export default async function PublicSpecialistPage({
               </div>
 
               {profile.headline && (
-                <p className="text-slate-600 italic text-sm border-l-2 border-brand-200 pl-3">
+                <p
+                  className="text-slate-600 italic text-sm pl-3"
+                  style={{ borderLeft: `2px solid ${accent}33` }}
+                >
                   {profile.headline}
                 </p>
               )}
@@ -224,6 +244,14 @@ export default async function PublicSpecialistPage({
                 </a>
               )}
 
+              <PublicDoctorImageSocial doctorImage={profile.doctorImage} providerName={name} />
+
+              <PublicDoctorImageGallery images={profile.doctorImage.galleryImages} />
+
+              <PublicDoctorImageVideo videoUrl={profile.doctorImage.videoUrl} />
+
+              <PublicDoctorImageBlocks blocks={profile.doctorImage.contentBlocks} />
+
               <PublicReviewsSection slug={profile.slug} />
             </div>
 
@@ -255,6 +283,7 @@ export default async function PublicSpecialistPage({
           </Link>
         </footer>
       </div>
+      </PublicDoctorImageTheme>
     </>
   );
 }

@@ -15,7 +15,8 @@ import ConsultPricingSettings from "@/components/professional/ConsultPricingSett
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
-import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
+import ProfileSettingsSection from "@/components/professional/ProfileSettingsSection";
+import DoctorImageSettings from "@/components/DoctorImageSettings";
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
 import IncompleteSectionHighlight from "@/components/IncompleteSectionHighlight";
 import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
@@ -34,6 +35,7 @@ import {
   Building2,
   Globe,
   Calendar,
+  Sparkles,
 } from "lucide-react";
 
 const inputClass =
@@ -67,6 +69,7 @@ export default function IntegrativeTherapistSettingsPage() {
   const [regionSaving, setRegionSaving] = useState(false);
   const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");
+  const [doctorImageOpen, setDoctorImageOpen] = useState(false);
 
   const { providerChecklist, refresh: refreshRegistration } = useRegistrationChecklist();
   const missingProfessionalData = providerChecklist?.professionalData === false;
@@ -76,6 +79,7 @@ export default function IntegrativeTherapistSettingsPage() {
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
     if (!hash) return;
+    if (hash === "section-doctor-image") setDoctorImageOpen(true);
     requestAnimationFrame(() => {
       document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -312,6 +316,19 @@ export default function IntegrativeTherapistSettingsPage() {
       </div>
 
       <PublicListingSettings apiPath="/api/integrative-therapist/public-profile" />
+
+      <ProfileSettingsSection
+        id="section-doctor-image"
+        title={t("set.sectionDoctorImage")}
+        description={t("set.sectionDoctorImageDesc")}
+        icon={<Sparkles size={18} />}
+        open={doctorImageOpen}
+        onToggle={() => setDoctorImageOpen((v) => !v)}
+        optional
+      >
+        <DoctorImageSettings apiPath="/api/integrative-therapist/public-profile" />
+      </ProfileSettingsSection>
+
       <HealthPlansSettings apiPath="/api/integrative-therapist/health-plans" />
       <IncompleteSectionHighlight
         id={registrationChecklistHash("careSettings")}

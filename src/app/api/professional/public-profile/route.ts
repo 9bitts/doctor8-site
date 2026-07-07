@@ -1,4 +1,4 @@
-// GET/PATCH ? public listing settings for the logged-in professional.
+// GET/PATCH — public listing settings for the logged-in professional.
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
@@ -10,20 +10,10 @@ import {
 } from "@/lib/public-profile";
 import { getPublicProfileAnalytics } from "@/lib/public-analytics";
 import { buildEmbedAgendaUrl } from "@/lib/public-slugs";
-
-function parseGoogleBusinessUrl(raw: unknown): string | null | false {
-  if (raw === null || raw === "") return null;
-  if (typeof raw !== "string") return false;
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  try {
-    const u = new URL(trimmed);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
-    return u.toString();
-  } catch {
-    return false;
-  }
-}
+import {
+  doctorImageFromCard,
+  parsePublicProfilePatch,
+} from "@/lib/public-profile-patch";
 
 export async function GET() {
   const ctx = await requireProfessionalApi();
@@ -63,6 +53,7 @@ export async function GET() {
     googleBusinessUrl: card.googleBusinessUrl,
     embedUrl: buildEmbedAgendaUrl(card.slug),
     analytics,
+    doctorImage: doctorImageFromCard(card),
   });
 }
 
@@ -79,33 +70,21 @@ export async function PATCH(req: NextRequest) {
   if (!profile?.virtualCard)
     return NextResponse.json({ error: "Complete your profile first" }, { status: 400 });
 
-  const updateData: { isPublic?: boolean; googleBusinessUrl?: string | null } = {};
-
-  if (typeof body.isPublic === "boolean") {
-    if (body.isPublic && !profile.verified) {
-      return NextResponse.json(
-        { error: "Your profile must be approved by an admin before going public" },
-        { status: 403 }
-      );
-    }
-    updateData.isPublic = body.isPublic;
+  const parsed = parsePublicProfilePatch(body);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  if ("googleBusinessUrl" in body) {
-    const parsed = parseGoogleBusinessUrl(body.googleBusinessUrl);
-    if (parsed === false) {
-      return NextResponse.json({ error: "Invalid Google Business URL" }, { status: 400 });
-    }
-    updateData.googleBusinessUrl = parsed;
-  }
-
-  if (Object.keys(updateData).length === 0) {
-    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+  if (parsed.data.isPublic === true && !profile.verified) {
+    return NextResponse.json(
+      { error: "Your profile must be approved by an admin before going public" },
+      { status: 403 }
+    );
   }
 
   const card = await db.virtualCard.update({
     where: { id: profile.virtualCard.id },
-    data: updateData,
+    data: parsed.data,
   });
 
   const status = getPublicListingStatus(profile.verified, card.isPublic);
@@ -115,5 +94,6 @@ export async function PATCH(req: NextRequest) {
     status,
     publicUrl: status === "live" ? buildPublicProfileUrl(card) : null,
     googleBusinessUrl: card.googleBusinessUrl,
+    doctorImage: doctorImageFromCard(card),
   });
 }

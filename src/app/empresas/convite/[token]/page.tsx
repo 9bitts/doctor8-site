@@ -6,8 +6,10 @@ import Link from "next/link";
 import { Loader2, Brain, Shield, Eye, EyeOff } from "lucide-react";
 import { buildLoginHref } from "@/lib/auth-portals";
 import InternationalPhoneInput, { type InternationalPhoneValue } from "@/components/InternationalPhoneInput";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export default function WorkforceInvitePage() {
+  const { lang } = useI18n();
   const params = useParams();
   const router = useRouter();
   const token = params.token as string;
@@ -128,7 +130,7 @@ export default function WorkforceInvitePage() {
 
         <form onSubmit={handleActivate} className="space-y-4">
           <input disabled value={invite.email} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-          <InternationalPhoneInput value={phone} onChange={setPhone} />
+          <InternationalPhoneInput lang={lang} region="BR" value={phone} onChange={setPhone} />
           <div className="relative">
             <input
               required

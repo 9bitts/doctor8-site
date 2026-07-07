@@ -30,8 +30,9 @@ import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
 import {
   Loader2, CheckCircle2, User, Award, Camera, X, Plus,
   LayoutTemplate, Globe, Building2, Calendar, DollarSign,
-  PenLine, CreditCard, MapPin,
+  PenLine, CreditCard, MapPin, Sparkles,
 } from "lucide-react";
+import DoctorImageSettings from "@/components/DoctorImageSettings";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40";
@@ -78,6 +79,7 @@ export default function ProfessionalSettings() {
     clinic: false,
     region: false,
     publicDetails: false,
+    doctorImage: false,
     healthPlans: false,
     practice: false,
   });
@@ -136,6 +138,7 @@ export default function ProfessionalSettings() {
       "section-clinic": "clinic",
       "section-region": "region",
       "section-public-details": "publicDetails",
+      "section-doctor-image": "doctorImage",
       "section-health-plans": "healthPlans",
       "section-practice": "practice",
       [registrationChecklistHash("professionalData")]: "credentials",
@@ -637,6 +640,19 @@ export default function ProfessionalSettings() {
           />
           <p className="text-xs text-slate-400">{t("set.sectionRegionHint")}</p>
         </div>
+      </ProfileSettingsSection>
+
+      {/* Doctor Image — public profile personalization */}
+      <ProfileSettingsSection
+        id="section-doctor-image"
+        title={t("set.sectionDoctorImage")}
+        description={t("set.sectionDoctorImageDesc")}
+        icon={<Sparkles size={18} />}
+        open={openSections.doctorImage}
+        onToggle={() => toggleSection("doctorImage")}
+        optional
+      >
+        <DoctorImageSettings apiPath="/api/professional/public-profile" />
       </ProfileSettingsSection>
 
       {/* Public profile details (analytics, embed, google) */}

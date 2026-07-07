@@ -38,6 +38,7 @@ import {
   type PracticeLocationDto,
   type ProviderServiceDto,
 } from "@/lib/practice";
+import { serializeDoctorImage, type DoctorImageData } from "@/lib/doctor-image";
 
 export type PublicListingStatus = "pending_approval" | "hidden" | "live";
 
@@ -84,6 +85,7 @@ export type PublicProfileData = {
   ratingCount: number;
   publicPath: string;
   googleBusinessUrl: string | null;
+  doctorImage: DoctorImageData;
   locations: PracticeLocationDto[];
   services: ProviderServiceDto[];
   acuraVolunteer: boolean;
@@ -187,6 +189,15 @@ function mapCardToPublicProfile(
     specialtySlug: string;
     citySlug: string;
     headline: string | null;
+    website: string | null;
+    whatsappNumber: string | null;
+    socialLinks: unknown;
+    coverImageUrl: string | null;
+    galleryImages: unknown;
+    videoUrl: string | null;
+    themePreset: string;
+    accentColor: string | null;
+    contentBlocks: unknown;
     googleBusinessUrl: string | null;
     professional: {
       id: string;
@@ -263,6 +274,8 @@ function mapCardToPublicProfile(
   },
   reviews: { avg: number | null; count: number }
 ): PublicProfileData | null {
+  const doctorImage: DoctorImageData = serializeDoctorImage(card);
+
   if (card.professional) {
     const p = card.professional;
     const info = getProfessionInfo(p.specialty);
@@ -300,6 +313,7 @@ function mapCardToPublicProfile(
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),
       googleBusinessUrl: card.googleBusinessUrl,
+      doctorImage,
       locations: [],
       services: [],
       acuraVolunteer: p.acuraVolunteer,
@@ -342,6 +356,7 @@ function mapCardToPublicProfile(
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),
       googleBusinessUrl: card.googleBusinessUrl,
+      doctorImage,
       locations: [],
       services: [],
       acuraVolunteer: p.acuraVolunteer,
@@ -392,6 +407,7 @@ function mapCardToPublicProfile(
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),
       googleBusinessUrl: card.googleBusinessUrl,
+      doctorImage,
       locations: [],
       services: [],
       acuraVolunteer: p.acuraVolunteer,
@@ -549,6 +565,16 @@ export function buildPhysicianJsonLd(
 
   if (profile.googleBusinessUrl) {
     jsonLd.sameAs = [profile.googleBusinessUrl];
+  }
+
+  const sameAs: string[] = [];
+  if (profile.googleBusinessUrl) sameAs.push(profile.googleBusinessUrl);
+  if (profile.doctorImage.website) sameAs.push(profile.doctorImage.website);
+  for (const url of Object.values(profile.doctorImage.socialLinks)) {
+    if (url) sameAs.push(url);
+  }
+  if (sameAs.length > 0) {
+    jsonLd.sameAs = [...new Set(sameAs)];
   }
 
   jsonLd.potentialAction = {

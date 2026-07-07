@@ -9,9 +9,11 @@ import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
 import IncompleteSectionHighlight from "@/components/IncompleteSectionHighlight";
+import ProfileSettingsSection from "@/components/professional/ProfileSettingsSection";
+import DoctorImageSettings from "@/components/DoctorImageSettings";
 import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
 import { registrationChecklistHash } from "@/lib/provider-registration-complete";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, Sparkles } from "lucide-react";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/40";
@@ -37,6 +39,7 @@ export default function PsychoanalystSettingsPage() {
   const [bio, setBio] = useState("");
   const [clinicCity, setClinicCity] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
+  const [doctorImageOpen, setDoctorImageOpen] = useState(false);
 
   const { providerChecklist, refresh: refreshRegistration } = useRegistrationChecklist();
   const missingProfessionalData = providerChecklist?.professionalData === false;
@@ -46,6 +49,7 @@ export default function PsychoanalystSettingsPage() {
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
     if (!hash) return;
+    if (hash === "section-doctor-image") setDoctorImageOpen(true);
     requestAnimationFrame(() => {
       document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -140,6 +144,19 @@ export default function PsychoanalystSettingsPage() {
       {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl p-3">{error}</p>}
 
       <PublicListingSettings apiPath="/api/psychoanalyst/public-profile" />
+
+      <ProfileSettingsSection
+        id="section-doctor-image"
+        title={t("set.sectionDoctorImage")}
+        description={t("set.sectionDoctorImageDesc")}
+        icon={<Sparkles size={18} />}
+        open={doctorImageOpen}
+        onToggle={() => setDoctorImageOpen((v) => !v)}
+        optional
+      >
+        <DoctorImageSettings apiPath="/api/psychoanalyst/public-profile" />
+      </ProfileSettingsSection>
+
       <HealthPlansSettings apiPath="/api/psychoanalyst/health-plans" />
       <IncompleteSectionHighlight
         id={registrationChecklistHash("careSettings")}
