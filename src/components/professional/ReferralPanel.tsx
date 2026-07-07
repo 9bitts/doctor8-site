@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, UserPlus, Copy, CheckCircle2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, UserPlus, Copy, CheckCircle2, Brain } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
-export default function ReferralPanel({ chartId }: { chartId: string }) {
+type Props = {
+  chartId: string;
+  presetSpecialty?: "psychology";
+};
+
+export default function ReferralPanel({ chartId, presetSpecialty }: Props) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -18,17 +23,23 @@ export default function ReferralPanel({ chartId }: { chartId: string }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
-  async function searchColleagues(q: string) {
+  const isPsychology = presetSpecialty === "psychology";
+  const openLabel = isPsychology ? t("referral.openPsychology") : t("referral.open");
+  const titleLabel = isPsychology ? t("referral.titlePsychology") : t("referral.title");
+  const hintLabel = isPsychology ? t("referral.hintPsychology") : t("referral.hint");
+
+  async function searchColleagues(q: string, specialty?: string) {
     setQuery(q);
-    if (q.trim().length < 2) {
+    if (q.trim().length < 2 && !specialty) {
       setResults([]);
       return;
     }
     setSearching(true);
     try {
-      const res = await fetch(
-        `/api/professional/search-pros?q=${encodeURIComponent(q.trim())}`
-      );
+      const params = new URLSearchParams();
+      if (q.trim().length >= 2) params.set("q", q.trim());
+      if (specialty) params.set("specialty", specialty);
+      const res = await fetch(`/api/professional/search-pros?${params}`);
       const data = await res.json();
       setResults(data.professionals || []);
     } catch {
@@ -37,6 +48,12 @@ export default function ReferralPanel({ chartId }: { chartId: string }) {
       setSearching(false);
     }
   }
+
+  useEffect(() => {
+    if (open && isPsychology) {
+      searchColleagues("", "psychology");
+    }
+  }, [open, isPsychology]);
 
   async function createReferral(targetProfessionalId: string) {
     setLoading(true);
@@ -67,23 +84,34 @@ export default function ReferralPanel({ chartId }: { chartId: string }) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function handleOpen() {
+    setOpen(true);
+    if (isPsychology) setQuery("");
+  }
+
   if (!open) {
     return (
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 px-3 py-2 rounded-xl transition"
+        onClick={handleOpen}
+        className={`inline-flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-xl transition ${
+          isPsychology
+            ? "text-violet-700 bg-violet-50 hover:bg-violet-100"
+            : "text-brand-600 bg-brand-50 hover:bg-brand-100"
+        }`}
       >
-        <UserPlus size={16} />
-        {t("referral.open")}
+        {isPsychology ? <Brain size={16} /> : <UserPlus size={16} />}
+        {openLabel}
       </button>
     );
   }
 
   return (
-    <div className="rounded-xl border border-brand-100 bg-brand-50/50 p-4 space-y-3">
+    <div className={`rounded-xl border p-4 space-y-3 ${
+      isPsychology ? "border-violet-100 bg-violet-50/50" : "border-brand-100 bg-brand-50/50"
+    }`}>
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-800">{t("referral.title")}</p>
+        <p className="text-sm font-semibold text-slate-800">{titleLabel}</p>
         <button
           type="button"
           onClick={() => {
@@ -98,7 +126,7 @@ export default function ReferralPanel({ chartId }: { chartId: string }) {
           {t("referral.close")}
         </button>
       </div>
-      <p className="text-xs text-slate-600">{t("referral.hint")}</p>
+      <p className="text-xs text-slate-600">{hintLabel}</p>
 
       {bookingUrl ? (
         <div className="space-y-2">
@@ -123,16 +151,27 @@ export default function ReferralPanel({ chartId }: { chartId: string }) {
         </div>
       ) : (
         <>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => searchColleagues(e.target.value)}
-            placeholder={t("referral.searchPlaceholder")}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
-          />
+          {!isPsychology && (
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => searchColleagues(e.target.value)}
+              placeholder={t("referral.searchPlaceholder")}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+            />
+          )}
+          {isPsychology && (
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => searchColleagues(e.target.value, "psychology")}
+              placeholder={t("referral.searchPsychologyPlaceholder")}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+            />
+          )}
           {searching && (
             <div className="flex items-center gap-2 text-xs text-slate-400">
-              <Loader2 size={14} className="animate-spin" /> ?
+              <Loader2 size={14} className="animate-spin" />
             </div>
           )}
           {results.length > 0 && (
@@ -150,6 +189,9 @@ export default function ReferralPanel({ chartId }: { chartId: string }) {
                 </button>
               ))}
             </div>
+          )}
+          {isPsychology && !searching && results.length === 0 && (
+            <p className="text-xs text-slate-500">{t("referral.noPsychologists")}</p>
           )}
           <textarea
             value={note}

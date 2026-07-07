@@ -23,6 +23,7 @@ import { EmissionCardActions } from "@/components/professional/emissions/Emissio
 import { EmissionsSignModal, type EmissionKind, type SignTarget } from "@/components/professional/emissions/EmissionsSignModal";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import ReferralPanel from "@/components/professional/ReferralPanel";
+import PsychologyChartAuditPanel from "@/components/psychologist/PsychologyChartAuditPanel";
 import PatientChartTags, { type ChartTag } from "@/components/professional/PatientChartTags";
 import MetricsFormFields, { emptyMetrics } from "@/components/professional/MetricsFormFields";
 import MetricsEvolutionPanel from "@/components/professional/MetricsEvolutionPanel";
@@ -266,6 +267,12 @@ export default function RecordDetailClient({
   const isPsychologistPortal = pathname.startsWith("/psychologist");
   const isNursePortal = pathname.startsWith("/enfermeiro");
   const isPharmacistPortal = pathname.startsWith("/farmaceutico");
+  const isMedicalPortal =
+    pathname.startsWith("/professional") &&
+    !isPsychologistPortal &&
+    !isNutritionistPortal &&
+    !isNursePortal &&
+    !isPharmacistPortal;
   const portalBase = mapProfessionalPathToPortal(pathname, "/professional");
   const { data: session } = useSession();
   const userId = session?.user?.id ?? "";
@@ -1032,9 +1039,16 @@ export default function RecordDetailClient({
           </div>
         )}
 
-        <div className="mt-4 pt-4 border-t border-slate-100">
+        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-2">
           <ReferralPanel chartId={chart.id} />
+          {isMedicalPortal && <ReferralPanel chartId={chart.id} presetSpecialty="psychology" />}
         </div>
+
+        {isPsychologistPortal && isOwner && (
+          <div className="mt-4">
+            <PsychologyChartAuditPanel chartId={chart.id} />
+          </div>
+        )}
 
         {/* ── P1-b: registration data (for the prescription) ── */}
         <div className="mt-4 pt-4 border-t border-slate-100">

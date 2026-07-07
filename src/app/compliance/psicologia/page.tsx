@@ -63,6 +63,10 @@ export default function PublicPsychologyCompliancePage() {
           <Link href="/register/professional/signup?portal=psychologist" className="text-violet-600 underline">
             Cadastro psicólogo
           </Link>
+          {" · "}
+          <Link href="/psicologos" className="text-violet-600 underline">
+            Página para psicólogos
+          </Link>
         </p>
       </main>
     </div>

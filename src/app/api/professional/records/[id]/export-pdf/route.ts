@@ -51,6 +51,16 @@ export async function GET(
     exportedAt,
   });
 
+  const { createAuditLog } = await import("@/lib/audit");
+  const { AuditAction } = await import("@prisma/client");
+  await createAuditLog({
+    userId: professional.userId,
+    action: AuditAction.EXPORT_DATA,
+    resource: "PatientRecord",
+    resourceId: record.id,
+    details: { exportType: "psychology_chart_pdf" },
+  });
+
   const safeName = patientName.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-") || "paciente";
 
   return new NextResponse(Buffer.from(pdf), {

@@ -9,16 +9,29 @@ export async function GET(req: NextRequest) {
   if (isApiError(ctx)) return ctx.error;
 
   const q = req.nextUrl.searchParams.get("q")?.trim() || "";
-  if (q.length < 2) return NextResponse.json({ professionals: [] });
+  const specialtyFilter = req.nextUrl.searchParams.get("specialty")?.trim() || "";
+  if (q.length < 2 && !specialtyFilter) return NextResponse.json({ professionals: [] });
+
+  const psychologySpecialties = [
+    "Psychologist", "Psychology", "Psychoanalyst", "Neuropsychologist", "Psychotherapist", "Behavioral Therapist",
+  ];
 
   const pros = await db.professionalProfile.findMany({
     where: {
-      userId: { not: ctx.userId }, // exclude self
-      OR: [
-        { firstName: { contains: q, mode: "insensitive" } },
-        { lastName:  { contains: q, mode: "insensitive" } },
-        { specialty: { contains: q, mode: "insensitive" } },
-      ],
+      userId: { not: ctx.userId },
+      verified: true,
+      ...(specialtyFilter === "psychology"
+        ? { specialty: { in: psychologySpecialties } }
+        : {}),
+      ...(q.length >= 2
+        ? {
+            OR: [
+              { firstName: { contains: q, mode: "insensitive" } },
+              { lastName: { contains: q, mode: "insensitive" } },
+              { specialty: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
     },
     select: {
       id: true,

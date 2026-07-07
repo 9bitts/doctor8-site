@@ -73,6 +73,7 @@ const PUBLIC_ROUTES = [
   "/share/",     // shared medical records (token-based)
   "/anamnese-psi/", // psychology digital anamnesis (token-based)
   "/compliance/",   // public compliance pages
+  "/psicologos",    // psychology marketing landing
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
