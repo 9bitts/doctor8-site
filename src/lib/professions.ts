@@ -32,11 +32,21 @@ export const PROFESSION_GROUPS: { groupKey: string; options: string[] }[] = [
     "Dentist (General)", "Orthodontist", "Endodontist", "Periodontist",
     "Oral and Maxillofacial Surgeon", "Pediatric Dentist",
   ]},
-  { groupKey: "set.profGroup.other", options: [
-    "Pharmacist", "Biomedical Scientist", "Physical Educator / Personal Trainer", "Social Worker (Health)",
-    "Optometrist", "Podiatrist", "Acupuncturist (non-medical)", "Naturopath", "Veterinarian", "Other",
-  ]},
 ];
+
+/** Stored specialties no longer offered in settings dropdown (labels kept for display). */
+const RETIRED_PROFESSION_VALUES = [
+  "Pharmacist",
+  "Biomedical Scientist",
+  "Physical Educator / Personal Trainer",
+  "Social Worker (Health)",
+  "Optometrist",
+  "Podiatrist",
+  "Acupuncturist (non-medical)",
+  "Naturopath",
+  "Veterinarian",
+  "Other",
+] as const;
 
 const LABELS: Record<string, Record<Lang, string>> = {
   "Acupuncture": { en: "Acupuncture", pt: "Acupuntura", es: "Acupuntura" },
@@ -195,6 +205,7 @@ export function canonicalProfessionValue(raw: string): string | null {
   const s = raw.trim();
   if (!s) return null;
   if (ALL_PROFESSION_VALUES.includes(s)) return s;
+  if ((RETIRED_PROFESSION_VALUES as readonly string[]).includes(s)) return s;
 
   const legacy = LEGACY_SPECIALTY_ALIASES[s];
   if (legacy) return legacy;
