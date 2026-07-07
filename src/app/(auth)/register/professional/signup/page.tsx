@@ -249,10 +249,10 @@ export default function RegisterProfessionalSignupPage() {
 
               <button
                 onClick={() => chooseRole("NUTRITIONIST")}
-                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-amber-500 hover:bg-amber-500/10 transition text-left group"
+                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-yellow-500 hover:bg-yellow-500/10 transition text-left group"
               >
-                <div className="w-14 h-14 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition">
-                  <Utensils className="w-7 h-7 text-amber-400" />
+                <div className="w-14 h-14 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center shrink-0 group-hover:bg-yellow-500/20 group-hover:border-yellow-400 transition">
+                  <Utensils className="w-7 h-7 text-yellow-400" />
                 </div>
                 <div>
                   <p className="text-white font-semibold text-base">{t("reg.imNutritionist")}</p>

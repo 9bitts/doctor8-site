@@ -40,7 +40,7 @@ const PORTAL_LINKS: PortalLink[] = [
     href: "/login?portal=nutritionist",
     labelKey: "login.proNutritionistPortal",
     icon: Utensils,
-    className: "text-slate-400 hover:text-amber-300",
+    className: "text-slate-400 hover:text-yellow-300",
   },
   {
     href: "/login?portal=nurse",
