@@ -11,11 +11,13 @@ const medicationItemSchema = z.object({
   instructions: z.string().optional(),
   presentation: z.string().optional(),
   pharmaceuticalForm: z.string().optional(),
-  itemKind: z.enum(["medication", "device", "phytotherapy"]).optional(),
+  itemKind: z.enum(["medication", "device", "phytotherapy", "floral"]).optional(),
+  phytoProductId: z.string().optional(),
+  floralProductId: z.string().optional(),
 }).superRefine((item, ctx) => {
   const kind = item.itemKind || "medication";
-  if (kind !== "phytotherapy") {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "only phytotherapy allowed", path: ["itemKind"] });
+  if (kind !== "phytotherapy" && kind !== "floral") {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "only phytotherapy or floral allowed", path: ["itemKind"] });
   }
 });
 

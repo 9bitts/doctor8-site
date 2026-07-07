@@ -169,6 +169,7 @@ export function generatePatientHandout(opts: {
     lines.push(
       ...([
         line(t("it.tpl.florais.formula"), String(structured.essencesFormula ?? "")),
+        line(t("it.tpl.florais.product"), String(structured.floralProduct ?? "")),
         line(t("it.tpl.florais.posology"), String(structured.posology ?? "")),
         line(t("it.tpl.florais.orientations"), String(structured.orientations ?? "")),
       ].filter(Boolean) as string[]),

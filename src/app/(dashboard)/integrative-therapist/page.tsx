@@ -6,13 +6,14 @@ import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations"
 import { getUserLang } from "@/lib/i18n/server-lang";
 import { decryptIntegrativeNameFields, safeDecrypt } from "@/lib/integrative-therapist-api";
 import { picBySlug, picLabel } from "@/lib/pics/practices";
-import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf, TrendingUp, Clock, BookOpen, ClipboardList, AlertCircle } from "lucide-react";
+import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf, TrendingUp, Clock, BookOpen, ClipboardList, AlertCircle, Sprout } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getIntegrativeVisitMetaByPatientUserIds } from "@/lib/integrative-appointment-meta";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
+import { hasAnyNaturalMedicinePractice } from "@/lib/natural-medicine/config";
 import { providerDayBounds } from "@/lib/provider-day-bounds";
 import {
   DEFAULT_TIME_ZONE,
@@ -77,6 +78,7 @@ export default async function IntegrativeTherapistDashboard() {
 
   const needsPracticeSetup = profile.picsPractices.length === 0;
   const canStartConsult = clientCount > 0;
+  const showNaturalMedicine = hasAnyNaturalMedicinePractice(profile.picsPractices);
 
   const visitMetaByUser = await getIntegrativeVisitMetaByPatientUserIds(
     profile.id,
@@ -187,6 +189,9 @@ export default async function IntegrativeTherapistDashboard() {
         {[
           { href: "/integrative-therapist/clients", icon: Users, label: t("it.nav.clients") },
           { href: "/integrative-therapist/appointments", icon: Calendar, label: t("nav.appointments") },
+          ...(showNaturalMedicine
+            ? [{ href: "/integrative-therapist/medicina-natural", icon: Sprout, label: t("nav.naturalMedicine") }]
+            : []),
           { href: "/integrative-therapist/financeiro", icon: TrendingUp, label: t("nav.financeiro") },
           { href: "/integrative-therapist/settings", icon: Settings, label: t("nav.myProfile") },
           { href: "/integrative-therapist/settings/availability", icon: Video, label: t("nav.availability") },

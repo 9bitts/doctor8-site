@@ -15,12 +15,13 @@ const medicationItemSchema = z.object({
   instructions: z.string().optional(),
   presentation: z.string().optional(),
   pharmaceuticalForm: z.string().optional(),
-  itemKind: z.enum(["medication", "device", "phytotherapy"]).optional(),
+  itemKind: z.enum(["medication", "device", "phytotherapy", "floral"]).optional(),
   phytoProductId: z.string().optional(),
+  floralProductId: z.string().optional(),
 }).superRefine((item, ctx) => {
   const kind = item.itemKind || "medication";
-  if (kind !== "phytotherapy") {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "only phytotherapy allowed", path: ["itemKind"] });
+  if (kind !== "phytotherapy" && kind !== "floral") {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "only phytotherapy or floral allowed", path: ["itemKind"] });
   }
 });
 
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
       integrativeTherapistId: therapist.id,
       appointmentId: appointmentId || null,
       type: "PRESCRIPTION",
-      title: encrypt(`Prescrição fitoterápica — ${new Date().toLocaleDateString("pt-BR")}`),
+      title: encrypt(`Prescrição — ${new Date().toLocaleDateString("pt-BR")}`),
     },
   });
 
@@ -131,7 +132,7 @@ export async function POST(req: NextRequest) {
     await createNotification({
       userId: patientUserId,
       title: "Nova prescrição",
-      body: `${therapistName} enviou uma prescrição fitoterápica.`,
+      body: `${therapistName} enviou uma nova prescrição.`,
       type: "system",
       data: {
         url: "/patient/prescriptions",

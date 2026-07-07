@@ -5,6 +5,8 @@ export interface PrescriptionsPortalConfig {
   apiBase: string;
   /** Only fitoterápicos — hide drug search and conventional meds */
   phytoOnly: boolean;
+  /** Allow flower essence items (integrative terapia de florais) */
+  allowFloral: boolean;
   /** Skip Lacuna digital signature — deliver to patient only */
   skipDigitalSign: boolean;
   /** Hide exam/document flows in the hub */
@@ -19,6 +21,7 @@ const CONFIG: Record<PrescriptionsPortalId, PrescriptionsPortalConfig> = {
     portal: "professional",
     apiBase: "/api/professional",
     phytoOnly: false,
+    allowFloral: false,
     skipDigitalSign: false,
     prescriptionsOnly: false,
     accountSignHref: "/professional/account#digital-sign",
@@ -29,6 +32,7 @@ const CONFIG: Record<PrescriptionsPortalId, PrescriptionsPortalConfig> = {
     portal: "integrative-therapist",
     apiBase: "/api/integrative-therapist",
     phytoOnly: true,
+    allowFloral: true,
     skipDigitalSign: true,
     prescriptionsOnly: true,
     accountSignHref: "/integrative-therapist/settings",

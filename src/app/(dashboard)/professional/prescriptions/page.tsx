@@ -28,6 +28,11 @@ import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 import DrugSearchResults, { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
 import PrescriptionMedItemForm, { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 import { phytotherapyProductByValue, PHYTOTHERAPY_REFERENCE_PRODUCTS } from "@/lib/pics/reference-library/phytotherapy-products";
+import { floralProductByValue } from "@/lib/pics/reference-library/floral-products";
+import {
+  resolveFloralStarter,
+  templateHasFloralItems,
+} from "@/lib/pics/reference-library/floral-starter-templates";
 import {
   getPrescriptionsPortalConfig,
   apiPath,
@@ -350,6 +355,9 @@ export default function PrescriptionsPage() {
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [lockPatient, setLockPatient] = useState(false);
   const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
+  const [pendingStarterId, setPendingStarterId] = useState<string | null>(null);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [floralOnlyMode, setFloralOnlyMode] = useState(false);
 
   useEffect(() => {
     if (cfg.prescriptionsOnly && (view === "exam" || view === "document")) {
@@ -403,6 +411,33 @@ export default function PrescriptionsPage() {
       });
     }
 
+    if (params.get("add") === "floral" && !patientRecordId) {
+      setView("prescription");
+      setFloralOnlyMode(true);
+      const starter = params.get("starter");
+      const templateId = params.get("templateId");
+      if (starter) {
+        setPendingStarterId(starter);
+      } else if (templateId) {
+        setPendingTemplateId(templateId);
+      } else {
+        setMedications((prev) => {
+          if (prev.some((m) => m.itemKind === "floral")) return prev;
+          return [
+            ...prev,
+            {
+              name: "",
+              dosage: "",
+              frequency: "",
+              duration: "",
+              instructions: "",
+              itemKind: "floral" as const,
+            },
+          ];
+        });
+      }
+    }
+
     const sign = params.get("sign");
     const flow = params.get("flow");
     const kind = params.get("kind") as EmissionKind | null;
@@ -440,6 +475,28 @@ export default function PrescriptionsPage() {
       setTimeout(() => setSignResult(null), 6000);
     }
   }, []);
+
+  useEffect(() => {
+    if (!pendingStarterId) return;
+    const resolved = resolveFloralStarter(pendingStarterId, lang);
+    if (resolved) {
+      setMedications(resolved.medications);
+      setInstructions(resolved.instructions);
+      setValidDays(resolved.validDays);
+      setView("prescription");
+    }
+    setPendingStarterId(null);
+  }, [pendingStarterId, lang]);
+
+  useEffect(() => {
+    if (!pendingTemplateId) return;
+    const tpl = rxTemplates.find((x) => x.id === pendingTemplateId);
+    if (tpl) {
+      applyRxTemplate(tpl);
+      setView("prescription");
+      setPendingTemplateId(null);
+    }
+  }, [pendingTemplateId, rxTemplates]);
 
   async function loadEmissionPatient(kind: EmissionKind, id: string): Promise<Chart | null> {
     try {
@@ -818,7 +875,7 @@ export default function PrescriptionsPage() {
     setDrugQuery(""); setDrugResults([]);
   }
 
-  function addSpecialItem(kind: "device" | "phytotherapy") {
+  function addSpecialItem(kind: "device" | "phytotherapy" | "floral") {
     setMedications((prev) => [...prev, {
       name: "",
       dosage: "",
@@ -845,6 +902,22 @@ export default function PrescriptionsPage() {
               name: product && productId !== "other" && productId !== "planta_medicinal"
                 ? t(product.labelKey)
                 : m.name,
+            }
+          : m,
+      ),
+    );
+  }
+
+  function selectFloralProduct(index: number, productId: string) {
+    const product = floralProductByValue(productId);
+    setMedications((prev) =>
+      prev.map((m, i) =>
+        i === index
+          ? {
+              ...m,
+              floralProductId: productId,
+              name: product && productId !== "floral_custom" ? t(product.labelKey) : m.name,
+              dosage: m.dosage || (productId.startsWith("bach_") || productId.startsWith("sg") ? "4 gotas, 4x/dia" : m.dosage),
             }
           : m,
       ),
@@ -878,6 +951,8 @@ export default function PrescriptionsPage() {
         presentation: m.presentation || "",
         pharmaceuticalForm: m.pharmaceuticalForm || "",
         itemKind: m.itemKind || "medication",
+        phytoProductId: m.phytoProductId || undefined,
+        floralProductId: m.floralProductId || undefined,
       }));
       const res = await fetch(api("/templates/prescriptions"), {
         method: "POST",
@@ -918,6 +993,8 @@ export default function PrescriptionsPage() {
         presentation: m.presentation || "",
         pharmaceuticalForm: m.pharmaceuticalForm || "",
         itemKind: m.itemKind || "medication",
+        phytoProductId: m.phytoProductId || undefined,
+        floralProductId: m.floralProductId || undefined,
       }));
       const payload = selectedPatient
         ? { [cfg.patientRecordField]: selectedPatient.id, medications: cleanMeds, instructions, validDays }
@@ -1279,13 +1356,18 @@ export default function PrescriptionsPage() {
               )}
             </div>
 
-            {rxTemplates.length > 0 && (
+            {rxTemplates.length > 0 && (() => {
+              const visibleTemplates = floralOnlyMode
+                ? rxTemplates.filter((tpl) => templateHasFloralItems(tpl.medications as MedItem[]))
+                : rxTemplates;
+              if (visibleTemplates.length === 0) return null;
+              return (
               <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5">
                 <p className="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-1.5">
                   <LayoutTemplate size={16} className="text-brand-500" /> {t("tmpl.savedRxTemplates")}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {rxTemplates.map((tpl) => (
+                  {visibleTemplates.map((tpl) => (
                     <button
                       key={tpl.id}
                       type="button"
@@ -1297,14 +1379,15 @@ export default function PrescriptionsPage() {
                   ))}
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* Add item card */}
             <div className={`bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4 ${drugQuery.trim().length >= 2 && drugResults.length > 0 ? "relative z-50" : ""}`}>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-800">{t("rx2.addItem")}</label>
                 {cfg.phytoOnly ? (
-                  <p className="text-xs text-slate-500">{t("rx.addPhytotherapy")}</p>
+                  <p className="text-xs text-slate-500">{t("rx.addPhytotherapy")} · {t("rx.addFloral")}</p>
                 ) : (
                   <>
                     <p className="text-xs text-slate-500">{t("rx2.countryPick")}</p>
@@ -1362,10 +1445,18 @@ export default function PrescriptionsPage() {
                 </div>
               )}
               {cfg.phytoOnly && (
-                <button type="button" onClick={() => addSpecialItem("phytotherapy")}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 font-medium text-sm transition">
-                  <Plus size={14} /> {t("rx.addPhytotherapy")}
-                </button>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  <button type="button" onClick={() => addSpecialItem("phytotherapy")}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 font-medium text-sm transition">
+                    <Plus size={14} /> {t("rx.addPhytotherapy")}
+                  </button>
+                  {cfg.allowFloral && (
+                    <button type="button" onClick={() => addSpecialItem("floral")}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-pink-200 bg-pink-50/50 hover:bg-pink-50 text-pink-800 font-medium text-sm transition">
+                      <Plus size={14} /> {t("rx.addFloral")}
+                    </button>
+                  )}
+                </div>
               )}
               <p className="text-xs text-slate-400 text-center -mt-2">{t("rx.manualAlways")}</p>
 
@@ -1400,7 +1491,8 @@ export default function PrescriptionsPage() {
                   {medications.map((med, index) => {
                     const kind = med.itemKind || "medication";
                     const kindLabel = kind === "device" ? t("rx.itemKind.device")
-                      : kind === "phytotherapy" ? t("rx.itemKind.phytotherapy") : null;
+                      : kind === "phytotherapy" ? t("rx.itemKind.phytotherapy")
+                      : kind === "floral" ? t("rx.itemKind.floral") : null;
                     const fieldErrors = medItemFieldErrors(med);
                     const itemInvalid = !isMedItemValid(med);
                     const showErrors = highlightIncompleteMeds && itemInvalid;
@@ -1415,6 +1507,7 @@ export default function PrescriptionsPage() {
                         controlInfo={controlInfo(med.prescriptionType)}
                         onUpdate={updateMedication}
                         onPhytoProductSelect={selectPhytoProduct}
+                        onFloralProductSelect={selectFloralProduct}
                         onRemove={removeMedication}
                         t={t}
                         rxFieldClass={rxFieldClass}

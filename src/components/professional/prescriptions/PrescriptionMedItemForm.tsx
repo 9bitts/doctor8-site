@@ -3,6 +3,12 @@ import {
   PHYTOTHERAPY_REFERENCE_PRODUCTS,
   phytotherapyProductByValue,
 } from "@/lib/pics/reference-library/phytotherapy-products";
+import {
+  FLORAL_CATEGORY_LABEL_KEYS,
+  FLORAL_REFERENCE_PRODUCTS,
+  floralProductByValue,
+  type FloralProductCategory,
+} from "@/lib/pics/reference-library/floral-products";
 
 export type PrescriptionMedItem = {
   name: string;
@@ -14,8 +20,9 @@ export type PrescriptionMedItem = {
   pharmaceuticalForm?: string;
   controlled?: boolean;
   prescriptionType?: string | null;
-  itemKind?: "medication" | "device" | "phytotherapy";
+  itemKind?: "medication" | "device" | "phytotherapy" | "floral";
   phytoProductId?: string;
+  floralProductId?: string;
 };
 
 export type ControlInfo = {
@@ -33,10 +40,19 @@ interface PrescriptionMedItemFormProps {
   controlInfo: ControlInfo;
   onUpdate: (index: number, field: keyof PrescriptionMedItem, value: string) => void;
   onPhytoProductSelect?: (index: number, productId: string) => void;
+  onFloralProductSelect?: (index: number, productId: string) => void;
   onRemove: (index: number) => void;
   t: (key: string) => string;
   rxFieldClass: (invalid: boolean) => string;
 }
+
+const FLORAL_CATEGORIES: FloralProductCategory[] = [
+  "bach",
+  "bach_rescue",
+  "saint_germain",
+  "saint_germain_formula",
+  "custom",
+];
 
 export default function PrescriptionMedItemForm({
   med,
@@ -47,6 +63,7 @@ export default function PrescriptionMedItemForm({
   controlInfo: ci,
   onUpdate,
   onPhytoProductSelect,
+  onFloralProductSelect,
   onRemove,
   t,
   rxFieldClass,
@@ -88,6 +105,38 @@ export default function PrescriptionMedItemForm({
               {med.phytoProductId && phytotherapyProductByValue(med.phytoProductId) && (
                 <p className="text-[11px] text-teal-700 mt-1 leading-relaxed">
                   {t(phytotherapyProductByValue(med.phytoProductId)!.indicationKey)}
+                </p>
+              )}
+            </div>
+          )}
+          {kind === "floral" && onFloralProductSelect && (
+            <div>
+              <label className="text-xs font-medium text-slate-600 block mb-1">
+                {t("rx.floralProductSelect")}
+              </label>
+              <select
+                value={med.floralProductId || ""}
+                onChange={(e) => onFloralProductSelect(index, e.target.value)}
+                className="rx-inp-sm"
+              >
+                <option value="">{t("rx.floralProductPlaceholder")}</option>
+                {FLORAL_CATEGORIES.map((cat) => {
+                  const products = FLORAL_REFERENCE_PRODUCTS.filter((p) => p.category === cat);
+                  if (products.length === 0) return null;
+                  return (
+                    <optgroup key={cat} label={t(FLORAL_CATEGORY_LABEL_KEYS[cat])}>
+                      {products.map((p) => (
+                        <option key={p.value} value={p.value}>
+                          {t(p.labelKey)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+              </select>
+              {med.floralProductId && floralProductByValue(med.floralProductId) && (
+                <p className="text-[11px] text-pink-700 mt-1 leading-relaxed">
+                  {t(floralProductByValue(med.floralProductId)!.indicationKey)}
                 </p>
               )}
             </div>
@@ -171,6 +220,23 @@ export default function PrescriptionMedItemForm({
             </select>
           </div>
         )}
+        {kind === "floral" && (
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-slate-600 block mb-1">
+              {t("it.tpl.florais.preparation")}
+            </label>
+            <select
+              value={med.pharmaceuticalForm || ""}
+              onChange={(e) => onUpdate(index, "pharmaceuticalForm", e.target.value)}
+              className="rx-inp-sm"
+            >
+              <option value="">{t("med.freqSelect")}</option>
+              <option value="gotas_30ml">{t("it.tpl.florais.presentation.floral")}</option>
+              <option value="spray">{t("it.tpl.florais.presentation.spray")}</option>
+              <option value="estoque">{t("it.tpl.florais.presentation.stock")}</option>
+            </select>
+          </div>
+        )}
         <div>
           <label
             className={`text-xs font-medium block mb-1 ${
@@ -184,7 +250,7 @@ export default function PrescriptionMedItemForm({
             type="text"
             value={med.dosage}
             onChange={(e) => onUpdate(index, "dosage", e.target.value)}
-            placeholder={t("rx.medDosagePlaceholder")}
+            placeholder={kind === "floral" ? "4 gotas, 4x/dia" : t("rx.medDosagePlaceholder")}
             className={`rx-inp-sm${rxFieldClass(showErrors && fieldErrors.dosage)}`}
           />
         </div>

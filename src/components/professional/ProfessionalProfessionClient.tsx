@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Check, Heart, ChevronRight,
-  Stethoscope, Brain, Sparkles, Leaf, Dumbbell, Utensils,
+  Stethoscope, Brain, Sparkles, Leaf, Dumbbell, Utensils, Pill,
   type LucideIcon,
 } from "lucide-react";
 import type { HumanitarianPoolSlug } from "@/lib/humanitarian/constants";
@@ -21,6 +21,7 @@ const ICONS: Record<string, LucideIcon> = {
   dumbbell: Dumbbell,
   utensils: Utensils,
   heart: Heart,
+  pill: Pill,
 };
 
 export default function ProfessionalProfessionClient({ slug }: { slug: HumanitarianPoolSlug }) {

@@ -87,6 +87,22 @@ export default function PicsPracticeHub({ portal, practice }: PicsPracticeHubPro
             color: "bg-emerald-100 text-emerald-600",
             key: "nm.mod.sessions",
           },
+          ...(practice.id === "terapia_florais"
+            ? [
+                {
+                  path: "/integrative-therapist/prescriptions?add=floral",
+                  icon: Stethoscope,
+                  color: "bg-pink-100 text-pink-600",
+                  key: "nm.mod.floralPrescriptions",
+                },
+                {
+                  path: `${practiceBase}/templates`,
+                  icon: LayoutTemplate,
+                  color: "bg-rose-100 text-rose-600",
+                  key: "nm.mod.floralTemplates",
+                },
+              ]
+            : []),
           {
             path: "/integrative-therapist/clients",
             icon: Users,

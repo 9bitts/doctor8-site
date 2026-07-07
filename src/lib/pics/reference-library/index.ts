@@ -1,6 +1,10 @@
 import type { Lang } from "@/lib/i18n/translations";
 import { translate } from "@/lib/i18n/translations";
-import { BACH_ESSENCE_GROUPS, BACH_RESCUE_KEYS } from "./florais-bach";
+import { BACH_EMOTIONAL_GROUPS, BACH_RESCUE_ENTRIES } from "./florais-bach";
+import {
+  SAINT_GERMAIN_COMPOUND_FORMULAS,
+  SAINT_GERMAIN_ESSENCES,
+} from "./florais-saint-germain";
 import { PHYTOTHERAPY_REFERENCE_PRODUCTS } from "./phytotherapy-products";
 
 export type ReferenceSectionId =
@@ -21,6 +25,8 @@ export type ReferenceSectionId =
   | "music_care"
   | "florais_care"
   | "bach_essences"
+  | "saint_germain_essences"
+  | "saint_germain_formulas"
   | "ayur_care"
   | "hypno_care"
   | "antro_care"
@@ -66,7 +72,12 @@ const SECTIONS_BY_PRACTICE: Record<string, ReferenceSectionId[]> = {
   biodanca: ["biodanca_care"],
   reflexoterapia: ["reflex_care"],
   musicoterapia: ["music_care"],
-  terapia_florais: ["florais_care", "bach_essences"],
+  terapia_florais: [
+    "florais_care",
+    "bach_essences",
+    "saint_germain_essences",
+    "saint_germain_formulas",
+  ],
   ayurveda: ["ayur_care"],
   hipnoterapia: ["hypno_care"],
   antroposofia: ["antro_care"],
@@ -175,11 +186,24 @@ const SECTION_DEFS: Record<ReferenceSectionId, Omit<ReferenceSection, "id">> = {
   },
   florais_care: {
     titleKey: "it.ref.floraisCare",
-    bodyKeys: ["it.ref.florais.1", "it.ref.florais.2", "it.ref.florais.3"],
+    bodyKeys: [
+      "it.ref.florais.1",
+      "it.ref.florais.2",
+      "it.ref.florais.3",
+      "it.ref.florais.4",
+    ],
   },
   bach_essences: {
     titleKey: "it.ref.bach.title",
     bodyKeys: [],
+  },
+  saint_germain_essences: {
+    titleKey: "it.ref.sg.title",
+    bodyKeys: ["it.ref.sg.intro"],
+  },
+  saint_germain_formulas: {
+    titleKey: "it.ref.sgf.title",
+    bodyKeys: ["it.ref.sgf.intro"],
   },
   ayur_care: {
     titleKey: "it.ref.ayurCare",
@@ -255,17 +279,36 @@ export function getReferenceSections(practiceSlug: string): ReferenceSection[] {
 export function renderReferenceSectionBody(section: ReferenceSection, lang: Lang): string[] {
   if (section.id === "bach_essences") {
     const lines: string[] = [translate(lang, "it.ref.bach.intro")];
-    for (const group of BACH_ESSENCE_GROUPS) {
+    for (const group of BACH_EMOTIONAL_GROUPS) {
       lines.push("");
       lines.push(translate(lang, group.groupKey));
-      for (const key of group.essenceKeys) {
-        lines.push(`  • ${translate(lang, key)}`);
+      for (const essence of group.essences) {
+        const name = translate(lang, essence.labelKey);
+        const neg = translate(lang, essence.negKey);
+        const pos = translate(lang, essence.posKey);
+        lines.push(`  • ${name} — ${neg} → ${pos}`);
       }
     }
     lines.push("");
     lines.push(translate(lang, "it.ref.bach.rescueTitle"));
-    for (const key of BACH_RESCUE_KEYS) {
-      lines.push(`  • ${translate(lang, key)}`);
+    for (const rescue of BACH_RESCUE_ENTRIES) {
+      lines.push(`  • ${translate(lang, rescue.labelKey)}: ${translate(lang, rescue.indicationKey)}`);
+    }
+    return lines;
+  }
+
+  if (section.id === "saint_germain_essences") {
+    const lines = section.bodyKeys.map((k) => translate(lang, k));
+    for (const essence of SAINT_GERMAIN_ESSENCES) {
+      lines.push(`  • ${translate(lang, essence.labelKey)}: ${translate(lang, essence.indicationKey)}`);
+    }
+    return lines;
+  }
+
+  if (section.id === "saint_germain_formulas") {
+    const lines = section.bodyKeys.map((k) => translate(lang, k));
+    for (const formula of SAINT_GERMAIN_COMPOUND_FORMULAS) {
+      lines.push(`  • ${translate(lang, formula.labelKey)}: ${translate(lang, formula.indicationKey)}`);
     }
     return lines;
   }
