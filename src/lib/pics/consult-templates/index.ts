@@ -9,6 +9,7 @@ import { SHANTALA_TEMPLATE } from "./shantala";
 import { REIKI_TEMPLATE } from "./reiki";
 import { AROMATERAPIA_TEMPLATE } from "./aromaterapia";
 import { BIODANCA_TEMPLATE } from "./biodanca";
+import { BREATHWORK_TEMPLATE } from "./breathwork";
 import { REFLEXOTERAPIA_TEMPLATE } from "./reflexoterapia";
 import { MUSICOTERAPIA_TEMPLATE } from "./musicoterapia";
 import { TERAPIA_FLORAIS_TEMPLATE } from "./terapia_florais";
@@ -42,6 +43,7 @@ const TEMPLATES: Record<string, ConsultTemplate> = {
   reiki: REIKI_TEMPLATE,
   aromaterapia: AROMATERAPIA_TEMPLATE,
   biodanca: BIODANCA_TEMPLATE,
+  breathwork: BREATHWORK_TEMPLATE,
   reflexoterapia: REFLEXOTERAPIA_TEMPLATE,
   musicoterapia: MUSICOTERAPIA_TEMPLATE,
   terapia_florais: TERAPIA_FLORAIS_TEMPLATE,

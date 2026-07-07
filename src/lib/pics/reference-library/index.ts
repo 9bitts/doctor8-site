@@ -32,6 +32,7 @@ export type ReferenceSectionId =
   | "antro_care"
   | "api_care"
   | "bioen_care"
+  | "breath_care"
   | "constel_care"
   | "cromo_care"
   | "dcircular_care"
@@ -83,6 +84,7 @@ const SECTIONS_BY_PRACTICE: Record<string, ReferenceSectionId[]> = {
   antroposofia: ["antro_care"],
   apiterapia: ["api_care"],
   bioenergetica: ["bioen_care"],
+  breathwork: ["breath_care"],
   constelacao_familiar: ["constel_care"],
   cromoterapia: ["cromo_care"],
   danca_circular: ["dcircular_care"],
@@ -224,6 +226,10 @@ const SECTION_DEFS: Record<ReferenceSectionId, Omit<ReferenceSection, "id">> = {
   bioen_care: {
     titleKey: "it.ref.bioenCare",
     bodyKeys: ["it.ref.bioen.1", "it.ref.bioen.2"],
+  },
+  breath_care: {
+    titleKey: "it.ref.breathCare",
+    bodyKeys: ["it.ref.breath.1", "it.ref.breath.2", "it.ref.breath.3"],
   },
   constel_care: {
     titleKey: "it.ref.constelCare",

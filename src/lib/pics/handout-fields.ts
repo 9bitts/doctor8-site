@@ -12,6 +12,10 @@ export const HANDOUT_FIELD_MAP: Record<string, { labelKey: string; fieldKey: str
     { labelKey: "it.tpl.bioen.home", fieldKey: "homeExercises" },
     { labelKey: "it.tpl.bioen.frequency", fieldKey: "frequency" },
   ],
+  breathwork: [
+    { labelKey: "it.tpl.breath.technique", fieldKey: "techniqueTaught" },
+    { labelKey: "it.tpl.breath.frequency", fieldKey: "homeFrequency" },
+  ],
   constelacao_familiar: [
     { labelKey: "it.tpl.constel.insights", fieldKey: "insights" },
     { labelKey: "it.tpl.constel.integration", fieldKey: "integrationPlan" },

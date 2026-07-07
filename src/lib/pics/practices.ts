@@ -107,6 +107,14 @@ export const PICS_PRACTICES: PicPractice[] = [
     descriptionPt: "Sistema de integração afetiva, motora e existencial por meio da dança e do movimento.",
   },
   {
+    slug: "breathwork",
+    category: "mental_emocional",
+    labelPt: "Breathwork",
+    labelEn: "Breathwork",
+    labelEs: "Breathwork",
+    descriptionPt: "Técnicas de respiração consciente para regulação emocional, redução de estresse e integração mente-corpo.",
+  },
+  {
     slug: "bioenergetica",
     category: "corporal",
     labelPt: "Bioenergética",
