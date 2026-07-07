@@ -20,6 +20,8 @@ import {
   Clock,
   LayoutList,
   AlertCircle,
+  HeartPulse,
+  Pill,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -107,6 +109,8 @@ const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
   psicologos: <Brain size={14} />,
   nutricionistas: <Apple size={14} />,
   fisioterapeutas: <Activity size={14} />,
+  enfermeiros: <HeartPulse size={14} />,
+  farmaceuticos: <Pill size={14} />,
   psicanalistas: <Brain size={14} />,
   terapeutas: <Leaf size={14} />,
   anjos: <Heart size={14} />,
@@ -162,6 +166,12 @@ function computeLegacyTabCounts(
     fisioterapeutas:
       angels.filter((a) => angelMatchesAdminTab(a, "fisioterapeutas")).length +
       doctors.filter((d) => matchesDoctorTab("fisioterapeutas", d.specialty, d.licenseNumber)).length,
+    enfermeiros:
+      angels.filter((a) => angelMatchesAdminTab(a, "enfermeiros")).length +
+      doctors.filter((d) => matchesDoctorTab("enfermeiros", d.specialty, d.licenseNumber)).length,
+    farmaceuticos:
+      angels.filter((a) => angelMatchesAdminTab(a, "farmaceuticos")).length +
+      doctors.filter((d) => matchesDoctorTab("farmaceuticos", d.specialty, d.licenseNumber)).length,
     psicanalistas:
       angels.filter((a) => angelMatchesAdminTab(a, "psicanalistas")).length +
       doctors.filter((d) => matchesDoctorTab("psicanalistas", d.specialty, d.licenseNumber)).length +

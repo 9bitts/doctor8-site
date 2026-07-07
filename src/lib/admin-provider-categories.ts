@@ -10,7 +10,7 @@ const PROFESSION_GROUP_TAB: Record<string, AdminProviderTab> = {
   "set.profGroup.psychology": "psicologos",
   "set.profGroup.nutrition": "nutricionistas",
   "set.profGroup.rehab": "fisioterapeutas",
-  "set.profGroup.nursing": "outros",
+  "set.profGroup.nursing": "enfermeiros",
   "set.profGroup.dentistry": "medicos",
   "set.profGroup.other": "outros",
 };
@@ -27,6 +27,7 @@ function tabFromCanonicalProfession(raw: string): AdminProviderTab | null {
     return "psicanalistas";
   }
   if (INTEGRATIVE_OTHER_PROFESSIONS.has(canonical)) return "terapeutas";
+  if (canonical === "Pharmacist") return "farmaceuticos";
 
   for (const group of PROFESSION_GROUPS) {
     if (!group.options.includes(canonical)) continue;
@@ -43,6 +44,8 @@ export type AdminProviderTab =
   | "psicologos"
   | "nutricionistas"
   | "fisioterapeutas"
+  | "enfermeiros"
+  | "farmaceuticos"
   | "psicanalistas"
   | "terapeutas"
   | "anjos"
@@ -56,6 +59,8 @@ export const ADMIN_PROVIDER_TABS: { id: AdminProviderTab }[] = [
   { id: "psicologos" },
   { id: "nutricionistas" },
   { id: "fisioterapeutas" },
+  { id: "enfermeiros" },
+  { id: "farmaceuticos" },
   { id: "psicanalistas" },
   { id: "terapeutas" },
   { id: "anjos" },
@@ -89,9 +94,9 @@ function tabFromProfessionInfoType(
     case "physiotherapist":
       return "fisioterapeutas";
     case "nurse":
-      return "outros";
+      return "enfermeiros";
     case "pharmacist":
-      return "outros";
+      return "farmaceuticos";
     case "dentist":
     case "doctor":
       return "medicos";
@@ -113,8 +118,10 @@ export function resolveAdminTabFromProfessionText(
   if (s.includes("psicanal")) return "psicanalistas";
   if (s.includes("terapeuta integrativ")) return "terapeutas";
   if (isPsychologistSpecialtyValue(specialty)) return "psicologos";
-  if (s.includes("enferm") || s.includes("nurse")) return "outros";
-  if (s.includes("farmac") || s.includes("pharm")) return "outros";
+  if (s.includes("enferm") || s.includes("nurse") || s.includes("midwife") || s.includes("obstetric nurse")) {
+    return "enfermeiros";
+  }
+  if (s.includes("farmac") || s.includes("pharm")) return "farmaceuticos";
 
   const fromProfessionGroups = tabFromCanonicalProfession(raw);
   if (fromProfessionGroups) return fromProfessionGroups;
@@ -171,8 +178,8 @@ export function inferAdminTabFromLicense(
   if (/\bCRP\b|CRP[\s/-]/.test(lic)) return "psicologos";
   if (/\bCRN\b|CRN[\s/-]/.test(lic)) return "nutricionistas";
   if (/\bCREFITO\b|CREFITO[\s/-]/.test(lic)) return "fisioterapeutas";
-  if (/\bCOREN\b|COREN[\s/-]/.test(lic)) return "outros";
-  if (/\bCRF\b|CRF[\s/-]/.test(lic)) return "outros";
+  if (/\bCOREN\b|COREN[\s/-]/.test(lic)) return "enfermeiros";
+  if (/\bCRF\b|CRF[\s/-]/.test(lic)) return "farmaceuticos";
   return null;
 }
 

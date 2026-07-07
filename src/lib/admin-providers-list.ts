@@ -91,6 +91,8 @@ const ADMIN_PROVIDER_TAB_IDS: AdminProviderTab[] = [
   "psicologos",
   "nutricionistas",
   "fisioterapeutas",
+  "enfermeiros",
+  "farmaceuticos",
   "psicanalistas",
   "terapeutas",
   "anjos",

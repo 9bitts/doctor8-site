@@ -15,6 +15,8 @@ const VALID_CATEGORIES = new Set<string>([
   "psicologos",
   "nutricionistas",
   "fisioterapeutas",
+  "enfermeiros",
+  "farmaceuticos",
   "psicanalistas",
   "terapeutas",
   "outros",
