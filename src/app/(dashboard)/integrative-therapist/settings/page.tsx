@@ -15,6 +15,7 @@ import ConsultPricingSettings from "@/components/professional/ConsultPricingSett
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
+import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
 import ProfileSettingsSection from "@/components/professional/ProfileSettingsSection";
 import DoctorImageSettings from "@/components/DoctorImageSettings";
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
