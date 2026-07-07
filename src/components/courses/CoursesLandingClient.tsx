@@ -217,19 +217,21 @@ export default function CoursesLandingClient() {
             </div>
           </form>
 
-          <div className="mt-10 text-center text-white">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-accent-300">
+          <div className="mt-12 text-center text-white sm:mt-14">
+            <p className="mb-5 text-xs font-bold uppercase tracking-[0.2em] text-accent-300 sm:mb-6">
               Doctor8 Educação
             </p>
-            <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
+            <h1 className="text-3xl font-extrabold leading-snug tracking-tight sm:text-4xl lg:text-5xl">
               Cursos para profissionais
-              <span className="block text-white/90">que vivem a saúde na prática</span>
+              <span className="mt-2 block text-white/90 sm:mt-3">
+                que vivem a saúde na prática
+              </span>
             </h1>
-            <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
+            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/70 sm:mt-7 sm:text-lg">
               Atualize-se com especialistas parceiros. Aprenda no seu ritmo e aplique no plantão,
               no consultório e na telemedicina.
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-4 sm:mt-12">
               <button
                 type="button"
                 onClick={scrollToCatalog}

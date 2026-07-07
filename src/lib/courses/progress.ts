@@ -1,6 +1,7 @@
 // Recalculate enrollment progress from lesson completions.
 
 import { db } from "@/lib/db";
+import { issueCourseCertificate } from "@/lib/courses/certificate";
 
 export async function recalculateEnrollmentProgress(enrollmentId: string): Promise<number> {
   const enrollment = await db.courseEnrollment.findUnique({
@@ -30,6 +31,12 @@ export async function recalculateEnrollmentProgress(enrollmentId: string): Promi
     where: { id: enrollmentId },
     data: { progressPercent, completedAt },
   });
+
+  if (progressPercent >= 100) {
+    await issueCourseCertificate(enrollmentId).catch((err) => {
+      console.error("[courses] certificate issue failed", enrollmentId, err);
+    });
+  }
 
   return progressPercent;
 }

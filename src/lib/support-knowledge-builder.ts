@@ -20,6 +20,7 @@ const PORTAL_LABELS: Record<PlatformPortalId, string> = {
   PSYCHOANALYST: "Psychoanalyst portal (/psychoanalyst)",
   INTEGRATIVE_THERAPIST: "Integrative therapist portal (/integrative-therapist)",
   ORGANIZATION: "Clinic / organization portal (/organization)",
+  EMPLOYER: "Employer NR-1 portal (/empresas/painel)",
   ADMIN: "Admin portal (/admin ? ADMIN role only)",
   ANGEL: "Angel volunteer portal (/admin/patients, /admin/angel ? ANGEL role)",
 };

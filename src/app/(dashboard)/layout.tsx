@@ -31,6 +31,7 @@ import {
   PHARMACIST_NAV,
   DENTIST_NAV,
   ORGANIZATION_NAV,
+  EMPLOYER_NAV,
   PATIENT_DASHBOARD_ENTRY,
   PATIENT_HUMANITARIAN_ENTRY,
   PATIENT_SCHEDULED_VOLUNTEER_ENTRY,
@@ -221,6 +222,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     role === "ADMIN" ? withNavIcons(ADMIN_NAV)
     : role === "ANGEL" ? withNavIcons(ANGEL_NAV)
     : role === "ORGANIZATION" ? withNavIcons(ORGANIZATION_NAV)
+    : role === "EMPLOYER" ? withNavIcons(EMPLOYER_NAV)
     : isPsychologistPortal ? withNavIcons(PSYCHOLOGIST_NAV)
     : isNutritionistPortal ? withNavIcons(NUTRITIONIST_NAV)
     : isNursePortal ? withNavIcons(NURSE_NAV)
@@ -241,6 +243,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     : [];
   const roleLabel =
     role === "ORGANIZATION" ? t("role.organization")
+    : role === "EMPLOYER" ? t("role.employer")
     : isPsychologistPortal ? t("role.psychologist")
     : isNutritionistPortal ? t("role.nutritionist")
     : isNursePortal ? t("role.nurse")
@@ -261,6 +264,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
   const isOrganization = role === "ORGANIZATION";
+  const isEmployer = role === "EMPLOYER";
   const isAngel = role === "ANGEL";
   const isPatient = role === "PATIENT";
   const patientDashboardItem = withNavIcons([PATIENT_DASHBOARD_ENTRY])[0];
@@ -274,6 +278,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
     : isOrganization
     ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+    : isEmployer
+    ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
     : isPsychologist
       ? "bg-violet-500/10 text-violet-400 border border-violet-500/20"
     : isNutritionist
@@ -291,9 +297,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       : isIntegrativeTherapist
         ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
         : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-  const avatarBg = isAngel ? "bg-rose-500/20" : isOrganization ? "bg-indigo-500/20" : isPsychologist ? "bg-violet-500/20" : isNutritionist ? "bg-amber-500/20" : isNurse ? "bg-rose-500/20" : isPharmacist ? "bg-teal-500/20" : isDentist ? "bg-fuchsia-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
-  const avatarIcon = isAngel ? "text-rose-400" : isOrganization ? "text-indigo-400" : isPsychologist ? "text-violet-400" : isNutritionist ? "text-amber-400" : isNurse ? "text-rose-400" : isPharmacist ? "text-teal-400" : isDentist ? "text-fuchsia-300" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
-  const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-fuchsia-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
+  const avatarBg = isAngel ? "bg-rose-500/20" : isOrganization ? "bg-indigo-500/20" : isEmployer ? "bg-sky-500/20" : isPsychologist ? "bg-violet-500/20" : isNutritionist ? "bg-amber-500/20" : isNurse ? "bg-rose-500/20" : isPharmacist ? "bg-teal-500/20" : isDentist ? "bg-fuchsia-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
+  const avatarIcon = isAngel ? "text-rose-400" : isOrganization ? "text-indigo-400" : isEmployer ? "text-sky-400" : isPsychologist ? "text-violet-400" : isNutritionist ? "text-amber-400" : isNurse ? "text-rose-400" : isPharmacist ? "text-teal-400" : isDentist ? "text-fuchsia-300" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
+  const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isEmployer ? "bg-sky-600" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-fuchsia-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal || isNutritionistPortal || isNursePortal || isPharmacistPortal || isDentistPortal);
 
   function isNavItemActive(href: string): boolean {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Stethoscope,
+  GraduationCap,
   Loader2,
   CheckCircle2,
   XCircle,
@@ -46,6 +47,7 @@ interface ProfessionalRow {
   licenseCountry: string;
   verified: boolean;
   emailVerified: boolean;
+  courseCreatorApproved?: boolean;
   appointments: number;
   charts: number;
   publicUrl: string | null;
@@ -66,6 +68,7 @@ interface ProviderRow {
   subtitle: string;
   verified: boolean;
   emailVerified: boolean;
+  courseCreatorApproved?: boolean;
   appointments: number;
   charts: number;
   publicUrl: string | null;
@@ -272,6 +275,7 @@ export default function ProvidersAdminClient() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [queryErrors, setQueryErrors] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [courseCreatorBusyUserId, setCourseCreatorBusyUserId] = useState<string | null>(null);
   const [actingAngel, setActingAngel] = useState<string | null>(null);
   const [verifyingEmailUserId, setVerifyingEmailUserId] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -447,6 +451,20 @@ export default function ProvidersAdminClient() {
       if (res.ok) await load(q.trim());
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function toggleCourseCreator(userId: string, approved: boolean) {
+    setCourseCreatorBusyUserId(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/course-creator`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approved }),
+      });
+      if (res.ok) await load(q.trim());
+    } finally {
+      setCourseCreatorBusyUserId(null);
     }
   }
 
@@ -738,6 +756,8 @@ export default function ProvidersAdminClient() {
                 toggleVolunteerScheduledApproval(row, approved, "health")
               }
               onVerifyEmail={verifyUserEmail}
+              courseCreatorBusyUserId={courseCreatorBusyUserId}
+              onToggleCourseCreator={toggleCourseCreator}
             />
           )}
           {filteredPsychoanalysts.length > 0 && (
@@ -751,6 +771,8 @@ export default function ProvidersAdminClient() {
                 toggleVolunteerScheduledApproval(row, approved, "psychoanalyst")
               }
               onVerifyEmail={verifyUserEmail}
+              courseCreatorBusyUserId={courseCreatorBusyUserId}
+              onToggleCourseCreator={toggleCourseCreator}
             />
           )}
           {filteredIntegrativeTherapists.length > 0 && (
@@ -764,6 +786,8 @@ export default function ProvidersAdminClient() {
                 toggleVolunteerScheduledApproval(row, approved, "integrative")
               }
               onVerifyEmail={verifyUserEmail}
+              courseCreatorBusyUserId={courseCreatorBusyUserId}
+              onToggleCourseCreator={toggleCourseCreator}
             />
           )}
         </div>
@@ -921,25 +945,32 @@ function ActionButtons({
   userId,
   verified,
   emailVerified,
+  courseCreatorApproved,
   rowId,
   licenseDocCount,
   busyId,
   verifyingEmailUserId,
+  courseCreatorBusyUserId,
   onToggle,
   onVerifyEmail,
+  onToggleCourseCreator,
 }: {
   userId: string;
   verified: boolean;
   emailVerified?: boolean;
+  courseCreatorApproved?: boolean;
   rowId: string;
   licenseDocCount: number;
   busyId: string | null;
   verifyingEmailUserId?: string | null;
+  courseCreatorBusyUserId?: string | null;
   onToggle: () => void;
   onVerifyEmail?: (userId: string) => void;
+  onToggleCourseCreator?: (userId: string, approved: boolean) => void;
 }) {
   const { t } = useI18n();
   const emailOk = emailVerified !== false;
+  const creatorApproved = courseCreatorApproved === true;
   return (
     <div className="flex flex-col gap-2 shrink-0">
       <AdminViewPhoneButton userId={userId} />
@@ -959,6 +990,25 @@ function ActionButtons({
         </button>
       )}
       <AdminViewLicenseDocsButton userId={userId} licenseDocCount={licenseDocCount} />
+      {onToggleCourseCreator && verified && (
+        <button
+          type="button"
+          onClick={() => onToggleCourseCreator(userId, !creatorApproved)}
+          disabled={courseCreatorBusyUserId === userId}
+          className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition disabled:opacity-50 ${
+            creatorApproved
+              ? "text-violet-700 border-violet-200 bg-violet-50 hover:bg-violet-100"
+              : "text-slate-600 border-slate-200 hover:bg-slate-50"
+          }`}
+        >
+          {courseCreatorBusyUserId === userId ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <GraduationCap size={14} />
+          )}
+          {creatorApproved ? "Instrutor de cursos" : "Liberar instrutor"}
+        </button>
+      )}
       <button
         type="button"
         onClick={onToggle}
@@ -988,18 +1038,22 @@ function ProfessionalList({
   showCategoryBadge,
   busyId,
   verifyingEmailUserId,
+  courseCreatorBusyUserId,
   onToggle,
   onVolunteerApproval,
   onVerifyEmail,
+  onToggleCourseCreator,
 }: {
   rows: ProfessionalRow[];
   lang: string;
   showCategoryBadge?: boolean;
   busyId: string | null;
   verifyingEmailUserId: string | null;
+  courseCreatorBusyUserId?: string | null;
   onToggle: (row: ProfessionalRow) => void;
   onVolunteerApproval: (row: ProfessionalRow, approved: boolean) => void;
   onVerifyEmail: (userId: string) => void;
+  onToggleCourseCreator?: (userId: string, approved: boolean) => void;
 }) {
   const { t } = useI18n();
   return (
@@ -1013,6 +1067,11 @@ function ProfessionalList({
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-slate-800 text-sm">{d.name}</p>
               <StatusBadge verified={d.verified} />
+              {d.courseCreatorApproved && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
+                  <GraduationCap size={11} /> Instrutor
+                </span>
+              )}
               {showCategoryBadge && (
                 <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
                   {providerTabLabel(
@@ -1093,12 +1152,15 @@ function ProfessionalList({
             userId={d.userId}
             verified={d.verified}
             emailVerified={d.emailVerified}
+            courseCreatorApproved={d.courseCreatorApproved}
             rowId={d.id}
             licenseDocCount={d.licenseDocCount}
             busyId={busyId}
             verifyingEmailUserId={verifyingEmailUserId}
+            courseCreatorBusyUserId={courseCreatorBusyUserId}
             onToggle={() => onToggle(d)}
             onVerifyEmail={onVerifyEmail}
+            onToggleCourseCreator={onToggleCourseCreator}
           />
         </div>
       ))}
@@ -1110,18 +1172,22 @@ function ProviderList({
   rows,
   busyId,
   verifyingEmailUserId,
+  courseCreatorBusyUserId,
   kind,
   onToggle,
   onVolunteerApproval,
   onVerifyEmail,
+  onToggleCourseCreator,
 }: {
   rows: ProviderRow[];
   busyId: string | null;
   verifyingEmailUserId: string | null;
+  courseCreatorBusyUserId?: string | null;
   kind: "psychoanalyst" | "integrative";
   onToggle: (row: ProviderRow, kind: "psychoanalyst" | "integrative") => void;
   onVolunteerApproval: (row: ProviderRow, approved: boolean) => void;
   onVerifyEmail: (userId: string) => void;
+  onToggleCourseCreator?: (userId: string, approved: boolean) => void;
 }) {
   const { t } = useI18n();
   const Icon = kind === "psychoanalyst" ? Brain : Leaf;
@@ -1138,6 +1204,11 @@ function ProviderList({
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-slate-800 text-sm">{p.name}</p>
               <StatusBadge verified={p.verified} />
+              {p.courseCreatorApproved && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
+                  <GraduationCap size={11} /> Instrutor
+                </span>
+              )}
               {p.isPublic && p.verified && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
                   <Globe size={11} /> {t("admin.providers.public")}
@@ -1200,12 +1271,15 @@ function ProviderList({
             userId={p.userId}
             verified={p.verified}
             emailVerified={p.emailVerified}
+            courseCreatorApproved={p.courseCreatorApproved}
             rowId={p.id}
             licenseDocCount={p.licenseDocCount}
             busyId={busyId}
             verifyingEmailUserId={verifyingEmailUserId}
+            courseCreatorBusyUserId={courseCreatorBusyUserId}
             onToggle={() => onToggle(p, kind)}
             onVerifyEmail={onVerifyEmail}
+            onToggleCourseCreator={onToggleCourseCreator}
           />
         </div>
       ))}

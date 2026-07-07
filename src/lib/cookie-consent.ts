@@ -39,6 +39,7 @@ const ANALYTICS_BLOCKED_PREFIXES = [
   "/psychoanalyst",
   "/integrative-therapist",
   "/organization",
+  "/empresas/painel",
   "/humanitarian/angel",
   "/humanitarian/volunteer",
   "/admin",

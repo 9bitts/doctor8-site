@@ -6,7 +6,7 @@ const PROFESSIONAL_ROLES: UserRole[] = [
   "INTEGRATIVE_THERAPIST",
 ];
 
-const PROFILE_EXEMPT_ROLES = new Set<string>(["ADMIN", "ANGEL", "ORGANIZATION"]);
+const PROFILE_EXEMPT_ROLES = new Set<string>(["ADMIN", "ANGEL", "ORGANIZATION", "EMPLOYER"]);
 
 export type UserProfileSnapshot = {
   role: UserRole | string;

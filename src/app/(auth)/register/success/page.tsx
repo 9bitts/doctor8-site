@@ -26,6 +26,7 @@ function detectLang(): Lang {
 function roleAccent(role: string): "emerald" | "rose" | "indigo" | "teal" | "violet" {
   if (role === "ANGEL") return "rose";
   if (role === "ORGANIZATION") return "indigo";
+  if (role === "EMPLOYER") return "indigo";
   if (role === "INTEGRATIVE_THERAPIST") return "teal";
   if (role === "PSYCHOANALYST") return "violet";
   return "emerald";

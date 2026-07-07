@@ -76,21 +76,38 @@ export async function GET(
       workloadHours: course.workloadHours,
       thumbnailUrl,
       instructor,
-      modules: course.modules.map((m) => ({
-        id: m.id,
-        title: m.title,
-        sortOrder: m.sortOrder,
-        lessons: m.lessons.map((l) => ({
-          id: l.id,
-          title: l.title,
-          description: l.description,
-          durationSecs: l.durationSecs,
-          isPreview: l.isPreview,
-          hasVideo: !!(l.videoKey || l.videoUrl),
-          // Hide video sources unless preview or enrolled
-          videoUrl: enrolled || l.isPreview ? l.videoUrl : null,
+      modules: await Promise.all(
+        course.modules.map(async (m) => ({
+          id: m.id,
+          title: m.title,
+          sortOrder: m.sortOrder,
+          lessons: await Promise.all(
+            m.lessons.map(async (l) => {
+              const canStream = enrolled || l.isPreview;
+              let streamUrl: string | null = null;
+              if (canStream) {
+                streamUrl = l.videoUrl;
+                if (l.videoKey) {
+                  try {
+                    streamUrl = await getSignedReadUrl(l.videoKey, 3600);
+                  } catch {
+                    streamUrl = l.videoUrl;
+                  }
+                }
+              }
+              return {
+                id: l.id,
+                title: l.title,
+                description: l.description,
+                durationSecs: l.durationSecs,
+                isPreview: l.isPreview,
+                hasVideo: !!(l.videoKey || l.videoUrl),
+                streamUrl: canStream ? streamUrl : null,
+              };
+            }),
+          ),
         })),
-      })),
+      ),
       lessonCount,
       totalDurationSecs,
       enrollmentCount: course._count.enrollments,

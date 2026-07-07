@@ -37,6 +37,8 @@ export function resolveRoleHome(
       return "/integrative-therapist";
     case "ORGANIZATION":
       return "/organization";
+    case "EMPLOYER":
+      return "/empresas/painel";
     case "ANGEL":
       return "/admin/patients";
     case "PATIENT":
@@ -59,6 +61,17 @@ const ROLE_ROUTE_CHECKS: { prefix: string; roles: string[] }[] = [
   { prefix: "/integrative-therapist", roles: ["INTEGRATIVE_THERAPIST", "ADMIN"] },
   { prefix: "/patient", roles: ["PATIENT", "ADMIN"] },
   { prefix: "/organization", roles: ["ORGANIZATION", "ADMIN"] },
+  { prefix: "/empresas/painel", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/nr1", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/aep", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/plano-acao", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/pesquisas", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/colaboradores", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/eap", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/equipe", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/documentacao", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/pcmso", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/configuracoes", roles: ["EMPLOYER", "ADMIN"] },
   { prefix: "/humanitarian/angel", roles: ["ANGEL", "ADMIN"] },
   {
     prefix: "/humanitarian/volunteer",

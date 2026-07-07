@@ -34,6 +34,7 @@ export type AdminProfessionalRow = {
   licenseCountry: string;
   verified: boolean;
   emailVerified: boolean;
+  courseCreatorApproved: boolean;
   appointments: number;
   charts: number;
   publicUrl: string | null;
@@ -54,6 +55,7 @@ export type AdminProviderRow = {
   subtitle: string;
   verified: boolean;
   emailVerified: boolean;
+  courseCreatorApproved: boolean;
   appointments: number;
   charts: number;
   publicUrl: string | null;
@@ -187,6 +189,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
               select: {
                 email: true,
                 emailVerified: true,
+                courseCreatorApproved: true,
                 _count: { select: { providerLicenseDocuments: true } },
               },
             },
@@ -207,6 +210,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
                 email: true,
                 region: true,
                 emailVerified: true,
+                courseCreatorApproved: true,
                 _count: { select: { providerLicenseDocuments: true } },
               },
             },
@@ -229,6 +233,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
                 email: true,
                 region: true,
                 emailVerified: true,
+                courseCreatorApproved: true,
                 _count: { select: { providerLicenseDocuments: true } },
               },
             },
@@ -257,6 +262,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
                 email: true,
                 region: true,
                 emailVerified: true,
+                courseCreatorApproved: true,
                 _count: { select: { providerLicenseDocuments: true } },
               },
             },
@@ -310,6 +316,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
     licenseCountry: p.licenseCountry,
     verified: p.verified,
     emailVerified: !!p.user?.emailVerified,
+    courseCreatorApproved: p.user?.courseCreatorApproved ?? false,
     appointments: p._count.appointments,
     charts: p._count.patientRecords,
     isPublic: p.virtualCard?.isPublic ?? false,
@@ -339,6 +346,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
       subtitle: p.trainingInstitution,
       verified: p.verified,
       emailVerified: !!p.user?.emailVerified,
+      courseCreatorApproved: p.user?.courseCreatorApproved ?? false,
       appointments: p._count.appointments,
       charts: p._count.analysandRecords,
       isPublic: p.virtualCard?.isPublic ?? false,
@@ -372,6 +380,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
         : p.trainingInstitution,
       verified: p.verified,
       emailVerified: !!p.user?.emailVerified,
+      courseCreatorApproved: p.user?.courseCreatorApproved ?? false,
       appointments: p._count.appointments,
       charts: p._count.clientRecords,
       isPublic: p.virtualCard?.isPublic ?? false,

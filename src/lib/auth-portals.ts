@@ -32,6 +32,8 @@ export const PHARMACIST_REGISTER =
 export const DENTIST_REGISTER =
   "/register/professional/signup?portal=dentist&profession=dentista";
 export const ORGANIZATION_REGISTER = "/register/organization";
+export const EMPLOYER_LOGIN = "/empresas/login";
+export const EMPLOYER_REGISTER = "/empresas/cadastro";
 
 /** Registration URL when user arrived via ?portal= on the unified login screen. */
 export function resolveProfessionalRegisterForPortal(portal: string | null | undefined): string {

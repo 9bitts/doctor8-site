@@ -1,6 +1,7 @@
 // Enroll buyer after Stripe payment for a course purchase.
 
 import { db } from "@/lib/db";
+import { sendCourseEnrollmentEmail } from "@/lib/course-enrollment-notify";
 
 export type CoursePaymentMeta = {
   kind?: string;
@@ -77,5 +78,12 @@ export async function fulfillCoursePurchase(params: {
   });
 
   if (!purchase.enrollment) throw new Error("Enrollment not created");
+
+  sendCourseEnrollmentEmail({
+    userId,
+    courseId,
+    enrollmentId: purchase.enrollment.id,
+  }).catch((err) => console.error("[courses] enrollment email failed", err));
+
   return { enrollmentId: purchase.enrollment.id, created: true };
 }

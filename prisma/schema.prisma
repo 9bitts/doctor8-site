@@ -27,6 +27,7 @@ enum UserRole {
   PSYCHOANALYST
   INTEGRATIVE_THERAPIST
   ORGANIZATION
+  EMPLOYER
   ANGEL
   ADMIN
 }
@@ -507,6 +508,7 @@ model User {
   professionalReviews ProfessionalReview[] @relation("PatientReviews")
   buyingClubMembers BuyingClubMember[]
   organizationMemberships OrganizationMember[]
+  employerMemberships   EmployerMember[]
   clubStampEntries      ClubStampEntry[]
   clubDiversityAwards   ClubDiversityAward[]
   providerLicenseDocuments ProviderLicenseDocument[]
@@ -4089,9 +4091,24 @@ model CourseEnrollment {
 
   lessonProgress  CourseLessonProgress[]
   connectionRedemption CourseConnectionRedemption?
+  certificate     CourseCertificate?
 
   @@unique([courseId, userId])
   @@index([userId])
+}
+
+model CourseCertificate {
+  id             String           @id @default(cuid())
+  enrollmentId   String           @unique
+  enrollment     CourseEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  verifyCode     String           @unique
+  studentName    String
+  courseTitle    String
+  instructorName String
+  workloadHours  Float?
+  issuedAt       DateTime         @default(now())
+
+  @@index([verifyCode])
 }
 
 model CourseLessonProgress {
@@ -4140,4 +4157,357 @@ model CourseConnectionRedemption {
 
   @@unique([userId, periodMonth])
   @@index([userId])
+}
+
+// ────────────────────────────────────────────
+// EMPLOYER — B2B corporate NR-1 / EAP (empresa empregadora)
+// Separate from Organization (CNPJ clinic management).
+// ────────────────────────────────────────────
+
+enum EmployerMemberRole {
+  OWNER
+  ADMIN
+  SST
+  HR
+  VIEWER
+}
+
+enum EmployerMemberStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+enum EmployerCompanySize {
+  MEI
+  ME
+  EPP
+  MEDIUM
+  LARGE
+}
+
+enum EmployerRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum EmployerAepStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  APPROVED
+}
+
+enum EmployerActionStatus {
+  PLANNED
+  IN_PROGRESS
+  DONE
+  VERIFIED
+  CANCELLED
+}
+
+enum EmployerSurveyStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum EmployerWorkforceStatus {
+  INVITED
+  ACTIVE
+  INACTIVE
+}
+
+enum EmployerWhistleblowerStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  ARCHIVED
+}
+
+model EmployerCompany {
+  id                   String              @id @default(cuid())
+  cnpj                 String              @unique
+  razaoSocial          String
+  nomeFantasia         String
+  slug                 String              @unique
+  inviteCode           String              @unique @default(cuid())
+
+  responsibleFirstName String
+  responsibleLastName  String
+  contactEmail         String?
+  contactPhone         String?
+  logoUrl              String?
+
+  addressStreet        String?
+  addressNumber        String?
+  addressComplement    String?
+  addressNeighborhood  String?
+  addressCity          String?
+  addressState         String?
+  addressZip           String?
+  addressCountry       String              @default("BR")
+
+  companySize          EmployerCompanySize?
+  employeeCount        Int?
+  grauRisco            Int?
+
+  timezone             String              @default("America/Sao_Paulo")
+  currency             String              @default("BRL")
+
+  nr1ComplianceScore   Int?
+  lastPgrReviewAt      DateTime?
+
+  members              EmployerMember[]
+  workforce            EmployerWorkforceMember[]
+  riskEntries          EmployerRiskEntry[]
+  aepRecords           EmployerAepRecord[]
+  actionPlans          EmployerActionPlan[]
+  surveyCampaigns      EmployerSurveyCampaign[]
+  eapBenefit           EmployerEapBenefit?
+  whistleblowerReports EmployerWhistleblowerReport[]
+  documents            EmployerNr1Document[]
+  invites              EmployerInvite[]
+
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([slug])
+  @@index([cnpj])
+}
+
+model EmployerMember {
+  id               String               @id @default(cuid())
+  employerCompanyId String
+  employerCompany  EmployerCompany      @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role             EmployerMemberRole
+  status           EmployerMemberStatus @default(ACTIVE)
+
+  invitedAt        DateTime?
+  joinedAt         DateTime             @default(now())
+
+  @@unique([employerCompanyId, userId])
+  @@index([userId])
+  @@index([employerCompanyId])
+}
+
+model EmployerInvite {
+  id               String           @id @default(cuid())
+  employerCompanyId String
+  employerCompany  EmployerCompany  @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  email            String
+  role             EmployerMemberRole
+  token            String           @unique @default(cuid())
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  createdAt        DateTime         @default(now())
+
+  @@index([employerCompanyId])
+  @@index([email])
+}
+
+model EmployerWorkforceMember {
+  id               String                  @id @default(cuid())
+  employerCompanyId String
+  employerCompany  EmployerCompany         @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  email            String
+  firstName        String
+  lastName         String
+  department       String?
+  jobTitle         String?
+  userId           String?
+
+  status           EmployerWorkforceStatus @default(INVITED)
+  inviteToken      String?                 @unique @default(cuid())
+  sessionsUsed     Int                     @default(0)
+  sessionsQuota    Int?
+
+  invitedAt        DateTime                @default(now())
+  activatedAt      DateTime?
+
+  @@unique([employerCompanyId, email])
+  @@index([employerCompanyId])
+  @@index([userId])
+  @@index([inviteToken])
+}
+
+model EmployerRiskEntry {
+  id                    String            @id @default(cuid())
+  employerCompanyId     String
+  employerCompany       EmployerCompany   @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  aepRecordId           String?
+  aepRecord             EmployerAepRecord? @relation(fields: [aepRecordId], references: [id], onDelete: SetNull)
+
+  hazardCode            String
+  hazardLabel           String
+  processDescription    String?           @db.Text
+  exposedGroups         String?           @db.Text
+  possibleHarm          String?           @db.Text
+  exposureCharacterization String?        @db.Text
+  existingControls      String?           @db.Text
+
+  severity              Int
+  probability           Int
+  riskLevel             EmployerRiskLevel
+
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  actionItems           EmployerActionPlanItem[]
+
+  @@index([employerCompanyId])
+  @@index([aepRecordId])
+  @@index([hazardCode])
+}
+
+model EmployerAepRecord {
+  id                    String            @id @default(cuid())
+  employerCompanyId     String
+  employerCompany       EmployerCompany   @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  title                 String
+  version               Int               @default(1)
+  status                EmployerAepStatus @default(DRAFT)
+  methodology           String?
+  methodologyRationale  String?           @db.Text
+  workerParticipation   String?           @db.Text
+  notes                 String?           @db.Text
+
+  completedAt           DateTime?
+  approvedByName        String?
+
+  riskEntries           EmployerRiskEntry[]
+
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([employerCompanyId])
+}
+
+model EmployerActionPlan {
+  id               String                 @id @default(cuid())
+  employerCompanyId String
+  employerCompany  EmployerCompany        @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  title            String
+  version          Int                    @default(1)
+  status           EmployerAepStatus      @default(DRAFT)
+  reviewNotes      String?                @db.Text
+
+  items            EmployerActionPlanItem[]
+
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@index([employerCompanyId])
+}
+
+model EmployerActionPlanItem {
+  id                 String               @id @default(cuid())
+  planId             String
+  plan               EmployerActionPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  riskEntryId        String?
+  riskEntry          EmployerRiskEntry?   @relation(fields: [riskEntryId], references: [id], onDelete: SetNull)
+
+  hazardCode         String?
+  measureDescription String               @db.Text
+  responsibleName    String?
+  dueDate            DateTime?
+  status             EmployerActionStatus @default(PLANNED)
+  verificationNotes  String?              @db.Text
+  completedAt        DateTime?
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([planId])
+  @@index([riskEntryId])
+}
+
+model EmployerSurveyCampaign {
+  id               String               @id @default(cuid())
+  employerCompanyId String
+  employerCompany  EmployerCompany      @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  title            String
+  instrument       String
+  status           EmployerSurveyStatus @default(DRAFT)
+  anonymousMinGroup Int                 @default(5)
+  publicToken      String               @unique @default(cuid())
+
+  startsAt         DateTime?
+  endsAt           DateTime?
+
+  responses        EmployerSurveyResponse[]
+
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([employerCompanyId])
+  @@index([publicToken])
+}
+
+model EmployerSurveyResponse {
+  id          String                 @id @default(cuid())
+  campaignId  String
+  campaign    EmployerSurveyCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  department  String?
+  answersJson Json
+  submittedAt DateTime               @default(now())
+
+  @@index([campaignId])
+  @@index([department])
+}
+
+model EmployerEapBenefit {
+  id                  String          @id @default(cuid())
+  employerCompanyId   String          @unique
+  employerCompany     EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  enabled             Boolean         @default(true)
+  sessionsPerEmployee Int             @default(6)
+  jitEnabled          Boolean         @default(false)
+  notes               String?         @db.Text
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+}
+
+model EmployerWhistleblowerReport {
+  id               String                      @id @default(cuid())
+  employerCompanyId String
+  employerCompany  EmployerCompany             @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  protocolCode     String                      @unique
+  category         String
+  description      String                      @db.Text
+  status           EmployerWhistleblowerStatus @default(OPEN)
+  internalNotes    String?                     @db.Text
+
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+
+  @@index([employerCompanyId])
+  @@index([status])
+}
+
+model EmployerNr1Document {
+  id               String          @id @default(cuid())
+  employerCompanyId String
+  employerCompany  EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  docType          String
+  version          Int             @default(1)
+  title            String
+  contentJson      Json
+  exportedAt       DateTime        @default(now())
+
+  @@index([employerCompanyId])
+  @@index([docType])
 }

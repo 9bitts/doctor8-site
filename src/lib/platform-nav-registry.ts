@@ -66,6 +66,7 @@ export type PlatformPortalId =
   | "PSYCHOANALYST"
   | "INTEGRATIVE_THERAPIST"
   | "ORGANIZATION"
+  | "EMPLOYER"
   | "ADMIN"
   | "ANGEL";
 
@@ -528,6 +529,21 @@ export const ORGANIZATION_NAV: PlatformNavEntry[] = [
   { href: "/organization/settings", labelKey: "nav.account", roles: ["ORGANIZATION"], iconKey: "Settings" },
 ];
 
+/** Employer B2B portal — NR-1 compliance + EAP */
+export const EMPLOYER_NAV: PlatformNavEntry[] = [
+  { href: "/empresas/painel", labelKey: "nav.dashboard", roles: ["EMPLOYER"], iconKey: "LayoutDashboard" },
+  { href: "/empresas/nr1", labelKey: "emp.nav.nr1", roles: ["EMPLOYER"], iconKey: "Shield" },
+  { href: "/empresas/aep", labelKey: "emp.nav.aep", roles: ["EMPLOYER"], iconKey: "ClipboardList" },
+  { href: "/empresas/plano-acao", labelKey: "emp.nav.actionPlan", roles: ["EMPLOYER"], iconKey: "FileSpreadsheet" },
+  { href: "/empresas/pesquisas", labelKey: "emp.nav.surveys", roles: ["EMPLOYER"], iconKey: "BarChart3" },
+  { href: "/empresas/colaboradores", labelKey: "emp.nav.workforce", roles: ["EMPLOYER"], iconKey: "Users" },
+  { href: "/empresas/eap", labelKey: "emp.nav.eap", roles: ["EMPLOYER"], iconKey: "Brain" },
+  { href: "/empresas/pcmso", labelKey: "emp.nav.pcmso", roles: ["EMPLOYER"], iconKey: "Stethoscope" },
+  { href: "/empresas/documentacao", labelKey: "emp.nav.docs", roles: ["EMPLOYER"], iconKey: "ScrollText" },
+  { href: "/empresas/equipe", labelKey: "emp.nav.team", roles: ["EMPLOYER"], iconKey: "Building2" },
+  { href: "/empresas/configuracoes", labelKey: "nav.account", roles: ["EMPLOYER"], iconKey: "Settings" },
+];
+
 export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin", labelKey: "admin.home.title", roles: ["ADMIN"], iconKey: "Shield" },
   { href: "/admin/categories", labelKey: "nav.adminCategories", roles: ["ADMIN"], iconKey: "Layers" },
@@ -561,6 +577,7 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   PSYCHOANALYST: PSYCHOANALYST_NAV,
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV,
   ORGANIZATION: ORGANIZATION_NAV,
+  EMPLOYER: EMPLOYER_NAV,
   ADMIN: ADMIN_NAV,
   ANGEL: ANGEL_NAV,
 };
@@ -578,6 +595,9 @@ export const PLATFORM_PUBLIC_ROUTES: PublicRouteEntry[] = [
   { href: "/humanitarian/volunteer", description: "Humanitarian volunteer dashboard (professionals)" },
   { href: "/anfiteatro/nise-yamaguchi", description: "Virtual amphitheater invite — register as professional to join meeting rooms" },
   { href: "/admin/angel", description: "Angel volunteer follow-up dashboard" },
+  { href: "/empresas", description: "Employer NR-1 B2B landing" },
+  { href: "/empresas/login", description: "Employer portal sign in" },
+  { href: "/empresas/cadastro", description: "Register employer company (NR-1)" },
 ];
 
 export function allPlatformNavEntries(): PlatformNavEntry[] {

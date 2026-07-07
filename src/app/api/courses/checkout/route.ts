@@ -10,6 +10,7 @@ import {
 } from "@/lib/courses/access";
 import { toStripeCurrency } from "@/lib/billing-regions";
 import { z } from "zod";
+import { sendCourseEnrollmentEmail } from "@/lib/course-enrollment-notify";
 
 const schema = z.object({
   courseId: z.string(),
@@ -57,6 +58,11 @@ export async function POST(req: NextRequest) {
         source: "FREE",
       },
     });
+    sendCourseEnrollmentEmail({
+      userId: session.user.id,
+      courseId: course.id,
+      enrollmentId: enrollment.id,
+    }).catch((err) => console.error("[courses] enrollment email failed", err));
     return NextResponse.json({ enrollmentId: enrollment.id, free: true });
   }
 
@@ -94,6 +100,11 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+    sendCourseEnrollmentEmail({
+      userId: session.user.id,
+      courseId: course.id,
+      enrollmentId: enrollment.id,
+    }).catch((err) => console.error("[courses] enrollment email failed", err));
     return NextResponse.json({ enrollmentId: enrollment.id, redeemed: true });
   }
 

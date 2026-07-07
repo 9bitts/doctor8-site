@@ -4,11 +4,15 @@ import { NextResponse } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import type { UserRole, OrganizationMemberRole } from "@prisma/client";
+import type { UserRole, OrganizationMemberRole, EmployerMemberRole } from "@prisma/client";
 import {
   getOrganizationMembership,
   type OrganizationContext,
 } from "@/lib/organization-auth";
+import {
+  getEmployerMembership,
+  type EmployerContext,
+} from "@/lib/employer-auth";
 
 export type ApiError = { error: NextResponse };
 
@@ -98,6 +102,39 @@ export async function requireOrganizationApi(
       cnpj: membership.organization.cnpj,
       currency: membership.organization.currency,
       inviteCode: membership.organization.inviteCode,
+    },
+  };
+}
+
+export async function requireEmployerApi(
+  allowedRoles?: EmployerMemberRole[],
+): Promise<EmployerContext | ApiError> {
+  const session = await auth();
+  if (!session?.user) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  if (session.user.role !== "EMPLOYER" && session.user.role !== "ADMIN") {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
+  const membership = await getEmployerMembership(session.user.id);
+  if (!membership) {
+    return { error: NextResponse.json({ error: "Employer company not found" }, { status: 404 }) };
+  }
+  if (allowedRoles && !allowedRoles.includes(membership.role) && session.user.role !== "ADMIN") {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
+  return {
+    userId: session.user.id,
+    employerCompanyId: membership.employerCompanyId,
+    memberRole: membership.role,
+    company: {
+      id: membership.employerCompany.id,
+      nomeFantasia: membership.employerCompany.nomeFantasia,
+      cnpj: membership.employerCompany.cnpj,
+      slug: membership.employerCompany.slug,
+      inviteCode: membership.employerCompany.inviteCode,
     },
   };
 }

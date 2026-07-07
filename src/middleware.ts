@@ -30,6 +30,7 @@ const LEGACY_LOGIN_PATHS = [
   "/login/farmaceutico",
   "/login/odontologo",
   "/login/organizacao",
+  "/login/empresas",
   "/login/anjo",
 ];
 
@@ -76,6 +77,11 @@ const PUBLIC_ROUTES = [
   "/anamnese-psi/", // psychology digital anamnesis (token-based)
   "/compliance/",   // public compliance pages
   "/psicologos",    // psychology marketing landing
+  "/empresas/login",
+  "/empresas/cadastro",
+  "/empresas/pesquisa/",
+  "/empresas/denuncia/",
+  "/empresas/convite/",
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -85,6 +91,7 @@ const PUBLIC_ROUTES = [
 ];
 
 function isPublicRoute(pathname: string): boolean {
+  if (pathname === "/empresas") return true;
   return PUBLIC_ROUTES.some((route) => {
     // "/" must be exact — every path starts with "/"
     if (route === "/") return pathname === "/";
@@ -125,6 +132,19 @@ const DENTIST_ROUTES = ["/odontologo"];
 const PSYCHOANALYST_ROUTES = ["/psychoanalyst"];
 const INTEGRATIVE_THERAPIST_ROUTES = ["/integrative-therapist"];
 const ORGANIZATION_ROUTES = ["/organization"];
+const EMPLOYER_ROUTES = [
+  "/empresas/painel",
+  "/empresas/nr1",
+  "/empresas/aep",
+  "/empresas/plano-acao",
+  "/empresas/pesquisas",
+  "/empresas/colaboradores",
+  "/empresas/eap",
+  "/empresas/equipe",
+  "/empresas/documentacao",
+  "/empresas/pcmso",
+  "/empresas/configuracoes",
+];
 const ANGEL_ROUTES = ["/humanitarian/angel"];
 const VOLUNTEER_ROUTES = ["/humanitarian/volunteer"];
 const HUMANITARIAN_ROUTES = ["/humanitarian"];
@@ -141,6 +161,7 @@ const AUTHENTICATED_DASHBOARD_PREFIXES = [
   ...PSYCHOANALYST_ROUTES,
   ...INTEGRATIVE_THERAPIST_ROUTES,
   ...ORGANIZATION_ROUTES,
+  ...EMPLOYER_ROUTES,
   ...HUMANITARIAN_ROUTES,
   ...ANGEL_ROUTES,
   ...VOLUNTEER_ROUTES,
@@ -210,6 +231,10 @@ export default auth((req) => {
   // Redirect legacy per-role login URLs to the unified login (preserve query + portal hint).
   if (LEGACY_LOGIN_PATHS.includes(pathname)) {
     const url = req.nextUrl.clone();
+    if (pathname === "/login/empresas") {
+      url.pathname = "/empresas/login";
+      return NextResponse.redirect(url);
+    }
     url.pathname = "/login";
     const portal = LEGACY_LOGIN_PORTAL[pathname];
     if (portal) url.searchParams.set("portal", portal);
@@ -219,6 +244,28 @@ export default auth((req) => {
   // Already-authenticated users shouldn't see the login screen — send them to
   // their dashboard so they don't get stuck on a form they don't need.
   // Exception: honor ?callbackUrl= (e.g. SSO OAuth resume for eight).
+  // Already-authenticated users shouldn't see the login screen — send them to
+  // their dashboard so they don't get stuck on a form they don't need.
+  // Exception: honor ?callbackUrl= (e.g. SSO OAuth resume for eight).
+  if (pathname === "/empresas/login" && session?.user) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
+    const { role, professionalSpecialty } = session.user as {
+      role: string;
+      professionalSpecialty?: string | null;
+    };
+    const home = resolveRoleHome(role, professionalSpecialty);
+    const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl?.trim()) {
+      const destination = safePostLoginUrl(role, callbackUrl, undefined, professionalSpecialty);
+      if (destination !== home) {
+        return NextResponse.redirect(new URL(destination, req.url));
+      }
+    }
+    return NextResponse.redirect(new URL(home, req.url));
+  }
+
   if (pathname === "/login" && session?.user) {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
@@ -425,6 +472,14 @@ export default auth((req) => {
   if (
     ORGANIZATION_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "ORGANIZATION" &&
+    role !== "ADMIN"
+  ) {
+    return denyWrongRole();
+  }
+
+  if (
+    EMPLOYER_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "EMPLOYER" &&
     role !== "ADMIN"
   ) {
     return denyWrongRole();

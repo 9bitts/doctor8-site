@@ -49,6 +49,39 @@ export async function getInstructorDisplay(userId: string): Promise<{
   return { name: user?.email?.split("@")[0] ?? "Instrutor", specialty: null, licenseNumber: null };
 }
 
+export async function getStudentDisplayName(userId: string): Promise<string> {
+  const [pro, psycho, integrative, patient] = await Promise.all([
+    db.professionalProfile.findUnique({
+      where: { userId },
+      select: { firstName: true, lastName: true },
+    }),
+    db.psychoanalystProfile.findUnique({
+      where: { userId },
+      select: { firstName: true, lastName: true },
+    }),
+    db.integrativeTherapistProfile.findUnique({
+      where: { userId },
+      select: { firstName: true, lastName: true },
+    }),
+    db.patientProfile.findUnique({
+      where: { userId },
+      select: { firstName: true, lastName: true },
+    }),
+  ]);
+
+  const profile = pro ?? psycho ?? integrative ?? patient;
+  if (profile) {
+    const name = `${profile.firstName} ${profile.lastName}`.trim();
+    if (name) return name;
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+  return user?.email?.split("@")[0] ?? "Aluno";
+}
+
 export function formatPriceBrl(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
