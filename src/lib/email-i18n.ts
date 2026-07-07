@@ -623,3 +623,86 @@ const ORG_ROLE_LABELS: Record<string, Record<EmailLang, string>> = {
 export function orgRoleLabel(role: string, lang: EmailLang): string {
   return ORG_ROLE_LABELS[role]?.[lang] || role;
 }
+
+export const EMAIL_EMPLOYER_STAFF_INVITE: Record<EmailLang, {
+  subject: (companyName: string) => string;
+  heading: string;
+  hi: string;
+  body: (companyName: string, role: string) => string;
+  cta: string;
+  expires: string;
+  orCopy: string;
+}> = {
+  en: {
+    subject: (c) => `Join ${c} on Doctor8 Empresas (NR-1)`,
+    heading: "Employer team invite",
+    hi: "Hello,",
+    body: (c, r) => `You were invited to join <strong>${c}</strong> on Doctor8 Empresas as <strong>${r}</strong>.`,
+    cta: "Accept invitation",
+    expires: "This link expires in <strong>7 days</strong>.",
+    orCopy: "Or copy this link:",
+  },
+  pt: {
+    subject: (c) => `Convite para ${c} no Doctor8 Empresas (NR-1)`,
+    heading: "Convite equipe empresarial",
+    hi: "Olá,",
+    body: (c, r) => `Você foi convidado(a) para integrar <strong>${c}</strong> no Doctor8 Empresas como <strong>${r}</strong>.`,
+    cta: "Aceitar convite",
+    expires: "Este link expira em <strong>7 dias</strong>.",
+    orCopy: "Ou copie este link:",
+  },
+  es: {
+    subject: (c) => `Invitación a ${c} en Doctor8 Empresas (NR-1)`,
+    heading: "Invitación al equipo empresarial",
+    hi: "Hola,",
+    body: (c, r) => `Fuiste invitado(a) a unirte a <strong>${c}</strong> en Doctor8 Empresas como <strong>${r}</strong>.`,
+    cta: "Aceptar invitación",
+    expires: "Este enlace expira en <strong>7 días</strong>.",
+    orCopy: "O copia este enlace:",
+  },
+};
+
+export const EMAIL_EMPLOYER_WORKFORCE_INVITE: Record<EmailLang, {
+  subject: (companyName: string) => string;
+  heading: string;
+  hi: (name: string) => string;
+  body: (companyName: string, sessions: number) => string;
+  cta: string;
+  orCopy: string;
+}> = {
+  en: {
+    subject: (c) => `${c} invited you to psychological support (EAP)`,
+    heading: "Corporate wellness benefit",
+    hi: (n) => `Hello, ${n},`,
+    body: (c, s) => `<strong>${c}</strong> offers confidential psychological support through Doctor8. You have up to <strong>${s}</strong> sessions per year.`,
+    cta: "Activate my benefit",
+    orCopy: "Or copy this link:",
+  },
+  pt: {
+    subject: (c) => `${c} convidou você para apoio psicológico (EAP)`,
+    heading: "Benefício de saúde mental",
+    hi: (n) => `Olá, ${n},`,
+    body: (c, s) => `A empresa <strong>${c}</strong> oferece atendimento psicológico sigiloso via Doctor8. Você tem até <strong>${s}</strong> sessões por ano.`,
+    cta: "Ativar meu benefício",
+    orCopy: "Ou copie este link:",
+  },
+  es: {
+    subject: (c) => `${c} te invitó al apoyo psicológico (EAP)`,
+    heading: "Beneficio de salud mental",
+    hi: (n) => `Hola, ${n},`,
+    body: (c, s) => `<strong>${c}</strong> ofrece apoyo psicológico confidencial vía Doctor8. Tienes hasta <strong>${s}</strong> sesiones por año.`,
+    cta: "Activar mi beneficio",
+    orCopy: "O copia este enlace:",
+  },
+};
+
+const EMPLOYER_ROLE_LABELS: Record<string, Record<EmailLang, string>> = {
+  ADMIN: { en: "Administrator", pt: "Administrador", es: "Administrador" },
+  SST: { en: "OHS / SST", pt: "SST / Segurança do Trabalho", es: "SST" },
+  HR: { en: "HR", pt: "RH", es: "RRHH" },
+  VIEWER: { en: "Viewer", pt: "Visualizador", es: "Visualizador" },
+};
+
+export function employerRoleLabel(role: string, lang: EmailLang): string {
+  return EMPLOYER_ROLE_LABELS[role]?.[lang] || role;
+}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Copy, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Copy, ExternalLink, BarChart3, ChevronDown, ChevronUp } from "lucide-react";
+import { dimensionRiskLevel } from "@/lib/nr1-survey-report";
 
 type Campaign = {
   id: string;
@@ -12,10 +13,31 @@ type Campaign = {
   _count: { responses: number };
 };
 
+type Report = {
+  totalResponses: number;
+  minGroupSize: number;
+  meetsAnonymityThreshold: boolean;
+  overallDimensions: Record<string, number>;
+  byDepartment: Array<{
+    department: string;
+    count: number;
+    dimensions: Record<string, number>;
+  }>;
+};
+
+function riskColor(level: string) {
+  if (level === "high") return "bg-red-100 text-red-800";
+  if (level === "medium") return "bg-amber-100 text-amber-800";
+  return "bg-emerald-100 text-emerald-800";
+}
+
 export default function PesquisasPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("Pesquisa psicossocial — COPSOQ-lite");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [reports, setReports] = useState<Record<string, Report>>({});
+  const [loadingReport, setLoadingReport] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -44,6 +66,21 @@ export default function PesquisasPage() {
       body: JSON.stringify({ id, status: "ACTIVE", startsAt: new Date().toISOString() }),
     });
     load();
+  }
+
+  async function loadReport(id: string) {
+    if (reports[id]) {
+      setExpandedId(expandedId === id ? null : id);
+      return;
+    }
+    setLoadingReport(id);
+    const res = await fetch(`/api/employer/surveys/${id}/report`);
+    const data = await res.json();
+    if (res.ok) {
+      setReports((prev) => ({ ...prev, [id]: data.report }));
+      setExpandedId(id);
+    }
+    setLoadingReport(null);
   }
 
   function surveyUrl(token: string) {
@@ -89,7 +126,22 @@ export default function PesquisasPage() {
                     {c.instrument} · {c.status} · {c._count.responses} respostas
                   </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 shrink-0 items-center">
+                  {c._count.responses > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => loadReport(c.id)}
+                      className="inline-flex items-center gap-1 text-sm text-sky-600 hover:underline"
+                    >
+                      {loadingReport === c.id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <BarChart3 size={14} />
+                      )}
+                      Relatório
+                      {expandedId === c.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                  )}
                   {c.status === "DRAFT" && (
                     <button type="button" onClick={() => activate(c.id)} className="text-sm text-sky-600 hover:underline">
                       Ativar
@@ -107,6 +159,52 @@ export default function PesquisasPage() {
                   )}
                 </div>
               </div>
+
+              {expandedId === c.id && reports[c.id] && (
+                <div className="mt-4 pt-4 border-t border-slate-100 space-y-4">
+                  {!reports[c.id].meetsAnonymityThreshold ? (
+                    <p className="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
+                      Mínimo de {reports[c.id].minGroupSize} respostas para exibir agregados (anonimato).
+                      Atual: {reports[c.id].totalResponses}.
+                    </p>
+                  ) : (
+                    <>
+                      <div>
+                        <p className="text-xs font-medium text-slate-500 uppercase mb-2">Dimensões (geral)</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(reports[c.id].overallDimensions).map(([dim, score]) => {
+                            const level = dimensionRiskLevel(score);
+                            return (
+                              <span key={dim} className={`text-xs px-2 py-1 rounded-full ${riskColor(level)}`}>
+                                {dim}: {score}%
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {reports[c.id].byDepartment.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase mb-2">Por setor</p>
+                          <div className="space-y-2">
+                            {reports[c.id].byDepartment.map((d) => (
+                              <div key={d.department} className="text-sm bg-slate-50 rounded-lg p-3">
+                                <p className="font-medium text-slate-800">{d.department} ({d.count} respostas)</p>
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {Object.entries(d.dimensions).map(([dim, score]) => (
+                                    <span key={dim} className={`text-xs px-1.5 py-0.5 rounded ${riskColor(dimensionRiskLevel(score))}`}>
+                                      {dim}: {score}%
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </li>
           ))}
         </ul>

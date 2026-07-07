@@ -540,6 +540,7 @@ export const EMPLOYER_NAV: PlatformNavEntry[] = [
   { href: "/empresas/eap", labelKey: "emp.nav.eap", roles: ["EMPLOYER"], iconKey: "Brain" },
   { href: "/empresas/pcmso", labelKey: "emp.nav.pcmso", roles: ["EMPLOYER"], iconKey: "Stethoscope" },
   { href: "/empresas/documentacao", labelKey: "emp.nav.docs", roles: ["EMPLOYER"], iconKey: "ScrollText" },
+  { href: "/empresas/denuncias", labelKey: "emp.nav.whistleblower", roles: ["EMPLOYER"], iconKey: "MessageSquareWarning" },
   { href: "/empresas/equipe", labelKey: "emp.nav.team", roles: ["EMPLOYER"], iconKey: "Building2" },
   { href: "/empresas/configuracoes", labelKey: "nav.account", roles: ["EMPLOYER"], iconKey: "Settings" },
 ];

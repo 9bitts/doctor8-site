@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Mail } from "lucide-react";
 
 type Member = {
   id: string;
@@ -22,6 +22,7 @@ export default function ColaboradoresPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [department, setDepartment] = useState("");
+  const [invitingId, setInvitingId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -44,6 +45,13 @@ export default function ColaboradoresPage() {
     setFirstName("");
     setLastName("");
     setDepartment("");
+    load();
+  }
+
+  async function sendInvite(id: string) {
+    setInvitingId(id);
+    await fetch(`/api/employer/workforce/${id}/invite`, { method: "POST" });
+    setInvitingId(null);
     load();
   }
 
@@ -77,6 +85,7 @@ export default function ColaboradoresPage() {
                 <th className="px-4 py-2">Setor</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Sessões</th>
+                <th className="px-4 py-2" />
               </tr>
             </thead>
             <tbody>
@@ -89,6 +98,19 @@ export default function ColaboradoresPage() {
                   <td className="px-4 py-3 text-slate-600">{m.department || "—"}</td>
                   <td className="px-4 py-3 text-slate-600">{m.status}</td>
                   <td className="px-4 py-3 text-slate-600">{m.sessionsUsed}{m.sessionsQuota ? ` / ${m.sessionsQuota}` : ""}</td>
+                  <td className="px-4 py-3">
+                    {m.status !== "ACTIVE" && (
+                      <button
+                        type="button"
+                        disabled={invitingId === m.id}
+                        onClick={() => sendInvite(m.id)}
+                        className="inline-flex items-center gap-1 text-xs text-sky-600 hover:underline disabled:opacity-50"
+                      >
+                        {invitingId === m.id ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
+                        Enviar convite
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -97,7 +119,7 @@ export default function ColaboradoresPage() {
       )}
 
       <p className="text-xs text-slate-500">
-        Colaboradores agendam sessões com psicólogos Doctor8 via portal paciente (conta vinculada por convite — próxima fase).
+        Colaboradores ativam o benefício via e-mail e agendam sessões em /empresas/colaborador ou portal paciente.
         O RH vê apenas métricas agregadas de utilização.
       </p>
     </div>

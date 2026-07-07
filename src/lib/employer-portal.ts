@@ -12,6 +12,7 @@ export const EMPLOYER_PUBLIC_PREFIXES = [
   "/empresas/pesquisa",
   "/empresas/denuncia",
   "/empresas/convite",
+  "/empresas/equipe/cadastro",
 ] as const;
 
 export function isEmployerPublicPath(pathname: string): boolean {
@@ -20,6 +21,7 @@ export function isEmployerPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/empresas/pesquisa/")) return true;
   if (pathname.startsWith("/empresas/denuncia/")) return true;
   if (pathname.startsWith("/empresas/convite/")) return true;
+  if (pathname.startsWith("/empresas/equipe/cadastro")) return true;
   return false;
 }
 

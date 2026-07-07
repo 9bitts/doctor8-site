@@ -4270,6 +4270,7 @@ model EmployerCompany {
   whistleblowerReports EmployerWhistleblowerReport[]
   documents            EmployerNr1Document[]
   invites              EmployerInvite[]
+  pcmsoConfig          EmployerPcmsoConfig?
 
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
@@ -4510,4 +4511,20 @@ model EmployerNr1Document {
 
   @@index([employerCompanyId])
   @@index([docType])
+}
+
+model EmployerPcmsoConfig {
+  id                String          @id @default(cuid())
+  employerCompanyId String          @unique
+  employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  coordinatorName   String?
+  coordinatorEmail  String?
+  coordinatorCrm    String?
+  lastReviewAt      DateTime?
+  checklistJson     Json?
+  notes             String?         @db.Text
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 }

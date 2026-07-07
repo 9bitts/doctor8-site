@@ -82,6 +82,7 @@ const PUBLIC_ROUTES = [
   "/empresas/pesquisa/",
   "/empresas/denuncia/",
   "/empresas/convite/",
+  "/empresas/equipe/cadastro",
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -122,7 +123,7 @@ function isPrivateApi(pathname: string): boolean {
 }
 
 // Role-based route prefixes
-const PATIENT_ROUTES = ["/patient"];
+const PATIENT_ROUTES = ["/patient", "/empresas/colaborador"];
 const PROFESSIONAL_ROUTES = ["/professional"];
 const PSYCHOLOGIST_ROUTES = ["/psychologist"];
 const NUTRITIONIST_ROUTES = ["/nutricionista"];
@@ -144,6 +145,7 @@ const EMPLOYER_ROUTES = [
   "/empresas/documentacao",
   "/empresas/pcmso",
   "/empresas/configuracoes",
+  "/empresas/denuncias",
 ];
 const ANGEL_ROUTES = ["/humanitarian/angel"];
 const VOLUNTEER_ROUTES = ["/humanitarian/volunteer"];

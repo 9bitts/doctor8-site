@@ -15,6 +15,7 @@ export default function DocumentacaoPage() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [lastExport, setLastExport] = useState<object | null>(null);
 
   async function load() {
@@ -46,6 +47,23 @@ export default function DocumentacaoPage() {
     }
   }
 
+  async function exportPdf() {
+    setExportingPdf(true);
+    try {
+      const res = await fetch("/api/employer/documents/pdf");
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pgr-inventario-nr1-${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
@@ -55,15 +73,26 @@ export default function DocumentacaoPage() {
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={exportPgr}
-        disabled={exporting}
-        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-sky-600 text-white font-medium disabled:opacity-50"
-      >
-        {exporting ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
-        Gerar exportação PGR (JSON)
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={exportPgr}
+          disabled={exporting}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-sky-600 text-white font-medium disabled:opacity-50"
+        >
+          {exporting ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+          Gerar exportação PGR (JSON)
+        </button>
+        <button
+          type="button"
+          onClick={exportPdf}
+          disabled={exportingPdf}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-sky-600 text-sky-700 font-medium disabled:opacity-50"
+        >
+          {exportingPdf ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+          Baixar PDF
+        </button>
+      </div>
 
       {lastExport && (
         <p className="text-sm text-emerald-700">Exportação gerada e salva no histórico.</p>

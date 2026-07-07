@@ -23,6 +23,9 @@ import {
   EMAIL_COLLEAGUE_INVITE,
   EMAIL_ORG_STAFF_INVITE,
   orgRoleLabel,
+  EMAIL_EMPLOYER_STAFF_INVITE,
+  EMAIL_EMPLOYER_WORKFORCE_INVITE,
+  employerRoleLabel,
   EMAIL_SLOT_ALERT,
   EMAIL_REVIEW_REQUEST,
   EMAIL_MAGIC_LINK,
@@ -767,5 +770,94 @@ export async function sendOrganizationStaffInvite({
       c.expires.replace(/<[^>]+>/g, ""),
     ].join("\n\n"),
     tag: "org-staff-invite",
+  });
+}
+
+export async function sendEmployerStaffInvite({
+  email,
+  companyName,
+  role,
+  token,
+  language,
+}: {
+  email: string;
+  companyName: string;
+  role: string;
+  token: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_EMPLOYER_STAFF_INVITE[lang];
+  const roleLabel = employerRoleLabel(role, lang);
+  const acceptUrl = `${getAppUrl()}/empresas/equipe/cadastro?token=${encodeURIComponent(token)}`;
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(companyName, roleLabel)}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${acceptUrl}" style="background:#0284c7;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:13px;line-height:1.6;">${c.expires}</p>
+    <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+      ${c.orCopy} <a href="${acceptUrl}" style="color:#0284c7;">${acceptUrl}</a>
+    </p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject(companyName),
+    html: emailShell(c.heading, body, lang),
+    text: [
+      c.hi,
+      c.body(companyName, roleLabel).replace(/<[^>]+>/g, ""),
+      `${c.cta}: ${acceptUrl}`,
+      c.expires.replace(/<[^>]+>/g, ""),
+    ].join("\n\n"),
+    tag: "employer-staff-invite",
+  });
+}
+
+export async function sendEmployerWorkforceInvite({
+  email,
+  firstName,
+  companyName,
+  sessionsPerYear,
+  token,
+  language,
+}: {
+  email: string;
+  firstName: string;
+  companyName: string;
+  sessionsPerYear: number;
+  token: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_EMPLOYER_WORKFORCE_INVITE[lang];
+  const acceptUrl = `${getAppUrl()}/empresas/convite/${encodeURIComponent(token)}`;
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(firstName)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(companyName, sessionsPerYear)}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${acceptUrl}" style="background:#0284c7;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+      ${c.orCopy} <a href="${acceptUrl}" style="color:#0284c7;">${acceptUrl}</a>
+    </p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject(companyName),
+    html: emailShell(c.heading, body, lang),
+    text: [
+      c.hi(firstName),
+      c.body(companyName, sessionsPerYear).replace(/<[^>]+>/g, ""),
+      `${c.cta}: ${acceptUrl}`,
+    ].join("\n\n"),
+    tag: "employer-workforce-invite",
   });
 }
