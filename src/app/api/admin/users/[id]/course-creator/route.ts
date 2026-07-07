@@ -9,7 +9,7 @@ const schema = z.object({
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { userId: string } },
+  { params }: { params: { id: string } },
 ) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,7 +21,7 @@ export async function PUT(
 
   const now = new Date();
   const user = await db.user.update({
-    where: { id: params.userId },
+    where: { id: params.id },
     data: parsed.data.approved
       ? {
           courseCreatorApproved: true,

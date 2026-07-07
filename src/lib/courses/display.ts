@@ -12,11 +12,11 @@ export async function getInstructorDisplay(userId: string): Promise<{
     }),
     db.psychoanalystProfile.findUnique({
       where: { userId },
-      select: { firstName: true, lastName: true, licenseNumber: true },
+      select: { firstName: true, lastName: true, otherRegulatedProfession: true },
     }),
     db.integrativeTherapistProfile.findUnique({
       where: { userId },
-      select: { firstName: true, lastName: true, specialty: true, licenseNumber: true },
+      select: { firstName: true, lastName: true, picsPractices: true, certifications: true },
     }),
   ]);
 
@@ -31,14 +31,14 @@ export async function getInstructorDisplay(userId: string): Promise<{
     return {
       name: `${psycho.firstName} ${psycho.lastName}`.trim(),
       specialty: "Psicanálise",
-      licenseNumber: psycho.licenseNumber,
+      licenseNumber: psycho.otherRegulatedProfession ?? null,
     };
   }
   if (integrative) {
     return {
       name: `${integrative.firstName} ${integrative.lastName}`.trim(),
-      specialty: integrative.specialty,
-      licenseNumber: integrative.licenseNumber,
+      specialty: integrative.picsPractices[0] ?? "Medicina integrativa",
+      licenseNumber: integrative.certifications ?? null,
     };
   }
 
