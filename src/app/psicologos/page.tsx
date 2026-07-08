@@ -30,13 +30,13 @@ const PLANS = [
 export default function PsicologosLandingPage() {
   return (
     <div className="min-h-screen bg-white">
-      <header className="bg-gradient-to-br from-violet-600 to-indigo-700 text-white">
+      <header className="bg-violet-600 text-white">
         <div className="max-w-5xl mx-auto px-4 py-16 sm:py-20">
           <p className="text-violet-200 text-sm font-semibold uppercase tracking-wide mb-3">Doctor8 Psicologia</p>
           <h1 className="text-3xl sm:text-4xl font-bold leading-tight max-w-2xl">
             A plataforma de saúde mental integrada para o seu consultório
           </h1>
-          <p className="mt-4 text-violet-100 text-lg max-w-xl leading-relaxed">
+          <p className="mt-4 text-white/90 text-lg max-w-xl leading-relaxed">
             Telepsicologia com plantão online, prontuário alinhado ao CFP, escalas clínicas e ferramentas fiscais para psicólogos no Brasil.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
