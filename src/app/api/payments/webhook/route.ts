@@ -22,6 +22,11 @@ import { isClubPriceId } from "@/lib/stripe-payment-methods";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import {
+  fulfillPharmacyOrderPayment,
+  fulfillPharmacyCheckoutSession,
+  parsePharmacyOrderMeta,
+} from "@/lib/fulfill-pharmacy-order";
+import {
   isStripeConnectEnabled,
   logConnectAccountUpdated,
 } from "@/lib/stripe-connect";
@@ -281,6 +286,11 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
         currency: intent.currency,
         metadata: meta as CoursePaymentMeta,
       });
+    } else if (meta.type === "pharmacy_order") {
+      const pharmacyMeta = parsePharmacyOrderMeta(meta as Record<string, string>);
+      if (pharmacyMeta) {
+        await fulfillPharmacyOrderPayment(pharmacyMeta, intent.amount);
+      }
     }
     return;
   }
@@ -306,6 +316,9 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
     }
     if (cs.mode === "payment" && cs.metadata?.kind === "course_purchase") {
       await fulfillCourseCheckoutSession(cs.id);
+    }
+    if (cs.mode === "payment" && cs.metadata?.type === "pharmacy_order") {
+      await fulfillPharmacyCheckoutSession(cs.id);
     }
     return;
   }
@@ -403,6 +416,9 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
     }
     if (cs.mode === "payment" && cs.metadata?.kind === "course_purchase" && cs.payment_status === "paid") {
       await fulfillCourseCheckoutSession(cs.id);
+    }
+    if (cs.mode === "payment" && cs.metadata?.type === "pharmacy_order" && cs.payment_status === "paid") {
+      await fulfillPharmacyCheckoutSession(cs.id);
     }
 
     if (cs.mode === "subscription") {

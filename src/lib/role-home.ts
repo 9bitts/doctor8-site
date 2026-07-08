@@ -39,6 +39,8 @@ export function resolveRoleHome(
       return "/organization";
     case "EMPLOYER":
       return "/empresas/painel";
+    case "PHARMACY_STORE":
+      return "/farmacias/painel";
     case "OCCUPATIONAL_PHYSICIAN":
       return "/empresas/medico/painel";
     case "ANGEL":
@@ -80,6 +82,11 @@ const ROLE_ROUTE_CHECKS: { prefix: string; roles: string[] }[] = [
   { prefix: "/empresas/colaborador", roles: ["PATIENT", "ADMIN"] },
   { prefix: "/empresas/medico/painel", roles: ["OCCUPATIONAL_PHYSICIAN", "ADMIN"] },
   { prefix: "/empresas/medico/empresas", roles: ["OCCUPATIONAL_PHYSICIAN", "ADMIN"] },
+  { prefix: "/farmacias/painel", roles: ["PHARMACY_STORE", "ADMIN"] },
+  { prefix: "/farmacias/estoque", roles: ["PHARMACY_STORE", "ADMIN"] },
+  { prefix: "/farmacias/pedidos", roles: ["PHARMACY_STORE", "ADMIN"] },
+  { prefix: "/farmacias/configuracoes", roles: ["PHARMACY_STORE", "ADMIN"] },
+  { prefix: "/farmacias/farmaceutico/painel", roles: ["PROFESSIONAL", "ADMIN"] },
   { prefix: "/humanitarian/angel", roles: ["ANGEL", "ADMIN"] },
   {
     prefix: "/humanitarian/volunteer",

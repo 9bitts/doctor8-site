@@ -88,6 +88,10 @@ const PUBLIC_ROUTES = [
   "/empresas/medico/cadastro",
   "/empresas/medico/aceitar",
   "/empresas/psicologo/login",
+  "/farmacias/login",
+  "/farmacias/cadastro",
+  "/farmacias/farmaceutico/login",
+  "/farmacias/validar/",
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -98,6 +102,7 @@ const PUBLIC_ROUTES = [
 
 function isPublicRoute(pathname: string): boolean {
   if (pathname === "/empresas") return true;
+  if (pathname === "/farmacias") return true;
   return PUBLIC_ROUTES.some((route) => {
     // "/" must be exact — every path starts with "/"
     if (route === "/") return pathname === "/";
@@ -112,6 +117,7 @@ function isPublicApi(pathname: string): boolean {
     || pathname.startsWith("/api/fhir/smart/")
     || pathname.startsWith("/api/oauth/")
     || pathname.startsWith("/api/cnpj/")
+    || pathname.startsWith("/api/cep/")
     || pathname.startsWith("/api/buying-club/public")
     || pathname.startsWith("/api/support")
     || pathname.startsWith("/api/payments/webhook")
@@ -160,6 +166,15 @@ const OCCUPATIONAL_PHYSICIAN_ROUTES = [
   "/empresas/medico/painel",
   "/empresas/medico/empresas",
 ];
+const PHARMACY_STORE_ROUTES = [
+  "/farmacias/painel",
+  "/farmacias/estoque",
+  "/farmacias/pedidos",
+  "/farmacias/configuracoes",
+];
+const PHARMACY_STORE_PHARMACIST_ROUTES = [
+  "/farmacias/farmaceutico/painel",
+];
 const ANGEL_ROUTES = ["/humanitarian/angel"];
 const VOLUNTEER_ROUTES = ["/humanitarian/volunteer"];
 const HUMANITARIAN_ROUTES = ["/humanitarian"];
@@ -178,6 +193,8 @@ const AUTHENTICATED_DASHBOARD_PREFIXES = [
   ...ORGANIZATION_ROUTES,
   ...EMPLOYER_ROUTES,
   ...OCCUPATIONAL_PHYSICIAN_ROUTES,
+  ...PHARMACY_STORE_ROUTES,
+  ...PHARMACY_STORE_PHARMACIST_ROUTES,
   ...HUMANITARIAN_ROUTES,
   ...ANGEL_ROUTES,
   ...VOLUNTEER_ROUTES,
@@ -320,6 +337,44 @@ export default auth((req) => {
     return NextResponse.redirect(new URL(home, req.url));
   }
 
+  if (pathname === "/farmacias/login" && session?.user) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
+    const { role, professionalSpecialty } = session.user as {
+      role: string;
+      professionalSpecialty?: string | null;
+    };
+    const home = resolveRoleHome(role, professionalSpecialty);
+    const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl?.trim()) {
+      const destination = safePostLoginUrl(role, callbackUrl, undefined, professionalSpecialty);
+      if (destination !== home) {
+        return NextResponse.redirect(new URL(destination, req.url));
+      }
+    }
+    return NextResponse.redirect(new URL(home, req.url));
+  }
+
+  if (pathname === "/farmacias/farmaceutico/login" && session?.user) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
+    const { role, professionalSpecialty } = session.user as {
+      role: string;
+      professionalSpecialty?: string | null;
+    };
+    const home = resolveRoleHome(role, professionalSpecialty);
+    const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl?.trim()) {
+      const destination = safePostLoginUrl(role, callbackUrl, undefined, professionalSpecialty);
+      if (destination !== home) {
+        return NextResponse.redirect(new URL(destination, req.url));
+      }
+    }
+    return NextResponse.redirect(new URL(home, req.url));
+  }
+
   if (pathname === "/login" && session?.user) {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
@@ -403,6 +458,9 @@ export default auth((req) => {
 
   // CNPJ lookup during registration
   if (pathname.startsWith("/api/cnpj/")) return NextResponse.next();
+
+  // CEP lookup during pharmacy registration
+  if (pathname.startsWith("/api/cep/")) return NextResponse.next();
 
   // Public buying-club invite preview
   if (pathname.startsWith("/api/buying-club/public")) return NextResponse.next();
@@ -542,6 +600,22 @@ export default auth((req) => {
   if (
     OCCUPATIONAL_PHYSICIAN_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "OCCUPATIONAL_PHYSICIAN" &&
+    role !== "ADMIN"
+  ) {
+    return denyWrongRole();
+  }
+
+  if (
+    PHARMACY_STORE_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "PHARMACY_STORE" &&
+    role !== "ADMIN"
+  ) {
+    return denyWrongRole();
+  }
+
+  if (
+    PHARMACY_STORE_PHARMACIST_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "PROFESSIONAL" &&
     role !== "ADMIN"
   ) {
     return denyWrongRole();

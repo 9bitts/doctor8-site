@@ -1,6 +1,6 @@
 // Pharmacy marketplace ? shared types for affiliate / price-comparison integrations.
 
-export type PharmacyProviderId = "consulta-remedios" | "stub";
+export type PharmacyProviderId = "consulta-remedios" | "doctor8-network" | "stub";
 
 /** How purchases are routed to the partner. */
 export type PharmacyIntegrationMode = "disabled" | "deeplink" | "api";
@@ -45,6 +45,9 @@ export type PharmacyOffer = {
   deliveryEta?: string;
   inStock: boolean;
   purchaseUrl: string;
+  /** Doctor8 network store id when offer is from our pharmacy portal */
+  doctor8StoreId?: string;
+  source?: "doctor8" | "partner";
 };
 
 export type PharmacySearchFilters = {
@@ -71,6 +74,8 @@ export type PharmacyOffersResponse = {
   offers: PharmacyOffer[];
   fallbackPurchaseUrl?: string;
   reference?: PharmacyReferencePrice | null;
+  /** Number of Doctor8 pharmacy network offers included */
+  doctor8NetworkCount?: number;
 };
 
 export type PharmacyPublicConfig = {

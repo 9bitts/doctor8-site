@@ -6,6 +6,29 @@ type ProfileNames = {
   avatarUrl?: string | null;
 };
 
+type ProviderVerificationProfiles = {
+  professionalProfile?: { verified: boolean } | null;
+  psychoanalystProfile?: { verified: boolean } | null;
+  integrativeTherapistProfile?: { verified: boolean } | null;
+};
+
+/** Admin document approval on the provider profile (not email_verified). */
+export function resolveProviderVerified(
+  role: string,
+  profiles: ProviderVerificationProfiles,
+): boolean {
+  switch (role) {
+    case "PROFESSIONAL":
+      return profiles.professionalProfile?.verified ?? false;
+    case "PSYCHOANALYST":
+      return profiles.psychoanalystProfile?.verified ?? false;
+    case "INTEGRATIVE_THERAPIST":
+      return profiles.integrativeTherapistProfile?.verified ?? false;
+    default:
+      return false;
+  }
+}
+
 function fullName(profile: ProfileNames | null | undefined, fallback: string): string {
   if (!profile) return fallback;
   const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ").trim();
@@ -22,9 +45,15 @@ export async function getSsoUserClaims(userId: string) {
       role: true,
       deletedAt: true,
       patientProfile: { select: { firstName: true, lastName: true, avatarUrl: true } },
-      professionalProfile: { select: { firstName: true, lastName: true, avatarUrl: true } },
-      psychoanalystProfile: { select: { firstName: true, lastName: true, avatarUrl: true } },
-      integrativeTherapistProfile: { select: { firstName: true, lastName: true, avatarUrl: true } },
+      professionalProfile: {
+        select: { firstName: true, lastName: true, avatarUrl: true, verified: true },
+      },
+      psychoanalystProfile: {
+        select: { firstName: true, lastName: true, avatarUrl: true, verified: true },
+      },
+      integrativeTherapistProfile: {
+        select: { firstName: true, lastName: true, avatarUrl: true, verified: true },
+      },
     },
   });
 
@@ -45,5 +74,6 @@ export async function getSsoUserClaims(userId: string) {
     name,
     picture: profile?.avatarUrl ?? null,
     role: user.role,
+    verified: resolveProviderVerified(user.role, user),
   };
 }

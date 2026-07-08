@@ -120,6 +120,7 @@ export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/patient/nutrition", labelKey: "nav.nutrition", roles: ["PATIENT"], iconKey: "BarChart3" },
       { href: "/patient/nursing", labelKey: "nav.nursing", roles: ["PATIENT"], iconKey: "Heart" },
       { href: "/patient/pharmacy", labelKey: "nav.pharmacy", roles: ["PATIENT"], iconKey: "Pill" },
+      { href: "/patient/pharmacy/orders", labelKey: "nav.pharmacyOrders", roles: ["PATIENT"], iconKey: "ShoppingBag" },
     ],
   },
   {
@@ -562,6 +563,7 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
   { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ADMIN"], iconKey: "Users" },
   { href: "/admin/empresas", labelKey: "nav.adminEmployers", roles: ["ADMIN"], iconKey: "Building2" },
+  { href: "/admin/farmacias", labelKey: "nav.adminPharmacies", roles: ["ADMIN"], iconKey: "Pill" },
   { href: "/admin/payments", labelKey: "nav.adminPayments", roles: ["ADMIN"], iconKey: "CreditCard" },
   { href: "/admin/courses", labelKey: "nav.adminCourses", roles: ["ADMIN"], iconKey: "BookOpen" },
   { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", roles: ["ADMIN"], iconKey: "Radio" },

@@ -102,6 +102,7 @@ export function issueIdToken(params: {
   name: string;
   picture?: string | null;
   role: string;
+  verified: boolean;
   nonce?: string | null;
 }): string {
   const claims: Record<string, unknown> = {
@@ -112,6 +113,7 @@ export function issueIdToken(params: {
     email_verified: params.emailVerified,
     name: params.name,
     role: params.role,
+    verified: params.verified,
   };
   if (params.picture) claims.picture = params.picture;
   if (params.nonce) claims.nonce = params.nonce;

@@ -10,6 +10,7 @@ import {
   pharmacyOutApiPath,
   pharmacyOutApiPathForPartnerUrl,
 } from "./partner-url";
+import { getDoctor8NetworkOffers } from "@/lib/pharmacy-network/doctor8-provider";
 import type {
   PharmacyDrugRef,
   PharmacyMarketplaceProvider,
@@ -121,16 +122,26 @@ export async function getPharmacyOffers(
 ): Promise<PharmacyOffersResponse> {
   const provider = getProvider();
   const mode = getPharmacyIntegrationMode();
-  const rawOffers =
+
+  const doctor8Offers = await getDoctor8NetworkOffers(drug, cep);
+  const networkOffers = doctor8Offers.map((offer) => ({
+    ...offer,
+    source: "doctor8" as const,
+  }));
+
+  const rawPartnerOffers =
     mode === "disabled" ? [] : await provider.getOffers(drug, cep);
-  const offers = rawOffers.map((offer) => ({
+  const partnerOffers = rawPartnerOffers.map((offer) => ({
     ...offer,
     purchaseUrl: pharmacyOutApiPathForPartnerUrl(offer.purchaseUrl),
+    source: "partner" as const,
   }));
+
+  const offers = [...networkOffers, ...partnerOffers];
   const reference = await getCmedReferencePrice(drug);
 
   return {
-    provider: provider.id,
+    provider: doctor8Offers.length > 0 ? "doctor8-network" : provider.id,
     mode,
     drug,
     cep,
@@ -138,6 +149,7 @@ export async function getPharmacyOffers(
     fallbackPurchaseUrl:
       mode === "disabled" ? undefined : pharmacyOutApiPath(drug, cep),
     reference,
+    doctor8NetworkCount: networkOffers.length,
   };
 }
 

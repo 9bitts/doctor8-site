@@ -28,6 +28,7 @@ enum UserRole {
   INTEGRATIVE_THERAPIST
   ORGANIZATION
   EMPLOYER
+  PHARMACY_STORE
   OCCUPATIONAL_PHYSICIAN
   ANGEL
   ADMIN
@@ -510,6 +511,7 @@ model User {
   buyingClubMembers BuyingClubMember[]
   organizationMemberships OrganizationMember[]
   employerMemberships   EmployerMember[]
+  pharmacyStoreMemberships PharmacyStoreMember[]
   occupationalPhysicianLinks EmployerOccupationalPhysician[]
   clubStampEntries      ClubStampEntry[]
   clubDiversityAwards   ClubDiversityAward[]
@@ -1267,6 +1269,13 @@ model Prescription {
   patientNotifiedAt  DateTime?
   whatsappNotifiedAt DateTime?
   whatsappNotifyStatus String? // SENT | FAILED | NO_PHONE | SKIPPED
+
+  pharmacyAccessToken  String?   @unique
+  pharmacyDispensedAt  DateTime?
+  pharmacyDispensedStoreId String?
+
+  pharmacyOrders       PharmacyOrder[]
+  pharmacyPrescriptionToken PharmacyPrescriptionToken?
 
   createdAt        DateTime @default(now())
 
@@ -3102,6 +3111,8 @@ model DrugCatalog {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  pharmacyInventoryItems PharmacyStoreInventoryItem[]
+
   @@unique([country, externalCode])
   @@index([searchName])
   @@index([searchIngredient])
@@ -4876,4 +4887,227 @@ model EmployerEapUsageSnapshot {
 
   @@unique([employerCompanyId, yearMonth])
   @@index([employerCompanyId])
+}
+
+// ────────────────────────────────────────────
+// PHARMACY STORE — B2B drogaria / rede (Pilar 3)
+// Separate from Organization (clinic) and pharmacist clinical portal.
+// ────────────────────────────────────────────
+
+enum PharmacyStoreStatus {
+  PENDING_REVIEW
+  ACTIVE
+  SUSPENDED
+}
+
+enum PharmacyStoreMemberRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum PharmacyStoreMemberStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+model PharmacyStore {
+  id                   String              @id @default(cuid())
+  cnpj                 String              @unique
+  razaoSocial          String
+  nomeFantasia         String
+  slug                 String              @unique
+
+  responsibleFirstName String
+  responsibleLastName  String
+  contactEmail         String?
+  contactPhone         String?
+
+  addressStreet        String?
+  addressNumber        String?
+  addressComplement    String?
+  addressNeighborhood  String?
+  addressCity          String?
+  addressState         String?
+  addressZip           String?
+  addressCountry       String              @default("BR")
+  latitude             Float?
+  longitude            Float?
+
+  acceptsPickup        Boolean             @default(true)
+  acceptsDelivery      Boolean             @default(false)
+  deliveryRadiusKm     Float?
+  openingHoursJson     Json?
+
+  status               PharmacyStoreStatus @default(ACTIVE)
+  platformFeeCents     Int                 @default(0)
+  alvaraUrl            String?
+  autorizacaoAnvisa    String?
+
+  members              PharmacyStoreMember[]
+  inventory            PharmacyStoreInventoryItem[]
+  importBatches        PharmacyStoreInventoryImport[]
+  orders               PharmacyOrder[]
+
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([status])
+  @@index([addressCity, addressState])
+}
+
+model PharmacyStoreMember {
+  id              String                    @id @default(cuid())
+  pharmacyStoreId String
+  pharmacyStore   PharmacyStore             @relation(fields: [pharmacyStoreId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            PharmacyStoreMemberRole
+  status          PharmacyStoreMemberStatus @default(ACTIVE)
+
+  invitedAt       DateTime?
+  joinedAt        DateTime                  @default(now())
+
+  @@unique([pharmacyStoreId, userId])
+  @@index([userId])
+  @@index([pharmacyStoreId])
+}
+
+model PharmacyStoreInventoryItem {
+  id              String        @id @default(cuid())
+  pharmacyStoreId String
+  pharmacyStore   PharmacyStore @relation(fields: [pharmacyStoreId], references: [id], onDelete: Cascade)
+  drugCatalogId   String
+  drugCatalog     DrugCatalog   @relation(fields: [drugCatalogId], references: [id], onDelete: Restrict)
+
+  priceCents      Int
+  stockQty        Int?
+  available       Boolean       @default(true)
+  ean             String?
+  sku             String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([pharmacyStoreId, drugCatalogId])
+  @@index([pharmacyStoreId])
+  @@index([drugCatalogId])
+  @@index([pharmacyStoreId, available])
+}
+
+model PharmacyStoreInventoryImport {
+  id               String        @id @default(cuid())
+  pharmacyStoreId  String
+  pharmacyStore    PharmacyStore @relation(fields: [pharmacyStoreId], references: [id], onDelete: Cascade)
+  filename         String?
+  rowsTotal        Int           @default(0)
+  rowsMatched      Int           @default(0)
+  rowsCreated      Int           @default(0)
+  rowsUpdated      Int           @default(0)
+  rowsSkipped      Int           @default(0)
+  errorsJson       Json?
+  importedByUserId String
+
+  createdAt        DateTime      @default(now())
+
+  @@index([pharmacyStoreId])
+  @@index([createdAt])
+}
+
+enum PharmacyOrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CONFIRMED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum PharmacyFulfillmentType {
+  PICKUP
+  DELIVERY
+}
+
+enum PharmacyPrescriptionTokenStatus {
+  ACTIVE
+  DISPENSED
+  REVOKED
+}
+
+model PharmacyOrder {
+  id                    String                  @id @default(cuid())
+  pharmacyStoreId       String
+  pharmacyStore         PharmacyStore           @relation(fields: [pharmacyStoreId], references: [id], onDelete: Restrict)
+  patientUserId         String
+  prescriptionId        String?
+  prescription          Prescription?           @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+
+  status                PharmacyOrderStatus     @default(PENDING_PAYMENT)
+  fulfillmentType       PharmacyFulfillmentType @default(PICKUP)
+
+  patientCep            String?
+  deliveryAddressJson     Json?
+
+  subtotalCents         Int
+  deliveryFeeCents      Int                     @default(0)
+  platformFeeCents      Int                     @default(0)
+  totalCents            Int
+
+  stripePaymentIntentId String?                 @unique
+  paidAt                DateTime?
+  confirmedAt           DateTime?
+  readyAt               DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  validatedAt           DateTime?
+  validatedByUserId     String?
+
+  items                 PharmacyOrderItem[]
+  prescriptionToken     PharmacyPrescriptionToken?
+
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  @@index([pharmacyStoreId])
+  @@index([patientUserId])
+  @@index([prescriptionId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PharmacyOrderItem {
+  id                      String        @id @default(cuid())
+  orderId                 String
+  order                   PharmacyOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  drugCatalogId           String
+  pharmacyInventoryItemId String?
+  quantity                Int           @default(1)
+  unitPriceCents          Int
+  drugName                String
+  presentation            String?
+
+  @@index([orderId])
+  @@index([drugCatalogId])
+}
+
+model PharmacyPrescriptionToken {
+  id              String                        @id @default(cuid())
+  prescriptionId  String                        @unique
+  prescription    Prescription                  @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  token           String                        @unique @default(cuid())
+  status          PharmacyPrescriptionTokenStatus @default(ACTIVE)
+
+  pharmacyOrderId String?                       @unique
+  pharmacyOrder   PharmacyOrder?                @relation(fields: [pharmacyOrderId], references: [id], onDelete: SetNull)
+  pharmacyStoreId String?
+  dispensedAt     DateTime?
+  dispensedByUserId String?
+
+  createdAt       DateTime                      @default(now())
+  updatedAt       DateTime                      @updatedAt
+
+  @@index([token])
+  @@index([status])
 }

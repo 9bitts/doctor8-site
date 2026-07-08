@@ -79,6 +79,7 @@ export default function ConsultPricingSettings({
   const [acceptsInPerson, setAcceptsInPerson] = useState(false);
   const [sessionDurationMins, setSessionDurationMins] = useState("50");
   const readyRef = useRef(false);
+  const skipAutoSaveRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const accentText = accent === "teal" ? "text-teal-500" : "text-brand-500";
@@ -154,6 +155,7 @@ export default function ConsultPricingSettings({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t("set.errGeneric"));
       if (data.services) {
+        skipAutoSaveRef.current = true;
         setServices(
           data.services.map((s: ProviderServiceDto) => ({
             name: s.name,
@@ -187,6 +189,10 @@ export default function ConsultPricingSettings({
 
   useEffect(() => {
     if (!autoSave || !readyRef.current) return;
+    if (skipAutoSaveRef.current) {
+      skipAutoSaveRef.current = false;
+      return;
+    }
     if (validServices.length === 0) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -255,20 +261,6 @@ export default function ConsultPricingSettings({
       )}
 
       {embedded && <p className="text-sm text-slate-500">{t("consultServices.subtitle")}</p>}
-
-      {autoSave && (saving || saved) && (
-        <p className="text-xs text-slate-500 flex items-center gap-1.5">
-          {saving ? (
-            <>
-              <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
-            </>
-          ) : (
-            <>
-              <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
-            </>
-          )}
-        </p>
-      )}
 
       {error && (
         <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
@@ -469,6 +461,24 @@ export default function ConsultPricingSettings({
           {saving && <Loader2 size={14} className="animate-spin" />}
           {saving ? t("set.saving") : t("consultServices.save")}
         </button>
+      )}
+
+      {autoSave && (
+        <div className="min-h-[20px] pt-1">
+          {(saving || saved) && (
+            <p className="text-xs text-slate-500 flex items-center gap-1.5">
+              {saving ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
+                </>
+              )}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

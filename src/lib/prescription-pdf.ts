@@ -40,6 +40,8 @@ export interface PrescriptionPdfData {
   signed?: boolean;
   /** Optional council compliance line (CFO, CFF, etc.) */
   councilComplianceLine?: string | null;
+  /** PNG bytes for pharmacy validation QR (top-left corner) */
+  pharmacyQrPng?: Uint8Array;
 }
 
 const L: Record<Lang, Record<string, string>> = {
@@ -128,7 +130,18 @@ export async function buildPrescriptionPdf(
     }
   };
 
-  // ── Cabeçalho: logo Doctor8 (centro) — canto esquerdo fica livre para QR ICP-Brasil ──
+  // ── Cabeçalho: logo Doctor8 (centro) — canto esquerdo para QR farmácia / ICP-Brasil ──
+  if (data.pharmacyQrPng?.length) {
+    try {
+      const qrImg = await pdf.embedPng(data.pharmacyQrPng);
+      const qrSize = 72;
+      page.drawImage(qrImg, { x: margin, y: A4.h - margin - qrSize, width: qrSize, height: qrSize });
+      text(page, "Validar na farmacia", margin, A4.h - margin - qrSize - 10, 6, font, GRAY);
+    } catch {
+      // skip if QR embed fails
+    }
+  }
+
   const logoSize = 26;
   const logoDoctorW = fontBold.widthOfTextAtSize("Doctor", logoSize);
   const logoEightW = fontBold.widthOfTextAtSize("8", logoSize);

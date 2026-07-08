@@ -13,6 +13,8 @@ import { decrypt } from "@/lib/encryption";
 import { audit } from "@/lib/audit";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
+import { ensurePrescriptionToken, prescriptionQrUrl } from "@/lib/pharmacy-network/prescription-token";
+import { generateQrPngBuffer } from "@/lib/qr-png";
 import { formatLicense, getProfessionInfo, isDentistSpecialty } from "@/lib/profession-label";
 import { resolveRequestLang } from "@/lib/sign-helpers";
 
@@ -169,6 +171,16 @@ export async function GET(
     ? new Date(prescription.validUntil).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" })
     : (lang === "pt" ? "Sem validade" : lang === "es" ? "Sin caducidad" : "No expiry");
 
+  let pharmacyQrPng: Uint8Array | undefined;
+  if (prescription.signatureStatus === "SIGNED") {
+    try {
+      const tokenRow = await ensurePrescriptionToken(prescription.id);
+      pharmacyQrPng = await generateQrPngBuffer(prescriptionQrUrl(tokenRow.token), 180);
+    } catch {
+      // optional QR
+    }
+  }
+
   const pdfBytes = await buildPrescriptionPdf({
     lang,
     proFirstName: pro.firstName, proLastName: pro.lastName,
@@ -188,6 +200,7 @@ export async function GET(
     medications: meds,
     instructions: prescription.instructions ? safeDecrypt(prescription.instructions) : "",
     signed: false,
+    pharmacyQrPng,
     councilComplianceLine: isDentistSpecialty(pro.specialty)
       ? (lang === "en"
         ? "Issued per CFO Resolution 278/2025 and applicable dental practice regulations."

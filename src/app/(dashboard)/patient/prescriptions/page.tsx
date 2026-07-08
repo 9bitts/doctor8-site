@@ -10,6 +10,7 @@ import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import { formatShortDateWithYear } from "@/lib/timezone";
 import { getProfessionLabel } from "@/lib/professions";
 import PatientEmissionAlertsPanel from "@/components/patient/PatientEmissionAlertsPanel";
+import PatientPharmacyBuyPanel from "@/components/patient/PatientPharmacyBuyPanel";
 import {
   FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw,
   ShieldCheck, Clock, XCircle, MessageCircle,
@@ -172,6 +173,12 @@ export default function PatientPrescriptionsPage() {
                     <Download size={14} /> {t("myrx.downloadPDF")}
                   </a>
                 </div>
+                {!p.isExpired && (p.signatureStatus === "SIGNED" || p.hasSignedPdf) && (
+                  <PatientPharmacyBuyPanel
+                    prescriptionId={p.id}
+                    medications={meds}
+                  />
+                )}
               </div>
             );
           })}

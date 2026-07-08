@@ -27,6 +27,7 @@ function roleAccent(role: string): "emerald" | "rose" | "indigo" | "teal" | "vio
   if (role === "ANGEL") return "rose";
   if (role === "ORGANIZATION") return "indigo";
   if (role === "EMPLOYER") return "indigo";
+  if (role === "PHARMACY_STORE") return "emerald";
   if (role === "INTEGRATIVE_THERAPIST") return "teal";
   if (role === "PSYCHOANALYST") return "violet";
   return "emerald";

@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
     name: claims.name,
     picture: claims.picture,
     role: claims.role,
+    verified: claims.verified,
     nonce: meta.nonce,
   });
 

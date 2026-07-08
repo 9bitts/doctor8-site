@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   ExternalLink,
@@ -380,20 +381,34 @@ export default function PharmacyMarketplacePanel({ onSaved }: PharmacyMarketplac
                   </div>
                   {offers.length > 0 && (
                     <ul className="space-y-2 text-left">
-                      {offers.slice(0, 3).map((offer) => (
+                      {offers.slice(0, 5).map((offer) => (
                         <li
                           key={`${offer.pharmacyName}-${offer.purchaseUrl}`}
                           className="flex items-center justify-between gap-2 text-xs bg-white rounded-lg border border-blue-100 px-3 py-2"
                         >
-                          <span className="font-medium text-slate-800 truncate">{offer.pharmacyName}</span>
-                          <a
-                            href={offer.purchaseUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 text-blue-600 font-semibold hover:underline"
-                          >
-                            {formatBrl(offer.priceCents)}
-                          </a>
+                          <span className="font-medium text-slate-800 truncate">
+                            {offer.pharmacyName}
+                            {"source" in offer && (offer as { source?: string }).source === "doctor8" && (
+                              <span className="ml-1 text-[10px] text-emerald-600 font-bold">Doctor8</span>
+                            )}
+                          </span>
+                          {"doctor8StoreId" in offer && (offer as { doctor8StoreId?: string }).doctor8StoreId ? (
+                            <Link
+                              href={`/patient/pharmacy/buy?storeId=${(offer as { doctor8StoreId: string }).doctor8StoreId}&drugId=${selected?.drugCatalogId ?? ""}`}
+                              className="shrink-0 text-emerald-700 font-semibold hover:underline"
+                            >
+                              {formatBrl(offer.priceCents)}
+                            </Link>
+                          ) : (
+                            <a
+                              href={offer.purchaseUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 text-blue-600 font-semibold hover:underline"
+                            >
+                              {formatBrl(offer.priceCents)}
+                            </a>
+                          )}
                         </li>
                       ))}
                     </ul>
