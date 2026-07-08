@@ -4,7 +4,8 @@ import Link from "next/link";
 import { getPharmacyStoreMembership } from "@/lib/pharmacy-store-auth";
 import { resolveRoleHome } from "@/lib/role-home";
 import { db } from "@/lib/db";
-import { Package, MapPin, Upload, ArrowRight } from "lucide-react";
+import { buildPharmacyStoreAnalytics } from "@/lib/pharmacy-store-analytics";
+import { Package, MapPin, Upload, ArrowRight, ShoppingBag, TrendingUp } from "lucide-react";
 
 const STORE_STATUS_LABEL: Record<string, { label: string; hint: string }> = {
   PENDING_REVIEW: {
@@ -36,6 +37,10 @@ export default async function FarmaciasPainelPage() {
   const inventoryCount = await db.pharmacyStoreInventoryItem.count({
     where: { pharmacyStoreId: store.id, available: true },
   });
+  const analytics = await buildPharmacyStoreAnalytics(store.id);
+
+  const formatBrl = (cents: number) =>
+    (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const statusInfo = STORE_STATUS_LABEL[store.status] ?? {
     label: store.status,
@@ -68,16 +73,25 @@ export default async function FarmaciasPainelPage() {
         </p>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-2xl bg-white border border-slate-200 p-5">
           <Package className="text-emerald-600 mb-2" size={22} />
           <p className="text-2xl font-bold text-slate-900">{inventoryCount}</p>
           <p className="text-sm text-slate-500">itens no estoque</p>
         </div>
         <div className="rounded-2xl bg-white border border-slate-200 p-5">
-          <p className="text-sm font-semibold text-slate-600">Taxa Doctor8</p>
-          <p className="text-2xl font-bold text-emerald-600 mt-2">R$ 0,00</p>
-          <p className="text-xs text-slate-500 mt-1">por venda — fase de lançamento</p>
+          <ShoppingBag className="text-emerald-600 mb-2" size={22} />
+          <p className="text-2xl font-bold text-slate-900">{analytics.ordersPaid}</p>
+          <p className="text-sm text-slate-500">pedidos pagos</p>
+          {analytics.ordersPending > 0 && (
+            <p className="text-xs text-amber-600 mt-1">{analytics.ordersPending} em andamento</p>
+          )}
+        </div>
+        <div className="rounded-2xl bg-white border border-slate-200 p-5">
+          <TrendingUp className="text-emerald-600 mb-2" size={22} />
+          <p className="text-2xl font-bold text-emerald-600">{formatBrl(analytics.revenueLast30DaysCents)}</p>
+          <p className="text-sm text-slate-500">receita (30 dias)</p>
+          <p className="text-xs text-slate-400 mt-1">{analytics.ordersLast30Days} pedidos no período</p>
         </div>
         <div className={`rounded-2xl p-5 text-white ${
           store.status === "ACTIVE"

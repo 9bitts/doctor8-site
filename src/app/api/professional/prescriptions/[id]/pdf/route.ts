@@ -15,6 +15,7 @@ import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
 import { ensurePrescriptionToken, prescriptionQrUrl } from "@/lib/pharmacy-network/prescription-token";
 import { generateQrPngBuffer } from "@/lib/qr-png";
+import { embedPharmacyQrInPdfBytes } from "@/lib/pharmacy-prescription-pdf-qr";
 import { formatLicense, getProfessionInfo, isDentistSpecialty } from "@/lib/profession-label";
 import { resolveRequestLang } from "@/lib/sign-helpers";
 
@@ -116,7 +117,18 @@ export async function GET(
         Bucket: BUCKET, Key: prescription.signedFileUrl,
       }));
       const buf = await streamToBuffer(obj.Body as any);
-      return new NextResponse(new Blob([new Uint8Array(buf)], { type: "application/pdf" }), {
+      let out = new Uint8Array(buf);
+      if (prescription.signatureStatus === "SIGNED") {
+        try {
+          const tokenRow = await ensurePrescriptionToken(prescription.id);
+          out = new Uint8Array(
+            await embedPharmacyQrInPdfBytes(out, prescriptionQrUrl(tokenRow.token)),
+          );
+        } catch {
+          // serve signed PDF without QR overlay if stamping fails
+        }
+      }
+      return new NextResponse(new Blob([out], { type: "application/pdf" }), {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `inline; filename="receita-${prescription.id.slice(0, 8)}-assinada.pdf"`,

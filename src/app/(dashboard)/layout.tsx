@@ -213,6 +213,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const isNursePortal = pathname.startsWith("/enfermeiro");
   const isPharmacistPortal = pathname.startsWith("/farmaceutico");
   const isPharmacyNetworkPharmacistPortal = pathname.startsWith("/farmacias/farmaceutico");
+  const isPharmacyValidateHub = pathname === "/farmacias/validar";
   const isPharmacyStorePortal =
     pathname.startsWith("/farmacias") && !isPharmacyNetworkPharmacistPortal;
   const isDentistPortal = pathname.startsWith("/odontologo");
@@ -225,10 +226,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   });
 
   const isPharmacyStore =
-    role === "PHARMACY_STORE" || (role === "ADMIN" && isPharmacyStorePortal);
+    !isPharmacyValidateHub || role === "PHARMACY_STORE"
+      ? role === "PHARMACY_STORE" || (role === "ADMIN" && isPharmacyStorePortal)
+      : false;
   const isPharmacyNetworkPharmacist =
-    isPharmacyNetworkPharmacistPortal &&
-    (role === "PROFESSIONAL" || role === "ADMIN");
+    (isPharmacyNetworkPharmacistPortal && (role === "PROFESSIONAL" || role === "ADMIN"))
+    || (isPharmacyValidateHub && role === "PROFESSIONAL");
 
   const navItems: NavItem[] =
     isPharmacyStore ? withNavIcons(PHARMACY_STORE_NAV)

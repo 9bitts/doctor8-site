@@ -169,6 +169,17 @@ export async function POST(req: NextRequest) {
 
   // ── Gera o PDF real ──
   let pdfBytes: Uint8Array;
+  let pharmacyQrPng: Uint8Array | undefined;
+  try {
+    const { ensurePrescriptionToken, prescriptionQrUrl } = await import(
+      "@/lib/pharmacy-network/prescription-token"
+    );
+    const { generateQrPngBuffer } = await import("@/lib/qr-png");
+    const tokenRow = await ensurePrescriptionToken(prescription.id);
+    pharmacyQrPng = await generateQrPngBuffer(prescriptionQrUrl(tokenRow.token), 180);
+  } catch {
+    // optional QR at sign time
+  }
   try {
     pdfBytes = await buildPrescriptionPdf({
       lang,
@@ -189,6 +200,7 @@ export async function POST(req: NextRequest) {
       medications: meds,
       instructions: prescription.instructions ? safeDecrypt(prescription.instructions) : "",
       signed: false,
+      pharmacyQrPng,
       councilComplianceLine: isDentistSpecialty(pro.specialty)
         ? (lang === "en"
           ? "Issued per CFO Resolution 278/2025 and applicable dental practice regulations."

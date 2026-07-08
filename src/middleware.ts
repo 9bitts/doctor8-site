@@ -92,6 +92,7 @@ const PUBLIC_ROUTES = [
   "/farmacias/cadastro",
   "/farmacias/farmaceutico/login",
   "/farmacias/validar/",
+  "/farmacias/buscar",
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -103,6 +104,7 @@ const PUBLIC_ROUTES = [
 function isPublicRoute(pathname: string): boolean {
   if (pathname === "/empresas") return true;
   if (pathname === "/farmacias") return true;
+  if (pathname === "/farmacias/buscar") return true;
   return PUBLIC_ROUTES.some((route) => {
     // "/" must be exact — every path starts with "/"
     if (route === "/") return pathname === "/";
@@ -170,8 +172,10 @@ const PHARMACY_STORE_ROUTES = [
   "/farmacias/painel",
   "/farmacias/estoque",
   "/farmacias/pedidos",
+  "/farmacias/equipe",
   "/farmacias/configuracoes",
 ];
+const PHARMACY_VALIDATE_HUB = "/farmacias/validar";
 const PHARMACY_STORE_PHARMACIST_ROUTES = [
   "/farmacias/farmaceutico/painel",
 ];
@@ -194,6 +198,7 @@ const AUTHENTICATED_DASHBOARD_PREFIXES = [
   ...EMPLOYER_ROUTES,
   ...OCCUPATIONAL_PHYSICIAN_ROUTES,
   ...PHARMACY_STORE_ROUTES,
+  PHARMACY_VALIDATE_HUB,
   ...PHARMACY_STORE_PHARMACIST_ROUTES,
   ...HUMANITARIAN_ROUTES,
   ...ANGEL_ROUTES,
@@ -608,6 +613,15 @@ export default auth((req) => {
   if (
     PHARMACY_STORE_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "PHARMACY_STORE" &&
+    role !== "ADMIN"
+  ) {
+    return denyWrongRole();
+  }
+
+  if (
+    pathname === PHARMACY_VALIDATE_HUB &&
+    role !== "PHARMACY_STORE" &&
+    role !== "PROFESSIONAL" &&
     role !== "ADMIN"
   ) {
     return denyWrongRole();

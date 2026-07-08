@@ -64,5 +64,10 @@ export async function PATCH(
     include: { items: true },
   });
 
+  const { notifyPharmacyOrderStatusChanged } = await import("@/lib/pharmacy-order-notify");
+  notifyPharmacyOrderStatusChanged(updated.id, parsed.data.status).catch((e) =>
+    console.error("[PHARMACY ORDER STATUS NOTIFY]", e),
+  );
+
   return NextResponse.json({ order: updated });
 }

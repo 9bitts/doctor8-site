@@ -178,3 +178,101 @@ export async function notifyPharmacyOrderPaid(orderId: string): Promise<void> {
     }).catch((e) => console.error("[PHARMACY ORDER NOTIFY PATIENT]", e)),
   ]);
 }
+
+const STATUS_PATIENT_COPY: Record<
+  string,
+  { title: string; body: string; emailSubject: string; emailLead: string }
+> = {
+  CONFIRMED: {
+    title: "Pedido confirmado pela farmácia",
+    body: "A farmácia confirmou seu pedido e iniciará a preparação.",
+    emailSubject: "Farmácia confirmou seu pedido",
+    emailLead: "Sua farmácia confirmou o pedido e começará a preparação.",
+  },
+  PREPARING: {
+    title: "Pedido em preparação",
+    body: "Seus medicamentos estão sendo separados na farmácia.",
+    emailSubject: "Seu pedido está sendo preparado",
+    emailLead: "A farmácia está separando seus medicamentos.",
+  },
+  READY: {
+    title: "Pedido pronto",
+    body: "Seu pedido está pronto para retirada ou entrega.",
+    emailSubject: "Seu pedido está pronto",
+    emailLead: "Seu pedido está pronto. Apresente o QR da receita na farmácia.",
+  },
+  COMPLETED: {
+    title: "Pedido concluído",
+    body: "Dispensação registrada. Obrigado por usar a rede Doctor8.",
+    emailSubject: "Pedido concluído",
+    emailLead: "Sua dispensação foi registrada com sucesso.",
+  },
+  CANCELLED: {
+    title: "Pedido cancelado",
+    body: "A farmácia cancelou este pedido. Entre em contato se tiver dúvidas.",
+    emailSubject: "Pedido cancelado",
+    emailLead: "Este pedido foi cancelado pela farmácia.",
+  },
+};
+
+export async function notifyPharmacyOrderStatusChanged(
+  orderId: string,
+  newStatus: string,
+): Promise<void> {
+  const copy = STATUS_PATIENT_COPY[newStatus];
+  if (!copy) return;
+
+  const order = await db.pharmacyOrder.findUnique({
+    where: { id: orderId },
+    include: {
+      pharmacyStore: { select: { nomeFantasia: true } },
+      items: { select: { drugName: true } },
+    },
+  });
+  if (!order) return;
+
+  const patientUser = await db.user.findUnique({
+    where: { id: order.patientUserId },
+    select: { email: true },
+  });
+  if (!patientUser?.email) return;
+
+  const appUrl = getAppUrl();
+  const patientOrdersUrl = `${appUrl}/patient/pharmacy/orders`;
+  const total = formatBrl(order.totalCents);
+  const itemList = order.items.map((i) => i.drugName).join(", ");
+
+  const html = emailShell(
+    copy.emailSubject,
+    `
+      <p style="font-size:15px;color:#1e293b;margin:0 0 16px;">${copy.emailLead}</p>
+      <div style="background:#f8fafc;border-radius:12px;padding:16px 20px;margin:0 0 20px;">
+        <p style="margin:0 0 8px;font-size:14px;color:#334155;"><strong>Farmácia:</strong> ${order.pharmacyStore.nomeFantasia}</p>
+        <p style="margin:0 0 8px;font-size:14px;color:#334155;"><strong>Total:</strong> ${total}</p>
+        <p style="margin:0;font-size:14px;color:#334155;"><strong>Itens:</strong> ${itemList}</p>
+      </div>
+      <p style="text-align:center;margin:0;">
+        <a href="${patientOrdersUrl}" style="display:inline-block;background:#0a4d6e;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:600;font-size:15px;">
+          Ver pedido
+        </a>
+      </p>
+    `,
+    "pt",
+  );
+
+  await Promise.all([
+    sendTransactionalEmail({
+      to: patientUser.email,
+      subject: `${copy.emailSubject} — ${order.pharmacyStore.nomeFantasia}`,
+      html,
+      tag: `pharmacy_order_${newStatus.toLowerCase()}_patient`,
+    }).catch((e) => console.error("[PHARMACY ORDER STATUS EMAIL]", e)),
+    createNotification({
+      userId: order.patientUserId,
+      title: copy.title,
+      body: `${order.pharmacyStore.nomeFantasia} — ${copy.body}`,
+      type: "system",
+      data: { url: "/patient/pharmacy/orders", orderId: order.id },
+    }).catch((e) => console.error("[PHARMACY ORDER STATUS NOTIFY]", e)),
+  ]);
+}
