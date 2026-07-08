@@ -11,6 +11,8 @@ type BillingData = {
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
     hasSubscription: boolean;
+    meteredConfigured?: boolean;
+    meteredActive?: boolean;
   };
   plans: {
     tier: string;
@@ -83,6 +85,9 @@ export function EmployerBillingSection() {
           Assinatura {data.billing.status}
           {data.billing.currentPeriodEnd && (
             <> · renova em {new Date(data.billing.currentPeriodEnd).toLocaleDateString("pt-BR")}</>
+          )}
+          {data.billing.meteredConfigured && (
+            <> · EAP metered {data.billing.meteredActive ? "ativo" : "pendente"}</>
           )}
         </p>
       )}

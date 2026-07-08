@@ -152,6 +152,7 @@ const EMPLOYER_ROUTES = [
   "/empresas/pcmso",
   "/empresas/exames",
   "/empresas/configuracoes",
+  "/empresas/integracoes",
   "/empresas/denuncias",
   "/empresas/rede-psicologos",
 ];

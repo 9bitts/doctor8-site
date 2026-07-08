@@ -44,6 +44,9 @@ export async function GET() {
       physicianName: e.physicianName,
       physicianCrm: e.physicianCrm,
       clinicName: e.clinicName,
+      clinicPartnerId: e.clinicPartnerId,
+      partnerBookingRef: e.partnerBookingRef,
+      hasReport: Boolean(e.reportPdfKey),
       overdue: isExamOverdue(e.dueDate, e.status),
       employee: e.workforceMember,
     })),
@@ -56,6 +59,7 @@ const createSchema = z.object({
   scheduledAt: z.string().datetime().optional(),
   dueDate: z.string().datetime().optional(),
   clinicName: z.string().max(200).optional(),
+  clinicPartnerId: z.string().optional(),
   notes: z.string().max(2000).optional(),
 });
 
@@ -75,6 +79,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Employee not found" }, { status: 404 });
   }
 
+  let clinicName = parsed.data.clinicName;
+  if (parsed.data.clinicPartnerId) {
+    const clinic = await db.occupationalClinicPartner.findFirst({
+      where: { id: parsed.data.clinicPartnerId, active: true },
+    });
+    if (!clinic) {
+      return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
+    }
+    clinicName = clinic.name;
+  }
+
   const exam = await db.employerOccupationalExam.create({
     data: {
       employerCompanyId: ctx.employerCompanyId,
@@ -82,7 +97,9 @@ export async function POST(req: NextRequest) {
       examType: parsed.data.examType,
       scheduledAt: parsed.data.scheduledAt ? new Date(parsed.data.scheduledAt) : null,
       dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
-      clinicName: parsed.data.clinicName,
+      clinicName,
+      clinicPartnerId: parsed.data.clinicPartnerId,
+      partnerBookingRef: parsed.data.clinicPartnerId ? `D8-${Date.now()}` : undefined,
       notes: parsed.data.notes,
     },
   });

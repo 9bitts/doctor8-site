@@ -13,6 +13,8 @@ type Member = {
   status: string;
   sessionsUsed: number;
   sessionsQuota: number | null;
+  cpf: string | null;
+  matriculaEsocial: string | null;
 };
 
 export default function ColaboradoresPage() {
@@ -25,6 +27,10 @@ export default function ColaboradoresPage() {
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCpf, setEditCpf] = useState("");
+  const [editMatricula, setEditMatricula] = useState("");
+  const [savingSst, setSavingSst] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -79,6 +85,21 @@ export default function ColaboradoresPage() {
     load();
   }
 
+  async function saveSstFields(id: string) {
+    setSavingSst(true);
+    await fetch(`/api/employer/workforce/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cpf: editCpf || null,
+        matriculaEsocial: editMatricula || null,
+      }),
+    });
+    setSavingSst(false);
+    setEditingId(null);
+    load();
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
@@ -101,7 +122,7 @@ export default function ColaboradoresPage() {
       <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
         <p className="text-sm font-medium text-slate-800">Importar CSV</p>
         <p className="text-xs text-slate-500">
-          Colunas: email, nome, sobrenome, setor (opcional), cargo (opcional). Cabeçalho opcional.
+          Colunas: email, nome, sobrenome, setor, cargo (opcionais). Para eSocial: informe CPF e matrícula na tabela abaixo.
         </p>
         <label className="inline-flex items-center gap-2 text-sm text-sky-600 cursor-pointer">
           <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvImport} disabled={importing} />
@@ -119,6 +140,7 @@ export default function ColaboradoresPage() {
               <tr>
                 <th className="px-4 py-2">Nome</th>
                 <th className="px-4 py-2">Setor</th>
+                <th className="px-4 py-2">CPF / Matrícula</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Sessões</th>
                 <th className="px-4 py-2" />
@@ -132,6 +154,48 @@ export default function ColaboradoresPage() {
                     <p className="text-xs text-slate-500">{m.email}</p>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{m.department || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600 text-xs">
+                    {editingId === m.id ? (
+                      <div className="space-y-1">
+                        <input
+                          value={editCpf}
+                          onChange={(e) => setEditCpf(e.target.value)}
+                          placeholder="CPF"
+                          className="w-full rounded border border-slate-200 px-2 py-1"
+                        />
+                        <input
+                          value={editMatricula}
+                          onChange={(e) => setEditMatricula(e.target.value)}
+                          placeholder="Matrícula eSocial"
+                          className="w-full rounded border border-slate-200 px-2 py-1"
+                        />
+                        <button
+                          type="button"
+                          disabled={savingSst}
+                          onClick={() => saveSstFields(m.id)}
+                          className="text-sky-600 hover:underline"
+                        >
+                          {savingSst ? "…" : "Salvar"}
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p>{m.cpf || "—"}</p>
+                        <p className="text-slate-400">{m.matriculaEsocial || "sem matrícula"}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingId(m.id);
+                            setEditCpf(m.cpf ?? "");
+                            setEditMatricula(m.matriculaEsocial ?? "");
+                          }}
+                          className="text-sky-600 hover:underline mt-1"
+                        >
+                          Editar SST
+                        </button>
+                      </>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{m.status}</td>
                   <td className="px-4 py-3 text-slate-600">{m.sessionsUsed}{m.sessionsQuota ? ` / ${m.sessionsQuota}` : ""}</td>
                   <td className="px-4 py-3">

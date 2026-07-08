@@ -22,7 +22,15 @@ export async function GET() {
     take: 50,
   });
 
-  return NextResponse.json({ signatures });
+  return NextResponse.json({
+    signatures: signatures.map((s) => ({
+      id: s.id,
+      docType: s.docType,
+      signedByName: s.signedByName,
+      signatureStatus: s.signatureStatus,
+      signedAt: s.signedAt.toISOString(),
+    })),
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -43,6 +51,7 @@ export async function POST(req: NextRequest) {
       signedByRegistro: parsed.data.signedByRegistro,
       signedByRole: parsed.data.signedByRole,
       notes: parsed.data.notes,
+      signatureStatus: "METADATA_ONLY",
     },
   });
 

@@ -548,6 +548,7 @@ export const EMPLOYER_NAV: PlatformNavEntry[] = [
   { href: "/empresas/denuncias", labelKey: "emp.nav.whistleblower", roles: ["EMPLOYER"], iconKey: "MessageSquare" },
   { href: "/empresas/equipe", labelKey: "emp.nav.team", roles: ["EMPLOYER"], iconKey: "Building2" },
   { href: "/empresas/configuracoes", labelKey: "nav.account", roles: ["EMPLOYER"], iconKey: "Settings" },
+  { href: "/empresas/integracoes", labelKey: "emp.nav.integrations", roles: ["EMPLOYER"], iconKey: "Plug" },
 ];
 
 /** Occupational physician — PCMSO coordinator read-only slice */

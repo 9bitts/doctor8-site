@@ -28,6 +28,41 @@ function formatBrl(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function MeteredBillingNote() {
+  const [metered, setMetered] = useState<{
+    configured: boolean;
+    mode: string;
+    sessionsReported: number;
+    sessionsInternalDemo: number;
+    message?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/employer/billing/metered")
+      .then((r) => r.json())
+      .then((d) =>
+        setMetered({
+          configured: d.configured,
+          mode: d.mode ?? "demo",
+          sessionsReported: d.sessionsReported ?? 0,
+          sessionsInternalDemo: d.sessionsInternalDemo ?? 0,
+          message: d.message,
+        }),
+      )
+      .catch(() => {});
+  }, []);
+
+  if (!metered) return null;
+
+  return (
+    <p className={`text-xs border-t border-slate-100 pt-2 ${metered.configured ? "text-emerald-700" : "text-amber-800"}`}>
+      {metered.configured
+        ? `Cobrança Stripe metered: ${metered.sessionsReported} sessão(ões) reportadas.`
+        : `Modo demo: ${metered.sessionsInternalDemo || metered.sessionsReported} sessão(ões) registradas internamente (sem Stripe).`}
+    </p>
+  );
+}
+
 export function EmployerEapUsageSection() {
   const [report, setReport] = useState<UsageReport | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -104,6 +139,7 @@ export function EmployerEapUsageSection() {
           </div>
         </div>
       )}
+      <MeteredBillingNote />
       <div className="pt-4 border-t border-slate-100 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-medium text-slate-500 uppercase flex items-center gap-1">

@@ -61,5 +61,13 @@ export async function PATCH(
     },
   });
 
+  if (exam.status === "COMPLETED" && exam.asoResult) {
+    import("@/lib/employer-esocial-partner")
+      .then(({ buildAndQueueS2220FromExam }) =>
+        buildAndQueueS2220FromExam(exam.id, ctx.employerCompanyId),
+      )
+      .catch(() => {});
+  }
+
   return NextResponse.json({ exam });
 }

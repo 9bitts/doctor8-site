@@ -4320,6 +4320,8 @@ model EmployerCompany {
   occupationalExams    EmployerOccupationalExam[]
   documentSignatures   EmployerDocumentSignature[]
   eapUsageSnapshots    EmployerEapUsageSnapshot[]
+  esocialTransmissions EmployerEsocialTransmission[]
+  eapMeteredUsages     EmployerEapMeteredUsage[]
 
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
@@ -4394,6 +4396,9 @@ model EmployerWorkforceMember {
   email            String
   firstName        String
   lastName         String
+  cpf              String?
+  matriculaEsocial String?
+  admissionDate    DateTime?
   department       String?
   jobTitle         String?
   userId           String?
@@ -4645,6 +4650,7 @@ model EmployerBilling {
   stripeCustomerId     String?         @unique
   stripeSubscriptionId String?         @unique
   stripePriceId        String?
+  stripeMeteredItemId  String?
 
   status               String          @default("trialing")
   currentPeriodEnd     DateTime?
@@ -4712,6 +4718,8 @@ model EmployerContentProgress {
   workforceMemberId   String?
   workforceMember     EmployerWorkforceMember? @relation(fields: [workforceMemberId], references: [id], onDelete: SetNull)
   contentId           String
+  progressSecs        Int                      @default(0)
+  format              String?
   completedAt         DateTime                 @default(now())
 
   @@index([employerCompanyId])
@@ -4733,6 +4741,10 @@ model EmployerOccupationalExam {
   completedAt         DateTime?
 
   clinicName          String?
+  clinicPartnerId     String?
+  clinicPartner       OccupationalClinicPartner? @relation(fields: [clinicPartnerId], references: [id], onDelete: SetNull)
+  partnerBookingRef   String?
+  reportPdfKey        String?
   asoResult           EmployerAsoResult?
   asoRestrictions     String?                 @db.Text
   physicianName       String?
@@ -4746,23 +4758,109 @@ model EmployerOccupationalExam {
   @@index([workforceMemberId])
   @@index([status])
   @@index([dueDate])
+  @@index([clinicPartnerId])
+}
+
+enum EmployerSignatureStatus {
+  METADATA_ONLY
+  PENDING_ICP
+  SIGNED
+  CANCELLED
 }
 
 model EmployerDocumentSignature {
-  id                String          @id @default(cuid())
+  id                String                  @id @default(cuid())
   employerCompanyId String
-  employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  employerCompany   EmployerCompany         @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
 
   docType           String
   docRefId          String?
   signedByName      String
   signedByRegistro  String?
   signedByRole      String
-  signedAt          DateTime        @default(now())
-  notes             String?         @db.Text
+  signedAt          DateTime                @default(now())
+  notes             String?                 @db.Text
+  signatureStatus   EmployerSignatureStatus @default(METADATA_ONLY)
+  lacunaSessionId   String?                 @unique
+  signedPdfKey      String?
+  icpSerial         String?
 
   @@index([employerCompanyId])
   @@index([docType])
+}
+
+enum EsocialTransmissionStatus {
+  DRAFT
+  QUEUED
+  SENT_TO_PARTNER
+  ACCEPTED
+  REJECTED
+}
+
+model EmployerEsocialTransmission {
+  id                String                    @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany           @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  eventType         String
+  eventRefId        String?
+  payloadJson       Json
+  payloadXml        String?                   @db.Text
+  status            EsocialTransmissionStatus @default(DRAFT)
+  partnerName       String?
+  partnerRef        String?
+  partnerResponse   Json?
+  sentAt            DateTime?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([employerCompanyId])
+  @@index([status])
+}
+
+model OccupationalClinicPartner {
+  id           String                     @id @default(cuid())
+  name         String
+  cnpj         String?
+  city         String
+  state        String
+  email        String?
+  phone        String?
+  addressLine  String?
+  servicesJson Json?
+  active       Boolean                    @default(true)
+  exams        EmployerOccupationalExam[]
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  @@index([state, city])
+  @@index([active])
+}
+
+model EmployerContentAsset {
+  id           String   @id @default(cuid())
+  contentId    String   @unique
+  format       String
+  audioKey     String?
+  publicUrl    String?
+  transcript   String?  @db.Text
+  durationSecs Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model EmployerEapMeteredUsage {
+  id                  String          @id @default(cuid())
+  employerCompanyId   String
+  employerCompany     EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  appointmentId       String          @unique
+  stripeUsageRecordId String?
+  sessionsReported    Int             @default(1)
+  amountCents         Int
+  reportedAt          DateTime        @default(now())
+
+  @@index([employerCompanyId])
+  @@index([reportedAt])
 }
 
 model EmployerEapUsageSnapshot {

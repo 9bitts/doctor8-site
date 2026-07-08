@@ -7,6 +7,7 @@ import { CopyLinkButton } from "@/components/employer/CopyLinkButton";
 import { EmployerBillingSection, EmployerWebhooksSection } from "@/components/employer/EmployerSettingsSections";
 import EmployerCompanyForm from "@/components/employer/EmployerCompanyForm";
 import { EmployerEapUsageSection } from "@/components/employer/EmployerEapUsageSection";
+import { EmployerIntegrationsSection } from "@/components/employer/EmployerIntegrationsSection";
 
 export default async function ConfiguracoesPage() {
   const session = await auth();
@@ -28,6 +29,7 @@ export default async function ConfiguracoesPage() {
       <EmployerCompanyForm />
 
       <EmployerBillingSection />
+      <EmployerIntegrationsSection />
       <EmployerEapUsageSection />
       <EmployerWebhooksSection />
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BookOpen, CheckCircle2, Loader2 } from "lucide-react";
+import { ContentAudioPlayer } from "@/components/employer/ContentAudioPlayer";
 
 type ContentItem = {
   id: string;
@@ -10,6 +11,10 @@ type ContentItem = {
   durationMins: number;
   format: string;
   completed?: boolean;
+  audioUrl?: string | null;
+  transcript?: string | null;
+  durationSecs?: number | null;
+  progressSecs?: number;
 };
 
 const FORMAT_LABEL: Record<string, string> = {
@@ -46,6 +51,15 @@ export default function PsychoedTrailsCard() {
     await load();
   }
 
+  async function reportProgress(contentId: string, secs: number, completed: boolean) {
+    await fetch("/api/workforce/content/progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contentId, progressSecs: secs, completed }),
+    });
+    if (completed) await load();
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-6">
@@ -69,12 +83,24 @@ export default function PsychoedTrailsCard() {
         {recommended.map((item) => (
           <li key={item.id} className="rounded-xl border border-slate-100 p-4 text-sm">
             <div className="flex justify-between gap-2 items-start">
-              <div>
+              <div className="flex-1">
                 <p className="font-medium text-slate-900">{item.title}</p>
                 <p className="text-slate-600 mt-1 text-xs leading-relaxed">{item.summary}</p>
                 <p className="text-xs text-slate-400 mt-2">
                   {FORMAT_LABEL[item.format] ?? item.format} · {item.durationMins} min
                 </p>
+                {item.format === "audio" && (
+                  <div className="mt-3">
+                    <ContentAudioPlayer
+                      contentId={item.id}
+                      audioUrl={item.audioUrl}
+                      transcript={item.transcript}
+                      durationSecs={item.durationSecs}
+                      completed={item.completed}
+                      onProgress={(secs, done) => reportProgress(item.id, secs, done)}
+                    />
+                  </div>
+                )}
               </div>
               {item.completed ? (
                 <span className="inline-flex items-center gap-1 text-xs text-emerald-600 shrink-0">

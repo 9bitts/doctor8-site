@@ -39,6 +39,13 @@ export async function settleEapCorporateAppointment(appointmentId: string): Prom
       currency: "BRL",
     },
   });
+
+  try {
+    const { reportEapMeteredUsage } = await import("@/lib/employer-metered-billing");
+    await reportEapMeteredUsage(appointmentId);
+  } catch (e) {
+    console.error("[EAP] Metered billing report failed:", e);
+  }
 }
 
 /** Creates a paid JitPayment record for completed corporate EAP JIT sessions. */

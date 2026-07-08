@@ -27,7 +27,13 @@ export async function GET(req: NextRequest) {
     if (exam) {
       const s2220 = buildS2220Payload({
         company,
-        employee: exam.workforceMember,
+        employee: {
+          firstName: exam.workforceMember.firstName,
+          lastName: exam.workforceMember.lastName,
+          email: exam.workforceMember.email,
+          cpf: exam.workforceMember.cpf ?? undefined,
+          matricula: exam.workforceMember.matriculaEsocial ?? undefined,
+        },
         exam,
       });
       if (s2220) events.push(s2220);
@@ -47,7 +53,13 @@ export async function GET(req: NextRequest) {
       events.push(
         buildS2240Payload({
           company,
-          employee: member,
+          employee: {
+            firstName: member.firstName,
+            lastName: member.lastName,
+            email: member.email,
+            cpf: member.cpf ?? undefined,
+            matricula: member.matriculaEsocial ?? undefined,
+          },
           risks,
         }),
       );
@@ -97,7 +109,13 @@ export async function POST(req: NextRequest) {
     .map((exam) =>
       buildS2220Payload({
         company,
-        employee: exam.workforceMember,
+        employee: {
+          firstName: exam.workforceMember.firstName,
+          lastName: exam.workforceMember.lastName,
+          email: exam.workforceMember.email,
+          cpf: exam.workforceMember.cpf ?? undefined,
+          matricula: exam.workforceMember.matriculaEsocial ?? undefined,
+        },
         exam,
       }),
     )

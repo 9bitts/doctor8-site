@@ -74,7 +74,7 @@ function cleanCnpj(cnpj: string): string {
 
 export function buildS2220Payload(input: {
   company: { cnpj: string };
-  employee: { firstName: string; lastName: string; email: string };
+  employee: { firstName: string; lastName: string; email: string; cpf?: string; matricula?: string };
   exam: {
     examType: string;
     completedAt: Date | null;
@@ -101,8 +101,9 @@ export function buildS2220Payload(input: {
       tpInsc: 1,
     },
     trabalhador: {
+      cpf: input.employee.cpf,
       nmTrab: `${input.employee.firstName} ${input.employee.lastName}`.trim(),
-      matricula: input.employee.email,
+      matricula: input.employee.matricula ?? input.employee.email,
     },
     exameMedicoOcupacional: {
       tpExameOcup: EXAM_TYPE_TO_ESOCIAL[input.exam.examType] ?? 1,
@@ -122,7 +123,7 @@ export function buildS2220Payload(input: {
 
 export function buildS2240Payload(input: {
   company: { cnpj: string };
-  employee: { firstName: string; lastName: string; email: string };
+  employee: { firstName: string; lastName: string; email: string; cpf?: string; matricula?: string };
   risks: Array<{ hazardCode: string; hazardLabel: string; riskLevel: string }>;
 }): EsocialS2240Payload {
   return {
@@ -134,8 +135,9 @@ export function buildS2240Payload(input: {
       tpInsc: 1,
     },
     trabalhador: {
+      cpf: input.employee.cpf,
       nmTrab: `${input.employee.firstName} ${input.employee.lastName}`.trim(),
-      matricula: input.employee.email,
+      matricula: input.employee.matricula ?? input.employee.email,
     },
     agNoc: input.risks.map((r) => ({
       codAgNoc: `09.01.${r.hazardCode}`,

@@ -115,6 +115,15 @@ export async function syncEmployerSubscription(params: {
     where: { id: params.employerCompanyId },
     data: { planTier: isPaid ? tier : "PILOT" },
   });
+
+  if (isPaid) {
+    try {
+      const { ensureEmployerMeteredItem } = await import("@/lib/employer-metered-billing");
+      await ensureEmployerMeteredItem(params.employerCompanyId);
+    } catch (e) {
+      console.error("[EMPLOYER-BILLING] Metered item setup failed:", e);
+    }
+  }
 }
 
 export function employerBillingSummary(
@@ -124,6 +133,7 @@ export function employerBillingSummary(
     currentPeriodEnd: Date | null;
     cancelAtPeriodEnd: boolean;
     stripeSubscriptionId: string | null;
+    stripeMeteredItemId?: string | null;
   } | null,
 ) {
   const limits = resolveEmployerPlanLimits({ planTier });
@@ -135,6 +145,8 @@ export function employerBillingSummary(
       currentPeriodEnd: billing?.currentPeriodEnd?.toISOString() ?? null,
       cancelAtPeriodEnd: billing?.cancelAtPeriodEnd ?? false,
       hasSubscription: Boolean(billing?.stripeSubscriptionId),
+      meteredConfigured: Boolean(process.env.STRIPE_PRICE_EMPLOYER_EAP_METERED_BRL),
+      meteredActive: Boolean(billing?.stripeMeteredItemId),
     },
     plans: EMPLOYER_BILLING_PLANS.map((p) => ({
       ...p,
