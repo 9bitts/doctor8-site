@@ -10,8 +10,9 @@ const PROFILES = [
     description: "Painel NR-1, EAP, pesquisas, denúncias e documentação.",
     cta: "Entrar como empresa",
     accent: "from-indigo-600 to-indigo-700",
-    ring: "ring-indigo-100",
-    bg: "bg-indigo-50/80",
+    border: "border-indigo-200 hover:border-indigo-300",
+    subtitleColor: "text-indigo-600",
+    ctaColor: "text-indigo-700 group-hover:text-indigo-800",
   },
   {
     href: "/empresas/medico/login",
@@ -21,8 +22,9 @@ const PROFILES = [
     description: "Integração PGR ↔ PCMSO, alertas de risco e acompanhamento.",
     cta: "Entrar como médico",
     accent: "from-teal-600 to-teal-700",
-    ring: "ring-teal-100",
-    bg: "bg-teal-50/80",
+    border: "border-teal-200 hover:border-teal-300",
+    subtitleColor: "text-teal-600",
+    ctaColor: "text-teal-700 group-hover:text-teal-800",
   },
   {
     href: "/empresas/psicologo/login",
@@ -32,8 +34,9 @@ const PROFILES = [
     description: "Empresas credenciadas, sessões e repasse financeiro.",
     cta: "Entrar como psicólogo",
     accent: "from-violet-600 to-violet-700",
-    ring: "ring-violet-100",
-    bg: "bg-violet-50/80",
+    border: "border-violet-200 hover:border-violet-300",
+    subtitleColor: "text-violet-600",
+    ctaColor: "text-violet-700 group-hover:text-violet-800",
   },
 ] as const;
 
@@ -61,15 +64,15 @@ export default function EmpresasLoginHub() {
             <Link
               key={p.href}
               href={p.href}
-              className={`group relative rounded-2xl border border-white/10 ${p.bg} backdrop-blur-sm p-5 sm:p-6 ring-1 ${p.ring} hover:border-white/20 hover:scale-[1.02] transition-all duration-200`}
+              className={`group relative rounded-2xl border-2 ${p.border} bg-white p-5 sm:p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:scale-[1.02] transition-all duration-200`}
             >
-              <div className={`inline-flex p-2.5 rounded-xl bg-gradient-to-br ${p.accent} text-white shadow-lg mb-4`}>
+              <div className={`inline-flex p-2.5 rounded-xl bg-gradient-to-br ${p.accent} text-white shadow-md mb-4`}>
                 <p.icon size={22} />
               </div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{p.subtitle}</p>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${p.subtitleColor}`}>{p.subtitle}</p>
               <h2 className="text-lg font-bold text-slate-900 mt-0.5">{p.title}</h2>
               <p className="text-sm text-slate-600 mt-2 leading-relaxed">{p.description}</p>
-              <span className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-slate-800 group-hover:gap-2.5 transition-all">
+              <span className={`inline-flex items-center gap-1.5 mt-4 text-sm font-semibold ${p.ctaColor} group-hover:gap-2.5 transition-all`}>
                 {p.cta} <ArrowRight size={16} />
               </span>
             </Link>
@@ -84,7 +87,7 @@ export default function EmpresasLoginHub() {
             <UserPlus size={18} />
             Cadastrar minha empresa
           </Link>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs sm:text-sm text-slate-300 text-center sm:text-left">
             Colaborador com benefício EAP? Ative pelo convite recebido por e-mail.
           </p>
         </div>
