@@ -68,6 +68,8 @@ export type PlatformPortalId =
   | "ORGANIZATION"
   | "EMPLOYER"
   | "OCCUPATIONAL_PHYSICIAN"
+  | "PHARMACY_STORE"
+  | "PHARMACY_NETWORK_PHARMACIST"
   | "ADMIN"
   | "ANGEL";
 
@@ -557,6 +559,20 @@ export const OCCUPATIONAL_PHYSICIAN_NAV: PlatformNavEntry[] = [
   { href: "/empresas/medico/painel", labelKey: "nav.dashboard", roles: ["OCCUPATIONAL_PHYSICIAN"], iconKey: "LayoutDashboard" },
 ];
 
+/** B2B pharmacy store (drogaria) — price network portal */
+export const PHARMACY_STORE_NAV: PlatformNavEntry[] = [
+  { href: "/farmacias/painel", labelKey: "nav.dashboard", roles: ["PHARMACY_STORE"], iconKey: "LayoutDashboard" },
+  { href: "/farmacias/estoque", labelKey: "pharm.nav.inventory", roles: ["PHARMACY_STORE"], iconKey: "Package" },
+  { href: "/farmacias/pedidos", labelKey: "pharm.nav.orders", roles: ["PHARMACY_STORE"], iconKey: "ShoppingBag" },
+  { href: "/farmacias/configuracoes", labelKey: "nav.account", roles: ["PHARMACY_STORE"], iconKey: "Settings" },
+];
+
+/** Pharmacist (CRF) on the Doctor8 pharmacy network — separate from store owner login */
+export const PHARMACY_NETWORK_PHARMACIST_NAV: PlatformNavEntry[] = [
+  { href: "/farmacias/farmaceutico/painel", labelKey: "pharm.nav.networkQueue", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
+  { href: "/farmaceutico", labelKey: "pharm.nav.clinicalPortal", roles: ["PROFESSIONAL"], iconKey: "Stethoscope" },
+];
+
 export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin", labelKey: "admin.home.title", roles: ["ADMIN"], iconKey: "Shield" },
   { href: "/admin/categories", labelKey: "nav.adminCategories", roles: ["ADMIN"], iconKey: "Layers" },
@@ -594,6 +610,8 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   ORGANIZATION: ORGANIZATION_NAV,
   EMPLOYER: EMPLOYER_NAV,
   OCCUPATIONAL_PHYSICIAN: OCCUPATIONAL_PHYSICIAN_NAV,
+  PHARMACY_STORE: PHARMACY_STORE_NAV,
+  PHARMACY_NETWORK_PHARMACIST: PHARMACY_NETWORK_PHARMACIST_NAV,
   ADMIN: ADMIN_NAV,
   ANGEL: ANGEL_NAV,
 };
@@ -616,6 +634,10 @@ export const PLATFORM_PUBLIC_ROUTES: PublicRouteEntry[] = [
   { href: "/empresas/cadastro", description: "Register employer company (NR-1)" },
   { href: "/empresas/medico/login", description: "Occupational physician (PCMSO) sign in" },
   { href: "/empresas/psicologo/login", description: "Psychologist EAP / corporate network sign in" },
+  { href: "/farmacias", description: "Pharmacy network B2B landing — register store and publish prices" },
+  { href: "/farmacias/login", description: "Pharmacy store owner sign in (CNPJ)" },
+  { href: "/farmacias/cadastro", description: "Register pharmacy store on Doctor8 network" },
+  { href: "/farmacias/farmaceutico/login", description: "Pharmacist (CRF) sign in for prescription validation on the network" },
 ];
 
 export function allPlatformNavEntries(): PlatformNavEntry[] {
