@@ -8,6 +8,7 @@ import { psychologistHubHref } from "@/lib/psychologist-portal";
 import {
   ArrowLeft, MessageCircle, Loader2, Send, User, Search, Bot,
 } from "lucide-react";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 
 interface Chart { id: string; firstName: string; lastName: string; }
 interface ChatMsg { role: "user" | "assistant"; text: string }
@@ -96,6 +97,8 @@ export default function PsychologyChartChatClient() {
           </div>
         ) : loading ? (
           <Loader2 className="animate-spin text-violet-500" size={20} />
+        ) : charts.length === 0 ? (
+          <NoPatientChartsEmptyState variant="violet" compact />
         ) : (
           <>
             <div className="relative">
@@ -108,7 +111,9 @@ export default function PsychologyChartChatClient() {
               />
             </div>
             <div className="max-h-32 overflow-y-auto space-y-1">
-              {filtered.map((c) => (
+              {filtered.length === 0 ? (
+                <p className="text-sm text-slate-500 py-2 text-center">{t("pat.searchEmpty")}</p>
+              ) : filtered.map((c) => (
                 <button
                   key={c.id}
                   type="button"

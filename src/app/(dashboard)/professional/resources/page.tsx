@@ -14,6 +14,7 @@ import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getProfessionLabel } from "@/lib/professions";
 import { useToast } from "@/components/ui/toast";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Resource {
@@ -418,8 +419,10 @@ export default function ResourcesPage() {
                     <div className="flex items-center gap-2 text-slate-400 text-sm py-2">
                       <Loader2 size={14} className="animate-spin" /> {t("lib.shareLoading")}
                     </div>
+                  ) : charts.length === 0 ? (
+                    <NoPatientChartsEmptyState variant="brand" compact />
                   ) : filteredCharts.length === 0 ? (
-                    <p className="text-sm text-slate-400">{t("lib.shareNone")}</p>
+                    <p className="text-sm text-slate-400">{t("pat.searchEmpty")}</p>
                   ) : (
                     <div className="space-y-1 max-h-48 overflow-y-auto">
                       {filteredCharts.map((c) => {

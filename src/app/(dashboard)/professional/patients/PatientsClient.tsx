@@ -10,8 +10,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { professionalPatientsHref } from "@/lib/psychologist-portal";
 import { useT, useI18n } from "@/lib/i18n/I18nProvider";
-import { Users, Plus, X, ChevronRight, CheckCircle2, AlertCircle, Search, Send, Loader2 } from "lucide-react";
+import { Plus, X, ChevronRight, CheckCircle2, AlertCircle, Search, Send, Loader2 } from "lucide-react";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 
 interface Chart {
   id: string;
@@ -182,10 +183,8 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
       {/* List */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {charts.length === 0 ? (
-          <div className="text-center py-16">
-            <Users className="mx-auto text-slate-300 mb-3" size={40} />
-            <p className="text-slate-400 text-sm">{t("pat.empty")}</p>
-            <p className="text-slate-400 text-xs mt-1">{t("pat.emptyHint")}</p>
+          <div className="py-8 px-4">
+            <NoPatientChartsEmptyState onAction={() => { setShowForm(true); resetForm(); }} />
           </div>
         ) : filteredCharts.length === 0 ? (
           <div className="text-center py-16">

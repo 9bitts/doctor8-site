@@ -8,6 +8,7 @@ import { psychologistHubHref } from "@/lib/psychologist-portal";
 import {
   ArrowLeft, ClipboardPlus, Copy, CheckCircle2, Loader2, Link2, User, Search,
 } from "lucide-react";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 
 interface Chart { id: string; firstName: string; lastName: string; }
 interface Invite {
@@ -106,27 +107,39 @@ export default function PsychologyAnamnesisClient() {
           </div>
         ) : (
           <>
-            <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={patientQuery}
-                onChange={(e) => setPatientQuery(e.target.value)}
-                placeholder={t("psy.sessions.searchPatient")}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm"
-              />
-            </div>
-            <div className="space-y-1 max-h-40 overflow-y-auto">
-              {filtered.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setSelectedPatient(c)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-violet-50 text-left text-sm"
-                >
-                  <User size={14} className="text-slate-400" /> {c.firstName} {c.lastName}
-                </button>
-              ))}
-            </div>
+            {loading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="animate-spin text-violet-500" size={20} />
+              </div>
+            ) : charts.length === 0 ? (
+              <NoPatientChartsEmptyState variant="violet" compact />
+            ) : (
+              <>
+                <div className="relative">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={patientQuery}
+                    onChange={(e) => setPatientQuery(e.target.value)}
+                    placeholder={t("psy.sessions.searchPatient")}
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm"
+                  />
+                </div>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {filtered.length === 0 ? (
+                    <p className="text-sm text-slate-500 py-2 text-center">{t("pat.searchEmpty")}</p>
+                  ) : filtered.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setSelectedPatient(c)}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-violet-50 text-left text-sm"
+                    >
+                      <User size={14} className="text-slate-400" /> {c.firstName} {c.lastName}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
         {error && <p className="text-sm text-rose-600">{error}</p>}

@@ -9,6 +9,7 @@ import { RECEITA_SAUDE_OFFICIAL_URL } from "@/lib/psychology-receita-saude";
 import {
   ArrowLeft, Receipt, ExternalLink, Loader2, Download, User, Search,
 } from "lucide-react";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 
 interface Chart { id: string; firstName: string; lastName: string; cpf?: string | null; }
 
@@ -111,6 +112,12 @@ export default function PsychologyReceitaSaudeClient() {
         <h2 className="font-semibold text-slate-800">{t("psy.receita.helperPdf")}</h2>
         {selected ? (
           <p className="text-sm font-medium">{selected.firstName} {selected.lastName}</p>
+        ) : loading ? (
+          <div className="flex justify-center py-4">
+            <Loader2 className="animate-spin text-violet-500" size={20} />
+          </div>
+        ) : charts.length === 0 ? (
+          <NoPatientChartsEmptyState variant="violet" compact />
         ) : (
           <>
             <div className="relative">
@@ -123,7 +130,9 @@ export default function PsychologyReceitaSaudeClient() {
               />
             </div>
             <div className="space-y-1 max-h-32 overflow-y-auto">
-              {filtered.map((c) => (
+              {filtered.length === 0 ? (
+                <p className="text-sm text-slate-500 py-2 text-center">{t("pat.searchEmpty")}</p>
+              ) : filtered.map((c) => (
                 <button
                   key={c.id}
                   type="button"

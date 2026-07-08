@@ -10,6 +10,7 @@ import ExamSearchInput, { formatExamItem, parseExamItemLine } from "@/components
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
 import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 
 interface ExamCreateViewProps {
@@ -126,6 +127,8 @@ export function ExamCreateView({
           </div>
         ) : lockPatient ? (
           <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
+        ) : charts.length === 0 ? (
+          <NoPatientChartsEmptyState variant="brand" compact />
         ) : (
           <>
             <div className="relative">
@@ -142,7 +145,7 @@ export function ExamCreateView({
                     <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
                   </div>
                 ) : filteredCharts.length === 0 ? (
-                  <p className="p-4 text-center text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
+                  <p className="p-4 text-center text-sm text-slate-500">{t("pat.searchEmpty")}</p>
                 ) : filteredCharts.map((c) => (
                   <button
                     key={c.id}

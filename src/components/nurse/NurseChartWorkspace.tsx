@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Search, User } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import SaeModule from "./SaeModule";
 import ScalesModule from "./ScalesModule";
 import CarePlanModule from "./CarePlanModule";
@@ -131,8 +132,10 @@ export default function NurseChartWorkspace({
               <div className="flex justify-center py-6">
                 <Loader2 className="animate-spin text-rose-500" size={22} />
               </div>
+            ) : charts.length === 0 ? (
+              <NoPatientChartsEmptyState variant="rose" compact />
             ) : filtered.length === 0 ? (
-              <p className="text-sm text-slate-500 py-4 text-center">{t("nurse.noPatients")}</p>
+              <p className="text-sm text-slate-500 py-4 text-center">{t("pat.searchEmpty")}</p>
             ) : (
               <ul className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
                 {filtered.map((c) => (

@@ -10,6 +10,7 @@ import type { Chart } from "./types";
 import type { SavedEmission } from "./EmissionPostSaveFlow";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
 import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 
 const DOC_TYPES = [
@@ -188,6 +189,8 @@ export function DocumentCreateView({
           </div>
         ) : lockPatient ? (
           <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
+        ) : charts.length === 0 ? (
+          <NoPatientChartsEmptyState variant="brand" compact />
         ) : (
           <>
             <div className="relative">
@@ -204,7 +207,7 @@ export function DocumentCreateView({
                     <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
                   </div>
                 ) : filteredCharts.length === 0 ? (
-                  <p className="p-4 text-center text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
+                  <p className="p-4 text-center text-sm text-slate-500">{t("pat.searchEmpty")}</p>
                 ) : filteredCharts.map((c) => (
                   <button
                     key={c.id}

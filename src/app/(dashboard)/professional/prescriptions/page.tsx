@@ -20,6 +20,7 @@ import { EmissionCardActions } from "@/components/professional/emissions/Emissio
 import { ExamCreateView } from "@/components/professional/emissions/ExamCreateView";
 import { DocumentCreateView } from "@/components/professional/emissions/DocumentCreateView";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { readChartDeepLink } from "@/lib/video-chart-nav";
 import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import type { Chart } from "@/components/professional/emissions/types";
@@ -1240,15 +1241,21 @@ export default function PrescriptionsPage() {
                           <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
                         </div>
                       ) : charts.length === 0 && importablePatients.length === 0 && platformMatches.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-slate-500 space-y-1">
-                          <p>{t("rx2.noPatientFound")}</p>
-                          {patientQuery.trim().length > 0 && patientQuery.trim().length < 3 && (
-                            <p className="text-xs text-slate-400">{t("link.searchMinChars")}</p>
-                          )}
-                          {patientQuery.trim().length >= 3 && (
-                            <p className="text-xs text-slate-400">{t("rx2.noPatientHint")}</p>
-                          )}
-                        </div>
+                        patientQuery.trim() ? (
+                          <div className="p-4 text-center text-sm text-slate-500 space-y-1">
+                            <p>{t("pat.searchEmpty")}</p>
+                            {patientQuery.trim().length > 0 && patientQuery.trim().length < 3 && (
+                              <p className="text-xs text-slate-400">{t("link.searchMinChars")}</p>
+                            )}
+                            {patientQuery.trim().length >= 3 && (
+                              <p className="text-xs text-slate-400">{t("rx2.noPatientHint")}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="p-2">
+                            <NoPatientChartsEmptyState variant="brand" compact />
+                          </div>
+                        )
                       ) : (
                         <>
                           {charts.map((c) => (

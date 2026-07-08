@@ -81,6 +81,17 @@ export function professionalPatientsHref(pathname: string, chartId: string): str
   return `${professionalPortalBase(pathname)}/patients/${chartId}`;
 }
 
+/** Patients list page for the portal matching the current URL. */
+export function professionalPatientsListHref(pathname: string): string {
+  if (pathname.startsWith("/psychologist")) return "/psychologist/patients";
+  if (pathname.startsWith("/nutricionista")) return "/nutricionista/patients";
+  if (pathname.startsWith("/enfermeiro")) return "/enfermeiro/patients";
+  if (pathname.startsWith("/farmaceutico")) return "/farmaceutico/patients";
+  if (pathname.startsWith("/odontologo")) return "/odontologo/patients";
+  if (pathname.startsWith("/integrative-therapist")) return "/integrative-therapist/clients";
+  return "/professional/patients";
+}
+
 /** Rewrites a /professional/... path to the portal matching the current URL. */
 export function mapProfessionalPathToPortal(
   pathname: string,

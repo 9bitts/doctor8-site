@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { PICS_PRACTICES } from "@/lib/pics/practices";
 import { Loader2, Plus, ChevronRight } from "lucide-react";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 
 interface Client {
   id: string;
@@ -181,7 +182,7 @@ export default function IntegrativeClientsPage() {
             <Loader2 className="animate-spin text-slate-400" />
           </div>
         ) : clients.length === 0 ? (
-          <p className="text-center text-slate-400 text-sm py-16">{t("it.clients.empty")}</p>
+          <NoPatientChartsEmptyState variant="teal" onAction={() => setShowForm(true)} />
         ) : (
           <div className="divide-y divide-slate-100">
             {clients.map((c) => (

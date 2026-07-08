@@ -8,6 +8,7 @@ import { psychologistHubHref } from "@/lib/psychologist-portal";
 import { localeOf, type Lang } from "@/lib/i18n/translations";
 import { PSYCHOLOGY_SCALES, type ScaleId } from "@/lib/psychology-scales";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import {
   ArrowLeft, BarChart3, Loader2, Save, User, Search, CheckCircle2, AlertTriangle,
@@ -193,6 +194,8 @@ export default function PsychologyScalesPage() {
             </div>
           ) : lockPatient ? (
             <p className="text-sm text-slate-500">{t("psy.scales.selectPatient")}</p>
+          ) : charts.length === 0 ? (
+            <NoPatientChartsEmptyState variant="indigo" compact />
           ) : (
             <>
               <div className="relative">
@@ -200,7 +203,9 @@ export default function PsychologyScalesPage() {
                 <input value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} placeholder={t("psy.scales.searchPatient")} className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm" />
               </div>
               <div className="space-y-1 max-h-40 overflow-y-auto">
-                {filteredCharts.map((c) => (
+                {filteredCharts.length === 0 ? (
+                  <p className="text-sm text-slate-500 py-2 text-center">{t("pat.searchEmpty")}</p>
+                ) : filteredCharts.map((c) => (
                   <button key={c.id} onClick={() => setSelectedPatient(c)} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-left text-sm">
                     <User size={16} className="text-slate-400" />{c.firstName} {c.lastName}
                   </button>

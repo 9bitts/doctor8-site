@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { psychologistHubHref } from "@/lib/psychologist-portal";
 import { CFP_DOCUMENT_TEMPLATES, type CfpDocumentTemplateId } from "@/lib/psychology-templates";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { readChartDeepLink } from "@/lib/video-chart-nav";
 import {
   ArrowLeft, FileText, Loader2, Save, User, Search, PenLine,
@@ -168,6 +169,10 @@ export default function PsychologyDocumentsPage() {
               </div>
             ) : lockPatient ? (
               <p className="mt-1.5 text-sm text-slate-500">{t("psy.sessions.selectPatient")}</p>
+            ) : charts.length === 0 ? (
+              <div className="mt-2">
+                <NoPatientChartsEmptyState variant="sky" compact />
+              </div>
             ) : !loading && (
               <>
                 <div className="relative mt-1.5">
@@ -175,7 +180,9 @@ export default function PsychologyDocumentsPage() {
                   <input value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} placeholder={t("psy.docs.searchPatient")} className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm" />
                 </div>
                 <div className="space-y-1 max-h-36 overflow-y-auto mt-2">
-                  {filteredCharts.map((c) => (
+                  {filteredCharts.length === 0 ? (
+                    <p className="text-sm text-slate-500 py-2 text-center">{t("pat.searchEmpty")}</p>
+                  ) : filteredCharts.map((c) => (
                     <button key={c.id} onClick={() => setSelectedPatient(c)} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-sky-50 text-left text-sm">
                       <User size={16} className="text-slate-400" />{c.firstName} {c.lastName}
                     </button>

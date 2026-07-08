@@ -14,6 +14,7 @@ import {
   Copy, Printer, Pencil, Share2, Mail, AlertCircle,
 } from "lucide-react";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
+import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { readChartDeepLink } from "@/lib/video-chart-nav";
 
 interface Chart { id: string; firstName: string; lastName: string; }
@@ -404,6 +405,8 @@ export default function PsychologySessionsPage() {
             </div>
           ) : lockPatient ? (
             <p className="text-sm text-slate-500">{t("psy.sessions.selectPatient")}</p>
+          ) : charts.length === 0 ? (
+            <NoPatientChartsEmptyState variant="violet" compact />
           ) : (
             <>
               <div className="relative">
@@ -416,7 +419,9 @@ export default function PsychologySessionsPage() {
                 />
               </div>
               <div className="space-y-1 max-h-48 overflow-y-auto">
-                {filteredCharts.map((c) => (
+                {filteredCharts.length === 0 ? (
+                  <p className="text-sm text-slate-500 py-2 text-center">{t("pat.searchEmpty")}</p>
+                ) : filteredCharts.map((c) => (
                   <button
                     key={c.id}
                     onClick={() => setSelectedPatient(c)}
