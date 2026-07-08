@@ -1,6 +1,27 @@
 import Link from "next/link";
 import { ArrowRight, Brain, Building2, Stethoscope, UserPlus } from "lucide-react";
 
+const ACCENT = {
+  indigo: {
+    border: "border-indigo-200 hover:border-indigo-300",
+    subtitle: "text-indigo-600",
+    cta: "text-indigo-700 group-hover:text-indigo-800",
+    iconBox: "bg-indigo-100 text-indigo-700",
+  },
+  teal: {
+    border: "border-teal-200 hover:border-teal-300",
+    subtitle: "text-teal-600",
+    cta: "text-teal-700 group-hover:text-teal-800",
+    iconBox: "bg-teal-100 text-teal-700",
+  },
+  violet: {
+    border: "border-violet-200 hover:border-violet-300",
+    subtitle: "text-violet-600",
+    cta: "text-violet-700 group-hover:text-violet-800",
+    iconBox: "bg-violet-100 text-violet-700",
+  },
+} as const;
+
 const PROFILES = [
   {
     href: "/empresas/login",
@@ -9,10 +30,7 @@ const PROFILES = [
     subtitle: "RH, SST e gestão",
     description: "Painel NR-1, EAP, pesquisas, denúncias e documentação.",
     cta: "Entrar como empresa",
-    accent: "from-indigo-600 to-indigo-700",
-    border: "border-indigo-200 hover:border-indigo-300",
-    subtitleColor: "text-indigo-600",
-    ctaColor: "text-indigo-700 group-hover:text-indigo-800",
+    accent: "indigo" as const,
   },
   {
     href: "/empresas/medico/login",
@@ -21,10 +39,7 @@ const PROFILES = [
     subtitle: "Coordenador PCMSO",
     description: "Integração PGR ↔ PCMSO, alertas de risco e acompanhamento.",
     cta: "Entrar como médico",
-    accent: "from-teal-600 to-teal-700",
-    border: "border-teal-200 hover:border-teal-300",
-    subtitleColor: "text-teal-600",
-    ctaColor: "text-teal-700 group-hover:text-teal-800",
+    accent: "teal" as const,
   },
   {
     href: "/empresas/psicologo/login",
@@ -33,10 +48,7 @@ const PROFILES = [
     subtitle: "Rede EAP corporativa",
     description: "Empresas credenciadas, sessões e repasse financeiro.",
     cta: "Entrar como psicólogo",
-    accent: "from-violet-600 to-violet-700",
-    border: "border-violet-200 hover:border-violet-300",
-    subtitleColor: "text-violet-600",
-    ctaColor: "text-violet-700 group-hover:text-violet-800",
+    accent: "violet" as const,
   },
 ] as const;
 
@@ -60,23 +72,30 @@ export default function EmpresasLoginHub() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-4 sm:gap-5">
-          {PROFILES.map((p) => (
-            <Link
-              key={p.href}
-              href={p.href}
-              className={`group relative rounded-2xl border-2 ${p.border} bg-white p-5 sm:p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:scale-[1.02] transition-all duration-200`}
-            >
-              <div className={`inline-flex p-2.5 rounded-xl bg-gradient-to-br ${p.accent} text-white shadow-md mb-4`}>
-                <p.icon size={22} />
-              </div>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${p.subtitleColor}`}>{p.subtitle}</p>
-              <h2 className="text-lg font-bold text-slate-900 mt-0.5">{p.title}</h2>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed">{p.description}</p>
-              <span className={`inline-flex items-center gap-1.5 mt-4 text-sm font-semibold ${p.ctaColor} group-hover:gap-2.5 transition-all`}>
-                {p.cta} <ArrowRight size={16} />
-              </span>
-            </Link>
-          ))}
+          {PROFILES.map((profile) => {
+            const styles = ACCENT[profile.accent];
+            const Icon = profile.icon;
+
+            return (
+              <Link
+                key={profile.href}
+                href={profile.href}
+                className={`group relative rounded-2xl border-2 ${styles.border} bg-white p-5 sm:p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:scale-[1.02] transition-all duration-200`}
+              >
+                <div className={`inline-flex p-2.5 rounded-xl mb-4 ${styles.iconBox}`}>
+                  <Icon size={22} strokeWidth={2} aria-hidden />
+                </div>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${styles.subtitle}`}>
+                  {profile.subtitle}
+                </p>
+                <h2 className="text-lg font-bold text-slate-900 mt-0.5">{profile.title}</h2>
+                <p className="text-sm text-slate-600 mt-2 leading-relaxed">{profile.description}</p>
+                <span className={`inline-flex items-center gap-1.5 mt-4 text-sm font-semibold ${styles.cta} group-hover:gap-2.5 transition-all`}>
+                  {profile.cta} <ArrowRight size={16} />
+                </span>
+              </Link>
+            );
+          })}
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8 pt-6 border-t border-white/10">
