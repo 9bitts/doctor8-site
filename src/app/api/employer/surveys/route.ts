@@ -20,7 +20,7 @@ export async function GET() {
 
 const createSchema = z.object({
   title: z.string().min(2).max(200),
-  instrument: z.string().default("COPSOQ-LITE"),
+  instrument: z.enum(["COPSOQ-LITE", "HSE-IT"]).default("COPSOQ-LITE"),
   anonymousMinGroup: z.number().int().min(3).max(50).optional(),
 });
 

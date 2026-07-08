@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Brain, Calendar, Shield } from "lucide-react";
 import { buildLoginHref } from "@/lib/auth-portals";
+import WellnessPulseCard from "@/components/employer/WellnessPulseCard";
+import PsychoedTrailsCard from "@/components/employer/PsychoedTrailsCard";
 
 type Benefit = {
   companyName: string;
+  companySlug: string;
   firstName: string;
   sessionsQuota: number;
   sessionsUsed: number;
@@ -97,6 +100,9 @@ export default function ColaboradorPortalPage() {
             <p className="text-3xl font-bold text-sky-800 mt-1">{benefit.sessionsRemaining}</p>
           </div>
         </div>
+
+        <WellnessPulseCard companySlug={benefit.companySlug} />
+        <PsychoedTrailsCard />
 
         {benefit.eapEnabled && benefit.sessionsRemaining > 0 ? (
           <Link

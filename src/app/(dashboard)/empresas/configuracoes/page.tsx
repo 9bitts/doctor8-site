@@ -5,6 +5,8 @@ import { resolveRoleHome } from "@/lib/role-home";
 import Link from "next/link";
 import { CopyLinkButton } from "@/components/employer/CopyLinkButton";
 import { EmployerBillingSection, EmployerWebhooksSection } from "@/components/employer/EmployerSettingsSections";
+import EmployerCompanyForm from "@/components/employer/EmployerCompanyForm";
+import { EmployerEapUsageSection } from "@/components/employer/EmployerEapUsageSection";
 
 export default async function ConfiguracoesPage() {
   const session = await auth();
@@ -23,16 +25,10 @@ export default async function ConfiguracoesPage() {
     <div className="p-6 max-w-3xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-slate-900">Configurações</h1>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
-        <h2 className="font-semibold text-slate-800">Empresa</h2>
-        <p className="text-sm text-slate-600">{company.razaoSocial}</p>
-        <p className="text-sm text-slate-500">CNPJ {company.cnpj}</p>
-        {company.grauRisco && (
-          <p className="text-sm text-slate-500">Grau de risco: {company.grauRisco}</p>
-        )}
-      </section>
+      <EmployerCompanyForm />
 
       <EmployerBillingSection />
+      <EmployerEapUsageSection />
       <EmployerWebhooksSection />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">

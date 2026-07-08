@@ -32,7 +32,7 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const report = aggregateSurveyResponses(campaign.responses, campaign.anonymousMinGroup);
+  const report = aggregateSurveyResponses(campaign.responses, campaign.anonymousMinGroup, campaign.instrument);
   if (!report.meetsAnonymityThreshold) {
     return NextResponse.json({ error: "ANONYMITY_THRESHOLD" }, { status: 400 });
   }
@@ -66,7 +66,7 @@ export async function POST(
         hazardCode: hazard.code,
         hazardLabel: hazard.labelPt,
         possibleHarm: hazard.possibleHarm,
-        processDescription: `Sugerido pela pesquisa "${campaign.title}" (COPSOQ-lite).`,
+        processDescription: `Sugerido pela pesquisa "${campaign.title}" (${campaign.instrument}).`,
         severity,
         probability,
         riskLevel: classifyEmployerRisk(severity, probability),

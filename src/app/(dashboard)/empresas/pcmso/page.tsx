@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Loader2, Mail, Stethoscope } from "lucide-react";
 
 type ChecklistItem = { id: string; label: string; done: boolean };
@@ -115,12 +116,17 @@ export default function PcmsoPage() {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 flex items-center gap-3">
-        <Stethoscope className="text-sky-700" size={24} />
-        <div>
-          <p className="font-medium text-sky-900">Checklist NR-7: {completionPercent}% concluído</p>
-          <p className="text-xs text-sky-700">Nota Técnica SEI nº 4655/2024/MTE</p>
+      <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Stethoscope className="text-sky-700" size={24} />
+          <div>
+            <p className="font-medium text-sky-900">Checklist NR-7: {completionPercent}% concluído</p>
+            <p className="text-xs text-sky-700">Nota Técnica SEI nº 4655/2024/MTE</p>
+          </div>
         </div>
+        <Link href="/empresas/exames" className="text-sm text-sky-700 font-medium hover:underline">
+          Exames ocupacionais / ASO →
+        </Link>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">

@@ -5,6 +5,7 @@ import { getEmployerMembership } from "@/lib/employer-auth";
 import { db } from "@/lib/db";
 import { resolveRoleHome } from "@/lib/role-home";
 import { riskLevelColor, riskLevelLabel } from "@/lib/nr1-risk-matrix";
+import { buildEmployerAnalytics } from "@/lib/employer-analytics";
 import {
   Shield,
   AlertTriangle,
@@ -13,6 +14,9 @@ import {
   Brain,
   ArrowRight,
   FileDown,
+  TrendingUp,
+  Activity,
+  Stethoscope,
 } from "lucide-react";
 import EmployerOnboardingCard from "@/components/employer/EmployerOnboardingCard";
 
@@ -29,40 +33,33 @@ export default async function EmpresasPainelPage() {
   const companyId = membership.employerCompanyId;
   const company = membership.employerCompany;
 
-  const [
-    riskEntries,
-    aepLatest,
-    actionItems,
-    workforceCount,
-    surveyActive,
-    eap,
-    openReports,
-  ] = await Promise.all([
+  const [riskEntries, riskCount, analytics, aepLatest, examStats] = await Promise.all([
     db.employerRiskEntry.findMany({
       where: { employerCompanyId: companyId },
       orderBy: { updatedAt: "desc" },
       take: 5,
     }),
+    db.employerRiskEntry.count({ where: { employerCompanyId: companyId } }),
+    buildEmployerAnalytics(companyId),
     db.employerAepRecord.findFirst({
       where: { employerCompanyId: companyId },
       orderBy: { version: "desc" },
     }),
-    db.employerActionPlanItem.findMany({
-      where: { plan: { employerCompanyId: companyId } },
-      select: { status: true },
-    }),
-    db.employerWorkforceMember.count({ where: { employerCompanyId: companyId, status: "ACTIVE" } }),
-    db.employerSurveyCampaign.findFirst({
-      where: { employerCompanyId: companyId, status: "ACTIVE" },
-    }),
-    db.employerEapBenefit.findUnique({ where: { employerCompanyId: companyId } }),
-    db.employerWhistleblowerReport.count({
-      where: { employerCompanyId: companyId, status: { in: ["OPEN", "IN_REVIEW"] } },
-    }),
+    Promise.all([
+      db.employerOccupationalExam.count({
+        where: { employerCompanyId: companyId, status: { in: ["SCHEDULED", "IN_PROGRESS"] } },
+      }),
+      db.employerOccupationalExam.count({
+        where: {
+          employerCompanyId: companyId,
+          status: { in: ["SCHEDULED", "IN_PROGRESS"] },
+          dueDate: { lt: new Date() },
+        },
+      }),
+    ]),
   ]);
 
-  const doneActions = actionItems.filter((i) => i.status === "DONE" || i.status === "VERIFIED").length;
-  const score = company.nr1ComplianceScore ?? 0;
+  const [pendingExams, overdueExams] = examStats;
 
   const quickLinks = [
     { href: "/empresas/nr1", label: "Inventário de riscos", icon: Shield },
@@ -70,6 +67,7 @@ export default async function EmpresasPainelPage() {
     { href: "/empresas/plano-acao", label: "Plano de ação", icon: AlertTriangle },
     { href: "/empresas/pesquisas", label: "Pesquisas anônimas", icon: Users },
     { href: "/empresas/eap", label: "EAP psicológico", icon: Brain },
+    { href: "/empresas/exames", label: "Exames / ASO", icon: Stethoscope },
     { href: "/empresas/documentacao", label: "Exportar PGR", icon: FileDown },
   ];
 
@@ -88,28 +86,97 @@ export default async function EmpresasPainelPage() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-slate-200 p-5 bg-white">
           <p className="text-xs text-slate-500 uppercase tracking-wide">Conformidade NR-1</p>
-          <p className="text-3xl font-bold text-sky-700 mt-2">{score}%</p>
-          <p className="text-xs text-slate-400 mt-1">Índice de completude do PGR</p>
+          <p className="text-3xl font-bold text-sky-700 mt-2">{analytics.nr1.complianceScore}%</p>
+          <p className="text-xs text-slate-400 mt-1">Onboarding {analytics.nr1.onboardingPercent}%</p>
         </div>
         <div className="rounded-2xl border border-slate-200 p-5 bg-white">
           <p className="text-xs text-slate-500 uppercase tracking-wide">Riscos mapeados</p>
-          <p className="text-3xl font-bold text-slate-900 mt-2">{riskEntries.length > 0 ? riskEntries.length : "—"}</p>
+          <p className="text-3xl font-bold text-slate-900 mt-2">{riskCount || "—"}</p>
+          {analytics.nr1.highRiskCount > 0 && (
+            <p className="text-xs text-amber-600 mt-1">{analytics.nr1.highRiskCount} alto/crítico</p>
+          )}
         </div>
         <div className="rounded-2xl border border-slate-200 p-5 bg-white">
           <p className="text-xs text-slate-500 uppercase tracking-wide">Plano de ação</p>
           <p className="text-3xl font-bold text-slate-900 mt-2">
-            {actionItems.length ? `${doneActions}/${actionItems.length}` : "—"}
+            {analytics.actionPlan.total ? `${analytics.actionPlan.done}/${analytics.actionPlan.total}` : "—"}
           </p>
-          <p className="text-xs text-slate-400 mt-1">medidas concluídas</p>
+          <p className="text-xs text-slate-400 mt-1">{analytics.actionPlan.completionPercent}% concluído</p>
         </div>
         <div className="rounded-2xl border border-slate-200 p-5 bg-white">
-          <p className="text-xs text-slate-500 uppercase tracking-wide">Colaboradores EAP</p>
-          <p className="text-3xl font-bold text-slate-900 mt-2">{workforceCount}</p>
-          {eap?.enabled && (
-            <p className="text-xs text-slate-400 mt-1">{eap.sessionsPerEmployee} sessões/ano</p>
-          )}
+          <p className="text-xs text-slate-500 uppercase tracking-wide">EAP · adoção</p>
+          <p className="text-3xl font-bold text-slate-900 mt-2">{analytics.eap.adoptionPercent}%</p>
+          <p className="text-xs text-slate-400 mt-1">{analytics.eap.activeMembers} colaboradores ativos</p>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-sky-100 bg-sky-50/40 p-5 space-y-4">
+        <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+          <TrendingUp size={18} className="text-sky-600" />
+          Inteligência RH / SST (últimos 30 dias)
+        </h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+          <div className="rounded-xl bg-white border border-slate-200 p-4">
+            <p className="text-xs text-slate-500">Utilização EAP</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">{analytics.eap.utilizationPercent}%</p>
+            <p className="text-xs text-slate-400">{analytics.eap.sessionsUsed}/{analytics.eap.sessionsQuota} sessões</p>
+          </div>
+          <div className="rounded-xl bg-white border border-slate-200 p-4">
+            <p className="text-xs text-slate-500">Sessões agendadas</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">{analytics.eap.appointmentsLast30Days}</p>
+            <p className="text-xs text-slate-400">{analytics.eap.linkedPsychologists} psicólogos na rede</p>
+          </div>
+          <div className="rounded-xl bg-white border border-slate-200 p-4">
+            <p className="text-xs text-slate-500">Respostas pesquisa</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">{analytics.surveys.responsesLast30Days}</p>
+            <p className="text-xs text-slate-400">{analytics.surveys.activeCampaign ? "Campanha ativa" : "Sem campanha ativa"}</p>
+          </div>
+          <div className="rounded-xl bg-white border border-slate-200 p-4">
+            <p className="text-xs text-slate-500">Bem-estar (pulse + trilhas)</p>
+            <p className="text-xl font-bold text-slate-900 mt-1">
+              {analytics.wellness.pulsesLast30Days + analytics.wellness.contentViewsLast30Days}
+            </p>
+            <p className="text-xs text-slate-400">
+              {analytics.wellness.pulsesLast30Days} check-ins · {analytics.wellness.contentViewsLast30Days} trilhas
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-violet-100 bg-violet-50/30 p-5 space-y-3">
+        <h2 className="font-semibold text-slate-900 text-sm">Benchmark setorial — {analytics.benchmark.sector.label}</h2>
+        <div className="grid sm:grid-cols-3 gap-3 text-sm">
+          {[
+            { label: "Conformidade NR-1", yours: analytics.benchmark.company.complianceScore, ref: analytics.benchmark.sector.avgComplianceScore, delta: analytics.benchmark.deltas.compliance, status: analytics.benchmark.status.compliance },
+            { label: "Adoção EAP", yours: analytics.benchmark.company.eapAdoptionPercent, ref: analytics.benchmark.sector.avgEapAdoptionPercent, delta: analytics.benchmark.deltas.eapAdoption, status: analytics.benchmark.status.eapAdoption },
+            { label: "Plano de ação", yours: analytics.benchmark.company.actionPlanCompletion, ref: analytics.benchmark.sector.avgActionPlanCompletion, delta: analytics.benchmark.deltas.actionPlan, status: analytics.benchmark.status.actionPlan },
+          ].map((row) => (
+            <div key={row.label} className="rounded-xl bg-white border border-slate-200 p-4">
+              <p className="text-xs text-slate-500">{row.label}</p>
+              <p className="text-xl font-bold text-slate-900 mt-1">{row.yours}%</p>
+              <p className="text-xs text-slate-400">Mercado: {row.ref}%</p>
+              <p className={`text-xs mt-1 font-medium ${row.status === "above" ? "text-emerald-600" : row.status === "below" ? "text-amber-600" : "text-slate-500"}`}>
+                {row.delta >= 0 ? "+" : ""}{row.delta} pts vs setor
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {(overdueExams > 0 || pendingExams > 0) && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex gap-3">
+          <Stethoscope className="shrink-0" size={18} />
+          <div>
+            <p className="font-medium">
+              {pendingExams} exame(s) pendente(s)
+              {overdueExams > 0 ? ` · ${overdueExams} vencido(s)` : ""}
+            </p>
+            <Link href="/empresas/exames" className="inline-flex items-center gap-1 text-amber-900 font-medium mt-2 underline">
+              Gerenciar exames / ASO <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {(aepLatest?.status !== "COMPLETED" && aepLatest?.status !== "APPROVED") && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex gap-3">
@@ -126,11 +193,12 @@ export default async function EmpresasPainelPage() {
         </div>
       )}
 
-      {openReports > 0 && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
-          {openReports} denúncia(s) aberta(s) no canal de assédio.{" "}
-          <Link href="/empresas/configuracoes" className="font-medium underline">
-            Ver protocolos
+      {analytics.nr1.openWhistleblowerReports > 0 && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 flex items-center gap-2">
+          <Activity size={18} />
+          {analytics.nr1.openWhistleblowerReports} denúncia(s) aberta(s).{" "}
+          <Link href="/empresas/denuncias" className="font-medium underline">
+            Ver triagem
           </Link>
         </div>
       )}
@@ -156,7 +224,7 @@ export default async function EmpresasPainelPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-slate-900">Últimos riscos no inventário</h2>
             <Link href="/empresas/nr1" className="text-sm text-sky-600 hover:underline">
-              Ver todos
+              Ver todos ({riskCount})
             </Link>
           </div>
           <div className="rounded-xl border border-slate-200 overflow-hidden bg-white">
@@ -182,15 +250,6 @@ export default async function EmpresasPainelPage() {
             </table>
           </div>
         </section>
-      )}
-
-      {surveyActive && (
-        <p className="text-sm text-slate-600">
-          Pesquisa ativa: <strong>{surveyActive.title}</strong> —{" "}
-          <Link href="/empresas/pesquisas" className="text-sky-600 underline">
-            copiar link anônimo
-          </Link>
-        </p>
       )}
     </div>
   );

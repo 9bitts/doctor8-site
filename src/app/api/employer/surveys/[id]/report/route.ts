@@ -28,6 +28,7 @@ export async function GET(
   const report = aggregateSurveyResponses(
     campaign.responses,
     campaign.anonymousMinGroup,
+    campaign.instrument,
   );
 
   return NextResponse.json({

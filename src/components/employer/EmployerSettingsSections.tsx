@@ -120,8 +120,19 @@ export function EmployerBillingSection() {
   );
 }
 
+type WebhookDelivery = {
+  id: string;
+  event: string;
+  success: boolean;
+  httpStatus: number | null;
+  errorMessage: string | null;
+  deliveredAt: string;
+  endpointLabel: string | null;
+};
+
 export function EmployerWebhooksSection() {
   const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([]);
+  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
   const [events, setEvents] = useState<string[]>([]);
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
@@ -131,10 +142,15 @@ export function EmployerWebhooksSection() {
 
   async function load() {
     setLoading(true);
-    const res = await fetch("/api/employer/webhooks");
-    const data = await res.json();
+    const [whRes, delRes] = await Promise.all([
+      fetch("/api/employer/webhooks"),
+      fetch("/api/employer/webhooks/deliveries"),
+    ]);
+    const data = await whRes.json();
+    const delData = delRes.ok ? await delRes.json() : { deliveries: [] };
     setEndpoints(data.endpoints ?? []);
     setEvents(data.availableEvents ?? []);
+    setDeliveries(delData.deliveries ?? []);
     setLoading(false);
   }
 
@@ -224,6 +240,22 @@ export function EmployerWebhooksSection() {
           ))}
           {endpoints.length === 0 && <p className="text-slate-400 text-xs">Nenhum webhook configurado.</p>}
         </ul>
+      )}
+
+      {deliveries.length > 0 && (
+        <div className="pt-4 border-t border-slate-100 space-y-2">
+          <p className="text-xs font-medium text-slate-500 uppercase">Últimas entregas</p>
+          <ul className="space-y-1 max-h-48 overflow-y-auto text-xs">
+            {deliveries.slice(0, 15).map((d) => (
+              <li key={d.id} className="flex justify-between gap-2 text-slate-600">
+                <span className="truncate">{d.event} · {d.endpointLabel || "endpoint"}</span>
+                <span className={d.success ? "text-emerald-600 shrink-0" : "text-red-600 shrink-0"}>
+                  {d.success ? "OK" : d.errorMessage || "Falha"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

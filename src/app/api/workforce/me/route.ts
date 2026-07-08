@@ -27,6 +27,7 @@ export async function GET() {
 
   return NextResponse.json({
     companyName: membership.employerCompany.nomeFantasia,
+    companySlug: membership.employerCompany.slug,
     firstName: membership.firstName,
     sessionsQuota: quota,
     sessionsUsed: membership.sessionsUsed,

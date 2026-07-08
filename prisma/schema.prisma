@@ -4244,6 +4244,27 @@ enum EmployerWhistleblowerStatus {
   ARCHIVED
 }
 
+enum EmployerExamType {
+  ADMISSIONAL
+  PERIODICO
+  RETORNO_TRABALHO
+  MUDANCA_FUNCAO
+  DEMISSIONAL
+}
+
+enum EmployerExamStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EmployerAsoResult {
+  APTO
+  APTO_COM_RESTRICAO
+  INAPTO
+}
+
 model EmployerCompany {
   id                   String              @id @default(cuid())
   cnpj                 String              @unique
@@ -4294,6 +4315,11 @@ model EmployerCompany {
   occupationalPhysicians EmployerOccupationalPhysician[]
   billing              EmployerBilling?
   webhookEndpoints     EmployerWebhookEndpoint[]
+  wellnessPulses       EmployerWellnessPulse[]
+  contentProgress      EmployerContentProgress[]
+  occupationalExams    EmployerOccupationalExam[]
+  documentSignatures   EmployerDocumentSignature[]
+  eapUsageSnapshots    EmployerEapUsageSnapshot[]
 
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
@@ -4382,6 +4408,8 @@ model EmployerWorkforceMember {
 
   eapAppointments  Appointment[]
   eapJitQueues     JitQueue[]
+  contentProgress  EmployerContentProgress[]
+  occupationalExams EmployerOccupationalExam[]
 
   @@unique([employerCompanyId, email])
   @@index([employerCompanyId])
@@ -4637,8 +4665,117 @@ model EmployerWebhookEndpoint {
   events            Json            @default("[]")
   enabled           Boolean         @default(true)
 
+  deliveries        EmployerWebhookDelivery[]
+
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
+  @@index([employerCompanyId])
+}
+
+model EmployerWebhookDelivery {
+  id                String                  @id @default(cuid())
+  endpointId        String
+  endpoint          EmployerWebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  employerCompanyId String
+  event             String
+  payloadJson       Json
+  httpStatus        Int?
+  success           Boolean                 @default(false)
+  errorMessage      String?
+  deliveredAt       DateTime                @default(now())
+
+  @@index([employerCompanyId])
+  @@index([endpointId])
+  @@index([deliveredAt])
+}
+
+model EmployerWellnessPulse {
+  id                String          @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  moodScore         Int
+  moodReason        String?
+  department        String?
+
+  submittedAt       DateTime        @default(now())
+
+  @@index([employerCompanyId])
+  @@index([submittedAt])
+}
+
+model EmployerContentProgress {
+  id                  String                   @id @default(cuid())
+  employerCompanyId   String
+  employerCompany     EmployerCompany          @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  workforceMemberId   String?
+  workforceMember     EmployerWorkforceMember? @relation(fields: [workforceMemberId], references: [id], onDelete: SetNull)
+  contentId           String
+  completedAt         DateTime                 @default(now())
+
+  @@index([employerCompanyId])
+  @@index([contentId])
+  @@index([workforceMemberId])
+}
+
+model EmployerOccupationalExam {
+  id                  String                  @id @default(cuid())
+  employerCompanyId   String
+  employerCompany     EmployerCompany         @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  workforceMemberId   String
+  workforceMember     EmployerWorkforceMember @relation(fields: [workforceMemberId], references: [id], onDelete: Cascade)
+
+  examType            EmployerExamType
+  status              EmployerExamStatus      @default(SCHEDULED)
+  scheduledAt         DateTime?
+  dueDate             DateTime?
+  completedAt         DateTime?
+
+  clinicName          String?
+  asoResult           EmployerAsoResult?
+  asoRestrictions     String?                 @db.Text
+  physicianName       String?
+  physicianCrm        String?
+  notes               String?                 @db.Text
+
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  @@index([employerCompanyId])
+  @@index([workforceMemberId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model EmployerDocumentSignature {
+  id                String          @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  docType           String
+  docRefId          String?
+  signedByName      String
+  signedByRegistro  String?
+  signedByRole      String
+  signedAt          DateTime        @default(now())
+  notes             String?         @db.Text
+
+  @@index([employerCompanyId])
+  @@index([docType])
+}
+
+model EmployerEapUsageSnapshot {
+  id                String          @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  yearMonth         String
+  sessionsCompleted Int             @default(0)
+  amountCents       Int             @default(0)
+  repasseCents      Int             @default(0)
+  generatedAt       DateTime        @default(now())
+
+  @@unique([employerCompanyId, yearMonth])
   @@index([employerCompanyId])
 }

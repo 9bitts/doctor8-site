@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Plus, Copy, ExternalLink, BarChart3, ChevronDown, ChevronUp } from "lucide-react";
-import { dimensionRiskLevel } from "@/lib/nr1-survey-report";
+import { dimensionRiskLevel, SURVEY_INSTRUMENTS } from "@/lib/nr1-survey-report";
 
 type Campaign = {
   id: string;
@@ -37,6 +37,7 @@ export default function PesquisasPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("Pesquisa psicossocial — COPSOQ-lite");
+  const [instrument, setInstrument] = useState("COPSOQ-LITE");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reports, setReports] = useState<Record<string, Report>>({});
   const [loadingReport, setLoadingReport] = useState<string | null>(null);
@@ -57,7 +58,7 @@ export default function PesquisasPage() {
     await fetch("/api/employer/surveys", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, instrument: "COPSOQ-LITE" }),
+      body: JSON.stringify({ title, instrument }),
     });
     load();
   }
@@ -121,15 +122,29 @@ export default function PesquisasPage() {
         </p>
       </div>
 
-      <form onSubmit={createCampaign} className="rounded-2xl border border-slate-200 bg-white p-6 flex gap-3">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-        />
-        <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium">
-          <Plus size={16} /> Criar
-        </button>
+      <form onSubmit={createCampaign} className="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          />
+          <select
+            value={instrument}
+            onChange={(e) => setInstrument(e.target.value)}
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm sm:max-w-xs"
+          >
+            {SURVEY_INSTRUMENTS.map((i) => (
+              <option key={i.id} value={i.id}>{i.label}</option>
+            ))}
+          </select>
+          <button type="submit" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium">
+            <Plus size={16} /> Criar
+          </button>
+        </div>
+        <p className="text-xs text-slate-500">
+          {SURVEY_INSTRUMENTS.find((i) => i.id === instrument)?.description}
+        </p>
       </form>
 
       {loading ? (
@@ -203,7 +218,7 @@ export default function PesquisasPage() {
                       </div>
                       {reports[c.id].suggestedHazardsOverall?.length > 0 && (
                         <div className="rounded-lg bg-sky-50 border border-sky-100 p-3 space-y-2">
-                          <p className="text-xs font-medium text-sky-900 uppercase">Riscos sugeridos (COPSOQ → NR-1)</p>
+                          <p className="text-xs font-medium text-sky-900 uppercase">Riscos sugeridos (pesquisa → NR-1)</p>
                           <div className="flex flex-wrap gap-1">
                             {reports[c.id].suggestedHazardsOverall.map((code) => (
                               <span key={code} className="text-xs px-2 py-0.5 rounded bg-white border border-sky-200 text-sky-800">

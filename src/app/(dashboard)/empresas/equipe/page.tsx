@@ -9,6 +9,7 @@ type Staff = {
   role: string;
   status: string;
   joinedAt: string;
+  userId?: string;
 };
 
 type PendingInvite = {
@@ -76,6 +77,16 @@ export default function EquipePage() {
     }
   }
 
+  async function updateMember(id: string, patch: { role?: string; status?: string }) {
+    const res = await fetch(`/api/employer/members/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (res.ok) await load();
+    else alert("Não foi possível atualizar o membro.");
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -136,14 +147,43 @@ export default function EquipePage() {
         </div>
         <div className="divide-y divide-slate-100">
           {staff.map((m) => (
-            <div key={m.id} className="py-3 flex justify-between gap-4">
+            <div key={m.id} className="py-3 flex flex-col sm:flex-row sm:justify-between gap-3 border-b border-slate-50 last:border-0">
               <div>
                 <p className="font-medium text-slate-900">{m.email}</p>
-                <p className="text-xs text-slate-500">{m.role} · {m.status}</p>
+                <p className="text-xs text-slate-500">{m.status} · desde {new Date(m.joinedAt).toLocaleDateString("pt-BR")}</p>
               </div>
-              <span className="text-xs text-slate-400">
-                {new Date(m.joinedAt).toLocaleDateString("pt-BR")}
-              </span>
+              {canManage && m.role !== "OWNER" ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={m.role}
+                    onChange={(e) => updateMember(m.id, { role: e.target.value })}
+                    className="rounded-lg border border-slate-200 px-2 py-1 text-xs"
+                  >
+                    {ROLES.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                  {m.status === "ACTIVE" ? (
+                    <button
+                      type="button"
+                      onClick={() => updateMember(m.id, { status: "DISABLED" })}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      Desativar
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => updateMember(m.id, { status: "ACTIVE" })}
+                      className="text-xs text-emerald-600 hover:underline"
+                    >
+                      Reativar
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <span className="text-xs text-slate-400">{m.role}</span>
+              )}
             </div>
           ))}
         </div>

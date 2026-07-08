@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { COPSOQ_LITE_QUESTIONS } from "@/lib/nr1-copsoq-lite";
+import { getSurveyOptions, getSurveyQuestions } from "@/lib/nr1-survey-instruments";
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
@@ -23,14 +23,8 @@ export async function GET(req: NextRequest) {
     title: campaign.title,
     companyName: campaign.employerCompany.nomeFantasia,
     instrument: campaign.instrument,
-    questions: COPSOQ_LITE_QUESTIONS,
-    options: [
-      { value: 1, label: "Nunca / Discordo totalmente" },
-      { value: 2, label: "Raramente / Discordo" },
-      { value: 3, label: "Às vezes / Neutro" },
-      { value: 4, label: "Frequentemente / Concordo" },
-      { value: 5, label: "Sempre / Concordo totalmente" },
-    ],
+    questions: getSurveyQuestions(campaign.instrument),
+    options: getSurveyOptions(campaign.instrument),
     privacyNotice:
       "Suas respostas são anônimas e agregadas. Este questionário avalia condições de trabalho, não diagnóstico individual.",
   });

@@ -37,7 +37,7 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [highRisks, pcmsoConfig, actionPlanOpen] = await Promise.all([
+  const [highRisks, pcmsoConfig, actionPlanOpen, exams] = await Promise.all([
     db.employerRiskEntry.findMany({
       where: {
         employerCompanyId: companyId,
@@ -65,6 +65,14 @@ export async function GET(
         status: { in: ["PLANNED", "IN_PROGRESS"] },
       },
     }),
+    db.employerOccupationalExam.findMany({
+      where: { employerCompanyId: companyId, status: { in: ["SCHEDULED", "IN_PROGRESS"] } },
+      include: {
+        workforceMember: { select: { firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { dueDate: "asc" },
+      take: 20,
+    }),
   ]);
 
   const checklist = parsePcmsoChecklist(pcmsoConfig?.checklistJson);
@@ -84,5 +92,11 @@ export async function GET(
       : null,
     highRisks,
     openActionItems: actionPlanOpen,
+    pendingExams: exams.map((e) => ({
+      id: e.id,
+      examType: e.examType,
+      dueDate: e.dueDate?.toISOString() ?? null,
+      employee: e.workforceMember,
+    })),
   });
 }
