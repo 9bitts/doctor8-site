@@ -203,6 +203,7 @@ export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/psychologist", labelKey: "nav.dashboard", roles: ["PROFESSIONAL"], iconKey: "LayoutDashboard" },
       { href: "/psychologist/jit", labelKey: "nav.jit", roles: ["PROFESSIONAL"], iconKey: "Radio" },
       { href: "/psychologist/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+      { href: "/psychologist/empresas", labelKey: "psy.nav.empresas", roles: ["PROFESSIONAL"], iconKey: "Building2" },
       { href: "/psychologist/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
     ],
   },

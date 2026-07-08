@@ -16,6 +16,7 @@ export function buildEmployerOnboardingSteps(input: {
   actionItemCount: number;
   pcmsoPercent: number;
   exportedDoc: boolean;
+  psychNetworkCount: number;
 }): OnboardingStep[] {
   return [
     { id: "risks", label: "Cadastrar inventário de riscos psicossociais", href: "/empresas/nr1", done: input.riskCount > 0 },
@@ -24,6 +25,7 @@ export function buildEmployerOnboardingSteps(input: {
     { id: "action", label: "Criar plano de ação", href: "/empresas/plano-acao", done: input.actionItemCount > 0 },
     { id: "workforce", label: "Cadastrar colaboradores EAP", href: "/empresas/colaboradores", done: input.workforceCount > 0 },
     { id: "eap", label: "Configurar benefício EAP", href: "/empresas/eap", done: input.eapEnabled },
+    { id: "network", label: "Credenciar rede de psicólogos EAP", href: "/empresas/rede-psicologos", done: input.psychNetworkCount > 0 },
     { id: "pcmso", label: "Integrar PCMSO (checklist ≥ 50%)", href: "/empresas/pcmso", done: input.pcmsoPercent >= 50 },
     { id: "export", label: "Exportar documentação PGR", href: "/empresas/documentacao", done: input.exportedDoc },
   ];

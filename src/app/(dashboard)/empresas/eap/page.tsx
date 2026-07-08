@@ -80,7 +80,7 @@ export default function EapPage() {
       <p className="text-sm text-slate-600">
         Psicólogos atendem via{" "}
         <Link href="/psicologos" className="text-sky-600 underline">portal Doctor8 Psicologia</Link>
-        . Credenciamento corporativo e repasse B2B em evolução.
+        . Credencie psicólogos em Rede EAP e acompanhe sessões no portal do profissional.
       </p>
     </div>
   );

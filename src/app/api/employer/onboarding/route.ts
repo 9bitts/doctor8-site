@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireEmployerApi } from "@/lib/api-auth";
-import { buildEmployerOnboardingSteps, mergeOnboardingJson, onboardingCompletionPercent, parseOnboardingDismissed } from "@/lib/employer-onboarding";
+import { buildEmployerOnboardingSteps, mergeOnboardingJson, onboardingCompletionPercent, parseOnboardingDismissed, resolveEmployerPlanLimits } from "@/lib/employer-onboarding";
 import { pcmsoCompletionPercent, parsePcmsoChecklist } from "@/lib/employer-pcmso-checklist";
 import { db } from "@/lib/db";
 
@@ -23,6 +23,7 @@ export async function GET() {
     pcmso,
     docCount,
     highRisks,
+    psychNetworkCount,
   ] = await Promise.all([
     db.employerRiskEntry.count({ where: { employerCompanyId: ctx.employerCompanyId } }),
     db.employerAepRecord.findFirst({
@@ -42,6 +43,9 @@ export async function GET() {
     db.employerRiskEntry.count({
       where: { employerCompanyId: ctx.employerCompanyId, riskLevel: { in: ["HIGH", "CRITICAL"] } },
     }),
+    db.employerLinkedPsychologist.count({
+      where: { employerCompanyId: ctx.employerCompanyId, status: "ACTIVE" },
+    }),
   ]);
 
   const pcmsoPercent = pcmsoCompletionPercent(parsePcmsoChecklist(pcmso?.checklistJson));
@@ -55,13 +59,30 @@ export async function GET() {
     actionItemCount,
     pcmsoPercent,
     exportedDoc: docCount > 0,
+    psychNetworkCount,
   });
+
+  const limits = resolveEmployerPlanLimits(company ?? { planTier: "PILOT" });
+  const yearStart = new Date(new Date().getFullYear(), 0, 1);
+  const [workforceTotal, surveysThisYear] = await Promise.all([
+    db.employerWorkforceMember.count({
+      where: { employerCompanyId: ctx.employerCompanyId, status: { in: ["ACTIVE", "INVITED"] } },
+    }),
+    db.employerSurveyCampaign.count({
+      where: { employerCompanyId: ctx.employerCompanyId, createdAt: { gte: yearStart } },
+    }),
+  ]);
 
   return NextResponse.json({
     steps,
     completionPercent: onboardingCompletionPercent(steps),
     dismissed: parseOnboardingDismissed(company?.onboardingJson),
     planTier: company?.planTier ?? "PILOT",
+    planUsage: {
+      tier: limits.tier,
+      workforce: { current: workforceTotal, max: limits.maxWorkforce },
+      surveysYear: { current: surveysThisYear, max: limits.maxSurveysPerYear },
+    },
     alerts: {
       highRiskCount: highRisks,
       openWhistleblower: await db.employerWhistleblowerReport.count({

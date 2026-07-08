@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireEmployerApi } from "@/lib/api-auth";
+import { assertWorkforceCapacity } from "@/lib/employer-plan-enforcement";
 import { db } from "@/lib/db";
 
 export async function GET() {
@@ -34,6 +35,31 @@ export async function POST(req: NextRequest) {
   }
 
   const email = parsed.data.email.toLowerCase();
+
+  const existingMember = await db.employerWorkforceMember.findUnique({
+    where: {
+      employerCompanyId_email: {
+        employerCompanyId: ctx.employerCompanyId,
+        email,
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!existingMember) {
+    const capacity = await assertWorkforceCapacity(ctx.employerCompanyId);
+    if (!capacity.ok) {
+      return NextResponse.json(
+        {
+          error: "WORKFORCE_LIMIT",
+          message: `Limite do plano (${capacity.limits.tier}): ${capacity.limits.maxWorkforce} colaboradores.`,
+          current: capacity.current,
+          max: capacity.limits.maxWorkforce,
+        },
+        { status: 400 },
+      );
+    }
+  }
 
   const member = await db.employerWorkforceMember.upsert({
     where: {

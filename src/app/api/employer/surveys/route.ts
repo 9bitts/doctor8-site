@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireEmployerApi } from "@/lib/api-auth";
+import { assertSurveyCapacity } from "@/lib/employer-plan-enforcement";
 import { refreshEmployerNr1Compliance } from "@/lib/employer-nr1";
 import { db } from "@/lib/db";
 
@@ -30,6 +31,19 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const capacity = await assertSurveyCapacity(ctx.employerCompanyId);
+  if (!capacity.ok) {
+    return NextResponse.json(
+      {
+        error: "SURVEY_LIMIT",
+        message: `Limite do plano (${capacity.limits.tier}): ${capacity.limits.maxSurveysPerYear} pesquisas/ano.`,
+        current: capacity.current,
+        max: capacity.limits.maxSurveysPerYear,
+      },
+      { status: 400 },
+    );
   }
 
   const campaign = await db.employerSurveyCampaign.create({

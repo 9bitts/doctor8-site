@@ -18,10 +18,12 @@ type Report = {
   minGroupSize: number;
   meetsAnonymityThreshold: boolean;
   overallDimensions: Record<string, number>;
+  suggestedHazardsOverall: string[];
   byDepartment: Array<{
     department: string;
     count: number;
     dimensions: Record<string, number>;
+    suggestedHazards: string[];
   }>;
 };
 
@@ -38,6 +40,7 @@ export default function PesquisasPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reports, setReports] = useState<Record<string, Report>>({});
   const [loadingReport, setLoadingReport] = useState<string | null>(null);
+  const [importing, setImporting] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -81,6 +84,22 @@ export default function PesquisasPage() {
       setExpandedId(id);
     }
     setLoadingReport(null);
+  }
+
+  async function importHazards(campaignId: string) {
+    setImporting(campaignId);
+    const res = await fetch(`/api/employer/surveys/${campaignId}/import-hazards`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    setImporting(null);
+    if (res.ok) {
+      alert(`${data.created?.length ?? 0} risco(s) importado(s) para o inventário NR-1.`);
+    } else {
+      alert(data.error === "ANONYMITY_THRESHOLD" ? "Aguarde o mínimo de respostas anônimas." : "Não foi possível importar.");
+    }
   }
 
   function surveyUrl(token: string) {
@@ -182,6 +201,26 @@ export default function PesquisasPage() {
                           })}
                         </div>
                       </div>
+                      {reports[c.id].suggestedHazardsOverall?.length > 0 && (
+                        <div className="rounded-lg bg-sky-50 border border-sky-100 p-3 space-y-2">
+                          <p className="text-xs font-medium text-sky-900 uppercase">Riscos sugeridos (COPSOQ → NR-1)</p>
+                          <div className="flex flex-wrap gap-1">
+                            {reports[c.id].suggestedHazardsOverall.map((code) => (
+                              <span key={code} className="text-xs px-2 py-0.5 rounded bg-white border border-sky-200 text-sky-800">
+                                {code}
+                              </span>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            disabled={importing === c.id}
+                            onClick={() => importHazards(c.id)}
+                            className="text-xs font-medium text-sky-700 hover:text-sky-900 underline disabled:opacity-50"
+                          >
+                            {importing === c.id ? "Importando…" : "Importar ao inventário de riscos"}
+                          </button>
+                        </div>
+                      )}
                       {reports[c.id].byDepartment.length > 0 && (
                         <div>
                           <p className="text-xs font-medium text-slate-500 uppercase mb-2">Por setor</p>

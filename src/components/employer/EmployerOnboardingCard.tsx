@@ -12,6 +12,11 @@ export default function EmployerOnboardingCard() {
   const [percent, setPercent] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const [alerts, setAlerts] = useState<{ highRiskCount: number; openWhistleblower: number; pcmsoIncomplete: boolean } | null>(null);
+  const [planUsage, setPlanUsage] = useState<{
+    tier: string;
+    workforce: { current: number; max: number };
+    surveysYear: { current: number; max: number };
+  } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -22,6 +27,7 @@ export default function EmployerOnboardingCard() {
       setPercent(data.completionPercent ?? 0);
       setDismissed(data.dismissed);
       setAlerts(data.alerts ?? null);
+      setPlanUsage(data.planUsage ?? null);
     }
     setLoading(false);
   }
@@ -52,12 +58,22 @@ export default function EmployerOnboardingCard() {
         </button>
       </div>
 
-      {alerts && (alerts.highRiskCount > 0 || alerts.openWhistleblower > 0) && (
+      {alerts && (alerts.highRiskCount > 0 || alerts.openWhistleblower > 0 || alerts.pcmsoIncomplete) && (
         <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
           {alerts.highRiskCount > 0 && <span>{alerts.highRiskCount} risco(s) alto/crítico. </span>}
           {alerts.openWhistleblower > 0 && <span>{alerts.openWhistleblower} denúncia(s) aberta(s). </span>}
           {alerts.pcmsoIncomplete && <span>PCMSO incompleto.</span>}
         </div>
+      )}
+
+      {planUsage && (
+        <p className="text-xs text-slate-500">
+          Plano <strong className="text-slate-700">{planUsage.tier}</strong>
+          {" · "}
+          Colaboradores {planUsage.workforce.current}/{planUsage.workforce.max}
+          {" · "}
+          Pesquisas {planUsage.surveysYear.current}/{planUsage.surveysYear.max} (ano)
+        </p>
       )}
 
       <ul className="space-y-2">
