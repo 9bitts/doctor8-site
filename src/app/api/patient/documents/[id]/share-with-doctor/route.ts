@@ -3,13 +3,14 @@
 // DELETE  — patient un-shares it (removes access + tells the doctor).
 //
 // Eligibility (POST, checked server-side): the patient must have a CONFIRMED
-// appointment with that professional.
+// or COMPLETED appointment with that professional.
 import { NextRequest, NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
+import { PATIENT_DOCTOR_ELIGIBLE_STATUSES } from "@/lib/patient-doctor-eligibility";
 import { z } from "zod";
 
 const schema = z.object({
@@ -55,7 +56,11 @@ export async function POST(
   if (!professional) return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
 
   const eligible = await db.appointment.findFirst({
-    where: { patientId: patientProfileId, professionalId: professional.id, status: "CONFIRMED" },
+    where: {
+      patientId: patientProfileId,
+      professionalId: professional.id,
+      status: { in: [...PATIENT_DOCTOR_ELIGIBLE_STATUSES] },
+    },
     select: { id: true },
   });
   if (!eligible) {

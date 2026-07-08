@@ -16,7 +16,8 @@ import { auth } from "@/lib/auth";
 import {
   uploadToS3,
   buildKey,
-  ALLOWED_MIME,
+  isAllowedUpload,
+  inferUploadContentType,
   MAX_UPLOAD_BYTES,
 } from "@/lib/s3";
 import { isAllowedUploadFolder, normalizeUploadFolder, patientDocsFolder, nutritionDiaryFolder } from "@/lib/upload-folders";
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (!ALLOWED_MIME.includes(file.type) && !file.name.toLowerCase().endsWith(".dcm")) {
+  if (!isAllowedUpload(file)) {
     return NextResponse.json(
       { error: "File type not allowed. Use PDF, image, video, or DICOM." },
       { status: 400 }
@@ -65,9 +66,7 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(arrayBuffer);
 
   const key = buildKey(folder, file.name);
-  const contentType = file.name.toLowerCase().endsWith(".dcm")
-    ? "application/dicom"
-    : file.type;
+  const contentType = inferUploadContentType(file);
   await uploadToS3({ key, body: buffer, contentType });
 
   return NextResponse.json({

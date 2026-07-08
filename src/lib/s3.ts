@@ -43,6 +43,41 @@ export const ALLOWED_MIME = [
 // Max upload size: 50 MB (videos can be large; we cap to control storage cost).
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
+const ALLOWED_EXTENSIONS = [
+  ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".heic",
+  ".mp4", ".mov", ".webm", ".dcm",
+];
+
+/** MIME check with extension fallback (some mobile browsers send an empty file.type). */
+export function isAllowedUpload(file: { type: string; name: string }): boolean {
+  if (ALLOWED_MIME.includes(file.type)) return true;
+  const lower = file.name.toLowerCase();
+  return ALLOWED_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+const EXT_TO_MIME: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".heic": "image/heic",
+  ".mp4": "video/mp4",
+  ".mov": "video/quicktime",
+  ".webm": "video/webm",
+  ".dcm": "application/dicom",
+};
+
+/** Best-effort content type when the browser omits file.type. */
+export function inferUploadContentType(file: { type: string; name: string }): string {
+  if (file.type) return file.type;
+  const lower = file.name.toLowerCase();
+  for (const [ext, mime] of Object.entries(EXT_TO_MIME)) {
+    if (lower.endsWith(ext)) return mime;
+  }
+  return "application/octet-stream";
+}
+
 // Generates a unique, safe key for storing the object.
 export function buildKey(folder: string, originalName: string): string {
   const ext = (originalName.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");

@@ -134,6 +134,12 @@ export async function GET(req: NextRequest) {
   if (!doc.fileUrl) return NextResponse.json({ error: "No file" }, { status: 404 });
 
   const key = safeDecrypt(doc.fileUrl);
-  const url = await getSignedReadUrl(key);
-  return NextResponse.json({ url });
+  if (!key) return NextResponse.json({ error: "Invalid file reference" }, { status: 404 });
+
+  try {
+    const url = await getSignedReadUrl(key);
+    return NextResponse.json({ url });
+  } catch {
+    return NextResponse.json({ error: "Could not generate download link" }, { status: 500 });
+  }
 }

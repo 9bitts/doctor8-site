@@ -10,7 +10,7 @@ import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
 import { getProfessionLabel } from "@/lib/professions";
 import {
   FileText, Plus, X, Download, Loader2, UserCheck, Tag, Share2, CheckCircle2,
-  Stethoscope, AlertCircle, XCircle,
+  Stethoscope, AlertCircle, XCircle, Trash2,
 } from "lucide-react";
 import { openUrlAfterAsync } from "@/lib/open-url-safely";
 
@@ -56,14 +56,16 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const [doctors, setDoctors] = useState<Doctor[] | null>(null);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
+  const [doctorsLoadError, setDoctorsLoadError] = useState(false);
 
   const [shareDocId, setShareDocId] = useState<string | null>(null);
   const [sharingTo, setSharingTo] = useState<string | null>(null);
@@ -102,17 +104,25 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     el?.classList.add("ring-2", "ring-brand-400", "bg-brand-50/40");
   }, [items]);
 
-  async function ensureDoctorsLoaded() {
-    if (doctors !== null) return doctors;
+  async function loadDoctors(force = false) {
+    if (!force && doctors !== null) return doctors;
     setDoctorsLoading(true);
+    setDoctorsLoadError(false);
     try {
       const res = await fetch("/api/patient/doctors");
       const data = await res.json();
+      if (!res.ok) {
+        setDoctorsLoadError(true);
+        setDoctors([]);
+        setDoctorsLoading(false);
+        return [];
+      }
       const list: Doctor[] = data.doctors || [];
       setDoctors(list);
       setDoctorsLoading(false);
       return list;
     } catch {
+      setDoctorsLoadError(true);
       setDoctors([]);
       setDoctorsLoading(false);
       return [];
@@ -139,6 +149,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         const up = await fetch("/api/uploads", { method: "POST", body: fd });
         const upData = await up.json();
         if (!up.ok) { setError(upData.error || t("docs.err.uploadFailed")); setSaving(false); return; }
+        if (!upData.key) { setError(t("docs.err.noFileKey")); setSaving(false); return; }
         fileKey = upData.key;
       }
       const res = await fetch("/api/patient/documents", {
@@ -171,7 +182,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       resetForm();
       setShowForm(false);
       setSaving(false);
-      await ensureDoctorsLoaded();
+      await loadDoctors(true);
       setShareDocId(newId);
     } catch {
       setError(t("docs.err.network"));
@@ -180,13 +191,31 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   }
 
   async function openShare(docId: string) {
-    await ensureDoctorsLoaded();
+    await loadDoctors(true);
     setShareDocId(docId);
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm(t("docs.deleteConfirm"))) return;
+    setDeletingId(id);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/patient/documents/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setActionError(t("docs.deleteError"));
+        return;
+      }
+      setItems((prev) => prev.filter((it) => it.id !== id));
+    } catch {
+      setActionError(t("docs.deleteError"));
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   async function handleShareWithDoctor(docId: string, professionalId: string, doctorName: string) {
     setSharingTo(professionalId);
-    setActionError(false);
+    setActionError(null);
     try {
       const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor`, {
         method: "POST",
@@ -202,10 +231,10 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         }));
         setShareDocId(null);
       } else {
-        setActionError(true);
+        setActionError(t("common.actionError"));
       }
     } catch {
-      setActionError(true);
+      setActionError(t("common.actionError"));
     }
     setSharingTo(null);
   }
@@ -213,7 +242,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   async function handleUnshare(docId: string, professionalId: string) {
     const key = docId + ":" + professionalId;
     setUnsharingKey(key);
-    setActionError(false);
+    setActionError(null);
     try {
       const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor?professionalId=${professionalId}`, {
         method: "DELETE",
@@ -225,27 +254,31 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
             : it
         ));
       } else {
-        setActionError(true);
+        setActionError(t("common.actionError"));
       }
     } catch {
-      setActionError(true);
+      setActionError(t("common.actionError"));
     }
     setUnsharingKey(null);
   }
 
   async function handleDownload(id: string) {
     setDownloadingId(id);
-    setActionError(false);
+    setActionError(null);
     try {
       await openUrlAfterAsync(async () => {
         const res = await fetch(`/api/patient/documents?documentId=${id}`);
         const data = await res.json();
         if (res.ok && data.url) return data.url as string;
-        setActionError(true);
+        if (data.error === "No file") {
+          setActionError(t("docs.err.downloadNoFile"));
+        } else {
+          setActionError(t("docs.err.downloadFailed"));
+        }
         return null;
       });
     } catch {
-      setActionError(true);
+      setActionError(t("docs.err.downloadFailed"));
     }
     setDownloadingId(null);
   }
@@ -279,8 +312,8 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       {actionError && (
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl">
           <AlertCircle size={16} className="shrink-0" />
-          <span>{t("common.actionError")}</span>
-          <button type="button" onClick={() => setActionError(false)} className="ml-auto text-amber-600 hover:text-amber-800">
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError(null)} className="ml-auto text-amber-600 hover:text-amber-800">
             <X size={16} />
           </button>
         </div>
@@ -329,17 +362,33 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                           {it.content && (
                             <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{it.content}</p>
                           )}
+                          {isOwn && !it.hasFile && (
+                            <p className="text-xs text-slate-400 mt-1">{t("docs.noFile")}</p>
+                          )}
                         </div>
+                        <div className="flex items-center gap-1 shrink-0">
                         {it.hasFile && (
                           <button
                             onClick={() => handleDownload(it.id)}
                             disabled={downloadingId === it.id}
-                            className="shrink-0 text-slate-400 hover:text-emerald-500 transition p-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
+                            className="text-slate-400 hover:text-emerald-500 transition p-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
                             aria-label={t("docs.openAttachment")}
                           >
                             {downloadingId === it.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                           </button>
                         )}
+                        {isOwn && (
+                          <button
+                            onClick={() => handleDelete(it.id)}
+                            disabled={deletingId === it.id}
+                            className="text-slate-400 hover:text-rose-500 transition p-2 rounded-lg hover:bg-rose-50 disabled:opacity-50"
+                            aria-label={t("docs.delete")}
+                            title={t("docs.delete")}
+                          >
+                            {deletingId === it.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                          </button>
+                        )}
+                        </div>
                       </div>
 
                       {isOwn && (
@@ -488,6 +537,11 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
               {doctorsLoading ? (
                 <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
                   <Loader2 size={16} className="animate-spin" /> {t("docs.share.loading")}
+                </div>
+              ) : doctorsLoadError ? (
+                <div className="flex items-start gap-2 text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">
+                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                  <span>{t("docs.share.loadError")}</span>
                 </div>
               ) : !doctors || doctors.length === 0 ? (
                 <div className="flex items-start gap-2 text-sm text-amber-600 bg-amber-50 rounded-xl px-4 py-3">

@@ -1,20 +1,18 @@
 // src/app/api/patient/doctors/route.ts
 // GET — list the doctors this patient is allowed to share documents with.
-// Eligibility rule (Phase 4D): the patient has at least one appointment with
-// status CONFIRMED with that professional (= paid + scheduled, even if the
-// consult hasn't happened yet — the doctor may need to see the exam before).
+// Eligibility: at least one appointment with status CONFIRMED or COMPLETED.
 import { NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { PATIENT_DOCTOR_ELIGIBLE_STATUSES } from "@/lib/patient-doctor-eligibility";
 
 export async function GET() {
   const ctx = await requirePatient();
   if (isApiError(ctx)) return ctx.error;
   const { patientProfileId } = ctx;
 
-  // Distinct professionals with a CONFIRMED appointment for this patient.
   const appts = await db.appointment.findMany({
-    where: { patientId: patientProfileId, status: "CONFIRMED" },
+    where: { patientId: patientProfileId, status: { in: [...PATIENT_DOCTOR_ELIGIBLE_STATUSES] } },
     select: {
       professional: {
         select: {
