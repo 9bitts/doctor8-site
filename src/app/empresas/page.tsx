@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Shield, ClipboardList, Brain, BarChart3, FileText, ArrowRight, CheckCircle2 } from "lucide-react";
+import EmpresasAccessLinks from "@/components/employer/EmpresasAccessLinks";
 
 export const metadata = {
   title: "Doctor8 Empresas — Conformidade NR-1 e saúde mental corporativa",
@@ -96,6 +97,14 @@ export default function EmpresasLandingPage() {
           <p className="text-xs text-slate-400 mt-6">
             Referência: Portaria MTE nº 1.419/2024 · Guia NR-01 Riscos Psicossociais (MTE, 2025)
           </p>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-900 text-center">Acesso por perfil</h2>
+          <p className="text-sm text-slate-500 text-center max-w-lg mx-auto">
+            Compartilhe <strong className="text-slate-700">doctor8.org/empresas</strong> — cada perfil entra pelo seu login.
+          </p>
+          <EmpresasAccessLinks />
         </section>
 
         <section className="text-center pb-8">

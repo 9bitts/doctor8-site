@@ -183,6 +183,12 @@ export default function EmployerLoginForm() {
               Acesso médico do trabalho
             </Link>
           </p>
+          <p className="text-slate-400 text-sm">
+            Psicólogo na rede EAP?{" "}
+            <Link href="/empresas/psicologo/login" className="text-violet-400 hover:text-violet-300 font-medium">
+              Acesso psicólogo
+            </Link>
+          </p>
           <Link href="/empresas" className="text-xs text-slate-500 hover:text-slate-300">
             ← Voltar para Doctor8 Empresas
           </Link>

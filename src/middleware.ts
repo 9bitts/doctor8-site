@@ -87,6 +87,7 @@ const PUBLIC_ROUTES = [
   "/empresas/medico/login",
   "/empresas/medico/cadastro",
   "/empresas/medico/aceitar",
+  "/empresas/psicologo/login",
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -279,6 +280,25 @@ export default auth((req) => {
   }
 
   if (pathname === "/empresas/medico/login" && session?.user) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
+    const { role, professionalSpecialty } = session.user as {
+      role: string;
+      professionalSpecialty?: string | null;
+    };
+    const home = resolveRoleHome(role, professionalSpecialty);
+    const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl?.trim()) {
+      const destination = safePostLoginUrl(role, callbackUrl, undefined, professionalSpecialty);
+      if (destination !== home) {
+        return NextResponse.redirect(new URL(destination, req.url));
+      }
+    }
+    return NextResponse.redirect(new URL(home, req.url));
+  }
+
+  if (pathname === "/empresas/psicologo/login" && session?.user) {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
     }

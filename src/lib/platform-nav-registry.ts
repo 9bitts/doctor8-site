@@ -608,6 +608,7 @@ export const PLATFORM_PUBLIC_ROUTES: PublicRouteEntry[] = [
   { href: "/empresas/login", description: "Employer portal sign in" },
   { href: "/empresas/cadastro", description: "Register employer company (NR-1)" },
   { href: "/empresas/medico/login", description: "Occupational physician (PCMSO) sign in" },
+  { href: "/empresas/psicologo/login", description: "Psychologist EAP / corporate network sign in" },
 ];
 
 export function allPlatformNavEntries(): PlatformNavEntry[] {

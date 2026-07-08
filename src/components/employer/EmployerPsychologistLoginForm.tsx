@@ -4,12 +4,17 @@ import { useState, useEffect } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Stethoscope } from "lucide-react";
+import { Brain } from "lucide-react";
 import { persistAuthCallback, consumeAuthCallback, resolveClientAuthCallback } from "@/lib/auth-callback";
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { safePostLoginUrl } from "@/lib/role-home";
 import { buildForgotPasswordHref } from "@/lib/auth-portals";
-import { OCCUPATIONAL_PHYSICIAN_HOME, OCCUPATIONAL_PHYSICIAN_LOGIN } from "@/lib/occupational-physician-portal";
+import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
+import {
+  EMPLOYER_PSYCHOLOGIST_HOME,
+  EMPLOYER_PSYCHOLOGIST_LOGIN,
+  EMPLOYER_PSYCHOLOGIST_REGISTER,
+} from "@/lib/employer-psychologist-portal";
 import {
   useLoginLang,
   parseLoginError,
@@ -17,6 +22,8 @@ import {
   LoginLanguageSelector,
   LoginCard,
   LoginAlerts,
+  GoogleSignInButton,
+  LoginDivider,
   LoginCredentialsForm,
   navigateAfterAuth,
   waitForAuthenticatedSession,
@@ -25,16 +32,27 @@ import {
 
 const POST_LOGIN_CALLBACK = "/callback";
 
-export default function OccupationalPhysicianLoginForm() {
+function canAccessEmployerPsychologistPortal(
+  role: string,
+  specialty?: string | null,
+): boolean {
+  if (role === "ADMIN") return true;
+  return role === "PROFESSIONAL" && isPsychologistSpecialty(specialty);
+}
+
+export default function EmployerPsychologistLoginForm() {
   const searchParams = useSearchParams();
   const queryCallback = searchParams.get("callbackUrl") || "";
-  const { callback: callbackUrl } = resolveClientAuthCallback(queryCallback || OCCUPATIONAL_PHYSICIAN_HOME);
+  const { callback: callbackUrl } = resolveClientAuthCallback(
+    queryCallback || EMPLOYER_PSYCHOLOGIST_HOME,
+  );
   const { lang, changeLang, t } = useLoginLang(callbackUrl);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<LoginErrorCode>("");
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
@@ -44,7 +62,7 @@ export default function OccupationalPhysicianLoginForm() {
 
   const forgotHref = buildForgotPasswordHref({
     email: email.trim() || undefined,
-    from: OCCUPATIONAL_PHYSICIAN_LOGIN,
+    from: EMPLOYER_PSYCHOLOGIST_LOGIN,
   });
 
   useEffect(() => {
@@ -66,7 +84,7 @@ export default function OccupationalPhysicianLoginForm() {
       const result = await signIn("credentials", {
         email: trimmedEmail,
         password,
-        callbackUrl: callbackUrl || OCCUPATIONAL_PHYSICIAN_HOME,
+        callbackUrl: callbackUrl || EMPLOYER_PSYCHOLOGIST_HOME,
         redirect: false,
       });
 
@@ -86,7 +104,9 @@ export default function OccupationalPhysicianLoginForm() {
       persistAuthCallback(callbackUrl);
       const session = await waitForAuthenticatedSession({ expectedEmail: trimmedEmail });
       if (session?.user?.role) {
-        if (session.user.role !== "OCCUPATIONAL_PHYSICIAN" && session.user.role !== "ADMIN") {
+        const specialty = (session.user as { professionalSpecialty?: string | null })
+          .professionalSpecialty;
+        if (!canAccessEmployerPsychologistPortal(session.user.role, specialty)) {
           await signOut({ redirect: false });
           setError("invalid");
           setLoading(false);
@@ -95,7 +115,9 @@ export default function OccupationalPhysicianLoginForm() {
         const savedCallback = consumeAuthCallback();
         const destination = safePostLoginUrl(
           session.user.role,
-          savedCallback || callbackUrl || OCCUPATIONAL_PHYSICIAN_HOME,
+          savedCallback || callbackUrl || EMPLOYER_PSYCHOLOGIST_HOME,
+          undefined,
+          specialty,
         );
         navigateAfterAuth(destination, session.user.role);
         return;
@@ -108,17 +130,31 @@ export default function OccupationalPhysicianLoginForm() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true);
+    setError("");
+    persistAuthCallback(callbackUrl);
+    try {
+      clearSensitiveClientState();
+      await signOut({ redirect: false });
+      await signIn("google", { callbackUrl: callbackUrl || EMPLOYER_PSYCHOLOGIST_HOME });
+    } catch {
+      setError("oauthFailed");
+      setGoogleLoading(false);
+    }
+  }
+
   return (
-    <LoginPageShell accent="teal">
-      <LoginLanguageSelector lang={lang} onChange={changeLang} accent="teal" />
+    <LoginPageShell accent="violet">
+      <LoginLanguageSelector lang={lang} onChange={changeLang} accent="violet" />
 
       <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-2 text-teal-300 mb-2">
-          <Stethoscope size={22} />
-          <span className="font-semibold text-lg">Médico do Trabalho</span>
+        <div className="inline-flex items-center gap-2 text-violet-300 mb-2">
+          <Brain size={22} />
+          <span className="font-semibold text-lg">Psicólogo · Doctor8 Empresas</span>
         </div>
         <p className="text-slate-400 text-sm">
-          Acesso coordenador PCMSO — integração PGR e alertas de risco psicossocial.
+          Atendimentos EAP e rede corporativa — use o mesmo portal clínico Doctor8.
         </p>
       </div>
 
@@ -131,17 +167,27 @@ export default function OccupationalPhysicianLoginForm() {
           unverifiedEmail={unverifiedEmail}
           t={t}
           roleOnlyKey="login.invalid"
-          verifyFrom={OCCUPATIONAL_PHYSICIAN_LOGIN}
+          verifyFrom={EMPLOYER_PSYCHOLOGIST_LOGIN}
           callbackUrl={callbackUrl || undefined}
         />
+
+        <GoogleSignInButton
+          loading={googleLoading}
+          disabled={googleLoading || loading}
+          onClick={handleGoogleSignIn}
+          t={t}
+          labelKey="login.continueGoogle"
+        />
+
+        <LoginDivider t={t} />
 
         <LoginCredentialsForm
           email={email}
           password={password}
           showPassword={showPassword}
           loading={loading}
-          googleLoading={false}
-          accent="teal"
+          googleLoading={googleLoading}
+          accent="violet"
           forgotHref={forgotHref}
           t={t}
           onEmailChange={setEmail}
@@ -153,13 +199,19 @@ export default function OccupationalPhysicianLoginForm() {
 
         <div className="border-t border-white/10 mt-6 pt-6 text-center space-y-3">
           <p className="text-slate-400 text-sm">
-            Acesso da empresa (CNPJ)?{" "}
+            Ainda não tem conta?{" "}
+            <Link href={EMPLOYER_PSYCHOLOGIST_REGISTER} className="text-violet-400 hover:text-violet-300 font-medium">
+              Cadastrar como psicólogo
+            </Link>
+          </p>
+          <p className="text-slate-400 text-sm">
+            Empresa (CNPJ)?{" "}
             <Link href="/empresas/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
               Login empresarial
             </Link>
             {" · "}
-            <Link href="/empresas/psicologo/login" className="text-violet-400 hover:text-violet-300 font-medium">
-              Psicólogo EAP
+            <Link href="/empresas/medico/login" className="text-teal-400 hover:text-teal-300 font-medium">
+              Médico PCMSO
             </Link>
           </p>
           <Link href="/empresas" className="text-xs text-slate-500 hover:text-slate-300">
