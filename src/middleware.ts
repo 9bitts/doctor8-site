@@ -84,6 +84,9 @@ const PUBLIC_ROUTES = [
   "/empresas/convite/",
   "/empresas/equipe/cadastro",
   "/empresas/equipe/aceitar",
+  "/empresas/medico/login",
+  "/empresas/medico/cadastro",
+  "/empresas/medico/aceitar",
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -149,6 +152,10 @@ const EMPLOYER_ROUTES = [
   "/empresas/denuncias",
   "/empresas/rede-psicologos",
 ];
+const OCCUPATIONAL_PHYSICIAN_ROUTES = [
+  "/empresas/medico/painel",
+  "/empresas/medico/empresas",
+];
 const ANGEL_ROUTES = ["/humanitarian/angel"];
 const VOLUNTEER_ROUTES = ["/humanitarian/volunteer"];
 const HUMANITARIAN_ROUTES = ["/humanitarian"];
@@ -166,6 +173,7 @@ const AUTHENTICATED_DASHBOARD_PREFIXES = [
   ...INTEGRATIVE_THERAPIST_ROUTES,
   ...ORGANIZATION_ROUTES,
   ...EMPLOYER_ROUTES,
+  ...OCCUPATIONAL_PHYSICIAN_ROUTES,
   ...HUMANITARIAN_ROUTES,
   ...ANGEL_ROUTES,
   ...VOLUNTEER_ROUTES,
@@ -252,6 +260,25 @@ export default auth((req) => {
   // their dashboard so they don't get stuck on a form they don't need.
   // Exception: honor ?callbackUrl= (e.g. SSO OAuth resume for eight).
   if (pathname === "/empresas/login" && session?.user) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
+    const { role, professionalSpecialty } = session.user as {
+      role: string;
+      professionalSpecialty?: string | null;
+    };
+    const home = resolveRoleHome(role, professionalSpecialty);
+    const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl?.trim()) {
+      const destination = safePostLoginUrl(role, callbackUrl, undefined, professionalSpecialty);
+      if (destination !== home) {
+        return NextResponse.redirect(new URL(destination, req.url));
+      }
+    }
+    return NextResponse.redirect(new URL(home, req.url));
+  }
+
+  if (pathname === "/empresas/medico/login" && session?.user) {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
     }
@@ -484,6 +511,14 @@ export default auth((req) => {
   if (
     EMPLOYER_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "EMPLOYER" &&
+    role !== "ADMIN"
+  ) {
+    return denyWrongRole();
+  }
+
+  if (
+    OCCUPATIONAL_PHYSICIAN_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "OCCUPATIONAL_PHYSICIAN" &&
     role !== "ADMIN"
   ) {
     return denyWrongRole();

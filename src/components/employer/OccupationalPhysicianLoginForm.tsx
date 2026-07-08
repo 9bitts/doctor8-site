@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Shield } from "lucide-react";
+import { Stethoscope } from "lucide-react";
 import { persistAuthCallback, consumeAuthCallback, resolveClientAuthCallback } from "@/lib/auth-callback";
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { safePostLoginUrl } from "@/lib/role-home";
-import { EMPLOYER_REGISTER, buildForgotPasswordHref } from "@/lib/auth-portals";
-import { EMPLOYER_HOME } from "@/lib/employer-portal";
+import { buildForgotPasswordHref } from "@/lib/auth-portals";
+import { OCCUPATIONAL_PHYSICIAN_HOME, OCCUPATIONAL_PHYSICIAN_LOGIN } from "@/lib/occupational-physician-portal";
 import {
   useLoginLang,
   parseLoginError,
@@ -17,8 +17,6 @@ import {
   LoginLanguageSelector,
   LoginCard,
   LoginAlerts,
-  GoogleSignInButton,
-  LoginDivider,
   LoginCredentialsForm,
   navigateAfterAuth,
   waitForAuthenticatedSession,
@@ -27,17 +25,16 @@ import {
 
 const POST_LOGIN_CALLBACK = "/callback";
 
-export default function EmployerLoginForm() {
+export default function OccupationalPhysicianLoginForm() {
   const searchParams = useSearchParams();
   const queryCallback = searchParams.get("callbackUrl") || "";
-  const { callback: callbackUrl } = resolveClientAuthCallback(queryCallback || EMPLOYER_HOME);
+  const { callback: callbackUrl } = resolveClientAuthCallback(queryCallback || OCCUPATIONAL_PHYSICIAN_HOME);
   const { lang, changeLang, t } = useLoginLang(callbackUrl);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<LoginErrorCode>("");
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
@@ -47,7 +44,7 @@ export default function EmployerLoginForm() {
 
   const forgotHref = buildForgotPasswordHref({
     email: email.trim() || undefined,
-    from: "/empresas/login",
+    from: OCCUPATIONAL_PHYSICIAN_LOGIN,
   });
 
   useEffect(() => {
@@ -69,7 +66,7 @@ export default function EmployerLoginForm() {
       const result = await signIn("credentials", {
         email: trimmedEmail,
         password,
-        callbackUrl: callbackUrl || EMPLOYER_HOME,
+        callbackUrl: callbackUrl || OCCUPATIONAL_PHYSICIAN_HOME,
         redirect: false,
       });
 
@@ -89,10 +86,16 @@ export default function EmployerLoginForm() {
       persistAuthCallback(callbackUrl);
       const session = await waitForAuthenticatedSession({ expectedEmail: trimmedEmail });
       if (session?.user?.role) {
+        if (session.user.role !== "OCCUPATIONAL_PHYSICIAN" && session.user.role !== "ADMIN") {
+          await signOut({ redirect: false });
+          setError("invalid");
+          setLoading(false);
+          return;
+        }
         const savedCallback = consumeAuthCallback();
         const destination = safePostLoginUrl(
           session.user.role,
-          savedCallback || callbackUrl || EMPLOYER_HOME,
+          savedCallback || callbackUrl || OCCUPATIONAL_PHYSICIAN_HOME,
         );
         navigateAfterAuth(destination, session.user.role);
         return;
@@ -105,30 +108,18 @@ export default function EmployerLoginForm() {
     }
   }
 
-  async function handleGoogleSignIn() {
-    setGoogleLoading(true);
-    setError("");
-    persistAuthCallback(callbackUrl);
-    try {
-      clearSensitiveClientState();
-      await signOut({ redirect: false });
-      await signIn("google", { callbackUrl: callbackUrl || EMPLOYER_HOME });
-    } catch {
-      setError("oauthFailed");
-      setGoogleLoading(false);
-    }
-  }
-
   return (
-    <LoginPageShell accent="indigo">
-      <LoginLanguageSelector lang={lang} onChange={changeLang} accent="indigo" />
+    <LoginPageShell accent="teal">
+      <LoginLanguageSelector lang={lang} onChange={changeLang} accent="teal" />
 
       <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-2 text-indigo-300 mb-2">
-          <Shield size={22} />
-          <span className="font-semibold text-lg">Doctor8 Empresas</span>
+        <div className="inline-flex items-center gap-2 text-teal-300 mb-2">
+          <Stethoscope size={22} />
+          <span className="font-semibold text-lg">Médico do Trabalho</span>
         </div>
-        <p className="text-slate-400 text-sm">{t("emp.login.tagline")}</p>
+        <p className="text-slate-400 text-sm">
+          Acesso coordenador PCMSO — integração PGR e alertas de risco psicossocial.
+        </p>
       </div>
 
       <LoginCard>
@@ -140,27 +131,17 @@ export default function EmployerLoginForm() {
           unverifiedEmail={unverifiedEmail}
           t={t}
           roleOnlyKey="login.invalid"
-          verifyFrom="/empresas/login"
+          verifyFrom={OCCUPATIONAL_PHYSICIAN_LOGIN}
           callbackUrl={callbackUrl || undefined}
         />
-
-        <GoogleSignInButton
-          loading={googleLoading}
-          disabled={googleLoading || loading}
-          onClick={handleGoogleSignIn}
-          t={t}
-          labelKey="login.continueGoogle"
-        />
-
-        <LoginDivider t={t} />
 
         <LoginCredentialsForm
           email={email}
           password={password}
           showPassword={showPassword}
           loading={loading}
-          googleLoading={googleLoading}
-          accent="indigo"
+          googleLoading={false}
+          accent="teal"
           forgotHref={forgotHref}
           t={t}
           onEmailChange={setEmail}
@@ -172,15 +153,9 @@ export default function EmployerLoginForm() {
 
         <div className="border-t border-white/10 mt-6 pt-6 text-center space-y-3">
           <p className="text-slate-400 text-sm">
-            {t("login.noAccount")}{" "}
-            <Link href={EMPLOYER_REGISTER} className="text-indigo-400 hover:text-indigo-300 font-medium">
-              Cadastrar empresa
-            </Link>
-          </p>
-          <p className="text-slate-400 text-sm">
-            Médico coordenador PCMSO?{" "}
-            <Link href="/empresas/medico/login" className="text-teal-400 hover:text-teal-300 font-medium">
-              Acesso médico do trabalho
+            Acesso da empresa (CNPJ)?{" "}
+            <Link href="/empresas/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
+              Login empresarial
             </Link>
           </p>
           <Link href="/empresas" className="text-xs text-slate-500 hover:text-slate-300">

@@ -28,6 +28,7 @@ enum UserRole {
   INTEGRATIVE_THERAPIST
   ORGANIZATION
   EMPLOYER
+  OCCUPATIONAL_PHYSICIAN
   ANGEL
   ADMIN
 }
@@ -509,6 +510,7 @@ model User {
   buyingClubMembers BuyingClubMember[]
   organizationMemberships OrganizationMember[]
   employerMemberships   EmployerMember[]
+  occupationalPhysicianLinks EmployerOccupationalPhysician[]
   clubStampEntries      ClubStampEntry[]
   clubDiversityAwards   ClubDiversityAward[]
   providerLicenseDocuments ProviderLicenseDocument[]
@@ -4286,12 +4288,39 @@ model EmployerCompany {
   invites              EmployerInvite[]
   pcmsoConfig          EmployerPcmsoConfig?
   linkedPsychologists  EmployerLinkedPsychologist[]
+  occupationalPhysicians EmployerOccupationalPhysician[]
 
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
 
   @@index([slug])
   @@index([cnpj])
+}
+
+enum EmployerOccupationalPhysicianStatus {
+  INVITED
+  ACTIVE
+  DISABLED
+}
+
+model EmployerOccupationalPhysician {
+  id                String                            @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany                   @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  userId            String?
+  user              User?                             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email             String
+  fullName          String?
+  crm               String?
+  status            EmployerOccupationalPhysicianStatus @default(INVITED)
+  inviteToken       String?                           @unique
+  expiresAt         DateTime?
+  invitedAt         DateTime                          @default(now())
+  joinedAt          DateTime?
+
+  @@unique([employerCompanyId, email])
+  @@index([userId])
+  @@index([employerCompanyId])
 }
 
 model EmployerMember {

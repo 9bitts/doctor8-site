@@ -138,3 +138,27 @@ export async function requireEmployerApi(
     },
   };
 }
+
+export async function requireOccupationalPhysicianApi(): Promise<
+  | { userId: string; links: Awaited<ReturnType<typeof import("@/lib/occupational-physician-auth").getOccupationalPhysicianLinks>> }
+  | ApiError
+> {
+  const session = await auth();
+  if (!session?.user) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  if (
+    session.user.role !== "OCCUPATIONAL_PHYSICIAN" &&
+    session.user.role !== "ADMIN"
+  ) {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
+  const { getOccupationalPhysicianLinks } = await import("@/lib/occupational-physician-auth");
+  const links = await getOccupationalPhysicianLinks(session.user.id);
+  if (links.length === 0 && session.user.role !== "ADMIN") {
+    return { error: NextResponse.json({ error: "No company links" }, { status: 404 }) };
+  }
+
+  return { userId: session.user.id, links };
+}

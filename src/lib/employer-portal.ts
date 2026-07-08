@@ -23,6 +23,9 @@ export function isEmployerPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/empresas/convite/")) return true;
   if (pathname.startsWith("/empresas/equipe/cadastro")) return true;
   if (pathname.startsWith("/empresas/equipe/aceitar")) return true;
+  if (pathname === "/empresas/medico/login") return true;
+  if (pathname.startsWith("/empresas/medico/cadastro")) return true;
+  if (pathname.startsWith("/empresas/medico/aceitar")) return true;
   return false;
 }
 

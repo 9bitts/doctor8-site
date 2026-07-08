@@ -67,6 +67,7 @@ export type PlatformPortalId =
   | "INTEGRATIVE_THERAPIST"
   | "ORGANIZATION"
   | "EMPLOYER"
+  | "OCCUPATIONAL_PHYSICIAN"
   | "ADMIN"
   | "ANGEL";
 
@@ -546,6 +547,11 @@ export const EMPLOYER_NAV: PlatformNavEntry[] = [
   { href: "/empresas/configuracoes", labelKey: "nav.account", roles: ["EMPLOYER"], iconKey: "Settings" },
 ];
 
+/** Occupational physician — PCMSO coordinator read-only slice */
+export const OCCUPATIONAL_PHYSICIAN_NAV: PlatformNavEntry[] = [
+  { href: "/empresas/medico/painel", labelKey: "nav.dashboard", roles: ["OCCUPATIONAL_PHYSICIAN"], iconKey: "LayoutDashboard" },
+];
+
 export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin", labelKey: "admin.home.title", roles: ["ADMIN"], iconKey: "Shield" },
   { href: "/admin/categories", labelKey: "nav.adminCategories", roles: ["ADMIN"], iconKey: "Layers" },
@@ -580,6 +586,7 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   INTEGRATIVE_THERAPIST: INTEGRATIVE_THERAPIST_NAV,
   ORGANIZATION: ORGANIZATION_NAV,
   EMPLOYER: EMPLOYER_NAV,
+  OCCUPATIONAL_PHYSICIAN: OCCUPATIONAL_PHYSICIAN_NAV,
   ADMIN: ADMIN_NAV,
   ANGEL: ANGEL_NAV,
 };
@@ -600,6 +607,7 @@ export const PLATFORM_PUBLIC_ROUTES: PublicRouteEntry[] = [
   { href: "/empresas", description: "Employer NR-1 B2B landing" },
   { href: "/empresas/login", description: "Employer portal sign in" },
   { href: "/empresas/cadastro", description: "Register employer company (NR-1)" },
+  { href: "/empresas/medico/login", description: "Occupational physician (PCMSO) sign in" },
 ];
 
 export function allPlatformNavEntries(): PlatformNavEntry[] {

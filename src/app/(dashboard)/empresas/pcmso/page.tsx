@@ -1,13 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Stethoscope } from "lucide-react";
+import { Loader2, Mail, Stethoscope } from "lucide-react";
 
 type ChecklistItem = { id: string; label: string; done: boolean };
+
+type InviteLink = {
+  email: string;
+  fullName: string | null;
+  status: string;
+  invitedAt: string;
+  joinedAt: string | null;
+};
 
 export default function PcmsoPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [inviteLink, setInviteLink] = useState<InviteLink | null>(null);
   const [coordinatorName, setCoordinatorName] = useState("");
   const [coordinatorEmail, setCoordinatorEmail] = useState("");
   const [coordinatorCrm, setCoordinatorCrm] = useState("");
@@ -17,15 +28,22 @@ export default function PcmsoPage() {
 
   async function load() {
     setLoading(true);
-    const res = await fetch("/api/employer/pcmso");
-    const data = await res.json();
-    if (res.ok) {
+    const [pcmsoRes, inviteRes] = await Promise.all([
+      fetch("/api/employer/pcmso"),
+      fetch("/api/employer/pcmso/invite"),
+    ]);
+    const data = await pcmsoRes.json();
+    const inviteData = await inviteRes.json();
+    if (pcmsoRes.ok) {
       setCoordinatorName(data.config?.coordinatorName ?? "");
       setCoordinatorEmail(data.config?.coordinatorEmail ?? "");
       setCoordinatorCrm(data.config?.coordinatorCrm ?? "");
       setNotes(data.config?.notes ?? "");
       setChecklist(data.checklist ?? []);
       setCompletionPercent(data.completionPercent ?? 0);
+    }
+    if (inviteRes.ok) {
+      setInviteLink(inviteData.link ?? null);
     }
     setLoading(false);
   }
@@ -47,6 +65,32 @@ export default function PcmsoPage() {
       }),
     });
     setSaving(false);
+    load();
+  }
+
+  async function handleInvite() {
+    if (!coordinatorEmail.trim()) {
+      setInviteMessage("Informe o e-mail do médico coordenador.");
+      return;
+    }
+    setInviting(true);
+    setInviteMessage("");
+    const res = await fetch("/api/employer/pcmso/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: coordinatorEmail.trim(),
+        fullName: coordinatorName.trim() || undefined,
+        crm: coordinatorCrm.trim() || undefined,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setInviteMessage(data.message || "Convite enviado.");
+    } else {
+      setInviteMessage(data.error === "ALREADY_ACTIVE" ? "Este médico já possui acesso ativo." : (data.error || "Erro ao enviar convite."));
+    }
+    setInviting(false);
     load();
   }
 
@@ -102,6 +146,30 @@ export default function PcmsoPage() {
               placeholder="CRM"
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
+          </div>
+          <div className="rounded-xl border border-teal-100 bg-teal-50/80 p-4 space-y-3">
+            <p className="text-sm text-teal-900 font-medium flex items-center gap-2">
+              <Mail size={16} />
+              Acesso portal médico do trabalho
+            </p>
+            <p className="text-xs text-teal-800">
+              Envie convite para o coordenador PCMSO acessar alertas de risco e checklist (sem EAP/denúncias).
+            </p>
+            {inviteLink && (
+              <p className="text-xs text-slate-600">
+                Status: <strong>{inviteLink.status === "ACTIVE" ? "Ativo" : "Convite pendente"}</strong>
+                {inviteLink.joinedAt ? ` · desde ${new Date(inviteLink.joinedAt).toLocaleDateString("pt-BR")}` : ""}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleInvite}
+              disabled={inviting || !coordinatorEmail.trim()}
+              className="px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium disabled:opacity-50"
+            >
+              {inviting ? "Enviando…" : "Enviar convite de acesso"}
+            </button>
+            {inviteMessage && <p className="text-xs text-teal-900">{inviteMessage}</p>}
           </div>
         </div>
 

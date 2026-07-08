@@ -9,8 +9,13 @@ export default async function EmpresasDashboardLayout({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/empresas/login");
-  if (session.user.role !== "EMPLOYER" && session.user.role !== "ADMIN") {
-    redirect(resolveRoleHome(session.user.role));
+  const role = session.user.role;
+  if (
+    role !== "EMPLOYER" &&
+    role !== "OCCUPATIONAL_PHYSICIAN" &&
+    role !== "ADMIN"
+  ) {
+    redirect(resolveRoleHome(role));
   }
   return <>{children}</>;
 }

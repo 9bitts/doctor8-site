@@ -662,6 +662,44 @@ export const EMAIL_EMPLOYER_STAFF_INVITE: Record<EmailLang, {
   },
 };
 
+export const EMAIL_OCCUPATIONAL_PHYSICIAN_INVITE: Record<EmailLang, {
+  subject: (companyName: string) => string;
+  heading: string;
+  hi: string;
+  body: (companyName: string) => string;
+  cta: string;
+  expires: string;
+  orCopy: string;
+}> = {
+  en: {
+    subject: (c) => `PCMSO coordinator access — ${c}`,
+    heading: "Occupational physician invite",
+    hi: "Hello,",
+    body: (c) => `You were invited as <strong>PCMSO coordinator</strong> for <strong>${c}</strong> on Doctor8 Empresas. View psychosocial risk alerts and PCMSO integration status.`,
+    cta: "Create account",
+    expires: "This link expires in <strong>7 days</strong>.",
+    orCopy: "Or copy this link:",
+  },
+  pt: {
+    subject: (c) => `Acesso médico PCMSO — ${c}`,
+    heading: "Convite médico do trabalho",
+    hi: "Olá,",
+    body: (c) => `Você foi convidado(a) como <strong>médico coordenador PCMSO</strong> de <strong>${c}</strong> no Doctor8 Empresas. Acompanhe alertas de risco psicossocial e a integração PGR ↔ PCMSO.`,
+    cta: "Criar conta",
+    expires: "Este link expira em <strong>7 dias</strong>.",
+    orCopy: "Ou copie este link:",
+  },
+  es: {
+    subject: (c) => `Acceso médico PCMSO — ${c}`,
+    heading: "Invitación médico del trabajo",
+    hi: "Hola,",
+    body: (c) => `Fuiste invitado(a) como <strong>coordinador PCMSO</strong> de <strong>${c}</strong> en Doctor8 Empresas.`,
+    cta: "Crear cuenta",
+    expires: "Este enlace expira en <strong>7 días</strong>.",
+    orCopy: "O copia este enlace:",
+  },
+};
+
 export const EMAIL_EMPLOYER_WORKFORCE_INVITE: Record<EmailLang, {
   subject: (companyName: string) => string;
   heading: string;

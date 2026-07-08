@@ -1,4 +1,4 @@
-import type { EmployerCompany } from "@prisma/client";
+import type { EmployerCompany, Prisma } from "@prisma/client";
 
 export type OnboardingStep = {
   id: string;
@@ -42,9 +42,12 @@ export function parseOnboardingDismissed(raw: unknown): boolean {
 export function mergeOnboardingJson(
   existing: unknown,
   patch: Record<string, unknown>,
-): Record<string, unknown> {
-  const base = existing && typeof existing === "object" ? { ...(existing as Record<string, unknown>) } : {};
-  return { ...base, ...patch };
+): Prisma.InputJsonValue {
+  const base =
+    existing && typeof existing === "object" && !Array.isArray(existing)
+      ? { ...(existing as Record<string, unknown>) }
+      : {};
+  return { ...base, ...patch } as Prisma.InputJsonValue;
 }
 
 export type EmployerPlanLimits = {
