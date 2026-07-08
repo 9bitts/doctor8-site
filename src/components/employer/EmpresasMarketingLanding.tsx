@@ -19,23 +19,39 @@ import {
   HeartPulse,
   Building2,
   LineChart,
+  BookOpen,
+  Plug,
+  FileSignature,
+  Activity,
+  TrendingUp,
+  Hospital,
+  FileCode,
+  Sparkles,
+  Target,
 } from "lucide-react";
+
+const PSICOLOGOS_URL = "https://app.doctor8.org/psicologos";
 
 const PILLARS = [
   {
     icon: Scale,
     title: "Conformidade NR-1",
-    body: "Inventário de riscos psicossociais, AEP, plano de ação e exportação documental pronta para auditoria e fiscalização.",
+    body: "PGR, AEP, GRO, plano de ação, denúncias e documentação com assinatura técnica — pronto para auditoria MTE.",
   },
   {
     icon: HeartPulse,
-    title: "Saúde mental no trabalho",
-    body: "EAP com psicólogos credenciados Doctor8 — sigilo total para o colaborador, métricas agregadas para o RH.",
+    title: "Saúde mental que gera ROI",
+    body: "EAP sigiloso, trilhas de bem-estar, pulse check-in e analytics de adoção — cuidado mensurável, não só discurso.",
   },
   {
     icon: Stethoscope,
-    title: "PCMSO integrado",
-    body: "Portal do médico do trabalho conecta riscos psicossociais ao programa de saúde ocupacional da empresa.",
+    title: "SST ocupacional integrado",
+    body: "PCMSO, exames/ASO, rede de clínicas e eSocial — o que SOC e Metra fazem, no mesmo ecossistema do EAP.",
+  },
+  {
+    icon: Plug,
+    title: "Pronto para escalar",
+    body: "Integrações ICP-Brasil, parceiro eSocial, Stripe metered e webhooks RH — contrate o terceiro, ligue a chave.",
   },
 ];
 
@@ -44,145 +60,254 @@ const MODULES = [
     icon: ClipboardList,
     tag: "NR-1",
     title: "Inventário de riscos psicossociais",
-    body: "Mapeie fatores de risco, classifique severidade e probabilidade e mantenha o PGR atualizado conforme a Portaria MTE nº 1.419/2024.",
+    body: "Matriz de risco, fatores MTE, classificação S×P e exportação PGR em PDF/JSON para o dossiê de conformidade.",
+  },
+  {
+    icon: Target,
+    tag: "GRO",
+    title: "Critérios GRO documentados",
+    body: "Critérios de Grau de Risco Ocupacional alinhados à NR-1 — exportáveis e assináveis para auditoria.",
   },
   {
     icon: BarChart3,
-    tag: "Diagnóstico",
-    title: "Pesquisas organizacionais",
-    body: "Instrumentos validados (COPSOQ-lite) com anonimato garantido. Importe resultados direto para o inventário de riscos.",
+    tag: "HSE-IT",
+    title: "Pesquisas COPSOQ / HSE-IT",
+    body: "Diagnóstico anônimo com importação automática de achados para o inventário — paridade com players enterprise.",
   },
   {
     icon: FileText,
     tag: "NR-17",
-    title: "AEP — Avaliação Ergonômica Preliminar",
-    body: "Fluxo completo com versões, aprovação, vínculo com pesquisas e riscos no inventário NR-1.",
+    title: "AEP ergonômica completa",
+    body: "Versões, aprovação, vínculo com pesquisas e riscos psicossociais no PGR.",
   },
   {
-    icon: FileText,
+    icon: ClipboardList,
     tag: "PDCA",
-    title: "Plano de ação",
-    body: "Medidas corretivas com responsáveis, prazos e acompanhamento — o que a fiscalização espera ver na prática.",
+    title: "Plano de ação rastreável",
+    body: "Medidas, responsáveis, prazos e status — o que o fiscal espera ver além da planilha.",
   },
   {
     icon: Brain,
     tag: "EAP",
     title: "Atendimento psicológico corporativo",
-    body: "Sessões sigilosas por teleconsulta, cotas por colaborador, rede de psicólogos credenciados e plantão de urgência (JIT) corporativo.",
+    body: "Teleconsulta sigilosa, cotas por colaborador, rede credenciada, JIT de urgência e repasse transparente.",
   },
   {
-    icon: Users,
-    tag: "Gestão",
-    title: "Colaboradores e elegibilidade",
-    body: "Cadastro individual ou importação em lote (CSV). Convites por e-mail e controle de sessões utilizadas — sem expor conteúdo clínico.",
+    icon: BookOpen,
+    tag: "Bem-estar",
+    title: "Trilhas psicoeducativas",
+    body: "Conteúdo por dimensão de risco (sobrecarga, assédio, autonomia) com player de áudio e progresso do colaborador.",
+  },
+  {
+    icon: Activity,
+    tag: "Pulse",
+    title: "Check-in de bem-estar",
+    body: "Pulse anônimo no portal do colaborador — sinais precoces sem violar sigilo clínico.",
+  },
+  {
+    icon: TrendingUp,
+    tag: "Analytics",
+    title: "Inteligência RH / SST",
+    body: "Painel 30 dias: adoção EAP, pesquisas, trilhas, conformidade e alertas de exames vencidos.",
+  },
+  {
+    icon: LineChart,
+    tag: "Benchmark",
+    title: "Comparativo setorial",
+    body: "Sua empresa vs. média do setor em conformidade NR-1, EAP e plano de ação — argumento para board e diretoria.",
+  },
+  {
+    icon: Hospital,
+    tag: "PCMSO",
+    title: "Exames ocupacionais / ASO",
+    body: "Agenda admissional, periódico e demissional; rede de clínicas parceiras; laudo PDF e ASO exportável.",
+  },
+  {
+    icon: FileCode,
+    tag: "eSocial",
+    title: "eSocial S-2220 e S-2240",
+    body: "XML validável, fila de transmissão e integração com parceiro DP — feche o ciclo SST digital.",
+  },
+  {
+    icon: FileSignature,
+    tag: "ICP",
+    title: "Assinatura PGR / PCMSO / ASO",
+    body: "Assinatura digital ICP-Brasil (Lacuna) ou registro técnico — validade jurídica no dossiê.",
+  },
+  {
+    icon: Stethoscope,
+    tag: "NR-7",
+    title: "Portal médico do trabalho",
+    body: "Convite ao coordenador PCMSO, checklist PGR ↔ PCMSO, riscos altos e conclusão de ASO.",
   },
   {
     icon: MessageSquareWarning,
     tag: "Ética",
     title: "Canal de denúncias",
-    body: "Link público anônimo para assédio e condições adversas. Protocolo automático e painel para o time de SST.",
+    body: "Link público anônimo, protocolo automático e triagem no painel SST.",
   },
   {
-    icon: Stethoscope,
-    tag: "PCMSO",
-    title: "Médico do trabalho",
-    body: "Convite ao coordenador PCMSO, alertas de risco alto e checklist de integração PGR ↔ saúde ocupacional.",
+    icon: Users,
+    tag: "Gestão",
+    title: "Colaboradores + dados SST",
+    body: "CSV em lote, CPF/matrícula eSocial, convites EAP e controle de cotas — sem expor prontuário.",
   },
   {
     icon: FileDown,
     tag: "Auditoria",
     title: "Documentação exportável",
-    body: "Gere inventário PGR em PDF e JSON — AEP, pesquisas, EAP, PCMSO e denúncias em um pacote para arquivo e fiscalização.",
-  },
-  {
-    icon: LineChart,
-    tag: "Painel",
-    title: "Onboarding e score de conformidade",
-    body: "Roteiro guiado passo a passo e indicador de completude do programa — saiba exatamente o que falta.",
+    body: "PGR, GRO, PCMSO e histórico de assinaturas — pacote único para fiscalização interna e externa.",
   },
   {
     icon: CreditCard,
-    tag: "Comercial",
-    title: "Planos e assinatura",
-    body: "Starter, Growth e Enterprise com limites claros de colaboradores e pesquisas. Cobrança recorrente via Stripe.",
+    tag: "B2B",
+    title: "Planos e cobrança EAP",
+    body: "Starter / Growth / Enterprise, snapshots mensais de uso e cobrança metered por sessão (Stripe).",
   },
   {
     icon: Webhook,
-    tag: "Integração",
-    title: "Webhooks para RH",
-    body: "Notifique seu SI-RH sobre denúncias, novos colaboradores e mudanças de conformidade — assinatura HMAC segura.",
+    tag: "API",
+    title: "Webhooks RH + log de entregas",
+    body: "SI-RH recebe eventos de denúncia, colaborador e conformidade — HMAC e histórico de entregas.",
+  },
+  {
+    icon: Plug,
+    tag: "Hub",
+    title: "Central de integrações",
+    body: "Status Lacuna, eSocial, Stripe metered e clínicas — modo demo para apresentação, live após contrato.",
+  },
+];
+
+const VS_MARKET = [
+  {
+    name: "Zenklub",
+    focus: "EAP + bem-estar",
+    doctor8: "EAP + NR-1 completo + PCMSO + eSocial",
+  },
+  {
+    name: "SOC / Metra",
+    focus: "SST ocupacional",
+    doctor8: "SST + saúde mental + EAP na mesma plataforma",
+  },
+  {
+    name: "Planilhas + consultoria",
+    focus: "Projeto pontual",
+    doctor8: "Software contínuo, métricas e documentação viva",
   },
 ];
 
 const JOURNEY = [
   {
     step: "01",
-    title: "A empresa contrata e configura",
-    body: "RH cadastra colaboradores, define cotas do EAP, credencia psicólogos e inicia o inventário de riscos.",
+    title: "Contrata e configura",
+    body: "Cadastro CNPJ, equipe SST/RH, colaboradores (CSV), cotas EAP e convite ao médico PCMSO.",
   },
   {
     step: "02",
-    title: "Diagnóstico e conformidade",
-    body: "Pesquisas anônimas, AEP, plano de ação e canal de denúncias — tudo documentado na plataforma.",
+    title: "Diagnostica riscos",
+    body: "Pesquisa HSE-IT, inventário NR-1, AEP e benchmark setorial — dados para o board.",
   },
   {
     step: "03",
-    title: "Médico do trabalho integra",
-    body: "O coordenador PCMSO acompanha riscos psicossociais e valida a integração com a saúde ocupacional.",
+    title: "Executa e documenta",
+    body: "Plano de ação, denúncias, exames/ASO, assinatura PGR e fila eSocial.",
   },
   {
     step: "04",
-    title: "Colaborador é atendido",
-    body: "Sessões sigilosas com psicólogo da rede. O RH vê apenas números agregados — nunca o que foi dito na consulta.",
+    title: "Cuida das pessoas",
+    body: "EAP sigiloso, trilhas de bem-estar e pulse — adoção visível, conteúdo clínico protegido.",
+  },
+  {
+    step: "05",
+    title: "Fatura e integra",
+    body: "Snapshot EAP, metered billing, webhooks ao SI-RH e integrações live quando contratadas.",
   },
 ];
 
 const TRUST = [
-  "Psicólogos verificados (CRP) na plataforma Doctor8",
-  "Sigilo clínico do EAP separado do painel de gestão",
-  "LGPD: denúncias anônimas e dados mínimos",
-  "Referência MTE: NR-1, NR-17 e Guia de Riscos Psicossociais",
-  "Exportação documental para auditoria interna e externa",
+  "Psicólogos CRP verificados no ecossistema Doctor8",
+  "Separação técnica: gestão corporativa ≠ prontuário clínico",
+  "LGPD: denúncias anônimas, dados mínimos, exportação auditável",
+  "Referência MTE: NR-1, NR-7, NR-17 e Guia de Riscos Psicossociais",
+  "Paridade funcional com SOC/Metra em SST + diferencial EAP integrado",
+  "Hub de integrações pronto para Lacuna, eSocial e Stripe",
 ];
 
 export default function EmpresasMarketingLanding() {
   return (
     <div className="bg-white">
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-sky-50/80 to-white" />
+      <section className="relative overflow-hidden bg-sky-50">
         <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-24">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold mb-6">
               <Shield size={14} />
-              Doctor8 Empresas — novo produto
+              Doctor8 Empresas — SST + saúde mental integrados
             </div>
             <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 leading-[1.1] tracking-tight">
-              NR-1, saúde mental e PCMSO —{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-600">
-                uma plataforma, zero improviso
-              </span>
+              A plataforma que une{" "}
+              <span className="text-sky-600">NR-1, EAP, PCMSO e eSocial</span>{" "}
+              — sem três fornecedores diferentes
             </h2>
             <p className="text-lg sm:text-xl text-slate-600 mt-6 leading-relaxed">
-              A adequação às novas exigências de riscos psicossociais não precisa ser um projeto de planilhas
-              e consultorias desconectadas. O Doctor8 Empresas une{" "}
+              Enquanto Zenklub cuida do EAP e SOC cuida do ASO, o Doctor8 Empresas entrega{" "}
               <strong className="text-slate-800">conformidade regulatória</strong>,{" "}
-              <strong className="text-slate-800">cuidado real com pessoas</strong> e{" "}
-              <strong className="text-slate-800">gestão integrada</strong> para RH, SST e médico do trabalho.
+              <strong className="text-slate-800">atendimento psicológico sigiloso</strong> e{" "}
+              <strong className="text-slate-800">medicina do trabalho digital</strong> em um único contrato —
+              com documentação exportável e integrações prontas para produção.
             </p>
             <div className="flex flex-wrap gap-3 mt-8">
               <Link
                 href="/empresas/cadastro"
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-700 transition shadow-lg shadow-sky-600/25"
               >
-                Começar agora <ArrowRight size={18} />
+                Agendar demonstração grátis <ArrowRight size={18} />
               </Link>
               <a
                 href="#modulos"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-medium hover:bg-slate-50 transition"
               >
-                Ver todos os módulos
+                Ver 20+ módulos
               </a>
+            </div>
+            <p className="text-xs text-slate-500 mt-4">
+              Piloto sem cartão · Onboarding guiado · Export PGR no primeiro dia
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Banner psicólogos */}
+      <section className="bg-violet-600 text-white">
+        <div className="max-w-6xl mx-auto px-4 py-10 sm:py-12">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 text-violet-200 text-xs font-semibold uppercase tracking-wide mb-3">
+                <Sparkles size={14} />
+                Ecossistema Doctor8
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-bold leading-tight">
+                Seu EAP merece psicólogos de verdade — não uma lista genérica
+              </h3>
+              <p className="text-violet-100 mt-3 leading-relaxed text-sm sm:text-base">
+                O Doctor8 Empresas conecta sua empresa à mesma rede de psicólogos que usa teleconsulta CFP,
+                escalas clínicas, plantão JIT e prontuário seguro. Para o RH: credenciamento formal.
+                Para o colaborador: atendimento de qualidade. Para você: um argumento de venda que fecha contrato.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+              <a
+                href={PSICOLOGOS_URL}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white text-violet-700 font-semibold hover:bg-violet-50 transition shadow-lg"
+              >
+                Conheça a rede de psicólogos <ArrowRight size={18} />
+              </a>
+              <Link
+                href="/empresas/cadastro"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-white/40 text-white font-medium hover:bg-white/10 transition"
+              >
+                Credenciar na minha empresa
+              </Link>
             </div>
           </div>
         </div>
@@ -194,21 +319,22 @@ export default function EmpresasMarketingLanding() {
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
               <h3 className="text-2xl sm:text-3xl font-bold">
-                O que mudou — e por que sua empresa precisa agir
+                NR-1 não é só “saúde mental” — é obrigação documentada
               </h3>
               <p className="text-slate-300 mt-4 leading-relaxed">
-                A NR-1 passou a exigir que <strong className="text-white">riscos psicossociais</strong> façam
-                parte do Programa de Gerenciamento de Riscos (PGR). Isso inclui identificação, avaliação,
-                controle e monitoramento — com documentação que resiste a uma fiscalização do Ministério do Trabalho.
+                A Portaria MTE nº 1.419/2024 exige riscos psicossociais no PGR, integração com PCMSO quando
+                aplicável, e evidências que resistem à fiscalização. Empresas que tratam isso só com
+                pesquisa de clima <strong className="text-white">pagam duas vezes</strong>: na consultoria e na multa.
               </p>
             </div>
             <ul className="space-y-3">
               {[
-                "Inventário de riscos psicossociais no PGR",
-                "AEP integrada (NR-17) quando aplicável",
-                "Plano de ação com medidas e prazos",
-                "Canal para denúncias de assédio",
-                "Integração com PCMSO (NR-7)",
+                "Inventário + critérios GRO exportáveis",
+                "Pesquisas HSE-IT com anonimato",
+                "AEP (NR-17) e plano de ação PDCA",
+                "Exames / ASO e eSocial S-2220",
+                "Canal de denúncias e assinatura ICP",
+                "EAP como medida complementar ao PGR",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-sm text-slate-200">
                   <CheckCircle2 size={18} className="text-sky-400 shrink-0" />
@@ -223,49 +349,53 @@ export default function EmpresasMarketingLanding() {
       {/* Pillars */}
       <section className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
         <p className="text-center text-sky-600 font-semibold text-sm uppercase tracking-wide mb-2">
-          Três pilares
+          Proposta de valor
         </p>
-        <h3 className="text-center text-3xl font-bold text-slate-900 mb-12">
-          Compliance, cuidado e integração — sem silos
+        <h3 className="text-center text-3xl font-bold text-slate-900 mb-4">
+          Um contrato. Quatro pilares. Zero silo entre RH, SST e medicina do trabalho.
         </h3>
-        <div className="grid md:grid-cols-3 gap-6">
+        <p className="text-center text-slate-500 max-w-2xl mx-auto mb-12">
+          Vendemos para quem precisa mostrar resultado: diretoria, jurídico, auditoria e colaboradores.
+        </p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {PILLARS.map((p) => (
             <div
               key={p.title}
-              className="rounded-2xl border border-slate-200 p-6 hover:shadow-lg hover:border-sky-200 transition-all duration-300"
+              className="rounded-2xl border border-slate-200 p-5 hover:shadow-lg hover:border-sky-200 transition-all duration-300"
             >
-              <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center mb-4">
-                <p.icon className="text-sky-600" size={24} />
+              <div className="w-11 h-11 rounded-xl bg-sky-100 flex items-center justify-center mb-4">
+                <p.icon className="text-sky-600" size={22} />
               </div>
-              <h4 className="font-bold text-slate-900 text-lg">{p.title}</h4>
+              <h4 className="font-bold text-slate-900">{p.title}</h4>
               <p className="text-slate-600 text-sm mt-2 leading-relaxed">{p.body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* EAP highlight */}
-      <section className="bg-gradient-to-br from-violet-50 via-white to-sky-50 border-y border-slate-100">
+      {/* EAP + bem-estar */}
+      <section className="bg-violet-50 border-y border-violet-100">
         <div className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 text-violet-700 font-semibold text-sm mb-4">
-                <Brain size={18} /> EAP Doctor8
+                <Brain size={18} /> EAP + bem-estar mensurável
               </div>
               <h3 className="text-3xl font-bold text-slate-900">
-                Apoio psicológico que o colaborador confia — e o RH respeita
+                Zenklub vende bem-estar. Nós vendemos bem-estar{" "}
+                <span className="text-violet-600">com compliance embutido</span>.
               </h3>
               <p className="text-slate-600 mt-4 leading-relaxed">
-                O Programa de Assistência ao Empregado (EAP) não é luxo: é medida complementar ao PGR e
-                resposta concreta aos riscos psicossociais. No Doctor8, cada sessão é sigilosa; a empresa
-                vê apenas <strong>quantas sessões foram utilizadas</strong>, nunca o conteúdo clínico.
+                Sessões sigilosas, trilhas psicoeducativas (texto e áudio), pulse de check-in e analytics
+                de adoção — tudo vinculado ao inventário de riscos. O RH prova que a medida do PGR está
+                em execução; o colaborador recebe cuidado real.
               </p>
               <ul className="mt-6 space-y-2">
                 {[
-                  "Psicólogos credenciados com convite e aceite formal",
-                  "Cotas anuais por colaborador com reset automático",
-                  "Plantão de urgência (JIT) para crises",
-                  "Repasse financeiro transparente ao profissional",
+                  "Rede credenciada com convite formal e repasse",
+                  "Cotas anuais + cobrança metered por sessão excedente",
+                  "Snapshots mensais para fechamento financeiro",
+                  "Benchmark: sua adoção EAP vs. setor",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-sm text-slate-700">
                     <Zap size={16} className="text-violet-500 shrink-0 mt-0.5" />
@@ -280,22 +410,26 @@ export default function EmpresasMarketingLanding() {
                   <Lock size={18} className="text-violet-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-900">Sigilo garantido</p>
-                  <p className="text-xs text-slate-500">Separação técnica entre gestão e clínica</p>
+                  <p className="font-semibold text-slate-900">Sigilo que fecha contrato jurídico</p>
+                  <p className="text-xs text-slate-500">Gestão ≠ prontuário — separação técnica</p>
                 </div>
               </div>
               <div className="space-y-4 text-sm">
                 <div className="flex justify-between py-2 border-b border-slate-100">
-                  <span className="text-slate-500">O que o RH vê</span>
+                  <span className="text-slate-500">RH / SST vê</span>
                   <span className="font-medium text-slate-800">Métricas agregadas</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-slate-100">
-                  <span className="text-slate-500">O que o RH não vê</span>
+                  <span className="text-slate-500">Nunca vê</span>
                   <span className="font-medium text-slate-800">Conteúdo das sessões</span>
                 </div>
+                <div className="flex justify-between py-2 border-b border-slate-100">
+                  <span className="text-slate-500">Colaborador acessa</span>
+                  <span className="font-medium text-slate-800">EAP + trilhas + pulse</span>
+                </div>
                 <div className="flex justify-between py-2">
-                  <span className="text-slate-500">Quem atende</span>
-                  <span className="font-medium text-slate-800">Psicólogo CRP verificado</span>
+                  <span className="text-slate-500">Financeiro</span>
+                  <span className="font-medium text-slate-800">Snapshot + Stripe metered</span>
                 </div>
               </div>
             </div>
@@ -303,93 +437,147 @@ export default function EmpresasMarketingLanding() {
         </div>
       </section>
 
-      {/* Médico do trabalho */}
+      {/* SST ocupacional */}
       <section className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="order-2 lg:order-1 rounded-2xl bg-teal-50 border border-teal-100 p-6 sm:p-8">
-            <Stethoscope className="text-teal-600 mb-4" size={32} />
-            <h4 className="font-bold text-slate-900 text-xl">Portal do médico do trabalho</h4>
+          <div className="rounded-2xl bg-teal-50 border border-teal-100 p-6 sm:p-8">
+            <Hospital className="text-teal-600 mb-4" size={32} />
+            <h4 className="font-bold text-slate-900 text-xl">Exames, ASO e eSocial — paridade SOC/Metra</h4>
             <p className="text-slate-600 text-sm mt-3 leading-relaxed">
-              O coordenador do PCMSO recebe convite da empresa e acessa painel dedicado: riscos
-              psicossociais mapeados, alertas de severidade alta, checklist PGR ↔ PCMSO e contexto
-              para decisões de saúde ocupacional — <strong>sem acesso ao EAP clínico</strong>.
+              Agenda admissional, periódico e demissional. Rede de clínicas parceiras, upload de laudo,
+              ASO em PDF, assinatura ICP e fila eSocial S-2220/S-2240 com XML exportável.
+              O médico do trabalho conclui ASO no portal dedicado.
+            </p>
+            <ul className="mt-4 space-y-2 text-sm text-slate-700">
+              {["CPF e matrícula eSocial no cadastro", "Alertas de exames vencidos no painel", "Integração parceiro eSocial (plug-and-play)"].map((t) => (
+                <li key={t} className="flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-teal-600 shrink-0" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-teal-600 font-semibold text-sm uppercase tracking-wide mb-2">
+              SST digital
+            </p>
+            <h3 className="text-3xl font-bold text-slate-900">
+              Pare de pagar um sistema para EAP e outro para medicina do trabalho
+            </h3>
+            <p className="text-slate-600 mt-4 leading-relaxed">
+              O Doctor8 Empresas é a resposta para o comprador que quer{" "}
+              <strong>uma fatura e um login</strong> para RH, SST, médico do trabalho e colaborador —
+              com documentação que conversa entre si.
             </p>
             <Link
               href="/empresas/medico/login"
-              className="inline-flex items-center gap-1.5 mt-5 text-sm font-semibold text-teal-700 hover:underline"
+              className="inline-flex items-center gap-1.5 mt-6 text-sm font-semibold text-teal-700 hover:underline"
             >
-              Acesso médico do trabalho <ArrowRight size={14} />
+              Portal médico do trabalho <ArrowRight size={14} />
             </Link>
-          </div>
-          <div className="order-1 lg:order-2">
-            <p className="text-teal-600 font-semibold text-sm uppercase tracking-wide mb-2">
-              PCMSO + NR-1
-            </p>
-            <h3 className="text-3xl font-bold text-slate-900">
-              O médico do trabalho não fica de fora
-            </h3>
-            <p className="text-slate-600 mt-4 leading-relaxed">
-              Muitas soluções de “saúde mental corporativa” ignoram o PCMSO. Nós integramos: o inventário
-              de riscos alimenta a visão do médico coordenador, que valida a integração com o programa
-              de saúde ocupacional — exatamente como a legislação espera.
-            </p>
           </div>
         </div>
       </section>
 
-      {/* Modules grid */}
-      <section id="modulos" className="bg-slate-50 border-y border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
-          <p className="text-center text-sky-600 font-semibold text-sm uppercase tracking-wide mb-2">
-            Plataforma completa
-          </p>
-          <h3 className="text-center text-3xl font-bold text-slate-900 mb-4">
-            Tudo que construímos — pronto para operar
+      {/* vs mercado */}
+      <section className="bg-slate-50 border-y border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
+          <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-2">
+            Por que não só Zenklub, SOC ou planilha?
           </h3>
-          <p className="text-center text-slate-500 max-w-2xl mx-auto mb-12">
-            Do diagnóstico à documentação, do EAP à cobrança B2B. Um ecossistema para empresas que levam
-            saúde mental e conformidade a sério.
+          <p className="text-center text-slate-500 text-sm mb-10 max-w-xl mx-auto">
+            Posicionamento claro para sua equipe comercial e para o comprador enterprise.
           </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {MODULES.map((m) => (
-              <div
-                key={m.title}
-                className="rounded-xl bg-white border border-slate-200 p-5 hover:shadow-md hover:border-sky-200 transition-all"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <m.icon size={20} className="text-sky-600" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full">
-                    {m.tag}
-                  </span>
-                </div>
-                <h4 className="font-semibold text-slate-900 text-sm">{m.title}</h4>
-                <p className="text-xs text-slate-600 mt-2 leading-relaxed">{m.body}</p>
+          <div className="grid md:grid-cols-3 gap-4">
+            {VS_MARKET.map((row) => (
+              <div key={row.name} className="rounded-xl bg-white border border-slate-200 p-5">
+                <p className="font-bold text-slate-900">{row.name}</p>
+                <p className="text-xs text-slate-500 mt-1">Foco: {row.focus}</p>
+                <p className="text-sm text-sky-700 font-medium mt-3 flex items-start gap-2">
+                  <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-sky-500" />
+                  Doctor8: {row.doctor8}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Journey */}
-      <section className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
-        <h3 className="text-center text-3xl font-bold text-slate-900 mb-12">
-          Como funciona na prática
+      {/* Modules grid */}
+      <section id="modulos" className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
+        <p className="text-center text-sky-600 font-semibold text-sm uppercase tracking-wide mb-2">
+          Plataforma completa
+        </p>
+        <h3 className="text-center text-3xl font-bold text-slate-900 mb-4">
+          20+ módulos — do diagnóstico ao eSocial
         </h3>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {JOURNEY.map((j) => (
-            <div key={j.step} className="relative">
-              <span className="text-5xl font-black text-sky-100">{j.step}</span>
-              <h4 className="font-bold text-slate-900 mt-2">{j.title}</h4>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed">{j.body}</p>
+        <p className="text-center text-slate-500 max-w-2xl mx-auto mb-12">
+          Tudo que implementamos está operacional: modo demonstração para pitch, integrações live após contratar parceiros.
+        </p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {MODULES.map((m) => (
+            <div
+              key={m.title}
+              className="rounded-xl bg-white border border-slate-200 p-4 hover:shadow-md hover:border-sky-200 transition-all"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <m.icon size={18} className="text-sky-600" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full">
+                  {m.tag}
+                </span>
+              </div>
+              <h4 className="font-semibold text-slate-900 text-sm leading-snug">{m.title}</h4>
+              <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">{m.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Journey */}
+      <section className="bg-sky-50 border-y border-sky-100">
+        <div className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
+          <h3 className="text-center text-3xl font-bold text-slate-900 mb-12">
+            Jornada de implementação — 30 a 90 dias
+          </h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {JOURNEY.map((j) => (
+              <div key={j.step} className="relative">
+                <span className="text-4xl font-black text-sky-200">{j.step}</span>
+                <h4 className="font-bold text-slate-900 mt-2 text-sm">{j.title}</h4>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">{j.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Integrações CTA strip */}
+      <section className="max-w-6xl mx-auto px-4 py-12">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+              <Plug className="text-violet-600" size={22} />
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900">Hub de integrações pronto para contratação</h4>
+              <p className="text-sm text-slate-600 mt-1">
+                Lacuna (ICP), parceiro eSocial, Stripe metered e clínicas — demonstre hoje, ative amanhã.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg border border-emerald-100">ICP-Brasil</span>
+            <span className="text-xs bg-sky-50 text-sky-700 px-2 py-1 rounded-lg border border-sky-100">eSocial</span>
+            <span className="text-xs bg-violet-50 text-violet-700 px-2 py-1 rounded-lg border border-violet-100">Stripe</span>
+            <span className="text-xs bg-teal-50 text-teal-700 px-2 py-1 rounded-lg border border-teal-100">Clínicas</span>
+          </div>
         </div>
       </section>
 
       {/* Trust */}
       <section className="bg-slate-900 text-white">
         <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
-          <h3 className="text-2xl font-bold text-center mb-8">Por que confiar no Doctor8 Empresas</h3>
+          <h3 className="text-2xl font-bold text-center mb-8">Por que o comprador enterprise escolhe Doctor8</h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {TRUST.map((t) => (
               <div key={t} className="flex items-start gap-3 text-sm text-slate-300">
@@ -405,11 +593,11 @@ export default function EmpresasMarketingLanding() {
       <section className="max-w-6xl mx-auto px-4 py-16 sm:py-24 text-center">
         <Building2 className="mx-auto text-sky-600 mb-4" size={40} />
         <h3 className="text-3xl sm:text-4xl font-bold text-slate-900">
-          Pronto para colocar sua empresa em conformidade?
+          Leve sua proposta comercial com produto na mão
         </h3>
         <p className="text-slate-600 mt-4 max-w-xl mx-auto">
-          Cadastre-se em minutos. Configure o EAP, convide o médico do trabalho e comece o inventário
-          de riscos hoje — com documentação exportável quando precisar.
+          Cadastre a empresa, rode o onboarding guiado e mostre PGR, EAP, exames e eSocial na mesma demo —
+          antes do concorrente voltar com a planilha.
         </p>
         <div className="flex flex-wrap justify-center gap-3 mt-8">
           <Link
@@ -419,30 +607,38 @@ export default function EmpresasMarketingLanding() {
             Criar conta empresarial <ArrowRight size={18} />
           </Link>
           <a
+            href={PSICOLOGOS_URL}
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-violet-200 bg-violet-50 text-violet-800 font-medium hover:bg-violet-100 transition"
+          >
+            Ver rede de psicólogos
+          </a>
+          <a
             href="#acesso"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition"
           >
-            Já tenho conta — entrar
+            Já tenho conta
           </a>
         </div>
       </section>
 
-      {/* Footer note */}
+      {/* Footer */}
       <footer className="border-t border-slate-200 bg-slate-50">
         <div className="max-w-6xl mx-auto px-4 py-8 text-center text-sm text-slate-500 space-y-2">
           <p>
-            Clínica com CNPJ e agenda médica?{" "}
+            <a href={PSICOLOGOS_URL} className="text-violet-600 hover:underline font-medium">
+              Doctor8 para Psicólogos
+            </a>
+            {" · "}
             <Link href="/register/organization" className="text-sky-600 hover:underline">
-              Doctor8 Organização
+              Clínicas (CNPJ)
             </Link>
             {" · "}
-            Psicólogos autônomos:{" "}
-            <Link href="/psicologos" className="text-sky-600 hover:underline">
-              Portal Psicologia
+            <Link href="/privacy" className="text-sky-600 hover:underline">
+              Privacidade
             </Link>
           </p>
           <p className="text-xs text-slate-400">
-            Referências: Portaria MTE nº 1.419/2024 · NR-1 · NR-7 (PCMSO) · NR-17 (AEP)
+            Portaria MTE nº 1.419/2024 · NR-1 · NR-7 (PCMSO) · NR-17 (AEP) · eSocial S-2220/S-2240
           </p>
         </div>
       </footer>

@@ -28,7 +28,7 @@ const PROFILES = [
     icon: Building2,
     title: "Empresa",
     subtitle: "RH, SST e gestão",
-    description: "Painel NR-1, EAP, pesquisas, denúncias e documentação.",
+    description: "Painel NR-1, EAP, exames/ASO, eSocial, pesquisas e documentação exportável.",
     cta: "Entrar como empresa",
     accent: "indigo" as const,
   },

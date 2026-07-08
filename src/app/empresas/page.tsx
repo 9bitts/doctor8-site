@@ -2,9 +2,9 @@ import EmpresasLoginHub from "@/components/employer/EmpresasLoginHub";
 import EmpresasMarketingLanding from "@/components/employer/EmpresasMarketingLanding";
 
 export const metadata = {
-  title: "Doctor8 Empresas — NR-1, EAP e saúde mental corporativa",
+  title: "Doctor8 Empresas — NR-1, EAP, PCMSO, eSocial e saúde mental corporativa",
   description:
-    "Plataforma completa para conformidade NR-1: inventário de riscos psicossociais, EAP com psicólogos, PCMSO, denúncias, pesquisas e documentação exportável.",
+    "Plataforma B2B completa: inventário NR-1, pesquisas HSE-IT, EAP com psicólogos CRP, exames/ASO, eSocial S-2220, assinatura ICP, trilhas de bem-estar, benchmarks setoriais e integrações enterprise.",
 };
 
 export default function EmpresasLandingPage() {
