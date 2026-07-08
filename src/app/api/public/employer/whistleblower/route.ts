@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
 
   const company = await db.employerCompany.findUnique({
     where: { slug: parsed.data.slug },
+    select: { id: true, nomeFantasia: true, contactEmail: true },
   });
 
   if (!company) {
@@ -40,6 +41,34 @@ export async function POST(req: NextRequest) {
       description: parsed.data.description,
     },
   });
+
+  const sstMembers = await db.employerMember.findMany({
+    where: {
+      employerCompanyId: company.id,
+      status: "ACTIVE",
+      role: { in: ["OWNER", "ADMIN", "SST"] },
+    },
+    include: { user: { select: { email: true } } },
+  });
+
+  const notifyEmails = [
+    company.contactEmail,
+    ...sstMembers.map((m) => m.user.email),
+  ].filter((e): e is string => Boolean(e));
+
+  if (notifyEmails.length > 0) {
+    try {
+      const { sendEmployerWhistleblowerAlert } = await import("@/lib/email");
+      await sendEmployerWhistleblowerAlert({
+        emails: [...new Set(notifyEmails.map((e) => e.toLowerCase()))],
+        companyName: company.nomeFantasia,
+        protocolCode,
+        category: parsed.data.category,
+      });
+    } catch (e) {
+      console.error("[WHISTLEBLOWER EMAIL]", e);
+    }
+  }
 
   return NextResponse.json({
     success: true,

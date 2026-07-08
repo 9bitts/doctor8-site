@@ -73,6 +73,8 @@ const ROLE_ROUTE_CHECKS: { prefix: string; roles: string[] }[] = [
   { prefix: "/empresas/pcmso", roles: ["EMPLOYER", "ADMIN"] },
   { prefix: "/empresas/configuracoes", roles: ["EMPLOYER", "ADMIN"] },
   { prefix: "/empresas/denuncias", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/rede-psicologos", roles: ["EMPLOYER", "ADMIN"] },
+  { prefix: "/empresas/aep", roles: ["EMPLOYER", "ADMIN"] },
   { prefix: "/empresas/colaborador", roles: ["PATIENT", "ADMIN"] },
   { prefix: "/humanitarian/angel", roles: ["ANGEL", "ADMIN"] },
   {

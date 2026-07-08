@@ -737,6 +737,7 @@ model ProfessionalProfile {
 
   clinicMemberships     ClinicMember[]
   organizationLinks     OrganizationProfessional[]
+  employerLinks         EmployerLinkedPsychologist[]
   organizationRepasseRules OrganizationRepasseRule[]
   chartSharesCreated    PatientRecordShare[] @relation("ChartSharesCreated")
   chartSharesReceived   PatientRecordShare[] @relation("ChartSharesReceived")
@@ -1051,7 +1052,11 @@ model Appointment {
   reviewRequestSent Boolean @default(false)
   remindersEpoch   Int     @default(0)
 
-  bookingSource    String?  // patient_panel | public_profile | public_search
+  bookingSource    String?  // patient_panel | public_profile | public_search | eap_corporate
+
+  // Corporate EAP (employer-funded psychology sessions)
+  employerWorkforceMemberId String?
+  employerWorkforceMember   EmployerWorkforceMember? @relation(fields: [employerWorkforceMemberId], references: [id], onDelete: SetNull)
 
   // Dental clinic — optional chair assignment
   dentalChairId    String?
@@ -4266,6 +4271,8 @@ model EmployerCompany {
 
   nr1ComplianceScore   Int?
   lastPgrReviewAt      DateTime?
+  onboardingJson       Json?
+  planTier             String              @default("PILOT")
 
   members              EmployerMember[]
   workforce            EmployerWorkforceMember[]
@@ -4278,6 +4285,7 @@ model EmployerCompany {
   documents            EmployerNr1Document[]
   invites              EmployerInvite[]
   pcmsoConfig          EmployerPcmsoConfig?
+  linkedPsychologists  EmployerLinkedPsychologist[]
 
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
@@ -4338,6 +4346,8 @@ model EmployerWorkforceMember {
   invitedAt        DateTime                @default(now())
   activatedAt      DateTime?
 
+  eapAppointments  Appointment[]
+
   @@unique([employerCompanyId, email])
   @@index([employerCompanyId])
   @@index([userId])
@@ -4388,6 +4398,7 @@ model EmployerAepRecord {
 
   completedAt           DateTime?
   approvedByName        String?
+  surveyCampaignId      String?
 
   riskEntries           EmployerRiskEntry[]
 
@@ -4534,4 +4545,25 @@ model EmployerPcmsoConfig {
 
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+}
+
+enum EmployerLinkedPsychologistStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model EmployerLinkedPsychologist {
+  id                String                           @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany                  @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  professionalId    String
+  professional      ProfessionalProfile              @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  repassePercent    Float                            @default(70)
+  status            EmployerLinkedPsychologistStatus @default(ACTIVE)
+  notes             String?                          @db.Text
+  joinedAt          DateTime                         @default(now())
+
+  @@unique([employerCompanyId, professionalId])
+  @@index([employerCompanyId])
+  @@index([professionalId])
 }

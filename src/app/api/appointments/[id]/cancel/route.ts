@@ -13,6 +13,7 @@ import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { notifyProfessionalCancelled } from "@/lib/pro-appointment-notify";
 import { sendPatientCancelChatMessage } from "@/lib/pro-cancel-patient-notify";
+import { restoreEapSessionQuota } from "@/lib/employer-eap-booking";
 
 const CANCEL_FRESH_SELECT = {
   status: true,
@@ -181,6 +182,10 @@ export async function POST(
       remindersEpoch: { increment: 1 },
     },
   });
+
+  await restoreEapSessionQuota(params.id).catch((e) =>
+    console.error("[EAP QUOTA RESTORE]", e),
+  );
 
   await audit.updateRecord(session.user.id, "Appointment", params.id);
 

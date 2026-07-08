@@ -83,6 +83,7 @@ const PUBLIC_ROUTES = [
   "/empresas/denuncia/",
   "/empresas/convite/",
   "/empresas/equipe/cadastro",
+  "/empresas/equipe/aceitar",
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -146,6 +147,7 @@ const EMPLOYER_ROUTES = [
   "/empresas/pcmso",
   "/empresas/configuracoes",
   "/empresas/denuncias",
+  "/empresas/rede-psicologos",
 ];
 const ANGEL_ROUTES = ["/humanitarian/angel"];
 const VOLUNTEER_ROUTES = ["/humanitarian/volunteer"];

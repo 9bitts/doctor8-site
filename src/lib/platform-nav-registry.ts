@@ -538,6 +538,7 @@ export const EMPLOYER_NAV: PlatformNavEntry[] = [
   { href: "/empresas/pesquisas", labelKey: "emp.nav.surveys", roles: ["EMPLOYER"], iconKey: "BarChart3" },
   { href: "/empresas/colaboradores", labelKey: "emp.nav.workforce", roles: ["EMPLOYER"], iconKey: "Users" },
   { href: "/empresas/eap", labelKey: "emp.nav.eap", roles: ["EMPLOYER"], iconKey: "Brain" },
+  { href: "/empresas/rede-psicologos", labelKey: "emp.nav.psychNetwork", roles: ["EMPLOYER"], iconKey: "Brain" },
   { href: "/empresas/pcmso", labelKey: "emp.nav.pcmso", roles: ["EMPLOYER"], iconKey: "Stethoscope" },
   { href: "/empresas/documentacao", labelKey: "emp.nav.docs", roles: ["EMPLOYER"], iconKey: "ScrollText" },
   { href: "/empresas/denuncias", labelKey: "emp.nav.whistleblower", roles: ["EMPLOYER"], iconKey: "MessageSquare" },

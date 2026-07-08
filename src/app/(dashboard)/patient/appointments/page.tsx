@@ -106,6 +106,7 @@ export default function AppointmentsPage() {
   const userTz = useUserTimeZone();
   const searchParams = useSearchParams();
   const highlightApptId = searchParams.get("id");
+  const eapMode = searchParams.get("eap") === "1";
 
   const SPECIALTIES = ["All", "General Practice", "Cardiology", "Psychology", PSYCHOANALYSIS_SPECIALTY, "Nutrition", "Cannabis Medicine", "Dermatology"] as const;
 
@@ -142,6 +143,11 @@ export default function AppointmentsPage() {
   const [search, setSearch]               = useState("");
   const [specialty, setSpecialty]         = useState("All");
   const [volunteersOnly, setVolunteersOnly] = useState(false);
+  const [eapContext, setEapContext] = useState<{
+    companyName: string;
+    sessionsRemaining: number;
+    linkedPsychologistIds: string[];
+  } | null>(null);
   const [type, setType]                   = useState<"TELECONSULT" | "IN_PERSON">("TELECONSULT");
   const [appointments, setAppointments]   = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
@@ -277,6 +283,23 @@ export default function AppointmentsPage() {
     if (pro) selectProfessional(pro, params.get("slot") || undefined, params.get("service") || undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionals]);
+
+  useEffect(() => {
+    if (!eapMode) return;
+    setSpecialty("Psychology");
+    fetch("/api/appointments/eap")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.active) {
+          setEapContext({
+            companyName: data.companyName,
+            sessionsRemaining: data.sessionsRemaining,
+            linkedPsychologistIds: data.linkedPsychologistIds ?? [],
+          });
+        }
+      })
+      .catch(() => {});
+  }, [eapMode]);
 
   // Deep link: /patient/appointments?confirm=APPT_ID (from 24h email)
   useEffect(() => {
@@ -647,6 +670,52 @@ export default function AppointmentsPage() {
     finally { setPayLoading(false); }
   }
 
+  async function handleEapBooking() {
+    if (!selectedPro || !selectedSlot || !acceptedPolicy || !eapContext) return;
+    if (!requireTcleForTeleconsult()) return;
+    setPayLoading(true);
+    setError("");
+    try {
+      const selectedService = providerServices.find((s) => s.id === selectedServiceId);
+      const selectedPlan =
+        healthPlanSlug === "particular"
+          ? { slug: "particular", name: t("appt.healthPlanPrivate") }
+          : providerPlans.find((p) => p.slug === healthPlanSlug) ?? {
+              slug: healthPlanSlug,
+              name: healthPlanSlug,
+            };
+
+      const res = await fetch("/api/appointments/eap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          professionalId: selectedPro.id,
+          scheduledAt: selectedSlot,
+          type,
+          acceptedCancellationPolicy: acceptedPolicy,
+          visitReason: visitReason.trim() || undefined,
+          healthPlanSlug: selectedPlan.slug,
+          healthPlanLabel: selectedPlan.name,
+          ...(selectedServiceId && selectedService
+            ? { serviceId: selectedServiceId, serviceName: selectedService.name }
+            : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error?.general?.[0] || t("appt.errNotConfirmed"));
+        return;
+      }
+      setConfirmedId(data.appointmentId);
+      setStep("confirmed");
+      fetchAppointments();
+    } catch {
+      setError(t("appt.errGeneric"));
+    } finally {
+      setPayLoading(false);
+    }
+  }
+
   async function handleVolunteerBooking() {
     if (!selectedPro || !selectedSlot || !acceptedPolicy) return;
     if (!requireTcleForTeleconsult()) return;
@@ -780,7 +849,13 @@ export default function AppointmentsPage() {
     const matchSearch = search === "" || `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) || specialtyMatchesSearch(lang, p.specialty, search);
     const matchSpec   = matchesSpecialtyFilter(specialty, p);
     const matchVolunteer = !volunteersOnly || isAcuraVolunteerProvider(!!p.verified, !!p.acuraVolunteer);
-    return matchSearch && matchSpec && matchVolunteer;
+    const matchEap =
+      !eapContext ||
+      (p.providerType !== "psychoanalyst" &&
+        matchesSpecialtyFilter("Psychology", p) &&
+        (eapContext.linkedPsychologistIds.length === 0 ||
+          eapContext.linkedPsychologistIds.includes(p.id)));
+    return matchSearch && matchSpec && matchVolunteer && matchEap;
   }).sort(compareVolunteerFirst);
 
   const volunteerPros = filtered.filter((p) => isAcuraVolunteerProvider(!!p.verified, !!p.acuraVolunteer));
@@ -793,6 +868,8 @@ export default function AppointmentsPage() {
     selectedDay?.slots.find((s) => s.datetime === selectedSlot) ??
     slots.flatMap((d) => d.slots).find((s) => s.datetime === selectedSlot);
   const selectedSlotIsVolunteer = !!selectedSlotMeta?.volunteerOnly && !!selectedSlotMeta?.available;
+  const eapBookingActive = Boolean(eapContext && eapMode);
+  const selectedSlotIsEap = eapBookingActive && !!selectedSlot && !selectedSlotIsVolunteer;
 
   const selectedService = providerServices.find((s) => s.id === selectedServiceId);
   const checkoutPriceCents = selectedService?.priceCents ?? selectedPro?.consultPrice ?? 0;
@@ -803,12 +880,12 @@ export default function AppointmentsPage() {
     ? new Intl.NumberFormat(locale, { style: "currency", currency: checkoutCurrency }).format(checkoutPriceCents / 100)
     : "";
 
-  const usesHostedCheckout = isBrlCheckout && paymentMethod !== "card" && !selectedSlotIsVolunteer;
-  const canPay = selectedSlotIsVolunteer
+  const usesHostedCheckout = isBrlCheckout && paymentMethod !== "card" && !selectedSlotIsVolunteer && !selectedSlotIsEap;
+  const canPay = selectedSlotIsVolunteer || selectedSlotIsEap
     ? acceptedPolicy
     : acceptedPolicy && (usesHostedCheckout || (stripeLoaded && cardComplete));
   const summaryPriceLabel =
-    selectedSlotIsVolunteer || selectedService?.priceCents === 0
+    selectedSlotIsVolunteer || selectedSlotIsEap || selectedService?.priceCents === 0
       ? t("appt.volunteerFreeTotal")
       : priceDisplay;
 
@@ -819,6 +896,12 @@ export default function AppointmentsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <AppointmentsAnchorScroll queryId={highlightApptId} ready={!loading} />
+
+      {eapBookingActive && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          <strong>Benefício EAP</strong> — {eapContext?.companyName} · {eapContext?.sessionsRemaining} sessões restantes · apenas psicólogos
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -1165,12 +1248,18 @@ export default function AppointmentsPage() {
       {step === "payment" && selectedPro && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
           <h2 className="font-bold text-slate-900 text-lg">
-            {selectedSlotIsVolunteer ? t("appt.volunteerBookingTitle") : t("appt.completePayment")}
+            {selectedSlotIsEap
+              ? "Confirmar sessão EAP (benefício corporativo)"
+              : selectedSlotIsVolunteer
+                ? t("appt.volunteerBookingTitle")
+                : t("appt.completePayment")}
           </h2>
 
-          {selectedSlotIsVolunteer && (
+          {(selectedSlotIsVolunteer || selectedSlotIsEap) && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
-              {t("appt.volunteerBookingIntro")}
+              {selectedSlotIsEap
+                ? `Sessão coberta pelo benefício EAP de ${eapContext?.companyName}. Restam ${eapContext?.sessionsRemaining} sessões no período.`
+                : t("appt.volunteerBookingIntro")}
             </div>
           )}
 
@@ -1292,7 +1381,7 @@ export default function AppointmentsPage() {
             </ul>
           </div>
 
-          {isBrlCheckout && !selectedSlotIsVolunteer && (
+          {isBrlCheckout && !selectedSlotIsVolunteer && !selectedSlotIsEap && (
             <div className="space-y-3">
               <p className="text-sm font-semibold text-slate-700">{t("appt.paymentMethodLabel")}</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1321,7 +1410,7 @@ export default function AppointmentsPage() {
             </div>
           )}
 
-          {!usesHostedCheckout && !selectedSlotIsVolunteer && (
+          {!usesHostedCheckout && !selectedSlotIsVolunteer && !selectedSlotIsEap && (
           <div>
             <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
               <CreditCard size={16} /> {t("appt.cardDetails")}
@@ -1335,7 +1424,7 @@ export default function AppointmentsPage() {
           </div>
           )}
 
-          {usesHostedCheckout && !selectedSlotIsVolunteer && (
+          {usesHostedCheckout && !selectedSlotIsVolunteer && !selectedSlotIsEap && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
               <p className="font-medium">{t("appt.checkoutRedirect")}</p>
             </div>
@@ -1363,23 +1452,25 @@ export default function AppointmentsPage() {
           )}
 
           <button
-            onClick={() => (selectedSlotIsVolunteer ? handleVolunteerBooking() : usesHostedCheckout ? handleCheckoutPayment(paymentMethod) : handlePayment())}
+            onClick={() => (selectedSlotIsEap ? handleEapBooking() : selectedSlotIsVolunteer ? handleVolunteerBooking() : usesHostedCheckout ? handleCheckoutPayment(paymentMethod) : handlePayment())}
             disabled={payLoading || !canPay}
             className={`w-full flex items-center justify-center gap-2 text-white font-bold py-4 rounded-xl transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-base ${
-              selectedSlotIsVolunteer
+              selectedSlotIsVolunteer || selectedSlotIsEap
                 ? "bg-gradient-to-r from-green-700 to-green-500"
                 : "bg-gradient-to-r from-slate-800 to-emerald-600"
             }`}
           >
-            {payLoading ? <Loader2 size={18} className="animate-spin" /> : selectedSlotIsVolunteer ? <CheckCircle2 size={18} /> : <Lock size={18} />}
+            {payLoading ? <Loader2 size={18} className="animate-spin" /> : (selectedSlotIsVolunteer || selectedSlotIsEap) ? <CheckCircle2 size={18} /> : <Lock size={18} />}
             {payLoading
               ? t("appt.processing")
+              : selectedSlotIsEap
+                ? "Confirmar sessão EAP"
               : selectedSlotIsVolunteer
                 ? t("appt.confirmVolunteerBooking")
                 : `${t("appt.pay")} ${priceDisplay}`}
           </button>
 
-          {!selectedSlotIsVolunteer && (
+          {!selectedSlotIsVolunteer && !selectedSlotIsEap && (
           <p className="text-xs text-slate-400 text-center flex items-center justify-center gap-1">
             <Lock size={11} /> {t("appt.securedBy")}
           </p>

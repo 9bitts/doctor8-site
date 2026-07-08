@@ -861,3 +861,35 @@ export async function sendEmployerWorkforceInvite({
     tag: "employer-workforce-invite",
   });
 }
+
+export async function sendEmployerWhistleblowerAlert({
+  emails,
+  companyName,
+  protocolCode,
+  category,
+}: {
+  emails: string[];
+  companyName: string;
+  protocolCode: string;
+  category: string;
+}) {
+  const panelUrl = `${getAppUrl()}/empresas/denuncias`;
+  const subject = `[Doctor8 Empresas] Nova denúncia — ${protocolCode}`;
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">Nova denúncia registrada no canal de <strong>${companyName}</strong>.</p>
+    <p style="color:#4a6070;font-size:14px;"><strong>Protocolo:</strong> ${protocolCode}<br/><strong>Categoria:</strong> ${category}</p>
+    <p style="color:#6b7280;font-size:13px;">O conteúdo é anônimo. Acesse o painel para atualizar o status.</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${panelUrl}" style="background:#0284c7;color:white;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;">Ver denúncias</a>
+    </div>`;
+
+  for (const to of emails) {
+    await sendTransactionalEmail({
+      to,
+      subject,
+      html: emailShell("Canal de denúncias", body, "pt"),
+      text: `Nova denúncia ${protocolCode} — ${companyName}. Painel: ${panelUrl}`,
+      tag: "employer-whistleblower-alert",
+    });
+  }
+}

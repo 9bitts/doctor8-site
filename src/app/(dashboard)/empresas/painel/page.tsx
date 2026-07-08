@@ -14,6 +14,7 @@ import {
   ArrowRight,
   FileDown,
 } from "lucide-react";
+import EmployerOnboardingCard from "@/components/employer/EmployerOnboardingCard";
 
 export default async function EmpresasPainelPage() {
   const session = await auth();
@@ -74,6 +75,7 @@ export default async function EmpresasPainelPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
+      <EmployerOnboardingCard />
       <div>
         <p className="text-sm text-sky-600 font-medium">Doctor8 Empresas · NR-1</p>
         <h1 className="text-2xl font-bold text-slate-900 mt-1">{company.nomeFantasia}</h1>

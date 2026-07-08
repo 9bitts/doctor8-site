@@ -62,6 +62,13 @@ export default function RegisterEmployerStaffPage() {
         }),
       });
       const data = await res.json();
+      if (res.status === 409) {
+        setError(data.error?.email?.[0] || "Conta existente.");
+        if (data.acceptUrl) {
+          setTimeout(() => router.push(data.acceptUrl), 2000);
+        }
+        return;
+      }
       if (!res.ok) {
         setError(data.error?.general?.[0] || data.error?.email?.[0] || "Erro ao criar conta");
         return;

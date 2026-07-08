@@ -82,7 +82,10 @@ export async function POST(req: NextRequest) {
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json(
-        { error: { email: ["Este e-mail já possui conta. Faça login e aceite o convite."] } },
+        {
+          error: { email: ["Este e-mail já possui conta."] },
+          acceptUrl: `/empresas/equipe/aceitar?token=${encodeURIComponent(data.data.token)}`,
+        },
         { status: 409 },
       );
     }

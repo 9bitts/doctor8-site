@@ -19,6 +19,8 @@ import {
   assertScheduledVolunteerSlotBooking,
   VolunteerSlotBookingError,
 } from "@/lib/volunteer-slot-booking";
+import { EAP_BOOKING_SOURCE } from "@/lib/employer-eap-booking";
+import { resolveWorkforceSessionQuota } from "@/lib/employer-workforce";
 
 type BookingProviderType = ProviderType | "integrative";
 
@@ -42,6 +44,8 @@ export type ConsultationPaymentMeta = {
   durationMins?: string;
   patientName?: string;
   volunteerBooking?: string;
+  eapBooking?: string;
+  workforceMemberId?: string;
 };
 
 export class AppointmentSlotTakenError extends Error {
@@ -141,6 +145,42 @@ export async function fulfillScheduledVolunteerConsultation(params: {
   });
 }
 
+export async function fulfillEapConsultation(params: {
+  userId: string;
+  professionalId: string;
+  scheduledAt: string;
+  type: "TELECONSULT" | "IN_PERSON";
+  acceptedCancellationPolicy: boolean;
+  workforceMemberId: string;
+  visitReason?: string;
+  healthPlanSlug?: string;
+  healthPlanLabel?: string;
+  serviceId?: string;
+  serviceName?: string;
+}): Promise<{ appointmentId: string; created: boolean }> {
+  return fulfillConsultationPayment({
+    stripePaymentId: "",
+    amount: 0,
+    currency: "BRL",
+    metadata: {
+      userId: params.userId,
+      providerType: "health",
+      professionalId: params.professionalId,
+      scheduledAt: params.scheduledAt,
+      type: params.type,
+      visitReason: params.visitReason,
+      healthPlanSlug: params.healthPlanSlug,
+      healthPlanLabel: params.healthPlanLabel,
+      serviceId: params.serviceId,
+      serviceName: params.serviceName,
+      acceptedCancellationPolicy: params.acceptedCancellationPolicy ? "true" : undefined,
+      bookingSource: EAP_BOOKING_SOURCE,
+      eapBooking: "true",
+      workforceMemberId: params.workforceMemberId,
+    },
+  });
+}
+
 export async function fulfillVolunteerConsultation(params: {
   userId: string;
   providerType: "health" | "psychoanalyst";
@@ -187,7 +227,9 @@ export async function fulfillConsultationPayment(params: {
   revalidateBeforeCreate?: () => Promise<void>;
 }): Promise<{ appointmentId: string; created: boolean }> {
   const { stripePaymentId, amount, currency, metadata, revalidateBeforeCreate } = params;
-  const isVolunteerBooking = metadata.volunteerBooking === "true" || amount === 0;
+  const isVolunteerBooking = metadata.volunteerBooking === "true";
+  const isEapBooking = metadata.eapBooking === "true";
+  const isZeroPriceBooking = isVolunteerBooking || isEapBooking || amount === 0;
   const {
     userId,
     scheduledAt,
@@ -282,7 +324,7 @@ export async function fulfillConsultationPayment(params: {
         ? { integrativeTherapistId: providerId }
         : { professionalId: providerId };
 
-  if (!isVolunteerBooking && stripePaymentId) {
+  if (!isZeroPriceBooking && stripePaymentId) {
     const expectedAmount = await resolveExpectedConsultationPriceCents(
       providerType,
       providerId,
@@ -303,7 +345,7 @@ export async function fulfillConsultationPayment(params: {
     const result = await db.$transaction(
       async (tx) => {
         const existingPayment =
-          stripePaymentId && !isVolunteerBooking
+          stripePaymentId && !isZeroPriceBooking
             ? await tx.appointment.findFirst({ where: { stripePaymentId } })
             : null;
         if (existingPayment) {
@@ -323,6 +365,41 @@ export async function fulfillConsultationPayment(params: {
           await revalidateBeforeCreate();
         }
 
+        let workforceMemberId: string | null = null;
+        if (isEapBooking) {
+          const wfId = metadata.workforceMemberId?.trim();
+          if (!wfId) throw new Error("Missing EAP workforce member");
+          const wf = await tx.employerWorkforceMember.findUnique({
+            where: { id: wfId },
+            include: { employerCompany: { include: { eapBenefit: true } } },
+          });
+          if (!wf || wf.status !== "ACTIVE") {
+            throw new Error("EAP membership invalid");
+          }
+          if (wf.userId && wf.userId !== userId) {
+            throw new Error("EAP membership invalid");
+          }
+          if (!wf.userId) {
+            const u = await tx.user.findUnique({ where: { id: userId }, select: { email: true } });
+            if (!u || u.email.toLowerCase() !== wf.email.toLowerCase()) {
+              throw new Error("EAP membership invalid");
+            }
+          }
+          if (!wf.employerCompany.eapBenefit?.enabled) {
+            throw new Error("EAP benefit disabled");
+          }
+          const quota = resolveWorkforceSessionQuota(
+            wf.sessionsQuota,
+            wf.employerCompany.eapBenefit.sessionsPerEmployee,
+          );
+          if (wf.sessionsUsed >= quota) throw new Error("EAP quota exceeded");
+          await tx.employerWorkforceMember.update({
+            where: { id: wf.id },
+            data: { sessionsUsed: { increment: 1 } },
+          });
+          workforceMemberId = wf.id;
+        }
+
         const createdAppointment = await tx.appointment.create({
           data: {
             patientId: patient.id,
@@ -339,11 +416,14 @@ export async function fulfillConsultationPayment(params: {
             type: (type as "TELECONSULT" | "IN_PERSON") || "TELECONSULT",
             status: "CONFIRMED",
             priceAmount: amount,
-            currency: isVolunteerBooking ? "BRL" : currency,
-            stripePaymentId: isVolunteerBooking ? null : stripePaymentId,
-            paidAt: isVolunteerBooking ? null : new Date(),
+            currency: isZeroPriceBooking ? "BRL" : currency,
+            stripePaymentId: isZeroPriceBooking ? null : stripePaymentId,
+            paidAt: isZeroPriceBooking ? null : new Date(),
             durationMins,
-            bookingSource: (bookingSource as any) || (isVolunteerBooking ? "acura_volunteer" : "patient_panel"),
+            bookingSource: isEapBooking
+              ? EAP_BOOKING_SOURCE
+              : (bookingSource as string) || (isVolunteerBooking ? "acura_volunteer" : "patient_panel"),
+            employerWorkforceMemberId: workforceMemberId,
             ...(intakePayload ? { chiefComplaint: intakePayload } : {}),
           },
         });
@@ -357,7 +437,7 @@ export async function fulfillConsultationPayment(params: {
   } catch (e) {
     if (
       stripePaymentId &&
-      !isVolunteerBooking &&
+      !isZeroPriceBooking &&
       e instanceof Prisma.PrismaClientKnownRequestError &&
       e.code === "P2002"
     ) {
