@@ -49,6 +49,17 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
     scheduleMinute: 30,
     timezone: "America/Sao_Paulo",
   },
+  {
+    id: "medicos-pela-vida",
+    titleKey: "meetRoom.medicosPelaVida.title",
+    subjectKey: "meetRoom.medicosPelaVida.subject",
+    audienceKey: "meetRoom.medicosPelaVida.audience",
+    scheduleHour: 20,
+    scheduleMinute: 0,
+    timezone: "America/Sao_Paulo",
+    dialIn: "(DE) +49 30 300195060 · PIN: 714 236 139 9552#",
+    phoneNumbersUrl: "https://tel.meet/dtp-rdjw-wuz?pin=7142361399552",
+  },
 ];
 
 export function getMeetingRoomInvitePath(roomId: string): string {
@@ -81,11 +92,13 @@ const MEETING_ROOM_URL_BY_ID: Record<string, string | undefined> = {
   "alianca-pela-vida": process.env.NEXT_PUBLIC_MEETING_ROOM_ALIANCA_PELA_VIDA_URL,
   "nise-yamaguchi": process.env.NEXT_PUBLIC_MEETING_ROOM_NISE_URL,
   "treinamento-doctor8": process.env.NEXT_PUBLIC_MEETING_ROOM_DOCTOR8_URL,
+  "medicos-pela-vida": process.env.NEXT_PUBLIC_MEETING_ROOM_MEDICOS_PELA_VIDA_URL,
 };
 
 const MEETING_ROOM_URL_FALLBACK: Record<string, string> = {
   "alianca-pela-vida": "https://meet.google.com/knj-ohde-eih",
   "treinamento-doctor8": "https://meet.google.com/kbe-vkof-xza",
+  "medicos-pela-vida": "https://meet.google.com/dtp-rdjw-wuz",
 };
 
 export function getMeetingRoomMeetUrl(roomId: string): string | null {
