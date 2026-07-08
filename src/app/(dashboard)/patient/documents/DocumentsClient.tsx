@@ -5,6 +5,7 @@
 // share own documents WITH A DOCTOR + UN-SHARE (4D-2). i18n via useT().
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
 import { getProfessionLabel } from "@/lib/professions";
@@ -544,9 +545,18 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                   <span>{t("docs.share.loadError")}</span>
                 </div>
               ) : !doctors || doctors.length === 0 ? (
-                <div className="flex items-start gap-2 text-sm text-amber-600 bg-amber-50 rounded-xl px-4 py-3">
-                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  <span>{t("docs.share.none")}</span>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 text-sm text-amber-600 bg-amber-50 rounded-xl px-4 py-3">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    <span>{t("docs.share.none")}</span>
+                  </div>
+                  <Link
+                    href="/patient/appointments"
+                    onClick={() => setShareDocId(null)}
+                    className="w-full py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm text-center block transition"
+                  >
+                    {t("docs.share.bookFirst")}
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-2">

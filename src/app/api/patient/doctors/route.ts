@@ -1,10 +1,10 @@
 // src/app/api/patient/doctors/route.ts
 // GET — list the doctors this patient is allowed to share documents with.
-// Eligibility: at least one appointment with status CONFIRMED or COMPLETED.
+// Eligibility: CONFIRMED/COMPLETED appointment, or CANCELLED within the grace period.
 import { NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
-import { PATIENT_DOCTOR_ELIGIBLE_STATUSES } from "@/lib/patient-doctor-eligibility";
+import { patientDoctorEligibleAppointmentWhere } from "@/lib/patient-doctor-eligibility";
 
 export async function GET() {
   const ctx = await requirePatient();
@@ -12,7 +12,7 @@ export async function GET() {
   const { patientProfileId } = ctx;
 
   const appts = await db.appointment.findMany({
-    where: { patientId: patientProfileId, status: { in: [...PATIENT_DOCTOR_ELIGIBLE_STATUSES] } },
+    where: patientDoctorEligibleAppointmentWhere(patientProfileId),
     select: {
       professional: {
         select: {

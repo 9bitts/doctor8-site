@@ -30,7 +30,12 @@ const appointmentListSelect = {
   meetingUrl: true,
   chiefComplaint: true,
   notes: true,
+  cancelledAt: true,
+  cancelReason: true,
+  cancelledBy: true,
 } as const;
+
+const UPCOMING_ACTIVE_STATUSES = ["CONFIRMED", "PENDING"] as const;
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -60,7 +65,12 @@ export async function GET(req: NextRequest) {
       where: {
         patientId: patient.id,
         ...(status ? { status: status as any } : {}),
-        ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
+        ...(upcoming
+          ? {
+              scheduledAt: { gte: new Date() },
+              status: { in: [...UPCOMING_ACTIVE_STATUSES] },
+            }
+          : {}),
         ...(dateRange ? { scheduledAt: dateRange } : {}),
       },
       select: {

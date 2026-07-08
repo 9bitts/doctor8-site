@@ -85,6 +85,8 @@ interface Appointment {
   psychoanalystId?: string;
   providerType?: "health" | "psychoanalyst";
   patientConfirmedAt?: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
   professional: { firstName: string; lastName: string; specialty: string };
 }
 
@@ -150,6 +152,7 @@ export default function AppointmentsPage() {
   } | null>(null);
   const [type, setType]                   = useState<"TELECONSULT" | "IN_PERSON">("TELECONSULT");
   const [appointments, setAppointments]   = useState<Appointment[]>([]);
+  const [cancelledAppointments, setCancelledAppointments] = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
 
   // CDC policy checkbox
@@ -160,7 +163,7 @@ export default function AppointmentsPage() {
   const [rescheduleModal, setRescheduleModal] = useState<Appointment | null>(null);
   const [cancelReason,    setCancelReason]    = useState("");
   const [cancelLoading,   setCancelLoading]   = useState(false);
-  const [cancelResult,    setCancelResult]    = useState<{ refunded: boolean; hoursUntil: number } | null>(null);
+  const [cancelResult,    setCancelResult]    = useState<{ refunded: boolean; hoursUntil: number; alreadyCancelled?: boolean } | null>(null);
   const [cancelError,     setCancelError]     = useState<string | null>(null);
   const [rescheduleSlots, setRescheduleSlots] = useState<SlotDay[]>([]);
   const [rescheduleDay,   setRescheduleDay]   = useState<SlotDay | null>(null);
@@ -198,7 +201,7 @@ export default function AppointmentsPage() {
   const [healthPlanSlug, setHealthPlanSlug] = useState("particular");
   const [visitReason, setVisitReason] = useState("");
 
-  useEffect(() => { fetchProfessionals(); fetchAppointments(); fetchPastAppointments(); fetchReviewStatus(); }, []);
+  useEffect(() => { fetchProfessionals(); fetchAppointments(); fetchCancelledAppointments(); fetchPastAppointments(); fetchReviewStatus(); }, []);
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
@@ -229,6 +232,7 @@ export default function AppointmentsPage() {
           setConfirmedId(data.appointmentId);
           setStep("confirmed");
           fetchAppointments();
+          fetchCancelledAppointments();
         } else if (data.status === "pending") {
           setCheckoutPending(data.message || t("appt.paymentPending"));
           setStep("payment");
@@ -377,6 +381,16 @@ export default function AppointmentsPage() {
     const res = await fetch("/api/appointments?upcoming=true");
     const d   = await res.json();
     setAppointments(d.appointments || []);
+  }
+
+  async function fetchCancelledAppointments() {
+    const res = await fetch("/api/appointments?status=CANCELLED");
+    const d = await res.json();
+    const sorted = (d.appointments || []).sort(
+      (a: Appointment, b: Appointment) =>
+        new Date(b.cancelledAt || b.scheduledAt).getTime() - new Date(a.cancelledAt || a.scheduledAt).getTime()
+    );
+    setCancelledAppointments(sorted.slice(0, 10));
   }
 
   async function fetchPastAppointments() {
@@ -780,8 +794,13 @@ export default function AppointmentsPage() {
         setCancelError(typeof data.error === "string" && data.error ? data.error : t("appt.cancelError"));
         return;
       }
-      setCancelResult({ refunded: data.refunded === true, hoursUntil: data.hoursUntil });
+      if (data.alreadyCancelled) {
+        setCancelResult({ refunded: false, hoursUntil: 0, alreadyCancelled: true });
+      } else {
+        setCancelResult({ refunded: data.refunded === true, hoursUntil: data.hoursUntil });
+      }
       fetchAppointments();
+      fetchCancelledAppointments();
     } catch {
       setCancelError(t("appt.cancelError"));
     } finally {
@@ -959,8 +978,8 @@ export default function AppointmentsPage() {
           <div className="space-y-2">
             {appointments.slice(0, 3).map((apt) => {
               const hoursUntil = (new Date(apt.scheduledAt).getTime() - Date.now()) / 3600000;
-              const canCancel  = hoursUntil > 0;
-              const canReschedule = hoursUntil > 24;
+              const canCancel  = hoursUntil > 0 && apt.status !== "CANCELLED";
+              const canReschedule = hoursUntil > 24 && apt.status !== "CANCELLED";
               const within48h = hoursUntil > 0 && hoursUntil <= 48;
               const isVolunteerAppt = isScheduledVolunteerAppointment(apt);
               return (
@@ -1008,6 +1027,55 @@ export default function AppointmentsPage() {
                       </button>
                     )}
                   </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {cancelledAppointments.length > 0 && step === "browse" && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4">
+          <p className="text-sm font-semibold text-rose-800 mb-3 flex items-center gap-2">
+            <X size={15} /> {t("appt.cancelledTitle")}
+          </p>
+          <div className="space-y-2">
+            {cancelledAppointments.map((apt) => {
+              const isVolunteerAppt = isScheduledVolunteerAppointment(apt);
+              return (
+                <div key={apt.id} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm flex-wrap opacity-90">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-700 truncate flex items-center gap-2 flex-wrap">
+                      Dr. {apt.professional?.firstName} {apt.professional?.lastName}
+                      <span className="text-[10px] font-bold uppercase tracking-wide bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">
+                        {t("status.CANCELLED")}
+                      </span>
+                      {isVolunteerAppt && (
+                        <span className="text-[10px] font-bold uppercase tracking-wide bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                          {t("volAppt.badge")}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-slate-500">{getProfessionLabel(lang, apt.professional?.specialty)}</p>
+                    {apt.cancelReason && (
+                      <p className="text-xs text-slate-400 mt-1 truncate">{apt.cancelReason}</p>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-semibold text-slate-600">
+                      {formatShortDate(new Date(apt.scheduledAt), userTz, locale)}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), userTz, locale)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => rebookFromPast(apt)}
+                    className="flex items-center gap-1 text-xs font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-2 rounded-lg transition shrink-0"
+                  >
+                    <Calendar size={13} /> {t("appt.rebookCta")}
+                  </button>
                 </div>
               );
             })}
@@ -1532,6 +1600,13 @@ export default function AppointmentsPage() {
               {t("appt.addToCalendar")}
             </a>
           )}
+          <Link
+            href="/patient/documents"
+            className="inline-flex items-center justify-center gap-2 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl transition"
+          >
+            <FileText size={18} />
+            {t("appt.sendDocumentNow")}
+          </Link>
           <p className="text-sm text-slate-500">{t("appt.emailSent")}</p>
           {userId && <PushPermissionPrompt context="booking" userId={userId} />}
           <button onClick={resetFlow} className="w-full bg-slate-900 text-white font-semibold py-3.5 rounded-xl hover:bg-slate-700 transition">
@@ -1548,11 +1623,23 @@ export default function AppointmentsPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             {cancelResult ? (
               <>
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto ${cancelResult.refunded ? "bg-emerald-100" : "bg-amber-100"}`}>
-                  {cancelResult.refunded ? <CheckCircle2 size={28} className="text-emerald-500" /> : <AlertTriangle size={28} className="text-amber-500" />}
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto ${cancelResult.alreadyCancelled ? "bg-rose-100" : cancelResult.refunded ? "bg-emerald-100" : "bg-amber-100"}`}>
+                  {cancelResult.alreadyCancelled ? (
+                    <X size={28} className="text-rose-500" />
+                  ) : cancelResult.refunded ? (
+                    <CheckCircle2 size={28} className="text-emerald-500" />
+                  ) : (
+                    <AlertTriangle size={28} className="text-amber-500" />
+                  )}
                 </div>
-                <h3 className="font-bold text-slate-900 text-center text-lg">{t("appt.cancelDoneTitle")}</h3>
-                {cancelIsVolunteer ? (
+                <h3 className="font-bold text-slate-900 text-center text-lg">
+                  {cancelResult.alreadyCancelled ? t("appt.cancelAlreadyTitle") : t("appt.cancelDoneTitle")}
+                </h3>
+                {cancelResult.alreadyCancelled ? (
+                  <p className="text-sm text-rose-700 text-center bg-rose-50 rounded-xl p-3">
+                    {t("appt.cancelAlreadyBody")}
+                  </p>
+                ) : cancelIsVolunteer ? (
                   <p className="text-sm text-emerald-700 text-center bg-emerald-50 rounded-xl p-3">
                     {t("volAppt.cancelDone")}
                   </p>

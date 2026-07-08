@@ -97,6 +97,26 @@ export default async function PatientDashboard() {
 
   if (!patient) redirect("/onboarding");
 
+  const cancelledAppointments = await db.appointment.findMany({
+    where: {
+      patientId: patient.id,
+      status: "CANCELLED",
+    },
+    orderBy: { cancelledAt: "desc" },
+    take: 5,
+    include: {
+      professional: {
+        select: { firstName: true, lastName: true, specialty: true },
+      },
+      psychoanalyst: {
+        select: { firstName: true, lastName: true },
+      },
+      integrativeTherapist: {
+        select: { firstName: true, lastName: true },
+      },
+    },
+  });
+
   await audit.viewRecord(userId, "PatientProfile", patient.id);
 
   const decrypted = decryptPatientFields(
@@ -508,7 +528,7 @@ export default async function PatientDashboard() {
           icon={<Calendar size={16} />}
           viewAllLabel={t("common.viewAll")}
         >
-          {patient.appointments.length === 0 ? (
+          {patient.appointments.length === 0 && cancelledAppointments.length === 0 ? (
             <EmptyState
               icon={<Calendar size={28} className="text-slate-300" />}
               message={t("pdash.upcoming.empty")}
@@ -580,6 +600,56 @@ export default async function PatientDashboard() {
                     )}
                   </div>
                 </div>
+                );
+              })}
+              {cancelledAppointments.map((apt) => {
+                const pro = apt.professional ?? apt.psychoanalyst ?? apt.integrativeTherapist;
+                const specialtyLabel = apt.professional
+                  ? getProfessionLabel(lang, apt.professional.specialty)
+                  : apt.psychoanalyst
+                    ? t("providers.typePsychoanalyst")
+                    : t("providers.typeIntegrative");
+                const prefix = apt.professional ? "Dr. " : "";
+                if (!pro) return null;
+                const proFirstName = safeDecrypt(pro.firstName);
+                const proLastName = safeDecrypt(pro.lastName);
+                return (
+                  <div
+                    key={apt.id}
+                    className="flex flex-col gap-3 sm:flex-row sm:items-center p-4 bg-rose-50/60 border border-rose-100 rounded-xl"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-sm shrink-0 opacity-70">
+                        {proFirstName.charAt(0)}{proLastName.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-700 text-sm truncate flex items-center gap-2 flex-wrap">
+                          {prefix}{proFirstName} {proLastName}
+                          <span className="text-[10px] font-bold uppercase tracking-wide bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">
+                            {t("status.CANCELLED")}
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-500">{specialtyLabel}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                      <div className="text-left sm:text-right">
+                        <p className="text-xs font-semibold text-slate-600">
+                          {formatShortDate(new Date(apt.scheduledAt), userTz, locale)}
+                        </p>
+                        <p className="text-xs text-slate-400 flex items-center gap-1 sm:justify-end">
+                          <Clock size={10} />
+                          {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), userTz, locale)}
+                        </p>
+                      </div>
+                      <Link
+                        href="/patient/appointments"
+                        className="shrink-0 text-xs font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-2 rounded-lg transition"
+                      >
+                        {t("appt.rebookCta")}
+                      </Link>
+                    </div>
+                  </div>
                 );
               })}
             </div>
