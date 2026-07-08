@@ -406,9 +406,22 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
     }
 
     if (cs.mode === "subscription") {
-      const userId = cs.metadata?.userId;
+      const planKind = cs.metadata?.planKind;
       const customerId = cs.customer as string;
       const subscriptionId = cs.subscription as string;
+
+      if (planKind === "employer" && cs.metadata?.employerCompanyId && subscriptionId) {
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        const { syncEmployerSubscription } = await import("@/lib/employer-billing");
+        await syncEmployerSubscription({
+          employerCompanyId: cs.metadata.employerCompanyId,
+          stripeCustomerId: customerId,
+          subscription: sub,
+        });
+        return;
+      }
+
+      const userId = cs.metadata?.userId;
       if (userId && subscriptionId) {
         const sub = await stripe.subscriptions.retrieve(subscriptionId);
         await db.subscription.upsert({
@@ -444,6 +457,25 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
     event.type === "customer.subscription.deleted"
   ) {
     const sub = event.data.object as Stripe.Subscription;
+    const employerBilling = await db.employerBilling.findFirst({
+      where: { stripeCustomerId: sub.customer as string },
+    });
+    if (employerBilling) {
+      const { syncEmployerSubscription } = await import("@/lib/employer-billing");
+      await syncEmployerSubscription({
+        employerCompanyId: employerBilling.employerCompanyId,
+        stripeCustomerId: sub.customer as string,
+        subscription: sub,
+      });
+      if (event.type === "customer.subscription.deleted") {
+        await db.employerCompany.update({
+          where: { id: employerBilling.employerCompanyId },
+          data: { planTier: "PILOT" },
+        });
+      }
+      return;
+    }
+
     const existing = await db.subscription.findFirst({
       where: { stripeCustomerId: sub.customer as string },
     });

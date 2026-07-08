@@ -3303,6 +3303,9 @@ model JitQueue {
   paymentId       String?         @unique
   payment         JitPayment?     @relation(fields: [paymentId], references: [id])
 
+  employerWorkforceMemberId String?
+  employerWorkforceMember   EmployerWorkforceMember? @relation(fields: [employerWorkforceMemberId], references: [id], onDelete: SetNull)
+
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -4289,6 +4292,8 @@ model EmployerCompany {
   pcmsoConfig          EmployerPcmsoConfig?
   linkedPsychologists  EmployerLinkedPsychologist[]
   occupationalPhysicians EmployerOccupationalPhysician[]
+  billing              EmployerBilling?
+  webhookEndpoints     EmployerWebhookEndpoint[]
 
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
@@ -4376,6 +4381,7 @@ model EmployerWorkforceMember {
   activatedAt      DateTime?
 
   eapAppointments  Appointment[]
+  eapJitQueues     JitQueue[]
 
   @@unique([employerCompanyId, email])
   @@index([employerCompanyId])
@@ -4520,6 +4526,8 @@ model EmployerEapBenefit {
 
   enabled             Boolean         @default(true)
   sessionsPerEmployee Int             @default(6)
+  sessionPriceCents   Int             @default(12000)
+  quotaYear           Int             @default(2026)
   jitEnabled          Boolean         @default(false)
   notes               String?         @db.Text
 
@@ -4577,6 +4585,7 @@ model EmployerPcmsoConfig {
 }
 
 enum EmployerLinkedPsychologistStatus {
+  INVITED
   ACTIVE
   INACTIVE
 }
@@ -4588,11 +4597,48 @@ model EmployerLinkedPsychologist {
   professionalId    String
   professional      ProfessionalProfile              @relation(fields: [professionalId], references: [id], onDelete: Cascade)
   repassePercent    Float                            @default(70)
-  status            EmployerLinkedPsychologistStatus @default(ACTIVE)
+  status            EmployerLinkedPsychologistStatus @default(INVITED)
   notes             String?                          @db.Text
-  joinedAt          DateTime                         @default(now())
+  inviteToken       String?                          @unique
+  expiresAt         DateTime?
+  invitedAt         DateTime                         @default(now())
+  joinedAt          DateTime?
 
   @@unique([employerCompanyId, professionalId])
   @@index([employerCompanyId])
   @@index([professionalId])
+}
+
+model EmployerBilling {
+  id                   String          @id @default(cuid())
+  employerCompanyId    String          @unique
+  employerCompany      EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  stripeCustomerId     String?         @unique
+  stripeSubscriptionId String?         @unique
+  stripePriceId        String?
+
+  status               String          @default("trialing")
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean         @default(false)
+
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+model EmployerWebhookEndpoint {
+  id                String          @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  label             String?
+  url               String
+  secret            String
+  events            Json            @default("[]")
+  enabled           Boolean         @default(true)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([employerCompanyId])
 }

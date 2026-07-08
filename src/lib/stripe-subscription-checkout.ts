@@ -12,17 +12,26 @@ export function buildSubscriptionCheckoutParams(params: {
   priceId: string;
   currency: string;
   userId: string;
-  planKind: "club" | "professional";
+  planKind: "club" | "professional" | "employer";
   successPath: string;
   cancelPath: string;
   paymentMethodTypes?: string[];
   includeBrazilTaxId?: boolean;
+  employerCompanyId?: string;
+  planTier?: string;
 }) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org";
   const methodTypes =
     params.paymentMethodTypes ?? getSubscriptionPaymentMethodTypes(params.currency);
   const withTaxId =
     params.includeBrazilTaxId ?? needsBrazilTaxId(params.currency);
+
+  const metadata: Record<string, string> = {
+    userId: params.userId,
+    planKind: params.planKind,
+  };
+  if (params.employerCompanyId) metadata.employerCompanyId = params.employerCompanyId;
+  if (params.planTier) metadata.planTier = params.planTier;
 
   return {
     customer: params.customerId,
@@ -31,10 +40,8 @@ export function buildSubscriptionCheckoutParams(params: {
     line_items: [{ price: params.priceId, quantity: 1 }],
     success_url: `${appUrl}${params.successPath}`,
     cancel_url: `${appUrl}${params.cancelPath}`,
-    metadata: { userId: params.userId, planKind: params.planKind },
-    subscription_data: {
-      metadata: { userId: params.userId, planKind: params.planKind },
-    },
+    metadata,
+    subscription_data: { metadata },
     billing_address_collection: "auto" as const,
     ...(withTaxId
       ? {

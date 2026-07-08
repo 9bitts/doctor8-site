@@ -8,6 +8,7 @@ export default function EapPage() {
   const [loading, setLoading] = useState(true);
   const [enabled, setEnabled] = useState(true);
   const [sessionsPerEmployee, setSessionsPerEmployee] = useState(6);
+  const [sessionPriceCents, setSessionPriceCents] = useState(12000);
   const [jitEnabled, setJitEnabled] = useState(false);
   const [utilization, setUtilization] = useState({ activeMembers: 0, totalSessionsUsed: 0 });
 
@@ -18,6 +19,7 @@ export default function EapPage() {
     if (data.benefit) {
       setEnabled(data.benefit.enabled);
       setSessionsPerEmployee(data.benefit.sessionsPerEmployee);
+      setSessionPriceCents(data.benefit.sessionPriceCents ?? 12000);
       setJitEnabled(data.benefit.jitEnabled);
     }
     setUtilization(data.utilization ?? { activeMembers: 0, totalSessionsUsed: 0 });
@@ -30,7 +32,7 @@ export default function EapPage() {
     await fetch("/api/employer/eap", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled, sessionsPerEmployee, jitEnabled }),
+      body: JSON.stringify({ enabled, sessionsPerEmployee, sessionPriceCents, jitEnabled }),
     });
     load();
   }
@@ -61,6 +63,21 @@ export default function EapPage() {
             onChange={(e) => setSessionsPerEmployee(+e.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
           />
+        </label>
+        <label className="block text-sm text-slate-600">
+          Valor da sessão (centavos BRL) — base do repasse ao psicólogo
+          <input
+            type="number"
+            min={0}
+            max={1000000}
+            step={100}
+            value={sessionPriceCents}
+            onChange={(e) => setSessionPriceCents(+e.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
+          />
+          <span className="text-xs text-slate-400 mt-1 block">
+            Ex.: 12000 = R$ 120,00 por sessão concluída
+          </span>
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={jitEnabled} onChange={(e) => setJitEnabled(e.target.checked)} />

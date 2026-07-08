@@ -4,6 +4,7 @@ import { getEmployerMembership } from "@/lib/employer-auth";
 import { resolveRoleHome } from "@/lib/role-home";
 import Link from "next/link";
 import { CopyLinkButton } from "@/components/employer/CopyLinkButton";
+import { EmployerBillingSection, EmployerWebhooksSection } from "@/components/employer/EmployerSettingsSections";
 
 export default async function ConfiguracoesPage() {
   const session = await auth();
@@ -30,6 +31,9 @@ export default async function ConfiguracoesPage() {
           <p className="text-sm text-slate-500">Grau de risco: {company.grauRisco}</p>
         )}
       </section>
+
+      <EmployerBillingSection />
+      <EmployerWebhooksSection />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
         <h2 className="font-semibold text-slate-800">Canal de denúncia (assédio)</h2>

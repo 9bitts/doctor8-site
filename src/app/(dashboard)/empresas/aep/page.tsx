@@ -14,15 +14,25 @@ type AepRecord = {
   workerParticipation: string | null;
   notes: string | null;
   approvedByName: string | null;
+  surveyCampaignId: string | null;
   _count: { riskEntries: number };
+};
+
+type SurveyCampaign = {
+  id: string;
+  title: string;
+  instrument: string;
+  status: string;
 };
 
 export default function AepPage() {
   const [records, setRecords] = useState<AepRecord[]>([]);
+  const [campaigns, setCampaigns] = useState<SurveyCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("AEP — Riscos psicossociais");
   const [methodologyRationale, setMethodologyRationale] = useState("");
   const [workerParticipation, setWorkerParticipation] = useState("");
+  const [surveyCampaignId, setSurveyCampaignId] = useState("");
   const [error, setError] = useState("");
   const [approvedByName, setApprovedByName] = useState("");
 
@@ -31,6 +41,7 @@ export default function AepPage() {
     const res = await fetch("/api/employer/nr1/aep");
     const data = await res.json();
     setRecords(data.records ?? []);
+    setCampaigns(data.campaigns ?? []);
     setLoading(false);
   }
 
@@ -47,8 +58,19 @@ export default function AepPage() {
         methodology: "COPSOQ-LITE + entrevistas + observação",
         methodologyRationale,
         workerParticipation,
+        surveyCampaignId: surveyCampaignId || undefined,
         status: "IN_PROGRESS",
       }),
+    });
+    load();
+  }
+
+  async function linkSurvey(id: string, campaignId: string) {
+    setError("");
+    await fetch("/api/employer/nr1/aep", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, surveyCampaignId: campaignId || null }),
     });
     load();
   }
@@ -86,13 +108,21 @@ export default function AepPage() {
     load();
   }
 
+  const campaignLabel = (id: string | null) => {
+    if (!id) return null;
+    const c = campaigns.find((x) => x.id === id);
+    return c ? `${c.title} (${c.instrument})` : id;
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Avaliação Ergonômica Preliminar (AEP)</h1>
         <p className="text-slate-500 text-sm mt-1">
           Obrigatória para todas as empresas (NR-17 + NR-1). Vincule riscos em{" "}
-          <Link href="/empresas/nr1" className="text-sky-600 hover:underline">Inventário NR-1</Link>.
+          <Link href="/empresas/nr1" className="text-sky-600 hover:underline">Inventário NR-1</Link>
+          {" "}e pesquisas em{" "}
+          <Link href="/empresas/pesquisas" className="text-sky-600 hover:underline">Pesquisas</Link>.
         </p>
       </div>
 
@@ -119,6 +149,21 @@ export default function AepPage() {
           placeholder="Participação dos trabalhadores / CIPA"
           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[72px]"
         />
+        <label className="block text-sm text-slate-600">
+          Pesquisa vinculada (opcional)
+          <select
+            value={surveyCampaignId}
+            onChange={(e) => setSurveyCampaignId(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          >
+            <option value="">Nenhuma</option>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title} — {c.instrument} ({c.status})
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium">
           <Plus size={16} /> Iniciar AEP
         </button>
@@ -140,7 +185,7 @@ export default function AepPage() {
         <ul className="space-y-3">
           {records.map((r) => (
             <li key={r.id} className="rounded-xl border border-slate-200 p-4 bg-white flex justify-between gap-4 items-start">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="font-medium text-slate-900 flex items-center gap-2">
                   {r.title} · v{r.version}
                   {(r.status === "COMPLETED" || r.status === "APPROVED") && (
@@ -152,6 +197,24 @@ export default function AepPage() {
                 </p>
                 {r.methodology && <p className="text-xs text-slate-600 mt-2">Método: {r.methodology}</p>}
                 {r.approvedByName && <p className="text-xs text-slate-600">Aprovado por: {r.approvedByName}</p>}
+                <label className="block text-xs text-slate-500 mt-3">
+                  Pesquisa vinculada
+                  <select
+                    value={r.surveyCampaignId ?? ""}
+                    onChange={(e) => linkSurvey(r.id, e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+                  >
+                    <option value="">Nenhuma</option>
+                    {campaigns.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title} — {c.instrument}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {r.surveyCampaignId && (
+                  <p className="text-xs text-sky-600 mt-1">{campaignLabel(r.surveyCampaignId)}</p>
+                )}
               </div>
               <div className="flex flex-col gap-2 shrink-0">
                 {r.status !== "COMPLETED" && r.status !== "APPROVED" && (

@@ -46,6 +46,7 @@ export async function GET() {
     companyName: ctx.companyName,
     sessionsRemaining: ctx.sessionsRemaining,
     linkedPsychologistIds: ctx.linkedPsychologistIds,
+    jitEnabled: ctx.jitEnabled,
   });
 }
 

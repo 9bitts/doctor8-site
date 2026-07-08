@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import { requireEmployerApi } from "@/lib/api-auth";
 import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
+import { sendEmployerPsychologistNetworkLinked } from "@/lib/email";
 import { db } from "@/lib/db";
 
 export async function GET() {
@@ -10,7 +12,7 @@ export async function GET() {
 
   const links = await db.employerLinkedPsychologist.findMany({
     where: { employerCompanyId: ctx.employerCompanyId },
-    orderBy: { joinedAt: "desc" },
+    orderBy: { invitedAt: "desc" },
     include: {
       professional: {
         select: {
@@ -35,7 +37,7 @@ export async function GET() {
       verified: l.professional.verified,
       repassePercent: l.repassePercent,
       status: l.status,
-      joinedAt: l.joinedAt.toISOString(),
+      joinedAt: l.joinedAt?.toISOString() ?? l.invitedAt.toISOString(),
     })),
   });
 }
@@ -57,11 +59,24 @@ export async function POST(req: NextRequest) {
 
   const pro = await db.professionalProfile.findUnique({
     where: { id: parsed.data.professionalId, verified: true },
-    select: { specialty: true },
+    select: { specialty: true, firstName: true, lastName: true },
   });
   if (!pro || !isPsychologistSpecialty(pro.specialty)) {
     return NextResponse.json({ error: "Profissional deve ser psicólogo verificado." }, { status: 400 });
   }
+
+  const existing = await db.employerLinkedPsychologist.findUnique({
+    where: {
+      employerCompanyId_professionalId: {
+        employerCompanyId: ctx.employerCompanyId,
+        professionalId: parsed.data.professionalId,
+      },
+    },
+  });
+
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const keepActive = existing?.status === "ACTIVE";
 
   const link = await db.employerLinkedPsychologist.upsert({
     where: {
@@ -75,16 +90,53 @@ export async function POST(req: NextRequest) {
       professionalId: parsed.data.professionalId,
       repassePercent: parsed.data.repassePercent ?? 70,
       notes: parsed.data.notes,
-      status: "ACTIVE",
+      status: "INVITED",
+      inviteToken: token,
+      expiresAt,
     },
     update: {
       repassePercent: parsed.data.repassePercent,
       notes: parsed.data.notes,
-      status: "ACTIVE",
+      ...(keepActive
+        ? {}
+        : {
+            status: "INVITED",
+            inviteToken: token,
+            expiresAt,
+            invitedAt: new Date(),
+            joinedAt: null,
+          }),
     },
   });
 
-  return NextResponse.json({ link }, { status: 201 });
+  if (!keepActive) {
+    try {
+      const [company, proUser] = await Promise.all([
+        db.employerCompany.findUnique({
+          where: { id: ctx.employerCompanyId },
+          select: { nomeFantasia: true },
+        }),
+        db.user.findFirst({
+          where: { professionalProfile: { id: parsed.data.professionalId } },
+          select: { email: true, language: true },
+        }),
+      ]);
+      if (proUser?.email && company) {
+        await sendEmployerPsychologistNetworkLinked({
+          email: proUser.email,
+          psychologistName: `${pro.firstName} ${pro.lastName}`.trim(),
+          companyName: company.nomeFantasia,
+          repassePercent: link.repassePercent,
+          inviteToken: token,
+          language: proUser.language ?? undefined,
+        });
+      }
+    } catch (e) {
+      console.error("[EMPLOYER] Psychologist network email failed:", e);
+    }
+  }
+
+  return NextResponse.json({ link, invited: !keepActive }, { status: 201 });
 }
 
 const patchSchema = z.object({
@@ -106,6 +158,13 @@ export async function PATCH(req: NextRequest) {
     where: { id: parsed.data.id, employerCompanyId: ctx.employerCompanyId },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (existing.status === "INVITED" && parsed.data.status === "ACTIVE") {
+    return NextResponse.json(
+      { error: "Aguarde o psicólogo aceitar o convite." },
+      { status: 400 },
+    );
+  }
 
   const link = await db.employerLinkedPsychologist.update({
     where: { id: existing.id },

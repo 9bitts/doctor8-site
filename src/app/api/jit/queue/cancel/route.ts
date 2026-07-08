@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const entry = await db.jitQueue.findUnique({
     where: { id: parsed.data.queueId },
-    select: { id: true, patientUserId: true, status: true, paymentId: true },
+    select: { id: true, patientUserId: true, status: true, paymentId: true, employerWorkforceMemberId: true },
   });
 
   if (!entry || entry.patientUserId !== session.user.id) {
@@ -62,6 +62,15 @@ export async function POST(req: NextRequest) {
   if (entry.paymentId) {
     const result = await refundJitQueuePayment(entry.paymentId, "jit_cancelled_by_patient");
     refunded = result.refunded;
+  }
+
+  if (entry.employerWorkforceMemberId) {
+    try {
+      const { restoreEapJitSessionQuota } = await import("@/lib/employer-eap-booking");
+      await restoreEapJitSessionQuota(entry.id);
+    } catch (e) {
+      console.error("[JIT] EAP quota restore failed:", e);
+    }
   }
 
   return NextResponse.json({ success: true, refunded });

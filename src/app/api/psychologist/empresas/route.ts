@@ -21,7 +21,7 @@ export async function GET() {
   const [links, upcomingEap, completedEapYear] = await Promise.all([
     db.employerLinkedPsychologist.findMany({
       where: { professionalId: profile.id },
-      orderBy: { joinedAt: "desc" },
+      orderBy: { invitedAt: "desc" },
       include: {
         employerCompany: {
           select: { id: true, nomeFantasia: true, slug: true },
@@ -63,7 +63,7 @@ export async function GET() {
       companyName: l.employerCompany.nomeFantasia,
       repassePercent: l.repassePercent,
       status: l.status,
-      joinedAt: l.joinedAt.toISOString(),
+      joinedAt: l.joinedAt?.toISOString() ?? l.invitedAt.toISOString(),
     })),
     stats: {
       activeCompanies: links.filter((l) => l.status === "ACTIVE").length,

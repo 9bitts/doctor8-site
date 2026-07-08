@@ -39,10 +39,22 @@ export async function refreshEmployerNr1Compliance(employerCompanyId: string) {
     lastPgrReviewAt: company?.lastPgrReviewAt ?? null,
   });
 
+  const previousScore = company?.nr1ComplianceScore ?? null;
+
   await db.employerCompany.update({
     where: { id: employerCompanyId },
     data: { nr1ComplianceScore: score, lastPgrReviewAt: new Date() },
   });
+
+  if (previousScore !== score) {
+    import("@/lib/employer-webhooks").then(({ dispatchEmployerWebhooks }) =>
+      dispatchEmployerWebhooks(employerCompanyId, "compliance.updated", {
+        previousScore,
+        score,
+        updatedAt: new Date().toISOString(),
+      }).catch(() => {}),
+    );
+  }
 
   return score;
 }
@@ -58,10 +70,22 @@ export async function buildPgrInventoryExport(employerCompanyId: string) {
         take: 1,
         include: { items: true },
       },
+      surveyCampaigns: {
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: { _count: { select: { responses: true } } },
+      },
+      eapBenefit: true,
+      pcmsoConfig: true,
+      workforce: { where: { status: "ACTIVE" }, select: { id: true, sessionsUsed: true } },
     },
   });
 
   if (!company) return null;
+
+  const openReports = await db.employerWhistleblowerReport.count({
+    where: { employerCompanyId, status: { in: ["OPEN", "IN_REVIEW"] } },
+  });
 
   const payload = {
     generatedAt: new Date().toISOString(),
@@ -72,6 +96,7 @@ export async function buildPgrInventoryExport(employerCompanyId: string) {
       nomeFantasia: company.nomeFantasia,
       grauRisco: company.grauRisco,
       employeeCount: company.employeeCount,
+      planTier: company.planTier,
     },
     hazardCatalog: NR1_PSYCHOSOCIAL_HAZARDS,
     inventory: company.riskEntries.map((r) => ({
@@ -88,6 +113,29 @@ export async function buildPgrInventoryExport(employerCompanyId: string) {
     })),
     aep: company.aepRecords[0] ?? null,
     actionPlan: company.actionPlans[0] ?? null,
+    surveys: company.surveyCampaigns.map((s) => ({
+      id: s.id,
+      title: s.title,
+      instrument: s.instrument,
+      status: s.status,
+      responseCount: s._count.responses,
+    })),
+    eap: company.eapBenefit
+      ? {
+          enabled: company.eapBenefit.enabled,
+          sessionsPerEmployee: company.eapBenefit.sessionsPerEmployee,
+          activeMembers: company.workforce.length,
+          totalSessionsUsed: company.workforce.reduce((sum, w) => sum + w.sessionsUsed, 0),
+        }
+      : null,
+    pcmso: company.pcmsoConfig
+      ? {
+          coordinatorName: company.pcmsoConfig.coordinatorName,
+          coordinatorCrm: company.pcmsoConfig.coordinatorCrm,
+          checklistJson: company.pcmsoConfig.checklistJson,
+        }
+      : null,
+    whistleblowerOpenCount: openReports,
     complianceScore: company.nr1ComplianceScore,
   };
 

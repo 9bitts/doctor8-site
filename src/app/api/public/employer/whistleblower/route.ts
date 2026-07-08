@@ -42,6 +42,14 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  import("@/lib/employer-webhooks").then(({ dispatchEmployerWebhooks }) =>
+    dispatchEmployerWebhooks(company.id, "whistleblower.created", {
+      protocolCode,
+      category: parsed.data.category,
+      createdAt: new Date().toISOString(),
+    }).catch(() => {}),
+  );
+
   const sstMembers = await db.employerMember.findMany({
     where: {
       employerCompanyId: company.id,

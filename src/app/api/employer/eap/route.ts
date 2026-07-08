@@ -29,6 +29,7 @@ export async function GET() {
 const patchSchema = z.object({
   enabled: z.boolean().optional(),
   sessionsPerEmployee: z.number().int().min(0).max(52).optional(),
+  sessionPriceCents: z.number().int().min(0).max(1_000_000).optional(),
   jitEnabled: z.boolean().optional(),
   notes: z.string().optional(),
 });

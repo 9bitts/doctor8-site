@@ -74,6 +74,7 @@ export default function RedePsicologosPage() {
   }
 
   async function toggleStatus(p: Psych) {
+    if (p.status === "INVITED") return;
     await fetch("/api/employer/psychologists", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -143,7 +144,7 @@ export default function RedePsicologosPage() {
             disabled={!selected || saving}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium disabled:opacity-50"
           >
-            <Plus size={16} /> Credenciar na rede
+            <Plus size={16} /> Enviar convite
           </button>
         </div>
       </form>
@@ -159,9 +160,16 @@ export default function RedePsicologosPage() {
                 <p className="font-medium text-slate-900">{p.name}</p>
                 <p className="text-xs text-slate-500 truncate">{p.licenseNumber} · repasse {p.repassePercent}%</p>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>
-                {p.status === "ACTIVE" ? "Ativo" : "Inativo"}
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                p.status === "ACTIVE"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : p.status === "INVITED"
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-slate-100 text-slate-600"
+              }`}>
+                {p.status === "ACTIVE" ? "Ativo" : p.status === "INVITED" ? "Convite enviado" : "Inativo"}
               </span>
+              {p.status !== "INVITED" && (
               <button
                 type="button"
                 onClick={() => toggleStatus(p)}
@@ -170,6 +178,7 @@ export default function RedePsicologosPage() {
               >
                 <Power size={16} />
               </button>
+              )}
             </li>
           ))}
           {list.length === 0 && (

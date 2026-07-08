@@ -278,12 +278,35 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const jitSession = await db.jitSession.findUnique({ where: { id: sessionId } });
+  const jitSession = await db.jitSession.findUnique({
+    where: { id: sessionId },
+    select: {
+      status: true,
+      isFree: true,
+      priceAmount: true,
+      professionalId: true,
+      maxQueueSize: true,
+    },
+  });
   if (!jitSession || jitSession.status !== "ONLINE")
     return NextResponse.json({ error: "Session not available" }, { status: 404 });
 
+  let corporateEapMemberId: string | null = null;
+  if (!jitSession.isFree && jitSession.priceAmount > 0 && !paymentIntentId) {
+    const { resolveEapJitContext } = await import("@/lib/employer-eap-booking");
+    const eapJit = await resolveEapJitContext(
+      session.user.id,
+      session.user.email || "",
+      jitSession.professionalId,
+    );
+    if (eapJit) corporateEapMemberId = eapJit.workforceMemberId;
+  }
+
+  const paymentRequired =
+    !jitSession.isFree && jitSession.priceAmount > 0 && !corporateEapMemberId;
+
   let verifiedIntent: VerifiedJitIntent | undefined;
-  if (!jitSession.isFree && jitSession.priceAmount > 0) {
+  if (paymentRequired) {
     if (!paymentIntentId) {
       return NextResponse.json({ error: "Payment required" }, { status: 402 });
     }
@@ -376,6 +399,34 @@ export async function POST(req: NextRequest) {
           linkedPaymentId = jitPay.id;
         }
 
+        if (corporateEapMemberId) {
+          const wf = await tx.employerWorkforceMember.findUnique({
+            where: { id: corporateEapMemberId },
+            select: {
+              sessionsUsed: true,
+              sessionsQuota: true,
+              employerCompanyId: true,
+            },
+          });
+          if (!wf) throw new Error("EAP_QUOTA_EXCEEDED");
+          const eapBenefit = await tx.employerEapBenefit.findUnique({
+            where: { employerCompanyId: wf.employerCompanyId },
+            select: { sessionsPerEmployee: true, enabled: true, jitEnabled: true },
+          });
+          if (!eapBenefit?.enabled || !eapBenefit.jitEnabled) {
+            throw new Error("EAP_QUOTA_EXCEEDED");
+          }
+          const quota =
+            typeof wf.sessionsQuota === "number" && wf.sessionsQuota >= 0
+              ? wf.sessionsQuota
+              : eapBenefit.sessionsPerEmployee;
+          if (wf.sessionsUsed >= quota) throw new Error("EAP_QUOTA_EXCEEDED");
+          await tx.employerWorkforceMember.update({
+            where: { id: corporateEapMemberId },
+            data: { sessionsUsed: { increment: 1 } },
+          });
+        }
+
         return tx.jitQueue.create({
           data: {
             sessionId,
@@ -384,6 +435,7 @@ export async function POST(req: NextRequest) {
             position,
             specialty,
             paymentId: linkedPaymentId,
+            employerWorkforceMemberId: corporateEapMemberId,
           },
         });
       },
@@ -395,6 +447,9 @@ export async function POST(req: NextRequest) {
     }
     if (e instanceof Error && e.message === "PAYMENT_ALREADY_USED") {
       return NextResponse.json({ error: "Payment already used for an active queue entry" }, { status: 409 });
+    }
+    if (e instanceof Error && e.message === "EAP_QUOTA_EXCEEDED") {
+      return NextResponse.json({ error: "EAP quota exceeded" }, { status: 400 });
     }
     throw e;
   }
@@ -505,6 +560,12 @@ export async function PATCH(req: NextRequest) {
         await tryStampForCompletedJitQueue(entry.id);
       } catch (e) {
         console.error("[JIT] Club stamp failed:", e);
+      }
+      try {
+        const { settleEapCorporateJitQueue } = await import("@/lib/employer-eap-settlement");
+        await settleEapCorporateJitQueue(entry.id);
+      } catch (e) {
+        console.error("[JIT] EAP settlement failed:", e);
       }
     }
 

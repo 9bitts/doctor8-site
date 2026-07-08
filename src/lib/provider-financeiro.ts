@@ -1,7 +1,9 @@
 import { db } from "@/lib/db";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import { EAP_BOOKING_SOURCE } from "@/lib/employer-eap-booking";
 
 const COMMISSION_RATE = 0.15;
+const DEFAULT_EAP_REPASSE_PERCENT = 70;
 
 export type FinanceProviderField =
   | "professionalId"
@@ -84,12 +86,41 @@ export async function buildProviderFinanceiroReport(params: {
       priceAmount: true,
       currency: true,
       type: true,
+      bookingSource: true,
+      employerWorkforceMember: {
+        select: { employerCompanyId: true },
+      },
       patient: {
         select: { firstName: true, lastName: true },
       },
     },
     orderBy: { scheduledAt: "desc" },
   });
+
+  const eapAppointments = appointments.filter((a) => a.bookingSource === EAP_BOOKING_SOURCE);
+  const repasseByCompany = new Map<string, number>();
+  if (eapAppointments.length > 0 && providerField === "professionalId") {
+    const companyIds = [
+      ...new Set(
+        eapAppointments
+          .map((a) => a.employerWorkforceMember?.employerCompanyId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    if (companyIds.length > 0) {
+      const links = await db.employerLinkedPsychologist.findMany({
+        where: {
+          professionalId: providerId,
+          employerCompanyId: { in: companyIds },
+          status: "ACTIVE",
+        },
+        select: { employerCompanyId: true, repassePercent: true },
+      });
+      for (const link of links) {
+        repasseByCompany.set(link.employerCompanyId, link.repassePercent);
+      }
+    }
+  }
 
   const transactions: {
     id: string;
@@ -105,8 +136,23 @@ export async function buildProviderFinanceiroReport(params: {
 
   for (const appt of appointments) {
     const gross = appt.priceAmount || 0;
-    const commission = Math.round(gross * COMMISSION_RATE);
-    const net = gross - commission;
+    const isEap = appt.bookingSource === EAP_BOOKING_SOURCE;
+    let commission: number;
+    let net: number;
+    let txType: string;
+    if (isEap) {
+      const companyId = appt.employerWorkforceMember?.employerCompanyId;
+      const repassePct = companyId
+        ? (repasseByCompany.get(companyId) ?? DEFAULT_EAP_REPASSE_PERCENT)
+        : DEFAULT_EAP_REPASSE_PERCENT;
+      net = Math.round(gross * repassePct / 100);
+      commission = gross - net;
+      txType = "EAP_CORPORATE";
+    } else {
+      commission = Math.round(gross * COMMISSION_RATE);
+      net = gross - commission;
+      txType = appt.type === "TELECONSULT" ? "TELECONSULT" : "IN_PERSON";
+    }
     const p = appt.patient;
     const first = safeDecrypt(p?.firstName ?? "");
     const last = safeDecrypt(p?.lastName ?? "");
@@ -114,7 +160,7 @@ export async function buildProviderFinanceiroReport(params: {
     transactions.push({
       id: appt.id,
       date: appt.scheduledAt.toISOString(),
-      type: appt.type === "TELECONSULT" ? "TELECONSULT" : "IN_PERSON",
+      type: txType,
       patientInitials: initials,
       grossCents: gross,
       commissionCents: commission,
@@ -139,22 +185,57 @@ export async function buildProviderFinanceiroReport(params: {
         queueEntry: {
           select: {
             patientUser: { select: { id: true } },
+            employerWorkforceMember: { select: { employerCompanyId: true } },
           },
         },
       },
       orderBy: { createdAt: "desc" },
     });
 
+    const jitCompanyIds = [
+      ...new Set(
+        jitPayments
+          .map((jp) => jp.queueEntry?.employerWorkforceMember?.employerCompanyId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ].filter((id) => !repasseByCompany.has(id));
+    if (jitCompanyIds.length > 0) {
+      const links = await db.employerLinkedPsychologist.findMany({
+        where: {
+          professionalId: providerId,
+          employerCompanyId: { in: jitCompanyIds },
+          status: "ACTIVE",
+        },
+        select: { employerCompanyId: true, repassePercent: true },
+      });
+      for (const link of links) {
+        repasseByCompany.set(link.employerCompanyId, link.repassePercent);
+      }
+    }
+
     for (const jp of jitPayments) {
       const gross = jp.amount || 0;
-      const commission = Math.round(gross * COMMISSION_RATE);
-      const net = gross - commission;
+      const companyId = jp.queueEntry?.employerWorkforceMember?.employerCompanyId;
+      const isEapJit = Boolean(companyId);
+      let commission: number;
+      let net: number;
+      let txType: string;
+      if (isEapJit && companyId) {
+        const repassePct = repasseByCompany.get(companyId) ?? DEFAULT_EAP_REPASSE_PERCENT;
+        net = Math.round(gross * repassePct / 100);
+        commission = gross - net;
+        txType = "EAP_CORPORATE";
+      } else {
+        commission = Math.round(gross * COMMISSION_RATE);
+        net = gross - commission;
+        txType = "JIT";
+      }
       const uid = jp.queueEntry?.patientUser?.id || "";
       const initials = uid ? uid.slice(0, 2).toUpperCase() : "??";
       transactions.push({
         id: jp.id,
         date: jp.createdAt.toISOString(),
-        type: "JIT",
+        type: txType,
         patientInitials: initials,
         grossCents: gross,
         commissionCents: commission,

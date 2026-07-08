@@ -14,11 +14,16 @@ export type EapBookingContext = {
   companyName: string;
   sessionsRemaining: number;
   linkedPsychologistIds: string[];
+  jitEnabled: boolean;
 };
 
 export async function resolveEapBookingContext(userId: string, email: string): Promise<EapBookingContext | null> {
   const membership = await getWorkforceMembershipForUser(userId, email);
   if (!membership) return null;
+
+  await import("@/lib/employer-eap-quota").then((m) =>
+    m.ensureEmployerEapQuotaYear(membership.employerCompanyId),
+  );
 
   const [eap, linked] = await Promise.all([
     db.employerEapBenefit.findUnique({ where: { employerCompanyId: membership.employerCompanyId } }),
@@ -40,6 +45,55 @@ export async function resolveEapBookingContext(userId: string, email: string): P
     companyName: membership.employerCompany.nomeFantasia,
     sessionsRemaining: remaining,
     linkedPsychologistIds: linked.map((l) => l.professionalId),
+    jitEnabled: eap.jitEnabled,
+  };
+}
+
+export type EapJitContext = {
+  workforceMemberId: string;
+  employerCompanyId: string;
+  companyName: string;
+  sessionsRemaining: number;
+};
+
+export async function resolveEapJitContext(
+  userId: string,
+  email: string,
+  professionalId: string,
+): Promise<EapJitContext | null> {
+  const membership = await getWorkforceMembershipForUser(userId, email);
+  if (!membership) return null;
+
+  await import("@/lib/employer-eap-quota").then((m) =>
+    m.ensureEmployerEapQuotaYear(membership.employerCompanyId),
+  );
+
+  const [eap, linked] = await Promise.all([
+    db.employerEapBenefit.findUnique({ where: { employerCompanyId: membership.employerCompanyId } }),
+    db.employerLinkedPsychologist.findMany({
+      where: { employerCompanyId: membership.employerCompanyId, status: "ACTIVE" },
+      select: { professionalId: true },
+    }),
+  ]);
+
+  if (!eap?.enabled || !eap.jitEnabled) return null;
+
+  const proCheck = await assertEapPsychologistBooking(
+    professionalId,
+    membership.employerCompanyId,
+    linked.map((l) => l.professionalId),
+  );
+  if (!proCheck.ok) return null;
+
+  const quota = resolveWorkforceSessionQuota(membership.sessionsQuota, eap.sessionsPerEmployee);
+  const remaining = workforceSessionsRemaining(quota, membership.sessionsUsed);
+  if (remaining <= 0) return null;
+
+  return {
+    workforceMemberId: membership.id,
+    employerCompanyId: membership.employerCompanyId,
+    companyName: membership.employerCompany.nomeFantasia,
+    sessionsRemaining: remaining,
   };
 }
 
@@ -72,5 +126,23 @@ export async function restoreEapSessionQuota(appointmentId: string) {
   await db.employerWorkforceMember.update({
     where: { id: appt.employerWorkforceMemberId },
     data: { sessionsUsed: { decrement: 1 } },
+  });
+}
+
+export async function restoreEapJitSessionQuota(queueEntryId: string) {
+  const entry = await db.jitQueue.findUnique({
+    where: { id: queueEntryId },
+    select: { employerWorkforceMemberId: true, status: true },
+  });
+  if (!entry?.employerWorkforceMemberId) return;
+  if (entry.status === "DONE") return;
+
+  await db.employerWorkforceMember.update({
+    where: { id: entry.employerWorkforceMemberId },
+    data: { sessionsUsed: { decrement: 1 } },
+  });
+  await db.jitQueue.update({
+    where: { id: queueEntryId },
+    data: { employerWorkforceMemberId: null },
   });
 }

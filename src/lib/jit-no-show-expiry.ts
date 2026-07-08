@@ -40,6 +40,7 @@ export async function expireStaleJitNoShows(sessionId?: string): Promise<number>
       sessionId: true,
       patientUserId: true,
       paymentId: true,
+      employerWorkforceMemberId: true,
     },
   });
 
@@ -52,6 +53,14 @@ export async function expireStaleJitNoShows(sessionId?: string): Promise<number>
     });
     if (e.paymentId) {
       await refundJitQueuePayment(e.paymentId, "jit_no_show_expired");
+    }
+    if (e.employerWorkforceMemberId) {
+      try {
+        const { restoreEapJitSessionQuota } = await import("@/lib/employer-eap-booking");
+        await restoreEapJitSessionQuota(e.id);
+      } catch (err) {
+        console.error("[JIT] EAP quota restore on no-show failed:", err);
+      }
     }
     const missedCopy = storedNotificationText("notif.jit.missed.title", "notif.jit.missed.body");
     await createNotification({

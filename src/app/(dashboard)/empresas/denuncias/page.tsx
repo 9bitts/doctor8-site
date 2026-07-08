@@ -7,6 +7,7 @@ type Report = {
   id: string;
   protocolCode: string;
   category: string;
+  description: string;
   status: string;
   createdAt: string;
   internalNotes: string | null;
@@ -71,6 +72,9 @@ export default function DenunciasPage() {
                     <p className="font-mono text-sm font-medium text-slate-900">{r.protocolCode}</p>
                     <p className="text-xs text-slate-500 mt-1">
                       {r.category} · {new Date(r.createdAt).toLocaleString("pt-BR")}
+                    </p>
+                    <p className="text-sm text-slate-700 mt-3 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100">
+                      {r.description}
                     </p>
                   </div>
                 </div>

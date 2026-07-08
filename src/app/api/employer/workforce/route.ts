@@ -87,5 +87,16 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  if (!existingMember) {
+    import("@/lib/employer-webhooks").then(({ dispatchEmployerWebhooks }) =>
+      dispatchEmployerWebhooks(ctx.employerCompanyId, "workforce.member.added", {
+        email: member.email,
+        firstName: member.firstName,
+        lastName: member.lastName,
+        status: member.status,
+      }).catch(() => {}),
+    );
+  }
+
   return NextResponse.json({ member }, { status: 201 });
 }

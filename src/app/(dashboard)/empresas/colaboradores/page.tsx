@@ -23,6 +23,8 @@ export default function ColaboradoresPage() {
   const [lastName, setLastName] = useState("");
   const [department, setDepartment] = useState("");
   const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState("");
 
   async function load() {
     setLoading(true);
@@ -55,6 +57,28 @@ export default function ColaboradoresPage() {
     load();
   }
 
+  async function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult("");
+    const csv = await file.text();
+    const res = await fetch("/api/employer/workforce/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ csv }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setImportResult(data.message || data.error || "Erro na importação.");
+    } else {
+      setImportResult(`${data.created} criados, ${data.updated} atualizados.`);
+    }
+    setImporting(false);
+    e.target.value = "";
+    load();
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
@@ -73,6 +97,18 @@ export default function ColaboradoresPage() {
           <Plus size={16} /> Adicionar colaborador
         </button>
       </form>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+        <p className="text-sm font-medium text-slate-800">Importar CSV</p>
+        <p className="text-xs text-slate-500">
+          Colunas: email, nome, sobrenome, setor (opcional), cargo (opcional). Cabeçalho opcional.
+        </p>
+        <label className="inline-flex items-center gap-2 text-sm text-sky-600 cursor-pointer">
+          <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvImport} disabled={importing} />
+          {importing ? "Importando…" : "Selecionar arquivo CSV"}
+        </label>
+        {importResult && <p className="text-xs text-slate-600">{importResult}</p>}
+      </div>
 
       {loading ? (
         <Loader2 className="animate-spin text-slate-400" />

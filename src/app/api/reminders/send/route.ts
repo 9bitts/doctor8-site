@@ -141,6 +141,12 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error("[REMINDER] Club stamp failed:", e);
       }
+      try {
+        const { settleEapCorporateAppointment } = await import("@/lib/employer-eap-settlement");
+        await settleEapCorporateAppointment(appointmentId);
+      } catch (e) {
+        console.error("[REMINDER] EAP settlement failed:", e);
+      }
       return NextResponse.json({ skipped: true, reason: "Already reviewed" });
     }
 
@@ -201,6 +207,13 @@ export async function POST(req: NextRequest) {
       await tryStampForCompletedAppointment(appointmentId);
     } catch (e) {
       console.error("[REMINDER] Club stamp failed:", e);
+    }
+
+    try {
+      const { settleEapCorporateAppointment } = await import("@/lib/employer-eap-settlement");
+      await settleEapCorporateAppointment(appointmentId);
+    } catch (e) {
+      console.error("[REMINDER] EAP settlement failed:", e);
     }
 
     await logQStashJob({ appointmentId, jobType: type, status: "sent" });

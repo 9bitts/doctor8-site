@@ -26,6 +26,7 @@ import {
   EMAIL_EMPLOYER_STAFF_INVITE,
   EMAIL_OCCUPATIONAL_PHYSICIAN_INVITE,
   EMAIL_EMPLOYER_WORKFORCE_INVITE,
+  EMAIL_EMPLOYER_PSYCHOLOGIST_NETWORK,
   employerRoleLabel,
   EMAIL_SLOT_ALERT,
   EMAIL_REVIEW_REQUEST,
@@ -902,6 +903,52 @@ export async function sendEmployerWorkforceInvite({
       `${c.cta}: ${acceptUrl}`,
     ].join("\n\n"),
     tag: "employer-workforce-invite",
+  });
+}
+
+export async function sendEmployerPsychologistNetworkLinked({
+  email,
+  psychologistName,
+  companyName,
+  repassePercent,
+  inviteToken,
+  language,
+}: {
+  email: string;
+  psychologistName: string;
+  companyName: string;
+  repassePercent: number;
+  inviteToken?: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_EMPLOYER_PSYCHOLOGIST_NETWORK[lang];
+  const portalUrl = inviteToken
+    ? `${getAppUrl()}/psychologist/empresas/aceitar?token=${encodeURIComponent(inviteToken)}`
+    : `${getAppUrl()}/psychologist/empresas`;
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(psychologistName)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(companyName, Math.round(repassePercent))}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${portalUrl}" style="background:#0284c7;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+      ${c.orCopy} <a href="${portalUrl}" style="color:#0284c7;">${portalUrl}</a>
+    </p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject(companyName),
+    html: emailShell(c.heading, body, lang),
+    text: [
+      c.hi(psychologistName),
+      c.body(companyName, Math.round(repassePercent)).replace(/<[^>]+>/g, ""),
+      `${c.cta}: ${portalUrl}`,
+    ].join("\n\n"),
+    tag: "employer-psychologist-network",
   });
 }
 

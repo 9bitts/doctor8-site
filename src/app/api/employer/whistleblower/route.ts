@@ -19,6 +19,7 @@ export async function GET() {
       createdAt: true,
       updatedAt: true,
       internalNotes: true,
+      description: true,
     },
   });
 

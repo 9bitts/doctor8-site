@@ -11,7 +11,7 @@ const createSchema = z.object({
   workerParticipation: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(["DRAFT", "IN_PROGRESS", "COMPLETED", "APPROVED"]).optional(),
-  surveyCampaignId: z.string().optional(),
+  surveyCampaignId: z.union([z.string(), z.null()]).optional(),
 });
 
 const patchSchema = z.object({
@@ -23,7 +23,7 @@ const patchSchema = z.object({
   notes: z.string().optional(),
   status: z.enum(["DRAFT", "IN_PROGRESS", "COMPLETED", "APPROVED"]).optional(),
   approvedByName: z.string().max(200).optional(),
-  surveyCampaignId: z.string().optional(),
+  surveyCampaignId: z.union([z.string(), z.null()]).optional(),
 });
 
 export async function GET() {
@@ -36,7 +36,13 @@ export async function GET() {
     include: { _count: { select: { riskEntries: true } } },
   });
 
-  return NextResponse.json({ records });
+  const campaigns = await db.employerSurveyCampaign.findMany({
+    where: { employerCompanyId: ctx.employerCompanyId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, title: true, instrument: true, status: true },
+  });
+
+  return NextResponse.json({ records, campaigns });
 }
 
 export async function POST(req: NextRequest) {

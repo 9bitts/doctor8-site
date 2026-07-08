@@ -76,6 +76,51 @@ export async function buildPgrInventoryPdf(payload: PgrPayload): Promise<Uint8Ar
   }
 
   y -= 8;
+  addLine("Avaliação Ergonômica Preliminar (AEP)", true, 11);
+  if (!payload.aep) {
+    addLine("Nenhuma AEP registrada.");
+  } else {
+    addLine(`${payload.aep.title} — v${payload.aep.version} — ${payload.aep.status}`, false, 9);
+    if (payload.aep.methodology) addLine(`Metodologia: ${payload.aep.methodology}`, false, 8);
+    if (payload.aep.approvedByName) addLine(`Aprovado por: ${payload.aep.approvedByName}`, false, 8);
+  }
+
+  y -= 8;
+  addLine("Pesquisas organizacionais", true, 11);
+  const surveys = payload.surveys ?? [];
+  if (surveys.length === 0) {
+    addLine("Nenhuma pesquisa registrada.");
+  } else {
+    for (const s of surveys) {
+      addLine(`• ${s.title} (${s.instrument}) — ${s.status} — ${s.responseCount} respostas`, false, 9);
+    }
+  }
+
+  y -= 8;
+  addLine("EAP / saúde mental", true, 11);
+  if (!payload.eap) {
+    addLine("Benefício EAP não configurado.");
+  } else {
+    addLine(
+      `Ativo: ${payload.eap.enabled ? "sim" : "não"} · ${payload.eap.sessionsPerEmployee} sessões/colaborador · ${payload.eap.totalSessionsUsed} sessões utilizadas`,
+      false,
+      9,
+    );
+  }
+
+  y -= 8;
+  addLine("PCMSO", true, 11);
+  if (!payload.pcmso?.coordinatorName) {
+    addLine("Coordenador PCMSO não vinculado.");
+  } else {
+    addLine(`Coordenador: ${payload.pcmso.coordinatorName}${payload.pcmso.coordinatorCrm ? ` (CRM ${payload.pcmso.coordinatorCrm})` : ""}`, false, 9);
+  }
+
+  y -= 8;
+  addLine("Canal de denúncias", true, 11);
+  addLine(`Denúncias em aberto / análise: ${payload.whistleblowerOpenCount ?? 0}`, false, 9);
+
+  y -= 8;
   addLine("Plano de ação (resumo)", true, 11);
   const items = payload.actionPlan?.items ?? [];
   if (items.length === 0) {

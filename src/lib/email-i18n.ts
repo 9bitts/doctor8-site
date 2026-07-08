@@ -734,6 +734,40 @@ export const EMAIL_EMPLOYER_WORKFORCE_INVITE: Record<EmailLang, {
   },
 };
 
+export const EMAIL_EMPLOYER_PSYCHOLOGIST_NETWORK: Record<EmailLang, {
+  subject: (companyName: string) => string;
+  heading: string;
+  hi: (name: string) => string;
+  body: (companyName: string, repassePercent: number) => string;
+  cta: string;
+  orCopy: string;
+}> = {
+  en: {
+    subject: (c) => `${c} added you to their EAP network`,
+    heading: "Corporate EAP network",
+    hi: (n) => `Hello, ${n},`,
+    body: (c, r) => `<strong>${c}</strong> credentialed you for confidential corporate psychological support on Doctor8. Your payout rate is <strong>${r}%</strong> per completed session.`,
+    cta: "Accept invitation",
+    orCopy: "Or copy this link:",
+  },
+  pt: {
+    subject: (c) => `${c} credenciou você na rede EAP`,
+    heading: "Rede EAP corporativa",
+    hi: (n) => `Olá, ${n},`,
+    body: (c, r) => `A empresa <strong>${c}</strong> credenciou você para atendimentos sigilosos via Doctor8 Empresas. Seu repasse é de <strong>${r}%</strong> por sessão concluída.`,
+    cta: "Aceitar convite",
+    orCopy: "Ou copie este link:",
+  },
+  es: {
+    subject: (c) => `${c} te acreditó en la red EAP`,
+    heading: "Red EAP corporativa",
+    hi: (n) => `Hola, ${n},`,
+    body: (c, r) => `<strong>${c}</strong> te acreditó para atención psicológica confidencial en Doctor8. Tu reparto es del <strong>${r}%</strong> por sesión completada.`,
+    cta: "Aceptar invitación",
+    orCopy: "O copia este enlace:",
+  },
+};
+
 const EMPLOYER_ROLE_LABELS: Record<string, Record<EmailLang, string>> = {
   ADMIN: { en: "Administrator", pt: "Administrador", es: "Administrador" },
   SST: { en: "OHS / SST", pt: "SST / Segurança do Trabalho", es: "SST" },
