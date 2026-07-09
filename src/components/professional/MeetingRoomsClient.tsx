@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Video, Clock, Globe, Languages, ExternalLink, Heart,
   MessageCircle, Mail, Copy, CheckCircle2,
@@ -8,6 +8,7 @@ import {
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { DoctorConnectionSeal } from "@/components/brand/DoctorConnectionSeal";
 import type { MeetingRoomConfig } from "@/lib/meeting-rooms";
+import { getMeetingRoomElementId } from "@/lib/meeting-rooms";
 
 type RoomWithUrl = MeetingRoomConfig & { meetUrl: string | null; inviteUrl: string };
 
@@ -85,8 +86,41 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
     );
   }
 
+  function scrollToRoom(roomId: string) {
+    const element = document.getElementById(getMeetingRoomElementId(roomId));
+    if (!element) return;
+    element.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.replaceState(null, "", `#${roomId}`);
+  }
+
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    const element = document.getElementById(getMeetingRoomElementId(hash));
+    if (!element) return;
+    requestAnimationFrame(() => {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
   return (
     <div className="max-w-3xl mx-auto space-y-8">
+      <nav
+        aria-label={t("meetRooms.quickAccess")}
+        className="-mx-1 flex gap-2 overflow-x-auto pb-1 scrollbar-thin"
+      >
+        {rooms.map((room) => (
+          <button
+            key={room.id}
+            type="button"
+            onClick={() => scrollToRoom(room.id)}
+            className="shrink-0 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800"
+          >
+            {t(room.navLabelKey)}
+          </button>
+        ))}
+      </nav>
+
       <div>
         <div className="flex items-center gap-2 text-brand-600 text-sm font-semibold mb-1">
           <Heart size={16} className="text-rose-500" />
@@ -129,7 +163,8 @@ export default function MeetingRoomsClient({ rooms }: { rooms: RoomWithUrl[] }) 
           return (
             <article
               key={room.id}
-              className="relative rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+              id={getMeetingRoomElementId(room.id)}
+              className="relative scroll-mt-24 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
             >
               <DoctorConnectionSeal
                 compact

@@ -7,6 +7,8 @@
 export type MeetingRoomConfig = {
   id: string;
   titleKey: string;
+  /** Short label for the quick-access nav at the top of the page. */
+  navLabelKey: string;
   subjectKey: string;
   audienceKey: string;
   /** Daily start time in America/Sao_Paulo */
@@ -23,6 +25,7 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
   {
     id: "alianca-pela-vida",
     titleKey: "meetRoom.alianca.title",
+    navLabelKey: "meetRoom.alianca.nav",
     subjectKey: "meetRoom.alianca.subject",
     audienceKey: "meetRoom.alianca.audience",
     scheduleHour: 20,
@@ -34,6 +37,7 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
   {
     id: "nise-yamaguchi",
     titleKey: "meetRoom.nise.title",
+    navLabelKey: "meetRoom.nise.nav",
     subjectKey: "meetRoom.nise.subject",
     audienceKey: "meetRoom.nise.audience",
     scheduleHour: 17,
@@ -43,6 +47,7 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
   {
     id: "treinamento-doctor8",
     titleKey: "meetRoom.doctor8.title",
+    navLabelKey: "meetRoom.doctor8.nav",
     subjectKey: "meetRoom.doctor8.subject",
     audienceKey: "meetRoom.doctor8.audience",
     scheduleHour: 19,
@@ -52,6 +57,7 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
   {
     id: "medicos-pela-vida",
     titleKey: "meetRoom.medicosPelaVida.title",
+    navLabelKey: "meetRoom.medicosPelaVida.nav",
     subjectKey: "meetRoom.medicosPelaVida.subject",
     audienceKey: "meetRoom.medicosPelaVida.audience",
     scheduleHour: 20,
@@ -63,6 +69,7 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
   {
     id: "claudia-de-bessa-solmucci",
     titleKey: "meetRoom.claudia.title",
+    navLabelKey: "meetRoom.claudia.nav",
     subjectKey: "meetRoom.claudia.subject",
     audienceKey: "meetRoom.claudia.audience",
     scheduleHour: 20,
@@ -75,6 +82,10 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
 
 export function getMeetingRoomInvitePath(roomId: string): string {
   return `/anfiteatro/${roomId}`;
+}
+
+export function getMeetingRoomElementId(roomId: string): string {
+  return `meeting-room-${roomId}`;
 }
 
 export function getMeetingRoomInviteUrl(roomId: string, origin?: string): string {
