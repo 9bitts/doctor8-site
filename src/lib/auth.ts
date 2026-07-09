@@ -7,6 +7,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
+import { CredentialsSignin } from "@auth/core/errors";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { isAccountVerified } from "@/lib/account-verified";
@@ -36,6 +37,14 @@ const loginSchema = z.object({
   password: z.string().min(8),
   callbackUrl: z.string().optional(),
 });
+
+class EmailNotVerifiedError extends CredentialsSignin {
+  code = "EmailNotVerified";
+}
+
+class AccountLockedError extends CredentialsSignin {
+  code = "AccountLocked";
+}
 
 // HIPAA: 15 minutes session timeout
 const SESSION_MAX_AGE = parseInt(
@@ -177,7 +186,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Block login until email or SMS verification (humanitarian context may bypass)
         if (!isAccountVerified(user)) {
           if (!skipEmailVerification) {
-            throw new Error("EmailNotVerified");
+            throw new EmailNotVerifiedError();
           }
           await db.user.update({
             where: { id: user.id },
@@ -187,7 +196,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // HIPAA: account lockout after failed attempts
         if (user.lockedUntil && user.lockedUntil > new Date()) {
-          throw new Error("AccountLocked");
+          throw new AccountLockedError();
         }
 
         const isValid = await bcrypt.compare(password, user.passwordHash);

@@ -219,6 +219,20 @@ export function parseLoginError(err: string | null): LoginErrorCode {
   return "invalid";
 }
 
+/** Map Auth.js credentials sign-in response to a login alert code. */
+export function resolveCredentialSignInError(result: {
+  error?: string | null;
+  code?: string | null;
+}): LoginErrorCode {
+  const code = result.code?.trim();
+  if (code === "EmailNotVerified") return "unverified";
+  if (code === "AccountLocked") return "locked";
+  const err = result.error ?? "";
+  if (err.includes("EmailNotVerified")) return "unverified";
+  if (err.includes("AccountLocked")) return "locked";
+  return parseLoginError(err || null);
+}
+
 export function LoginPageShell({
   accent,
   children,

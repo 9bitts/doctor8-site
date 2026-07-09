@@ -17,6 +17,10 @@ type Laboratory = {
   geocoded: boolean;
   examCount: number;
   memberCount: number;
+  ownerUserId: string | null;
+  ownerEmail: string | null;
+  ownerEmailVerified: boolean;
+  ownerLocked: boolean;
   createdAt: string;
 };
 
@@ -55,6 +59,15 @@ export default function AdminLaboratoriesClient() {
     if (statusFilter === "ALL") return laboratories;
     return laboratories.filter((lab) => lab.status === statusFilter);
   }, [laboratories, statusFilter]);
+
+  async function verifyOwnerEmail(userId: string | null) {
+    if (!userId) return;
+    if (!confirm("Confirmar verificação manual do e-mail deste usuário?")) return;
+    setSaving(userId);
+    await fetch(`/api/admin/users/${userId}/verify-email`, { method: "POST" });
+    setSaving(null);
+    await load();
+  }
 
   async function patchLaboratory(id: string, body: Record<string, unknown>) {
     setSaving(id);
@@ -109,13 +122,19 @@ export default function AdminLaboratoriesClient() {
         </select>
       </div>
 
+      <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+        Para o laboratório conseguir entrar, o <strong>e-mail do usuário</strong> precisa estar verificado.
+        Ativar o laboratório verifica o e-mail do responsável automaticamente. Use o botão abaixo se já estiver ativo.
+      </p>
+
       <div className="rounded-2xl border border-slate-200 bg-white overflow-x-auto">
-        <table className="w-full text-sm min-w-[980px]">
+        <table className="w-full text-sm min-w-[1100px]">
           <thead className="bg-slate-50 text-slate-500 text-left">
             <tr>
               <th className="px-4 py-3 font-medium">Laboratório</th>
               <th className="px-4 py-3 font-medium">Tipo</th>
               <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">E-mail login</th>
               <th className="px-4 py-3 font-medium">Taxa Doctor8</th>
               <th className="px-4 py-3 font-medium">Local</th>
               <th className="px-4 py-3 font-medium">Exames</th>
@@ -147,6 +166,28 @@ export default function AdminLaboratoriesClient() {
                       <option key={st} value={st}>{STATUS_LABEL[st]}</option>
                     ))}
                   </select>
+                </td>
+                <td className="px-4 py-3">
+                  {lab.ownerEmailVerified ? (
+                    <span className="text-emerald-700 text-xs font-medium">Verificado</span>
+                  ) : (
+                    <div className="space-y-1">
+                      <span className="text-amber-700 text-xs font-medium block">Pendente</span>
+                      {lab.ownerUserId && (
+                        <button
+                          type="button"
+                          disabled={saving === lab.ownerUserId}
+                          onClick={() => verifyOwnerEmail(lab.ownerUserId)}
+                          className="text-xs text-violet-700 font-semibold disabled:opacity-40"
+                        >
+                          Verificar e-mail
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {lab.ownerLocked && (
+                    <p className="text-[10px] text-red-600 mt-1">Conta bloqueada</p>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1">

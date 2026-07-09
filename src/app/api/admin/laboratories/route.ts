@@ -27,6 +27,21 @@ export async function GET() {
       latitude: true,
       longitude: true,
       createdAt: true,
+      members: {
+        where: { role: "OWNER" },
+        take: 1,
+        select: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              emailVerified: true,
+              phoneVerified: true,
+              lockedUntil: true,
+            },
+          },
+        },
+      },
       _count: {
         select: {
           exams: true,
@@ -37,23 +52,30 @@ export async function GET() {
   });
 
   return NextResponse.json({
-    laboratories: laboratories.map((lab) => ({
-      id: lab.id,
-      cnpj: lab.cnpj,
-      nomeFantasia: lab.nomeFantasia,
-      razaoSocial: lab.razaoSocial,
-      slug: lab.slug,
-      labType: lab.labType,
-      status: lab.status,
-      platformFeeCents: lab.platformFeeCents,
-      addressCity: lab.addressCity,
-      addressState: lab.addressState,
-      contactEmail: lab.contactEmail,
-      contactPhone: lab.contactPhone,
-      geocoded: lab.latitude != null && lab.longitude != null,
-      examCount: lab._count.exams,
-      memberCount: lab._count.members,
-      createdAt: lab.createdAt.toISOString(),
-    })),
+    laboratories: laboratories.map((lab) => {
+      const owner = lab.members[0]?.user;
+      return {
+        id: lab.id,
+        cnpj: lab.cnpj,
+        nomeFantasia: lab.nomeFantasia,
+        razaoSocial: lab.razaoSocial,
+        slug: lab.slug,
+        labType: lab.labType,
+        status: lab.status,
+        platformFeeCents: lab.platformFeeCents,
+        addressCity: lab.addressCity,
+        addressState: lab.addressState,
+        contactEmail: lab.contactEmail,
+        contactPhone: lab.contactPhone,
+        geocoded: lab.latitude != null && lab.longitude != null,
+        examCount: lab._count.exams,
+        memberCount: lab._count.members,
+        ownerUserId: owner?.id ?? null,
+        ownerEmail: owner?.email ?? lab.contactEmail,
+        ownerEmailVerified: Boolean(owner?.emailVerified || owner?.phoneVerified),
+        ownerLocked: Boolean(owner?.lockedUntil && owner.lockedUntil > new Date()),
+        createdAt: lab.createdAt.toISOString(),
+      };
+    }),
   });
 }

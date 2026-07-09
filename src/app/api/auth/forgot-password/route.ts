@@ -11,6 +11,7 @@ import {
   RATE_LIMITS,
   rateLimitResponse,
 } from "@/lib/rate-limit";
+import { sanitizeLoginFrom } from "@/lib/auth-portals";
 
 function resolveFirstName(user: {
   patientProfile: { firstName: string } | null;
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
 
-    const safeFrom = typeof from === "string" && from.startsWith("/login") ? from : undefined;
+    const safeFrom = sanitizeLoginFrom(typeof from === "string" ? from : undefined);
 
     const normalizedEmail = email.toLowerCase();
     const ip = clientIp(req);

@@ -29,5 +29,24 @@ export async function PATCH(
     data: parsed.data,
   });
 
+  if (parsed.data.status === "ACTIVE") {
+    const owner = await db.laboratoryMember.findFirst({
+      where: { laboratoryId: id, role: "OWNER" },
+      select: {
+        userId: true,
+        user: { select: { email: true, emailVerified: true, phoneVerified: true } },
+      },
+    });
+    if (owner?.user && !owner.user.emailVerified && !owner.user.phoneVerified) {
+      await db.user.update({
+        where: { id: owner.userId },
+        data: { emailVerified: new Date(), failedLoginAttempts: 0, lockedUntil: null },
+      });
+      if (owner.user.email) {
+        await db.verificationToken.deleteMany({ where: { identifier: owner.user.email } });
+      }
+    }
+  }
+
   return NextResponse.json({ laboratory });
 }
