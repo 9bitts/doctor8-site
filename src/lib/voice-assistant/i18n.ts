@@ -162,9 +162,9 @@ const T: Record<string, Record<Lang, string>> = {
     es: "Pruebe nuestra asistente de IA",
   },
   "promoBanner.desc": {
-    pt: "Fale o que precisa fazer — a IA transcreve, entende e preenche o formulário. Você revisa tudo e só salva quando confirmar. Use o botão roxo no canto inferior esquerdo ou Ctrl+Shift+V.",
-    en: "Say what you need to do — AI transcribes, understands, and prefills the form. You review everything and save only when you confirm. Use the purple button at the bottom-left or Ctrl+Shift+V.",
-    es: "Diga lo que necesita hacer — la IA transcribe, entiende y completa el formulario. Usted revisa todo y guarda solo cuando confirme. Use el botón morado abajo a la izquierda o Ctrl+Shift+V.",
+    pt: "Fale o comando — a IA transcreve e preenche o formulário. Você revisa e só salva ao confirmar. Botão roxo no canto inferior esquerdo ou Ctrl+Shift+V.",
+    en: "Speak your command — AI transcribes and prefills the form. You review and save only when you confirm. Purple button bottom-left or Ctrl+Shift+V.",
+    es: "Diga el comando — la IA transcribe y completa el formulario. Usted revisa y guarda al confirmar. Botón morado abajo a la izquierda o Ctrl+Shift+V.",
   },
   "promoBanner.cta": {
     pt: "Experimentar agora",

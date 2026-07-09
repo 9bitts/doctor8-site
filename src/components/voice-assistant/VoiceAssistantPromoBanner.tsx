@@ -42,23 +42,40 @@ export default function VoiceAssistantPromoBanner({ userId }: Props) {
   }
 
   return (
-    <div className="bg-gradient-to-r from-violet-600 via-violet-600 to-indigo-700 text-white border-b border-violet-500/40">
-      <div className="px-4 lg:px-8 py-3.5 flex items-start gap-3 sm:gap-4">
-        <div className="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0 text-white">
-          <OwlIcon size={30} />
+    <div
+      className="border-b-2 shadow-sm"
+      style={{ backgroundColor: "#ede9fe", borderColor: "#c4b5fd" }}
+      role="region"
+      aria-label={t("promoBanner.title")}
+    >
+      <div className="px-4 lg:px-8 py-4 sm:py-3.5 flex items-start gap-3 sm:gap-4">
+        <div
+          className="w-12 h-12 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
+          style={{ backgroundColor: "#ffffff", border: "2px solid #a78bfa" }}
+        >
+          <OwlIcon size={32} />
         </div>
 
-        <div className="flex-1 min-w-0 pt-0.5">
-          <p className="text-sm sm:text-base font-bold tracking-tight">{t("promoBanner.title")}</p>
-          <p className="text-xs sm:text-sm text-violet-100 mt-1 leading-relaxed max-w-3xl">
+        <div className="flex-1 min-w-0 pt-0.5 pr-1">
+          <p
+            className="text-base sm:text-lg font-bold leading-snug"
+            style={{ color: "#1e1b4b" }}
+          >
+            {t("promoBanner.title")}
+          </p>
+          <p
+            className="text-sm sm:text-[15px] mt-1.5 leading-relaxed"
+            style={{ color: "#334155" }}
+          >
             {t("promoBanner.desc")}
           </p>
           <button
             type="button"
             onClick={openVoiceAssistantFromBanner}
-            className="mt-2.5 inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg px-3 py-1.5 transition"
+            className="mt-3 inline-flex items-center gap-2 text-sm font-semibold rounded-xl px-4 py-2.5 shadow-sm transition hover:opacity-95 active:scale-[0.98]"
+            style={{ backgroundColor: "#6d28d9", color: "#ffffff" }}
           >
-            <Mic size={14} />
+            <Mic size={16} strokeWidth={2.5} />
             {t("promoBanner.cta")}
           </button>
         </div>
@@ -66,10 +83,11 @@ export default function VoiceAssistantPromoBanner({ userId }: Props) {
         <button
           type="button"
           onClick={dismiss}
-          className="p-1.5 rounded-lg text-violet-200 hover:text-white hover:bg-white/10 transition shrink-0"
+          className="p-2 rounded-lg transition shrink-0 -mr-1"
+          style={{ color: "#5b21b6" }}
           aria-label={t("close")}
         >
-          <X size={16} />
+          <X size={18} strokeWidth={2.5} />
         </button>
       </div>
     </div>
