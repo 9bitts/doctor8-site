@@ -60,6 +60,17 @@ export const MEETING_ROOMS: MeetingRoomConfig[] = [
     dialIn: "(DE) +49 30 300195060 · PIN: 714 236 139 9552#",
     phoneNumbersUrl: "https://tel.meet/dtp-rdjw-wuz?pin=7142361399552",
   },
+  {
+    id: "claudia-de-bessa-solmucci",
+    titleKey: "meetRoom.claudia.title",
+    subjectKey: "meetRoom.claudia.subject",
+    audienceKey: "meetRoom.claudia.audience",
+    scheduleHour: 20,
+    scheduleMinute: 0,
+    timezone: "America/Sao_Paulo",
+    dialIn: "(DE) +49 30 300195060 · PIN: 486 636 105 6264#",
+    phoneNumbersUrl: "https://tel.meet/pan-xqiv-xor?pin=4866361056264",
+  },
 ];
 
 export function getMeetingRoomInvitePath(roomId: string): string {
@@ -93,12 +104,14 @@ const MEETING_ROOM_URL_BY_ID: Record<string, string | undefined> = {
   "nise-yamaguchi": process.env.NEXT_PUBLIC_MEETING_ROOM_NISE_URL,
   "treinamento-doctor8": process.env.NEXT_PUBLIC_MEETING_ROOM_DOCTOR8_URL,
   "medicos-pela-vida": process.env.NEXT_PUBLIC_MEETING_ROOM_MEDICOS_PELA_VIDA_URL,
+  "claudia-de-bessa-solmucci": process.env.NEXT_PUBLIC_MEETING_ROOM_CLAUDIA_URL,
 };
 
 const MEETING_ROOM_URL_FALLBACK: Record<string, string> = {
   "alianca-pela-vida": "https://meet.google.com/knj-ohde-eih",
   "treinamento-doctor8": "https://meet.google.com/kbe-vkof-xza",
   "medicos-pela-vida": "https://meet.google.com/dtp-rdjw-wuz",
+  "claudia-de-bessa-solmucci": "https://meet.google.com/pan-xqiv-xor",
 };
 
 export function getMeetingRoomMeetUrl(roomId: string): string | null {
