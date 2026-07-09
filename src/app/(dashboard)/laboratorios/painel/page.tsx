@@ -119,7 +119,7 @@ export default async function LaboratoriosPainelPage() {
 
       {lab.status === "PENDING_REVIEW" && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Seu laboratório está em revisão. Após aprovação, pacientes poderão encontrá-lo na rede Doctor8.
+          Seu laboratório está em revisão. Após aprovação em <strong>/admin/laboratorios</strong>, pacientes poderão encontrá-lo na rede Doctor8.
         </div>
       )}
 
