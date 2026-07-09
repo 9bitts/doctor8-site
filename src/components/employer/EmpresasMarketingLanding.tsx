@@ -46,7 +46,7 @@ const PILLARS = [
   {
     icon: Stethoscope,
     title: "SST ocupacional integrado",
-    body: "PCMSO, exames/ASO, rede de clínicas e eSocial — o que SOC e Metra fazem, no mesmo ecossistema do EAP.",
+    body: "PCMSO, exames/ASO, rede de clínicas e eSocial — o que outras empresas fazem separadamente, no mesmo ecossistema do EAP.",
   },
   {
     icon: Plug,
@@ -180,12 +180,12 @@ const MODULES = [
 
 const VS_MARKET = [
   {
-    name: "Zenklub",
+    name: "Outras empresas",
     focus: "EAP + bem-estar",
     doctor8: "EAP + NR-1 completo + PCMSO + eSocial",
   },
   {
-    name: "SOC / Metra",
+    name: "Outras empresas",
     focus: "SST ocupacional",
     doctor8: "SST + saúde mental + EAP na mesma plataforma",
   },
@@ -229,7 +229,7 @@ const TRUST = [
   "Separação técnica: gestão corporativa ≠ prontuário clínico",
   "LGPD: denúncias anônimas, dados mínimos, exportação auditável",
   "Referência MTE: NR-1, NR-7, NR-17 e Guia de Riscos Psicossociais",
-  "Paridade funcional com SOC/Metra em SST + diferencial EAP integrado",
+  "Paridade funcional com outras empresas em SST + diferencial EAP integrado",
   "Hub de integrações pronto para Lacuna, eSocial e Stripe",
 ];
 
@@ -250,7 +250,7 @@ export default function EmpresasMarketingLanding() {
               — sem três fornecedores diferentes
             </h2>
             <p className="text-lg sm:text-xl text-slate-600 mt-6 leading-relaxed">
-              Enquanto Zenklub cuida do EAP e SOC cuida do ASO, o Doctor8 Empresas entrega{" "}
+              Enquanto outras empresas cuidam só do EAP ou só do ASO, o Doctor8 Empresas entrega{" "}
               <strong className="text-slate-800">conformidade regulatória</strong>,{" "}
               <strong className="text-slate-800">atendimento psicológico sigiloso</strong> e{" "}
               <strong className="text-slate-800">medicina do trabalho digital</strong> em um único contrato —
@@ -382,7 +382,7 @@ export default function EmpresasMarketingLanding() {
                 <Brain size={18} /> EAP + bem-estar mensurável
               </div>
               <h3 className="text-3xl font-bold text-slate-900">
-                Zenklub vende bem-estar. Nós vendemos bem-estar{" "}
+                Outras empresas vendem bem-estar. Nós vendemos bem-estar{" "}
                 <span className="text-violet-600">com compliance embutido</span>.
               </h3>
               <p className="text-slate-600 mt-4 leading-relaxed">
@@ -442,7 +442,7 @@ export default function EmpresasMarketingLanding() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="rounded-2xl bg-teal-50 border border-teal-100 p-6 sm:p-8">
             <Hospital className="text-teal-600 mb-4" size={32} />
-            <h4 className="font-bold text-slate-900 text-xl">Exames, ASO e eSocial — paridade SOC/Metra</h4>
+            <h4 className="font-bold text-slate-900 text-xl">Exames, ASO e eSocial — paridade com outras empresas</h4>
             <p className="text-slate-600 text-sm mt-3 leading-relaxed">
               Agenda admissional, periódico e demissional. Rede de clínicas parceiras, upload de laudo,
               ASO em PDF, assinatura ICP e fila eSocial S-2220/S-2240 com XML exportável.
@@ -483,14 +483,14 @@ export default function EmpresasMarketingLanding() {
       <section className="bg-slate-50 border-y border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
           <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-2">
-            Por que não só Zenklub, SOC ou planilha?
+            Por que não só outras empresas ou planilha?
           </h3>
           <p className="text-center text-slate-500 text-sm mb-10 max-w-xl mx-auto">
             Posicionamento claro para sua equipe comercial e para o comprador enterprise.
           </p>
           <div className="grid md:grid-cols-3 gap-4">
             {VS_MARKET.map((row) => (
-              <div key={row.name} className="rounded-xl bg-white border border-slate-200 p-5">
+              <div key={row.focus} className="rounded-xl bg-white border border-slate-200 p-5">
                 <p className="font-bold text-slate-900">{row.name}</p>
                 <p className="text-xs text-slate-500 mt-1">Foco: {row.focus}</p>
                 <p className="text-sm text-sky-700 font-medium mt-3 flex items-start gap-2">
