@@ -1,3 +1,5 @@
+import MarketingNav from "@/components/marketing/MarketingNav";
+import MarketingFooter from "@/components/marketing/MarketingFooter";
 import EmpresasLoginHub from "@/components/employer/EmpresasLoginHub";
 import EmpresasMarketingLanding from "@/components/employer/EmpresasMarketingLanding";
 
@@ -10,8 +12,10 @@ export const metadata = {
 export default function EmpresasLandingPage() {
   return (
     <div className="min-h-screen bg-white">
+      <MarketingNav active="empresas" />
       <EmpresasLoginHub />
       <EmpresasMarketingLanding />
+      <MarketingFooter />
     </div>
   );
 }

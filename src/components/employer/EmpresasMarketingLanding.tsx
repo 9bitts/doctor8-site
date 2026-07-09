@@ -621,27 +621,6 @@ export default function EmpresasMarketingLanding() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-slate-50">
-        <div className="max-w-6xl mx-auto px-4 py-8 text-center text-sm text-slate-500 space-y-2">
-          <p>
-            <a href={PSICOLOGOS_URL} className="text-violet-600 hover:underline font-medium">
-              Doctor8 para Psicólogos
-            </a>
-            {" · "}
-            <Link href="/register/organization" className="text-sky-600 hover:underline">
-              Clínicas (CNPJ)
-            </Link>
-            {" · "}
-            <Link href="/privacy" className="text-sky-600 hover:underline">
-              Privacidade
-            </Link>
-          </p>
-          <p className="text-xs text-slate-400">
-            Portaria MTE nº 1.419/2024 · NR-1 · NR-7 (PCMSO) · NR-17 (AEP) · eSocial S-2220/S-2240
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
