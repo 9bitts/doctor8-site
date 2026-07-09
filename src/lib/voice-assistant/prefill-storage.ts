@@ -1,9 +1,21 @@
 import type { VoicePrefillPayload } from "./types";
 import {
+  VOICE_FORM_PREFILL_EVENT,
   VOICE_FORM_PREFILL_STORAGE_KEY,
   VOICE_NOTE_STORAGE_KEY,
+  VOICE_PRESCRIPTION_PREFILL_EVENT,
   VOICE_PREFILL_STORAGE_KEY,
 } from "./types";
+
+export function notifyVoicePrescriptionPrefillReady(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(VOICE_PRESCRIPTION_PREFILL_EVENT));
+}
+
+export function notifyVoiceFormPrefillReady(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(VOICE_FORM_PREFILL_EVENT));
+}
 
 export function storeVoicePrefill(payload: Extract<VoicePrefillPayload, { type: "prescription" }>): void {
   if (typeof window === "undefined") return;

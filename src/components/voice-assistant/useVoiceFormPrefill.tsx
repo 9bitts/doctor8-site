@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { consumeVoiceFormPrefill } from "@/lib/voice-assistant/prefill-storage";
+import { VOICE_FORM_PREFILL_EVENT } from "@/lib/voice-assistant/types";
 import type { VoiceFormType } from "@/lib/voice-assistant/types";
 
 type Props = {
@@ -15,14 +16,25 @@ type Props = {
 export function useVoiceFormPrefill({ formType, chartId, onApply }: Props) {
   const [active, setActive] = useState(false);
 
-  useEffect(() => {
-    if (!chartId) return;
+  const tryApply = useCallback(() => {
     const payload = consumeVoiceFormPrefill(formType, chartId);
     if (!payload) return;
     onApply(payload.data as Record<string, unknown>);
     setActive(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formType, chartId]);
+  }, [chartId, formType, onApply]);
+
+  useEffect(() => {
+    if (!chartId) return;
+    tryApply();
+  }, [chartId, tryApply]);
+
+  useEffect(() => {
+    const onVoicePrefill = () => {
+      tryApply();
+    };
+    window.addEventListener(VOICE_FORM_PREFILL_EVENT, onVoicePrefill);
+    return () => window.removeEventListener(VOICE_FORM_PREFILL_EVENT, onVoicePrefill);
+  }, [tryApply]);
 
   return { voicePrefillActive: active };
 }

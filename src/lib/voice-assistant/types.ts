@@ -231,3 +231,6 @@ export const VOICE_PREFILL_STORAGE_KEY = "doctor8:voiceAssistant:prefill";
 export const VOICE_FORM_PREFILL_STORAGE_KEY = "doctor8:voiceAssistant:formPrefill";
 export const VOICE_NOTE_STORAGE_KEY = "doctor8:voiceAssistant:clinicalNote";
 export const VOICE_SESSION_STORAGE_KEY = "doctor8:voiceAssistant:session";
+
+export const VOICE_PRESCRIPTION_PREFILL_EVENT = "doctor8:voice-assistant:prescription-prefill";
+export const VOICE_FORM_PREFILL_EVENT = "doctor8:voice-assistant:form-prefill";

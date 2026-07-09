@@ -91,6 +91,11 @@ const T: Record<string, Record<Lang, string>> = {
     en: "Close",
     es: "Cerrar",
   },
+  closeAssistant: {
+    pt: "Fechar assistente",
+    en: "Close assistant",
+    es: "Cerrar asistente",
+  },
   editTranscript: {
     pt: "Editar transcrição",
     en: "Edit transcript",

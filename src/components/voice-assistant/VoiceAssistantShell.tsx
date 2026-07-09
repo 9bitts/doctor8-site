@@ -12,6 +12,8 @@ import {
   storeVoiceClinicalNote,
   storeVoiceFormPrefill,
   storeVoicePrefill,
+  notifyVoiceFormPrefillReady,
+  notifyVoicePrescriptionPrefillReady,
 } from "@/lib/voice-assistant/prefill-storage";
 import { getVoiceSessionContext, saveVoiceSessionContext } from "@/lib/voice-assistant/voice-session-context";
 import type { VoicePortalId, VoiceProcessResult } from "@/lib/voice-assistant/types";
@@ -39,6 +41,14 @@ function audioFileExtension(mime: string): string {
   const lower = mime.toLowerCase();
   if (lower.includes("mp4") || lower.includes("m4a")) return "m4a";
   return "webm";
+}
+
+function routeBasePath(route: string): string {
+  return route.split("?")[0];
+}
+
+function routesShareBasePath(a: string, b: string): boolean {
+  return routeBasePath(a) === routeBasePath(b);
 }
 
 export default function VoiceAssistantShell({ portalId, userId, variant = "fab" }: Props) {
@@ -214,6 +224,18 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
   const applyResult = useCallback(() => {
     if (!result || !activePortal) return;
 
+    const navigateAfterPrefill = (route: string, notify: () => void) => {
+      if (routesShareBasePath(pathname, route) && !route.includes("?")) {
+        notify();
+      } else {
+        router.push(route);
+        if (routesShareBasePath(pathname, route)) {
+          window.setTimeout(notify, 150);
+        }
+      }
+      setOpen(false);
+    };
+
     if (result.action === "navigate") {
       router.push(result.route);
       setOpen(false);
@@ -234,8 +256,7 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
           patientName: result.prefill.patient.displayName,
         });
       }
-      router.push(result.route);
-      setOpen(false);
+      navigateAfterPrefill(result.route, notifyVoicePrescriptionPrefillReady);
       return;
     }
 
@@ -256,8 +277,7 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
           patientName: result.patientName,
         });
       }
-      router.push(result.route);
-      setOpen(false);
+      navigateAfterPrefill(result.route, notifyVoiceFormPrefillReady);
       return;
     }
 
@@ -274,7 +294,7 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
       setOpen(false);
       return;
     }
-  }, [activePortal, result, router]);
+  }, [activePortal, pathname, result, router]);
 
   if (!activePortal || !userId) return null;
 
@@ -309,21 +329,25 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => !processing && !recording && setOpen(false)} />
           <div className="relative w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200">
-            <div className="sticky top-0 bg-gradient-to-r from-violet-600 to-indigo-700 text-white px-5 py-4 rounded-t-2xl sm:rounded-t-2xl flex items-start justify-between gap-3">
+            <div
+              className="sticky top-0 px-5 py-4 rounded-t-2xl sm:rounded-t-2xl flex items-start justify-between gap-3"
+              style={{ background: "linear-gradient(90deg, #6d28d9 0%, #4338ca 100%)" }}
+            >
               <div>
                 <div className="flex items-center gap-2">
-                  <Sparkles size={18} />
-                  <h2 className="font-bold text-lg">{t("title")}</h2>
+                  <Sparkles size={18} className="text-white" />
+                  <h2 className="font-bold text-lg text-white">{t("title")}</h2>
                 </div>
-                <p className="text-violet-100 text-sm mt-0.5">{t("subtitle")}</p>
+                <p className="text-sm mt-0.5" style={{ color: "#ede9fe" }}>{t("subtitle")}</p>
               </div>
               <button
                 type="button"
                 onClick={() => !processing && !recording && setOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 transition"
-                aria-label={t("close")}
+                className="p-2 rounded-lg transition shrink-0"
+                style={{ color: "#ffffff", backgroundColor: "rgba(255,255,255,0.18)" }}
+                aria-label={t("closeAssistant")}
               >
-                <X size={20} />
+                <X size={20} strokeWidth={2.5} />
               </button>
             </div>
 
@@ -393,6 +417,14 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                       {t("submitText")}
                     </button>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="w-full py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 bg-slate-50"
+                  >
+                    {t("closeAssistant")}
+                  </button>
                 </>
               )}
 
@@ -476,7 +508,7 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 pt-1">
                     {(result.action === "navigate" ||
                       result.action === "prescription_prefill" ||
                       result.action === "form_prefill" ||
@@ -484,7 +516,8 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                       <button
                         type="button"
                         onClick={applyResult}
-                        className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold"
+                        className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white text-sm font-semibold"
+                        style={{ backgroundColor: "#6d28d9" }}
                       >
                         {result.action === "navigate" ? <Navigation size={16} /> : <FileText size={16} />}
                         {result.action === "navigate" ? t("navigate") : t("apply")}
@@ -515,9 +548,9 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
-                      className="py-2.5 px-4 rounded-xl text-sm font-medium text-slate-500"
+                      className="py-2.5 px-4 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 bg-slate-50"
                     >
-                      {t("cancel")}
+                      {t("closeAssistant")}
                     </button>
                   </div>
                 </div>

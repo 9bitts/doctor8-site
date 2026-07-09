@@ -3,8 +3,8 @@
 // src/app/(dashboard)/professional/prescriptions/page.tsx
 // Memed-style prescription UI: reuse, manual add, recent carousel.
 
-import { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { useToast } from "@/components/ui/toast";
@@ -40,6 +40,7 @@ import {
   type PrescriptionsPortalId,
 } from "@/lib/prescriptions-portal-config";
 import { consumeVoicePrefill } from "@/lib/voice-assistant/prefill-storage";
+import { VOICE_PRESCRIPTION_PREFILL_EVENT } from "@/lib/voice-assistant/types";
 
 type ImportablePatient = {
   patientProfileId: string;
@@ -297,6 +298,7 @@ export default function PrescriptionsPage() {
   const { t, lang } = useI18n();
   const toast = useToast();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const portal: PrescriptionsPortalId = pathname.startsWith("/integrative-therapist")
     ? "integrative-therapist"
     : "professional";
@@ -369,52 +371,61 @@ export default function PrescriptionsPage() {
     }
   }, [cfg.prescriptionsOnly, view]);
 
-  useEffect(() => {
-    void (async () => {
-      const payload = consumeVoicePrefill();
-      if (!payload || payload.type !== "prescription") return;
+  const applyVoicePrefill = useCallback(async () => {
+    const payload = consumeVoicePrefill();
+    if (!payload || payload.type !== "prescription") return;
 
-      const { prefill } = payload;
-      setView("prescription");
-      setVoicePrefillActive(true);
+    const { prefill } = payload;
+    setView("prescription");
+    setVoicePrefillActive(true);
 
-      if (prefill.medications.length > 0) setMedications(prefill.medications);
-      if (prefill.instructions) setInstructions(prefill.instructions);
-      if (typeof prefill.validDays === "number") setValidDays(prefill.validDays);
+    if (prefill.medications.length > 0) setMedications(prefill.medications);
+    if (prefill.instructions) setInstructions(prefill.instructions);
+    if (typeof prefill.validDays === "number") setValidDays(prefill.validDays);
 
-      try {
-        if (prefill.patient?.patientRecordId) {
-          const res = await fetch(api("/records"));
-          const data = await res.json();
-          const chart = (data.records || []).find((c: Chart) => c.id === prefill.patient!.patientRecordId);
-          if (chart) {
-            setSelectedPatient(chart);
-            setPlatformTarget(null);
-          }
-        } else if (prefill.patient?.displayName) {
-          const res = await fetch(`${api("/records/search")}?q=${encodeURIComponent(prefill.patient.displayName)}`);
-          const data = await res.json();
-          const records: Chart[] = data.records || [];
-          const targetId = prefill.patientAmbiguities?.[0]?.patientRecordId;
-          const chart = (targetId ? records.find((c) => c.id === targetId) : records[0]) || null;
-          if (chart) {
-            setSelectedPatient(chart);
-            setPlatformTarget(null);
-          }
+    try {
+      if (prefill.patient?.patientRecordId) {
+        const res = await fetch(api("/records"));
+        const data = await res.json();
+        const chart = (data.records || []).find((c: Chart) => c.id === prefill.patient!.patientRecordId);
+        if (chart) {
+          setSelectedPatient(chart);
+          setPlatformTarget(null);
         }
-        toast.success(
-          lang === "es"
-            ? "Receta completada por voz. Revise antes de guardar."
-            : lang === "en"
-              ? "Prescription prefilled by voice. Review before saving."
-              : "Receita preenchida por voz. Confira antes de salvar.",
-        );
-      } catch {
-        /* ignore */
+      } else if (prefill.patient?.displayName) {
+        const res = await fetch(`${api("/records/search")}?q=${encodeURIComponent(prefill.patient.displayName)}`);
+        const data = await res.json();
+        const records: Chart[] = data.records || [];
+        const targetId = prefill.patientAmbiguities?.[0]?.patientRecordId;
+        const chart = (targetId ? records.find((c) => c.id === targetId) : records[0]) || null;
+        if (chart) {
+          setSelectedPatient(chart);
+          setPlatformTarget(null);
+        }
       }
-    })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+      toast.success(
+        lang === "es"
+          ? "Receta completada por voz. Revise antes de guardar."
+          : lang === "en"
+            ? "Prescription prefilled by voice. Review before saving."
+            : "Receita preenchida por voz. Confira antes de salvar.",
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [api, lang, toast]);
+
+  useEffect(() => {
+    void applyVoicePrefill();
+  }, [pathname, searchParams, applyVoicePrefill]);
+
+  useEffect(() => {
+    const onVoicePrefill = () => {
+      void applyVoicePrefill();
+    };
+    window.addEventListener(VOICE_PRESCRIPTION_PREFILL_EVENT, onVoicePrefill);
+    return () => window.removeEventListener(VOICE_PRESCRIPTION_PREFILL_EVENT, onVoicePrefill);
+  }, [applyVoicePrefill]);
 
   useEffect(() => {
     fetchAll();

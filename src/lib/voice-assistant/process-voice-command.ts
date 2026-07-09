@@ -156,9 +156,14 @@ export async function processVoiceCommand(params: {
       };
     }
 
+    const rxBase = prescriptionsRouteForPortal(portalId);
+    const rxRoute = prefill.patient?.patientRecordId
+      ? buildRouteWithPatient(rxBase, prefill.patient.patientRecordId, { view: "prescription" })
+      : rxBase;
+
     return {
       action: "prescription_prefill",
-      route: prescriptionsRouteForPortal(portalId),
+      route: rxRoute,
       message: intent.rawSummary || msg(lang, "Receita pronta para conferência.", "Prescription ready for review.", "Receta lista para revisión."),
       transcript,
       prefill,
