@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { Loader2, Plus, Save } from "lucide-react";
 import type { NutritionChart } from "./NutritionChartWorkspace";
+import { useVoiceFormPrefill, VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { NutritionAnamnesisPrefill } from "@/lib/voice-assistant/types";
 
 type RecallItem = { meal: string; time: string; foods: string; portion: string };
 
@@ -34,6 +36,28 @@ export default function FoodAnamnesisModule({ chart }: { chart: NutritionChart }
   const [recall, setRecall] = useState<RecallItem[]>([
     { meal: "", time: "", foods: "", portion: "" },
   ]);
+
+  const { voicePrefillActive } = useVoiceFormPrefill({
+    formType: "nutrition_anamnesis",
+    chartId: chart.id,
+    onApply: (data) => {
+      const d = data as NutritionAnamnesisPrefill;
+      setForm((prev) => ({
+        ...prev,
+        ...(d.chiefComplaint ? { chiefComplaint: d.chiefComplaint } : {}),
+        ...(d.clinicalHistory ? { clinicalHistory: d.clinicalHistory } : {}),
+        ...(d.familyHistory ? { familyHistory: d.familyHistory } : {}),
+        ...(d.allergies ? { allergies: d.allergies } : {}),
+        ...(d.medications ? { medications: d.medications } : {}),
+        ...(d.dietaryRestrictions ? { dietaryRestrictions: d.dietaryRestrictions } : {}),
+        ...(d.physicalActivity ? { physicalActivity: d.physicalActivity } : {}),
+        ...(d.weightGoal ? { weightGoal: d.weightGoal } : {}),
+        ...(d.bowelHabits ? { bowelHabits: d.bowelHabits } : {}),
+        ...(d.alcoholUse ? { alcoholUse: d.alcoholUse } : {}),
+        ...(d.notes ? { notes: d.notes } : {}),
+      }));
+    },
+  });
 
   async function load() {
     setLoading(true);
@@ -106,6 +130,7 @@ export default function FoodAnamnesisModule({ chart }: { chart: NutritionChart }
 
   return (
     <div className="space-y-6">
+      <VoicePrefillBanner active={voicePrefillActive} />
       <form onSubmit={handleSave} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
         <h3 className="font-semibold text-slate-900">{t("nutri.anam.fullTitle")}</h3>
         <div className="grid sm:grid-cols-2 gap-3">

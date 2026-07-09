@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import {
   Plus, FileText, Download, Loader2, CheckCircle2, Search,
   ChevronRight, AlertTriangle, PenLine, Pill, ArrowLeft, Copy,
-  Clock, User, FlaskConical, ScrollText, LayoutTemplate, BookmarkPlus,
+  Clock, User, FlaskConical, ScrollText, LayoutTemplate, BookmarkPlus, Sparkles,
 } from "lucide-react";
 import { PatientNoAccountPanel } from "@/components/professional/emissions/PatientNoAccountPanel";
 import { EmissionsSignModal, RX_STYLES, type SignTarget, type EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
@@ -39,6 +39,7 @@ import {
   apiPath,
   type PrescriptionsPortalId,
 } from "@/lib/prescriptions-portal-config";
+import { consumeVoicePrefill } from "@/lib/voice-assistant/prefill-storage";
 
 type ImportablePatient = {
   patientProfileId: string;
@@ -360,12 +361,60 @@ export default function PrescriptionsPage() {
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [pendingFloralProductId, setPendingFloralProductId] = useState<string | null>(null);
   const [floralOnlyMode, setFloralOnlyMode] = useState(false);
+  const [voicePrefillActive, setVoicePrefillActive] = useState(false);
 
   useEffect(() => {
     if (cfg.prescriptionsOnly && (view === "exam" || view === "document")) {
       setView("hub");
     }
   }, [cfg.prescriptionsOnly, view]);
+
+  useEffect(() => {
+    void (async () => {
+      const payload = consumeVoicePrefill();
+      if (!payload || payload.type !== "prescription") return;
+
+      const { prefill } = payload;
+      setView("prescription");
+      setVoicePrefillActive(true);
+
+      if (prefill.medications.length > 0) setMedications(prefill.medications);
+      if (prefill.instructions) setInstructions(prefill.instructions);
+      if (typeof prefill.validDays === "number") setValidDays(prefill.validDays);
+
+      try {
+        if (prefill.patient?.patientRecordId) {
+          const res = await fetch(api("/records"));
+          const data = await res.json();
+          const chart = (data.records || []).find((c: Chart) => c.id === prefill.patient!.patientRecordId);
+          if (chart) {
+            setSelectedPatient(chart);
+            setPlatformTarget(null);
+          }
+        } else if (prefill.patient?.displayName) {
+          const res = await fetch(`${api("/records/search")}?q=${encodeURIComponent(prefill.patient.displayName)}`);
+          const data = await res.json();
+          const records: Chart[] = data.records || [];
+          const targetId = prefill.patientAmbiguities?.[0]?.patientRecordId;
+          const chart = (targetId ? records.find((c) => c.id === targetId) : records[0]) || null;
+          if (chart) {
+            setSelectedPatient(chart);
+            setPlatformTarget(null);
+          }
+        }
+        toast.success(
+          lang === "es"
+            ? "Receta completada por voz. Revise antes de guardar."
+            : lang === "en"
+              ? "Prescription prefilled by voice. Review before saving."
+              : "Receita preenchida por voz. Confira antes de salvar.",
+        );
+      } catch {
+        /* ignore */
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
     fetchAll();
@@ -1156,6 +1205,20 @@ export default function PrescriptionsPage() {
           <h1 className="text-2xl font-bold text-slate-900">{t("rx.formTitle")}</h1>
           <p className="text-slate-500 text-sm mt-1">{t("rx.formSubtitle")}</p>
         </div>
+
+        {voicePrefillActive && (
+          <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 flex items-start gap-3">
+            <Sparkles size={18} className="text-violet-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-violet-800">
+                {lang === "es" ? "Completado por asistente de voz" : lang === "en" ? "Prefilled by voice assistant" : "Preenchido pelo assistente de voz"}
+              </p>
+              <p className="text-xs text-violet-700 mt-1">
+                {lang === "es" ? "Revise todos los campos antes de guardar." : lang === "en" ? "Review all fields before saving." : "Confira todos os campos antes de salvar."}
+              </p>
+            </div>
+          </div>
+        )}
 
         {reuseSource && (
           <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex items-start gap-3">

@@ -49,6 +49,8 @@ import {
 } from "@/lib/platform-nav-registry";
 import { withNavIcons, type DashboardNavItem } from "@/lib/dashboard-nav-icons";
 import { ToastProvider } from "@/components/ui/toast";
+import VoiceAssistantShell from "@/components/voice-assistant/VoiceAssistantShell";
+import { resolveVoicePortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
 import { isValidIanaTimeZone } from "@/lib/timezone";
 import { hasAnyNaturalMedicinePractice } from "@/lib/natural-medicine/config";
 import {
@@ -292,6 +294,8 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const isDentist = isDentistPortal;
   const isPsychoanalyst = role === "PSYCHOANALYST";
   const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
+  const voicePortalId = resolveVoicePortalFromPathname(pathname);
+  const showVoiceAssistant = sessionLoaded && !!userId && !!voicePortalId;
   const isOrganization = role === "ORGANIZATION";
   const isEmployer = role === "EMPLOYER";
   const isOccupationalPhysician = role === "OCCUPATIONAL_PHYSICIAN";
@@ -549,6 +553,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2 ml-auto shrink-0">
+            {showVoiceAssistant && voicePortalId && (
+              <VoiceAssistantShell portalId={voicePortalId} userId={userId} variant="header" />
+            )}
             {isOrganization && <OrganizationScopeSwitcher />}
             {isProfessional && <ProfessionalScopeSwitcher />}
             <EightBetaLink />
@@ -570,6 +577,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           )}
           {children}
         </main>
+        {showVoiceAssistant && voicePortalId && (
+          <VoiceAssistantShell portalId={voicePortalId} userId={userId} variant="fab" />
+        )}
       </div>
     </div>
   );

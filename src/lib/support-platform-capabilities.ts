@@ -15,6 +15,8 @@ export type SupportPlatformCapabilities = {
   documentSummarizeAiAvailable: boolean;
   /** Freud educational assistant (psychoanalyst portal) */
   freudAssistantAvailable: boolean;
+  /** Global voice assistant for clinical provider portals */
+  voiceAssistantAvailable: boolean;
   /** Daily.co video consultations */
   videoCallsAvailable: boolean;
   /** Google Meet handoff option */
@@ -45,6 +47,7 @@ export function getSupportPlatformCapabilities(): SupportPlatformCapabilities {
     consultTranscriptionAvailable: envSet("OPENAI_API_KEY"),
     documentSummarizeAiAvailable: anthropicOk,
     freudAssistantAvailable: anthropicOk,
+    voiceAssistantAvailable: anthropicOk && envSet("OPENAI_API_KEY"),
     videoCallsAvailable: dailyOk,
     googleMeetEnabled: isGoogleMeetEnabled(),
     pharmacyMarketplace: getPharmacyIntegrationMode(),
@@ -63,6 +66,7 @@ export function buildCapabilitiesContextBlock(caps: SupportPlatformCapabilities)
     `- Audio transcription (consult notes): ${caps.consultTranscriptionAvailable ? "available" : "unavailable ? paste transcript manually"}`,
     `- AI document summarize: ${caps.documentSummarizeAiAvailable ? "available" : "unavailable"}`,
     `- Freud educational assistant: ${caps.freudAssistantAvailable ? "available" : "unavailable"}`,
+    `- Voice assistant (clinical portals): ${caps.voiceAssistantAvailable ? "available" : "unavailable ? needs ANTHROPIC + OPENAI keys"}`,
     `- Video calls (Daily): ${caps.videoCallsAvailable ? "available" : "unavailable"}`,
     `- Google Meet handoff: ${caps.googleMeetEnabled ? "enabled" : "disabled in this deployment"}`,
     `- Pharmacy marketplace: ${caps.pharmacyMarketplace}`,

@@ -6,6 +6,8 @@ import { Loader2, Plus, Save } from "lucide-react";
 import { NURSING_DIAGNOSES } from "@/lib/nursing/diagnoses";
 import type { CarePlanIntervention } from "@/lib/nursing/care-plan-types";
 import type { NurseChart } from "./NurseChartWorkspace";
+import { useVoiceFormPrefill, VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { CarePlanPrefill } from "@/lib/voice-assistant/types";
 
 type CarePlan = {
   id: string;
@@ -25,6 +27,29 @@ export default function CarePlanModule({ chart }: { chart: NurseChart }) {
   const [selectedDx, setSelectedDx] = useState<string[]>([]);
   const [interventionText, setInterventionText] = useState("");
   const [notes, setNotes] = useState("");
+
+  const { voicePrefillActive } = useVoiceFormPrefill({
+    formType: "care_plan",
+    chartId: chart.id,
+    onApply: (data) => {
+      const d = data as CarePlanPrefill;
+      if (d.title) setTitle(d.title);
+      if (d.interventionText) setInterventionText(d.interventionText);
+      if (d.notes) setNotes(d.notes);
+      if (d.diagnosisLabels?.length) {
+        const ids = d.diagnosisLabels
+          .map((label) => {
+            const match = NURSING_DIAGNOSES.find((dx) =>
+              label.toLowerCase().includes(dx.code.toLowerCase()) ||
+              label.toLowerCase().includes(t(dx.labelKey).toLowerCase()),
+            );
+            return match?.id;
+          })
+          .filter(Boolean) as string[];
+        if (ids.length) setSelectedDx(ids);
+      }
+    },
+  });
 
   async function load() {
     setLoading(true);
@@ -86,6 +111,7 @@ export default function CarePlanModule({ chart }: { chart: NurseChart }) {
 
   return (
     <div className="space-y-6">
+      <VoicePrefillBanner active={voicePrefillActive} />
       <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-5 space-y-4">
         <h3 className="font-semibold text-slate-900">{t("nurse.carePlan.new")}</h3>
         <input

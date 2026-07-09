@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar,
   ChevronLeft,
@@ -101,6 +102,8 @@ export default function ProfessionalAppointmentsView({
   volunteerBlocks?: VolunteerWeeklyBlock[];
 }) {
   const { t, lang } = useI18n();
+  const searchParams = useSearchParams();
+  const voiceHint = searchParams.get("voiceHint");
   const locale = localeOf(lang);
   const isMobileDay = useIsMobileDayView();
 
@@ -489,6 +492,14 @@ export default function ProfessionalAppointmentsView({
 
   return (
     <div className="space-y-6">
+      {voiceHint && (
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
+          <span className="font-semibold">
+            {lang === "es" ? "Sugerencia de voz:" : lang === "en" ? "Voice hint:" : "Sugestão de voz:"}
+          </span>{" "}
+          {voiceHint}
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
         <div className="flex rounded-xl border border-slate-200 overflow-hidden text-sm">
           <button

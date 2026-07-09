@@ -16,6 +16,9 @@ import {
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { readChartDeepLink } from "@/lib/video-chart-nav";
+import { consumeVoiceFormPrefill } from "@/lib/voice-assistant/prefill-storage";
+import { VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { SessionNotePrefill } from "@/lib/voice-assistant/types";
 
 interface Chart { id: string; firstName: string; lastName: string; }
 interface SessionNote {
@@ -75,6 +78,7 @@ export default function PsychologySessionsPage() {
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
   const [lockPatient, setLockPatient] = useState(false);
+  const [voicePrefillActive, setVoicePrefillActive] = useState(false);
 
   const formatDef = SESSION_FORMATS.find((f) => f.id === format)!;
 
@@ -98,8 +102,8 @@ export default function PsychologySessionsPage() {
     if (loading) return;
     const { patientRecordId, returnUrl, view: viewParam } = readChartDeepLink();
     if (returnUrl) setConsultReturnUrl(returnUrl);
-    if (!patientRecordId || !returnUrl) return;
-    setLockPatient(true);
+    if (!patientRecordId) return;
+    if (returnUrl) setLockPatient(true);
     const chart = charts.find((c) => c.id === patientRecordId);
     if (chart) {
       setSelectedPatient(chart);
@@ -108,11 +112,33 @@ export default function PsychologySessionsPage() {
   }, [loading, charts]);
 
   useEffect(() => {
+    if (loading) return;
+    const { patientRecordId } = readChartDeepLink();
+    const chartId = selectedPatient?.id || patientRecordId;
+    if (!chartId) return;
+    const payload = consumeVoiceFormPrefill("session_note", chartId);
+    if (!payload) return;
+    const d = payload.data as SessionNotePrefill;
+    if (!selectedPatient && patientRecordId) {
+      const chart = charts.find((c) => c.id === patientRecordId);
+      if (chart) setSelectedPatient(chart);
+    }
+    setView("create");
+    setVoicePrefillActive(true);
+    if (d.format) setFormat(d.format);
+    if (d.fields) setFields((prev) => ({ ...prev, ...d.fields }));
+    if (d.rawNotes) setRawNotes(d.rawNotes);
+    if (typeof d.durationMins === "number") setDuration(d.durationMins);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, selectedPatient?.id, charts]);
+
+  useEffect(() => {
     if (view === "edit" && editingNote) return;
+    if (voicePrefillActive) return;
     const empty: Record<string, string> = {};
     formatDef.fields.forEach((f) => { empty[f.key] = ""; });
     setFields(empty);
-  }, [format, formatDef.fields, view, editingNote]);
+  }, [format, formatDef.fields, view, editingNote, voicePrefillActive]);
 
   const filteredCharts = patientQuery.trim()
     ? charts.filter((c) => `${c.firstName} ${c.lastName}`.toLowerCase().includes(patientQuery.toLowerCase()))
@@ -386,6 +412,8 @@ export default function PsychologySessionsPage() {
             {isEdit ? at("editSubtitle") : t("psy.sessions.createSubtitle")}
           </p>
         </div>
+
+        {!isEdit && <VoicePrefillBanner active={voicePrefillActive} />}
 
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
           <label className="text-sm font-semibold text-slate-800">{t("psy.sessions.selectPatient")}</label>

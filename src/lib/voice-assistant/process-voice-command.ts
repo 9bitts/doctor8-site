@@ -1,0 +1,271 @@
+import type { Lang } from "@/lib/i18n/translations";
+import { chartActionUrl } from "@/lib/video-chart-nav";
+import { generateStructuredFormPrefill } from "./generate-structured-prefill";
+import { formRouteForType, resolveFormType } from "./form-type-resolver";
+import {
+  appointmentsRouteForPortal,
+  patientChartRouteForPortal,
+  patientsRouteForPortal,
+  prescriptionsRouteForPortal,
+} from "./portal-resolver";
+import { parseVoiceIntent } from "./parse-intent";
+import { buildPrescriptionPrefill, resolvePatientById, resolvePatientMatches } from "./resolve-entities";
+import { resolveSkillRoute } from "./skill-registry";
+import type { VoicePortalId, VoiceProcessResult, PatientMatch } from "./types";
+import type { VoiceAssistantAuth } from "./voice-assistant-auth";
+
+function msg(lang: Lang, pt: string, en: string, es: string): string {
+  if (lang === "es") return es;
+  if (lang === "en") return en;
+  return pt;
+}
+
+function buildRouteWithPatient(
+  basePath: string,
+  patientRecordId?: string,
+  extra?: Record<string, string>,
+): string {
+  if (!patientRecordId) return basePath;
+  return chartActionUrl(basePath, patientRecordId, { extra });
+}
+
+export async function processVoiceCommand(params: {
+  auth: VoiceAssistantAuth;
+  lang: Lang;
+  portalId: VoicePortalId;
+  transcript: string;
+  sessionPatientRecordId?: string;
+}): Promise<VoiceProcessResult> {
+  const { auth, lang, portalId, transcript } = params;
+  const intent = await parseVoiceIntent({ lang, portalId, transcript });
+
+  if (intent.confidence < 0.35) {
+    return {
+      action: "unknown",
+      message: msg(
+        lang,
+        "Não entendi bem. Pode repetir ou editar a transcrição?",
+        "I didn't understand well. Could you repeat or edit the transcript?",
+        "No entendí bien. ¿Puede repetir o editar la transcripción?",
+      ),
+      transcript,
+    };
+  }
+
+  const skillRoute = intent.targetRoute || resolveSkillRoute(portalId, intent.skillId);
+
+  if (intent.skillId === "navigate") {
+    const route = skillRoute || resolveSkillRoute(portalId, "navigate");
+    if (!route) {
+      return {
+        action: "unknown",
+        message: msg(lang, "Não encontrei essa ferramenta no seu portal.", "I couldn't find that tool in your portal.", "No encontré esa herramienta en su portal."),
+        transcript,
+      };
+    }
+    return {
+      action: "navigate",
+      route,
+      message: intent.rawSummary || msg(lang, "Abrindo a ferramenta solicitada.", "Opening the requested tool.", "Abriendo la herramienta solicitada."),
+      transcript,
+    };
+  }
+
+  if (intent.skillId === "search_patient") {
+    const matches = await resolvePatientMatches({
+      providerId: auth.providerId,
+      portalId,
+      patientName: intent.patientName,
+    });
+    if (matches.length === 1 && matches[0].patientRecordId) {
+      return {
+        action: "navigate",
+        route: patientChartRouteForPortal(portalId, matches[0].patientRecordId),
+        message: msg(lang, `Abrindo ficha de ${matches[0].displayName}.`, `Opening chart for ${matches[0].displayName}.`, `Abriendo ficha de ${matches[0].displayName}.`),
+        transcript,
+      };
+    }
+    if (matches.length > 1) {
+      return {
+        action: "clarify",
+        message: msg(lang, "Encontrei mais de um paciente.", "I found more than one patient.", "Encontré más de un paciente."),
+        transcript,
+        question: msg(lang, "Qual paciente você quer abrir?", "Which patient do you want to open?", "¿Qué paciente desea abrir?"),
+        options: matches.map((m) => m.displayName),
+      };
+    }
+    const base = patientsRouteForPortal(portalId);
+    const q = intent.patientName ? `?q=${encodeURIComponent(intent.patientName)}` : "";
+    return {
+      action: "navigate",
+      route: `${base}${q}`,
+      message: msg(lang, "Abrindo lista de pacientes.", "Opening patient list.", "Abriendo lista de pacientes."),
+      transcript,
+    };
+  }
+
+  if (intent.skillId === "schedule") {
+    let route = appointmentsRouteForPortal(portalId);
+    if (intent.scheduleHint) {
+      route += `?voiceHint=${encodeURIComponent(intent.scheduleHint)}`;
+    }
+    return {
+      action: "navigate",
+      route,
+      message: intent.scheduleHint
+        ? msg(lang, `Abrindo agenda. ${intent.scheduleHint}`, `Opening schedule. ${intent.scheduleHint}`, `Abriendo agenda. ${intent.scheduleHint}`)
+        : msg(lang, "Abrindo agenda.", "Opening schedule.", "Abriendo agenda."),
+      transcript,
+    };
+  }
+
+  if (intent.skillId === "meal_plan") {
+    const route = resolveSkillRoute(portalId, "meal_plan") || "/nutricionista/planos";
+    return {
+      action: "navigate",
+      route,
+      message: intent.rawSummary || msg(lang, "Abrindo plano alimentar.", "Opening meal plan.", "Abriendo plan alimentario."),
+      transcript,
+    };
+  }
+
+  if (intent.skillId === "prescribe") {
+    const prefill = await buildPrescriptionPrefill({
+      providerId: auth.providerId,
+      portalId,
+      intent,
+      phytoOnly: portalId === "INTEGRATIVE_THERAPIST",
+    });
+
+    if (prefill.medications.length === 0) {
+      return {
+        action: "clarify",
+        message: msg(lang, "Entendi que você quer prescrever.", "I understand you want to prescribe.", "Entendí que desea prescribir."),
+        transcript,
+        question: msg(lang, "Qual medicamento e posologia?", "Which medication and dosage?", "¿Qué medicamento y posología?"),
+      };
+    }
+
+    if (prefill.patientAmbiguities && prefill.patientAmbiguities.length > 1) {
+      return {
+        action: "clarify",
+        message: msg(lang, "Encontrei mais de um paciente com esse nome.", "I found more than one patient with that name.", "Encontré más de un paciente con ese nombre."),
+        transcript,
+        question: msg(lang, "Qual paciente?", "Which patient?", "¿Qué paciente?"),
+        options: prefill.patientAmbiguities.map((p) => p.displayName),
+      };
+    }
+
+    return {
+      action: "prescription_prefill",
+      route: prescriptionsRouteForPortal(portalId),
+      message: intent.rawSummary || msg(lang, "Receita pronta para conferência.", "Prescription ready for review.", "Receta lista para revisión."),
+      transcript,
+      prefill,
+    };
+  }
+
+  const formSkills = new Set([
+    "clinical_note",
+    "sbar_note",
+    "med_review",
+    "anamnesis",
+  ]);
+
+  if (formSkills.has(intent.skillId)) {
+    const formType = resolveFormType(portalId, intent);
+    const clinicalText = intent.clinicalText?.trim() || transcript.trim();
+
+    const matches = await resolvePatientMatches({
+      providerId: auth.providerId,
+      portalId,
+      patientName: intent.patientName,
+    });
+
+    let patient: PatientMatch | undefined = matches[0];
+
+    if (!patient && params.sessionPatientRecordId) {
+      patient = (await resolvePatientById({
+        providerId: auth.providerId,
+        portalId,
+        patientRecordId: params.sessionPatientRecordId,
+      })) || undefined;
+    }
+
+    if (matches.length > 1) {
+      return {
+        action: "clarify",
+        message: msg(lang, "Encontrei mais de um paciente.", "I found more than one patient.", "Encontré más de un paciente."),
+        transcript,
+        question: msg(lang, "Qual paciente?", "Which patient?", "¿Qué paciente?"),
+        options: matches.map((m) => m.displayName),
+      };
+    }
+
+    const patientRecordId = patient?.patientRecordId || params.sessionPatientRecordId;
+    const patientName = patient?.displayName || intent.patientName || undefined;
+
+    if (formType) {
+      const data = await generateStructuredFormPrefill({
+        lang,
+        formType,
+        transcript: clinicalText,
+        patientName,
+      });
+
+      let baseRoute = formRouteForType(portalId, formType);
+      const extra: Record<string, string> = {};
+
+      if (formType === "session_note") {
+        extra.view = "create";
+      }
+      if (formType === "chart_evolution" && patientRecordId) {
+        baseRoute = patientChartRouteForPortal(portalId, patientRecordId);
+        extra.newRecord = "1";
+        extra.tab = "evolution";
+      }
+
+      const route = buildRouteWithPatient(baseRoute, patientRecordId, Object.keys(extra).length ? extra : undefined);
+
+      return {
+        action: "form_prefill",
+        route,
+        message: intent.rawSummary || msg(lang, "Formulário pronto para conferência.", "Form ready for review.", "Formulario listo para revisión."),
+        transcript,
+        formType,
+        patientRecordId,
+        patientName,
+        data,
+      };
+    }
+
+    const chartRoute = patientRecordId
+      ? patientChartRouteForPortal(portalId, patientRecordId)
+      : skillRoute || undefined;
+
+    return {
+      action: "clinical_note",
+      message: intent.rawSummary || msg(lang, "Rascunho gerado. Confira antes de salvar.", "Draft generated. Review before saving.", "Borrador generado. Revise antes de guardar."),
+      transcript,
+      draft: clinicalText,
+      patientRecordId,
+      patientName,
+      chartRoute,
+    };
+  }
+
+  if (skillRoute) {
+    return {
+      action: "navigate",
+      route: skillRoute,
+      message: intent.rawSummary || msg(lang, "Abrindo ferramenta.", "Opening tool.", "Abriendo herramienta."),
+      transcript,
+    };
+  }
+
+  return {
+    action: "unknown",
+    message: msg(lang, "Ainda não consigo executar esse comando neste portal.", "I can't execute that command in this portal yet.", "Aún no puedo ejecutar ese comando en este portal."),
+    transcript,
+  };
+}

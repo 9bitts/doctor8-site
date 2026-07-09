@@ -5,6 +5,8 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { ClipboardList, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import type { PharmacistChart } from "./PharmacistChartWorkspace";
 import type { MedicationItem } from "@/lib/pharmacy/types";
+import { useVoiceFormPrefill, VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { MedReviewPrefill } from "@/lib/voice-assistant/types";
 
 type MedProblem = {
   type: string;
@@ -45,6 +47,31 @@ export default function MedReviewModule({ chart }: { chart: PharmacistChart }) {
   const [recommendations, setRecommendations] = useState("");
   const [adherenceNotes, setAdherenceNotes] = useState("");
   const [followUpAt, setFollowUpAt] = useState("");
+
+  const { voicePrefillActive } = useVoiceFormPrefill({
+    formType: "med_review",
+    chartId: chart.id,
+    onApply: (data) => {
+      const d = data as MedReviewPrefill;
+      if (d.medications?.length) {
+        setMedications(d.medications.map((m) => ({
+          name: m.name || "",
+          dosage: m.dosage || "",
+          route: m.route || "",
+          frequency: m.frequency || "",
+        })));
+      }
+      if (d.problems?.length) {
+        setProblems(d.problems.map((p) => ({
+          type: p.type || "",
+          description: p.description || "",
+          severity: (p.severity as "LOW" | "MEDIUM" | "HIGH") || "LOW",
+        })));
+      }
+      if (d.recommendations) setRecommendations(d.recommendations);
+      if (d.adherenceNotes) setAdherenceNotes(d.adherenceNotes);
+    },
+  });
 
   async function load() {
     setLoading(true);
@@ -107,6 +134,7 @@ export default function MedReviewModule({ chart }: { chart: PharmacistChart }) {
 
   return (
     <div className="space-y-6">
+      <VoicePrefillBanner active={voicePrefillActive} />
       <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-5 space-y-4">
         <h3 className="font-semibold text-slate-900 flex items-center gap-2">
           <ClipboardList size={16} className="text-teal-600" />
