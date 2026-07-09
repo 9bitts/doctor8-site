@@ -96,6 +96,15 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
     setCopied(false);
   }, []);
 
+  useEffect(() => {
+    function onOpenFromBanner() {
+      resetSession();
+      setOpen(true);
+    }
+    window.addEventListener("doctor8:voice-assistant:open", onOpenFromBanner);
+    return () => window.removeEventListener("doctor8:voice-assistant:open", onOpenFromBanner);
+  }, [resetSession]);
+
   const processCommand = useCallback(
     async (text?: string, audioBlob?: Blob, mime?: string) => {
       if (!activePortal) return;

@@ -156,6 +156,21 @@ const T: Record<string, Record<Lang, string>> = {
     en: "Or type / paste the command:",
     es: "O escriba / pegue el comando:",
   },
+  "promoBanner.title": {
+    pt: "Teste nossa assistente de IA",
+    en: "Try our AI assistant",
+    es: "Pruebe nuestra asistente de IA",
+  },
+  "promoBanner.desc": {
+    pt: "Fale o que precisa fazer — a IA transcreve, entende e preenche o formulário. Você revisa tudo e só salva quando confirmar. Use o botão roxo no canto inferior esquerdo ou Ctrl+Shift+V.",
+    en: "Say what you need to do — AI transcribes, understands, and prefills the form. You review everything and save only when you confirm. Use the purple button at the bottom-left or Ctrl+Shift+V.",
+    es: "Diga lo que necesita hacer — la IA transcribe, entiende y completa el formulario. Usted revisa todo y guarda solo cuando confirme. Use el botón morado abajo a la izquierda o Ctrl+Shift+V.",
+  },
+  "promoBanner.cta": {
+    pt: "Experimentar agora",
+    en: "Try it now",
+    es: "Probar ahora",
+  },
 };
 
 export function voiceT(key: string, lang: Lang): string {

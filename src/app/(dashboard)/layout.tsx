@@ -50,6 +50,7 @@ import {
 import { withNavIcons, type DashboardNavItem } from "@/lib/dashboard-nav-icons";
 import { ToastProvider } from "@/components/ui/toast";
 import VoiceAssistantShell from "@/components/voice-assistant/VoiceAssistantShell";
+import VoiceAssistantPromoBanner from "@/components/voice-assistant/VoiceAssistantPromoBanner";
 import { resolveVoicePortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
 import { isValidIanaTimeZone } from "@/lib/timezone";
 import { hasAnyNaturalMedicinePractice } from "@/lib/natural-medicine/config";
@@ -566,6 +567,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
+
+        {showVoiceAssistant && voicePortalId && userId && (
+          <VoiceAssistantPromoBanner userId={userId} />
+        )}
 
         <main className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
           <PushSubscribe />
