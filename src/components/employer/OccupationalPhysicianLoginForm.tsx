@@ -13,6 +13,7 @@ import { OCCUPATIONAL_PHYSICIAN_HOME, OCCUPATIONAL_PHYSICIAN_LOGIN } from "@/lib
 import {
   useLoginLang,
   parseLoginError,
+  resolveCredentialSignInError,
   LoginPageShell,
   LoginLanguageSelector,
   LoginCard,
@@ -71,13 +72,10 @@ export default function OccupationalPhysicianLoginForm() {
       });
 
       if (!result?.ok || result?.error) {
-        if (result?.error?.includes("EmailNotVerified")) {
-          setError("unverified");
+        const failure = resolveCredentialSignInError(result ?? {});
+        setError(failure);
+        if (failure === "unverified") {
           setUnverifiedEmail(trimmedEmail);
-        } else if (result?.error?.includes("AccountLocked")) {
-          setError("locked");
-        } else {
-          setError("invalid");
         }
         setLoading(false);
         return;

@@ -591,6 +591,7 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
   { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ADMIN"], iconKey: "Users" },
   { href: "/admin/empresas", labelKey: "nav.adminEmployers", roles: ["ADMIN"], iconKey: "Building2" },
+  { href: "/admin/clinicas", labelKey: "nav.adminClinics", roles: ["ADMIN"], iconKey: "Building2" },
   { href: "/admin/farmacias", labelKey: "nav.adminPharmacies", roles: ["ADMIN"], iconKey: "Pill" },
   { href: "/admin/laboratorios", labelKey: "nav.adminLaboratories", roles: ["ADMIN"], iconKey: "FlaskConical" },
   { href: "/admin/payments", labelKey: "nav.adminPayments", roles: ["ADMIN"], iconKey: "CreditCard" },

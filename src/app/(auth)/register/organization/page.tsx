@@ -6,6 +6,7 @@ import Link from "next/link";
 import { translate, normalizeLang, LANGUAGES, Lang } from "@/lib/i18n/translations";
 import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
 import { ORGANIZATION_LOGIN, buildRegisterSuccessHref } from "@/lib/auth-portals";
+import { existingAccountMessage, registerSuccessFollowUp } from "@/lib/auth-flow-errors";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
 import { RegisterLogo } from "@/components/auth/register-shared";
@@ -117,12 +118,19 @@ export default function RegisterOrganizationPage() {
         setErrors(data.error || { general: [t("reg.regFailed")] });
         return;
       }
+      const followUp = registerSuccessFollowUp(data);
+      if (followUp.kind === "existingAccount") {
+        setErrors({ email: [existingAccountMessage(lang)] });
+        return;
+      }
+      const emailSent =
+        followUp.kind === "verify" ? followUp.emailSent : data.emailSent !== false;
       router.push(
         buildRegisterSuccessHref({
           role: "ORGANIZATION",
           email,
           callbackUrl: "/organization",
-          emailSent: data.emailSent !== false,
+          emailSent,
         }),
       );
     } catch {

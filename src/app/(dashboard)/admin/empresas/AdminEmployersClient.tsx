@@ -10,10 +10,15 @@ type Company = {
   planTier: string;
   nr1ComplianceScore: number | null;
   employeeCount: number | null;
+  contactEmail: string | null;
   workforceCount: number;
   riskCount: number;
   billingStatus: string;
   hasSubscription: boolean;
+  ownerUserId: string | null;
+  ownerEmail: string | null;
+  ownerEmailVerified: boolean;
+  ownerLocked: boolean;
   createdAt: string;
 };
 
@@ -35,6 +40,15 @@ export default function AdminEmployersClient() {
   }
 
   useEffect(() => { load(); }, []);
+
+  async function verifyOwnerEmail(userId: string | null) {
+    if (!userId) return;
+    if (!confirm("Confirmar verificação manual do e-mail deste usuário?")) return;
+    setSaving(userId);
+    await fetch(`/api/admin/users/${userId}/verify-email`, { method: "POST" });
+    setSaving(null);
+    await load();
+  }
 
   async function updateTier(id: string, planTier: string) {
     setSaving(id);
@@ -65,11 +79,16 @@ export default function AdminEmployersClient() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
+      <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+        Para a empresa conseguir entrar em <strong>/empresas/login</strong>, o e-mail do responsável precisa estar verificado.
+      </p>
+
+      <div className="rounded-2xl border border-slate-200 bg-white overflow-x-auto">
+        <table className="w-full text-sm min-w-[980px]">
           <thead className="bg-slate-50 text-slate-500 text-left">
             <tr>
               <th className="px-4 py-3 font-medium">Empresa</th>
+              <th className="px-4 py-3 font-medium">E-mail login</th>
               <th className="px-4 py-3 font-medium">Plano</th>
               <th className="px-4 py-3 font-medium">NR-1</th>
               <th className="px-4 py-3 font-medium">Colab. EAP</th>
@@ -83,6 +102,31 @@ export default function AdminEmployersClient() {
                 <td className="px-4 py-3">
                   <p className="font-medium text-slate-900">{c.nomeFantasia}</p>
                   <p className="text-xs text-slate-400">{c.cnpj}</p>
+                  {c.contactEmail && (
+                    <p className="text-xs text-slate-500 mt-0.5">{c.contactEmail}</p>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {c.ownerEmailVerified ? (
+                    <span className="text-emerald-700 text-xs font-medium">Verificado</span>
+                  ) : (
+                    <div className="space-y-1">
+                      <span className="text-amber-700 text-xs font-medium block">Pendente</span>
+                      {c.ownerUserId && (
+                        <button
+                          type="button"
+                          disabled={saving === c.ownerUserId}
+                          onClick={() => verifyOwnerEmail(c.ownerUserId)}
+                          className="text-xs text-sky-700 font-semibold disabled:opacity-40"
+                        >
+                          Verificar e-mail
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {c.ownerLocked && (
+                    <p className="text-[10px] text-red-600 mt-1">Conta bloqueada</p>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <select

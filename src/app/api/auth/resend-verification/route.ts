@@ -53,6 +53,21 @@ export async function POST(req: NextRequest) {
           take: 1,
           select: { laboratory: { select: { responsibleFirstName: true } } },
         },
+        pharmacyStoreMemberships: {
+          where: { role: "OWNER" },
+          take: 1,
+          select: { pharmacyStore: { select: { responsibleFirstName: true } } },
+        },
+        employerMemberships: {
+          where: { role: "OWNER" },
+          take: 1,
+          select: { employerCompany: { select: { responsibleFirstName: true } } },
+        },
+        organizationMemberships: {
+          where: { role: "OWNER" },
+          take: 1,
+          select: { organization: { select: { responsibleFirstName: true } } },
+        },
       },
     });
 
@@ -72,6 +87,9 @@ export async function POST(req: NextRequest) {
       user.integrativeTherapistProfile?.firstName ||
       user.angelProfile?.firstName ||
       user.laboratoryMemberships[0]?.laboratory.responsibleFirstName ||
+      user.pharmacyStoreMemberships[0]?.pharmacyStore.responsibleFirstName ||
+      user.employerMemberships[0]?.employerCompany.responsibleFirstName ||
+      user.organizationMemberships[0]?.organization.responsibleFirstName ||
       "there";
 
     // Remove old tokens and create a new one

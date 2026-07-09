@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { verifyB2BOwnerEmail } from "@/lib/b2b-admin";
 
 const patchSchema = z.object({
   status: z.enum(["PENDING_REVIEW", "ACTIVE", "SUSPENDED"]).optional(),
@@ -28,6 +29,19 @@ export async function PATCH(
     where: { id },
     data: parsed.data,
   });
+
+  if (parsed.data.status === "ACTIVE") {
+    const owner = await db.pharmacyStoreMember.findFirst({
+      where: { pharmacyStoreId: id, role: "OWNER" },
+      select: {
+        userId: true,
+        user: { select: { email: true } },
+      },
+    });
+    if (owner) {
+      await verifyB2BOwnerEmail(owner.userId, owner.user.email);
+    }
+  }
 
   return NextResponse.json({ store });
 }

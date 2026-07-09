@@ -11,6 +11,7 @@ import { EMPLOYER_LOGIN } from "@/lib/auth-portals";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
+import { handleExistingB2BRegistration } from "@/lib/b2b-admin";
 import {
   checkRateLimits,
   clientIp,
@@ -89,14 +90,36 @@ export async function POST(req: NextRequest) {
     }
     const contactPhone = `+${phoneParsed.e164}`;
     const email = parsed.email.toLowerCase();
+    const normalizedLanguage =
+      parsed.language === "pt" || parsed.language === "es" || parsed.language === "en"
+        ? parsed.language
+        : "pt";
 
     const [existingEmail, existingCnpj] = await Promise.all([
-      db.user.findUnique({ where: { email } }),
+      db.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          role: true,
+          emailVerified: true,
+          phoneVerified: true,
+          language: true,
+        },
+      }),
       db.employerCompany.findUnique({ where: { cnpj: cnpjDigits } }),
     ]);
 
-    if (existingEmail) {
-      return NextResponse.json({ success: true, existingAccount: true }, { status: 200 });
+    const existingResult = await handleExistingB2BRegistration({
+      existingUser: existingEmail,
+      expectedRole: UserRole.EMPLOYER,
+      email,
+      name: parsed.responsibleFirstName,
+      language: normalizedLanguage,
+      from: EMPLOYER_LOGIN,
+      callbackUrl: "/empresas/painel",
+    });
+    if (existingResult) {
+      return NextResponse.json(existingResult, { status: 200 });
     }
     if (existingCnpj) {
       return NextResponse.json({ error: { cnpj: ["CNPJ já cadastrado"] } }, { status: 409 });
@@ -104,10 +127,6 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(parsed.password, 12);
     const userAgent = req.headers.get("user-agent") || "unknown";
-    const normalizedLanguage =
-      parsed.language === "pt" || parsed.language === "es" || parsed.language === "en"
-        ? parsed.language
-        : "pt";
 
     const slug = await uniqueEmployerSlug(parsed.nomeFantasia);
 

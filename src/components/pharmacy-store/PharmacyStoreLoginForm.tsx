@@ -17,6 +17,7 @@ import {
 import {
   useLoginLang,
   parseLoginError,
+  resolveCredentialSignInError,
   LoginPageShell,
   LoginLanguageSelector,
   LoginCard,
@@ -78,13 +79,10 @@ export default function PharmacyStoreLoginForm() {
       });
 
       if (!result?.ok || result?.error) {
-        if (result?.error?.includes("EmailNotVerified")) {
-          setError("unverified");
+        const failure = resolveCredentialSignInError(result ?? {});
+        setError(failure);
+        if (failure === "unverified") {
           setUnverifiedEmail(trimmedEmail);
-        } else if (result?.error?.includes("AccountLocked")) {
-          setError("locked");
-        } else {
-          setError("invalid");
         }
         setLoading(false);
         return;

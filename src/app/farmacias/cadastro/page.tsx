@@ -6,6 +6,7 @@ import Link from "next/link";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
 import { PHARMACY_STORE_LOGIN, buildRegisterSuccessHref } from "@/lib/auth-portals";
+import { existingAccountMessage, registerSuccessFollowUp } from "@/lib/auth-flow-errors";
 import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
 import { RegisterLogo } from "@/components/auth/register-shared";
 import InternationalPhoneInput, { type InternationalPhoneValue } from "@/components/InternationalPhoneInput";
@@ -143,12 +144,19 @@ export default function FarmaciasCadastroPage() {
         setErrors(data.error || { general: ["Falha no cadastro"] });
         return;
       }
+      const followUp = registerSuccessFollowUp(data);
+      if (followUp.kind === "existingAccount") {
+        setErrors({ email: [existingAccountMessage(lang)] });
+        return;
+      }
+      const emailSent =
+        followUp.kind === "verify" ? followUp.emailSent : data.emailSent !== false;
       router.push(
         buildRegisterSuccessHref({
           role: "PHARMACY_STORE",
           email,
           callbackUrl: "/farmacias/painel",
-          emailSent: data.emailSent !== false,
+          emailSent,
         }),
       );
     } catch {

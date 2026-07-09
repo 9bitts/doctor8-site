@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const stores = await db.pharmacyStore.findMany({
+  const organizations = await db.organization.findMany({
     orderBy: { createdAt: "desc" },
     take: 200,
     select: {
@@ -18,14 +18,10 @@ export async function GET() {
       nomeFantasia: true,
       razaoSocial: true,
       slug: true,
-      status: true,
-      platformFeeCents: true,
-      addressCity: true,
-      addressState: true,
       contactEmail: true,
       contactPhone: true,
-      latitude: true,
-      longitude: true,
+      addressCity: true,
+      addressState: true,
       createdAt: true,
       members: {
         where: { role: "OWNER" },
@@ -44,35 +40,32 @@ export async function GET() {
       },
       _count: {
         select: {
-          inventory: true,
-          orders: true,
           members: true,
+          professionals: true,
+          employees: true,
         },
       },
     },
   });
 
   return NextResponse.json({
-    stores: stores.map((s) => {
-      const owner = s.members[0]?.user;
+    organizations: organizations.map((org) => {
+      const owner = org.members[0]?.user;
       return {
-        id: s.id,
-        cnpj: s.cnpj,
-        nomeFantasia: s.nomeFantasia,
-        razaoSocial: s.razaoSocial,
-        slug: s.slug,
-        status: s.status,
-        platformFeeCents: s.platformFeeCents,
-        addressCity: s.addressCity,
-        addressState: s.addressState,
-        contactEmail: s.contactEmail,
-        contactPhone: s.contactPhone,
-        geocoded: s.latitude != null && s.longitude != null,
-        inventoryCount: s._count.inventory,
-        orderCount: s._count.orders,
-        memberCount: s._count.members,
-        ...mapOwnerVerificationFields(owner, s.contactEmail),
-        createdAt: s.createdAt.toISOString(),
+        id: org.id,
+        cnpj: org.cnpj,
+        nomeFantasia: org.nomeFantasia,
+        razaoSocial: org.razaoSocial,
+        slug: org.slug,
+        contactEmail: org.contactEmail,
+        contactPhone: org.contactPhone,
+        addressCity: org.addressCity,
+        addressState: org.addressState,
+        memberCount: org._count.members,
+        professionalCount: org._count.professionals,
+        employeeCount: org._count.employees,
+        ...mapOwnerVerificationFields(owner, org.contactEmail),
+        createdAt: org.createdAt.toISOString(),
       };
     }),
   });

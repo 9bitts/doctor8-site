@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { verifyB2BOwnerEmail } from "@/lib/b2b-admin";
 
 const patchSchema = z.object({
   status: z.enum(["PENDING_REVIEW", "ACTIVE", "SUSPENDED"]).optional(),
@@ -34,17 +35,11 @@ export async function PATCH(
       where: { laboratoryId: id, role: "OWNER" },
       select: {
         userId: true,
-        user: { select: { email: true, emailVerified: true, phoneVerified: true } },
+        user: { select: { email: true } },
       },
     });
-    if (owner?.user && !owner.user.emailVerified && !owner.user.phoneVerified) {
-      await db.user.update({
-        where: { id: owner.userId },
-        data: { emailVerified: new Date(), failedLoginAttempts: 0, lockedUntil: null },
-      });
-      if (owner.user.email) {
-        await db.verificationToken.deleteMany({ where: { identifier: owner.user.email } });
-      }
+    if (owner) {
+      await verifyB2BOwnerEmail(owner.userId, owner.user.email);
     }
   }
 
