@@ -96,6 +96,7 @@ const PUBLIC_ROUTES = [
   "/farmacias/buscar",
   "/laboratorios/login",
   "/laboratorios/cadastro",
+  "/laboratorios/buscar",
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -112,6 +113,7 @@ function isPublicRoute(pathname: string): boolean {
   if (pathname === "/farmacias") return true;
   if (pathname === "/farmacias/buscar") return true;
   if (pathname === "/laboratorios") return true;
+  if (pathname === "/laboratorios/buscar") return true;
   return PUBLIC_ROUTES.some((route) => {
     // "/" must be exact — every path starts with "/"
     if (route === "/") return pathname === "/";

@@ -1,7 +1,7 @@
 "use client";
 
 // src/app/(dashboard)/patient/prescriptions/page.tsx
-// Patient's own prescriptions — read-only list with PDF download and status badges.
+// Patient prescriptions — PDF download, pharmacy network search and buy.
 
 import { useState, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -10,10 +10,11 @@ import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import { formatShortDateWithYear } from "@/lib/timezone";
 import { getProfessionLabel } from "@/lib/professions";
 import PatientEmissionAlertsPanel from "@/components/patient/PatientEmissionAlertsPanel";
+import PatientPharmacySearchPanel from "@/components/patient/PatientPharmacySearchPanel";
 import PatientPharmacyBuyPanel from "@/components/patient/PatientPharmacyBuyPanel";
 import {
   FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw,
-  ShieldCheck, Clock, XCircle, MessageCircle,
+  ShieldCheck, Clock, XCircle, MessageCircle, Search, ShoppingBag,
 } from "lucide-react";
 
 interface MedItem {
@@ -47,6 +48,9 @@ export default function PatientPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<RxItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [activeSearchMeds, setActiveSearchMeds] = useState<MedItem[]>([]);
+  const [activeBuyPrescriptionId, setActiveBuyPrescriptionId] = useState<string | null>(null);
+  const [searchPrescriptionId, setSearchPrescriptionId] = useState<string | undefined>();
 
   useEffect(() => { fetchData(); }, []);
 
@@ -64,6 +68,17 @@ export default function PatientPrescriptionsPage() {
 
   function fmt(date: string) {
     return formatShortDateWithYear(new Date(date), userTz, locale);
+  }
+
+  function canUsePharmacy(p: RxItem): boolean {
+    return !p.isExpired && (p.signatureStatus === "SIGNED" || p.hasSignedPdf);
+  }
+
+  function focusPharmacySearch(meds: MedItem[], prescriptionId: string) {
+    setActiveSearchMeds(meds);
+    setSearchPrescriptionId(prescriptionId);
+    setActiveBuyPrescriptionId(null);
+    document.getElementById("pharmacy-search-panel")?.scrollIntoView({ behavior: "smooth" });
   }
 
   function statusBadges(p: RxItem) {
@@ -118,6 +133,13 @@ export default function PatientPrescriptionsPage() {
 
       <PatientEmissionAlertsPanel />
 
+      <div id="pharmacy-search-panel">
+        <PatientPharmacySearchPanel
+          highlightMedications={activeSearchMeds.map((m) => ({ name: m.name, dosage: m.dosage }))}
+          buyPrescriptionId={searchPrescriptionId}
+        />
+      </div>
+
       {loadError ? (
         <div className="flex flex-col items-center gap-3 py-16 bg-white rounded-2xl border border-amber-200">
           <AlertCircle size={28} className="text-amber-500" />
@@ -138,6 +160,7 @@ export default function PatientPrescriptionsPage() {
         <div className="space-y-3">
           {prescriptions.map((p) => {
             const meds = p.medications as MedItem[];
+            const pharmacyReady = canUsePharmacy(p);
             return (
               <div key={p.id} className={`bg-white rounded-2xl border shadow-sm p-5 ${p.isExpired ? "border-rose-200 opacity-90" : "border-slate-200"}`}>
                 <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -164,6 +187,32 @@ export default function PatientPrescriptionsPage() {
                         </span>
                       ))}
                     </div>
+                    {pharmacyReady && (
+                      <div className="flex flex-wrap gap-3 mt-3">
+                        <button
+                          type="button"
+                          onClick={() => focusPharmacySearch(meds, p.id)}
+                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 hover:text-emerald-800"
+                        >
+                          <Search size={14} />
+                          {t("myrx.searchPharmacies")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveBuyPrescriptionId(
+                              activeBuyPrescriptionId === p.id ? null : p.id,
+                            );
+                          }}
+                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+                        >
+                          <ShoppingBag size={14} />
+                          {activeBuyPrescriptionId === p.id
+                            ? t("myrx.hideBuy")
+                            : t("myrx.buyNetwork")}
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <a
                     href={`/api/patient/prescriptions/${p.id}/pdf`}
@@ -173,7 +222,7 @@ export default function PatientPrescriptionsPage() {
                     <Download size={14} /> {t("myrx.downloadPDF")}
                   </a>
                 </div>
-                {!p.isExpired && (p.signatureStatus === "SIGNED" || p.hasSignedPdf) && (
+                {pharmacyReady && activeBuyPrescriptionId === p.id && (
                   <PatientPharmacyBuyPanel
                     prescriptionId={p.id}
                     medications={meds}

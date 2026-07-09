@@ -651,6 +651,7 @@ export const PLATFORM_PUBLIC_ROUTES: PublicRouteEntry[] = [
   { href: "/farmacias/login", description: "Pharmacy store owner sign in (CNPJ)" },
   { href: "/farmacias/cadastro", description: "Register pharmacy store on Doctor8 network" },
   { href: "/farmacias/buscar", description: "Public pharmacy network price search (no login)" },
+  { href: "/laboratorios/buscar", description: "Public laboratory network price search (no login)" },
   { href: "/farmacias/farmaceutico/login", description: "Pharmacist (CRF) sign in for prescription validation on the network" },
 ];
 

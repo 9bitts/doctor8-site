@@ -1,7 +1,7 @@
 "use client";
 
 // src/app/(dashboard)/patient/exam-requests/page.tsx
-// Patient exam requests from their doctors — read-only with PDF download.
+// Patient exam requests from their doctors — read-only with PDF download + lab price search.
 
 import { useState, useEffect, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -9,9 +9,10 @@ import { localeOf } from "@/lib/i18n/translations";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import { formatShortDateWithYear } from "@/lib/timezone";
 import { getProfessionLabel } from "@/lib/professions";
+import PatientLaboratorySearchPanel from "@/components/patient/PatientLaboratorySearchPanel";
 import {
   FlaskConical, Download, Loader2, Calendar, AlertCircle, RefreshCw,
-  ShieldCheck, Clock, XCircle, MessageCircle,
+  ShieldCheck, Clock, MessageCircle, Search,
 } from "lucide-react";
 
 interface ExamItem {
@@ -36,6 +37,8 @@ export default function PatientExamRequestsPage() {
   const [exams, setExams] = useState<ExamItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [activeSearchExamNames, setActiveSearchExamNames] = useState<string[]>([]);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(true);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -94,6 +97,14 @@ export default function PatientExamRequestsPage() {
         <p className="text-slate-500 text-sm mt-1">{t("myexam.subtitle")}</p>
       </div>
 
+      {showGlobalSearch && (
+        <div id="lab-search-panel">
+          <PatientLaboratorySearchPanel
+            highlightExamNames={activeSearchExamNames}
+          />
+        </div>
+      )}
+
       {loadError ? (
         <div className="flex flex-col items-center gap-3 py-16 bg-white rounded-2xl border border-amber-200">
           <AlertCircle size={28} className="text-amber-500" />
@@ -148,6 +159,20 @@ export default function PatientExamRequestsPage() {
                   )}
                   {p.examNotes && (
                     <p className="text-xs text-slate-500 mt-2 italic">{p.examNotes}</p>
+                  )}
+                  {p.examItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveSearchExamNames(p.examItems);
+                        setShowGlobalSearch(true);
+                        document.getElementById("lab-search-panel")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-violet-600 hover:text-violet-800"
+                    >
+                      <Search size={14} />
+                      {t("myexam.searchLabs")}
+                    </button>
                   )}
                 </div>
                 <a

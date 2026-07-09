@@ -264,3 +264,263 @@ export function calcDeliveryFeeCents(
   if (fulfillmentType !== "DELIVERY" || !acceptsDelivery) return 0;
   return getDefaultDeliveryFeeCents();
 }
+
+// ── Patient browse/search (store name + address + drug filter) ──
+
+export type PharmacyStoreSearchHit = {
+  pharmacyStoreId: string;
+  nomeFantasia: string;
+  slug: string;
+  addressStreet: string | null;
+  addressNeighborhood: string | null;
+  addressCity: string | null;
+  addressState: string | null;
+  addressZip: string | null;
+  distanceKm: number | null;
+  acceptsPickup: boolean;
+  acceptsDelivery: boolean;
+  inventoryCount: number;
+  matchedItemCount: number;
+  coveragePercent: number;
+  subtotalCents: number;
+};
+
+export type PharmacyStoreInventoryPrice = {
+  itemId: string;
+  drugCatalogId: string;
+  name: string;
+  presentation: string;
+  priceCents: number;
+  stockQty: number | null;
+};
+
+const STORE_MAX_RADIUS_KM = 50;
+
+function normalizeDrugSearch(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+async function resolveDrugCatalogIdsFromMedications(
+  medications: MedicationLine[],
+): Promise<string[]> {
+  const ids: string[] = [];
+  for (const med of medications) {
+    const id = await matchMedicationToDrugCatalog(med);
+    if (id) ids.push(id);
+  }
+  return [...new Set(ids)];
+}
+
+export async function searchPharmacyStores(opts: {
+  storeName?: string;
+  drugQ?: string;
+  medications?: MedicationLine[];
+  cep?: string;
+  city?: string;
+  state?: string;
+  latitude?: number;
+  longitude?: number;
+  limit?: number;
+}): Promise<PharmacyStoreSearchHit[]> {
+  let patientPoint: { latitude: number; longitude: number } | null = null;
+  if (opts.latitude != null && opts.longitude != null) {
+    patientPoint = { latitude: opts.latitude, longitude: opts.longitude };
+  } else if (opts.cep) {
+    patientPoint = await geocodeCep(opts.cep, opts.city, opts.state);
+  }
+
+  let targetDrugIds: string[] = [];
+  if (opts.medications?.length) {
+    targetDrugIds = await resolveDrugCatalogIdsFromMedications(opts.medications);
+  }
+
+  const drugQNorm = opts.drugQ ? normalizeDrugSearch(opts.drugQ) : "";
+  if (drugQNorm && targetDrugIds.length === 0) {
+    const drugs = await db.drugCatalog.findMany({
+      where: {
+        active: true,
+        country: "BR",
+        OR: [
+          { name: { contains: opts.drugQ!, mode: "insensitive" } },
+          { searchName: { contains: drugQNorm } },
+          { searchIngredient: { contains: drugQNorm } },
+        ],
+      },
+      select: { id: true },
+      take: 8,
+    });
+    targetDrugIds = drugs.map((d) => d.id);
+  }
+
+  const storeName = opts.storeName?.trim();
+  const where: Prisma.PharmacyStoreWhereInput = {
+    status: "ACTIVE",
+    inventory: { some: { available: true } },
+    ...(storeName
+      ? {
+          OR: [
+            { nomeFantasia: { contains: storeName, mode: "insensitive" } },
+            { razaoSocial: { contains: storeName, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+    ...(targetDrugIds.length > 0
+      ? {
+          inventory: {
+            some: {
+              available: true,
+              drugCatalogId: { in: targetDrugIds },
+            },
+          },
+        }
+      : {}),
+    ...(opts.city && !patientPoint
+      ? { addressCity: { equals: opts.city, mode: "insensitive" } }
+      : {}),
+    ...(opts.state && !patientPoint
+      ? { addressState: { equals: opts.state.toUpperCase() } }
+      : {}),
+  };
+
+  const stores = await db.pharmacyStore.findMany({
+    where,
+    include: {
+      inventory: {
+        where: { available: true },
+        include: {
+          drugCatalog: {
+            select: { id: true, name: true, presentation: true },
+          },
+        },
+      },
+    },
+    take: 100,
+  });
+
+  const requestedCount = targetDrugIds.length || 0;
+  const hits: PharmacyStoreSearchHit[] = [];
+
+  for (const store of stores) {
+    let distKm: number | null = null;
+    if (patientPoint && store.latitude != null && store.longitude != null) {
+      distKm = distanceKm(patientPoint, {
+        latitude: store.latitude,
+        longitude: store.longitude,
+      });
+      if (distKm > STORE_MAX_RADIUS_KM) continue;
+    }
+
+    const inventoryByDrug = new Map(
+      store.inventory.map((i) => [i.drugCatalogId, i]),
+    );
+
+    let matchedItems = store.inventory;
+    if (targetDrugIds.length > 0) {
+      matchedItems = targetDrugIds
+        .map((id) => inventoryByDrug.get(id))
+        .filter(Boolean) as typeof store.inventory;
+    }
+
+    if (targetDrugIds.length > 0 && matchedItems.length === 0) continue;
+
+    const subtotalCents = matchedItems.reduce((s, i) => s + i.priceCents, 0);
+    const matchedItemCount = targetDrugIds.length > 0 ? matchedItems.length : store.inventory.length;
+    const coveragePercent =
+      requestedCount > 0
+        ? Math.round((matchedItems.length / requestedCount) * 100)
+        : 100;
+
+    hits.push({
+      pharmacyStoreId: store.id,
+      nomeFantasia: store.nomeFantasia,
+      slug: store.slug,
+      addressStreet: store.addressStreet,
+      addressNeighborhood: store.addressNeighborhood,
+      addressCity: store.addressCity,
+      addressState: store.addressState,
+      addressZip: store.addressZip,
+      distanceKm: distKm,
+      acceptsPickup: store.acceptsPickup,
+      acceptsDelivery: store.acceptsDelivery,
+      inventoryCount: store.inventory.length,
+      matchedItemCount,
+      coveragePercent,
+      subtotalCents,
+    });
+  }
+
+  hits.sort((a, b) => {
+    if (requestedCount > 0 && b.coveragePercent !== a.coveragePercent) {
+      return b.coveragePercent - a.coveragePercent;
+    }
+    if (a.subtotalCents !== b.subtotalCents) return a.subtotalCents - b.subtotalCents;
+    const da = a.distanceKm ?? 9999;
+    const db = b.distanceKm ?? 9999;
+    return da - db;
+  });
+
+  return hits.slice(0, opts.limit ?? 20);
+}
+
+export async function getPharmacyStoreInventoryPrices(
+  pharmacyStoreId: string,
+  drugQ?: string,
+  medications?: MedicationLine[],
+): Promise<PharmacyStoreInventoryPrice[]> {
+  const drugQNorm = drugQ ? normalizeDrugSearch(drugQ) : "";
+  let highlightDrugIds: string[] = [];
+  if (medications?.length) {
+    highlightDrugIds = await resolveDrugCatalogIdsFromMedications(medications);
+  }
+
+  const items = await db.pharmacyStoreInventoryItem.findMany({
+    where: {
+      pharmacyStoreId,
+      available: true,
+      ...(drugQNorm
+        ? {
+            drugCatalog: {
+              OR: [
+                { searchName: { contains: drugQNorm } },
+                { name: { contains: drugQ!, mode: "insensitive" } },
+                { searchIngredient: { contains: drugQNorm } },
+              ],
+            },
+          }
+        : {}),
+      ...(highlightDrugIds.length > 0 && !drugQNorm
+        ? { drugCatalogId: { in: highlightDrugIds } }
+        : {}),
+    },
+    include: {
+      drugCatalog: {
+        select: { id: true, name: true, presentation: true },
+      },
+    },
+    orderBy: { drugCatalog: { name: "asc" } },
+    take: 200,
+  });
+
+  const prices: PharmacyStoreInventoryPrice[] = items.map((item) => ({
+    itemId: item.id,
+    drugCatalogId: item.drugCatalogId,
+    name: item.drugCatalog.name,
+    presentation: item.drugCatalog.presentation,
+    priceCents: item.priceCents,
+    stockQty: item.stockQty,
+  }));
+
+  if (highlightDrugIds.length === 0) return prices;
+
+  return prices.sort((a, b) => {
+    const aHit = highlightDrugIds.includes(a.drugCatalogId);
+    const bHit = highlightDrugIds.includes(b.drugCatalogId);
+    if (aHit && !bHit) return -1;
+    if (!aHit && bHit) return 1;
+    return a.name.localeCompare(b.name, "pt");
+  });
+}
