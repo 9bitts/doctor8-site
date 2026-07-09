@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireLaboratory } from "@/lib/laboratory-auth";
 import { db } from "@/lib/db";
 import { parseExamCsv, applyExamImport, examCsvTemplate } from "@/lib/laboratory-exam-import";
+import { assertCsvRowCount } from "@/lib/csv-import-limits";
+import { parseCsvImportRequest } from "@/lib/csv-import-request";
 
 export async function GET(req: NextRequest) {
   const ctx = await requireLaboratory();
@@ -31,34 +33,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Laboratório não encontrado" }, { status: 404 });
   }
 
-  const contentType = req.headers.get("content-type") || "";
-  let csvText = "";
-  let filename: string | undefined;
-
-  if (contentType.includes("multipart/form-data")) {
-    const form = await req.formData();
-    const file = form.get("file");
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: "Arquivo CSV obrigatório" }, { status: 400 });
-    }
-    filename = file.name;
-    csvText = await file.text();
-  } else {
-    const body = await req.json();
-    if (typeof body.csv !== "string" || !body.csv.trim()) {
-      return NextResponse.json({ error: "Campo csv obrigatório" }, { status: 400 });
-    }
-    csvText = body.csv;
-    filename = typeof body.filename === "string" ? body.filename : undefined;
+  const payload = await parseCsvImportRequest(req);
+  if (!payload.ok) {
+    return NextResponse.json({ error: payload.error }, { status: payload.status });
   }
 
-  const { rows, errors: parseErrors } = parseExamCsv(csvText);
+  const { rows, errors: parseErrors } = parseExamCsv(payload.csvText);
+  const rowErr = assertCsvRowCount(rows.length);
+  if (rowErr) return NextResponse.json({ error: rowErr }, { status: 400 });
+
   const result = await applyExamImport(ctx.laboratoryId, rows, parseErrors, lab.labType);
 
   const batch = await db.laboratoryExamImport.create({
     data: {
       laboratoryId: ctx.laboratoryId,
-      filename,
+      filename: payload.filename,
       rowsTotal: result.rowsTotal,
       rowsMatched: result.rowsMatched,
       rowsCreated: result.rowsCreated,

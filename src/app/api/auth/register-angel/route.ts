@@ -17,6 +17,7 @@ import {
 import { notifyAdminLicenseDocumentUploaded } from "@/lib/provider-license-notify";
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
+import { registerAckResponse } from "@/lib/register-anti-enum";
 import { isAccountVerified } from "@/lib/account-verified";
 import {
   checkRateLimits,
@@ -265,13 +266,10 @@ export async function POST(req: NextRequest) {
           console.error("[ANGEL REGISTER CERT RESEND]", certErr);
         }
 
-        return NextResponse.json(
-          { success: true, userId: existing.id, pendingVerification: true },
-          { status: 200 },
-        );
+        return registerAckResponse();
       }
 
-      return NextResponse.json({ success: true, existingAccount: true }, { status: 200 });
+      return registerAckResponse();
     }
 
     const passwordHash = await bcrypt.hash(password, 12);

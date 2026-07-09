@@ -11,6 +11,7 @@ import {
 import { parseBillingRegion, paymentMethodsForRegion, regionsMismatch } from "@/lib/billing-regions";
 import { decrypt } from "@/lib/encryption";
 import { z } from "zod";
+import { internalErrorResponse } from "@/lib/api-error-response";
 
 const postSchema = z.object({
   region: z.enum(["BR", "US", "EU", "VE"]).optional(),
@@ -124,15 +125,15 @@ export async function POST(req: NextRequest) {
       region,
       paymentMethods: paymentMethodsForRegion(region),
     });
-  } catch (e: any) {
-    const message = e?.raw?.message || e?.message || "Erro ao iniciar checkout.";
-    console.error("[SUBSCRIPTION] POST error:", message, e);
+  } catch (e: unknown) {
+    console.error("[SUBSCRIPTION] POST error:", e);
+    const raw = e as { message?: string; raw?: { message?: string } };
+    const message = raw?.raw?.message || raw?.message || "";
     const friendly = friendlyStripeCheckoutError(message);
     return NextResponse.json(
       {
-        error: friendly,
+        error: friendly || "Erro ao processar solicitação.",
         code: "CHECKOUT_FAILED",
-        detail: message,
       },
       { status: 502 },
     );

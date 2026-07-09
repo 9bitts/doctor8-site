@@ -44,7 +44,26 @@ export async function GET() {
     usage.set(d.categoryId, (usage.get(d.categoryId) || 0) + 1);
   }
 
-  const groupsMap = new Map<string, { group: string; groupOrder: number; items: any[] }>();
+  const groupsMap = new Map<
+    string,
+    {
+      group: string;
+      groupOrder: number;
+      items: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        groupName: string;
+        groupOrder: number;
+        itemOrder: number;
+        icon: string | null;
+        legacyType: string | null;
+        isSystem: boolean;
+        active: boolean;
+        usageCount: number;
+      }>;
+    }
+  >();
   for (const c of categories) {
     if (!groupsMap.has(c.groupName)) {
       groupsMap.set(c.groupName, { group: c.groupName, groupOrder: c.groupOrder, items: [] });

@@ -9,7 +9,10 @@ export function normalizeSearchToken(s: string): string {
     .trim();
 }
 
-/** Builds searchText from decrypted/plain name + email. */
+/** Builds searchText from decrypted/plain name + email.
+ * LGPD note: plaintext normalized index — intentional tradeoff for org patient search;
+ * names/emails are not stored encrypted in this column. See migration 20260629000000.
+ */
 export function buildPatientRecordSearchText(
   firstName: string,
   lastName: string,

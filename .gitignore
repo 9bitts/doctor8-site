@@ -1,10 +1,16 @@
 node_modules/
 .next/
 .env
+.env.local
+.env.production
+.env.*.local
 tsconfig.tsbuildinfo
 ANALISE_DOCTOR8.md
 playwright-report/
 test-results/
+*.log
+e2e-run.log
+test-e2e*.log
 data/cum-co/*
 !data/cum-co/README.md
 data/cmed/*.xlsx

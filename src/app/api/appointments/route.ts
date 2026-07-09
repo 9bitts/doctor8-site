@@ -13,6 +13,14 @@ import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { stripPsychoanalystAppointmentFields, isPsychoanalystAppointmentRequest } from "@/lib/appointment-provider-access";
 import { z } from "zod";
+import { AppointmentStatus } from "@prisma/client";
+
+function parseAppointmentStatus(status: string | null): AppointmentStatus | undefined {
+  if (!status) return undefined;
+  return (Object.values(AppointmentStatus) as string[]).includes(status)
+    ? (status as AppointmentStatus)
+    : undefined;
+}
 
 const appointmentListSelect = {
   id: true,
@@ -55,6 +63,8 @@ export async function GET(req: NextRequest) {
         }
       : undefined;
 
+  const statusFilter = parseAppointmentStatus(status);
+
   let appointments;
 
   if (session.user.role === "PATIENT") {
@@ -64,7 +74,7 @@ export async function GET(req: NextRequest) {
     appointments = await db.appointment.findMany({
       where: {
         patientId: patient.id,
-        ...(status ? { status: status as any } : {}),
+        ...(statusFilter ? { status: statusFilter } : {}),
         ...(upcoming
           ? {
               scheduledAt: { gte: new Date() },
@@ -92,7 +102,7 @@ export async function GET(req: NextRequest) {
     appointments = await db.appointment.findMany({
       where: {
         professionalId: professional.id,
-        ...(status ? { status: status as any } : {}),
+        ...(statusFilter ? { status: statusFilter } : {}),
         ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
         ...(dateRange ? { scheduledAt: dateRange } : {}),
       },
@@ -110,7 +120,7 @@ export async function GET(req: NextRequest) {
     appointments = await db.appointment.findMany({
       where: {
         psychoanalystId: psychoanalyst.id,
-        ...(status ? { status: status as any } : {}),
+        ...(statusFilter ? { status: statusFilter } : {}),
         ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
         ...(dateRange ? { scheduledAt: dateRange } : {}),
       },
@@ -125,8 +135,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const normalized = (appointments as any[]).map((a) => {
-    if (a.psychoanalyst && !a.professional) {
+  const normalized = appointments.map((a) => {
+    if ("psychoanalyst" in a && a.psychoanalyst && !a.professional) {
       const row = {
         ...a,
         providerType: "psychoanalyst",
@@ -142,8 +152,8 @@ export async function GET(req: NextRequest) {
         ? stripPsychoanalystAppointmentFields(row)
         : row;
     }
-    const row = { ...a, providerType: "health", professionalId: a.professionalId };
-    if (row.patient) {
+    const row = { ...a, providerType: "health" as const, professionalId: a.professionalId };
+    if ("patient" in row && row.patient) {
       row.patient = {
         ...row.patient,
         firstName: safeDecrypt(row.patient.firstName),

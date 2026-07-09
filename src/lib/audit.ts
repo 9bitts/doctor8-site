@@ -5,6 +5,7 @@
 import { db } from "@/lib/db";
 import { AuditAction } from "@prisma/client";
 import { headers } from "next/headers";
+import { encrypt } from "@/lib/encryption";
 
 interface AuditParams {
   userId?: string;
@@ -21,14 +22,16 @@ export async function createAuditLog(params: AuditParams): Promise<void> {
       headersList.get("x-real-ip") || "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
 
+    const rawIp = ipAddress.split(",")[0].trim();
+
     await db.auditLog.create({
       data: {
         userId: params.userId,
         action: params.action,
         resource: params.resource,
         resourceId: params.resourceId,
-        ipAddress: ipAddress.split(",")[0].trim(), // first IP if behind proxy
-        userAgent: userAgent.substring(0, 500),    // truncate long agents
+        ipAddress: encrypt(rawIp),
+        userAgent: userAgent.substring(0, 500),
         details: params.details as never,
       },
     });

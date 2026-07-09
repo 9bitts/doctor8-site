@@ -17,7 +17,7 @@ import { db } from "@/lib/db";
 import { audit, createAuditLog } from "@/lib/audit";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
-import { AuditAction } from "@prisma/client";
+import { AuditAction, Prisma } from "@prisma/client";
 import { createNotification } from "@/lib/notifications";
 import { hasAcceptedLink } from "@/lib/patient-professional-link";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
     data: {
       documentId: document.id,
       professionalId: ctx.professional.id,
-      medications: medications as any,
+      medications: medications as Prisma.InputJsonValue,
       instructions: instructions ? encrypt(instructions) : null,
       validUntil,
     },

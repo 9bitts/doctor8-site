@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { lookupPrescriptionByToken } from "@/lib/pharmacy-network/prescription-token";
 import { decrypt } from "@/lib/encryption";
 import { isPharmacistSpecialty } from "@/lib/profession-label";
+import { authorizePharmacyPrescriptionValidate } from "@/lib/pharmacy-prescription-validate-auth";
 import type { Prisma } from "@prisma/client";
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -25,6 +26,15 @@ export async function GET(req: NextRequest) {
   const row = await lookupPrescriptionByToken(token);
   if (!row) {
     return NextResponse.json({ error: "Receita não encontrada" }, { status: 404 });
+  }
+
+  const pharmacyStoreId = req.nextUrl.searchParams.get("pharmacyStoreId")?.trim();
+  const authz = await authorizePharmacyPrescriptionValidate(session.user.id, session.user.role, {
+    pharmacyStoreId: pharmacyStoreId || null,
+    rowPharmacyStoreId: row.pharmacyStoreId,
+  });
+  if (!authz.ok) {
+    return NextResponse.json({ error: authz.error }, { status: authz.status });
   }
 
   const rx = row.prescription;
@@ -60,11 +70,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const role = session.user.role;
-  if (role !== "PROFESSIONAL" && role !== "PHARMACY_STORE" && role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const body = await req.json();
   const token = body.token?.trim();
   const pharmacyStoreId = body.pharmacyStoreId?.trim();
@@ -77,18 +82,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Receita inválida ou já dispensada" }, { status: 400 });
   }
 
+  const authz = await authorizePharmacyPrescriptionValidate(session.user.id, session.user.role, {
+    pharmacyStoreId: pharmacyStoreId || null,
+    rowPharmacyStoreId: row.pharmacyStoreId,
+  });
+  if (!authz.ok) {
+    return NextResponse.json({ error: authz.error }, { status: authz.status });
+  }
+
   const storeId = pharmacyStoreId || row.pharmacyStoreId;
   if (!storeId) {
     return NextResponse.json({ error: "pharmacyStoreId obrigatório" }, { status: 400 });
-  }
-
-  if (role === "PHARMACY_STORE") {
-    const member = await db.pharmacyStoreMember.findFirst({
-      where: { userId: session.user.id, pharmacyStoreId: storeId, status: "ACTIVE" },
-    });
-    if (!member) {
-      return NextResponse.json({ error: "Farmácia não autorizada" }, { status: 403 });
-    }
   }
 
   const now = new Date();
@@ -105,7 +109,7 @@ export async function POST(req: NextRequest) {
   });
 
   let pharmacistProfileId: string | null = null;
-  if (role === "PROFESSIONAL") {
+  if (session.user.role === "PROFESSIONAL") {
     const pro = await db.professionalProfile.findUnique({
       where: { userId: session.user.id },
       select: { id: true, specialty: true },

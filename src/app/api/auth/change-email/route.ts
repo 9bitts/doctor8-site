@@ -6,10 +6,21 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 
-const schema = z.object({
-  newEmail: z.string().email("Invalid email address"),
-  currentPassword: z.string().min(1, "Password is required to change your email"),
-});
+const schema = z
+  .object({
+    newEmail: z.string().email("Invalid email address"),
+    currentPassword: z.string().optional(),
+    reauthOtp: z.string().length(6).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.currentPassword && !data.reauthOtp) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Password or verification code is required",
+        path: ["currentPassword"],
+      });
+    }
+  });
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -26,9 +37,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { newEmail, currentPassword } = parsed.data;
+  const { newEmail, currentPassword, reauthOtp } = parsed.data;
 
-  // Fetch user with profile names separately
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: { email: true, passwordHash: true, language: true },
@@ -48,13 +58,30 @@ export async function POST(req: NextRequest) {
   }
 
   if (user.passwordHash) {
+    if (!currentPassword) {
+      return NextResponse.json({ error: "Password is required." }, { status: 400 });
+    }
     const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValid) {
       return NextResponse.json({ error: "Password is incorrect." }, { status: 400 });
     }
+  } else {
+    if (!reauthOtp) {
+      return NextResponse.json(
+        { error: "Verification code required. Request one via /api/auth/change-email/send-reauth." },
+        { status: 400 },
+      );
+    }
+    const identifier = `email-change-reauth:${session.user.id}`;
+    const token = await db.verificationToken.findFirst({
+      where: { identifier, token: reauthOtp, expires: { gt: new Date() } },
+    });
+    if (!token) {
+      return NextResponse.json({ error: "Invalid or expired verification code." }, { status: 400 });
+    }
+    await db.verificationToken.deleteMany({ where: { identifier } });
   }
 
-  // Get first name for the email
   const patientProfile = await db.patientProfile.findUnique({
     where: { userId: session.user.id },
     select: { firstName: true },

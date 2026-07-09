@@ -20,6 +20,22 @@ import {
 } from "@/lib/support-context";
 import { auth } from "@/lib/auth";
 import { getSupportPlatformCapabilities } from "@/lib/support-platform-capabilities";
+import { z } from "zod";
+
+const supportMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().trim().min(1).max(4000),
+});
+
+const supportRequestSchema = z.object({
+  lang: z.string().optional(),
+  messages: z.array(supportMessageSchema).min(1),
+  context: z
+    .object({
+      pathname: z.string().max(256).optional(),
+    })
+    .optional(),
+});
 
 const ERROR_MSG: Record<string, Record<string, string>> = {
   pt: {
@@ -54,10 +70,11 @@ const ALLOWED_ROLES = new Set([
   "ADMIN",
 ]);
 
-function parseContext(body: Record<string, unknown>, sessionRole: string | null): SupportContext {
-  const ctx = body.context;
-  const raw = ctx && typeof ctx === "object" ? (ctx as Record<string, unknown>) : {};
-  const pathname = typeof raw.pathname === "string" ? raw.pathname.slice(0, 256) : "/";
+function parseContext(
+  raw: z.infer<typeof supportRequestSchema>["context"],
+  sessionRole: string | null,
+): SupportContext {
+  const pathname = raw?.pathname?.slice(0, 256) ?? "/";
 
   const safeRole =
     sessionRole && ALLOWED_ROLES.has(sessionRole) ? sessionRole : null;
@@ -65,24 +82,6 @@ function parseContext(body: Record<string, unknown>, sessionRole: string | null)
   const role = normalizeSupportRole(safeRole, pathname);
 
   return { pathname, role, isLoggedIn };
-}
-
-function sanitizeMessages(raw: unknown): SupportChatMessage[] | null {
-  if (!Array.isArray(raw)) return null;
-
-  const out: SupportChatMessage[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const msg = item as Record<string, unknown>;
-    const role = msg.role;
-    const content = msg.content;
-    if ((role !== "user" && role !== "assistant") || typeof content !== "string") continue;
-    const trimmed = content.trim();
-    if (!trimmed) continue;
-    out.push({ role, content: trimmed.slice(0, 4000) });
-  }
-
-  return out.length > 0 ? out : null;
 }
 
 export async function POST(req: NextRequest) {
@@ -98,18 +97,20 @@ export async function POST(req: NextRequest) {
     if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
 
     const body = await req.json();
-    const lang = resolveLang(body.lang);
+    const parsed = supportRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: ERROR_MSG[langKey].invalid }, { status: 400 });
+    }
+
+    const lang = resolveLang(parsed.data.lang);
     const err = ERROR_MSG[lang];
 
-    const messages = sanitizeMessages(body.messages);
-    if (!messages) {
-      return NextResponse.json({ error: err.invalid }, { status: 400 });
-    }
+    const messages: SupportChatMessage[] = parsed.data.messages;
 
     const session = await auth();
     const sessionRole = session?.user?.role ?? null;
 
-    const context = parseContext(body, sessionRole);
+    const context = parseContext(parsed.data.context, sessionRole);
     const apiMessages = prepareSupportMessages(messages);
     if (apiMessages.length === 0) {
       return NextResponse.json({ error: err.invalid }, { status: 400 });

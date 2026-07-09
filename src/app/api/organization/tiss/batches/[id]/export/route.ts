@@ -3,6 +3,7 @@ import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { buildTissBatchXml } from "@/lib/tiss-export";
 import { formatLicense, getProfessionInfo } from "@/lib/profession-label";
+import { decryptPhiField } from "@/lib/phi-field-crypto";
 
 export async function GET(
   _req: NextRequest,
@@ -47,9 +48,9 @@ export async function GET(
         procedureCode: g.procedureCode,
         procedureName: g.procedureName,
         amountCents: g.amountCents,
-        patientName: g.patientName,
-        patientCpf: g.patientCpf,
-        cardNumber: g.cardNumber,
+        patientName: decryptPhiField(g.patientName) ?? "",
+        patientCpf: decryptPhiField(g.patientCpf),
+        cardNumber: decryptPhiField(g.cardNumber),
         serviceDate: g.serviceDate,
         professionalName: prof ? `${prof.firstName} ${prof.lastName}` : "Profissional",
         professionalCouncilNumber: prof?.licenseNumber

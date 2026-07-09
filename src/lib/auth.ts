@@ -31,6 +31,7 @@ import {
   readServerHumAuthCookies,
   resolveHumanitarianAuthCallback,
 } from "@/lib/humanitarian/origin-cookie";
+import { encryptOAuthToken } from "@/lib/oauth-token-crypto";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -337,12 +338,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 type: account.type,
                 provider: account.provider,
                 providerAccountId: account.providerAccountId,
-                access_token: account.access_token,
-                refresh_token: account.refresh_token,
+                access_token: encryptOAuthToken(account.access_token),
+                refresh_token: encryptOAuthToken(account.refresh_token),
                 expires_at: account.expires_at,
                 token_type: account.token_type,
                 scope: account.scope,
-                id_token: account.id_token,
+                id_token: encryptOAuthToken(account.id_token),
               },
             });
           }
@@ -458,7 +459,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (dbUser.tokenVersion > tokenVersion) return null;
             token.tvCheckedAt = Date.now();
           } catch {
-            /* DB unavailable — keep session, retry on next window */
+            return null;
           }
         }
       }

@@ -60,7 +60,7 @@ const FREQ: Record<Lang, Record<string, string>> = {
 };
 const LOCALE: Record<Lang, string> = { en: "en-US", pt: "pt-BR", es: "es-ES" };
 
-async function streamToBuffer(stream: any): Promise<Buffer> {
+async function streamToBuffer(stream: AsyncIterable<Uint8Array>): Promise<Buffer> {
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
   return Buffer.concat(chunks);
@@ -116,7 +116,7 @@ export async function GET(
       const obj = await s3.send(new GetObjectCommand({
         Bucket: BUCKET, Key: prescription.signedFileUrl,
       }));
-      const buf = await streamToBuffer(obj.Body as any);
+      const buf = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
       let out = new Uint8Array(buf);
       if (prescription.signatureStatus === "SIGNED") {
         try {

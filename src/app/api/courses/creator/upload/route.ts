@@ -6,6 +6,7 @@ import {
   createCourseVideoUploadUrl,
 } from "@/lib/courses/upload";
 import { z } from "zod";
+import { internalErrorResponse } from "@/lib/api-error-response";
 
 const schema = z.object({
   kind: z.enum(["video", "thumbnail"]),
@@ -41,8 +42,7 @@ export async function POST(req: NextRequest) {
             sizeBytes: parsed.data.sizeBytes,
           });
     return NextResponse.json(result);
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Upload failed";
-    return NextResponse.json({ error: message }, { status: 400 });
+  } catch (e: unknown) {
+    return internalErrorResponse("COURSE-CREATOR-UPLOAD", e, 400);
   }
 }

@@ -24,6 +24,7 @@ import {
   type ContributionInput,
   type ContributionOutput,
 } from "@/lib/rateio";
+import { internalErrorResponse } from "@/lib/api-error-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -992,8 +993,8 @@ export async function GET(req: NextRequest) {
     if (action === "preview") return NextResponse.json(await doPreview(month, currency));
     if (action === "costs") return NextResponse.json(await doListCosts(month, currency));
     return NextResponse.json({ error: "Ação GET inválida. Use ?action=preview|costs" }, { status: 400 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Erro" }, { status: 500 });
+  } catch (e: unknown) {
+    return internalErrorResponse("ADMIN-RATEIO-GET", e);
   }
 }
 
@@ -1058,7 +1059,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Ação inválida. Use validate|ledger|cost|close|run" }, { status: 400 });
     }
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Erro";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalErrorResponse("ADMIN-RATEIO-POST", e);
   }
 }

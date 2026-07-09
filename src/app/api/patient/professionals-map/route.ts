@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { getProfessionalsMap } from "@/lib/professionals-map-data";
+import { internalErrorResponse } from "@/lib/api-error-response";
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,9 +22,7 @@ export async function GET(req: NextRequest) {
       patientUserId: userId,
     });
     return NextResponse.json(result);
-  } catch (e) {
-    console.error("[PROFESSIONALS-MAP]", e);
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (e: unknown) {
+    return internalErrorResponse("PROFESSIONALS-MAP", e);
   }
 }

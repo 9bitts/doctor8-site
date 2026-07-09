@@ -8,13 +8,19 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { nanoid } from "nanoid";
 
+import {
+  resolvePublicShareExpiresAt,
+  resolvePublicShareMaxViews,
+  SHARED_LINK_MAX_EXPIRES_HOURS,
+} from "@/lib/shared-record-public";
+
 export async function POST() {
   const ctx = await requirePatient();
   if (isApiError(ctx)) return ctx.error;
   const { userId, patientProfileId } = ctx;
 
   const token = nanoid(32);
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const expiresAt = resolvePublicShareExpiresAt(SHARED_LINK_MAX_EXPIRES_HOURS);
 
   const shared = await db.sharedRecord.create({
     data: {
@@ -33,6 +39,8 @@ export async function POST() {
       patientId: patientProfileId,
       accessToken: token,
       expiresAt,
+      isPublicLink: true,
+      maxViews: resolvePublicShareMaxViews(),
     },
   });
 

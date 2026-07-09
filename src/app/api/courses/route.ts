@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getInstructorDisplay, PROFESSION_LABELS } from "@/lib/courses/display";
+import { getInstructorDisplayBatch, PROFESSION_LABELS } from "@/lib/courses/display";
 import { getSignedReadUrl } from "@/lib/s3";
 
 export const dynamic = "force-dynamic";
@@ -42,9 +42,17 @@ export async function GET(req: NextRequest) {
     },
   });
 
+  const instructorMap = await getInstructorDisplayBatch(
+    courses.map((c) => c.instructorUserId),
+  );
+
   const rows = await Promise.all(
     courses.map(async (c) => {
-      const instructor = await getInstructorDisplay(c.instructorUserId);
+      const instructor = instructorMap.get(c.instructorUserId) ?? {
+        name: "Instrutor",
+        specialty: null,
+        licenseNumber: null,
+      };
       let thumbnailUrl: string | null = null;
       if (c.thumbnailKey) {
         try {

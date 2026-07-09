@@ -73,6 +73,9 @@ export default function SharedRecordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [lang, setLang] = useState<Lang>("pt");
+  const [requiresPin, setRequiresPin] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinSubmitting, setPinSubmitting] = useState(false);
 
   const t = (key: TranslationKey) => translate(lang, key);
   const locale = localeOf(lang);
@@ -81,22 +84,91 @@ export default function SharedRecordPage() {
     setLang(detectLang());
   }, []);
 
-  useEffect(() => {
+  async function loadShare(pinValue?: string) {
     if (!token) return;
-    fetch(`/api/shared/${token}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.error) setError(d.error);
-        else setData(d);
-      })
-      .catch(() => setError(t("sharePublic.errLoad")))
-      .finally(() => setLoading(false));
+    setLoading(true);
+    setError("");
+    try {
+      const qs = pinValue ? `?pin=${encodeURIComponent(pinValue)}` : "";
+      const r = await fetch(`/api/shared/${token}${qs}`);
+      const d = await r.json();
+      if (d.requiresPin && !pinValue) {
+        setRequiresPin(true);
+        setData(null);
+        return;
+      }
+      if (d.error) {
+        setError(d.error);
+        setData(null);
+      } else {
+        setRequiresPin(false);
+        setData(d);
+      }
+    } catch {
+      setError(t("sharePublic.errLoad"));
+    } finally {
+      setLoading(false);
+      setPinSubmitting(false);
+    }
+  }
+
+  useEffect(() => {
+    loadShare();
   }, [token, lang]);
 
-  if (loading) {
+  async function submitPin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pin.trim()) return;
+    setPinSubmitting(true);
+    await loadShare(pin.trim());
+  }
+
+  if (loading && !requiresPin) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="animate-spin text-emerald-500" size={32} />
+      </div>
+    );
+  }
+
+  if (requiresPin && !data) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <form
+          onSubmit={submitPin}
+          className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 max-w-md w-full"
+        >
+          <Shield size={32} className="text-emerald-500 mx-auto mb-4" />
+          <h2 className="text-lg font-bold text-slate-800 mb-2 text-center">
+            {lang === "pt" ? "PIN de acesso" : lang === "es" ? "PIN de acceso" : "Access PIN"}
+          </h2>
+          <p className="text-slate-500 text-sm mb-4 text-center">
+            {lang === "pt"
+              ? "Este link está protegido. Digite o PIN fornecido pelo paciente."
+              : lang === "es"
+                ? "Este enlace está protegido. Ingrese el PIN proporcionado por el paciente."
+                : "This link is protected. Enter the PIN provided by the patient."}
+          </p>
+          <input
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={8}
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-center text-lg tracking-widest mb-4"
+            placeholder="••••"
+            autoComplete="off"
+          />
+          {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
+          <button
+            type="submit"
+            disabled={pinSubmitting || pin.length < 4}
+            className="w-full bg-emerald-600 text-white rounded-xl py-3 font-semibold disabled:opacity-50"
+          >
+            {pinSubmitting ? "…" : lang === "pt" ? "Ver documento" : lang === "es" ? "Ver documento" : "View document"}
+          </button>
+        </form>
       </div>
     );
   }

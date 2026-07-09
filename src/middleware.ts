@@ -14,6 +14,7 @@ import {
   isHumanitarianPatientPath,
   stampHumanitarianOriginOnResponse,
 } from "@/lib/humanitarian/origin-cookie";
+import { isApiRoleAllowed } from "@/lib/api-route-roles";
 
 const PRIVATE_CACHE_CONTROL = "private, no-store";
 
@@ -551,6 +552,14 @@ export default auth((req) => {
     professionalSpecialty?: string | null;
   };
   const isApi = pathname.startsWith("/api/");
+
+  if (isApi && !isApiRoleAllowed(pathname, role)) {
+    return withPrivateCacheHeaders(
+      NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+      pathname,
+      authenticated,
+    );
+  }
 
   function denyWrongRole(): NextResponse {
     if (isApi) {

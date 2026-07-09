@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import {
+  checkRateLimits,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 import { UserRole, ConsentType } from "@prisma/client";
 import { parseRegistrationPhone } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
+import { registerAckResponse } from "@/lib/register-anti-enum";
 
 const passwordSchema = z
   .string()
@@ -52,6 +59,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = clientIp(req);
+    const rate = await checkRateLimits([
+      { namespace: "register-org-staff:ip", key: ip, ...RATE_LIMITS.authIp },
+    ]);
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
     const body = await req.json();
     const data = registerStaffSchema.safeParse(body);
     if (!data.success) {
@@ -81,14 +94,10 @@ export async function POST(req: NextRequest) {
     const email = invite.email.toLowerCase();
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
-      return NextResponse.json(
-        { error: { email: ["Este e-mail já possui conta. Faça login e aceite o convite."] } },
-        { status: 409 },
-      );
+      return registerAckResponse();
     }
 
     const passwordHash = await bcrypt.hash(data.data.password, 12);
-    const ip = req.headers.get("x-forwarded-for") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
 
     const user = await db.$transaction(async (tx) => {

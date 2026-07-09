@@ -16,6 +16,7 @@ import { UserRole, ConsentType } from "@prisma/client";
 import { REGISTRATION_REGION_CODES, requiresGdpr, requiresHipaa } from "@/lib/registration-regions";
 import { sendEmailVerification } from "@/lib/email";
 import { resolveLoginPathForRegistration } from "@/lib/auth-portals";
+import { registerAckResponse } from "@/lib/register-anti-enum";
 import { encrypt } from "@/lib/encryption";
 import {
   attachLinkedDocumentsToPatientProfile,
@@ -283,10 +284,7 @@ export async function POST(req: NextRequest) {
             where: { id: existing.id },
             data: { emailVerified: new Date() },
           });
-          return NextResponse.json(
-            { success: true, userId: existing.id, emailVerificationSkipped: true },
-            { status: 200 },
-          );
+          return registerAckResponse();
         }
 
         const token = randomBytes(32).toString("hex");
@@ -313,15 +311,12 @@ export async function POST(req: NextRequest) {
         } catch (emailError) {
           console.error("[REGISTER EMAIL RESEND]", emailError);
         }
-        return NextResponse.json(
-          { success: true, userId: existing.id, pendingVerification: true, emailSent: true },
-          { status: 200 },
-        );
+        return registerAckResponse();
       }
 
       if (userHasAnyProfile(existing)) {
         console.info("[REGISTER] Duplicate email signup attempt", { email: normalizedEmail });
-        return NextResponse.json({ success: true, existingAccount: true }, { status: 200 });
+        return registerAckResponse();
       }
 
       const passwordHash = await bcrypt.hash(password, 12);

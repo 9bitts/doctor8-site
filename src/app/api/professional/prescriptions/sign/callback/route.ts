@@ -68,7 +68,6 @@ export async function GET(req: NextRequest) {
 
   const signatureSessionId = req.nextUrl.searchParams.get("signatureSessionId") || "";
   let prescriptionId = req.nextUrl.searchParams.get("prescriptionId") || "";
-  console.log("[CALLBACK] prescriptionId:", prescriptionId, "sessionId:", signatureSessionId);
 
   let prescription = prescriptionId
     ? await db.prescription.findUnique({
@@ -112,7 +111,6 @@ export async function GET(req: NextRequest) {
   }
 
   const status = (lacunaSession.status || "").toLowerCase();
-  console.log("[CALLBACK] status da sessao:", status);
 
   // Cancelado pelo usuário
   if (status === "usercancelled" || status === "cancelled") {
@@ -144,7 +142,6 @@ export async function GET(req: NextRequest) {
 
   // Concluída — baixa o PDF assinado
   const location = getSignedLocation(lacunaSession);
-  console.log("[CALLBACK] location do PDF assinado:", location);
   if (!location) {
     await db.prescription.update({
       where: { id: prescriptionId },
@@ -156,7 +153,6 @@ export async function GET(req: NextRequest) {
   let signedBytes: Buffer;
   try {
     signedBytes = await downloadSignedPdf(location);
-    console.log("[CALLBACK] PDF assinado baixado:", signedBytes.length, "bytes");
   } catch (e) {
     console.error("[CALLBACK] download do PDF falhou:", (e as Error).message);
     await db.prescription.update({
@@ -175,7 +171,6 @@ export async function GET(req: NextRequest) {
       Body: signedBytes,
       ContentType: "application/pdf",
     }));
-    console.log("[CALLBACK] PDF salvo no S3:", key);
   } catch (e) {
     console.error("[CALLBACK] upload S3 falhou:", (e as Error).message);
     await db.prescription.update({
@@ -200,7 +195,6 @@ export async function GET(req: NextRequest) {
     await audit.viewRecord(session.user.id, "PrescriptionSigned", prescriptionId);
   } catch { /* auditoria nao deve quebrar o fluxo */ }
 
-  console.log("[CALLBACK] assinatura concluida com sucesso");
   const deliverAfter = req.nextUrl.searchParams.get("deliverAfter") === "1";
   return redirectTo(req, "success", proSpecialty, deliverAfter
     ? { flow: "deliver", kind: "prescription", id: prescriptionId }

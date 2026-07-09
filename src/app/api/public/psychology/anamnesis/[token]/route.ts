@@ -8,13 +8,28 @@ import {
 } from "@/lib/psychology-anamnesis";
 import { isPsychologyAnamnesisEnabled } from "@/lib/psychology-feature-flags";
 import { safeDecrypt } from "@/lib/psychology-api";
+import {
+  auditAnamnesisInviteView,
+  checkAnamnesisInviteAccess,
+} from "@/lib/anamnesis-invite-access";
+import { clientIp } from "@/lib/rate-limit";
 
 const submitSchema = z.object({
   fields: z.record(z.string(), z.string()),
 });
 
+async function recordAnamnesisView(inviteId: string, req: NextRequest): Promise<void> {
+  const ip = clientIp(req);
+  const userAgent = req.headers.get("user-agent") || "unknown";
+  await db.psychologyAnamnesisInvite.update({
+    where: { id: inviteId },
+    data: { viewCount: { increment: 1 } },
+  });
+  await auditAnamnesisInviteView(inviteId, ip, userAgent);
+}
+
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { token: string } },
 ) {
   if (!isPsychologyAnamnesisEnabled()) {
@@ -31,8 +46,14 @@ export async function GET(
 
   if (!invite) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const now = new Date();
-  const expired = invite.expiresAt < now;
+  const access = checkAnamnesisInviteAccess(invite);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
+  await recordAnamnesisView(invite.id, req);
+
+  const expired = invite.expiresAt < new Date();
   const completed = invite.status === "COMPLETED";
 
   return NextResponse.json({
@@ -60,15 +81,16 @@ export async function POST(
   });
 
   if (!invite) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (invite.status === "COMPLETED") {
-    return NextResponse.json({ error: "Already submitted" }, { status: 409 });
-  }
-  if (invite.expiresAt < new Date()) {
-    await db.psychologyAnamnesisInvite.update({
-      where: { id: invite.id },
-      data: { status: "EXPIRED" },
-    });
-    return NextResponse.json({ error: "Link expired" }, { status: 410 });
+
+  const access = checkAnamnesisInviteAccess(invite);
+  if (!access.ok) {
+    if (access.status === 410 && invite.expiresAt < new Date()) {
+      await db.psychologyAnamnesisInvite.update({
+        where: { id: invite.id },
+        data: { status: "EXPIRED" },
+      });
+    }
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   const body = await req.json();

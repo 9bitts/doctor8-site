@@ -5,39 +5,28 @@ import {
   parseInventoryCsv,
   applyInventoryImport,
 } from "@/lib/pharmacy-store-inventory-import";
+import { assertCsvRowCount } from "@/lib/csv-import-limits";
+import { parseCsvImportRequest } from "@/lib/csv-import-request";
 
 export async function POST(req: NextRequest) {
   const ctx = await requirePharmacyStore();
   if ("error" in ctx) return ctx.error;
 
-  const contentType = req.headers.get("content-type") || "";
-  let csvText = "";
-  let filename: string | undefined;
-
-  if (contentType.includes("multipart/form-data")) {
-    const form = await req.formData();
-    const file = form.get("file");
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: "Arquivo CSV obrigatório" }, { status: 400 });
-    }
-    filename = file.name;
-    csvText = await file.text();
-  } else {
-    const body = await req.json();
-    if (typeof body.csv !== "string" || !body.csv.trim()) {
-      return NextResponse.json({ error: "Campo csv obrigatório" }, { status: 400 });
-    }
-    csvText = body.csv;
-    filename = typeof body.filename === "string" ? body.filename : undefined;
+  const payload = await parseCsvImportRequest(req);
+  if (!payload.ok) {
+    return NextResponse.json({ error: payload.error }, { status: payload.status });
   }
 
-  const { rows, errors: parseErrors } = parseInventoryCsv(csvText);
+  const { rows, errors: parseErrors } = parseInventoryCsv(payload.csvText);
+  const rowErr = assertCsvRowCount(rows.length);
+  if (rowErr) return NextResponse.json({ error: rowErr }, { status: 400 });
+
   const result = await applyInventoryImport(ctx.pharmacyStoreId, rows, parseErrors);
 
   const batch = await db.pharmacyStoreInventoryImport.create({
     data: {
       pharmacyStoreId: ctx.pharmacyStoreId,
-      filename,
+      filename: payload.filename,
       rowsTotal: result.rowsTotal,
       rowsMatched: result.rowsMatched,
       rowsCreated: result.rowsCreated,

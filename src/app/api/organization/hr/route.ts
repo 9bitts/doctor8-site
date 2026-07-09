@@ -5,6 +5,7 @@ import { canViewFinance } from "@/lib/organization-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { dateOnlyRangeInTz } from "@/lib/timezone";
+import { encryptPhiField, decryptPhiField } from "@/lib/phi-field-crypto";
 
 /** Brazilian organizations — report/filter boundaries use America/Sao_Paulo. */
 const ORG_REPORT_TZ = "America/Sao_Paulo";
@@ -31,6 +32,7 @@ export async function GET() {
       id: e.id,
       fullName: e.fullName,
       email: e.email,
+      cpf: decryptPhiField(e.cpf),
       employmentType: e.employmentType,
       jobTitle: e.jobTitle,
       salaryCents: e.salaryCents,
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
       organizationId: ctx.organizationId,
       fullName: parsed.data.fullName,
       email: parsed.data.email,
-      cpf: parsed.data.cpf,
+      cpf: encryptPhiField(parsed.data.cpf),
       employmentType: parsed.data.employmentType,
       jobTitle: parsed.data.jobTitle,
       salaryCents: parsed.data.salaryCents,

@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
+import { canUsersExchangeMessages } from "@/lib/message-relationship";
 import { z } from "zod";
 
 const sendSchema = z.object({
@@ -145,6 +146,11 @@ export async function POST(req: NextRequest) {
   if (!receiver) return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
 
   if (session.user.role === "PATIENT" && receiver.role === "PATIENT") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const mayMessage = await canUsersExchangeMessages(session.user.id, receiverId);
+  if (!mayMessage) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

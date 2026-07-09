@@ -69,17 +69,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  console.log(
-    "[PHI-EMISSION-REPORT]",
-    JSON.stringify({
-      patientUserId: ctx.userId,
-      professionalUserId,
-      resourceType,
-      resourceId,
-      at: new Date().toISOString(),
-    }),
-  );
-
   await createAuditLog({
     userId: ctx.userId,
     action: AuditAction.CREATE_RECORD,

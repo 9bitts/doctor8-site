@@ -13,6 +13,7 @@ import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
 import { isAccountVerified } from "@/lib/account-verified";
+import { registerAckResponse } from "@/lib/register-anti-enum";
 import {
   checkRateLimits,
   clientIp,
@@ -145,13 +146,10 @@ export async function POST(req: NextRequest) {
           emailSent = false;
         }
 
-        return NextResponse.json(
-          { success: true, userId: existingEmail.id, pendingVerification: true, emailSent },
-          { status: 200 },
-        );
+        return registerAckResponse();
       }
 
-      return NextResponse.json({ success: true, existingAccount: true }, { status: 200 });
+      return registerAckResponse();
     }
     if (existingCnpj) {
       return NextResponse.json({ error: { cnpj: ["CNPJ já cadastrado"] } }, { status: 409 });

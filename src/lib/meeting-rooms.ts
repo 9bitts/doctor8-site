@@ -1,7 +1,7 @@
 /**
  * Fixed Google Meet rooms for professional coordination (e.g. humanitarian briefings).
  * Use a recurring Google Calendar event to obtain a permanent Meet URL, then set
- * NEXT_PUBLIC_MEETING_ROOM_NISE_URL in the environment.
+ * MEETING_ROOM_NISE_URL (server) or NEXT_PUBLIC_MEETING_ROOM_NISE_URL (legacy) in the environment.
  */
 
 export type MeetingRoomConfig = {
@@ -111,11 +111,18 @@ export function normalizeMeetUrl(raw: string | null | undefined): string | null 
 }
 
 const MEETING_ROOM_URL_BY_ID: Record<string, string | undefined> = {
-  "alianca-pela-vida": process.env.NEXT_PUBLIC_MEETING_ROOM_ALIANCA_PELA_VIDA_URL,
-  "nise-yamaguchi": process.env.NEXT_PUBLIC_MEETING_ROOM_NISE_URL,
-  "treinamento-doctor8": process.env.NEXT_PUBLIC_MEETING_ROOM_DOCTOR8_URL,
-  "medicos-pela-vida": process.env.NEXT_PUBLIC_MEETING_ROOM_MEDICOS_PELA_VIDA_URL,
-  "claudia-de-bessa-solmucci": process.env.NEXT_PUBLIC_MEETING_ROOM_CLAUDIA_URL,
+  "alianca-pela-vida":
+    process.env.MEETING_ROOM_ALIANCA_PELA_VIDA_URL ||
+    process.env.NEXT_PUBLIC_MEETING_ROOM_ALIANCA_PELA_VIDA_URL,
+  "nise-yamaguchi":
+    process.env.MEETING_ROOM_NISE_URL || process.env.NEXT_PUBLIC_MEETING_ROOM_NISE_URL,
+  "treinamento-doctor8":
+    process.env.MEETING_ROOM_DOCTOR8_URL || process.env.NEXT_PUBLIC_MEETING_ROOM_DOCTOR8_URL,
+  "medicos-pela-vida":
+    process.env.MEETING_ROOM_MEDICOS_PELA_VIDA_URL ||
+    process.env.NEXT_PUBLIC_MEETING_ROOM_MEDICOS_PELA_VIDA_URL,
+  "claudia-de-bessa-solmucci":
+    process.env.MEETING_ROOM_CLAUDIA_URL || process.env.NEXT_PUBLIC_MEETING_ROOM_CLAUDIA_URL,
 };
 
 const MEETING_ROOM_URL_FALLBACK: Record<string, string> = {

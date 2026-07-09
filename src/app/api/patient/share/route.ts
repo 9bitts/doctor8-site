@@ -12,12 +12,21 @@ import { decrypt } from "@/lib/encryption";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 
+import {
+  hashShareViewPin,
+  resolvePublicShareExpiresAt,
+  resolvePublicShareMaxViews,
+} from "@/lib/shared-record-public";
+
 const schema = z.object({
   type: z.enum(["history", "medications"]),
   // Optional: share directly with a professional inside Doctor8
   professionalUserId: z.string().optional(),
-  // Expiry in hours (0 = never)
-  expiresInHours: z.number().min(0).default(72),
+  // Expiry in hours (0 = default 72h; capped at 168h)
+  expiresInHours: z.number().min(0).max(168).default(72),
+  // Optional PIN for public link viewers (4–8 digits)
+  viewPin: z.string().regex(/^\d{4,8}$/).optional(),
+  maxViews: z.number().min(1).max(100).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -29,7 +38,7 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { type, professionalUserId, expiresInHours } = parsed.data;
+  const { type, professionalUserId, expiresInHours, viewPin, maxViews } = parsed.data;
 
   const patient = await db.patientProfile.findUnique({
     where: { userId },
@@ -38,9 +47,9 @@ export async function POST(req: NextRequest) {
 
   // Generate unique access token
   const accessToken = nanoid(32);
-  const expiresAt = expiresInHours > 0
-    ? new Date(Date.now() + expiresInHours * 60 * 60 * 1000)
-    : null;
+  const expiresAt = resolvePublicShareExpiresAt(expiresInHours);
+  const viewPinHash = viewPin ? await hashShareViewPin(viewPin) : null;
+  const shareMaxViews = resolvePublicShareMaxViews(maxViews);
 
   // Build the content to share based on type
   let content: Record<string, unknown> = {};
@@ -83,6 +92,9 @@ export async function POST(req: NextRequest) {
       patientId: patientProfileId,
       accessToken,
       expiresAt,
+      isPublicLink: true,
+      maxViews: shareMaxViews,
+      viewPinHash,
       ...(professionalUserId ? { sharedWithUserId: professionalUserId } : {}),
     },
   });

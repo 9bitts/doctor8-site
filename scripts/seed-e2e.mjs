@@ -11,6 +11,27 @@ import { PrismaClient, UserRole, ConsentType, ProviderType } from "@prisma/clien
 
 const prisma = new PrismaClient();
 
+function assertSafeToSeed() {
+  const allow = process.env.ALLOW_E2E_SEED === "1" || process.env.CI === "true";
+  if (allow) return;
+
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "").toLowerCase();
+  const nodeEnv = process.env.NODE_ENV || "";
+  const railwayEnv = process.env.RAILWAY_ENVIRONMENT || "";
+
+  const looksProduction =
+    railwayEnv === "production" ||
+    appUrl.includes("doctor8.org") ||
+    (nodeEnv === "production" && !process.env.PLAYWRIGHT_BASE_URL);
+
+  if (looksProduction) {
+    console.error(
+      "[seed-e2e] Refusing to seed @doctor8.test users in production. Set ALLOW_E2E_SEED=1 only in CI.",
+    );
+    process.exit(1);
+  }
+}
+
 const VENEZUELA_SLUG = "venezuela-terremoto-2026";
 
 const DEFAULT_PATIENT = {
@@ -692,6 +713,7 @@ async function seedHumanitarianQueueFixtures() {
 }
 
 async function main() {
+  assertSafeToSeed();
   await seedCampaign();
   await seedPatient(DEFAULT_PATIENT);
   await seedProfessional(DEFAULT_PROFESSIONAL);

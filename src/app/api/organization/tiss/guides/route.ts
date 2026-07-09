@@ -7,6 +7,7 @@ import {
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { dateOnlyRangeInTz } from "@/lib/timezone";
+import { encryptPhiField, decryptPhiField } from "@/lib/phi-field-crypto";
 
 /** Brazilian organizations — report/filter boundaries use America/Sao_Paulo. */
 const ORG_REPORT_TZ = "America/Sao_Paulo";
@@ -50,8 +51,8 @@ export async function GET(req: NextRequest) {
         procedureCode: g.procedureCode,
         procedureName: g.procedureName,
         amountCents: g.amountCents,
-        patientName: g.patientName,
-        cardNumber: g.cardNumber,
+        patientName: decryptPhiField(g.patientName),
+        cardNumber: decryptPhiField(g.cardNumber),
         status: g.status,
         glosaReason: g.glosaReason,
         batchId: g.batchId,
@@ -107,9 +108,9 @@ export async function POST(req: NextRequest) {
       organizationId: ctx.organizationId,
       orgHealthPlanId: parsed.data.orgHealthPlanId,
       professionalId: parsed.data.professionalId,
-      patientName: parsed.data.patientName,
-      patientCpf: parsed.data.patientCpf,
-      cardNumber: parsed.data.cardNumber,
+      patientName: encryptPhiField(parsed.data.patientName)!,
+      patientCpf: encryptPhiField(parsed.data.patientCpf),
+      cardNumber: encryptPhiField(parsed.data.cardNumber),
       amountCents: parsed.data.amountCents,
       serviceDate: dateOnlyRangeInTz(parsed.data.serviceDate, ORG_REPORT_TZ).start,
       appointmentId: parsed.data.appointmentId,

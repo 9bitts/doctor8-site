@@ -522,6 +522,10 @@ model User {
   patientProfessionalLinksAsProfessional PatientProfessionalLink[] @relation("PatientProfessionalLinkProfessional")
   emissionReportsAsPatient             ProfessionalEmissionReport[] @relation("EmissionReportPatient")
   emissionReportsAsProfessional        ProfessionalEmissionReport[] @relation("EmissionReportProfessional")
+  paymentRefunds                       PaymentRefund[] @relation("PaymentRefundUser")
+  orgLedgerEntriesCreated              OrganizationLedgerEntry[] @relation("OrgLedgerCreatedBy")
+  patientRecordsLinked                 PatientRecord[] @relation("PatientRecordLinkedUser")
+  patientProfilesReviewed              PatientProfile[] @relation("PatientProfileReviewedBy")
 
   // Course marketplace — admin grants partner instructors upload access
   courseCreatorApproved    Boolean   @default(false)
@@ -634,6 +638,7 @@ model PatientProfile {
   adminNote         String?
   adminReviewedAt   DateTime?
   adminReviewedById String?
+  adminReviewedBy   User?    @relation("PatientProfileReviewedBy", fields: [adminReviewedById], references: [id], onDelete: SetNull)
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -783,6 +788,9 @@ model ProfessionalProfile {
   poolContributions       PoolContribution[]
   consultationValidations ConsultationValidation[]
   humanitarianVolunteers  HumanitarianVolunteer[]
+  tissGuides              TissGuide[]
+  orgEmployees            OrganizationEmployee[]
+  orgLedgerEntries        OrganizationLedgerEntry[]
 
   @@index([userId])
   @@index([specialty])
@@ -1086,6 +1094,10 @@ model Appointment {
   updatedAt        DateTime @updatedAt
 
   documents        MedicalDocument[]
+  paymentRefunds   PaymentRefund[]
+  tissGuides       TissGuide[]
+  orgLedgerEntries OrganizationLedgerEntry[]
+  orgSurveyResponses OrganizationSurveyResponse[]
 
   @@index([patientId])
   @@index([professionalId])
@@ -1116,7 +1128,9 @@ model PaymentRefund {
   status          String   // SUCCEEDED | ALREADY_REFUNDED | FAILED
   triggeredBy     String   // AUTO_SLOT_TAKEN | AUTO_WEBHOOK_FAIL | PATIENT_CANCEL | JIT_ORPHAN | JIT_QUEUE | OTHER
   appointmentId   String?
+  appointment     Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   userId          String?
+  user            User? @relation("PaymentRefundUser", fields: [userId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
   @@index([paymentIntentId])
@@ -1204,8 +1218,13 @@ model SharedRecord {
   sharedWithProfessional    ProfessionalProfile? @relation("DocsSharedWithProfessional", fields: [sharedWithProfessionalId], references: [id]) // NEW
 
   accessToken      String    @unique @default(cuid()) // for link sharing
-  expiresAt        DateTime? // null = never expires
+  expiresAt        DateTime? // public links: always set; legacy null uses createdAt + default TTL
   viewedAt         DateTime?
+  isPublicLink     Boolean   @default(false) // only true for token-based external shares
+  viewCount        Int       @default(0)
+  maxViews         Int       @default(50)
+  revokedAt        DateTime?
+  viewPinHash      String?   // optional bcrypt PIN for public link access
 
   createdAt        DateTime  @default(now())
 
@@ -1275,6 +1294,7 @@ model Prescription {
   pharmacyAccessToken  String?   @unique
   pharmacyDispensedAt  DateTime?
   pharmacyDispensedStoreId String?
+  pharmacyDispensedStore   PharmacyStore? @relation(fields: [pharmacyDispensedStoreId], references: [id], onDelete: SetNull)
 
   pharmacyOrders       PharmacyOrder[]
   pharmacyPrescriptionToken PharmacyPrescriptionToken?
@@ -1534,6 +1554,7 @@ model Notification {
 
   @@index([userId])
   @@index([readAt])
+  @@index([userId, readAt])
 }
 
 model PushSubscription {
@@ -1696,6 +1717,7 @@ model PatientRecord {
 
   // Link to a real account, once the patient has one
   linkedUserId    String?
+  linkedUser      User? @relation("PatientRecordLinkedUser", fields: [linkedUserId], references: [id], onDelete: SetNull)
   // Normalized plaintext for search (first + last + email, accent-stripped)
   searchText      String?
   // Clinical records attached to this chart
@@ -1772,6 +1794,8 @@ model PsychologyAnamnesisInvite {
   professionalId  String
   professional    ProfessionalProfile       @relation(fields: [professionalId], references: [id], onDelete: Cascade)
   status          PsychologyAnamnesisStatus @default(PENDING)
+  viewCount       Int                       @default(0)
+  maxViews        Int                       @default(30)
   responses       String?                   @db.Text // @encrypted JSON
   expiresAt       DateTime
   completedAt     DateTime?
@@ -1949,8 +1973,11 @@ model OrganizationLedgerEntry {
   dueDate        DateTime?
   paidAt         DateTime?
   professionalId String?
+  professional   ProfessionalProfile? @relation(fields: [professionalId], references: [id], onDelete: SetNull)
   appointmentId  String?
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   createdById    String?
+  createdBy      User? @relation("OrgLedgerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
@@ -1994,16 +2021,18 @@ model TissGuide {
   orgHealthPlan   OrganizationHealthPlan @relation(fields: [orgHealthPlanId], references: [id], onDelete: Cascade)
 
   appointmentId   String?
+  appointment     Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   professionalId  String
+  professional    ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Restrict)
   guideNumber     String?
   guideType       TissGuideType   @default(CONSULTA)
   procedureCode   String          @default("10101012")
   procedureName   String          @default("Consulta em consultorio")
   amountCents     Int
 
-  patientName     String
-  patientCpf      String?
-  cardNumber      String?
+  patientName     String   // @encrypted
+  patientCpf      String?  // @encrypted
+  cardNumber      String?  // @encrypted
 
   status          TissGuideStatus @default(DRAFT)
   glosaReason     String?
@@ -2052,9 +2081,10 @@ model OrganizationEmployee {
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   professionalId String?
+  professional   ProfessionalProfile? @relation(fields: [professionalId], references: [id], onDelete: SetNull)
   fullName       String
   email          String?
-  cpf            String?
+  cpf            String?  // @encrypted
   employmentType EmploymentType
   jobTitle       String?
   salaryCents    Int?
@@ -2161,6 +2191,7 @@ model OrganizationSurveyResponse {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   appointmentId  String?
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   patientName    String?
   score          Int
   comment        String?
@@ -4951,6 +4982,7 @@ model PharmacyStore {
   inventory            PharmacyStoreInventoryItem[]
   importBatches        PharmacyStoreInventoryImport[]
   orders               PharmacyOrder[]
+  prescriptionsDispensed Prescription[]
 
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
