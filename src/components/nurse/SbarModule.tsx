@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { Loader2, Save, Send } from "lucide-react";
 import type { NurseChart } from "./NurseChartWorkspace";
+import { useVoiceFormPrefill, VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { SbarPrefill } from "@/lib/voice-assistant/types";
 
 type SbarReport = {
   id: string;
@@ -26,6 +28,19 @@ export default function SbarModule({ chart }: { chart: NurseChart }) {
   const [assessment, setAssessment] = useState("");
   const [recommendation, setRecommendation] = useState("");
   const [recipientNote, setRecipientNote] = useState("");
+
+  const { voicePrefillActive } = useVoiceFormPrefill({
+    formType: "sbar",
+    chartId: chart.id,
+    onApply: (data) => {
+      const d = data as SbarPrefill;
+      if (d.situation) setSituation(d.situation);
+      if (d.background) setBackground(d.background);
+      if (d.assessment) setAssessment(d.assessment);
+      if (d.recommendation) setRecommendation(d.recommendation);
+      if (d.recipientNote) setRecipientNote(d.recipientNote);
+    },
+  });
 
   async function load() {
     setLoading(true);
@@ -87,6 +102,7 @@ export default function SbarModule({ chart }: { chart: NurseChart }) {
 
   return (
     <div className="space-y-6">
+      <VoicePrefillBanner active={voicePrefillActive} />
       <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-5 space-y-4">
         <h3 className="font-semibold text-slate-900">{t("nurse.sbar.new")}</h3>
         <p className="text-sm text-slate-600">{t("nurse.sbar.newDesc")}</p>

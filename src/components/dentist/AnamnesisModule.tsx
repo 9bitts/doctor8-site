@@ -5,6 +5,8 @@ import { Loader2, Save, AlertTriangle } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { DENTAL_ANAMNESIS_FIELDS, DENTAL_TCLE_TEXT_KEY } from "@/lib/dentistry/anamnesis-fields";
 import type { DentistChart } from "./DentistChartWorkspace";
+import { useVoiceFormPrefill, VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { DentalAnamnesisPrefill } from "@/lib/voice-assistant/types";
 
 export default function AnamnesisModule({ chart }: { chart: DentistChart }) {
   const { t } = useI18n();
@@ -13,6 +15,19 @@ export default function AnamnesisModule({ chart }: { chart: DentistChart }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [history, setHistory] = useState<{ id: string; createdAt: string }[]>([]);
+
+  const { voicePrefillActive } = useVoiceFormPrefill({
+    formType: "dental_anamnesis",
+    chartId: chart.id,
+    onApply: (data) => {
+      const d = data as DentalAnamnesisPrefill;
+      setResponses((prev) => ({
+        ...prev,
+        ...(d.chiefComplaint ? { chiefComplaint: d.chiefComplaint } : {}),
+        ...(d.responses || {}),
+      }));
+    },
+  });
 
   useEffect(() => {
     fetch(`/api/dentist/charts/${chart.id}/anamnesis`)
@@ -43,6 +58,7 @@ export default function AnamnesisModule({ chart }: { chart: DentistChart }) {
 
   return (
     <div className="space-y-6">
+      <VoicePrefillBanner active={voicePrefillActive} />
       {history.length > 0 && (
         <p className="text-xs text-slate-500">
           {t("dental.anam.history")}: {history.length} {t("dental.anam.records")}

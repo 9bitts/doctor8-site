@@ -5,6 +5,8 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { GitCompare, Loader2, Save, Trash2 } from "lucide-react";
 import type { PharmacistChart } from "./PharmacistChartWorkspace";
 import type { MedicationItem } from "@/lib/pharmacy/types";
+import { useVoiceFormPrefill, VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { ReconciliationPrefill } from "@/lib/voice-assistant/types";
 
 type Discrepancy = {
   medication: string;
@@ -36,6 +38,30 @@ export default function ReconciliationModule({ chart }: { chart: PharmacistChart
   const [medicationsAfter, setMedicationsAfter] = useState<MedicationItem[]>([emptyMed()]);
   const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([]);
   const [notes, setNotes] = useState("");
+
+  const { voicePrefillActive } = useVoiceFormPrefill({
+    formType: "reconciliation",
+    chartId: chart.id,
+    onApply: (data) => {
+      const d = data as ReconciliationPrefill;
+      if (d.sourceContext) setSourceContext(d.sourceContext);
+      if (d.notes) setNotes(d.notes);
+      if (d.medicationsBefore?.length) {
+        setMedicationsBefore(d.medicationsBefore.map((m) => ({
+          name: m.name || "",
+          dosage: m.dosage || "",
+          frequency: "",
+        })));
+      }
+      if (d.medicationsAfter?.length) {
+        setMedicationsAfter(d.medicationsAfter.map((m) => ({
+          name: m.name || "",
+          dosage: m.dosage || "",
+          frequency: "",
+        })));
+      }
+    },
+  });
 
   async function load() {
     setLoading(true);
@@ -137,6 +163,7 @@ export default function ReconciliationModule({ chart }: { chart: PharmacistChart
 
   return (
     <div className="space-y-6">
+      <VoicePrefillBanner active={voicePrefillActive} />
       <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-5 space-y-4">
         <h3 className="font-semibold text-slate-900 flex items-center gap-2">
           <GitCompare size={16} className="text-teal-600" />

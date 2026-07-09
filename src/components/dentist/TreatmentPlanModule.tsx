@@ -5,6 +5,8 @@ import { Loader2, Plus, Save, CheckCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { DENTAL_PROCEDURES } from "@/lib/dentistry/procedures";
 import type { DentistChart } from "./DentistChartWorkspace";
+import { useVoiceFormPrefill, VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { TreatmentPlanPrefill } from "@/lib/voice-assistant/types";
 
 type PlanItem = {
   procedureCode: string;
@@ -30,6 +32,27 @@ export default function TreatmentPlanModule({ chart }: { chart: DentistChart }) 
   const [items, setItems] = useState<PlanItem[]>([]);
   const [discountCents, setDiscountCents] = useState(0);
   const [saving, setSaving] = useState(false);
+
+  const { voicePrefillActive } = useVoiceFormPrefill({
+    formType: "treatment_plan",
+    chartId: chart.id,
+    onApply: (data) => {
+      const d = data as TreatmentPlanPrefill;
+      if (typeof d.discountCents === "number") setDiscountCents(d.discountCents);
+      if (d.items?.length) {
+        setItems(d.items.map((item) => {
+          const proc = DENTAL_PROCEDURES.find((p) => p.code === item.procedureCode) || DENTAL_PROCEDURES[0];
+          return {
+            procedureCode: item.procedureCode || proc.code,
+            description: item.description || t(proc.nameKey),
+            toothNumbers: item.toothNumbers || [],
+            unitPriceCents: proc.defaultPriceCents,
+            quantity: 1,
+          };
+        }));
+      }
+    },
+  });
 
   function load() {
     fetch(`/api/dentist/charts/${chart.id}/treatment-plans`)
@@ -96,6 +119,7 @@ export default function TreatmentPlanModule({ chart }: { chart: DentistChart }) 
 
   return (
     <div className="space-y-6">
+      <VoicePrefillBanner active={voicePrefillActive} />
       {plans.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-slate-700">{t("dental.plan.existing")}</h3>

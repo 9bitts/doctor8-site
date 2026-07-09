@@ -46,6 +46,9 @@ import {
   RecordKindBadge,
   RecordTimelineDot,
 } from "@/components/professional/PatientRecordTimeline";
+import { consumeVoiceFormPrefill } from "@/lib/voice-assistant/prefill-storage";
+import { VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { ChartEvolutionPrefill } from "@/lib/voice-assistant/types";
 import { RecordFileThumbnail } from "@/components/professional/RecordFileThumbnail";
 import {
   mapProfessionalPathToPortal,
@@ -348,6 +351,19 @@ export default function RecordDetailClient({
   const [showImageCompare, setShowImageCompare] = useState(false);
   const [pendingDraft, setPendingDraft] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [voicePrefillActive, setVoicePrefillActive] = useState(false);
+
+  useEffect(() => {
+    const payload = consumeVoiceFormPrefill("chart_evolution", chart.id);
+    if (!payload) return;
+    const d = payload.data as ChartEvolutionPrefill;
+    setTitle(d.title || (lang === "es" ? "Evolución — asistente de voz" : lang === "en" ? "Evolution — voice assistant" : "Evolução — assistente de voz"));
+    setContent(d.draft);
+    setRecordKind("EVOLUTION");
+    setChartTab("evolution");
+    setShowForm(true);
+    setVoicePrefillActive(true);
+  }, [chart.id, lang]);
 
   useEffect(() => {
     let active = true;
@@ -1645,6 +1661,7 @@ export default function RecordDetailClient({
               </button>
             </div>
             <div className="p-5 space-y-4">
+              {voicePrefillActive && !editingDoc && <VoicePrefillBanner active />}
               {!editingDoc && draftRestored && (
                 <p className="text-xs text-brand-700 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2">
                   {t("rec.draftRestored")}
