@@ -69,6 +69,7 @@ const PUBLIC_ROUTES = [
   "/unauthorized",
   "/privacy",
   "/terms",
+  "/docs",
   "/hipaa",
   "/dr/",        // short links → canonical public profiles
   "/especialistas/", // public professional directory + profiles

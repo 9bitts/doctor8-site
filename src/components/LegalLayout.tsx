@@ -140,6 +140,10 @@ export default function LegalLayout({
           <Link href="/cookies" className="hover:text-slate-800">
             {lang === "pt" ? "Política de Cookies" : lang === "en" ? "Cookie Policy" : "Política de Cookies"}
           </Link>
+          <span>·</span>
+          <Link href="/docs" className="hover:text-slate-800">
+            {lang === "pt" ? "Docs LGPD" : lang === "en" ? "LGPD Docs" : "Docs LGPD"}
+          </Link>
         </div>
       </div>
     </div>
