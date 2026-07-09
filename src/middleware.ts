@@ -94,6 +94,8 @@ const PUBLIC_ROUTES = [
   "/farmacias/farmaceutico/login",
   "/farmacias/validar/",
   "/farmacias/buscar",
+  "/laboratorios/login",
+  "/laboratorios/cadastro",
   "/club/join",  // buying club invite landing (public)
   "/anfiteatro/", // virtual amphitheater invite (public → register → meeting rooms)
   "/.well-known/", // SMART on FHIR discovery
@@ -109,6 +111,7 @@ function isPublicRoute(pathname: string): boolean {
   if (pathname === "/especialistas") return true;
   if (pathname === "/farmacias") return true;
   if (pathname === "/farmacias/buscar") return true;
+  if (pathname === "/laboratorios") return true;
   return PUBLIC_ROUTES.some((route) => {
     // "/" must be exact — every path starts with "/"
     if (route === "/") return pathname === "/";
@@ -183,6 +186,11 @@ const PHARMACY_VALIDATE_HUB = "/farmacias/validar";
 const PHARMACY_STORE_PHARMACIST_ROUTES = [
   "/farmacias/farmaceutico/painel",
 ];
+const LABORATORY_ROUTES = [
+  "/laboratorios/painel",
+  "/laboratorios/exames",
+  "/laboratorios/configuracoes",
+];
 const ANGEL_ROUTES = ["/humanitarian/angel"];
 const VOLUNTEER_ROUTES = ["/humanitarian/volunteer"];
 const HUMANITARIAN_ROUTES = ["/humanitarian"];
@@ -204,6 +212,7 @@ const AUTHENTICATED_DASHBOARD_PREFIXES = [
   ...PHARMACY_STORE_ROUTES,
   PHARMACY_VALIDATE_HUB,
   ...PHARMACY_STORE_PHARMACIST_ROUTES,
+  ...LABORATORY_ROUTES,
   ...HUMANITARIAN_ROUTES,
   ...ANGEL_ROUTES,
   ...VOLUNTEER_ROUTES,
@@ -366,6 +375,25 @@ export default auth((req) => {
   }
 
   if (pathname === "/farmacias/farmaceutico/login" && session?.user) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
+    const { role, professionalSpecialty } = session.user as {
+      role: string;
+      professionalSpecialty?: string | null;
+    };
+    const home = resolveRoleHome(role, professionalSpecialty);
+    const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl?.trim()) {
+      const destination = safePostLoginUrl(role, callbackUrl, undefined, professionalSpecialty);
+      if (destination !== home) {
+        return NextResponse.redirect(new URL(destination, req.url));
+      }
+    }
+    return NextResponse.redirect(new URL(home, req.url));
+  }
+
+  if (pathname === "/laboratorios/login" && session?.user) {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
     }
@@ -634,6 +662,14 @@ export default auth((req) => {
   if (
     PHARMACY_STORE_PHARMACIST_ROUTES.some((r) => pathname.startsWith(r)) &&
     role !== "PROFESSIONAL" &&
+    role !== "ADMIN"
+  ) {
+    return denyWrongRole();
+  }
+
+  if (
+    LABORATORY_ROUTES.some((r) => pathname.startsWith(r)) &&
+    role !== "LABORATORY" &&
     role !== "ADMIN"
   ) {
     return denyWrongRole();

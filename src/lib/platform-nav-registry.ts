@@ -70,6 +70,7 @@ export type PlatformPortalId =
   | "EMPLOYER"
   | "OCCUPATIONAL_PHYSICIAN"
   | "PHARMACY_STORE"
+  | "LABORATORY"
   | "PHARMACY_NETWORK_PHARMACIST"
   | "ADMIN"
   | "ANGEL";
@@ -570,6 +571,13 @@ export const PHARMACY_STORE_NAV: PlatformNavEntry[] = [
   { href: "/farmacias/configuracoes", labelKey: "nav.account", roles: ["PHARMACY_STORE"], iconKey: "Settings" },
 ];
 
+/** B2B laboratory — exam price network portal */
+export const LABORATORY_NAV: PlatformNavEntry[] = [
+  { href: "/laboratorios/painel", labelKey: "nav.dashboard", roles: ["LABORATORY"], iconKey: "LayoutDashboard" },
+  { href: "/laboratorios/exames", labelKey: "lab.nav.exams", roles: ["LABORATORY"], iconKey: "FlaskConical" },
+  { href: "/laboratorios/configuracoes", labelKey: "nav.account", roles: ["LABORATORY"], iconKey: "Settings" },
+];
+
 /** Pharmacist (CRF) on the Doctor8 pharmacy network — separate from store owner login */
 export const PHARMACY_NETWORK_PHARMACIST_NAV: PlatformNavEntry[] = [
   { href: "/farmacias/farmaceutico/painel", labelKey: "pharm.nav.networkQueue", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
@@ -615,6 +623,7 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   EMPLOYER: EMPLOYER_NAV,
   OCCUPATIONAL_PHYSICIAN: OCCUPATIONAL_PHYSICIAN_NAV,
   PHARMACY_STORE: PHARMACY_STORE_NAV,
+  LABORATORY: LABORATORY_NAV,
   PHARMACY_NETWORK_PHARMACIST: PHARMACY_NETWORK_PHARMACIST_NAV,
   ADMIN: ADMIN_NAV,
   ANGEL: ANGEL_NAV,

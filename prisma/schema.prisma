@@ -29,6 +29,7 @@ enum UserRole {
   ORGANIZATION
   EMPLOYER
   PHARMACY_STORE
+  LABORATORY
   OCCUPATIONAL_PHYSICIAN
   ANGEL
   ADMIN
@@ -512,6 +513,7 @@ model User {
   organizationMemberships OrganizationMember[]
   employerMemberships   EmployerMember[]
   pharmacyStoreMemberships PharmacyStoreMember[]
+  laboratoryMemberships    LaboratoryMember[]
   occupationalPhysicianLinks EmployerOccupationalPhysician[]
   clubStampEntries      ClubStampEntry[]
   clubDiversityAwards   ClubDiversityAward[]
@@ -5110,4 +5112,149 @@ model PharmacyPrescriptionToken {
 
   @@index([token])
   @@index([status])
+}
+
+// ────────────────────────────────────────────
+// LABORATORY — B2B lab network (blood + imaging)
+// ────────────────────────────────────────────
+
+enum LaboratoryType {
+  BLOOD
+  IMAGING
+  BOTH
+}
+
+enum LaboratoryStatus {
+  PENDING_REVIEW
+  ACTIVE
+  SUSPENDED
+}
+
+enum LaboratoryMemberRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum LaboratoryMemberStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+enum ExamCategory {
+  BLOOD
+  IMAGING
+}
+
+model Laboratory {
+  id                   String             @id @default(cuid())
+  cnpj                 String             @unique
+  razaoSocial          String
+  nomeFantasia         String
+  slug                 String             @unique
+  labType              LaboratoryType     @default(BLOOD)
+
+  responsibleFirstName String
+  responsibleLastName  String
+  contactEmail         String?
+  contactPhone         String?
+
+  addressStreet        String?
+  addressNumber        String?
+  addressComplement    String?
+  addressNeighborhood  String?
+  addressCity          String?
+  addressState         String?
+  addressZip           String?
+  addressCountry       String             @default("BR")
+  latitude             Float?
+  longitude            Float?
+
+  status               LaboratoryStatus   @default(PENDING_REVIEW)
+  platformFeeCents     Int                @default(0)
+
+  members              LaboratoryMember[]
+  exams                LaboratoryExamItem[]
+  importBatches        LaboratoryExamImport[]
+
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([status])
+  @@index([labType])
+  @@index([addressCity, addressState])
+}
+
+model LaboratoryMember {
+  id            String                 @id @default(cuid())
+  laboratoryId  String
+  laboratory    Laboratory             @relation(fields: [laboratoryId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          LaboratoryMemberRole
+  status        LaboratoryMemberStatus @default(ACTIVE)
+
+  invitedAt     DateTime?
+  joinedAt      DateTime               @default(now())
+
+  @@unique([laboratoryId, userId])
+  @@index([userId])
+  @@index([laboratoryId])
+}
+
+model ExamCatalog {
+  id         String       @id @default(cuid())
+  name       String
+  slug       String       @unique
+  category   ExamCategory
+  code       String?
+  searchName String
+
+  exams      LaboratoryExamItem[]
+
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([category])
+  @@index([searchName])
+  @@index([code])
+}
+
+model LaboratoryExamItem {
+  id            String      @id @default(cuid())
+  laboratoryId  String
+  laboratory    Laboratory  @relation(fields: [laboratoryId], references: [id], onDelete: Cascade)
+  examCatalogId String
+  examCatalog   ExamCatalog @relation(fields: [examCatalogId], references: [id], onDelete: Restrict)
+
+  priceCents    Int
+  available     Boolean     @default(true)
+  internalCode  String?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([laboratoryId, examCatalogId])
+  @@index([laboratoryId])
+  @@index([examCatalogId])
+  @@index([laboratoryId, available])
+}
+
+model LaboratoryExamImport {
+  id               String     @id @default(cuid())
+  laboratoryId     String
+  laboratory       Laboratory @relation(fields: [laboratoryId], references: [id], onDelete: Cascade)
+  filename         String?
+  rowsTotal        Int        @default(0)
+  rowsMatched      Int        @default(0)
+  rowsCreated      Int        @default(0)
+  rowsUpdated      Int        @default(0)
+  rowsSkipped      Int        @default(0)
+  errorsJson       Json?
+  importedByUserId String?
+
+  createdAt        DateTime   @default(now())
+
+  @@index([laboratoryId])
 }

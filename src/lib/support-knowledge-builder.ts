@@ -23,6 +23,7 @@ const PORTAL_LABELS: Record<PlatformPortalId, string> = {
   EMPLOYER: "Employer NR-1 portal (/empresas/painel)",
   OCCUPATIONAL_PHYSICIAN: "Occupational physician PCMSO portal (/empresas/medico/painel)",
   PHARMACY_STORE: "Pharmacy store B2B portal (/farmacias/painel)",
+  LABORATORY: "Laboratory B2B portal (/laboratorios/painel)",
   PHARMACY_NETWORK_PHARMACIST: "Pharmacist network portal (/farmacias/farmaceutico/painel)",
   ADMIN: "Admin portal (/admin ? ADMIN role only)",
   ANGEL: "Angel volunteer portal (/admin/patients, /admin/angel ? ANGEL role)",

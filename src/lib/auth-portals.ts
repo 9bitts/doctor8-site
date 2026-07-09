@@ -38,6 +38,9 @@ export const EMPLOYER_REGISTER = "/empresas/cadastro";
 export const PHARMACY_STORE_LOGIN = "/farmacias/login";
 export const PHARMACY_STORE_REGISTER = "/farmacias/cadastro";
 
+export const LABORATORY_LOGIN = "/laboratorios/login";
+export const LABORATORY_REGISTER = "/laboratorios/cadastro";
+
 /** Registration URL when user arrived via ?portal= on the unified login screen. */
 export function resolveProfessionalRegisterForPortal(portal: string | null | undefined): string {
   switch (portal) {
