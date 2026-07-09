@@ -17,6 +17,7 @@ import {
   CreditCard,
   Map as MapIcon,
   HeartHandshake,
+  Radio,
 } from "lucide-react";
 import { buildPublicSearchConvenioPath } from "@/lib/public-slugs";
 import LandingMarketingSections from "@/components/public/LandingMarketingSections";
@@ -240,9 +241,12 @@ export default function EspecialistasLandingClient() {
 
   const platformLabel = lang === "pt" ? "Plataforma" : lang === "es" ? "Plataforma" : "Platform";
   const navLinks = [
+    { href: "#ecosystem", label: lc.nav.ecosystem },
     { href: "#platform", label: platformLabel },
+    { href: "#urgent", label: lc.nav.urgent },
     { href: "#how", label: lc.nav.how },
     { href: "#specialties", label: lc.nav.specialties },
+    { href: "#pharmacy", label: lc.nav.pharmacy },
     { href: "#club", label: lc.nav.club },
     { href: "#cannabis", label: lc.nav.cannabis },
     { href: "#energy", label: lc.nav.energy },
@@ -322,6 +326,27 @@ export default function EspecialistasLandingClient() {
               {t("pubSearch.landingTitle")}
             </h1>
             <p className="mt-3 text-lg text-white/70">{t("pubSearch.landingSubtitle")}</p>
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
+              <Link
+                href="/register?callbackUrl=%2Furgent"
+                className="inline-flex items-center gap-1.5 rounded-full bg-red-500/90 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-500 sm:text-sm"
+              >
+                <Radio size={14} />
+                {lc.heroCtas.urgent}
+              </Link>
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20 sm:text-sm"
+              >
+                {lc.heroCtas.register}
+              </Link>
+              <Link
+                href="/empresas/colaborador"
+                className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/40 bg-sky-500/20 px-4 py-2 text-xs font-semibold text-sky-100 transition hover:bg-sky-500/30 sm:text-sm"
+              >
+                {lc.heroCtas.corporate}
+              </Link>
+            </div>
           </div>
 
           <div className="mb-5 flex flex-wrap justify-center gap-2">
