@@ -1,10 +1,34 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   ArrowRight,
   CheckCircle2,
   Zap,
 } from "lucide-react";
 import type { AudienceLandingContent } from "@/lib/audience-landing-content";
+
+function CtaLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className: string;
+  children: ReactNode;
+}) {
+  if (href.startsWith("http")) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+}
 
 const ACCENT_STYLES = {
   sky: {
@@ -89,19 +113,19 @@ export default function AudienceMarketingLanding({ content }: { content: Audienc
               {content.hero.subtitle}
             </p>
             <div className="flex flex-wrap gap-3 mt-8">
-              <Link
+              <CtaLink
                 href={content.hero.primaryCta.href}
                 className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-white font-semibold transition shadow-lg ${s.cta}`}
               >
                 {content.hero.primaryCta.label} <ArrowRight size={18} />
-              </Link>
+              </CtaLink>
               {content.hero.secondaryCta && (
-                <Link
+                <CtaLink
                   href={content.hero.secondaryCta.href}
                   className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-medium hover:bg-slate-50 transition"
                 >
                   {content.hero.secondaryCta.label}
-                </Link>
+                </CtaLink>
               )}
             </div>
             {content.hero.note && (
@@ -175,12 +199,12 @@ export default function AudienceMarketingLanding({ content }: { content: Audienc
                 ))}
               </ul>
               {content.spotlight.cta && (
-                <Link
+                <CtaLink
                   href={content.spotlight.cta.href}
                   className={`inline-flex items-center gap-2 mt-6 text-sm font-semibold hover:underline ${s.highlight}`}
                 >
                   {content.spotlight.cta.label} <ArrowRight size={14} />
-                </Link>
+                </CtaLink>
               )}
             </div>
             <div className="rounded-2xl bg-white border border-slate-200 shadow-xl p-6 sm:p-8">
@@ -294,19 +318,19 @@ export default function AudienceMarketingLanding({ content }: { content: Audienc
         </h3>
         <p className="text-slate-600 mt-4 max-w-xl mx-auto">{content.finalCta.subtitle}</p>
         <div className="flex flex-wrap justify-center gap-3 mt-8">
-          <Link
+          <CtaLink
             href={content.finalCta.primary.href}
             className={`inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold transition shadow-lg ${s.cta}`}
           >
             {content.finalCta.primary.label} <ArrowRight size={18} />
-          </Link>
+          </CtaLink>
           {content.finalCta.secondary && (
-            <Link
+            <CtaLink
               href={content.finalCta.secondary.href}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition"
             >
               {content.finalCta.secondary.label}
-            </Link>
+            </CtaLink>
           )}
         </div>
       </section>

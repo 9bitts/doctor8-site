@@ -21,6 +21,8 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+const PATIENT_HOME = "/";
+
 export default function MarketingNav({ active }: { active?: AudienceId }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -52,16 +54,16 @@ export default function MarketingNav({ active }: { active?: AudienceId }) {
 
           <div className="hidden md:flex items-center gap-2 shrink-0">
             <Link
-              href="/login"
+              href={PATIENT_HOME}
               className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition"
             >
-              Entrar
+              Paciente
             </Link>
             <Link
-              href="/empresas/cadastro"
+              href={PATIENT_HOME}
               className="px-4 py-2 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600 transition shadow-lg shadow-accent-500/20"
             >
-              Criar conta
+              Agendar Consulta
             </Link>
           </div>
 
@@ -94,18 +96,18 @@ export default function MarketingNav({ active }: { active?: AudienceId }) {
             })}
             <div className="flex gap-2 pt-3 border-t border-white/10 mt-2">
               <Link
-                href="/login"
+                href={PATIENT_HOME}
                 onClick={() => setOpen(false)}
                 className="flex-1 text-center px-4 py-2.5 rounded-lg border border-white/20 text-sm text-white"
               >
-                Entrar
+                Paciente
               </Link>
               <Link
-                href="/empresas/cadastro"
+                href={PATIENT_HOME}
                 onClick={() => setOpen(false)}
                 className="flex-1 text-center px-4 py-2.5 rounded-lg bg-accent-500 text-white text-sm font-semibold"
               >
-                Criar conta
+                Agendar Consulta
               </Link>
             </div>
           </nav>

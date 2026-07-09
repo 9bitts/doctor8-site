@@ -418,7 +418,10 @@ const PARCEIROS: AudienceLandingContent = {
     titleHighlight: "pacientes, empresas e especialistas",
     subtitle:
       "Farmácias, clínicas, educadores e integradores tecnológicos encontram no Doctor8 um canal de distribuição, credenciamento e receita — sem depender de marketplaces externos.",
-    primaryCta: { label: "Quero ser parceiro", href: "/farmacias/cadastro" },
+    primaryCta: {
+      label: "Quero ser parceiro",
+      href: "https://wa.me/5531971720053?text=Ol%C3%A1%2C%20quero%20ser%20parceiro%20Doctor8",
+    },
     secondaryCta: { label: "Ver tipos de parceria", href: "#parcerias" },
     note: "Cadastro gratuito para farmácias · APIs documentadas · Revenue share transparente",
   },
