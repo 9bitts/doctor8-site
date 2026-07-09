@@ -12,6 +12,7 @@ import { geocodeAddress } from "@/lib/pharmacy-network/geocode";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
+import { isAccountVerified } from "@/lib/account-verified";
 import {
   checkRateLimits,
   clientIp,
@@ -94,13 +95,62 @@ export async function POST(req: NextRequest) {
     }
     const contactPhone = `+${phoneParsed.e164}`;
     const email = parsed.email.toLowerCase();
+    const normalizedLanguage =
+      parsed.language === "pt" || parsed.language === "es" || parsed.language === "en"
+        ? parsed.language
+        : "pt";
 
     const [existingEmail, existingCnpj] = await Promise.all([
-      db.user.findUnique({ where: { email } }),
+      db.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          role: true,
+          emailVerified: true,
+          phoneVerified: true,
+          language: true,
+          laboratoryMemberships: {
+            where: { role: "OWNER" },
+            take: 1,
+            select: { laboratory: { select: { responsibleFirstName: true } } },
+          },
+        },
+      }),
       db.laboratory.findUnique({ where: { cnpj: cnpjDigits } }),
     ]);
 
     if (existingEmail) {
+      if (existingEmail.role === UserRole.LABORATORY && !isAccountVerified(existingEmail)) {
+        const token = randomBytes(32).toString("hex");
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await db.verificationToken.deleteMany({ where: { identifier: email } });
+        await db.verificationToken.create({ data: { identifier: email, token, expires } });
+
+        const name =
+          existingEmail.laboratoryMemberships[0]?.laboratory.responsibleFirstName
+          || parsed.responsibleFirstName;
+
+        let emailSent = true;
+        try {
+          await sendEmailVerification({
+            email,
+            name,
+            token,
+            language: normalizedLanguage || existingEmail.language || "pt",
+            from: LABORATORY_LOGIN,
+            callbackUrl: "/laboratorios/painel",
+          });
+        } catch (emailError) {
+          console.error("[LABORATORY REGISTER EMAIL RESEND]", emailError);
+          emailSent = false;
+        }
+
+        return NextResponse.json(
+          { success: true, userId: existingEmail.id, pendingVerification: true, emailSent },
+          { status: 200 },
+        );
+      }
+
       return NextResponse.json({ success: true, existingAccount: true }, { status: 200 });
     }
     if (existingCnpj) {
@@ -109,10 +159,6 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(parsed.password, 12);
     const userAgent = req.headers.get("user-agent") || "unknown";
-    const normalizedLanguage =
-      parsed.language === "pt" || parsed.language === "es" || parsed.language === "en"
-        ? parsed.language
-        : "pt";
 
     const slug = await uniqueLaboratorySlug(parsed.nomeFantasia);
     const addressZip = parsed.addressZip?.replace(/\D/g, "") || undefined;

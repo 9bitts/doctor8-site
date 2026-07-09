@@ -48,6 +48,11 @@ export async function POST(req: NextRequest) {
         psychoanalystProfile: { select: { firstName: true } },
         integrativeTherapistProfile: { select: { firstName: true } },
         angelProfile: { select: { firstName: true } },
+        laboratoryMemberships: {
+          where: { role: "OWNER" },
+          take: 1,
+          select: { laboratory: { select: { responsibleFirstName: true } } },
+        },
       },
     });
 
@@ -66,6 +71,7 @@ export async function POST(req: NextRequest) {
       user.psychoanalystProfile?.firstName ||
       user.integrativeTherapistProfile?.firstName ||
       user.angelProfile?.firstName ||
+      user.laboratoryMemberships[0]?.laboratory.responsibleFirstName ||
       "there";
 
     // Remove old tokens and create a new one

@@ -7,6 +7,7 @@ import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import { formatCnpj, stripCnpj, isValidCnpj } from "@/lib/cnpj";
 import { LABORATORY_LOGIN, buildRegisterSuccessHref } from "@/lib/auth-portals";
 import { LABORATORY_TYPE_LABELS } from "@/lib/laboratory-portal";
+import { existingAccountMessage, registerSuccessFollowUp } from "@/lib/auth-flow-errors";
 import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
 import { RegisterLogo } from "@/components/auth/register-shared";
 import InternationalPhoneInput, { type InternationalPhoneValue } from "@/components/InternationalPhoneInput";
@@ -146,12 +147,19 @@ export default function LaboratoriosCadastroPage() {
         setErrors(data.error || { general: ["Falha no cadastro"] });
         return;
       }
+      const followUp = registerSuccessFollowUp(data);
+      if (followUp.kind === "existingAccount") {
+        setErrors({ email: [existingAccountMessage(lang)] });
+        return;
+      }
+      const emailSent =
+        followUp.kind === "verify" ? followUp.emailSent : data.emailSent !== false;
       router.push(
         buildRegisterSuccessHref({
           role: "LABORATORY",
           email,
           callbackUrl: "/laboratorios/painel",
-          emailSent: data.emailSent !== false,
+          emailSent,
         }),
       );
     } catch {

@@ -74,11 +74,28 @@ export function resolveLoginPathForSession(
   return LOGIN;
 }
 
-/** Accent + back link for forgot-password flow (single login → emerald). */
-export function resolveForgotPasswordContext(_from: string | null | undefined): {
+const ALLOWED_LOGIN_FROM_PATHS = new Set<string>([
+  LOGIN,
+  EMPLOYER_LOGIN,
+  PHARMACY_STORE_LOGIN,
+  LABORATORY_LOGIN,
+]);
+
+/** Accent + back link for forgot-password / verify-email flows. */
+export function resolveForgotPasswordContext(from: string | null | undefined): {
   loginPath: string;
   accent: LoginAccent;
 } {
+  const safeFrom = sanitizeLoginFrom(from);
+  if (safeFrom === LABORATORY_LOGIN) {
+    return { loginPath: LABORATORY_LOGIN, accent: "violet" };
+  }
+  if (safeFrom === PHARMACY_STORE_LOGIN) {
+    return { loginPath: PHARMACY_STORE_LOGIN, accent: "emerald" };
+  }
+  if (safeFrom === EMPLOYER_LOGIN) {
+    return { loginPath: EMPLOYER_LOGIN, accent: "indigo" };
+  }
   return { loginPath: LOGIN, accent: "emerald" };
 }
 
@@ -108,7 +125,8 @@ export function buildLoginHref(
 
 /** Only allow internal login paths in email links and redirects. */
 export function sanitizeLoginFrom(from: string | null | undefined): string | undefined {
-  if (!from?.startsWith("/login")) return undefined;
+  if (!from?.startsWith("/") || from.startsWith("//")) return undefined;
+  if (!ALLOWED_LOGIN_FROM_PATHS.has(from)) return undefined;
   return from;
 }
 
@@ -123,6 +141,10 @@ export function resolveVerifyFrom(opts: {
 }): string {
   const safeFrom = sanitizeLoginFrom(opts.from ?? undefined);
   if (safeFrom) return safeFrom;
+  const callback = opts.callbackUrl?.trim();
+  if (callback?.startsWith("/laboratorios")) return LABORATORY_LOGIN;
+  if (callback?.startsWith("/farmacias")) return PHARMACY_STORE_LOGIN;
+  if (callback?.startsWith("/empresas")) return EMPLOYER_LOGIN;
   return LOGIN;
 }
 
@@ -192,12 +214,21 @@ export function buildRegisterSuccessHref(opts: {
   return `/register/success?${sp.toString()}`;
 }
 
-/** Registration return-to login path — single login. */
+/** Registration return-to login path for verify/resend links. */
 export function resolveLoginPathForRegistration(
-  _role: string,
+  role: string,
   _professionalKind?: string | null,
 ): string {
-  return LOGIN;
+  switch (role) {
+    case "LABORATORY":
+      return LABORATORY_LOGIN;
+    case "PHARMACY_STORE":
+      return PHARMACY_STORE_LOGIN;
+    case "EMPLOYER":
+      return EMPLOYER_LOGIN;
+    default:
+      return LOGIN;
+  }
 }
 
 export function appendEmailQueryParam(url: string, key: string, value: string): string {

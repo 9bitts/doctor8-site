@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Mail, Loader2 } from "lucide-react";
 import { translate, normalizeLang, type Lang } from "@/lib/i18n/translations";
-import { buildVerifyAccountHref, MAIN_LOGIN } from "@/lib/auth-portals";
+import { buildVerifyAccountHref, resolveLoginPathForRegistration } from "@/lib/auth-portals";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import { RegisterLanguageSelector, RegisterLogo } from "@/components/auth/register-shared";
 
@@ -28,6 +28,7 @@ function roleAccent(role: string): "emerald" | "rose" | "indigo" | "teal" | "vio
   if (role === "ORGANIZATION") return "indigo";
   if (role === "EMPLOYER") return "indigo";
   if (role === "PHARMACY_STORE") return "emerald";
+  if (role === "LABORATORY") return "violet";
   if (role === "INTEGRATIVE_THERAPIST") return "teal";
   if (role === "PSYCHOANALYST") return "violet";
   return "emerald";
@@ -54,7 +55,7 @@ function RegisterSuccessInner() {
   const verifyHref = buildVerifyAccountHref({
     email,
     callbackUrl,
-    from: MAIN_LOGIN,
+    from: resolveLoginPathForRegistration(role),
   });
 
   const accentRing =

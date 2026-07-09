@@ -37,7 +37,7 @@ import {
   formatEmailAppointmentDateTime,
   formatAppointmentTimeWithLabel,
 } from "./timezone";
-import { appendEmailQueryParam } from "./auth-portals";
+import { appendEmailQueryParam, sanitizeLoginFrom } from "./auth-portals";
 
 // ─── EMAIL VERIFICATION ──────────────────────────────────────────────────────
 export async function sendEmailVerification({
@@ -58,7 +58,7 @@ export async function sendEmailVerification({
   const lang = normEmailLang(language);
   const c = EMAIL_VERIFICATION[lang];
   let verifyUrl = `${getAppUrl()}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
-  const safeFrom = from?.startsWith("/login") ? from : undefined;
+  const safeFrom = sanitizeLoginFrom(from);
   if (safeFrom) {
     verifyUrl = appendEmailQueryParam(verifyUrl, "from", safeFrom);
   }

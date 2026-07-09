@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Mail, RefreshCw, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import {
   resolveForgotPasswordContext,
-  sanitizeLoginFrom,
+  resolveVerifyFrom,
 } from "@/lib/auth-portals";
 import {
   useLoginLang,
@@ -24,7 +24,7 @@ type Props = {
 
 export default function VerifyEmailClient({ email, error, callbackUrl = "", from }: Props) {
   const { t } = useLoginLang();
-  const loginFrom = sanitizeLoginFrom(from) ?? resolveForgotPasswordContext(from).loginPath;
+  const loginFrom = resolveVerifyFrom({ from, callbackUrl });
   const { loginPath, accent } = resolveForgotPasswordContext(loginFrom);
   const styles = getLoginAccentStyles(accent);
   const loginHref = buildAuthHref(loginPath, { callbackUrl: callbackUrl || undefined });
@@ -51,7 +51,11 @@ export default function VerifyEmailClient({ email, error, callbackUrl = "", from
       const res = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, from: loginPath }),
+        body: JSON.stringify({
+          email,
+          from: loginPath,
+          callbackUrl: callbackUrl || undefined,
+        }),
       });
 
       if (res.ok) {
