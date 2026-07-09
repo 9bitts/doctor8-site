@@ -378,23 +378,33 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                       <button
                         type="button"
                         onClick={stopRecording}
-                        className="w-20 h-20 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg animate-pulse"
+                        className="w-full max-w-xs flex items-center justify-center gap-3 px-6 py-4 rounded-2xl shadow-lg animate-pulse font-semibold text-base"
+                        style={{ backgroundColor: "#dc2626", color: "#ffffff" }}
                       >
-                        <Square size={28} fill="currentColor" />
+                        <Square size={24} fill="currentColor" strokeWidth={0} />
+                        {t("stopRecording")}
                       </button>
                     ) : (
                       <button
                         type="button"
                         disabled={processing || !recordingSupported}
                         onClick={startRecording}
-                        className="w-20 h-20 rounded-full bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white flex items-center justify-center shadow-lg transition"
+                        className="w-full max-w-xs flex flex-col items-center justify-center gap-2 px-6 py-4 rounded-2xl shadow-lg transition disabled:opacity-40"
+                        style={{ backgroundColor: processing ? "#475569" : "#6d28d9", color: "#ffffff" }}
                       >
-                        {processing ? <Loader2 size={32} className="animate-spin" /> : <Mic size={32} />}
+                        {processing ? (
+                          <>
+                            <Loader2 size={32} className="animate-spin" />
+                            <span className="text-sm font-semibold">{t("processing")}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mic size={32} strokeWidth={2.5} />
+                            <span className="text-sm font-semibold">{t("startRecording")}</span>
+                          </>
+                        )}
                       </button>
                     )}
-                    <p className="text-sm font-medium text-slate-700">
-                      {processing ? t("processing") : recording ? t("recording") : t("startRecording")}
-                    </p>
                   </div>
 
                   <div className="space-y-2">

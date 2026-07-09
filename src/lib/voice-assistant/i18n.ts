@@ -42,7 +42,7 @@ const T: Record<string, Record<Lang, string>> = {
     es: "Toque para hablar",
   },
   stopRecording: {
-    pt: "Parar gravação",
+    pt: "Parar de gravar",
     en: "Stop recording",
     es: "Detener grabación",
   },
