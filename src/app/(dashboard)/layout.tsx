@@ -51,6 +51,7 @@ import { withNavIcons, type DashboardNavItem } from "@/lib/dashboard-nav-icons";
 import { ToastProvider } from "@/components/ui/toast";
 import LegalAcceptanceGate from "@/components/compliance/LegalAcceptanceGate";
 import VoiceAssistantPromoBanner from "@/components/voice-assistant/VoiceAssistantPromoBanner";
+import VoiceAssistantShell from "@/components/voice-assistant/VoiceAssistantShell";
 import { resolveVoicePortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
 import { isValidIanaTimeZone } from "@/lib/timezone";
 import { hasAnyNaturalMedicinePractice } from "@/lib/natural-medicine/config";
