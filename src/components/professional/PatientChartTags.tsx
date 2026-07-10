@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Plus, X, Loader2, Tag } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import {
+  extendSessionForWrite,
+  isAuthFailureStatus,
+  redirectToLoginAfterAuthFailure,
+} from "@/lib/session-extend-client";
 
 export type ChartTag = {
   id: string;
@@ -34,6 +40,7 @@ export default function PatientChartTags({
   suggestedAllergy?: string | null;
 }) {
   const { t } = useI18n();
+  const { update: updateSession } = useSession();
   const [tags, setTags] = useState<ChartTag[]>(initialTags);
   const [adding, setAdding] = useState(false);
   const [kind, setKind] = useState<ChartTag["kind"]>("ALLERGY");
@@ -48,18 +55,29 @@ export default function PatientChartTags({
     setError("");
   }, [chartId, initialTags]);
 
+  function handleAuthFailure() {
+    setError(t("session.expiredOnSave"));
+    redirectToLoginAfterAuthFailure();
+  }
+
   async function addSuggestedAllergy() {
     const trimmed = suggestedAllergy?.trim();
     if (!trimmed || readOnly) return;
     setSaving(true);
     setError("");
     try {
+      await extendSessionForWrite(updateSession);
       const res = await fetch(`/api/professional/records/${chartId}/tags`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ kind: "ALLERGY", label: trimmed }),
       });
       const data = await res.json();
+      if (isAuthFailureStatus(res.status)) {
+        handleAuthFailure();
+        return;
+      }
       if (!res.ok) throw new Error(data.error || t("tag.saveError"));
       setTags((prev) => [...prev, data]);
     } catch (e) {
@@ -75,12 +93,18 @@ export default function PatientChartTags({
     setSaving(true);
     setError("");
     try {
+      await extendSessionForWrite(updateSession);
       const res = await fetch(`/api/professional/records/${chartId}/tags`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ kind, label: trimmed }),
       });
       const data = await res.json();
+      if (isAuthFailureStatus(res.status)) {
+        handleAuthFailure();
+        return;
+      }
       if (!res.ok) throw new Error(data.error || t("tag.saveError"));
       setTags((prev) => [...prev, data]);
       setLabel("");
@@ -93,9 +117,15 @@ export default function PatientChartTags({
   }
 
   async function removeTag(tagId: string) {
+    await extendSessionForWrite(updateSession);
     const res = await fetch(`/api/professional/records/${chartId}/tags/${tagId}`, {
       method: "DELETE",
+      credentials: "same-origin",
     });
+    if (isAuthFailureStatus(res.status)) {
+      handleAuthFailure();
+      return;
+    }
     if (res.ok) setTags((prev) => prev.filter((t) => t.id !== tagId));
   }
 
