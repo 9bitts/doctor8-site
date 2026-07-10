@@ -117,7 +117,7 @@ export async function POST(
         userId: colleague.userId,
         title: shareCopy.title,
         body: shareCopy.body,
-        type: "chart_share",
+        type: "shared_record",
         data: {
           patientRecordId: params.id,
           permission: parsed.data.permission,
