@@ -16,7 +16,7 @@ import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film, Download,
-  Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill,
+  Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { EmissionCardActions } from "@/components/professional/emissions/EmissionCardActions";
@@ -228,6 +228,14 @@ interface CategoryGroup {
   items: CategoryItem[];
 }
 
+function findCategoryIdByLegacyType(groups: CategoryGroup[], legacyType: string): string {
+  for (const g of groups) {
+    const found = g.items.find((c) => c.legacyType === legacyType);
+    if (found) return found.id;
+  }
+  return "";
+}
+
 // Fallback labels for legacy `type` (records created before dynamic categories).
 const LEGACY_KEYS: Record<string, string> = {
   PRESCRIPTION: "doctype.PRESCRIPTION",
@@ -412,11 +420,15 @@ export default function RecordDetailClient({
   }, [chart.id, userId]);
 
   useEffect(() => {
-    if (searchParams.get("newRecord") === "1") {
+    if (searchParams.get("newRecord") !== "1" || categoriesLoading) return;
+    const docType = searchParams.get("docType");
+    if (docType === "EXAM_RESULT") {
+      openExamResultForm();
+    } else {
       openNewRecordForm();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, initialDocuments]);
+  }, [searchParams, initialDocuments, categoriesLoading, groups]);
 
   useEffect(() => {
     const tab = searchParams.get("tab") ?? searchParams.get("view");
@@ -538,6 +550,16 @@ export default function RecordDetailClient({
       resetForm();
       setRecordKind(suggestRecordKind(docs));
     }
+    setShowForm(true);
+  }
+
+  function openExamResultForm() {
+    resetForm();
+    setRecordKind("OTHER");
+    const catId = findCategoryIdByLegacyType(groups, "EXAM_RESULT");
+    if (catId) setCategoryId(catId);
+    setChartTab("records");
+    setRecordFilter("exam");
     setShowForm(true);
   }
 
@@ -920,7 +942,9 @@ export default function RecordDetailClient({
 
   const pinnedAnamnesis = useMemo(() => findPinnedAnamnesis(docs), [docs]);
   const filteredDocs = useMemo(
-    () => docs.filter((d) => matchesTimelineFilter(d, recordFilter)),
+    () => [...docs]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .filter((d) => matchesTimelineFilter(d, recordFilter)),
     [docs, recordFilter],
   );
   const filterCounts = useMemo(() => ({
@@ -1409,6 +1433,14 @@ export default function RecordDetailClient({
             <Columns2 size={18} /> {t("compare.open")}
           </button>
           {canEdit && (
+          <>
+          <button
+            type="button"
+            onClick={openExamResultForm}
+            className="inline-flex items-center gap-2 border border-cyan-200 hover:border-cyan-300 text-cyan-700 hover:text-cyan-800 font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+          >
+            <FileCheck size={18} /> {t("chartAct.examResult")}
+          </button>
           <button
             onClick={openNewRecordForm}
             className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
@@ -1420,6 +1452,7 @@ export default function RecordDetailClient({
               </span>
             )}
           </button>
+          </>
           )}
         </div>
       </div>
@@ -1490,9 +1523,13 @@ export default function RecordDetailClient({
                       <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
                         {t("timeline.filter.prescription")}
                       </span>
-                    ) : d.type === "EXAM_REQUEST" || d.type === "EXAM_RESULT" ? (
+                    ) : d.type === "EXAM_REQUEST" ? (
                       <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border bg-cyan-50 text-cyan-700 border-cyan-200">
-                        {t("timeline.filter.exam")}
+                        {t("doctype.EXAM_REQUEST")}
+                      </span>
+                    ) : d.type === "EXAM_RESULT" ? (
+                      <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200">
+                        {t("doctype.EXAM_RESULT")}
                       </span>
                     ) : d.recordKind ? (
                       <RecordKindBadge kind={d.recordKind as ClinicalRecordKind} />

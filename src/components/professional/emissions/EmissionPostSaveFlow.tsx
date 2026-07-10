@@ -9,11 +9,21 @@ import WhatsappDeliverButton from "./WhatsappDeliverButton";
 import Doctor8DeliverButton from "./Doctor8DeliverButton";
 import type { Chart } from "./types";
 
+export interface ReviewMedication {
+  name: string;
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
+  instructions?: string;
+}
+
 export interface SavedEmission {
   kind: EmissionKind;
   id: string;
   patient: Chart;
   label: string;
+  medications?: ReviewMedication[];
+  instructions?: string;
 }
 
 interface EmissionPostSaveFlowProps {
@@ -21,7 +31,7 @@ interface EmissionPostSaveFlowProps {
   t: (k: string) => string;
   lang: string;
   signConfig: { configured: boolean; cpfMasked: string } | null;
-  initialStep?: "choose" | "deliver" | "success";
+  initialStep?: "review" | "choose" | "deliver" | "success";
   initialShareUrl?: string;
   onDone: () => void;
   /** Skip digital signature step — go straight to deliver */
@@ -34,8 +44,10 @@ export function EmissionPostSaveFlow({
   deliveryOnly = false,
   apiBase = "/api/professional",
 }: EmissionPostSaveFlowProps) {
-  const [step, setStep] = useState<"choose" | "deliver" | "success">(
-    deliveryOnly && initialStep === "choose" ? "deliver" : initialStep,
+  const [step, setStep] = useState<"review" | "choose" | "deliver" | "success">(
+    initialStep === "review" ? "review"
+      : deliveryOnly && initialStep === "choose" ? "deliver"
+        : initialStep,
   );
   const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
   const [delivering, setDelivering] = useState(false);
@@ -128,6 +140,67 @@ export function EmissionPostSaveFlow({
       .replace("{{name}}", `${patient.firstName} ${patient.lastName}`)
       .replace("{{link}}", url);
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+  }
+
+  if (step === "review") {
+    const pdfUrl = `${apiBase}/prescriptions/${emission.id}/pdf`;
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+        <div className="flex flex-col items-center text-center">
+          <div className="w-14 h-14 rounded-full bg-brand-100 flex items-center justify-center mb-3">
+            <FileText size={28} className="text-brand-500" />
+          </div>
+          <p className="font-bold text-slate-900 text-lg">{t("rx.review.title")}</p>
+          <p className="text-slate-500 text-sm mt-1">{patient.firstName} {patient.lastName}</p>
+          <p className="text-xs text-slate-400 mt-2 max-w-sm">{t("rx.review.subtitle")}</p>
+        </div>
+
+        {emission.medications && emission.medications.length > 0 && (
+          <div className="bg-slate-50 rounded-xl p-4 space-y-2">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("rx.review.medications")}</p>
+            <ul className="space-y-2">
+              {emission.medications.map((med, i) => (
+                <li key={i} className="text-sm text-slate-700 border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                  <p className="font-semibold">{med.name}</p>
+                  {(med.dosage || med.frequency || med.duration) && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {[med.dosage, med.frequency, med.duration].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                  {med.instructions && (
+                    <p className="text-xs text-slate-500 mt-0.5">{med.instructions}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {emission.instructions && (
+          <div className="bg-slate-50 rounded-xl p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t("rx.review.instructions")}</p>
+            <p className="text-sm text-slate-700 whitespace-pre-wrap">{emission.instructions}</p>
+          </div>
+        )}
+
+        <a
+          href={pdfUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition flex items-center justify-center gap-2"
+        >
+          <FileText size={16} /> {t("rx.review.previewPdf")}
+        </a>
+
+        <button
+          type="button"
+          onClick={() => setStep("choose")}
+          className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition"
+        >
+          {t("rx.review.confirm")}
+        </button>
+      </div>
+    );
   }
 
   if (step === "deliver") {

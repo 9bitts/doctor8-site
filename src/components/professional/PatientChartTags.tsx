@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, X, Loader2, Tag } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
@@ -38,10 +38,6 @@ export default function PatientChartTags({
   const [label, setLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setTags(initialTags);
-  }, [initialTags]);
 
   async function addTag() {
     const trimmed = label.trim();
@@ -96,7 +92,7 @@ export default function PatientChartTags({
             key={tag.id}
             className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${kindStyle(tag.kind)}`}
           >
-            {tag.label}
+            <span className="opacity-80">{tagKindLabel(t, tag.kind)}:</span> {tag.label}
             {!readOnly && (
             <button
               type="button"

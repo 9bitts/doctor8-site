@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Pill, FlaskConical, ScrollText } from "lucide-react";
+import { Pill, FlaskConical, ScrollText, FileCheck } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { chartActionUrl } from "@/lib/video-chart-nav";
 
@@ -29,6 +29,15 @@ export default function ChartClinicalActions({
       href: chartActionUrl("/professional/prescriptions", chartId, { view: "exam", returnUrl }),
       icon: FlaskConical,
       label: t("chartAct.exam"),
+    },
+    {
+      href: (() => {
+        const sp = new URLSearchParams({ newRecord: "1", docType: "EXAM_RESULT" });
+        if (returnUrl) sp.set("returnUrl", returnUrl);
+        return `/professional/patients/${chartId}?${sp.toString()}`;
+      })(),
+      icon: FileCheck,
+      label: t("chartAct.examResult"),
     },
     {
       href: chartActionUrl("/professional/prescriptions", chartId, { view: "document", returnUrl }),

@@ -16,6 +16,7 @@ import {
   Pill,
   ScrollText,
   Video,
+  FileCheck,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -402,6 +403,16 @@ export default function ProfessionalAppointmentsView({
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
                   >
                     <FlaskConical size={11} /> {t("chartAct.exam")}
+                  </Link>
+                  <Link
+                    href={(() => {
+                      const sp = new URLSearchParams({ newRecord: "1", docType: "EXAM_RESULT" });
+                      sp.set("returnUrl", `${portalBase}/appointments`);
+                      return `/professional/patients/${chartId}?${sp.toString()}`;
+                    })()}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg hover:bg-indigo-100 transition"
+                  >
+                    <FileCheck size={11} /> {t("chartAct.examResult")}
                   </Link>
                   <Link
                     href={chartActionUrl("/professional/prescriptions", chartId, {

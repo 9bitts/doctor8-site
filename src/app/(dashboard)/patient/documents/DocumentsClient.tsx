@@ -292,12 +292,20 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   function groupKeyOf(it: Item): string {
     return it.categoryGroup || legacyLabel(it.type);
   }
+  const sortedItems = [...items].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
   const groupedByGroup: Record<string, Item[]> = {};
   const groupOrder: string[] = [];
-  for (const it of items) {
+  for (const it of sortedItems) {
     const k = groupKeyOf(it);
     if (!groupedByGroup[k]) { groupedByGroup[k] = []; groupOrder.push(k); }
     groupedByGroup[k].push(it);
+  }
+  for (const k of groupOrder) {
+    groupedByGroup[k].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
   }
 
   return (
@@ -359,6 +367,11 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                               {itemLabel}
                             </span>
                             <p className="font-semibold text-slate-800 text-sm">{it.title}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {new Date(it.createdAt).toLocaleDateString(lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US", {
+                                day: "2-digit", month: "short", year: "numeric",
+                              })}
+                            </p>
                             {it.sharedBy && (
                               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
                                 <UserCheck size={11} /> {t("docs.sharedBy")} {it.sharedBy}

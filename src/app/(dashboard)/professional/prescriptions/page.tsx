@@ -323,7 +323,7 @@ export default function PrescriptionsPage() {
   const [reuseSource, setReuseSource] = useState<Prescription | null>(null);
 
   const [savedEmission, setSavedEmission] = useState<SavedEmission | null>(null);
-  const [postSaveStep, setPostSaveStep] = useState<"choose" | "deliver" | "success">("choose");
+  const [postSaveStep, setPostSaveStep] = useState<"review" | "choose" | "deliver" | "success">("choose");
   const [postSaveShareUrl, setPostSaveShareUrl] = useState("");
 
   const [charts, setCharts] = useState<Chart[]>([]);
@@ -766,7 +766,13 @@ export default function PrescriptionsPage() {
 
   function handleEmissionSaved(emission: SavedEmission) {
     setSavedEmission(emission);
-    setPostSaveStep(cfg.skipDigitalSign ? "deliver" : "choose");
+    if (cfg.skipDigitalSign) {
+      setPostSaveStep("deliver");
+    } else if (emission.kind === "prescription" && emission.medications?.length) {
+      setPostSaveStep("review");
+    } else {
+      setPostSaveStep("choose");
+    }
     setPostSaveShareUrl("");
     fetchAll();
   }
@@ -1108,6 +1114,8 @@ export default function PrescriptionsPage() {
           id: data.prescriptionId,
           patient: patientForSave,
           label,
+          medications: cleanMeds,
+          instructions: instructions.trim() || undefined,
         });
       } else {
         const d = await res.json().catch(() => ({}));
