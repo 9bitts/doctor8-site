@@ -1418,12 +1418,6 @@ export default function RecordDetailClient({
           suggestedAllergy={chart.profileAllergies}
         />
 
-        {isOwner && (
-          <div className="mt-3">
-            <ChartSharePanel chartId={chart.id} />
-          </div>
-        )}
-
         {isPsychologistPortal && isOwner && (
           <div className="mt-4">
             <PsychologyChartAuditPanel chartId={chart.id} />
