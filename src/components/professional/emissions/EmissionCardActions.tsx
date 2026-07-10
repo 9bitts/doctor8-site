@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
-  Copy, PenLine, Download, Loader2, CheckCircle2, Clock, Share2, Printer,
+  Copy, PenLine, Download, Loader2, CheckCircle2, Clock, Share2, Printer, MessageCircle,
 } from "lucide-react";
-import WhatsappDeliverButton from "./WhatsappDeliverButton";
 import Doctor8DeliverButton from "./Doctor8DeliverButton";
+import { openWhatsAppShareLink } from "./whatsapp-share-link";
 import type { EmissionKind } from "./EmissionsSignModal";
 import {
   EMISSION_ACTIONS_ROW,
   EMISSION_BTN_AMBER,
   EMISSION_BTN_BRAND,
   EMISSION_BTN_NEUTRAL,
+  EMISSION_BTN_WHATSAPP,
 } from "./emission-button-styles";
 import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 
@@ -200,16 +201,17 @@ export function EmissionCardActions({
       )}
 
       {signed && (
-        <WhatsappDeliverButton
-          kind={kind}
-          id={emissionId}
-          patientName={patientName}
-          shareUrl={shareUrl}
-          t={t}
-          defaultMessage={t("rx.flow.whatsappMessage")}
-          initialStatus={whatsappNotifyStatus}
-          size="card"
-        />
+        <button
+          type="button"
+          onClick={() => openWhatsAppShareLink({
+            patientName,
+            shareUrl,
+            messageTemplate: t("rx.flow.whatsappMessage"),
+          })}
+          className={EMISSION_BTN_WHATSAPP}
+        >
+          <MessageCircle size={14} /> {t("rx.flow.whatsappShare")}
+        </button>
       )}
     </div>
   );

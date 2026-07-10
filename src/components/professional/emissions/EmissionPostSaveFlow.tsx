@@ -5,8 +5,8 @@ import {
   CheckCircle2, PenLine, Loader2, FileText, Send, MessageCircle,
 } from "lucide-react";
 import { EmissionsSignModal, type EmissionKind, type SignTarget } from "./EmissionsSignModal";
-import WhatsappDeliverButton from "./WhatsappDeliverButton";
 import Doctor8DeliverButton from "./Doctor8DeliverButton";
+import { openWhatsAppShareLink } from "./whatsapp-share-link";
 import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 import type { Chart } from "./types";
 
@@ -60,9 +60,6 @@ export function EmissionPostSaveFlow({
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
   const [inviteError, setInviteError] = useState("");
-  const [sendWhatsApp, setSendWhatsApp] = useState(true);
-  const [whatsappStatus, setWhatsappStatus] = useState("");
-  const [patientHasPhone, setPatientHasPhone] = useState(true);
   const [doctor8Delivered, setDoctor8Delivered] = useState(initialStep === "success" && !!initialShareUrl);
   const [pdfLoading, setPdfLoading] = useState(false);
 
@@ -85,7 +82,7 @@ export function EmissionPostSaveFlow({
         body: JSON.stringify({
           kind: deliverKind,
           id: emission.id,
-          sendWhatsApp,
+          sendWhatsApp: false,
         }),
       });
       const data = await res.json();
@@ -94,8 +91,6 @@ export function EmissionPostSaveFlow({
         return false;
       }
       setShareUrl(data.shareUrl || "");
-      setPatientHasPhone(!!data.patient?.hasPhone);
-      if (data.whatsapp?.status) setWhatsappStatus(data.whatsapp.status);
       setDoctor8Delivered(true);
       setStep("success");
       return true;
@@ -142,11 +137,11 @@ export function EmissionPostSaveFlow({
   }
 
   function openWhatsApp() {
-    const url = shareUrl || `${window.location.origin}/register`;
-    const msg = t("rx.flow.whatsappMessage")
-      .replace("{{name}}", `${patient.firstName} ${patient.lastName}`)
-      .replace("{{link}}", url);
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+    openWhatsAppShareLink({
+      patientName: `${patient.firstName} ${patient.lastName}`,
+      shareUrl: shareUrl || `${window.location.origin}/patient/documents`,
+      messageTemplate: t("rx.flow.whatsappMessage"),
+    });
   }
 
   if (step === "review") {
@@ -282,22 +277,6 @@ export function EmissionPostSaveFlow({
         )}
 
         <div className="space-y-3">
-          <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={sendWhatsApp}
-              onChange={(e) => {
-                const next = e.target.checked;
-                setSendWhatsApp(next);
-                if (typeof window !== "undefined") {
-                  sessionStorage.setItem("doctor8_emit_whatsapp_pref", next ? "1" : "0");
-                }
-              }}
-              className="w-4 h-4 accent-brand-500"
-            />
-            {t("wa.sendAfterDeliver")}
-          </label>
-
           <button onClick={deliverToPatient} disabled={delivering}
             className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
             {delivering ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
@@ -346,12 +325,9 @@ export function EmissionPostSaveFlow({
               id={emission.id}
               t={t}
               size="full"
-              sendWhatsApp={sendWhatsApp}
               apiBase={apiBase}
               onDelivered={(data) => {
                 setShareUrl(data.shareUrl || "");
-                setPatientHasPhone(!!data.hasPhone);
-                if (data.whatsappStatus) setWhatsappStatus(data.whatsappStatus);
                 setDoctor8Delivered(true);
               }}
               onError={setDeliverError}
@@ -384,35 +360,8 @@ export function EmissionPostSaveFlow({
           <p className="text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">{deliverError}</p>
         )}
 
-        {!patientHasPhone && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-            {t("wa.noPhone")}
-          </div>
-        )}
-
-        {whatsappStatus === "SENT" && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800 flex items-start gap-2">
-            <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
-            {t("wa.statusSent")}
-          </div>
-        )}
-
-        {shareUrl && patientHasPhone && (
-          <WhatsappDeliverButton
-            kind={emission.kind}
-            id={emission.id}
-            patientName={`${patient.firstName} ${patient.lastName}`}
-            shareUrl={shareUrl}
-            t={t}
-            defaultMessage={t("rx.flow.whatsappMessage")}
-            initialStatus={whatsappStatus}
-            size="full"
-            onStatusChange={setWhatsappStatus}
-          />
-        )}
-
         <button onClick={openWhatsApp}
-          className="w-full py-3 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 text-green-800 font-semibold text-sm transition flex items-center justify-center gap-2">
+          className="w-full py-3.5 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 text-green-800 font-semibold text-sm transition flex items-center justify-center gap-2">
           <MessageCircle size={18} /> {t("rx.flow.whatsappShare")}
         </button>
 
@@ -445,21 +394,6 @@ export function EmissionPostSaveFlow({
         )}
 
         <div className="space-y-3">
-          <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={sendWhatsApp}
-              onChange={(e) => {
-                const next = e.target.checked;
-                setSendWhatsApp(next);
-                if (typeof window !== "undefined") {
-                  sessionStorage.setItem("doctor8_emit_whatsapp_pref", next ? "1" : "0");
-                }
-              }}
-              className="w-4 h-4 accent-brand-500"
-            />
-            {t("wa.sendAfterDeliver")}
-          </label>
           <button onClick={handleSign} disabled={delivering}
             className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
             <PenLine size={18} /> {t("rx.flow.signNow")}
