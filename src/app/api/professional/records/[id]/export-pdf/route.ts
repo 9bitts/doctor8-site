@@ -12,6 +12,7 @@ import {
   buildChartExportSections,
   buildPatientInfoLines,
   formatDiagnosesForExport,
+  parseMedicationsForExport,
   type ChartDocForExport,
 } from "@/lib/chart-pdf-export";
 
@@ -84,10 +85,9 @@ export async function GET(
 
   const exportDocs: ChartDocForExport[] = docs.map((d) => {
     const rx = d.prescriptions[0];
-    let medications: ChartDocForExport["medications"] = null;
-    if (rx?.medications && Array.isArray(rx.medications)) {
-      medications = rx.medications as ChartDocForExport["medications"];
-    }
+    const medications = rx?.medications
+      ? parseMedicationsForExport(rx.medications)
+      : null;
     return {
       type: d.type,
       recordKind: d.recordKind,

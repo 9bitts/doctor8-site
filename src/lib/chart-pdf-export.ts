@@ -16,6 +16,23 @@ export interface MedicationExportItem {
   frequency?: string;
 }
 
+export function parseMedicationsForExport(value: unknown): MedicationExportItem[] | null {
+  if (!Array.isArray(value)) return null;
+  const items = value.flatMap((item) => {
+    if (!item || typeof item !== "object" || !("name" in item)) return [];
+    const name = (item as { name?: unknown }).name;
+    if (typeof name !== "string" || !name.trim()) return [];
+    const dosage = (item as { dosage?: unknown }).dosage;
+    const frequency = (item as { frequency?: unknown }).frequency;
+    return [{
+      name: name.trim(),
+      dosage: typeof dosage === "string" ? dosage : undefined,
+      frequency: typeof frequency === "string" ? frequency : undefined,
+    }];
+  });
+  return items.length > 0 ? items : null;
+}
+
 export interface ChartDocForExport {
   type: string;
   recordKind?: string | null;
