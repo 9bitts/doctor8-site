@@ -15,6 +15,7 @@ import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { appointmentJoinWindow } from "@/lib/appointment-join-window";
 import { requireVerifiedProfessional } from "@/lib/professional-verified";
+import { providerPanelFromSpecialty, type ProviderChartPanel } from "@/lib/video-chart-nav";
 
 function providerUserIdFromAppointment(appointment: {
   professional?: { userId: string } | null;
