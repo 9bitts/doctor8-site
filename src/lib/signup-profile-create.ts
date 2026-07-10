@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, PatientAcquisitionChannel } from "@prisma/client";
 import { encrypt } from "@/lib/encryption";
 import type { OAuthProfessionSlug, SignupRole } from "@/lib/oauth-signup-intent";
 import { isProfessionSignupSlug, PROFESSION_SIGNUP } from "@/lib/profession-signup";
@@ -28,9 +28,25 @@ export async function createSignupProfile(
     firstName: string;
     lastName: string;
     avatarUrl?: string | null;
+    acquisitionChannel?: PatientAcquisitionChannel | null;
+    acquisitionCampaign?: string | null;
+    acquisitionRecordedAt?: Date | null;
+    acquisitionReferrer?: string | null;
   },
 ): Promise<void> {
-  const { userId, role, professionalKind, profession, firstName, lastName, avatarUrl } = opts;
+  const {
+    userId,
+    role,
+    professionalKind,
+    profession,
+    firstName,
+    lastName,
+    avatarUrl,
+    acquisitionChannel,
+    acquisitionCampaign,
+    acquisitionRecordedAt,
+    acquisitionReferrer,
+  } = opts;
 
   if (role === "PROFESSIONAL") {
     await tx.professionalProfile.create({
@@ -73,6 +89,14 @@ export async function createSignupProfile(
         firstName: encrypt(firstName),
         lastName: encrypt(lastName),
         avatarUrl: avatarUrl ?? null,
+        ...(acquisitionChannel
+          ? {
+              acquisitionChannel,
+              acquisitionCampaign: acquisitionCampaign ?? undefined,
+              acquisitionRecordedAt: acquisitionRecordedAt ?? new Date(),
+              acquisitionReferrer: acquisitionReferrer ?? undefined,
+            }
+          : {}),
       },
     });
   }

@@ -45,6 +45,13 @@ import {
   rateLimitResponse,
 } from "@/lib/rate-limit";
 import { resolveRegistrationRegionForSignup } from "@/lib/detect-registration-region";
+import {
+  resolvePatientAcquisitionChannel,
+  patientAcquisitionProfileFields,
+  acquisitionInputFromRequest,
+  resolveAcquisitionReferrer,
+} from "@/lib/humanitarian/acquisition-channel";
+import { linkPartnerIntakesToPatient } from "@/lib/partner/acura-intake";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -98,13 +105,15 @@ type RegisterProfileInput = {
   email: string;
   professionalKind?: "psychologist";
   profession?: "medico" | "psicologo" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "dentista" | "cuidados_paliativos";
+  acquisitionFields?: ReturnType<typeof patientAcquisitionProfileFields>;
 };
 
 async function createRegisterProfile(
   tx: Parameters<Parameters<typeof db.$transaction>[0]>[0],
   input: RegisterProfileInput,
 ): Promise<void> {
-  const { userId, role, firstName, lastName, email, professionalKind, profession } = input;
+  const { userId, role, firstName, lastName, email, professionalKind, profession, acquisitionFields } =
+    input;
 
   if (role === "PATIENT") {
     await tx.patientProfile.create({
@@ -112,6 +121,7 @@ async function createRegisterProfile(
         userId,
         firstName: encrypt(firstName),
         lastName: encrypt(lastName),
+        ...(acquisitionFields ?? {}),
       },
     });
     await linkChartsToPatientOnSignup(tx, userId, email);
@@ -202,6 +212,18 @@ export async function POST(req: NextRequest) {
     const skipEmailVerification =
       role === "PATIENT"
       && canSkipHumanitarianEmailVerification(effectiveCallback, originCookie);
+
+    const acquisitionChannel =
+      role === "PATIENT"
+        ? resolvePatientAcquisitionChannel(acquisitionInputFromRequest(req, callbackUrl))
+        : null;
+    const acquisitionFields =
+      role === "PATIENT"
+        ? patientAcquisitionProfileFields(
+            acquisitionChannel,
+            resolveAcquisitionReferrer(acquisitionInputFromRequest(req, callbackUrl)),
+          )
+        : undefined;
 
     if (requiresHipaa(region) && !acceptedHipaa) {
       return NextResponse.json(
@@ -319,6 +341,7 @@ export async function POST(req: NextRequest) {
           email: normalizedEmail,
           professionalKind,
           profession,
+          acquisitionFields,
         });
 
         await createRegisterConsents(tx, existing.id, ip, userAgent, {
@@ -338,6 +361,11 @@ export async function POST(req: NextRequest) {
           await attachLinkedDocumentsToPatientProfile(existing.id);
         } catch (linkError) {
           console.error("[REGISTER RESUME LINK ERROR]", linkError);
+        }
+        try {
+          await linkPartnerIntakesToPatient(existing.id, normalizedEmail);
+        } catch (acuraLinkError) {
+          console.error("[REGISTER ACURA LINK ERROR]", acuraLinkError);
         }
       }
 
@@ -411,6 +439,7 @@ export async function POST(req: NextRequest) {
         email: email.toLowerCase(),
         professionalKind,
         profession,
+        acquisitionFields,
       });
 
       await createRegisterConsents(tx, newUser.id, ip, userAgent, {
@@ -432,6 +461,14 @@ export async function POST(req: NextRequest) {
       await attachLinkedDocumentsToPatientProfile(user.id);
     } catch (linkError) {
       console.error("[REGISTER LINK ERROR]", linkError);
+    }
+
+    if (role === "PATIENT") {
+      try {
+        await linkPartnerIntakesToPatient(user.id, email.toLowerCase());
+      } catch (acuraLinkError) {
+        console.error("[REGISTER ACURA LINK ERROR]", acuraLinkError);
+      }
     }
 
     // Generate verification token (24h expiry) — skipped for humanitarian patient signup

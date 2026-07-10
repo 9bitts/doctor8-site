@@ -12,7 +12,9 @@ import {
   type PatientListFilters,
   type PatientMonitorStatus,
   type PatientOrigin,
+  type PatientAcquisitionChannel,
 } from "@/lib/admin/patient-monitoring";
+import type { AdminJourneyStepKey } from "@/lib/admin/patient-journey";
 
 export const runtime = "nodejs";
 
@@ -20,16 +22,43 @@ function parseFilters(req: NextRequest): PatientListFilters {
   const sp = new URL(req.url).searchParams;
   const status = sp.get("status") as PatientMonitorStatus | null;
   const origin = sp.get("origin") as PatientOrigin | null;
+  const acquisitionChannel = sp.get("acquisitionChannel") as PatientAcquisitionChannel | null;
+  const journeyStep = sp.get("journeyStep") as AdminJourneyStepKey | null;
   const queueAlertRaw = sp.get("queueAlertMinutes");
   const queueAlertMinutes = queueAlertRaw
     ? parseInt(queueAlertRaw, 10)
     : getDefaultQueueAlertMinutes();
+
+  const validChannels: PatientAcquisitionChannel[] = [
+    "ACURA_SOS_FORM",
+    "DOCTOR8_SOS_LANDING",
+    "DOCTOR8_HUMANITARIAN",
+    "REGULAR",
+  ];
+
+  const validSteps: AdminJourneyStepKey[] = [
+    "acura_form",
+    "acura_triage",
+    "d8_register",
+    "d8_triage",
+    "d8_tcle",
+    "d8_anamnese",
+    "d8_queue",
+    "d8_consult",
+  ];
 
   return {
     q: sp.get("q") ?? undefined,
     status: status ?? undefined,
     country: sp.get("country") ?? undefined,
     origin: origin === "humanitarian" || origin === "regular" ? origin : undefined,
+    acquisitionChannel:
+      acquisitionChannel && validChannels.includes(acquisitionChannel)
+        ? acquisitionChannel
+        : undefined,
+    journeyStep:
+      journeyStep && validSteps.includes(journeyStep) ? journeyStep : undefined,
+    needsAttention: sp.get("needsAttention") === "1",
     registeredFrom: sp.get("registeredFrom") ?? undefined,
     registeredTo: sp.get("registeredTo") ?? undefined,
     lastSpecialty: sp.get("lastSpecialty") ?? undefined,

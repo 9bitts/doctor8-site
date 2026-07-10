@@ -18,6 +18,13 @@ import {
   linkChartsToPatientOnSignup,
   linkChartsToPatientUser,
 } from "@/lib/patient-chart-link";
+import { linkPartnerIntakesToPatient } from "@/lib/partner/acura-intake";
+import {
+  resolvePatientAcquisitionChannel,
+  patientAcquisitionProfileFields,
+  acquisitionInputFromRequest,
+  resolveAcquisitionReferrer,
+} from "@/lib/humanitarian/acquisition-channel";
 
 const MAGIC_LINK_TTL_MS = 30 * 60 * 1000;
 
@@ -83,7 +90,20 @@ export async function POST(req: NextRequest) {
     } catch (linkError) {
       console.error("[MAGIC LINK LINK ERROR]", linkError);
     }
+    try {
+      await linkPartnerIntakesToPatient(userId, email);
+    } catch (linkError) {
+      console.error("[MAGIC LINK PARTNER INTAKE LINK ERROR]", linkError);
+    }
   } else {
+    const acquisitionChannel = resolvePatientAcquisitionChannel(
+      acquisitionInputFromRequest(req, callbackUrl),
+    );
+    const acquisitionFields = patientAcquisitionProfileFields(
+      acquisitionChannel,
+      resolveAcquisitionReferrer(acquisitionInputFromRequest(req, callbackUrl)),
+    );
+
     const newUser = await db.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
@@ -99,6 +119,7 @@ export async function POST(req: NextRequest) {
           userId: newUser.id,
           firstName: encrypt(parsed.data.firstName),
           lastName: encrypt(parsed.data.lastName),
+          ...acquisitionFields,
         },
       });
 
@@ -134,6 +155,11 @@ export async function POST(req: NextRequest) {
       await attachLinkedDocumentsToPatientProfile(newUser.id);
     } catch (linkError) {
       console.error("[MAGIC LINK LINK ERROR]", linkError);
+    }
+    try {
+      await linkPartnerIntakesToPatient(newUser.id, email);
+    } catch (linkError) {
+      console.error("[MAGIC LINK PARTNER INTAKE LINK ERROR]", linkError);
     }
   }
 

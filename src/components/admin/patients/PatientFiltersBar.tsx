@@ -2,12 +2,17 @@
 
 import { Search } from "lucide-react";
 import type { PatientMonitorStatus } from "@/lib/admin/patient-monitoring";
+import type { PatientAcquisitionChannel } from "@prisma/client";
+import type { AdminJourneyStepKey } from "@/lib/admin/patient-journey";
 
 export interface PatientFiltersState {
   q: string;
   status: PatientMonitorStatus | "";
   country: string;
   origin: "" | "humanitarian" | "regular";
+  acquisitionChannel: "" | PatientAcquisitionChannel;
+  journeyStep: "" | AdminJourneyStepKey;
+  needsAttention: boolean;
   registeredFrom: string;
   registeredTo: string;
   lastSpecialty: string;
@@ -43,7 +48,7 @@ export default function PatientFiltersBar({
           value={filters.q}
           onChange={(e) => set("q", e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onApply()}
-          placeholder="Buscar por nome, e-mail ou telefone..."
+          placeholder="Buscar por nome, e-mail, telefone ou protocolo SOS-VE-..."
           className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none text-sm"
         />
       </div>
@@ -82,7 +87,24 @@ export default function PatientFiltersBar({
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Origem</span>
+          <span className="text-xs font-semibold text-slate-500 uppercase">Canal</span>
+          <select
+            value={filters.acquisitionChannel}
+            onChange={(e) =>
+              set("acquisitionChannel", e.target.value as PatientFiltersState["acquisitionChannel"])
+            }
+            className="mt-1 w-full text-sm border border-slate-200 rounded-lg px-3 py-2"
+          >
+            <option value="">Todos</option>
+            <option value="DOCTOR8_SOS_LANDING">SOS Doctor8</option>
+            <option value="DOCTOR8_HUMANITARIAN">Humanitário D8</option>
+            <option value="ACURA_SOS_FORM">ACURA → Doctor8</option>
+            <option value="REGULAR">Regular</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-xs font-semibold text-slate-500 uppercase">Origem (legado)</span>
           <select
             value={filters.origin}
             onChange={(e) =>
@@ -94,6 +116,35 @@ export default function PatientFiltersBar({
             <option value="humanitarian">Humanitario</option>
             <option value="regular">Regular</option>
           </select>
+        </label>
+
+        <label className="block">
+          <span className="text-xs font-semibold text-slate-500 uppercase">Etapa</span>
+          <select
+            value={filters.journeyStep}
+            onChange={(e) =>
+              set("journeyStep", e.target.value as PatientFiltersState["journeyStep"])
+            }
+            className="mt-1 w-full text-sm border border-slate-200 rounded-lg px-3 py-2"
+          >
+            <option value="">Todas</option>
+            <option value="d8_register">Cadastro</option>
+            <option value="d8_triage">Triagem</option>
+            <option value="d8_tcle">TCLE</option>
+            <option value="d8_anamnese">Anamnese</option>
+            <option value="d8_queue">Fila</option>
+            <option value="d8_consult">Consulta</option>
+          </select>
+        </label>
+
+        <label className="flex items-end gap-2 pb-2">
+          <input
+            type="checkbox"
+            checked={filters.needsAttention}
+            onChange={(e) => set("needsAttention", e.target.checked)}
+            className="rounded border-slate-300"
+          />
+          <span className="text-sm text-slate-700">Precisa atenção</span>
         </label>
 
         <label className="block">
@@ -193,6 +244,9 @@ export const DEFAULT_FILTERS: PatientFiltersState = {
   status: "",
   country: "",
   origin: "",
+  acquisitionChannel: "",
+  journeyStep: "",
+  needsAttention: false,
   registeredFrom: "",
   registeredTo: "",
   lastSpecialty: "",
@@ -207,6 +261,9 @@ export function filtersToQuery(f: PatientFiltersState): string {
   if (f.status) qs.set("status", f.status);
   if (f.country) qs.set("country", f.country);
   if (f.origin) qs.set("origin", f.origin);
+  if (f.acquisitionChannel) qs.set("acquisitionChannel", f.acquisitionChannel);
+  if (f.journeyStep) qs.set("journeyStep", f.journeyStep);
+  if (f.needsAttention) qs.set("needsAttention", "1");
   if (f.registeredFrom) qs.set("registeredFrom", f.registeredFrom);
   if (f.registeredTo) qs.set("registeredTo", f.registeredTo);
   if (f.lastSpecialty) qs.set("lastSpecialty", f.lastSpecialty);

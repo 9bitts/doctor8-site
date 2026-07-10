@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { CheckCircle2, FileText, Users } from "lucide-react";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
-import PatientStatusBadge, { OriginBadge } from "@/components/admin/patients/PatientStatusBadge";
+import PatientStatusBadge, { AcquisitionBadge } from "@/components/admin/patients/PatientStatusBadge";
 import type { PatientMonitorStatus } from "@/lib/admin/patient-monitoring";
+import type { PatientAcquisitionChannel } from "@prisma/client";
+import { journeyStepLabel, type AdminJourneyStepKey } from "@/lib/admin/patient-journey";
 
 export interface PatientRow {
   id: string;
@@ -14,6 +16,10 @@ export interface PatientRow {
   phoneHint: string | null;
   country: string | null;
   origin: "humanitarian" | "regular";
+  acquisitionChannel: PatientAcquisitionChannel;
+  acuraProtocolo: string | null;
+  currentJourneyStep: AdminJourneyStepKey;
+  stuckAlertCount: number;
   status: PatientMonitorStatus;
   statusDetail: string | null;
   registeredAt: string;
@@ -61,6 +67,7 @@ export default function PatientListTable({ patients }: { patients: PatientRow[] 
               <th className="px-4 py-3">Pais</th>
               <th className="px-4 py-3">Cadastro</th>
               <th className="px-4 py-3">Origem</th>
+              <th className="px-4 py-3">Etapa</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Anamnese</th>
               <th className="px-4 py-3">Especialidade</th>
@@ -80,15 +87,24 @@ export default function PatientListTable({ patients }: { patients: PatientRow[] 
                   </Link>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {p.email ?? "sem e-mail"}
-                    {p.phoneHint ? ` ? ${p.phoneHint}` : ""}
+                    {p.phoneHint ? ` · ${p.phoneHint}` : ""}
                   </p>
+                  {p.acuraProtocolo && (
+                    <p className="text-[10px] text-violet-600 font-mono mt-0.5">{p.acuraProtocolo}</p>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-slate-600">{p.country ?? "?"}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
                   {formatDate(p.registeredAt)}
                 </td>
                 <td className="px-4 py-3">
-                  <OriginBadge origin={p.origin} />
+                  <AcquisitionBadge channel={p.acquisitionChannel} />
+                </td>
+                <td className="px-4 py-3 text-xs text-slate-600">
+                  <span className="font-medium">{journeyStepLabel(p.currentJourneyStep)}</span>
+                  {p.stuckAlertCount > 0 && (
+                    <span className="ml-1 text-rose-600">({p.stuckAlertCount})</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-col gap-1">
@@ -155,7 +171,11 @@ export default function PatientListTable({ patients }: { patients: PatientRow[] 
               <PatientStatusBadge status={p.status} detail={p.statusDetail} />
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-              <OriginBadge origin={p.origin} />
+              <AcquisitionBadge channel={p.acquisitionChannel} />
+              <span>{journeyStepLabel(p.currentJourneyStep)}</span>
+              {p.stuckAlertCount > 0 && (
+                <span className="text-rose-600">{p.stuckAlertCount} alerta(s)</span>
+              )}
               <span>{p.country ?? "?"}</span>
               <span>{formatDate(p.registeredAt)}</span>
               {p.hasAnamnese && (

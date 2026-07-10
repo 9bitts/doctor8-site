@@ -6,13 +6,36 @@ import { poolLabel } from "@/lib/humanitarian/constants";
 import { buildIntakeSummary } from "@/lib/humanitarian/intake-summary";
 import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
 import type { IntakeSummarySection } from "@/lib/humanitarian/intake-summary";
-import type {
-  Appointment,
-  HumanitarianQueueEntry,
-  HumanitarianQueueStatus,
-  PatientProfile,
-  User,
+import {
+  PatientAcquisitionChannel,
+  type Appointment,
+  type HumanitarianQueueEntry,
+  type HumanitarianQueueStatus,
+  type PatientProfile,
+  type User,
 } from "@prisma/client";
+import {
+  buildAdminPatientJourney,
+  intakeToJourneySnapshot,
+  type AdminJourneyStepKey,
+  type AdminPatientJourney,
+  type PartnerIntakeJourneySnapshot,
+} from "@/lib/admin/patient-journey";
+import {
+  computeStuckAlerts,
+  priorityFromPartnerIntake,
+  stuckAlertsToProblemReasons,
+  stuckStepKeys,
+  type StuckAlert,
+} from "@/lib/admin/patient-stuck-rules";
+import {
+  getLatestPartnerIntakeForUser,
+  getPartnerIntakeEvents,
+  partnerIntakeTimelineEvents,
+  partnerIntakeToAdminDto,
+  type AcuraIntakeAdminDto,
+} from "@/lib/partner/acura-intake";
+import { resolveDisplayAcquisitionChannel } from "@/lib/humanitarian/acquisition-channel";
 
 export type PatientMonitorStatus =
   | "IN_QUEUE"
@@ -23,11 +46,16 @@ export type PatientMonitorStatus =
 
 export type PatientOrigin = "humanitarian" | "regular";
 
+export type { PatientAcquisitionChannel };
+
 export interface PatientListFilters {
   q?: string;
   status?: PatientMonitorStatus;
   country?: string;
   origin?: PatientOrigin;
+  acquisitionChannel?: PatientAcquisitionChannel;
+  journeyStep?: AdminJourneyStepKey;
+  needsAttention?: boolean;
   registeredFrom?: string;
   registeredTo?: string;
   lastSpecialty?: string;
@@ -45,6 +73,10 @@ export interface PatientListRow {
   country: string | null;
   language: string;
   origin: PatientOrigin;
+  acquisitionChannel: PatientAcquisitionChannel;
+  acuraProtocolo: string | null;
+  currentJourneyStep: AdminJourneyStepKey;
+  stuckAlertCount: number;
   status: PatientMonitorStatus;
   statusDetail: string | null;
   registeredAt: string;
@@ -92,7 +124,18 @@ export interface TimelineEvent {
     | "cancelled"
     | "video_incident"
     | "admin_removed"
-    | "admin_problem";
+    | "admin_problem"
+    | "account_created"
+    | "intake_triage_completed"
+    | "intake_tcle_accepted"
+    | "intake_anamnese_completed"
+    | "acura_form_submitted"
+    | "acura_status_changed"
+    | "acura_clicked_doctor8_register"
+    | "acura_clicked_doctor8_login"
+    | "acura_clicked_whatsapp"
+    | "acura_doctor8_email_verified"
+    | "acura_patient_linked";
   at: string;
   title: string;
   detail: string | null;
@@ -110,6 +153,8 @@ export interface PatientDetailDto {
   region: string;
   registeredAt: string;
   origin: PatientOrigin;
+  acquisitionChannel: PatientAcquisitionChannel;
+  acquisitionReferrer: string | null;
   status: PatientMonitorStatus;
   statusDetail: string | null;
   phoneHint: string | null;
@@ -126,6 +171,9 @@ export interface PatientDetailDto {
     durationMinutes: number;
   } | null;
   timeline: TimelineEvent[];
+  journey: AdminPatientJourney;
+  stuckAlerts: StuckAlert[];
+  acuraIntake: AcuraIntakeAdminDto | null;
   consultations: {
     id: string;
     kind: "humanitarian" | "appointment";
@@ -261,15 +309,35 @@ interface PatientContext {
   appointments: ApptRow[];
   hasIntake: boolean;
   intakeStatus: string | null;
+  intakeSnapshot: ReturnType<typeof intakeToJourneySnapshot>;
+  partnerIntakeSnapshot: PartnerIntakeJourneySnapshot | null;
+  partnerPriorityLabel: string | null;
+  acuraProtocolo: string | null;
   videoIncidents: { id: string; kind: string; createdAt: Date; notes: string | null }[];
   activeEntry: EntryWithPool | null;
   activeAppointment: ApptRow | null;
   lastSpecialty: string | null;
   lastActivityAt: Date | null;
   origin: PatientOrigin;
+  acquisitionChannel: PatientAcquisitionChannel;
+  journey: AdminPatientJourney;
+  stuckAlerts: StuckAlert[];
   status: PatientMonitorStatus;
   statusDetail: string | null;
   problemReasons: string[];
+}
+
+function partnerSnapshotFromRow(row: {
+  submittedAt: Date;
+  acuraStatus: import("@prisma/client").PartnerIntakeStatus;
+  protocolo: string;
+  priorityEnc: string | null;
+}): { snapshot: PartnerIntakeJourneySnapshot; protocolo: string; priorityLabel: string | null } {
+  return {
+    snapshot: { submittedAt: row.submittedAt, acuraStatus: row.acuraStatus },
+    protocolo: row.protocolo,
+    priorityLabel: safeDecrypt(row.priorityEnc) || null,
+  };
 }
 
 function derivePatientContext(
@@ -278,6 +346,8 @@ function derivePatientContext(
   appointments: ApptRow[],
   hasIntake: boolean,
   intakeStatus: string | null,
+  intakeSnapshot: ReturnType<typeof intakeToJourneySnapshot>,
+  partnerBundle: ReturnType<typeof partnerSnapshotFromRow> | null,
   videoIncidents: { id: string; kind: string; createdAt: Date; notes: string | null }[],
   queueAlertMinutes: number,
 ): PatientContext {
@@ -298,10 +368,49 @@ function derivePatientContext(
         isWithinAppointmentJoinWindow(a.scheduledAt, a.durationMins),
     ) ?? null;
 
-  const origin: PatientOrigin =
-    humanitarianEntries.length > 0 || hasIntake ? "humanitarian" : "regular";
+  const hasHumanitarianActivity = humanitarianEntries.length > 0 || hasIntake;
+  const partnerIntakeSnapshot = partnerBundle?.snapshot ?? null;
+  const acuraProtocolo = partnerBundle?.protocolo ?? null;
 
-  const problemReasons: string[] = [];
+  const acquisitionChannel = partnerIntakeSnapshot
+    ? PatientAcquisitionChannel.ACURA_SOS_FORM
+    : resolveDisplayAcquisitionChannel({
+        stored: profile.acquisitionChannel,
+        hasHumanitarianActivity,
+      });
+
+  const origin: PatientOrigin =
+    acquisitionChannel !== "REGULAR" || hasHumanitarianActivity ? "humanitarian" : "regular";
+
+  const queueWaitingSince =
+    activeEntry?.status === "WAITING" ? activeEntry.enteredAt : null;
+
+  const stuckAlerts = computeStuckAlerts({
+    now,
+    userCreatedAt: profile.user.createdAt,
+    acquisitionChannel,
+    partnerIntake: partnerIntakeSnapshot,
+    hasPatientAccount: true,
+    intake: intakeSnapshot,
+    queueWaitingSince,
+    queueAlertMinutes,
+    priority: priorityFromPartnerIntake(partnerBundle?.priorityLabel),
+  });
+
+  const journey = buildAdminPatientJourney({
+    userCreatedAt: profile.user.createdAt,
+    partnerIntake: partnerIntakeSnapshot,
+    intake: intakeSnapshot,
+    entries: humanitarianEntries.map((e) => ({
+      status: e.status,
+      enteredAt: e.enteredAt,
+      endedAt: e.endedAt,
+      startedAt: e.startedAt,
+    })),
+    stuckStepKeys: stuckStepKeys(stuckAlerts),
+  });
+
+  const problemReasons: string[] = [...stuckAlertsToProblemReasons(stuckAlerts)];
 
   if (activeEntry?.adminProblemAt) {
     problemReasons.push("Marcado como problema pelo admin");
@@ -313,12 +422,6 @@ function derivePatientContext(
   for (const e of humanitarianEntries) {
     if (e.adminProblemAt && !problemReasons.includes("Marcado como problema pelo admin")) {
       problemReasons.push("Marcado como problema pelo admin");
-    }
-    if (e.status === "WAITING") {
-      const waitMin = Math.floor((now.getTime() - e.enteredAt.getTime()) / 60000);
-      if (waitMin >= queueAlertMinutes) {
-        problemReasons.push(`Na fila h? ${waitMin} min (limite ${queueAlertMinutes} min)`);
-      }
     }
     if (e.status === "IN_PROGRESS" && e.startedAt) {
       const consultMin = Math.floor((now.getTime() - e.startedAt.getTime()) / 60000);
@@ -413,12 +516,19 @@ function derivePatientContext(
     appointments,
     hasIntake,
     intakeStatus,
+    intakeSnapshot,
+    partnerIntakeSnapshot,
+    partnerPriorityLabel: partnerBundle?.priorityLabel ?? null,
+    acuraProtocolo,
     videoIncidents,
     activeEntry,
     activeAppointment,
     lastSpecialty,
     lastActivityAt,
     origin,
+    acquisitionChannel,
+    journey,
+    stuckAlerts,
     status,
     statusDetail,
     problemReasons,
@@ -436,6 +546,10 @@ function contextToListRow(ctx: PatientContext): PatientListRow {
     country: p.country ?? p.user.region ?? null,
     language: p.user.language,
     origin: ctx.origin,
+    acquisitionChannel: ctx.acquisitionChannel,
+    acuraProtocolo: ctx.acuraProtocolo,
+    currentJourneyStep: ctx.journey.currentStep,
+    stuckAlertCount: ctx.stuckAlerts.length,
     status: ctx.status,
     statusDetail: ctx.statusDetail,
     registeredAt: p.createdAt.toISOString(),
@@ -464,7 +578,8 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
 
   const userIds = profiles.map((p) => p.userId);
 
-  const [humanitarianEntries, intakes, appointments, videoIncidents] = await Promise.all([
+  const [humanitarianEntries, intakes, appointments, videoIncidents, partnerIntakes] =
+    await Promise.all([
     db.humanitarianQueueEntry.findMany({
       where: { patientUserId: { in: userIds } },
       include: {
@@ -474,7 +589,14 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
     }),
     db.humanitarianIntake.findMany({
       where: { patientUserId: { in: userIds } },
-      select: { patientUserId: true, status: true },
+      select: {
+        patientUserId: true,
+        status: true,
+        triageCompletedAt: true,
+        telemedicineTcleAt: true,
+        consentAt: true,
+        updatedAt: true,
+      },
       orderBy: { updatedAt: "desc" },
     }),
     db.appointment.findMany({
@@ -496,6 +618,17 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
       select: { id: true, patientUserId: true, kind: true, createdAt: true, notes: true },
       orderBy: { createdAt: "desc" },
     }),
+    db.partnerIntake.findMany({
+      where: { patientUserId: { in: userIds } },
+      select: {
+        patientUserId: true,
+        protocolo: true,
+        submittedAt: true,
+        acuraStatus: true,
+        priorityEnc: true,
+      },
+      orderBy: { submittedAt: "desc" },
+    }),
   ]);
 
   const entriesByUser = new Map<string, EntryWithPool[]>();
@@ -507,9 +640,11 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
 
   const intakeUsers = new Set(intakes.map((i) => i.patientUserId));
   const intakeStatusByUser = new Map<string, string>();
+  const intakeSnapshotByUser = new Map<string, ReturnType<typeof intakeToJourneySnapshot>>();
   for (const i of intakes) {
     if (!intakeStatusByUser.has(i.patientUserId)) {
       intakeStatusByUser.set(i.patientUserId, i.status);
+      intakeSnapshotByUser.set(i.patientUserId, intakeToJourneySnapshot(i));
     }
   }
 
@@ -527,6 +662,12 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
     incidentsByUser.set(v.patientUserId, list);
   }
 
+  const partnerByUser = new Map<string, ReturnType<typeof partnerSnapshotFromRow>>();
+  for (const p of partnerIntakes) {
+    if (!p.patientUserId || partnerByUser.has(p.patientUserId)) continue;
+    partnerByUser.set(p.patientUserId, partnerSnapshotFromRow(p));
+  }
+
   const contexts = profiles.map((profile) =>
     derivePatientContext(
       profile as ProfileBundle,
@@ -534,6 +675,8 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
       apptsByPatient.get(profile.id) ?? [],
       intakeUsers.has(profile.userId),
       intakeStatusByUser.get(profile.userId) ?? null,
+      intakeSnapshotByUser.get(profile.userId) ?? null,
+      partnerByUser.get(profile.userId) ?? null,
       incidentsByUser.get(profile.userId) ?? [],
       queueAlertMinutes,
     ),
@@ -557,9 +700,11 @@ export function filterAndSortPatients(
         `${safeDecrypt(ctx.profile.firstName)} ${safeDecrypt(ctx.profile.lastName)}`
           .trim()
           .toLowerCase();
+      const qLower = q.toLowerCase();
       return (
-        name.includes(q) ||
-        (ctx.profile.user.email ?? "").toLowerCase().includes(q) ||
+        name.includes(qLower) ||
+        (ctx.profile.user.email ?? "").toLowerCase().includes(qLower) ||
+        (ctx.acuraProtocolo ?? "").toLowerCase().includes(qLower) ||
         matchesPhoneSearch(ctx.profile.user, ctx.profilePhone, qDigits)
       );
     });
@@ -577,6 +722,21 @@ export function filterAndSortPatients(
   }
   if (filters.origin) {
     filtered = filtered.filter((ctx) => ctx.origin === filters.origin);
+  }
+  if (filters.acquisitionChannel) {
+    filtered = filtered.filter(
+      (ctx) => ctx.acquisitionChannel === filters.acquisitionChannel,
+    );
+  }
+  if (filters.journeyStep) {
+    filtered = filtered.filter(
+      (ctx) => ctx.journey.currentStep === filters.journeyStep,
+    );
+  }
+  if (filters.needsAttention) {
+    filtered = filtered.filter(
+      (ctx) => ctx.stuckAlerts.length > 0 || ctx.status === "PROBLEM",
+    );
   }
   if (filters.lastSpecialty) {
     filtered = filtered.filter((ctx) =>
@@ -727,6 +887,47 @@ function documentTypeLabel(type: string): string {
 
 export function buildPatientTimeline(ctx: PatientContext): TimelineEvent[] {
   const events: TimelineEvent[] = [];
+
+  events.push({
+    id: `account-${ctx.profile.userId}`,
+    type: "account_created",
+    at: ctx.profile.user.createdAt.toISOString(),
+    title: "Conta criada no Doctor8",
+    detail: null,
+    link: null,
+  });
+
+  const intake = ctx.intakeSnapshot;
+  if (intake?.triageCompletedAt) {
+    events.push({
+      id: `intake-triage-${ctx.profile.userId}`,
+      type: "intake_triage_completed",
+      at: intake.triageCompletedAt.toISOString(),
+      title: "Triagem humanitária concluída",
+      detail: null,
+      link: null,
+    });
+  }
+  if (intake?.telemedicineTcleAt) {
+    events.push({
+      id: `intake-tcle-${ctx.profile.userId}`,
+      type: "intake_tcle_accepted",
+      at: intake.telemedicineTcleAt.toISOString(),
+      title: "TCLE de telemedicina aceito",
+      detail: null,
+      link: null,
+    });
+  }
+  if (intake?.status === "COMPLETE") {
+    events.push({
+      id: `intake-anamnese-${ctx.profile.userId}`,
+      type: "intake_anamnese_completed",
+      at: (intake.consentAt ?? intake.updatedAt)?.toISOString() ?? ctx.profile.user.createdAt.toISOString(),
+      title: "Anamnese humanitária completa",
+      detail: null,
+      link: null,
+    });
+  }
 
   for (const e of ctx.humanitarianEntries) {
     const specialty = poolLabel(e.pool, "pt");
@@ -907,7 +1108,7 @@ export async function loadPatientDetail(
   });
   if (!profile) return null;
 
-  const [humanitarianEntries, intakeRecord, appointments, videoIncidents, medicalDocs] =
+  const [humanitarianEntries, intakeRecord, appointments, videoIncidents, medicalDocs, partnerIntakeRow] =
     await Promise.all([
       db.humanitarianQueueEntry.findMany({
         where: { patientUserId: profile.userId },
@@ -958,7 +1159,10 @@ export async function loadPatientDetail(
         select: { id: true, type: true, title: true, appointmentId: true, createdAt: true },
         orderBy: { createdAt: "desc" },
       }),
+      getLatestPartnerIntakeForUser(profile.userId),
     ]);
+
+  const partnerBundle = partnerIntakeRow ? partnerSnapshotFromRow(partnerIntakeRow) : null;
 
   const ctx = derivePatientContext(
     profile as ProfileBundle,
@@ -966,6 +1170,8 @@ export async function loadPatientDetail(
     appointments as ApptRow[],
     Boolean(intakeRecord),
     intakeRecord?.status ?? null,
+    intakeToJourneySnapshot(intakeRecord),
+    partnerBundle,
     videoIncidents,
     queueAlertMinutes,
   );
@@ -1042,6 +1248,21 @@ export async function loadPatientDetail(
   }
 
   const timeline = buildPatientTimeline(ctx);
+
+  if (partnerIntakeRow) {
+    const partnerEvents = await getPartnerIntakeEvents(partnerIntakeRow.id);
+    const acuraTimeline = partnerIntakeTimelineEvents(partnerIntakeRow, partnerEvents);
+    for (const ev of acuraTimeline) {
+      timeline.push({
+        id: ev.id,
+        type: ev.type as TimelineEvent["type"],
+        at: ev.at,
+        title: ev.title,
+        detail: ev.detail,
+        link: null,
+      });
+    }
+  }
 
   for (const doc of medicalDocs) {
     if (doc.appointmentId) continue;
@@ -1145,6 +1366,8 @@ export async function loadPatientDetail(
     };
   }
 
+  const acuraIntake = partnerIntakeRow ? partnerIntakeToAdminDto(partnerIntakeRow) : null;
+
   return {
     id: profile.id,
     userId: profile.userId,
@@ -1155,12 +1378,17 @@ export async function loadPatientDetail(
     region: profile.user.region,
     registeredAt: profile.createdAt.toISOString(),
     origin: ctx.origin,
+    acquisitionChannel: ctx.acquisitionChannel,
+    acquisitionReferrer: profile.acquisitionReferrer ?? null,
     status: ctx.status,
     statusDetail: ctx.statusDetail,
     phoneHint: phoneHintFromUser(profile.user, profilePhone),
     activeQueue,
     liveConsult,
     timeline,
+    journey: ctx.journey,
+    stuckAlerts: ctx.stuckAlerts,
+    acuraIntake,
     consultations,
     journeyHighlight,
     problemReasons: ctx.problemReasons,

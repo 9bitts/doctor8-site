@@ -423,6 +423,35 @@ enum HumanitarianPriority {
   CRISIS
 }
 
+enum PatientAcquisitionChannel {
+  ACURA_SOS_FORM
+  DOCTOR8_SOS_LANDING
+  DOCTOR8_HUMANITARIAN
+  REGULAR
+}
+
+enum PartnerIntakeStatus {
+  NOVA
+  EM_TRIAGEM
+  ORIENTADO_DOCTOR8
+  NA_FILA
+  EM_CONSULTA
+  CONCLUIDO
+  CANCELADO
+}
+
+enum PartnerIntakeEventType {
+  FORM_SUBMITTED
+  STATUS_CHANGED
+  CLICKED_DOCTOR8_REGISTER
+  CLICKED_DOCTOR8_LOGIN
+  CLICKED_WHATSAPP_HELP
+  DOCTOR8_EMAIL_VERIFIED
+  VOLUNTEER_ASSIGNED
+  NOTES_UPDATED
+  PATIENT_LINKED
+}
+
 enum HumanitarianIntakeStatus {
   TRIAGE_ONLY
   PARTIAL
@@ -469,6 +498,7 @@ model User {
   humanitarianQueueEntries HumanitarianQueueEntry[] @relation("HumanitarianQueuePatient")
   humanitarianVolunteers   HumanitarianVolunteer[]  @relation("HumanitarianVolunteer")
   humanitarianIntakes        HumanitarianIntake[]     @relation("HumanitarianIntakePatient")
+  partnerIntakes             PartnerIntake[]          @relation("PartnerIntakePatient")
   angelProfile               AngelProfile?
   humanitarianAngels         HumanitarianAngel[]      @relation("HumanitarianAngelUser")
   angelFollowUpsAuthored     HumanitarianAngelFollowUp[] @relation("AngelFollowUpAuthor")
@@ -645,6 +675,12 @@ model PatientProfile {
   adminReviewedById String?
   adminReviewedBy   User?    @relation("PatientProfileReviewedBy", fields: [adminReviewedById], references: [id], onDelete: SetNull)
 
+  // First-touch acquisition (immutable after set at signup)
+  acquisitionChannel    PatientAcquisitionChannel?
+  acquisitionCampaign   String?
+  acquisitionRecordedAt DateTime?
+  acquisitionReferrer   String?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -655,6 +691,76 @@ model PatientProfile {
   sharedRecords     SharedRecord[]
 
   @@index([userId])
+}
+
+// ─────────────────────────────────────────
+// PARTNER INTAKES (ACURA Brasil / SOS Venezuela)
+// ─────────────────────────────────────────
+
+model PartnerIntake {
+  id                       String              @id @default(cuid())
+  partner                  String              @default("acura")
+  campaign                 String              @default("sos_venezuela")
+  protocolo                String              @unique
+
+  email                    String
+  emailNormalized          String
+  patientUserId            String?
+  patientUser              User?               @relation("PartnerIntakePatient", fields: [patientUserId], references: [id], onDelete: SetNull)
+
+  requesterName            String
+  phoneJson                Json
+
+  patientNameEnc           String?
+  ageEnc                   String?
+  relationship             String
+  location                 String
+  careTypeEnc              String?
+  priorityEnc              String?
+  symptomsEnc              String?
+  notesEnc                 String?
+
+  acuraStatus              PartnerIntakeStatus @default(NOVA)
+  triageNotes              String?
+  assignedVolunteerLabel   String?
+  referralSource           String?
+
+  clickedDoctor8RegisterAt DateTime?
+  clickedDoctor8LoginAt    DateTime?
+  clickedWhatsappHelpAt    DateTime?
+  doctor8RegisteredFlag    Boolean             @default(false)
+  doctor8EmailCheckedAt    DateTime?
+  doctor8EmailStatus       String?
+
+  lgpdPrivacyAccepted      Boolean             @default(false)
+  lgpdPrivacyVersion       String?
+  lgpdPrivacyAt            DateTime?
+
+  submittedAt              DateTime
+  lastSyncedAt             DateTime            @updatedAt
+  createdAt                DateTime            @default(now())
+
+  events                   PartnerIntakeEvent[]
+
+  @@index([emailNormalized])
+  @@index([patientUserId])
+  @@index([acuraStatus])
+  @@index([submittedAt])
+}
+
+model PartnerIntakeEvent {
+  id           String                   @id @default(cuid())
+  intakeId     String
+  intake       PartnerIntake            @relation(fields: [intakeId], references: [id], onDelete: Cascade)
+  type         PartnerIntakeEventType
+  occurredAt   DateTime
+  payload      Json?
+  source       String                   @default("acura")
+  externalId   String?
+  createdAt    DateTime                 @default(now())
+
+  @@unique([intakeId, externalId])
+  @@index([intakeId, occurredAt])
 }
 
 // ─────────────────────────────────────────

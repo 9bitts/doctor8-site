@@ -1,14 +1,24 @@
 "use client";
 
 import {
+  UserPlus,
+  ClipboardCheck,
+  FileCheck,
+  ClipboardList,
   Clock,
-  FileText,
-  CreditCard,
-  AlertTriangle,
-  UserMinus,
   Video,
   PhoneCall,
   XCircle,
+  AlertTriangle,
+  UserMinus,
+  CreditCard,
+  FileText,
+  Globe,
+  RefreshCw,
+  LogIn,
+  MessageCircle,
+  MailCheck,
+  Link2,
 } from "lucide-react";
 
 interface TimelineEvent {
@@ -21,6 +31,10 @@ interface TimelineEvent {
 }
 
 const ICONS: Record<string, typeof Clock> = {
+  account_created: UserPlus,
+  intake_triage_completed: ClipboardCheck,
+  intake_tcle_accepted: FileCheck,
+  intake_anamnese_completed: ClipboardList,
   queue_joined: Clock,
   queue_called: PhoneCall,
   consult_started: Video,
@@ -31,6 +45,13 @@ const ICONS: Record<string, typeof Clock> = {
   video_incident: AlertTriangle,
   admin_removed: UserMinus,
   admin_problem: AlertTriangle,
+  acura_form_submitted: Globe,
+  acura_status_changed: RefreshCw,
+  acura_clicked_doctor8_register: UserPlus,
+  acura_clicked_doctor8_login: LogIn,
+  acura_clicked_whatsapp: MessageCircle,
+  acura_doctor8_email_verified: MailCheck,
+  acura_patient_linked: Link2,
 };
 
 export default function PatientTimeline({ events }: { events: TimelineEvent[] }) {

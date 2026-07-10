@@ -5,7 +5,9 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
 import AdminAccountActions from "@/components/admin/AdminAccountActions";
-import PatientStatusBadge, { OriginBadge } from "@/components/admin/patients/PatientStatusBadge";
+import PatientStatusBadge, { AcquisitionBadge } from "@/components/admin/patients/PatientStatusBadge";
+import PatientJourneyStepper from "@/components/admin/patients/PatientJourneyStepper";
+import AcuraIntakePanel from "@/components/admin/patients/AcuraIntakePanel";
 import PatientLiveStatusPanel from "@/components/admin/patients/PatientLiveStatusPanel";
 import PatientTimeline from "@/components/admin/patients/PatientTimeline";
 import PatientConsultationsList from "@/components/admin/patients/PatientConsultationsList";
@@ -103,10 +105,13 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
           <div>
             <h1 className="text-xl font-bold text-slate-900">{patient.name}</h1>
             <p className="text-sm text-slate-500 mt-1">{patient.email}</p>
+            {patient.acuraIntake && (
+              <p className="text-xs text-violet-600 font-mono mt-1">{patient.acuraIntake.protocolo}</p>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <PatientStatusBadge status={patient.status} detail={patient.statusDetail} />
-            <OriginBadge origin={patient.origin} />
+            <AcquisitionBadge channel={patient.acquisitionChannel} />
             {patient.adminReviewedAt && (
               <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
                 <CheckCircle2 size={12} /> Conferido
@@ -166,6 +171,18 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
         )}
       </div>
 
+      <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-800">Jornada do paciente</h2>
+          {patient.acquisitionReferrer && (
+            <span className="text-xs text-slate-400 truncate max-w-xs" title={patient.acquisitionReferrer}>
+              Entrada: {patient.acquisitionReferrer}
+            </span>
+          )}
+        </div>
+        <PatientJourneyStepper steps={patient.journey.steps} currentStep={patient.journey.currentStep} />
+      </section>
+
       <PatientLiveStatusPanel
         activeQueue={patient.activeQueue}
         liveConsult={patient.liveConsult}
@@ -181,6 +198,8 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
         providerTab={patient.liveConsult?.providerTab ?? null}
         onActionDone={() => load(true)}
       />
+
+      {patient.acuraIntake && <AcuraIntakePanel intake={patient.acuraIntake} />}
 
       <PatientAnamnesePanel anamnese={patient.anamnese} />
 

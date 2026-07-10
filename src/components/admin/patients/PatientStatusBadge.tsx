@@ -1,6 +1,7 @@
 "use client";
 
 import type { PatientMonitorStatus } from "@/lib/admin/patient-monitoring";
+import type { PatientAcquisitionChannel } from "@prisma/client";
 
 const STATUS_CONFIG: Record<
   PatientMonitorStatus,
@@ -47,15 +48,42 @@ export default function PatientStatusBadge({
 }
 
 export function OriginBadge({ origin }: { origin: "humanitarian" | "regular" }) {
+  return <AcquisitionBadge channel={origin === "humanitarian" ? "DOCTOR8_HUMANITARIAN" : "REGULAR"} />;
+}
+
+const ACQUISITION_CONFIG: Record<
+  PatientAcquisitionChannel,
+  { label: string; className: string }
+> = {
+  ACURA_SOS_FORM: {
+    label: "ACURA → Doctor8",
+    className: "bg-violet-50 text-violet-700 border border-violet-100",
+  },
+  DOCTOR8_SOS_LANDING: {
+    label: "SOS Doctor8",
+    className: "bg-sky-50 text-sky-700 border border-sky-100",
+  },
+  DOCTOR8_HUMANITARIAN: {
+    label: "Humanitário D8",
+    className: "bg-brand-50 text-brand-600 border border-brand-100",
+  },
+  REGULAR: {
+    label: "Regular",
+    className: "bg-slate-50 text-slate-500 border border-slate-100",
+  },
+};
+
+export function AcquisitionBadge({
+  channel,
+}: {
+  channel: PatientAcquisitionChannel;
+}) {
+  const cfg = ACQUISITION_CONFIG[channel];
   return (
     <span
-      className={`text-xs font-medium px-2 py-0.5 rounded-md ${
-        origin === "humanitarian"
-          ? "bg-brand-50 text-brand-600 border border-brand-100"
-          : "bg-slate-50 text-slate-500 border border-slate-100"
-      }`}
+      className={`text-xs font-medium px-2 py-0.5 rounded-md ${cfg.className}`}
     >
-      {origin === "humanitarian" ? "Humanitario" : "Regular"}
+      {cfg.label}
     </span>
   );
 }
