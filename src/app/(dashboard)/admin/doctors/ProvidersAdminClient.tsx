@@ -763,7 +763,7 @@ export default function ProvidersAdminClient() {
               verifyingEmailUserId={verifyingEmailUserId}
               onAct={actAngel}
               onVerifyEmail={verifyUserEmail}
-          onResetPassword={resetUserPassword}
+              onResetPassword={resetUserPassword}
             />
           )}
           {filteredProfessionals.length > 0 && (
@@ -778,7 +778,7 @@ export default function ProvidersAdminClient() {
                 toggleVolunteerScheduledApproval(row, approved, "health")
               }
               onVerifyEmail={verifyUserEmail}
-          onResetPassword={resetUserPassword}
+              onResetPassword={resetUserPassword}
               courseCreatorBusyUserId={courseCreatorBusyUserId}
               onToggleCourseCreator={toggleCourseCreator}
             />
@@ -794,7 +794,7 @@ export default function ProvidersAdminClient() {
                 toggleVolunteerScheduledApproval(row, approved, "psychoanalyst")
               }
               onVerifyEmail={verifyUserEmail}
-          onResetPassword={resetUserPassword}
+              onResetPassword={resetUserPassword}
               courseCreatorBusyUserId={courseCreatorBusyUserId}
               onToggleCourseCreator={toggleCourseCreator}
             />
@@ -810,7 +810,7 @@ export default function ProvidersAdminClient() {
                 toggleVolunteerScheduledApproval(row, approved, "integrative")
               }
               onVerifyEmail={verifyUserEmail}
-          onResetPassword={resetUserPassword}
+              onResetPassword={resetUserPassword}
               courseCreatorBusyUserId={courseCreatorBusyUserId}
               onToggleCourseCreator={toggleCourseCreator}
             />
@@ -827,12 +827,14 @@ function AngelList({
   verifyingEmailUserId,
   onAct,
   onVerifyEmail,
+  onResetPassword,
 }: {
   rows: AngelRow[];
   actingAngel: string | null;
   verifyingEmailUserId: string | null;
   onAct: (userId: string, action: "approve" | "reject") => void;
   onVerifyEmail: (userId: string) => void;
+  onResetPassword: (userId: string) => void;
 }) {
   const { lang, t } = useI18n();
   const locale = localeOf(lang);
@@ -920,6 +922,14 @@ function AngelList({
                   {t("admin.providers.verifyEmail")}
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => onResetPassword(a.userId)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+              >
+                <KeyRound size={14} />
+                {t("admin.account.resetPassword")}
+              </button>
               {a.approvalStatus === "PENDING" && (
                 <div className="flex gap-2 shrink-0">
                   <button
