@@ -12,6 +12,7 @@ import { getProfessionLabel } from "@/lib/professions";
 import PatientEmissionAlertsPanel from "@/components/patient/PatientEmissionAlertsPanel";
 import PatientPharmacySearchPanel from "@/components/patient/PatientPharmacySearchPanel";
 import PatientPharmacyBuyPanel from "@/components/patient/PatientPharmacyBuyPanel";
+import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 import {
   FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw,
   ShieldCheck, Clock, XCircle, MessageCircle, Search, ShoppingBag,
@@ -51,6 +52,7 @@ export default function PatientPrescriptionsPage() {
   const [activeSearchMeds, setActiveSearchMeds] = useState<MedItem[]>([]);
   const [activeBuyPrescriptionId, setActiveBuyPrescriptionId] = useState<string | null>(null);
   const [searchPrescriptionId, setSearchPrescriptionId] = useState<string | undefined>();
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -58,7 +60,7 @@ export default function PatientPrescriptionsPage() {
     setLoading(true);
     setLoadError(false);
     try {
-      const res = await fetch("/api/patient/prescriptions");
+      const res = await fetch("/api/patient/prescriptions", { credentials: "same-origin" });
       if (!res.ok) { setLoadError(true); return; }
       const d = await res.json();
       setPrescriptions(d.prescriptions || []);
@@ -72,6 +74,17 @@ export default function PatientPrescriptionsPage() {
 
   function canUsePharmacy(p: RxItem): boolean {
     return !p.isExpired && (p.signatureStatus === "SIGNED" || p.hasSignedPdf);
+  }
+
+  async function downloadPdf(prescriptionId: string) {
+    setDownloadingId(prescriptionId);
+    try {
+      await openAuthenticatedPdf(`/api/patient/prescriptions/${prescriptionId}/pdf`);
+    } catch {
+      /* user can retry */
+    } finally {
+      setDownloadingId(null);
+    }
   }
 
   function focusPharmacySearch(meds: MedItem[], prescriptionId: string) {
@@ -214,13 +227,19 @@ export default function PatientPrescriptionsPage() {
                       </div>
                     )}
                   </div>
-                  <a
-                    href={`/api/patient/prescriptions/${p.id}/pdf`}
-                    target="_blank"
-                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shrink-0"
+                  <button
+                    type="button"
+                    onClick={() => downloadPdf(p.id)}
+                    disabled={downloadingId === p.id}
+                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shrink-0"
                   >
-                    <Download size={14} /> {t("myrx.downloadPDF")}
-                  </a>
+                    {downloadingId === p.id ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Download size={14} />
+                    )}
+                    {t("myrx.downloadPDF")}
+                  </button>
                 </div>
                 {pharmacyReady && activeBuyPrescriptionId === p.id && (
                   <PatientPharmacyBuyPanel

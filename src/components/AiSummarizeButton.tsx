@@ -38,6 +38,7 @@ export default function AiSummarizeButton({
       const res = await fetch("/api/professional/ai-summarize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ documentId, resourceId, lang }),
       });
       const data = await res.json();

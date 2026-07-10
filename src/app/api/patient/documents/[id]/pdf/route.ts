@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
+import { proxyInternalGet } from "@/lib/proxy-internal-get";
 
-/** Patient-scoped alias — forwards to the shared PDF handler (same auth cookies). */
+/** Patient-scoped alias — proxies to the shared PDF handler with the same session. */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } },
@@ -9,8 +10,5 @@ export async function GET(
   const ctx = await requirePatient();
   if (isApiError(ctx)) return ctx.error;
 
-  const target = new URL(`/api/professional/documents/${params.id}/pdf`, req.url);
-  const lang = req.nextUrl.searchParams.get("lang");
-  if (lang) target.searchParams.set("lang", lang);
-  return NextResponse.redirect(target);
+  return proxyInternalGet(req, `/api/professional/documents/${params.id}/pdf`);
 }

@@ -788,7 +788,10 @@ export default function PrescriptionsPage() {
     setSavedEmission(emission);
     if (cfg.skipDigitalSign) {
       setPostSaveStep("deliver");
-    } else if (emission.kind === "prescription" && emission.medications?.length) {
+    } else if (
+      (emission.kind === "prescription" && emission.medications?.length) ||
+      (emission.kind === "exam" && emission.examItems?.length)
+    ) {
       setPostSaveStep("review");
     } else {
       setPostSaveStep("choose");

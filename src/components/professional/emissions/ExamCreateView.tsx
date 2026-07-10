@@ -70,6 +70,7 @@ export function ExamCreateView({
       const res = await fetch("/api/professional/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           patientRecordId: selectedPatient.id,
           type: "EXAM_REQUEST",
@@ -87,6 +88,8 @@ export function ExamCreateView({
           id: data.id,
           patient: selectedPatient,
           label: title,
+          examItems: cleanItems,
+          examNotes: notes,
         });
       } else {
         const d = await res.json().catch(() => ({}));

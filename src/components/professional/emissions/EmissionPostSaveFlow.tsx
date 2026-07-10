@@ -7,6 +7,7 @@ import {
 import { EmissionsSignModal, type EmissionKind, type SignTarget } from "./EmissionsSignModal";
 import WhatsappDeliverButton from "./WhatsappDeliverButton";
 import Doctor8DeliverButton from "./Doctor8DeliverButton";
+import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 import type { Chart } from "./types";
 
 export interface ReviewMedication {
@@ -24,6 +25,8 @@ export interface SavedEmission {
   label: string;
   medications?: ReviewMedication[];
   instructions?: string;
+  examItems?: string[];
+  examNotes?: string;
 }
 
 interface EmissionPostSaveFlowProps {
@@ -60,6 +63,7 @@ export function EmissionPostSaveFlow({
   const [whatsappStatus, setWhatsappStatus] = useState("");
   const [patientHasPhone, setPatientHasPhone] = useState(true);
   const [doctor8Delivered, setDoctor8Delivered] = useState(initialStep === "success" && !!initialShareUrl);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const patient = emission.patient;
   const savedTitleKey =
@@ -76,6 +80,7 @@ export function EmissionPostSaveFlow({
       const res = await fetch(`${apiBase}/emissions/deliver`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           kind: deliverKind,
           id: emission.id,
@@ -120,6 +125,7 @@ export function EmissionPostSaveFlow({
       const res = await fetch(`${apiBase}/records/${patient.id}/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ language: lang }),
       });
       if (res.ok) setInviteSent(true);
@@ -143,16 +149,32 @@ export function EmissionPostSaveFlow({
   }
 
   if (step === "review") {
-    const pdfUrl = `${apiBase}/prescriptions/${emission.id}/pdf`;
+    const pdfUrl = emission.kind === "prescription"
+      ? `${apiBase}/prescriptions/${emission.id}/pdf?lang=${lang}`
+      : `${apiBase}/documents/${emission.id}/pdf?lang=${lang}`;
+    const reviewTitle = emission.kind === "exam" ? t("rx.review.examTitle") : t("rx.review.title");
+    const reviewSubtitle = emission.kind === "exam" ? t("rx.review.examSubtitle") : t("rx.review.subtitle");
+
+    async function previewPdf() {
+      setPdfLoading(true);
+      try {
+        await openAuthenticatedPdf(pdfUrl);
+      } catch {
+        /* user can retry */
+      } finally {
+        setPdfLoading(false);
+      }
+    }
+
     return (
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
         <div className="flex flex-col items-center text-center">
           <div className="w-14 h-14 rounded-full bg-brand-100 flex items-center justify-center mb-3">
             <FileText size={28} className="text-brand-500" />
           </div>
-          <p className="font-bold text-slate-900 text-lg">{t("rx.review.title")}</p>
+          <p className="font-bold text-slate-900 text-lg">{reviewTitle}</p>
           <p className="text-slate-500 text-sm mt-1">{patient.firstName} {patient.lastName}</p>
-          <p className="text-xs text-slate-400 mt-2 max-w-sm">{t("rx.review.subtitle")}</p>
+          <p className="text-xs text-slate-400 mt-2 max-w-sm">{reviewSubtitle}</p>
         </div>
 
         {emission.medications && emission.medications.length > 0 && (
@@ -176,6 +198,19 @@ export function EmissionPostSaveFlow({
           </div>
         )}
 
+        {emission.examItems && emission.examItems.length > 0 && (
+          <div className="bg-slate-50 rounded-xl p-4 space-y-2">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("rx.examItems")}</p>
+            <ul className="space-y-2">
+              {emission.examItems.map((item, i) => (
+                <li key={i} className="text-sm text-slate-700 border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {emission.instructions && (
           <div className="bg-slate-50 rounded-xl p-4">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t("rx.review.instructions")}</p>
@@ -183,14 +218,22 @@ export function EmissionPostSaveFlow({
           </div>
         )}
 
-        <a
-          href={pdfUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition flex items-center justify-center gap-2"
+        {emission.examNotes && (
+          <div className="bg-slate-50 rounded-xl p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t("rx.examNotes")}</p>
+            <p className="text-sm text-slate-700 whitespace-pre-wrap">{emission.examNotes}</p>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => void previewPdf()}
+          disabled={pdfLoading}
+          className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60 text-slate-700 font-semibold text-sm transition flex items-center justify-center gap-2"
         >
-          <FileText size={16} /> {t("rx.review.previewPdf")}
-        </a>
+          {pdfLoading ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+          {t("rx.review.previewPdf")}
+        </button>
 
         <button
           type="button"
