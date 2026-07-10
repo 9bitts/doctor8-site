@@ -36,7 +36,6 @@ import ClinicalCalculators from "@/components/professional/ClinicalCalculators";
 import NutritionPatientChartPanel from "@/components/nutritionist/NutritionPatientChartPanel";
 import NursePatientChartPanel from "@/components/nurse/NursePatientChartPanel";
 import PharmacistPatientChartPanel from "@/components/pharmacist/PharmacistPatientChartPanel";
-import ChartSharePanel from "@/components/professional/ChartSharePanel";
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
 import CategorySearchSelect from "@/components/professional/CategorySearchSelect";
 import { openAuthenticatedPdf, openAuthenticatedBlob } from "@/lib/open-url-safely";
