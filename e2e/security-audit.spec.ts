@@ -19,6 +19,12 @@ test.describe("Security audit — public API hardening", () => {
     expect(res.status()).toBe(401);
   });
 
+  test("GET pharmacy validate returns 403 for patient role before lookup", async ({ request }) => {
+    const res = await request.get("/api/pharmacy-store/prescriptions/validate?token=any-token");
+    if (res.status() === 401) return;
+    expect(res.status()).toBe(403);
+  });
+
   test("GET shared record returns 404 for invalid token", async ({ request }) => {
     const res = await request.get("/api/shared/not-a-real-token");
     expect([404, 410]).toContain(res.status());

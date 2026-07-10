@@ -57,7 +57,7 @@ jobs:
         run: npm ci
 
       - name: Security lib checks
-        run: npm run test:security-libs
+        run: npm run test:security-libs && npm run verify:api-roles
 
       - name: Sync database schema
         run: npx prisma migrate deploy

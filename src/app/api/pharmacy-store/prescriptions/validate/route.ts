@@ -23,18 +23,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "token obrigatório" }, { status: 400 });
   }
 
+  const pharmacyStoreId = req.nextUrl.searchParams.get("pharmacyStoreId")?.trim();
+  const authz = await authorizePharmacyPrescriptionValidate(session.user.id, session.user.role, {
+    pharmacyStoreId: pharmacyStoreId || null,
+    rowPharmacyStoreId: null,
+  });
+  if (!authz.ok) {
+    return NextResponse.json({ error: authz.error }, { status: authz.status });
+  }
+
   const row = await lookupPrescriptionByToken(token);
   if (!row) {
     return NextResponse.json({ error: "Receita não encontrada" }, { status: 404 });
   }
 
-  const pharmacyStoreId = req.nextUrl.searchParams.get("pharmacyStoreId")?.trim();
-  const authz = await authorizePharmacyPrescriptionValidate(session.user.id, session.user.role, {
+  const storeAuthz = await authorizePharmacyPrescriptionValidate(session.user.id, session.user.role, {
     pharmacyStoreId: pharmacyStoreId || null,
     rowPharmacyStoreId: row.pharmacyStoreId,
   });
-  if (!authz.ok) {
-    return NextResponse.json({ error: authz.error }, { status: authz.status });
+  if (!storeAuthz.ok) {
+    return NextResponse.json({ error: storeAuthz.error }, { status: storeAuthz.status });
   }
 
   const rx = row.prescription;
@@ -77,17 +85,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "token obrigatório" }, { status: 400 });
   }
 
+  const authz = await authorizePharmacyPrescriptionValidate(session.user.id, session.user.role, {
+    pharmacyStoreId: pharmacyStoreId || null,
+    rowPharmacyStoreId: null,
+  });
+  if (!authz.ok) {
+    return NextResponse.json({ error: authz.error }, { status: authz.status });
+  }
+
   const row = await lookupPrescriptionByToken(token);
   if (!row || row.status === "DISPENSED") {
     return NextResponse.json({ error: "Receita inválida ou já dispensada" }, { status: 400 });
   }
 
-  const authz = await authorizePharmacyPrescriptionValidate(session.user.id, session.user.role, {
+  const storeAuthz = await authorizePharmacyPrescriptionValidate(session.user.id, session.user.role, {
     pharmacyStoreId: pharmacyStoreId || null,
     rowPharmacyStoreId: row.pharmacyStoreId,
   });
-  if (!authz.ok) {
-    return NextResponse.json({ error: authz.error }, { status: authz.status });
+  if (!storeAuthz.ok) {
+    return NextResponse.json({ error: storeAuthz.error }, { status: storeAuthz.status });
   }
 
   const storeId = pharmacyStoreId || row.pharmacyStoreId;

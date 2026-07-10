@@ -8,6 +8,7 @@ export function encryptOAuthToken(token: string | null | undefined): string | nu
 
 export function decryptOAuthToken(stored: string | null | undefined): string | null {
   if (!stored) return null;
+  // Legacy plaintext tokens (pre-encryption) are returned as-is when decrypt fails.
   try {
     return decrypt(stored);
   } catch {

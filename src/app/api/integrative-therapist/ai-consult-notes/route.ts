@@ -1,29 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { db } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
-import { transcribeAudio, isTranscribeConfigured } from "@/lib/ai-transcribe";
-import { generateConsultEvolution } from "@/lib/ai-consult-notes";
-import { normalizeLang, Lang } from "@/lib/i18n/translations";
+import { normalizeLang } from "@/lib/i18n/translations";
 import { requireIntegrativeTherapist, safeDecrypt } from "@/lib/integrative-therapist-api";
 import { saveIntegrativeSessionNote } from "@/lib/save-integrative-session-note";
+import {
+  aiConsultNotesStatusPayload,
+  buildAiConsultSummary,
+  mapAiConsultNotesError,
+  parseAiConsultNotesRequest,
+  resolveAiConsultTranscript,
+} from "@/lib/ai-consult-notes-request";
 
-function evolutionTitle(lang: Lang): string {
-  if (lang === "pt") return "Evolu\u00e7\u00e3o \u2014 consulta integrativa";
-  if (lang === "es") return "Evoluci\u00f3n \u2014 consulta integrativa";
-  return "Evolution \u2014 integrative consult";
+function evolutionTitle(lang: "pt" | "en" | "es"): string {
+  if (lang === "pt") return "Evolução — consulta integrativa";
+  if (lang === "es") return "Evolución — consulta integrativa";
+  return "Evolution — integrative consult";
 }
-
-const jsonSchema = z.object({
-  consent: z.literal(true),
-  transcript: z.string().min(1).optional(),
-  lang: z.enum(["pt", "en", "es"]).optional(),
-  integrativeClientRecordId: z.string().optional(),
-  appointmentId: z.string().optional(),
-  practiceSlug: z.string().optional(),
-  saveToChart: z.boolean().optional(),
-});
 
 async function verifyClient(therapistId: string, clientRecordId: string) {
   return db.integrativeClientRecord.findFirst({
@@ -43,68 +37,15 @@ export async function POST(req: NextRequest) {
       select: { language: true },
     });
 
-    const contentType = req.headers.get("content-type") || "";
-    let lang: Lang = normalizeLang(user?.language);
-    let integrativeClientRecordId: string | undefined;
-    let appointmentId: string | undefined;
-    let practiceSlug: string | undefined;
-    let transcript: string | undefined;
-    let saveToChart = false;
-    let audioBuffer: Buffer | null = null;
-    let audioMime = "audio/webm";
-
-    if (contentType.includes("multipart/form-data")) {
-      const form = await req.formData();
-      if (form.get("consent") !== "true") {
-        return NextResponse.json({ error: "CONSENT_REQUIRED" }, { status: 400 });
-      }
-
-      const langRaw = form.get("lang");
-      if (typeof langRaw === "string" && ["pt", "en", "es"].includes(langRaw)) {
-        lang = langRaw as Lang;
-      }
-
-      const clientId = form.get("integrativeClientRecordId");
-      if (typeof clientId === "string" && clientId) integrativeClientRecordId = clientId;
-
-      const apptId = form.get("appointmentId");
-      if (typeof apptId === "string" && apptId) appointmentId = apptId;
-
-      const practice = form.get("practiceSlug");
-      if (typeof practice === "string" && practice) practiceSlug = practice;
-
-      const transcriptField = form.get("transcript");
-      if (typeof transcriptField === "string" && transcriptField.trim()) {
-        transcript = transcriptField.trim();
-      }
-
-      if (form.get("saveToChart") === "true") saveToChart = true;
-
-      const audio = form.get("audio");
-      if (audio instanceof File && audio.size > 0) {
-        if (audio.size > 25 * 1024 * 1024) {
-          return NextResponse.json({ error: "AUDIO_TOO_LARGE" }, { status: 400 });
-        }
-        audioBuffer = Buffer.from(await audio.arrayBuffer());
-        audioMime = audio.type || "audio/webm";
-      }
-    } else {
-      const body = await req.json();
-      const parsed = jsonSchema.safeParse(body);
-      if (!parsed.success) {
-        return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-      }
-      lang = normalizeLang(parsed.data.lang || lang);
-      integrativeClientRecordId = parsed.data.integrativeClientRecordId;
-      appointmentId = parsed.data.appointmentId;
-      practiceSlug = parsed.data.practiceSlug;
-      transcript = parsed.data.transcript;
-      saveToChart = !!parsed.data.saveToChart;
-    }
+    const input = await parseAiConsultNotesRequest(req, {
+      defaultLang: normalizeLang(user?.language),
+      recordFieldName: "integrativeClientRecordId",
+      includePracticeSlug: true,
+    });
 
     let clientRecord: Awaited<ReturnType<typeof verifyClient>> = null;
-    if (integrativeClientRecordId) {
-      clientRecord = await verifyClient(therapist.id, integrativeClientRecordId);
+    if (input.recordId) {
+      clientRecord = await verifyClient(therapist.id, input.recordId);
       if (!clientRecord) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -112,49 +53,34 @@ export async function POST(req: NextRequest) {
       userId: therapist.userId,
       action: AuditAction.CREATE_RECORD,
       resource: "ConsultNotesConsent",
-      resourceId: integrativeClientRecordId || appointmentId || therapist.id,
+      resourceId: input.recordId || input.appointmentId || therapist.id,
       details: {
-        appointmentId,
-        hasAudio: !!audioBuffer,
-        hasTranscript: !!transcript,
+        appointmentId: input.appointmentId,
+        hasAudio: !!input.audioBuffer,
+        hasTranscript: !!input.transcript,
         provider: "integrative_therapist",
       },
     });
 
-    let patientName: string | null = null;
-    if (clientRecord) {
-      patientName = `${safeDecrypt(clientRecord.firstName)} ${safeDecrypt(clientRecord.lastName)}`.trim();
-    }
+    const patientName = clientRecord
+      ? `${safeDecrypt(clientRecord.firstName)} ${safeDecrypt(clientRecord.lastName)}`.trim()
+      : null;
 
-    if (!transcript && audioBuffer) {
-      if (!isTranscribeConfigured()) {
-        return NextResponse.json({ error: "TRANSCRIBE_NOT_CONFIGURED" }, { status: 503 });
-      }
-      transcript = await transcribeAudio(audioBuffer, audioMime, lang);
-    }
-
-    if (!transcript?.trim()) {
-      return NextResponse.json({ error: "NO_TRANSCRIPT" }, { status: 400 });
-    }
-
-    const summary = await generateConsultEvolution({
-      lang,
-      transcript,
-      patientName,
-    });
+    const transcript = await resolveAiConsultTranscript(input);
+    const summary = await buildAiConsultSummary(input.lang, transcript, patientName);
 
     let documentId: string | undefined;
-    if (saveToChart) {
-      if (!integrativeClientRecordId) {
+    if (input.saveToChart) {
+      if (!input.recordId) {
         return NextResponse.json({ error: "NO_CLIENT_RECORD" }, { status: 400 });
       }
       const doc = await saveIntegrativeSessionNote({
         integrativeTherapistId: therapist.id,
-        integrativeClientRecordId,
+        integrativeClientRecordId: input.recordId,
         content: summary,
-        practiceSlug: practiceSlug || clientRecord?.mainPractice,
-        title: evolutionTitle(lang),
-        appointmentId,
+        practiceSlug: input.practiceSlug || clientRecord?.mainPractice,
+        title: evolutionTitle(input.lang),
+        appointmentId: input.appointmentId,
       });
       documentId = doc.id;
     }
@@ -162,20 +88,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ transcript, summary, saved: !!documentId, documentId });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (msg === "AI_NOT_CONFIGURED" || msg === "TRANSCRIBE_NOT_CONFIGURED") {
-      return NextResponse.json({ error: msg }, { status: 503 });
+    if (msg === "INVALID_REQUEST") {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
-    if (msg === "NO_TRANSCRIPT" || msg === "TRANSCRIBE_EMPTY") {
-      return NextResponse.json({ error: msg }, { status: 400 });
+    const mapped = mapAiConsultNotesError(msg);
+    if (mapped.status !== 500) {
+      return NextResponse.json({ error: mapped.error }, { status: mapped.status });
     }
     console.error("[IT-AI-CONSULT-NOTES]", e);
-    return NextResponse.json({ error: "AI_FAILED" }, { status: 500 });
+    return NextResponse.json({ error: mapped.error }, { status: mapped.status });
   }
 }
 
 export async function GET() {
-  return NextResponse.json({
-    transcribeConfigured: isTranscribeConfigured(),
-    summarizeConfigured: !!process.env.ANTHROPIC_API_KEY,
-  });
+  return NextResponse.json(aiConsultNotesStatusPayload());
 }
