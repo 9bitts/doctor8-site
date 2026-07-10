@@ -39,7 +39,9 @@ export default function ReferralPanel({ chartId, presetSpecialty }: Props) {
       const params = new URLSearchParams();
       if (q.trim().length >= 2) params.set("q", q.trim());
       if (specialty) params.set("specialty", specialty);
-      const res = await fetch(`/api/professional/search-pros?${params}`);
+      const res = await fetch(`/api/professional/search-pros?${params}`, {
+        credentials: "same-origin",
+      });
       const data = await res.json();
       setResults(data.professionals || []);
     } catch {
@@ -62,6 +64,7 @@ export default function ReferralPanel({ chartId, presetSpecialty }: Props) {
       const res = await fetch(`/api/professional/patients/${chartId}/referral`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ targetProfessionalId, note: note.trim() || undefined }),
       });
       const data = await res.json();

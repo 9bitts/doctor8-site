@@ -64,7 +64,9 @@ export async function POST(
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
-  const bookingUrl = `${appUrl}/patient/appointments?pro=${target.id}&providerType=health&from=referral`;
+  const bookingPath = `/patient/appointments?pro=${target.id}&providerType=health&from=referral`;
+  const bookingUrl = `${appUrl}${bookingPath}`;
+  const chartPath = `/professional/patients/${chart.id}`;
 
   const patientName = `${safeDecrypt(chart.firstName)} ${safeDecrypt(chart.lastName)}`.trim();
   const referrerName = `Dr. ${professional.firstName} ${professional.lastName}`;
@@ -75,7 +77,7 @@ export async function POST(
     `Encaminhamento de ${referrerName} para ${targetName} (${target.specialty}).`,
     patientName ? `Paciente: ${patientName}` : null,
     note ? `\nObservações:\n${note}` : null,
-    `\nLink de agendamento:\n${bookingUrl}`,
+    `\nLink de agendamento:\n${bookingPath}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -96,7 +98,7 @@ export async function POST(
         senderId: ctx.userId,
         receiverId: chart.linkedUserId,
         content: encrypt(
-          `📋 ${referrerName} indicou ${targetName} (${target.specialty}).\nAgende sua consulta:\n${bookingUrl}`,
+          `📋 ${referrerName} indicou ${targetName} (${target.specialty}).\nAgende sua consulta:\n${bookingPath}`,
         ),
       },
     });
@@ -113,7 +115,7 @@ export async function POST(
         chartId: chart.id,
         targetProfessionalId: target.id,
         bookingUrl,
-        link: `/patient/appointments?pro=${target.id}&providerType=health&from=referral`,
+        link: bookingPath,
         titleKey: "notif.referral.title",
         bodyKey: "notif.referral.body",
         bodyParams: { doctor: referrerName, specialty: target.specialty },
@@ -132,7 +134,8 @@ export async function POST(
             `📋 Encaminhamento de ${referrerName}.`,
             patientName ? `Paciente: ${patientName}` : null,
             note ? `\nObservações:\n${note}` : null,
-            `\nAgendamento do paciente:\n${bookingUrl}`,
+            `\nFicha do paciente:\n${chartPath}`,
+            `\nAgendamento do paciente:\n${bookingPath}`,
           ]
             .filter(Boolean)
             .join("\n"),
@@ -152,7 +155,7 @@ export async function POST(
       data: {
         chartId: chart.id,
         fromUserId: ctx.userId,
-        link: `/professional/messages?with=${ctx.userId}`,
+        link: chartPath,
         titleKey: "notif.referralColleague.title",
         bodyKey: "notif.referralColleague.body",
         bodyParams: { doctor: referrerName, patient: patientName || "Paciente" },

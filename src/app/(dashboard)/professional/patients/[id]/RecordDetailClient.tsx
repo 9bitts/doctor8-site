@@ -7,7 +7,7 @@
 // P1-b: edit the chart's registration data (birth, sex, cpf, address) used by the prescription.
 // P2: "Diagnóstico / Título" label (trilíngue) + botão WhatsApp no cabeçalho da ficha.
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -367,6 +367,7 @@ export default function RecordDetailClient({
   const [pendingDraft, setPendingDraft] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [voicePrefillActive, setVoicePrefillActive] = useState(false);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const payload = consumeVoiceFormPrefill("chart_evolution", chart.id);
@@ -444,6 +445,12 @@ export default function RecordDetailClient({
   }, [searchParams, initialDocuments, categoriesLoading, groups]);
 
   useEffect(() => {
+    if (!showForm || !minedImport || editingDoc) return;
+    const timer = window.setTimeout(() => contentRef.current?.focus(), 80);
+    return () => window.clearTimeout(timer);
+  }, [showForm, minedImport, editingDoc]);
+
+  useEffect(() => {
     const tab = searchParams.get("tab") ?? searchParams.get("view");
     const validTabs = new Set([
       "records", "evolution", "diagnoses", "vaccines", "growth", "dental", "audio",
@@ -518,6 +525,25 @@ export default function RecordDetailClient({
 
   function insertCalcText(text: string) {
     setContent((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
+  }
+
+  async function handleMinedFile(file: File | null) {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const trimmed = text.trim();
+      if (!trimmed) {
+        toast.error(t("rec.minedFileEmpty"));
+        return;
+      }
+      setContent(trimmed);
+      if (!title.trim()) {
+        const baseName = file.name.replace(/\.[^.]+$/, "").trim();
+        setTitle(baseName || t("rec.minedDefaultTitle"));
+      }
+    } catch {
+      toast.error(t("rec.minedFileError"));
+    }
   }
 
   function resetForm(clearDraft = false) {
@@ -1728,9 +1754,23 @@ export default function RecordDetailClient({
             <div className="p-5 space-y-4">
               {voicePrefillActive && !editingDoc && <VoicePrefillBanner active />}
               {!editingDoc && minedImport && (
-                <p className="text-xs text-cyan-800 bg-cyan-50 border border-cyan-100 rounded-lg px-3 py-2">
-                  {t("rec.minedHint")}
-                </p>
+                <div className="space-y-2">
+                  <p className="text-xs text-cyan-800 bg-cyan-50 border border-cyan-100 rounded-lg px-3 py-2">
+                    {t("rec.minedHint")}
+                  </p>
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-600 mb-1 block">{t("rec.minedImportFile")}</span>
+                    <input
+                      type="file"
+                      accept=".txt,.json,.csv,text/plain,application/json"
+                      onChange={(e) => {
+                        void handleMinedFile(e.target.files?.[0] ?? null);
+                        e.target.value = "";
+                      }}
+                      className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-cyan-50 file:text-cyan-700 file:text-sm file:font-medium hover:file:bg-cyan-100"
+                    />
+                  </label>
+                </div>
               )}
               {!editingDoc && draftRestored && (
                 <p className="text-xs text-brand-700 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2">
@@ -1828,9 +1868,11 @@ export default function RecordDetailClient({
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">{t("lib.descLabel")}</label>
                 <textarea
+                  ref={contentRef}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  rows={4}
+                  rows={minedImport && !editingDoc ? 10 : 4}
+                  placeholder={minedImport && !editingDoc ? t("rec.minedPlaceholder") : undefined}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-none"
                 />
               </div>

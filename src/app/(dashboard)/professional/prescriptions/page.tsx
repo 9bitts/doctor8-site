@@ -130,7 +130,10 @@ function isMedsFormValid(medications: MedItem[]): boolean {
   return medications.length > 0 && medications.every(isMedItemValid);
 }
 
-function parseBulkMedicationLines(text: string): MedItem[] {
+function parseBulkMedicationLines(
+  text: string,
+  defaultKind: MedItem["itemKind"] = "medication",
+): MedItem[] {
   return text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -143,7 +146,7 @@ function parseBulkMedicationLines(text: string): MedItem[] {
         frequency: parts[2] || "",
         duration: parts[3] || "",
         instructions: parts[4] || "",
-        itemKind: "medication" as const,
+        itemKind: defaultKind,
       };
     });
 }
@@ -383,6 +386,7 @@ export default function PrescriptionsPage() {
   const [floralOnlyMode, setFloralOnlyMode] = useState(false);
   const [voicePrefillActive, setVoicePrefillActive] = useState(false);
   const [bulkPasteText, setBulkPasteText] = useState("");
+  const [freeTextMode, setFreeTextMode] = useState(false);
   const [showBulkPaste, setShowBulkPaste] = useState(false);
 
   useEffect(() => {
@@ -782,6 +786,8 @@ export default function PrescriptionsPage() {
     setSavedEmission(null);
     setPostSaveStep("choose");
     setPostSaveShareUrl("");
+    setFreeTextMode(false);
+    setBulkPasteText("");
   }
 
   function handleEmissionSaved(emission: SavedEmission) {
@@ -963,6 +969,7 @@ export default function PrescriptionsPage() {
   }, [drugQuery, drugCountry, cfg.phytoOnly]);
 
   function addDrug(drug: DrugSearchResult) {
+    setFreeTextMode(false);
     const substance = drug.activeIngredient?.trim() || drug.name;
     setMedications((prev) => [...prev, {
       name: substance,
@@ -985,6 +992,7 @@ export default function PrescriptionsPage() {
   }
 
   function addManual() {
+    setFreeTextMode(false);
     const name = drugQuery.trim();
     setMedications((prev) => [...prev, {
       name: name || "",
@@ -1006,7 +1014,10 @@ export default function PrescriptionsPage() {
   }
 
   function importBulkMedications() {
-    const parsed = parseBulkMedicationLines(bulkPasteText);
+    const parsed = parseBulkMedicationLines(
+      bulkPasteText,
+      freeTextMode ? "device" : "medication",
+    );
     if (parsed.length === 0) {
       setFormError(t("rx.bulkPaste.empty"));
       return;
@@ -1018,6 +1029,7 @@ export default function PrescriptionsPage() {
   }
 
   function startFreeTextPrescription() {
+    setFreeTextMode(true);
     setMedications([{
       name: "",
       dosage: "",
@@ -1033,11 +1045,12 @@ export default function PrescriptionsPage() {
   }
 
   function applyFreeTextPrescription() {
-    const parsed = parseBulkMedicationLines(bulkPasteText);
+    const parsed = parseBulkMedicationLines(bulkPasteText, "device");
     if (parsed.length === 0) {
       setFormError(t("rx.bulkPaste.empty"));
       return;
     }
+    setFreeTextMode(true);
     setMedications(parsed);
     setBulkPasteText("");
     setShowBulkPaste(false);
@@ -1622,7 +1635,9 @@ export default function PrescriptionsPage() {
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="text-sm font-semibold text-slate-800">{t("rx.bulkPaste.title")}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{t("rx.bulkPaste.hint")}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {freeTextMode ? t("rx.bulkPaste.deviceHint") : t("rx.bulkPaste.hint")}
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -1638,7 +1653,7 @@ export default function PrescriptionsPage() {
                       value={bulkPasteText}
                       onChange={(e) => setBulkPasteText(e.target.value)}
                       rows={6}
-                      placeholder={t("rx.bulkPaste.placeholder")}
+                      placeholder={freeTextMode ? t("rx.bulkPaste.devicePlaceholder") : t("rx.bulkPaste.placeholder")}
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-y bg-white"
                     />
                     <div className="flex flex-wrap gap-2">
