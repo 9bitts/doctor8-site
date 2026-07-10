@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Loader2, UserPlus, Copy, CheckCircle2, ChevronLeft } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getProfessionLabel } from "@/lib/professions";
 
 type Props = {
   chartId: string;
@@ -186,14 +187,18 @@ export default function ReferralPanel({ chartId }: Props) {
                     {PROFESSION_GROUP_LABELS[groupKey]?.[langKey] || groupKey}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {specs.map((spec) => (
+                    {[...specs]
+                      .sort((a, b) =>
+                        getProfessionLabel(lang, a).localeCompare(getProfessionLabel(lang, b), langKey),
+                      )
+                      .map((spec) => (
                       <button
                         key={spec}
                         type="button"
                         onClick={() => pickSpecialty(spec)}
                         className="text-xs px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-brand-300 text-slate-700"
                       >
-                        {spec}
+                        {getProfessionLabel(lang, spec)}
                       </button>
                     ))}
                   </div>
@@ -212,7 +217,7 @@ export default function ReferralPanel({ chartId }: Props) {
             onClick={() => { setStep("specialty"); setSelectedSpecialty(""); setResults([]); }}
             className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
           >
-            <ChevronLeft size={14} /> {selectedSpecialty}
+            <ChevronLeft size={14} /> {getProfessionLabel(lang, selectedSpecialty)}
           </button>
           <input
             type="text"
@@ -237,7 +242,7 @@ export default function ReferralPanel({ chartId }: Props) {
                   className="w-full text-left px-3 py-2 rounded-lg bg-white border border-slate-100 hover:border-brand-200 text-sm"
                 >
                   <span className="font-medium text-slate-800">{pro.name}</span>
-                  <span className="text-xs text-slate-500 block">{pro.specialty}</span>
+                  <span className="text-xs text-slate-500 block">{getProfessionLabel(lang, pro.specialty)}</span>
                 </button>
               ))}
             </div>
