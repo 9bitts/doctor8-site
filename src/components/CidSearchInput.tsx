@@ -64,31 +64,39 @@ export default function CidSearchInput({ value, onChange, required, onOpenChange
       return;
     }
     const seq = ++requestSeq.current;
+    const controller = new AbortController();
     setLoading(true);
     setFetchError("");
     setOpen(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/cid/search?q=${encodeURIComponent(query.trim())}`);
+        const res = await fetch(
+          `/api/cid/search?q=${encodeURIComponent(query.trim())}`,
+          { signal: controller.signal },
+        );
         const data = await res.json();
         if (seq !== requestSeq.current) return;
         if (!res.ok) {
           setResults([]);
           setFetchError(data.error || lt("noResults"));
-          setOpen(true);
           return;
         }
         setResults(data.results || []);
-        setOpen(true);
-      } catch {
+      } catch (err) {
         if (seq !== requestSeq.current) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
         setResults([]);
         setFetchError(lt("noResults"));
-        setOpen(true);
+      } finally {
+        if (seq === requestSeq.current) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     }, 280);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      controller.abort();
+    };
   }, [query]);
 
   if (value) {

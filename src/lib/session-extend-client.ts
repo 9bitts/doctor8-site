@@ -5,7 +5,9 @@ import type { Session } from "next-auth";
 type SessionUpdate = (data?: { activityActive?: boolean }) => Promise<Session | null>;
 
 let lastClientExtendAt = 0;
-const CLIENT_EXTEND_DEBOUNCE_MS = 30_000;
+let lastNavigationExtendAt = 0;
+const CLIENT_EXTEND_DEBOUNCE_MS = 10_000;
+const NAVIGATION_EXTEND_DEBOUNCE_MS = 5_000;
 
 /** Sliding HIPAA window — call before writes (save prescription, document, etc.). */
 export async function extendSessionForWrite(update: SessionUpdate): Promise<void> {
@@ -21,6 +23,15 @@ export async function extendSessionForWrite(update: SessionUpdate): Promise<void
 export function extendSessionOnActivity(update: SessionUpdate): void {
   const now = Date.now();
   if (now - lastClientExtendAt < CLIENT_EXTEND_DEBOUNCE_MS) return;
+  lastClientExtendAt = now;
+  void update({ activityActive: true }).catch(() => {});
+}
+
+/** Extend on dashboard navigation — bypasses the activity debounce. */
+export function extendSessionOnNavigation(update: SessionUpdate): void {
+  const now = Date.now();
+  if (now - lastNavigationExtendAt < NAVIGATION_EXTEND_DEBOUNCE_MS) return;
+  lastNavigationExtendAt = now;
   lastClientExtendAt = now;
   void update({ activityActive: true }).catch(() => {});
 }

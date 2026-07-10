@@ -4,6 +4,12 @@ export const SESSION_MAX_AGE_SECONDS = parseInt(
   10,
 );
 
+/** How often the client polls /api/auth/session (mirror SESSION_UPDATE_AGE_SECONDS). */
+export const SESSION_UPDATE_AGE_SECONDS = parseInt(
+  process.env.NEXT_PUBLIC_SESSION_UPDATE_AGE_SECONDS || "60",
+  10,
+);
+
 /** Countdown shown in the warning modal before auto-logout. */
 export const INACTIVITY_WARNING_SECONDS = 60;
 

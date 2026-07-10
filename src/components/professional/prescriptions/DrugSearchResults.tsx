@@ -27,17 +27,19 @@ interface DrugSearchResultsProps {
   results: DrugSearchResult[];
   onSelect: (drug: DrugSearchResult) => void;
   controlInfo: (type: string | null | undefined) => ControlInfo;
+  className?: string;
 }
 
 export default function DrugSearchResults({
   results,
   onSelect,
   controlInfo,
+  className,
 }: DrugSearchResultsProps) {
   if (results.length === 0) return null;
 
   return (
-    <div className="border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 max-h-56 overflow-y-auto">
+    <div className={`border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 overflow-y-auto ${className ?? "max-h-56"}`}>
       {results.map((drug) => {
         const ci = controlInfo(drug.prescriptionType);
         const showIngredient = drug.activeIngredient.trim().toLowerCase() !== drug.name.trim().toLowerCase();

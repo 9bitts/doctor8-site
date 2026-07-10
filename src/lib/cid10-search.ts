@@ -1,28 +1,41 @@
 // In-memory CID-10 search (Brazilian DATASUS catalog in scripts/cid10-catalog-data.js).
 // Used by /api/cid/search so diagnosis lookup works without a seeded DB table.
 
-import { createRequire } from "module";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { db } from "@/lib/db";
 
 type CidEntry = { code: string; description: string; source?: string };
 
 let catalog: CidEntry[] | null = null;
 
-function normalize(s: string): string {
+export function normalizeCidText(s: string): string {
   return s
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function normalizeCode(s: string): string {
+export function normalizeCidCode(s: string): string {
   return s.toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
 function loadCatalog(): CidEntry[] {
   if (catalog) return catalog;
-  const require = createRequire(join(process.cwd(), "package.json"));
-  catalog = require(join(process.cwd(), "scripts", "cid10-catalog-data.js")) as CidEntry[];
+
+  const dataPath = join(process.cwd(), "scripts", "cid10-catalog-data.js");
+  if (!existsSync(dataPath)) {
+    throw new Error(`CID-10 catalog not found at ${dataPath}`);
+  }
+
+  const raw = readFileSync(dataPath, "utf8");
+  const start = raw.indexOf("[");
+  const end = raw.lastIndexOf("]");
+  if (start === -1 || end === -1) {
+    throw new Error("CID-10 catalog file is malformed");
+  }
+
+  catalog = JSON.parse(raw.slice(start, end + 1)) as CidEntry[];
   return catalog;
 }
 
@@ -33,15 +46,15 @@ export function searchCid10Catalog(
   const trimmed = q.trim();
   if (trimmed.length < 2) return [];
 
-  const qNorm = normalize(trimmed);
-  const qCode = normalizeCode(trimmed);
+  const qNorm = normalizeCidText(trimmed);
+  const qCode = normalizeCidCode(trimmed);
   const isCodeQuery = /^[A-Za-z]/.test(trimmed) && qCode.length >= 2;
   const codePrefix = trimmed.toUpperCase();
 
   const matches: CidEntry[] = [];
   for (const row of loadCatalog()) {
-    const descNorm = normalize(row.description);
-    const rowCodeNorm = normalizeCode(row.code);
+    const descNorm = normalizeCidText(row.description);
+    const rowCodeNorm = normalizeCidCode(row.code);
     const hit = isCodeQuery
       ? row.code.toUpperCase().startsWith(codePrefix)
         || rowCodeNorm.includes(qCode)
@@ -59,4 +72,34 @@ export function searchCid10Catalog(
     code: r.code,
     description: r.description,
   }));
+}
+
+export async function searchCid10FromDb(
+  q: string,
+  limit = 15,
+): Promise<{ code: string; description: string }[]> {
+  const trimmed = q.trim();
+  if (trimmed.length < 2) return [];
+
+  const qNorm = normalizeCidText(trimmed);
+  const qCode = normalizeCidCode(trimmed);
+  const isCodeQuery = /^[A-Za-z]/.test(trimmed) && qCode.length >= 2;
+
+  const rows = await db.cid10Catalog.findMany({
+    where: {
+      active: true,
+      OR: isCodeQuery
+        ? [
+            { code: { startsWith: trimmed.toUpperCase() } },
+            { searchCode: { contains: qCode } },
+            { searchDescription: { contains: qNorm } },
+          ]
+        : [{ searchDescription: { contains: qNorm } }],
+    },
+    select: { code: true, description: true },
+    orderBy: [{ code: "asc" }],
+    take: limit,
+  });
+
+  return rows.map((r) => ({ code: r.code, description: r.description }));
 }

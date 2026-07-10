@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { SESSION_INTERACTION_EVENTS } from "@/lib/session-inactivity-config";
-import { extendSessionOnActivity } from "@/lib/session-extend-client";
+import { extendSessionOnActivity, extendSessionOnNavigation } from "@/lib/session-extend-client";
 
 const EXTEND_INTERVAL_MS = 60_000;
 
@@ -56,6 +56,7 @@ export function useSessionActivityKeepalive(enabled = true) {
     }
 
     lastActivityRef.current = Date.now();
+    extendSessionOnNavigation(updateRef.current);
     void maybeExtend();
 
     const interval = setInterval(() => void maybeExtend(), EXTEND_INTERVAL_MS);

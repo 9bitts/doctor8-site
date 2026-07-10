@@ -2,7 +2,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
-import { searchCid10Catalog } from "@/lib/cid10-search";
+import { searchCid10Catalog, searchCid10FromDb } from "@/lib/cid10-search";
+
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   const ctx = await requireProfessionalApi();
@@ -16,8 +18,14 @@ export async function GET(req: NextRequest) {
   try {
     const results = searchCid10Catalog(q, 15);
     return NextResponse.json({ results });
-  } catch (err) {
-    console.error("[cid/search]", err);
-    return NextResponse.json({ error: "Search failed", results: [] }, { status: 500 });
+  } catch (memErr) {
+    console.error("[cid/search] in-memory catalog failed, trying DB:", memErr);
+    try {
+      const results = await searchCid10FromDb(q, 15);
+      return NextResponse.json({ results });
+    } catch (dbErr) {
+      console.error("[cid/search] DB fallback failed:", dbErr);
+      return NextResponse.json({ error: "Search failed", results: [] }, { status: 500 });
+    }
   }
 }

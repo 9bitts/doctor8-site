@@ -12,7 +12,7 @@ import { useToast } from "@/components/ui/toast";
 import {
   Plus, FileText, Download, Loader2, CheckCircle2, Search,
   ChevronRight, AlertTriangle, PenLine, Pill, ArrowLeft, Copy,
-  Clock, User, FlaskConical, ScrollText, LayoutTemplate, BookmarkPlus, Sparkles,
+  Clock, User, FlaskConical, ScrollText, LayoutTemplate, BookmarkPlus, Sparkles, X,
 } from "lucide-react";
 import { PatientNoAccountPanel } from "@/components/professional/emissions/PatientNoAccountPanel";
 import { EmissionsSignModal, RX_STYLES, type SignTarget, type EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
@@ -381,8 +381,8 @@ export default function PrescriptionsPage() {
   const [drugResults, setDrugResults] = useState<DrugSearchResult[]>([]);
   const [drugSearching, setDrugSearching] = useState(false);
   const [drugSearchDone, setDrugSearchDone] = useState(false);
+  const [drugSearchModalOpen, setDrugSearchModalOpen] = useState(false);
   const [drugCountry, setDrugCountry] = useState<DrugCountryCode>("BR");
-  const drugDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [medications, setMedications] = useState<MedItem[]>([]);
   const [highlightIncompleteMeds, setHighlightIncompleteMeds] = useState(false);
@@ -797,7 +797,7 @@ export default function PrescriptionsPage() {
     setPatientQuery("");
     setImportablePatients([]);
     setPlatformMatches([]);
-    setDrugQuery(""); setDrugResults([]); setDrugCountry("BR"); setDrugSearchDone(false); setMedications([]);
+    setDrugQuery(""); setDrugResults([]); setDrugCountry("BR"); setDrugSearchDone(false); setDrugSearchModalOpen(false); setMedications([]);
     setHighlightIncompleteMeds(false);
     setInstructions(""); setValidDays(30); setFormError("");
     setReuseSource(null);
@@ -939,52 +939,55 @@ export default function PrescriptionsPage() {
     };
   }, [patientQuery, patientPickerOpen]);
 
-  useEffect(() => {
-    if (drugDebounce.current) clearTimeout(drugDebounce.current);
+  const searchDrugs = useCallback(async () => {
     const q = drugQuery.trim();
-    if (q.length < 2) { setDrugResults([]); setDrugSearching(false); setDrugSearchDone(false); return; }
+    if (q.length < 2) return;
+    setDrugSearchModalOpen(true);
     setDrugSearching(true);
     setDrugSearchDone(false);
-    drugDebounce.current = setTimeout(async () => {
-      try {
-        if (cfg.phytoOnly) {
-          const matches = PHYTOTHERAPY_REFERENCE_PRODUCTS.filter((p) => {
-            const label = t(p.labelKey).toLowerCase();
-            return label.includes(q.toLowerCase()) || p.value.includes(q.toLowerCase());
-          }).map((p) => ({
-            id: p.value,
-            name: t(p.labelKey),
-            activeIngredient: t(p.labelKey),
-            dosage: "",
-            presentation: "",
-            pharmaceuticalForm: "",
-            manufacturer: "",
-            controlled: false,
-            prescriptionType: null,
-          }));
-          setDrugResults(matches);
-          if (matches.length === 0) toast.error(t("rx2.noDrugsFound"));
+    setDrugResults([]);
+    try {
+      if (cfg.phytoOnly) {
+        const matches = PHYTOTHERAPY_REFERENCE_PRODUCTS.filter((p) => {
+          const label = t(p.labelKey).toLowerCase();
+          return label.includes(q.toLowerCase()) || p.value.includes(q.toLowerCase());
+        }).map((p) => ({
+          id: p.value,
+          name: t(p.labelKey),
+          activeIngredient: t(p.labelKey),
+          dosage: "",
+          presentation: "",
+          pharmaceuticalForm: "",
+          manufacturer: "",
+          controlled: false,
+          prescriptionType: null,
+        }));
+        setDrugResults(matches);
+      } else {
+        const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`;
+        const res = await fetch(url);
+        const d = await res.json();
+        if (!res.ok) {
+          toast.error(typeof d.error === "string" ? d.error : t("rx2.noDrugsFound"));
+          setDrugResults([]);
         } else {
-          const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`;
-          const res = await fetch(url);
-          const d = await res.json();
-          if (!res.ok) {
-            toast.error(typeof d.error === "string" ? d.error : t("rx2.noDrugsFound"));
-            setDrugResults([]);
-          } else {
-            setDrugResults(d.drugs || []);
-          }
+          setDrugResults(d.drugs || []);
         }
-      } catch {
-        toast.error(t("rx2.noDrugsFound"));
-        setDrugResults([]);
-      } finally {
-        setDrugSearching(false);
-        setDrugSearchDone(true);
       }
-    }, 300);
-    return () => { if (drugDebounce.current) clearTimeout(drugDebounce.current); };
-  }, [drugQuery, drugCountry, cfg.phytoOnly]);
+    } catch {
+      toast.error(t("rx2.noDrugsFound"));
+      setDrugResults([]);
+    } finally {
+      setDrugSearching(false);
+      setDrugSearchDone(true);
+    }
+  }, [drugQuery, drugCountry, cfg.phytoOnly, t, toast]);
+
+  function closeDrugSearchModal() {
+    setDrugSearchModalOpen(false);
+    setDrugResults([]);
+    setDrugSearchDone(false);
+  }
 
   function addDrug(drug: DrugSearchResult) {
     setFreeTextMode(false);
@@ -1001,7 +1004,6 @@ export default function PrescriptionsPage() {
       prescriptionType: drug.prescriptionType,
       itemKind: cfg.phytoOnly ? "phytotherapy" as const : "medication",
     }]);
-    setDrugQuery(""); setDrugResults([]);
   }
 
   function flagIncompleteMeds(): void {
@@ -1017,7 +1019,7 @@ export default function PrescriptionsPage() {
       dosage: "", frequency: "", duration: "", instructions: "",
       itemKind: cfg.phytoOnly ? "phytotherapy" : "medication",
     }]);
-    setDrugQuery(""); setDrugResults([]);
+    setDrugQuery(""); setDrugResults([]); setDrugSearchModalOpen(false);
   }
 
   function addSpecialItem(kind: "device" | "phytotherapy" | "floral") {
@@ -1609,7 +1611,7 @@ export default function PrescriptionsPage() {
             })()}
 
             {/* Add item card */}
-            <div className={`bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4 ${drugQuery.trim().length >= 2 && drugResults.length > 0 ? "relative z-50" : ""}`}>
+            <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-800">{t("rx2.addItem")}</label>
                 {cfg.phytoOnly ? (
@@ -1629,6 +1631,7 @@ export default function PrescriptionsPage() {
                               setDrugQuery("");
                               setDrugResults([]);
                               setDrugSearchDone(false);
+                              setDrugSearchModalOpen(false);
                             }}
                             className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
                               selected
@@ -1648,9 +1651,27 @@ export default function PrescriptionsPage() {
               </div>
 
               <div className="relative">
-                <Pill size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" />
-                <input type="text" value={drugQuery} onChange={(e) => setDrugQuery(e.target.value)}
-                  placeholder={cfg.phytoOnly ? t("rx.phytoProductSelect") : t("rx2.searchDrug")} className="rx-inp rx-inp-pl-10" />
+                <button
+                  type="button"
+                  onClick={() => void searchDrugs()}
+                  disabled={drugQuery.trim().length < 2 || drugSearching}
+                  className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t("pubSearch.search")}
+                </button>
+                <input
+                  type="text"
+                  value={drugQuery}
+                  onChange={(e) => setDrugQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void searchDrugs();
+                    }
+                  }}
+                  placeholder={cfg.phytoOnly ? t("rx.phytoProductSelect") : t("rx2.searchDrug")}
+                  className="rx-inp pl-[6.75rem] pr-10"
+                />
                 {drugSearching && <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />}
               </div>
 
@@ -1737,19 +1758,6 @@ export default function PrescriptionsPage() {
                 </div>
               )}
               <p className="text-xs text-slate-400 text-center -mt-2">{t("rx.manualAlways")}</p>
-
-              {drugQuery.trim().length >= 2 && drugResults.length > 0 && (
-                <DrugSearchResults
-                  results={drugResults}
-                  onSelect={addDrug}
-                  controlInfo={cfg.phytoOnly ? () => null : controlInfo}
-                />
-              )}
-              {drugQuery.trim().length >= 2 && drugSearchDone && !drugSearching && drugResults.length === 0 && (
-                <p className="text-sm text-slate-500 px-1 py-2 border border-slate-100 rounded-xl bg-slate-50">
-                  {t("rx2.noDrugsFound")}
-                </p>
-              )}
             </div>
 
             {/* Prescription items */}
@@ -1841,6 +1849,52 @@ export default function PrescriptionsPage() {
           </div>
 
         <style>{RX_STYLES}</style>
+
+        {drugSearchModalOpen && (
+          <div
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4"
+            onClick={closeDrugSearchModal}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-100">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-900">{t("rx2.drugSearchModalTitle")}</h3>
+                  <p className="text-sm text-slate-500 mt-0.5 truncate">&ldquo;{drugQuery.trim()}&rdquo;</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeDrugSearchModal}
+                  className="text-slate-400 hover:text-slate-600 shrink-0 p-1 rounded-lg hover:bg-slate-100 transition"
+                  aria-label={t("rx2.cancel")}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1 min-h-0">
+                {drugSearching ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <Loader2 size={24} className="animate-spin text-brand-400" />
+                    <p className="text-sm text-slate-500">{t("rx2.searchingDrugs")}</p>
+                  </div>
+                ) : drugResults.length > 0 ? (
+                  <DrugSearchResults
+                    results={drugResults}
+                    onSelect={addDrug}
+                    controlInfo={cfg.phytoOnly ? () => null : controlInfo}
+                    className="max-h-[60vh]"
+                  />
+                ) : drugSearchDone ? (
+                  <p className="text-sm text-slate-500 text-center py-8 px-4 border border-slate-100 rounded-xl bg-slate-50">
+                    {t("rx2.noDrugsFound")}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

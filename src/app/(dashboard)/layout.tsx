@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import NotificationBell from "@/components/NotificationBell";
 import PushSubscribe from "@/components/PushSubscribe";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -87,28 +87,16 @@ function messagesHrefForPortal(portalId: PlatformPortalId | null): string | null
 function DashboardInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { t, lang } = useI18n();
+  const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sessionLoaded, setSessionLoaded] = useState(false);
-  const [role, setRole] = useState<string>("");
-  const [userName, setUserName] = useState<string>("User");
-  const [userId, setUserId] = useState<string>("");
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [showNaturalMedicineNav, setShowNaturalMedicineNav] = useState(true);
 
-  useEffect(() => {
-    async function loadSession() {
-      try {
-        const res = await fetch("/api/auth/session");
-        const session = await res.json();
-        if (session?.user?.role) setRole(session.user.role);
-        if (session?.user?.id) setUserId(session.user.id);
-        if (session?.user?.name) setUserName(session.user.name);
-        else if (session?.user?.email) setUserName(session.user.email.split("@")[0]);
-      } catch { /* keep defaults */ }
-      finally { setSessionLoaded(true); }
-    }
-    loadSession();
-  }, []);
+  const sessionLoaded = status !== "loading";
+  const role = session?.user?.role ?? "";
+  const userId = session?.user?.id ?? "";
+  const userName = session?.user?.name
+    ?? (session?.user?.email ? session.user.email.split("@")[0] : "User");
 
   useEffect(() => {
     const providerRoles = ["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"];

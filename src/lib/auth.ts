@@ -406,12 +406,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.profileComplete === undefined);
 
       if (shouldRefreshProfileComplete) {
-        const role = String(token.role ?? "");
-        if (isProfileExemptRole(role)) {
-          token.profileComplete = true;
-        } else {
-          const snapshot = await fetchUserProfileSnapshot(token.id as string);
-          token.profileComplete = snapshot ? computeProfileComplete(snapshot) : true;
+        try {
+          const role = String(token.role ?? "");
+          if (isProfileExemptRole(role)) {
+            token.profileComplete = true;
+          } else {
+            const snapshot = await fetchUserProfileSnapshot(token.id as string);
+            token.profileComplete = snapshot ? computeProfileComplete(snapshot) : true;
+          }
+        } catch (err) {
+          console.error("[auth.jwt] profileComplete refresh failed — keeping cached value", {
+            userId: token.id,
+            err,
+          });
         }
       }
 
@@ -473,13 +480,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               where: { id: token.id as string },
               select: { tokenVersion: true, lockedUntil: true },
             });
-            if (!dbUser) return null;
-            if (dbUser.lockedUntil && dbUser.lockedUntil > new Date()) return null;
+            if (!dbUser) {
+              console.warn("[auth.jwt] session revoked — user deleted", { userId: token.id });
+              return null;
+            }
+            if (dbUser.lockedUntil && dbUser.lockedUntil > new Date()) {
+              console.warn("[auth.jwt] session revoked — account locked", { userId: token.id });
+              return null;
+            }
             const tokenVersion = (token.tokenVersion as number | undefined) ?? 0;
-            if (dbUser.tokenVersion > tokenVersion) return null;
+            if (dbUser.tokenVersion > tokenVersion) {
+              console.warn("[auth.jwt] session revoked — tokenVersion mismatch", {
+                userId: token.id,
+                tokenVersion,
+                dbTokenVersion: dbUser.tokenVersion,
+              });
+              return null;
+            }
             token.tvCheckedAt = Date.now();
-          } catch {
-            return null;
+          } catch (err) {
+            // Transient DB errors must not kill active sessions; retry on next check.
+            console.error("[auth.jwt] tokenVersion check failed — keeping session", {
+              userId: token.id,
+              err,
+            });
           }
         }
       }
