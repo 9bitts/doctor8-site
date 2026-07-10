@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
+import AdminAccountActions from "@/components/admin/AdminAccountActions";
 import PatientStatusBadge, { OriginBadge } from "@/components/admin/patients/PatientStatusBadge";
 import PatientLiveStatusPanel from "@/components/admin/patients/PatientLiveStatusPanel";
 import PatientTimeline from "@/components/admin/patients/PatientTimeline";
@@ -136,6 +137,13 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
         </div>
 
         <AdminViewPhoneButton userId={patient.userId} />
+
+        <AdminAccountActions
+          userId={patient.userId}
+          emailVerified={patient.emailVerified}
+          locked={patient.accountLocked}
+          onActionDone={() => load(true)}
+        />
 
         {patient.journeyHighlight && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-900">

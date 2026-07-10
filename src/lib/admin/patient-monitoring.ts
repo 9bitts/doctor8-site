@@ -145,6 +145,9 @@ export interface PatientDetailDto {
   problemReasons: string[];
   adminNote: string | null;
   adminReviewedAt: string | null;
+  emailVerified: boolean;
+  accountLocked: boolean;
+  failedLoginAttempts: number;
   anamnese: {
     priority: string | null;
     status: string;
@@ -887,7 +890,17 @@ export async function loadPatientDetail(
     where: { id: profileId },
     include: {
       user: {
-        select: { email: true, region: true, language: true, phone: true, createdAt: true },
+        select: {
+          email: true,
+          region: true,
+          language: true,
+          phone: true,
+          createdAt: true,
+          emailVerified: true,
+          phoneVerified: true,
+          lockedUntil: true,
+          failedLoginAttempts: true,
+        },
       },
       _count: { select: { appointments: true, medicalDocuments: true } },
     },
@@ -1118,6 +1131,8 @@ export async function loadPatientDetail(
   const journeyHighlight = hasHumanitarianHistory && hasFutureVolunteerScheduled;
 
   const profilePhone = safeDecrypt(profile.phone);
+  const now = Date.now();
+  const accountLocked = !!profile.user.lockedUntil && profile.user.lockedUntil.getTime() > now;
 
   let anamnese: PatientDetailDto["anamnese"] = null;
   if (intakeRecord) {
@@ -1152,6 +1167,9 @@ export async function loadPatientDetail(
     problemReasons: ctx.problemReasons,
     adminNote: profile.adminNote ?? null,
     adminReviewedAt: profile.adminReviewedAt?.toISOString() ?? null,
+    emailVerified: !!(profile.user.emailVerified || profile.user.phoneVerified),
+    accountLocked,
+    failedLoginAttempts: profile.user.failedLoginAttempts,
     anamnese,
   };
 }

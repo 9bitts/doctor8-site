@@ -22,6 +22,8 @@ import {
   AlertCircle,
   HeartPulse,
   Pill,
+  KeyRound,
+  Smile,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -108,6 +110,7 @@ const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
   incompletos: <AlertCircle size={14} />,
   todos: <LayoutList size={14} />,
   medicos: <Stethoscope size={14} />,
+  odontologistas: <Smile size={14} />,
   psicologos: <Brain size={14} />,
   nutricionistas: <Apple size={14} />,
   fisioterapeutas: <Activity size={14} />,
@@ -158,6 +161,9 @@ function computeLegacyTabCounts(
     medicos:
       angels.filter((a) => angelMatchesAdminTab(a, "medicos")).length +
       doctors.filter((d) => matchesDoctorTab("medicos", d.specialty, d.licenseNumber)).length,
+    odontologistas:
+      angels.filter((a) => angelMatchesAdminTab(a, "odontologistas")).length +
+      doctors.filter((d) => matchesDoctorTab("odontologistas", d.specialty, d.licenseNumber)).length,
     psicologos:
       angels.filter((a) => angelMatchesAdminTab(a, "psicologos")).length +
       doctors.filter((d) => matchesDoctorTab("psicologos", d.specialty, d.licenseNumber)).length,
@@ -519,6 +525,20 @@ export default function ProvidersAdminClient() {
     setVerifyingEmailUserId(null);
   }
 
+  async function resetUserPassword(userId: string) {
+    if (!confirm(t("admin.account.resetPasswordConfirm"))) return;
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/reset-password`, { method: "POST" });
+      if (!res.ok) {
+        alert(t("admin.account.resetPasswordFail"));
+        return;
+      }
+      alert(t("admin.account.resetPasswordOk"));
+    } catch {
+      alert(t("admin.account.resetPasswordFail"));
+    }
+  }
+
   async function actAngel(userId: string, action: "approve" | "reject") {
     setActingAngel(userId);
     try {
@@ -732,6 +752,7 @@ export default function ProvidersAdminClient() {
           verifyingEmailUserId={verifyingEmailUserId}
           onAct={actAngel}
           onVerifyEmail={verifyUserEmail}
+          onResetPassword={resetUserPassword}
         />
       ) : (
         <div className="space-y-4">
@@ -742,6 +763,7 @@ export default function ProvidersAdminClient() {
               verifyingEmailUserId={verifyingEmailUserId}
               onAct={actAngel}
               onVerifyEmail={verifyUserEmail}
+          onResetPassword={resetUserPassword}
             />
           )}
           {filteredProfessionals.length > 0 && (
@@ -756,6 +778,7 @@ export default function ProvidersAdminClient() {
                 toggleVolunteerScheduledApproval(row, approved, "health")
               }
               onVerifyEmail={verifyUserEmail}
+          onResetPassword={resetUserPassword}
               courseCreatorBusyUserId={courseCreatorBusyUserId}
               onToggleCourseCreator={toggleCourseCreator}
             />
@@ -771,6 +794,7 @@ export default function ProvidersAdminClient() {
                 toggleVolunteerScheduledApproval(row, approved, "psychoanalyst")
               }
               onVerifyEmail={verifyUserEmail}
+          onResetPassword={resetUserPassword}
               courseCreatorBusyUserId={courseCreatorBusyUserId}
               onToggleCourseCreator={toggleCourseCreator}
             />
@@ -786,6 +810,7 @@ export default function ProvidersAdminClient() {
                 toggleVolunteerScheduledApproval(row, approved, "integrative")
               }
               onVerifyEmail={verifyUserEmail}
+          onResetPassword={resetUserPassword}
               courseCreatorBusyUserId={courseCreatorBusyUserId}
               onToggleCourseCreator={toggleCourseCreator}
             />
@@ -953,6 +978,7 @@ function ActionButtons({
   courseCreatorBusyUserId,
   onToggle,
   onVerifyEmail,
+  onResetPassword,
   onToggleCourseCreator,
 }: {
   userId: string;
@@ -966,6 +992,7 @@ function ActionButtons({
   courseCreatorBusyUserId?: string | null;
   onToggle: () => void;
   onVerifyEmail?: (userId: string) => void;
+  onResetPassword?: (userId: string) => void;
   onToggleCourseCreator?: (userId: string, approved: boolean) => void;
 }) {
   const { t } = useI18n();
@@ -987,6 +1014,16 @@ function ActionButtons({
             <Mail size={14} />
           )}
           {t("admin.providers.verifyEmail")}
+        </button>
+      )}
+      {onResetPassword && (
+        <button
+          type="button"
+          onClick={() => onResetPassword(userId)}
+          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+        >
+          <KeyRound size={14} />
+          {t("admin.account.resetPassword")}
         </button>
       )}
       <AdminViewLicenseDocsButton userId={userId} licenseDocCount={licenseDocCount} />
@@ -1042,6 +1079,7 @@ function ProfessionalList({
   onToggle,
   onVolunteerApproval,
   onVerifyEmail,
+  onResetPassword,
   onToggleCourseCreator,
 }: {
   rows: ProfessionalRow[];
@@ -1053,6 +1091,7 @@ function ProfessionalList({
   onToggle: (row: ProfessionalRow) => void;
   onVolunteerApproval: (row: ProfessionalRow, approved: boolean) => void;
   onVerifyEmail: (userId: string) => void;
+  onResetPassword: (userId: string) => void;
   onToggleCourseCreator?: (userId: string, approved: boolean) => void;
 }) {
   const { t } = useI18n();
@@ -1160,6 +1199,7 @@ function ProfessionalList({
             courseCreatorBusyUserId={courseCreatorBusyUserId}
             onToggle={() => onToggle(d)}
             onVerifyEmail={onVerifyEmail}
+            onResetPassword={onResetPassword}
             onToggleCourseCreator={onToggleCourseCreator}
           />
         </div>
@@ -1177,6 +1217,7 @@ function ProviderList({
   onToggle,
   onVolunteerApproval,
   onVerifyEmail,
+  onResetPassword,
   onToggleCourseCreator,
 }: {
   rows: ProviderRow[];
@@ -1187,6 +1228,7 @@ function ProviderList({
   onToggle: (row: ProviderRow, kind: "psychoanalyst" | "integrative") => void;
   onVolunteerApproval: (row: ProviderRow, approved: boolean) => void;
   onVerifyEmail: (userId: string) => void;
+  onResetPassword: (userId: string) => void;
   onToggleCourseCreator?: (userId: string, approved: boolean) => void;
 }) {
   const { t } = useI18n();
@@ -1279,6 +1321,7 @@ function ProviderList({
             courseCreatorBusyUserId={courseCreatorBusyUserId}
             onToggle={() => onToggle(p, kind)}
             onVerifyEmail={onVerifyEmail}
+            onResetPassword={onResetPassword}
             onToggleCourseCreator={onToggleCourseCreator}
           />
         </div>

@@ -24,6 +24,7 @@ import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
 import VolunteerAttendGuideModal from "@/components/VolunteerAttendGuideModal";
 import {
   ADMIN_NAV,
+  ADMIN_NAV_GROUPS,
   ANGEL_NAV,
   INTEGRATIVE_THERAPIST_NAV,
   NUTRITIONIST_NAV,
@@ -312,6 +313,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     ...group,
     items: withNavIcons(group.items),
   }));
+  const adminGroupedNav = ADMIN_NAV_GROUPS.map((group) => ({
+    ...group,
+    items: withNavIcons(group.items),
+  }));
   const navActive = isAngel
     ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
     : isOrganization
@@ -492,6 +497,17 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                   </div>
                 ))}
               </>
+            ) : role === "ADMIN" ? (
+              adminGroupedNav.map((group) => (
+                <div key={group.labelKey}>
+                  <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    {t(group.labelKey)}
+                  </p>
+                  <div className="space-y-1">
+                    {group.items.map((item) => renderNavLink(item))}
+                  </div>
+                </div>
+              ))
             ) : providerGroupedNav.length > 0 ? (
               providerGroupedNav.map((group) => (
                 <div key={group.labelKey}>

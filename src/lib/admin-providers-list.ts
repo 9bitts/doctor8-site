@@ -90,6 +90,7 @@ const ADMIN_PROVIDER_TAB_IDS: AdminProviderTab[] = [
   "incompletos",
   "todos",
   "medicos",
+  "odontologistas",
   "psicologos",
   "nutricionistas",
   "fisioterapeutas",

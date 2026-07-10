@@ -8,6 +8,7 @@ import {
 /** Profession categories that mirror signup/login portals (no catch-all "outros"). */
 export type AdminProfessionCategory =
   | "medicos"
+  | "odontologistas"
   | "psicologos"
   | "nutricionistas"
   | "fisioterapeutas"
@@ -29,7 +30,7 @@ const PROFESSION_GROUP_TAB: Record<string, AdminProfessionCategory> = {
   "set.profGroup.nutrition": "nutricionistas",
   "set.profGroup.rehab": "fisioterapeutas",
   "set.profGroup.nursing": "enfermeiros",
-  "set.profGroup.dentistry": "medicos",
+  "set.profGroup.dentistry": "odontologistas",
 };
 
 const OTHER_GROUP_CANONICAL_TAB: Record<string, AdminProfessionCategory> = {
@@ -55,6 +56,7 @@ export const ADMIN_PROVIDER_TABS: { id: AdminProviderTab }[] = [
   { id: "incompletos" },
   { id: "todos" },
   { id: "medicos" },
+  { id: "odontologistas" },
   { id: "psicologos" },
   { id: "nutricionistas" },
   { id: "fisioterapeutas" },
@@ -96,6 +98,7 @@ function tabFromProfessionInfoType(
     case "pharmacist":
       return "farmaceuticos";
     case "dentist":
+      return "odontologistas";
     case "doctor":
       return "medicos";
     default:
@@ -147,6 +150,7 @@ export function classifyProfessionCategory(
     return "enfermeiros";
   }
   if (s.includes("farmac") || s.includes("pharm")) return "farmaceuticos";
+  if (s.includes("dentist") || s.includes("odontolog")) return "odontologistas";
 
   const fromProfessionGroups = tabFromCanonicalProfession(raw);
   if (fromProfessionGroups) return fromProfessionGroups;
@@ -167,9 +171,7 @@ export function classifyProfessionCategory(
     s.includes("clínico geral") ||
     s.includes("clinico geral") ||
     s.includes("general practice") ||
-    s.includes("general_practitioner") ||
-    s.includes("dentist") ||
-    s.includes("odontolog")
+    s.includes("general_practitioner")
   ) {
     return "medicos";
   }
@@ -199,7 +201,8 @@ export function inferAdminTabFromLicense(
 ): AdminProfessionCategory | null {
   const lic = (licenseNumber ?? "").trim().toUpperCase();
   if (!lic) return null;
-  if (/\bCRM\b|\bCRO\b|CRM[\s/-]|CRO[\s/-]/.test(lic)) return "medicos";
+  if (/\bCRM\b|CRM[\s/-]/.test(lic)) return "medicos";
+  if (/\bCRO\b|CRO[\s/-]/.test(lic)) return "odontologistas";
   if (/\bCRP\b|CRP[\s/-]/.test(lic)) return "psicologos";
   if (/\bCRN\b|CRN[\s/-]/.test(lic)) return "nutricionistas";
   if (/\bCREFITO\b|CREFITO[\s/-]/.test(lic)) return "fisioterapeutas";

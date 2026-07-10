@@ -585,8 +585,10 @@ export const PHARMACY_NETWORK_PHARMACIST_NAV: PlatformNavEntry[] = [
 
 export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin", labelKey: "admin.home.title", roles: ["ADMIN"], iconKey: "Shield" },
+  { href: "/admin/users", labelKey: "nav.adminUsers", roles: ["ADMIN"], iconKey: "UserCog" },
   { href: "/admin/categories", labelKey: "nav.adminCategories", roles: ["ADMIN"], iconKey: "Layers" },
   { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
+  { href: "/admin/medicos-ocupacionais", labelKey: "nav.adminOccupational", roles: ["ADMIN"], iconKey: "Stethoscope" },
   { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ADMIN"], iconKey: "Users" },
   { href: "/admin/empresas", labelKey: "nav.adminEmployers", roles: ["ADMIN"], iconKey: "Building2" },
   { href: "/admin/clinicas", labelKey: "nav.adminClinics", roles: ["ADMIN"], iconKey: "Building2" },
@@ -600,6 +602,48 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/integrations", labelKey: "nav.adminIntegrations", roles: ["ADMIN"], iconKey: "Plug" },
   { href: "/admin/audit", labelKey: "nav.adminAudit", roles: ["ADMIN"], iconKey: "ScrollText" },
   { href: "/admin/rateio", labelKey: "nav.adminRateio", roles: ["ADMIN"], iconKey: "PieChart" },
+];
+
+/** Grouped admin sidebar — operation / B2B / platform / finance. */
+export const ADMIN_NAV_GROUPS: PlatformNavGroup[] = [
+  {
+    labelKey: "admin.home.group.operation",
+    items: [
+      { href: "/admin", labelKey: "admin.home.title", roles: ["ADMIN"], iconKey: "Shield" },
+      { href: "/admin/users", labelKey: "nav.adminUsers", roles: ["ADMIN"], iconKey: "UserCog" },
+      { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ADMIN"], iconKey: "Users" },
+      { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
+      { href: "/admin/medicos-ocupacionais", labelKey: "nav.adminOccupational", roles: ["ADMIN"], iconKey: "Stethoscope" },
+      { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", roles: ["ADMIN"], iconKey: "Heart" },
+      { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", roles: ["ADMIN"], iconKey: "Radio" },
+    ],
+  },
+  {
+    labelKey: "admin.home.group.b2b",
+    items: [
+      { href: "/admin/empresas", labelKey: "nav.adminEmployers", roles: ["ADMIN"], iconKey: "Building2" },
+      { href: "/admin/clinicas", labelKey: "nav.adminClinics", roles: ["ADMIN"], iconKey: "Building2" },
+      { href: "/admin/farmacias", labelKey: "nav.adminPharmacies", roles: ["ADMIN"], iconKey: "Pill" },
+      { href: "/admin/laboratorios", labelKey: "nav.adminLaboratories", roles: ["ADMIN"], iconKey: "FlaskConical" },
+    ],
+  },
+  {
+    labelKey: "admin.home.group.platform",
+    items: [
+      { href: "/admin/categories", labelKey: "nav.adminCategories", roles: ["ADMIN"], iconKey: "Layers" },
+      { href: "/admin/courses", labelKey: "nav.adminCourses", roles: ["ADMIN"], iconKey: "BookOpen" },
+      { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", roles: ["ADMIN"], iconKey: "ShoppingBag" },
+      { href: "/admin/integrations", labelKey: "nav.adminIntegrations", roles: ["ADMIN"], iconKey: "Plug" },
+    ],
+  },
+  {
+    labelKey: "admin.home.group.finance",
+    items: [
+      { href: "/admin/payments", labelKey: "nav.adminPayments", roles: ["ADMIN"], iconKey: "CreditCard" },
+      { href: "/admin/rateio", labelKey: "nav.adminRateio", roles: ["ADMIN"], iconKey: "PieChart" },
+      { href: "/admin/audit", labelKey: "nav.adminAudit", roles: ["ADMIN"], iconKey: "ScrollText" },
+    ],
+  },
 ];
 
 /** Angel volunteers — patient monitoring + follow-up (subset of admin). */

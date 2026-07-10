@@ -1,11 +1,11 @@
 import { getAdminSession } from "@/lib/admin";
 import { redirect } from "next/navigation";
-import AdminOrganizationsClient from "./AdminOrganizationsClient";
+import AdminUsersClient from "./AdminUsersClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminClinicasPage() {
+export default async function AdminUsersPage() {
   const session = await getAdminSession();
   if (!session) redirect("/login");
-  return <AdminOrganizationsClient />;
+  return <AdminUsersClient />;
 }

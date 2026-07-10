@@ -46,6 +46,10 @@ export function resolveProfessionalRegisterForPortal(portal: string | null | und
   switch (portal) {
     case "psychologist":
       return PSYCHOLOGIST_REGISTER;
+    case "psychoanalyst":
+      return PSYCHOANALYST_REGISTER;
+    case "integrative":
+      return INTEGRATIVE_REGISTER;
     case "nutritionist":
       return NUTRITIONIST_REGISTER;
     case "nurse":
@@ -54,6 +58,12 @@ export function resolveProfessionalRegisterForPortal(portal: string | null | und
       return PHARMACIST_REGISTER;
     case "dentist":
       return DENTIST_REGISTER;
+    case "physiotherapist":
+      return `${PROFESSIONAL_REGISTER}?portal=physiotherapist&profession=fisioterapeuta`;
+    case "organization":
+      return ORGANIZATION_REGISTER;
+    case "angel":
+      return ANGEL_REGISTER;
     default:
       return PROFESSIONAL_REGISTER;
   }
