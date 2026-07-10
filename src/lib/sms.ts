@@ -1,7 +1,7 @@
 // SMS ? AWS SNS (primary) or Twilio Verify / Messages (fallback).
 
 import { normalizeSmsPhone } from "@/lib/phone";
-import { isAwsSnsConfigured, sendSnsOtp, type SmsErrorCode } from "@/lib/sms-sns";
+import { isAwsSnsConfigured, sendSnsOtp, isAwsSnsProductionReady, type SmsErrorCode } from "@/lib/sms-sns";
 
 export type { SmsErrorCode };
 
@@ -41,7 +41,14 @@ export function isSmsConfigured(): boolean {
   );
 }
 
-export { isAwsSnsConfigured };
+/** User-facing SMS (OTP / password reset). AWS SNS stays off until production quota is approved. */
+export function isSmsUserFacingEnabled(): boolean {
+  if (!isSmsConfigured()) return false;
+  if (isAwsSnsConfigured()) return isAwsSnsProductionReady();
+  return true;
+}
+
+export { isAwsSnsConfigured, isAwsSnsProductionReady };
 
 const SMS_BODY: Record<string, (code: string) => string> = {
   pt: (code) => `Doctor8: seu codigo de verificacao e ${code}. Valido por 10 minutos.`,

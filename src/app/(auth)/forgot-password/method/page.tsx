@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { cookies, headers } from "next/headers";
 import { Mail, Smartphone } from "lucide-react";
 import { Lang, normalizeLang, translate } from "@/lib/i18n/translations";
-import { isSmsConfigured } from "@/lib/sms";
+import { isSmsUserFacingEnabled, isAwsSnsConfigured, isAwsSnsProductionReady } from "@/lib/sms";
 import {
   buildForgotPasswordHref,
   resolveForgotPasswordContext,
@@ -36,7 +36,8 @@ export default function ForgotPasswordMethodPage({
   const email = (searchParams.email || "").trim().toLowerCase();
   const { loginPath, accent } = resolveForgotPasswordContext(searchParams.from);
   const styles = getLoginAccentStyles(accent);
-  const smsEnabled = isSmsConfigured();
+  const smsEnabled = isSmsUserFacingEnabled();
+  const smsPendingAws = isAwsSnsConfigured() && !isAwsSnsProductionReady();
 
   if (!email) {
     return (
@@ -96,7 +97,9 @@ export default function ForgotPasswordMethodPage({
             </div>
           </Link>
         ) : (
-          <p className="text-slate-500 text-xs text-center">{t("forgot.smsUnavailable")}</p>
+          <p className="text-slate-500 text-xs text-center">
+            {smsPendingAws ? t("forgot.smsPendingApproval") : t("forgot.smsUnavailable")}
+          </p>
         )}
       </div>
     </ForgotPasswordShell>

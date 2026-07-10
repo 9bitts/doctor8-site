@@ -3,7 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Lang, normalizeLang } from "@/lib/i18n/translations";
-import { isSmsConfigured } from "@/lib/sms";
+import { isSmsUserFacingEnabled } from "@/lib/sms";
 import { resolveVerifyFrom } from "@/lib/auth-portals";
 import { canSkipHumanitarianEmailVerification } from "@/lib/humanitarian/feature-flags";
 import {
@@ -55,7 +55,7 @@ export default function VerifyAccountPage({
       email={email}
       callbackUrl={callbackUrl}
       from={from}
-      smsEnabled={isSmsConfigured()}
+      smsEnabled={isSmsUserFacingEnabled()}
     />
   );
 }

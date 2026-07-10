@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { isAccountVerified } from "@/lib/account-verified";
 import { normalizeSmsPhone } from "@/lib/phone";
 import {
-  isSmsConfigured,
+  isSmsUserFacingEnabled,
   sendOtpSms,
   startTwilioVerification,
   usesTwilioVerify,
@@ -20,7 +20,7 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
-    if (!isSmsConfigured()) {
+    if (!isSmsUserFacingEnabled()) {
       return NextResponse.json({ error: "SMS_UNAVAILABLE" }, { status: 503 });
     }
 

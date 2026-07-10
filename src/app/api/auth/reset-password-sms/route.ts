@@ -7,7 +7,7 @@ import { normalizeSmsPhone } from "@/lib/phone";
 import {
   checkTwilioVerification,
   usesTwilioVerify,
-  isSmsConfigured,
+  isSmsUserFacingEnabled,
 } from "@/lib/sms";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -29,7 +29,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    if (!isSmsConfigured()) {
+    if (!isSmsUserFacingEnabled()) {
       return NextResponse.json({ error: "SMS_UNAVAILABLE" }, { status: 503 });
     }
 

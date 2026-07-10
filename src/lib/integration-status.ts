@@ -2,7 +2,7 @@
 
 import { getWhatsAppReadiness } from "@/lib/whatsapp";
 import { isWebPushEnabled, getVapidPublicKey } from "@/lib/web-push";
-import { isSmsConfigured, usesTwilioVerify, isAwsSnsConfigured } from "@/lib/sms";
+import { isSmsConfigured, usesTwilioVerify, isAwsSnsConfigured, isAwsSnsProductionReady, isSmsUserFacingEnabled } from "@/lib/sms";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { isGoogleMeetEnabled, isCalendarMeetConfigured } from "@/lib/google-meet";
 import { getPharmacyIntegrationMode } from "@/lib/pharmacy-marketplace/config";
@@ -26,8 +26,10 @@ export function getIntegrationStatuses(): IntegrationRow[] {
   const stripeOk = has(process.env.STRIPE_SECRET_KEY);
   const stripeWebhook = has(process.env.STRIPE_WEBHOOK_SECRET);
   const smsOk = isSmsConfigured();
+  const smsUserFacing = isSmsUserFacingEnabled();
   const twilioVerify = usesTwilioVerify();
   const awsSms = isAwsSnsConfigured();
+  const awsSmsProduction = isAwsSnsProductionReady();
   const vapidPublic = getVapidPublicKey();
   const vapidClient = has(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
   const dailyOk = has(process.env.DAILY_API_KEY) || process.env.E2E_MOCK_DAILY === "1";
@@ -51,15 +53,19 @@ export function getIntegrationStatuses(): IntegrationRow[] {
     },
     {
       id: "twilio",
-      health: smsOk ? "ok" : "missing",
+      health: smsUserFacing ? "ok" : smsOk ? "partial" : "missing",
       configured: smsOk,
-      detail: smsOk
+      detail: smsUserFacing
         ? awsSms
-          ? "AWS SNS SMS (AWS_SNS_SMS_ENABLED=1). Requires production SMS access in AWS."
+          ? "AWS SNS SMS production (AWS_SNS_SMS_PRODUCTION=1)."
           : twilioVerify
             ? "Twilio Verify OTP (TWILIO_VERIFY_SERVICE_SID) + SMS fallback."
             : "Twilio SMS (TWILIO_SMS_FROM) for verification codes."
-        : "SMS OTP needs AWS_SNS_SMS_ENABLED=1 (+ AWS keys) or Twilio credentials.",
+        : awsSms && !awsSmsProduction
+          ? "AWS SNS credentials set but production SMS not enabled — waiting on AWS Service Quotas approval (TextMessageMonthlySpend). Set AWS_SNS_SMS_PRODUCTION=1 after approval."
+          : smsOk
+            ? "SMS configured but not enabled for users."
+            : "SMS OTP needs AWS_SNS_SMS_ENABLED=1 (+ AWS keys) or Twilio credentials.",
     },
     {
       id: "stripe",

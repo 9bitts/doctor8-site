@@ -11,7 +11,8 @@ export type SmsErrorCode =
   | "GEO_BLOCKED"
   | "FRAUD_BLOCKED"
   | "RATE_LIMITED"
-  | "SNS_SANDBOX";
+  | "SNS_SANDBOX"
+  | "SNS_QUOTA";
 
 let snsClient: SNSClient | null = null;
 
@@ -21,6 +22,11 @@ export function isAwsSnsConfigured(): boolean {
       process.env.AWS_ACCESS_KEY_ID?.trim() &&
       process.env.AWS_SECRET_ACCESS_KEY?.trim(),
   );
+}
+
+/** True after AWS approves production SMS spend (Service Quotas ticket). */
+export function isAwsSnsProductionReady(): boolean {
+  return isAwsSnsConfigured() && process.env.AWS_SNS_SMS_PRODUCTION?.trim() === "1";
 }
 
 function getSnsRegion(): string {
@@ -67,6 +73,14 @@ function mapSnsError(err: unknown): { error: SmsErrorCode; detail?: string } {
     : "";
   const lower = message.toLowerCase();
 
+  if (
+    lower.includes("monthly sms spend") ||
+    lower.includes("spending limit") ||
+    lower.includes("textmessagemonthlyspend") ||
+    lower.includes("quota exceeded")
+  ) {
+    return { error: "SNS_QUOTA", detail: message };
+  }
   if (
     lower.includes("not authorized to publish") ||
     lower.includes("sandbox") ||

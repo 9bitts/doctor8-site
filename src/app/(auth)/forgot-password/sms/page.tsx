@@ -77,6 +77,7 @@ function ForgotPasswordSmsContent() {
       else if (data.error === "INVALID_PHONE") setError("invalidPhone");
       else if (data.error === "NO_ACCOUNT") setError("noAccount");
       else if (data.error === "SNS_SANDBOX") setError("snsSandbox");
+      else if (data.error === "SNS_QUOTA") setError("snsQuota");
       else setError("sendFailed");
     } catch {
       setError("sendFailed");

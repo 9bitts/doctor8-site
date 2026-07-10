@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { normalizeSmsPhone } from "@/lib/phone";
 import {
-  isSmsConfigured,
+  isSmsUserFacingEnabled,
   sendOtpSms,
   startTwilioVerification,
   usesTwilioVerify,
@@ -23,7 +23,7 @@ const RESET_SMS_PREFIX = "reset-sms:";
 
 export async function POST(req: NextRequest) {
   try {
-    if (!isSmsConfigured()) {
+    if (!isSmsUserFacingEnabled()) {
       return NextResponse.json({ error: "SMS_UNAVAILABLE" }, { status: 503 });
     }
 

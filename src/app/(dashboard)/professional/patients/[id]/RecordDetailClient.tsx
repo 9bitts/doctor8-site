@@ -1093,6 +1093,10 @@ export default function RecordDetailClient({
                     )}
                   </button>
                 </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <ReferralPanel chartId={chart.id} />
+                  {isMedicalPortal && <ReferralPanel chartId={chart.id} presetSpecialty="psychology" />}
+                </div>
               </div>
             )}
           </div>
@@ -1105,11 +1109,6 @@ export default function RecordDetailClient({
             <ChartSharePanel chartId={chart.id} />
           </div>
         )}
-
-        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-2">
-          <ReferralPanel chartId={chart.id} />
-          {isMedicalPortal && <ReferralPanel chartId={chart.id} presetSpecialty="psychology" />}
-        </div>
 
         {isPsychologistPortal && isOwner && (
           <div className="mt-4">

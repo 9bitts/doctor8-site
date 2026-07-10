@@ -106,6 +106,8 @@ function VerifySmsContent() {
         setError("fraudBlocked");
       } else if (data.error === "SNS_SANDBOX") {
         setError("snsSandbox");
+      } else if (data.error === "SNS_QUOTA") {
+        setError("snsQuota");
       } else {
         setError("sendFailed");
       }
