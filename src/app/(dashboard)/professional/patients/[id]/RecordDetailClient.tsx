@@ -38,6 +38,7 @@ import NursePatientChartPanel from "@/components/nurse/NursePatientChartPanel";
 import PharmacistPatientChartPanel from "@/components/pharmacist/PharmacistPatientChartPanel";
 import ChartSharePanel from "@/components/professional/ChartSharePanel";
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
+import CategorySearchSelect from "@/components/professional/CategorySearchSelect";
 import { openAuthenticatedPdf, openAuthenticatedBlob } from "@/lib/open-url-safely";
 import { uploadFileToApi } from "@/lib/upload-client";
 import {
@@ -57,13 +58,12 @@ import {
 } from "@/lib/psychologist-portal";
 import { hasAnyMetric, type ClinicalMetricsInput } from "@/lib/clinical-metrics";
 import {
-  RECORD_KIND_OPTIONS,
   type ClinicalRecordKind,
   type RecordTimelineFilter,
   matchesTimelineFilter,
   suggestRecordKind,
+  inferRecordKindFromCategory,
   findPinnedAnamnesis,
-  recordKindLabelKey,
 } from "@/lib/record-kind";
 import {
   clearRecordDraft,
@@ -247,6 +247,27 @@ function findCategoryIdByLegacyType(groups: CategoryGroup[], legacyType: string)
   return "";
 }
 
+function normCategoryText(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+}
+
+function findCategoryIdByKeyword(
+  items: { id: string; slug: string; name: string; label: string }[],
+  keywords: string[],
+): string {
+  for (const c of items) {
+    const hay = normCategoryText(`${c.slug} ${c.name} ${c.label}`);
+    if (keywords.some((k) => hay.includes(normCategoryText(k)))) return c.id;
+  }
+  return "";
+}
+
+function firstSortedCategoryId(
+  items: { id: string; label: string }[],
+): string {
+  return items[0]?.id ?? "";
+}
+
 // Fallback labels for legacy `type` (records created before dynamic categories).
 const LEGACY_KEYS: Record<string, string> = {
   PRESCRIPTION: "doctype.PRESCRIPTION",
@@ -396,8 +417,6 @@ export default function RecordDetailClient({
         if (!active) return;
         const gs: CategoryGroup[] = data.groups || [];
         setGroups(gs);
-        const first = gs[0]?.items[0];
-        if (first) setCategoryId(first.id);
       } catch {
         // leave empty; form will show a message
       }
@@ -443,6 +462,21 @@ export default function RecordDetailClient({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, initialDocuments, categoriesLoading, groups]);
+
+  const sortedCategories = useMemo(() => {
+    const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en";
+    const items = groups.flatMap((g) =>
+      g.items.map((c) => ({
+        id: c.id,
+        slug: c.slug,
+        name: c.name,
+        legacyType: c.legacyType,
+        label: getCategoryLabel(lang, { slug: c.slug, name: c.name }),
+      })),
+    );
+    items.sort((a, b) => a.label.localeCompare(b.label, locale, { sensitivity: "base" }));
+    return items;
+  }, [groups, lang]);
 
   useEffect(() => {
     const tab = searchParams.get("tab") ?? searchParams.get("view");
@@ -522,8 +556,7 @@ export default function RecordDetailClient({
   }
 
   function resetForm(clearDraft = false) {
-    const first = groups[0]?.items[0];
-    setCategoryId(first ? first.id : "");
+    setCategoryId(firstSortedCategoryId(sortedCategories));
     setCidSelection(null);
     setTitle("");
     setContent("");
@@ -548,7 +581,8 @@ export default function RecordDetailClient({
       setDraftRestored(true);
     } else {
       resetForm();
-      setRecordKind("ANAMNESIS");
+      const anamId = findCategoryIdByKeyword(sortedCategories, ["anamnes", "anamnese"]);
+      if (anamId) setCategoryId(anamId);
     }
     setChartTab("records");
     setRecordFilter("anamnesis");
@@ -569,8 +603,9 @@ export default function RecordDetailClient({
 
   function openExamResultForm() {
     resetForm();
-    setRecordKind("OTHER");
-    const catId = findCategoryIdByLegacyType(groups, "EXAM_RESULT");
+    const catId =
+      findCategoryIdByLegacyType(groups, "EXAM_RESULT") ||
+      findCategoryIdByKeyword(sortedCategories, ["exame", "exam", "laboratorial", "sangue"]);
     if (catId) setCategoryId(catId);
     setChartTab("records");
     setRecordFilter("exam");
@@ -900,13 +935,16 @@ export default function RecordDetailClient({
     setError(null);
 
     let categoryLabel = "";
-    for (const g of groups) {
-      const cat = g.items.find((c) => c.id === categoryId);
-      if (cat) {
-        categoryLabel = getCategoryLabel(lang, { slug: cat.slug, name: cat.name });
-        break;
-      }
+    const cat = sortedCategories.find((c) => c.id === categoryId);
+    if (cat) {
+      categoryLabel = cat.label;
     }
+    const effectiveRecordKind = cat
+      ? inferRecordKindFromCategory(
+          { slug: cat.slug, name: cat.name, legacyType: cat.legacyType },
+          docs,
+        )
+      : recordKind;
     const baseTitle = resolveRecordTitle(categoryLabel);
     if (!baseTitle) {
       setError(t("rec.errTitle"));
@@ -936,7 +974,7 @@ export default function RecordDetailClient({
           cid: cidSelection?.code || "",
           cidLabel: cidSelection?.description || "",
           addToDiagnoses,
-          recordKind,
+          recordKind: effectiveRecordKind,
           ...(hasAnyMetric(metrics) ? { metrics } : {}),
           ...(fileKeys.length === 1 ? { fileKey: fileKeys[0] } : {}),
           ...(fileKeys.length > 0 ? { fileKeys } : {}),
@@ -954,7 +992,7 @@ export default function RecordDetailClient({
         {
           id: data.id,
           type: data.type,
-          recordKind: data.recordKind || recordKind,
+          recordKind: data.recordKind || effectiveRecordKind,
           categoryName: data.categoryName ?? null,
           categoryGroup: null,
           title: data.title,
@@ -1844,63 +1882,20 @@ export default function RecordDetailClient({
               )}
               {!editingDoc && (
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">{t("kind.label")}</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {RECORD_KIND_OPTIONS.map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => setRecordKind(k)}
-                      className={`p-2.5 rounded-xl border-2 text-left text-xs font-semibold transition ${
-                        recordKind === k
-                          ? "border-brand-500 bg-brand-50 text-brand-700"
-                          : "border-slate-200 text-slate-600 hover:border-slate-300"
-                      }`}
-                    >
-                      {t(recordKindLabelKey(k))}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              )}
-              {!editingDoc && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">{t("docs.modal.category")}</label>
                 {categoriesLoading ? (
                   <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
                     <Loader2 size={14} className="animate-spin" /> {t("docs.modal.loadingCategories")}
                   </div>
-                ) : groups.length === 0 ? (
+                ) : sortedCategories.length === 0 ? (
                   <p className="text-sm text-amber-600">{t("docs.modal.noCategories")}</p>
                 ) : (
-                  <select
+                  <CategorySearchSelect
+                    label={t("docs.modal.category")}
+                    options={sortedCategories.map((c) => ({ id: c.id, label: c.label }))}
                     value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                  >
-                    {groups.map((g) => (
-                      <optgroup key={g.group} label={getCategoryGroupLabel(lang, g.group)}>
-                        {g.items.map((c) => (
-                          <option key={c.id} value={c.id}>{getCategoryLabel(lang, { slug: c.slug, name: c.name })}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
+                    onChange={setCategoryId}
+                  />
                 )}
-              </div>
-              )}
-              {editingDoc && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">{t("kind.label")}</label>
-                <select
-                  value={recordKind}
-                  onChange={(e) => setRecordKind(e.target.value as ClinicalRecordKind)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                >
-                  {RECORD_KIND_OPTIONS.map((k) => (
-                    <option key={k} value={k}>{t(recordKindLabelKey(k))}</option>
-                  ))}
-                </select>
               </div>
               )}
               <CidSearchInput
@@ -1919,6 +1914,7 @@ export default function RecordDetailClient({
                   {t("diag.addFromRecord")}
                 </label>
               )}
+              {(editingDoc || cidSelection) && (
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
                   {t("rec.titleLabel")}
@@ -1930,6 +1926,7 @@ export default function RecordDetailClient({
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
                 />
               </div>
+              )}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">{t("lib.descLabel")}</label>
                 <textarea

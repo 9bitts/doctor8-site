@@ -67,6 +67,19 @@ export function suggestRecordKind(
   return hasAnamnesis ? "EVOLUTION" : "ANAMNESIS";
 }
 
+/** Infer timeline kind from category slug/name when the user picks only a category. */
+export function inferRecordKindFromCategory(
+  cat: { slug?: string | null; name?: string | null; legacyType?: string | null },
+  docs: { recordKind?: string | null }[] = [],
+): ClinicalRecordKind {
+  const s = `${cat.slug || ""} ${cat.name || ""}`.toLowerCase();
+  if (/anamnes/.test(s)) return "ANAMNESIS";
+  if (/laudo|atestado|attest|report/.test(s)) return "REPORT";
+  if (/evolu/.test(s)) return "EVOLUTION";
+  if (cat.legacyType === "CERTIFICATE") return "REPORT";
+  return suggestRecordKind(docs);
+}
+
 export function findPinnedAnamnesis<T extends { id: string; recordKind?: string | null; createdAt: string }>(
   docs: T[],
 ): T | null {

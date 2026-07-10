@@ -74,8 +74,6 @@ export function mapProfessionalPathForNutritionistSpecialty(
   return mapProfessionalPathToNutritionist(professionalPath);
 }
 
-import { isPharmacistSpecialty } from "@/lib/profession-label";
-
 /** Resolves health professional portal from profile specialty. */
 export async function resolveHealthProfessionalPortalBaseForUser(
   userId: string,

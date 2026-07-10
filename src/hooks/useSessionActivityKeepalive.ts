@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import { SESSION_INTERACTION_EVENTS } from "@/lib/session-inactivity-config";
 
 const EXTEND_INTERVAL_MS = 60_000;
-const ACTIVITY_EVENTS = ["mousedown", "keydown", "touchstart", "scroll"] as const;
 
 /** Keeps auth session alive while the user is active (sliding inactivity window). */
 export function useSessionActivityKeepalive(enabled = true) {
@@ -26,12 +26,12 @@ export function useSessionActivityKeepalive(enabled = true) {
       lastActivityRef.current = Date.now();
     }
 
-    for (const event of ACTIVITY_EVENTS) {
+    for (const event of SESSION_INTERACTION_EVENTS) {
       window.addEventListener(event, markActivity, { passive: true });
     }
 
     return () => {
-      for (const event of ACTIVITY_EVENTS) {
+      for (const event of SESSION_INTERACTION_EVENTS) {
         window.removeEventListener(event, markActivity);
       }
     };
@@ -60,7 +60,6 @@ export function useSessionActivityKeepalive(enabled = true) {
 
     function onVisible() {
       if (document.visibilityState === "visible") {
-        lastActivityRef.current = Date.now();
         void maybeExtend();
       }
     }

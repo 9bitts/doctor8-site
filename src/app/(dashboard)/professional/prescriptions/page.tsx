@@ -28,6 +28,7 @@ import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 import DrugSearchResults, { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
 import PrescriptionMedItemForm, { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
+import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
 import { phytotherapyProductByValue, PHYTOTHERAPY_REFERENCE_PRODUCTS } from "@/lib/pics/reference-library/phytotherapy-products";
 import { floralProductByValue } from "@/lib/pics/reference-library/floral-products";
 import {
@@ -139,6 +140,16 @@ function parseBulkMedicationLines(
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
+      if (isFreeTextPrescriptionItem(defaultKind)) {
+        return {
+          name: line,
+          dosage: "",
+          frequency: "",
+          duration: "",
+          instructions: "",
+          itemKind: defaultKind,
+        };
+      }
       const parts = line.split(/\t|;\s*|\s+-\s+/).map((p) => p.trim()).filter(Boolean);
       return {
         name: parts[0] || line,
@@ -1003,6 +1014,9 @@ export default function PrescriptionsPage() {
   }
 
   function addSpecialItem(kind: "device" | "phytotherapy" | "floral") {
+    if (isFreeTextPrescriptionItem(kind)) {
+      setFreeTextMode(true);
+    }
     setMedications((prev) => [...prev, {
       name: "",
       dosage: "",
@@ -1038,7 +1052,7 @@ export default function PrescriptionsPage() {
       instructions: "",
       itemKind: "device",
     }]);
-    setShowBulkPaste(true);
+    setShowBulkPaste(false);
     setBulkPasteText("");
     setFormError("");
     setHighlightIncompleteMeds(false);

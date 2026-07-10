@@ -224,6 +224,22 @@ export async function buildPrescriptionPdf(
   const maxW = A4.w - margin * 2 - 20;
   data.medications.forEach((med, i) => {
     ensureSpace(80);
+    const isFreeText =
+      !med.dosage?.trim() &&
+      !med.frequency?.trim() &&
+      !med.presentation?.trim() &&
+      !med.pharmaceuticalForm?.trim() &&
+      !med.duration?.trim() &&
+      !med.instructions?.trim();
+
+    if (isFreeText) {
+      for (const ln of wrap(`${i + 1}. ${med.name}`, maxW, 11, font)) {
+        ensureSpace(16);
+        text(page, ln, margin, y, 11, font, rgb(0.2, 0.2, 0.2));
+        y -= 15;
+      }
+      y -= 8;
+    } else {
     const title = med.presentation
       ? `${i + 1}. ${med.name} — ${med.presentation}`
       : `${i + 1}. ${med.name}`;
@@ -244,6 +260,7 @@ export async function buildPrescriptionPdf(
     if (med.duration) detail(tr.duration, med.duration);
     if (med.instructions) detail(tr.instructions, med.instructions);
     y -= 8;
+    }
     // separador tracejado
     ensureSpace(20);
     for (let x = margin; x < A4.w - margin; x += 6) {

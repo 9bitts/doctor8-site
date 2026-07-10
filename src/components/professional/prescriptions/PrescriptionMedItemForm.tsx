@@ -1,14 +1,11 @@
 import { AlertCircle, Trash2 } from "lucide-react";
 import {
-  PHYTOTHERAPY_REFERENCE_PRODUCTS,
-  phytotherapyProductByValue,
-} from "@/lib/pics/reference-library/phytotherapy-products";
-import {
   FLORAL_CATEGORY_LABEL_KEYS,
   FLORAL_REFERENCE_PRODUCTS,
   floralProductByValue,
   type FloralProductCategory,
 } from "@/lib/pics/reference-library/floral-products";
+import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
 
 export type PrescriptionMedItem = {
   name: string;
@@ -62,13 +59,59 @@ export default function PrescriptionMedItemForm({
   kindLabel,
   controlInfo: ci,
   onUpdate,
-  onPhytoProductSelect,
   onFloralProductSelect,
   onRemove,
   t,
   rxFieldClass,
 }: PrescriptionMedItemFormProps) {
   const kind = med.itemKind || "medication";
+
+  if (isFreeTextPrescriptionItem(kind)) {
+    return (
+      <div
+        className={`rounded-xl p-4 space-y-3 border ${
+          showErrors
+            ? "bg-rose-50/60 border-rose-300 ring-1 ring-rose-200"
+            : "bg-slate-50 border-slate-200"
+        }`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0 space-y-2">
+            {kindLabel && (
+              <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-50 text-accent-700 border border-accent-200">
+                {kindLabel}
+              </span>
+            )}
+            <label
+              className={`text-xs font-medium block ${
+                showErrors && fieldErrors.name ? "text-rose-700" : "text-slate-600"
+              }`}
+            >
+              {t("rx.freeTextItemLabel")}
+            </label>
+            <textarea
+              value={med.name}
+              onChange={(e) => onUpdate(index, "name", e.target.value)}
+              rows={5}
+              placeholder={
+                kind === "phytotherapy"
+                  ? t("rx.phytoFreeTextPlaceholder")
+                  : t("rx.bulkPaste.devicePlaceholder")
+              }
+              className={`w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-y bg-white${rxFieldClass(showErrors && fieldErrors.name)}`}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            className="text-red-400 hover:text-red-600 shrink-0 p-1"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -84,30 +127,6 @@ export default function PrescriptionMedItemForm({
             <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-50 text-accent-700 border border-accent-200">
               {kindLabel}
             </span>
-          )}
-          {kind === "phytotherapy" && onPhytoProductSelect && (
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">
-                {t("rx.phytoProductSelect")}
-              </label>
-              <select
-                value={med.phytoProductId || ""}
-                onChange={(e) => onPhytoProductSelect(index, e.target.value)}
-                className="rx-inp-sm"
-              >
-                <option value="">{t("rx.phytoProductPlaceholder")}</option>
-                {PHYTOTHERAPY_REFERENCE_PRODUCTS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {t(p.labelKey)}
-                  </option>
-                ))}
-              </select>
-              {med.phytoProductId && phytotherapyProductByValue(med.phytoProductId) && (
-                <p className="text-[11px] text-teal-700 mt-1 leading-relaxed">
-                  {t(phytotherapyProductByValue(med.phytoProductId)!.indicationKey)}
-                </p>
-              )}
-            </div>
           )}
           {kind === "floral" && onFloralProductSelect && (
             <div>
@@ -197,27 +216,6 @@ export default function PrescriptionMedItemForm({
               placeholder={"Ex.: Comprimido, Xarope (frasco)"}
               className="rx-inp-sm"
             />
-          </div>
-        )}
-        {kind === "phytotherapy" && (
-          <div className="sm:col-span-2">
-            <label className="text-xs font-medium text-slate-600 block mb-1">
-              {t("it.tpl.phyto.presentation")}
-            </label>
-            <select
-              value={med.pharmaceuticalForm || ""}
-              onChange={(e) => onUpdate(index, "pharmaceuticalForm", e.target.value)}
-              className="rx-inp-sm"
-            >
-              <option value="">{t("med.freqSelect")}</option>
-              <option value="capsula">{t("it.tpl.phyto.pres.capsula")}</option>
-              <option value="comprimido">{t("it.tpl.phyto.pres.comprimido")}</option>
-              <option value="tintura">{t("it.tpl.phyto.pres.tintura")}</option>
-              <option value="cha">{t("it.tpl.phyto.pres.cha")}</option>
-              <option value="xarope">{t("it.tpl.phyto.pres.xarope")}</option>
-              <option value="gel">{t("it.tpl.phyto.pres.gel")}</option>
-              <option value="po">{t("it.tpl.phyto.pres.po")}</option>
-            </select>
           </div>
         )}
         {kind === "floral" && (
