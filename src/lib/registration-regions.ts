@@ -126,6 +126,10 @@ export function requiresGdpr(code: RegistrationRegionCode | string): boolean {
   return code === "EU";
 }
 
+export function requiresLgpd(code: RegistrationRegionCode | string): boolean {
+  return code === "BR";
+}
+
 /** Default registration country when none is passed in the URL. */
 export function defaultRegistrationRegionForLang(lang: Lang): RegistrationRegionCode {
   if (lang === "pt") return "BR";

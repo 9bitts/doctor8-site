@@ -14,7 +14,7 @@ import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { appointmentJoinWindow } from "@/lib/appointment-join-window";
-import { providerPanelFromSpecialty, type ProviderChartPanel } from "@/lib/video-chart-nav";
+import { requireVerifiedProfessional } from "@/lib/professional-verified";
 
 function providerUserIdFromAppointment(appointment: {
   professional?: { userId: string } | null;
@@ -87,6 +87,13 @@ export async function GET(
       },
       { status: 403 },
     );
+  }
+
+  if (isProvider && appointment.professional) {
+    const verified = await requireVerifiedProfessional(session.user.id);
+    if (!verified.ok) {
+      return NextResponse.json({ error: verified.error, code: "PROVIDER_NOT_VERIFIED" }, { status: verified.status });
+    }
   }
 
   if (appointment.status === "CANCELLED") {

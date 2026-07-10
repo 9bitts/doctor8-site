@@ -346,6 +346,10 @@ enum ConsentType {
   PRIVACY_POLICY
   HIPAA_AUTHORIZATION   // US only
   GDPR_CONSENT          // EU only
+  LGPD_CONSENT          // BR only
+  COOKIE_CONSENT
+  PROFESSIONAL_TERMS
+  PARTNER_TERMS
   MARKETING
   TELEMEDICINE_TCLE     // TCLE — atendimento a distancia
 }
@@ -507,6 +511,7 @@ model User {
   pushSubscriptions PushSubscription[]
   subscription      Subscription?
   dataExportRequests DataExportRequest[]
+  supportTickets     SupportTicket[]
   patientFavorites  PatientFavorite[]  @relation("PatientFavorites")
   professionalReviews ProfessionalReview[] @relation("PatientReviews")
   buyingClubMembers BuyingClubMember[]
@@ -1687,6 +1692,29 @@ model DataExportRequest {
   updatedAt   DateTime @updatedAt
 
   @@index([userId])
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+
+  subject     String
+  body        String   @db.Text
+  status      String   @default("open") // open, in_progress, resolved
+  priority    String   @default("normal")
+  source      String   @default("ai_escalation")
+  contactEmail String?
+
+  slaDueAt    DateTime?
+  resolvedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ────────────────────────────────────────────

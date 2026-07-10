@@ -123,9 +123,10 @@ async function handleConsultationFulfillmentError(
   throw e;
 }
 
-async function notifyClubPaymentIssue(
+async function notifySubscriptionPaymentIssue(
   userId: string,
   bodyKey: "notif.clubPayment.failed" | "notif.clubPayment.actionRequired",
+  returnPath: string,
 ) {
   const copy = storedNotificationText("notif.clubPayment.title", bodyKey);
   await createNotification({
@@ -134,15 +135,25 @@ async function notifyClubPaymentIssue(
     body: copy.body,
     type: "payment",
     data: {
-      url: "/patient/club",
-      link: "/patient/club",
+      url: returnPath,
+      link: returnPath,
       titleKey: "notif.clubPayment.title",
       bodyKey,
     },
   }).catch(() => {});
 }
 
-async function updateClubSubscriptionStatus(
+async function subscriptionReturnPath(stripeSubscriptionId: string): Promise<string> {
+  try {
+    const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    if (stripeSub.metadata?.planKind === "professional") return "/professional/doctor-connection";
+  } catch {
+    /* fallback */
+  }
+  return "/patient/club-doctor";
+}
+
+async function updateSubscriptionStatusByCustomer(
   stripeCustomerId: string,
   stripeSubscriptionId: string,
   status: string,
@@ -372,14 +383,15 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
   if (event.type === "invoice.payment_failed") {
     const invoice = event.data.object as Stripe.Invoice;
     if (invoice.subscription && invoice.customer) {
-      const club = await isClubSubscription(invoice.subscription as string);
-      if (club) {
-        const userId = await updateClubSubscriptionStatus(
-          invoice.customer as string,
-          invoice.subscription as string,
-          "past_due",
-        );
-        if (userId) await notifyClubPaymentIssue(userId, "notif.clubPayment.failed");
+      const subId = invoice.subscription as string;
+      const userId = await updateSubscriptionStatusByCustomer(
+        invoice.customer as string,
+        subId,
+        "past_due",
+      );
+      if (userId) {
+        const returnPath = await subscriptionReturnPath(subId);
+        await notifySubscriptionPaymentIssue(userId, "notif.clubPayment.failed", returnPath);
       }
     }
     return;
@@ -388,14 +400,15 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
   if (event.type === "invoice.payment_action_required") {
     const invoice = event.data.object as Stripe.Invoice;
     if (invoice.subscription && invoice.customer) {
-      const club = await isClubSubscription(invoice.subscription as string);
-      if (club) {
-        const userId = await updateClubSubscriptionStatus(
-          invoice.customer as string,
-          invoice.subscription as string,
-          "past_due",
-        );
-        if (userId) await notifyClubPaymentIssue(userId, "notif.clubPayment.actionRequired");
+      const subId = invoice.subscription as string;
+      const userId = await updateSubscriptionStatusByCustomer(
+        invoice.customer as string,
+        subId,
+        "past_due",
+      );
+      if (userId) {
+        const returnPath = await subscriptionReturnPath(subId);
+        await notifySubscriptionPaymentIssue(userId, "notif.clubPayment.actionRequired", returnPath);
       }
     }
     return;

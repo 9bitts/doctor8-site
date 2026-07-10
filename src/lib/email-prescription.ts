@@ -69,7 +69,7 @@ export async function sendPrescriptionNotification({
 }) {
   const lang = normLang(language);
   const c = COPY[lang];
-  const link = `${getAppUrl()}/patient/documents`;
+  const link = `${getAppUrl()}/patient/prescriptions`;
 
   const body = `
     <p style="color:#1a2a3a;font-size:16px;">${c.hi(patientName)}</p>

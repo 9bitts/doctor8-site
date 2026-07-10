@@ -10,7 +10,7 @@ const AUDIENCE_LINKS = [
 const LEGAL_LINKS = [
   { label: "Privacidade", href: "/privacy" },
   { label: "Termos de uso", href: "/terms" },
-  { label: "LGPD", href: "/lgpd" },
+  { label: "LGPD", href: "/docs" },
 ];
 
 export default function MarketingFooter() {

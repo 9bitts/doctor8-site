@@ -25,6 +25,7 @@ import {
   type RegistrationRegionCode,
   requiresGdpr,
   requiresHipaa,
+  requiresLgpd,
 } from "@/lib/registration-regions";
 import InternationalPhoneInput, {
   type InternationalPhoneValue,
@@ -176,6 +177,7 @@ export function RegisterAccountForm({
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [acceptedHipaa, setAcceptedHipaa] = useState(false);
   const [acceptedGdpr, setAcceptedGdpr] = useState(false);
+  const [acceptedLgpd, setAcceptedLgpd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -189,7 +191,8 @@ export function RegisterAccountForm({
     acceptedTerms &&
     acceptedPrivacy &&
     (!requiresHipaa(region) || acceptedHipaa) &&
-    (!requiresGdpr(region) || acceptedGdpr);
+    (!requiresGdpr(region) || acceptedGdpr) &&
+    (!requiresLgpd(region) || acceptedLgpd);
 
   const missingFields: string[] = [];
   if (!isPhoneValid) missingFields.push(t("reg.missing.phone"));
@@ -197,6 +200,7 @@ export function RegisterAccountForm({
   if (!acceptedTerms || !acceptedPrivacy) missingFields.push(t("reg.missing.terms"));
   if (requiresHipaa(region) && !acceptedHipaa) missingFields.push(t("reg.missing.hipaa"));
   if (requiresGdpr(region) && !acceptedGdpr) missingFields.push(t("reg.missing.gdpr"));
+  if (requiresLgpd(region) && !acceptedLgpd) missingFields.push(t("reg.missing.lgpd"));
 
   const isProfessional = role === "PROFESSIONAL";
   const isPsychologistSignup = isProfessional && professionalKind === "psychologist";
@@ -295,6 +299,7 @@ export function RegisterAccountForm({
           acceptedPrivacy,
           acceptedHipaa: requiresHipaa(region) ? acceptedHipaa : undefined,
           acceptedGdpr: requiresGdpr(region) ? acceptedGdpr : undefined,
+          acceptedLgpd: requiresLgpd(region) ? acceptedLgpd : undefined,
           callbackUrl: authCallback || undefined,
         }),
       });
@@ -615,6 +620,13 @@ export function RegisterAccountForm({
               checked={acceptedGdpr}
               onChange={setAcceptedGdpr}
               label={<>{t("reg.acceptGdprPre")} <Link href="/privacy" className="text-emerald-400 hover:underline" target="_blank">{t("reg.privacyPolicy")}</Link> {t("reg.acceptGdprPost")}</>}
+            />
+          )}
+          {requiresLgpd(region) && (
+            <RegisterCheckbox
+              checked={acceptedLgpd}
+              onChange={setAcceptedLgpd}
+              label={<>{t("reg.acceptLgpd")}</>}
             />
           )}
         </div>

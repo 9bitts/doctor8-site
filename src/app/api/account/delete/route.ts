@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { deletionScheduledDate } from "@/lib/account-deletion";
+import { userHasClinicalRecords, MEDICAL_RECORD_RETENTION_YEARS } from "@/lib/clinical-retention";
 
 export async function POST() {
   try {
@@ -13,6 +14,7 @@ export async function POST() {
 
     const userId = session.user.id;
     const now = new Date();
+    const hasClinical = await userHasClinicalRecords(userId);
 
     await db.$transaction([
       db.user.update({
@@ -27,7 +29,13 @@ export async function POST() {
 
     await audit.deletionRequest(userId);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      clinicalRecordsRetained: hasClinical,
+      retentionNotice: hasClinical
+        ? `Registros clínicos serão mantidos pelo prazo legal mínimo (${MEDICAL_RECORD_RETENTION_YEARS} anos), conforme CFM.`
+        : undefined,
+    });
   } catch (error) {
     console.error("[ACCOUNT DELETE]", error);
     return NextResponse.json(

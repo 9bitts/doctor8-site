@@ -16,6 +16,7 @@ import { z } from "zod";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { resolveDeletedAccountOnLogin } from "@/lib/account-deletion";
 import { createSignupProfile } from "@/lib/signup-profile-create";
+import { createOAuthSignupConsents } from "@/lib/consent/register-consents";
 import type { ParsedSignupIntent } from "@/lib/oauth-signup-intent";
 import {
   resolveRegistrationRegion,
@@ -310,6 +311,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               if (phoneE164) {
                 await saveRegistrationPhone(tx, newUser.id, signupRole, phoneE164);
               }
+
+              await createOAuthSignupConsents(
+                tx,
+                newUser.id,
+                "oauth",
+                "google-oauth",
+                signupRegion,
+              );
 
               return newUser;
             });

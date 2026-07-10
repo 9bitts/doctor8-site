@@ -49,7 +49,7 @@ import {
 } from "@/lib/platform-nav-registry";
 import { withNavIcons, type DashboardNavItem } from "@/lib/dashboard-nav-icons";
 import { ToastProvider } from "@/components/ui/toast";
-import VoiceAssistantShell from "@/components/voice-assistant/VoiceAssistantShell";
+import LegalAcceptanceGate from "@/components/compliance/LegalAcceptanceGate";
 import VoiceAssistantPromoBanner from "@/components/voice-assistant/VoiceAssistantPromoBanner";
 import { resolveVoicePortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
 import { isValidIanaTimeZone } from "@/lib/timezone";
@@ -580,7 +580,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           {!isPharmacyStoreUser && !isPharmacyNetworkPharmacist && (
             <ProviderDashboardAlerts role={role} />
           )}
-          {children}
+          <LegalAcceptanceGate>{children}</LegalAcceptanceGate>
         </main>
         {showVoiceAssistant && voicePortalId && (
           <VoiceAssistantShell portalId={voicePortalId} userId={userId} variant="fab" />

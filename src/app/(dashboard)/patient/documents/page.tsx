@@ -11,6 +11,7 @@ import { resolveRoleHome } from "@/lib/role-home";
 import { audit } from "@/lib/audit";
 import { decrypt } from "@/lib/encryption";
 import DocumentsClient from "./DocumentsClient";
+import { documentHasStoredFile } from "@/lib/document-file";
 
 export const dynamic = "force-dynamic";
 
@@ -82,7 +83,7 @@ export default async function PatientDocuments() {
     categoryGroup: d.category?.groupName ?? null,
     title: safeDecrypt(d.title),
     content: d.content ? safeDecrypt(d.content) : null,
-    hasFile: !!d.fileUrl,
+    hasFile: documentHasStoredFile(d),
     createdAt: d.createdAt.toISOString(),
     sharedBy: null as string | null,
     sharedWithDoctors: sharedDoctorsByDoc.get(d.id) || [],
@@ -97,7 +98,7 @@ export default async function PatientDocuments() {
       categoryGroup: s.document!.category?.groupName ?? null,
       title: safeDecrypt(s.document!.title),
       content: s.document!.content ? safeDecrypt(s.document!.content) : null,
-      hasFile: !!s.document!.fileUrl,
+      hasFile: documentHasStoredFile(s.document!),
       createdAt: s.createdAt.toISOString(),
       sharedBy: s.document!.professional
         ? `Dr. ${s.document!.professional.firstName} ${s.document!.professional.lastName}`

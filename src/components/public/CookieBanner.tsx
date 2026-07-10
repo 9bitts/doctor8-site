@@ -27,6 +27,12 @@ export default function CookieBanner() {
     try { localStorage.setItem(STORAGE_KEY, value); } catch { /* ignore */ }
     notifyCookieConsentChanged();
     setVisible(false);
+    // Persist to Consent table when user is logged in
+    fetch("/api/consent/cookie", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ granted: value === "accepted" }),
+    }).catch(() => {});
   }
 
   const privacyLabel = lang === "en" ? "Privacy Policy" : lang === "es" ? "Pol\u00edtica de Privacidad" : "Pol\u00edtica de Privacidade";

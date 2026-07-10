@@ -125,6 +125,11 @@ async function anonymizeProfileInTransaction(
 
 async function anonymizeUser(userId: string, role: UserRole): Promise<void> {
   const now = new Date();
+  const { userHasClinicalRecords, MEDICAL_RECORD_RETENTION_YEARS } = await import(
+    "@/lib/clinical-retention"
+  );
+  const retainsClinical = await userHasClinicalRecords(userId);
+
   await db.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: userId },
@@ -136,6 +141,14 @@ async function anonymizeUser(userId: string, role: UserRole): Promise<void> {
     });
     await anonymizeProfileInTransaction(tx, userId, role);
   });
+
+  if (retainsClinical) {
+    await logQStashJob({
+      jobType: "account_anonymization",
+      status: "sent",
+      detail: `user ${userId}: account anonymized; clinical records retained (${MEDICAL_RECORD_RETENTION_YEARS}y legal hold)`,
+    });
+  }
 }
 
 /** Anonymize users past the 30-day deletion grace period (LGPD Art. 16). */

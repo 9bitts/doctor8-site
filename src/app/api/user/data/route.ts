@@ -6,6 +6,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { decrypt } from "@/lib/encryption";
+import { deletionScheduledDate } from "@/lib/account-deletion";
+import { userHasClinicalRecords, MEDICAL_RECORD_RETENTION_YEARS } from "@/lib/clinical-retention";
 import { AuditAction } from "@prisma/client";
 
 // GET — export all user data as JSON (GDPR right to portability)
@@ -92,15 +94,25 @@ export async function DELETE(req: NextRequest) {
   }
 
   const userId = session.user.id;
-  const deletionDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const deletionDate = deletionScheduledDate(now);
+  const hasClinical = await userHasClinicalRecords(userId);
 
   await db.$transaction([
     db.user.update({
       where: { id: userId },
-      data: { deletionScheduledAt: deletionDate },
+      data: {
+        deletedAt: now,
+        deletionScheduledAt: deletionDate,
+      },
     }),
     db.dataExportRequest.create({
-      data: { userId, type: "deletion", status: "pending", notes: `Scheduled for: ${deletionDate.toISOString()}` },
+      data: {
+        userId,
+        type: "deletion",
+        status: "pending",
+        notes: `Scheduled for: ${deletionDate.toISOString()}`,
+      },
     }),
     db.session.deleteMany({ where: { userId } }),
   ]);
@@ -113,6 +125,9 @@ export async function DELETE(req: NextRequest) {
     success: true,
     message: "Your account has been scheduled for deletion.",
     scheduledFor: deletionDate,
-    notice: "You have 30 days to cancel this request by contacting support@doctor8.org",
+    clinicalRecordsRetained: hasClinical,
+    notice: hasClinical
+      ? `Clinical records may be retained for the legal minimum period (${MEDICAL_RECORD_RETENTION_YEARS} years). You have 30 days to cancel by contacting support@doctor8.org`
+      : "You have 30 days to cancel this request by contacting support@doctor8.org",
   });
 }

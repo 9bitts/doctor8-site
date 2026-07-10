@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
-import { deliverEmissionToPatient, type EmissionDeliverKind } from "@/lib/emission-deliver";
+import { queueOrDeliverEmission, type EmissionDeliverKind } from "@/lib/emission-deliver";
 import { z } from "zod";
 
 const schema = z.object({
@@ -25,12 +25,12 @@ export async function POST(req: NextRequest) {
   const deliverKind: EmissionDeliverKind =
     kind === "exam" ? "exam" : kind === "document" ? "document" : "prescription";
 
-  const result = await deliverEmissionToPatient(ctx.userId, deliverKind, id, {
+  const result = await queueOrDeliverEmission(ctx.userId, deliverKind, id, {
     sendWhatsApp,
     whatsappMessage,
     forceWhatsapp,
   });
-  if ("error" in result) {
+  if (result.mode === "sync" && "error" in result) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 

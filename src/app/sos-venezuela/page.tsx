@@ -19,6 +19,7 @@ import HumanitarianLangSwitcher, {
 import PwaInstallPrompt from "@/components/humanitarian/PwaInstallPrompt";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 import HumanitarianOriginMarker from "@/components/humanitarian/HumanitarianOriginMarker";
+import { CrossBorderNotice } from "@/lib/humanitarian/cross-border-notice";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
 function t(lang: Lang, key: string) {
@@ -135,6 +136,7 @@ export default function SosVenezuelaPage() {
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
             {t(lang, "hum.landing.heroDesc")}
           </p>
+          <CrossBorderNotice lang={lang} />
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2">

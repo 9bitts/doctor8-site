@@ -17,6 +17,31 @@ function safeDecrypt(v: string | null | undefined): string {
   try { return decrypt(v); } catch { return v || ""; }
 }
 
+async function ensureDocumentSharedWithPatient(
+  documentId: string,
+  linkedUserId: string,
+): Promise<void> {
+  const patientProfile = await db.patientProfile.findUnique({
+    where: { userId: linkedUserId },
+    select: { id: true },
+  });
+  if (!patientProfile) return;
+
+  const existing = await db.sharedRecord.findFirst({
+    where: { documentId, patientId: patientProfile.id },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  await db.sharedRecord.create({
+    data: {
+      documentId,
+      patientId: patientProfile.id,
+      sharedWithUserId: linkedUserId,
+    },
+  });
+}
+
 function shareUrl(hasAccount: boolean, kind: EmissionDeliverKind): string {
   if (!hasAccount) return `${APP_URL}/register`;
   if (kind === "prescription") return `${APP_URL}/patient/prescriptions`;
@@ -221,6 +246,7 @@ export async function deliverEmissionToPatient(
   }
 
   if (linkedUserId) {
+    await ensureDocumentSharedWithPatient(document.id, linkedUserId);
     const keys = EMISSION_NOTIF_KEYS[docKind];
     const copy = storedNotificationText(keys.titleKey, keys.bodyKey, { doctor: doctorName });
     try {
@@ -414,4 +440,31 @@ export async function deliverIntegrativeTherapistEmissionToPatient(
     shareUrl: shareUrl(!!linkedUserId, "prescription"),
     whatsapp,
   };
+}
+
+/** Prefer QStash queue; fall back to synchronous delivery. */
+export async function queueOrDeliverEmission(
+  professionalUserId: string,
+  kind: EmissionDeliverKind,
+  id: string,
+  opts?: { sendWhatsApp?: boolean; whatsappMessage?: string; forceWhatsapp?: boolean },
+): Promise<
+  | { mode: "queued" }
+  | ({ mode: "sync" } & DeliverResult)
+  | { mode: "sync"; error: string; status: number }
+> {
+  const { scheduleEmissionDelivery } = await import("@/lib/qstash-emission");
+  const queued = await scheduleEmissionDelivery({
+    professionalUserId,
+    kind,
+    id,
+    sendWhatsApp: opts?.sendWhatsApp,
+  });
+  if (queued) return { mode: "queued" };
+
+  const result = await deliverEmissionToPatient(professionalUserId, kind, id, opts);
+  if ("error" in result) {
+    return { mode: "sync", error: result.error, status: result.status };
+  }
+  return { mode: "sync", ...result };
 }

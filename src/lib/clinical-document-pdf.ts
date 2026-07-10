@@ -2,6 +2,7 @@
 
 import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "pdf-lib";
 import type { SignLang } from "@/lib/sign-helpers";
+import { drawBrandLogoCentered } from "@/lib/pdf-brand-logo";
 
 const BLUE = rgb(33 / 255, 106 / 255, 134 / 255);   // #216a86
 const GREEN = rgb(224 / 255, 89 / 255, 48 / 255);   // #e05930
@@ -104,16 +105,10 @@ export async function buildClinicalDocumentPdf(data: ClinicalDocumentPdfData): P
 
   const maxW = A4.w - margin * 2;
 
-  // Header — logo centralizada (canto esquerdo livre para QR ICP-Brasil)
-  const logoSize = 26;
-  const logoDoctorW = fontBold.widthOfTextAtSize("Doctor", logoSize);
-  const logoEightW = fontBold.widthOfTextAtSize("8", logoSize);
-  const logoTotalW = logoDoctorW + logoEightW;
-  const logoX = (A4.w - logoTotalW) / 2;
-  text(page, "Doctor", logoX, y - 18, logoSize, fontBold, BLUE);
-  text(page, "8", logoX + logoDoctorW, y - 18, logoSize, fontBold, GREEN);
+  const logoH = await drawBrandLogoCentered(pdf, page, { topY: y - 4, maxWidth: 150, maxHeight: 30 });
+  const taglineY = logoH > 0 ? y - logoH - 12 : y - 32;
   const taglineW = font.widthOfTextAtSize(sanitize(tr.tagline), 8);
-  text(page, tr.tagline, (A4.w - taglineW) / 2, y - 32, 8, font, GRAY);
+  text(page, tr.tagline, (A4.w - taglineW) / 2, taglineY, 8, font, GRAY);
 
   const doctorTop = y - 52;
   const rightX = A4.w - margin;

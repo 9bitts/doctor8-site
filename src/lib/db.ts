@@ -14,6 +14,8 @@ export const db =
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]
         : ["error"],
+    // Railway Postgres: set DATABASE_URL with ?connection_limit=5&pool_timeout=20
+    // or use PgBouncer / Prisma Accelerate for multi-instance deploys.
   });
 
 globalForPrisma.prisma = db;

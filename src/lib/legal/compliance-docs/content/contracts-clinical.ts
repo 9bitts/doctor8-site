@@ -116,7 +116,7 @@ export const contractsAndClinicalDocs: ComplianceDoc[] = [
       {
         title: "1. Prazos de guarda",
         content: `<ul class="list-disc pl-5 space-y-2">
-<li><strong>Prontuário médico:</strong> mínimo de <strong>10 anos</strong> a partir do último atendimento (CFM 1.821/2007).</li>
+<li><strong>Prontuário médico:</strong> mínimo de <strong>20 anos</strong> a partir do último atendimento (CFM 1.821/2007 — confirmar interpretação com assessoria jurídica).</li>
 <li><strong>Documentos psicológicos:</strong> mínimo de <strong>5 anos</strong> (CFP 06/2019), salvo disposição mais restritiva.</li>
 <li><strong>Dados cadastrais:</strong> enquanto a conta estiver ativa + prazos fiscais/contratuais.</li>
 <li><strong>Logs de auditoria:</strong> mínimo de 6 meses a 5 anos conforme criticidade e obrigação legal.</li>

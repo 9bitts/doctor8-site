@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireOrganizationApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { buildTissBatchXml } from "@/lib/tiss-export";
+import { validateTissBatch } from "@/lib/tiss-validate";
 import { formatLicense, getProfessionInfo } from "@/lib/profession-label";
 import { decryptPhiField } from "@/lib/phi-field-crypto";
 
@@ -29,7 +30,7 @@ export async function GET(
   });
   const profMap = new Map(professionals.map((p) => [p.id, p]));
 
-  const xml = buildTissBatchXml({
+  const batchContext = {
     batchNumber: batch.batchNumber,
     operatorName: batch.orgHealthPlan.operatorName,
     ansRegistry: batch.orgHealthPlan.ansRegistry,
@@ -58,7 +59,17 @@ export async function GET(
           : null,
       };
     }),
-  });
+  };
+
+  const validationIssues = validateTissBatch(batchContext);
+  if (validationIssues.length > 0) {
+    return NextResponse.json(
+      { error: "TISS validation failed", issues: validationIssues },
+      { status: 422 },
+    );
+  }
+
+  const xml = buildTissBatchXml(batchContext);
 
   await db.tissBatch.update({
     where: { id: batch.id },

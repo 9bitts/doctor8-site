@@ -8,6 +8,7 @@ import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { getSignedReadUrl } from "@/lib/s3";
+import { documentHasStoredFile, resolveDocumentFileKey } from "@/lib/document-file";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -32,11 +33,12 @@ export async function GET(req: NextRequest) {
 
     const doc = await db.medicalDocument.findUnique({
       where: { id: documentId },
-      select: { fileUrl: true },
+      select: { fileUrl: true, signedFileUrl: true, signatureStatus: true },
     });
-    if (!doc?.fileUrl) return NextResponse.json({ error: "No file" }, { status: 404 });
+    const key = doc ? resolveDocumentFileKey(doc) : null;
+    if (!key) return NextResponse.json({ error: "No file" }, { status: 404 });
 
-    const url = await getSignedReadUrl(safeDecrypt(doc.fileUrl));
+    const url = await getSignedReadUrl(key);
     return NextResponse.json({ url });
   }
 
@@ -100,7 +102,7 @@ export async function GET(req: NextRequest) {
         categoryName: s.document!.category?.name ?? null,
         categoryGroup: s.document!.category?.groupName ?? null,
         type: s.document!.type as string,
-        hasFile: !!s.document!.fileUrl,
+        hasFile: documentHasStoredFile(s.document!),
         patientName: `${firstName} ${lastName}`.trim(),
         patientFirstName: firstName,
         patientLastName: lastName,

@@ -12,8 +12,9 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { UserRole, ConsentType } from "@prisma/client";
-import { REGISTRATION_REGION_CODES, requiresGdpr, requiresHipaa } from "@/lib/registration-regions";
+import { createRegisterConsents, createOAuthSignupConsents } from "@/lib/consent/register-consents";
+import { UserRole } from "@prisma/client";
+import { REGISTRATION_REGION_CODES, requiresGdpr, requiresHipaa, requiresLgpd } from "@/lib/registration-regions";
 import { sendEmailVerification } from "@/lib/email";
 import { resolveLoginPathForRegistration } from "@/lib/auth-portals";
 import { registerAckResponse } from "@/lib/register-anti-enum";
@@ -74,6 +75,7 @@ const registerSchema = z.object({
   }),
   acceptedHipaa: z.boolean().optional(),
   acceptedGdpr: z.boolean().optional(),
+  acceptedLgpd: z.boolean().optional(),
   professionalKind: z.enum(["psychologist"]).optional(),
   profession: z.enum([
     "medico",
@@ -140,40 +142,6 @@ async function createRegisterProfile(
   });
 }
 
-async function createRegisterConsents(
-  tx: Parameters<Parameters<typeof db.$transaction>[0]>[0],
-  userId: string,
-  ip: string,
-  userAgent: string,
-  acceptedTerms: true,
-  acceptedPrivacy: true,
-  acceptedHipaa?: boolean,
-  acceptedGdpr?: boolean,
-): Promise<void> {
-  const consents: { type: ConsentType; granted: boolean; version: string }[] = [
-    { type: "TERMS_OF_SERVICE", granted: acceptedTerms, version: "1.0" },
-    { type: "PRIVACY_POLICY", granted: acceptedPrivacy, version: "1.0" },
-  ];
-
-  if (acceptedHipaa !== undefined) {
-    consents.push({ type: "HIPAA_AUTHORIZATION", granted: acceptedHipaa, version: "1.0" });
-  }
-  if (acceptedGdpr !== undefined) {
-    consents.push({ type: "GDPR_CONSENT", granted: acceptedGdpr, version: "1.0" });
-  }
-
-  await tx.consent.createMany({
-    data: consents.map((c) => ({
-      userId,
-      type: c.type,
-      version: c.version,
-      granted: c.granted,
-      ipAddress: ip,
-      userAgent,
-    })),
-  });
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -207,6 +175,7 @@ export async function POST(req: NextRequest) {
       acceptedPrivacy,
       acceptedHipaa,
       acceptedGdpr,
+      acceptedLgpd,
       professionalKind,
       profession,
       callbackUrl,
@@ -244,6 +213,13 @@ export async function POST(req: NextRequest) {
     if (requiresGdpr(region) && !acceptedGdpr) {
       return NextResponse.json(
         { error: { acceptedGdpr: ["GDPR consent required for EU users"] } },
+        { status: 400 }
+      );
+    }
+
+    if (requiresLgpd(region) && !acceptedLgpd) {
+      return NextResponse.json(
+        { error: { acceptedLgpd: ["LGPD consent required for Brazil users"] } },
         { status: 400 }
       );
     }
@@ -345,16 +321,14 @@ export async function POST(req: NextRequest) {
           profession,
         });
 
-        await createRegisterConsents(
-          tx,
-          existing.id,
-          ip,
-          userAgent,
+        await createRegisterConsents(tx, existing.id, ip, userAgent, {
           acceptedTerms,
           acceptedPrivacy,
           acceptedHipaa,
           acceptedGdpr,
-        );
+          acceptedLgpd,
+          acceptedProfessionalTerms: role === "PROFESSIONAL",
+        });
 
         await saveRegistrationPhone(tx, existing.id, role as UserRole, phoneParsed.e164);
       });
@@ -439,16 +413,14 @@ export async function POST(req: NextRequest) {
         profession,
       });
 
-      await createRegisterConsents(
-        tx,
-        newUser.id,
-        ip,
-        userAgent,
+      await createRegisterConsents(tx, newUser.id, ip, userAgent, {
         acceptedTerms,
         acceptedPrivacy,
         acceptedHipaa,
         acceptedGdpr,
-      );
+        acceptedLgpd,
+        acceptedProfessionalTerms: role === "PROFESSIONAL",
+      });
 
       await saveRegistrationPhone(tx, newUser.id, role as UserRole, phoneParsed.e164);
 

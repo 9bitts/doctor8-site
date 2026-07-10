@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { getDailyRecordingAccessLink } from "@/lib/daily";
-import { markDailyRecordingReady } from "@/lib/daily-recording-log";
+import { markDailyRecordingReady, markDailyMeetingEnded } from "@/lib/daily-recording-log";
 
 function verifyDailySignature(
   rawBody: string,
@@ -42,6 +42,7 @@ type DailyWebhookEvent = {
     room_name?: string;
     recording_id?: string;
     duration?: number;
+    max_participants?: number;
   };
 };
 
@@ -66,6 +67,15 @@ export async function POST(req: NextRequest) {
 
   if (!verifyDailySignature(rawBody, signature, timestamp)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  if (event.type === "meeting.ended") {
+    const roomName = event.payload?.room_name;
+    const durationSecs = event.payload?.duration;
+    if (roomName) {
+      await markDailyMeetingEnded({ dailyRoomName: roomName, durationSecs });
+    }
+    return NextResponse.json({ received: true, type: event.type, roomName });
   }
 
   if (event.type !== "recording.ready-to-download") {

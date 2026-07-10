@@ -2,7 +2,7 @@
 
 // src/app/(dashboard)/admin/payments/PaymentsAdminClient.tsx
 import { useState, useEffect } from "react";
-import { CreditCard, Loader2, CheckCircle2, Clock } from "lucide-react";
+import { CreditCard, Loader2, CheckCircle2, Clock, RotateCcw } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 
@@ -44,6 +44,23 @@ export default function PaymentsAdminClient() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [totals, setTotals] = useState<Total[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refundingId, setRefundingId] = useState<string | null>(null);
+
+  async function refundPayment(appointmentId: string) {
+    if (!confirm("Confirmar reembolso deste pagamento via Stripe?")) return;
+    setRefundingId(appointmentId);
+    try {
+      const res = await fetch(`/api/admin/appointments/${appointmentId}/refund`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(typeof data.error === "string" ? data.error : "Falha no reembolso");
+        return;
+      }
+      alert("Reembolso processado.");
+    } finally {
+      setRefundingId(null);
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -108,11 +125,22 @@ export default function PaymentsAdminClient() {
                 </p>
                 {p.stripePaymentId && <p className="text-[11px] text-slate-400 mt-0.5">Stripe: {p.stripePaymentId}</p>}
               </div>
-              <div className="text-right shrink-0">
+              <div className="text-right shrink-0 flex flex-col items-end gap-2">
                 <p className="font-bold text-slate-900 text-sm">{money(p.amount, p.currency, locale)}</p>
                 <p className={`text-[11px] mt-0.5 ${p.paid ? "text-emerald-600" : "text-slate-400"}`}>
                   {p.paid ? t("admin.payments.statusConfirmed") : t("admin.payments.statusPending")}
                 </p>
+                {p.paid && p.stripePaymentId ? (
+                  <button
+                    type="button"
+                    onClick={() => refundPayment(p.id)}
+                    disabled={refundingId === p.id}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
+                  >
+                    {refundingId === p.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                    Reembolsar
+                  </button>
+                ) : null}
               </div>
             </div>
           ))}

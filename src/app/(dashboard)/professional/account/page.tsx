@@ -14,6 +14,7 @@ import { localeOf } from "@/lib/i18n/translations";
 import DigitalSignSettings from "@/components/professional/DigitalSignSettings";
 import PushNotificationSettings from "@/components/PushNotificationSettings";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
+import DataExportSection from "@/components/account/DataExportSection";
 import { readApiJson, apiErrorMessage } from "@/lib/api-client";
 import {
   BILLING_REGION_OPTIONS,
@@ -465,6 +466,8 @@ export default function ProfessionalAccountPage() {
           <LogOut size={15} /> {t("acct.signOut")}
         </button>
       </div>
+
+      <DataExportSection />
 
       <DeleteAccountSection />
     </div>

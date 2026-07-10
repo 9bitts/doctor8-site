@@ -10,6 +10,7 @@ import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { getSignedReadUrl } from "@/lib/s3";
+import { resolveDocumentFileKey } from "@/lib/document-file";
 import { z } from "zod";
 
 const DOC_TYPES = [
@@ -131,10 +132,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (!doc.fileUrl) return NextResponse.json({ error: "No file" }, { status: 404 });
-
-  const key = safeDecrypt(doc.fileUrl);
-  if (!key) return NextResponse.json({ error: "Invalid file reference" }, { status: 404 });
+  const key = resolveDocumentFileKey(doc);
+  if (!key) return NextResponse.json({ error: "No file" }, { status: 404 });
 
   try {
     const url = await getSignedReadUrl(key);

@@ -206,6 +206,7 @@ const contactPt = `
 <p>Se você acredita que seus Dados Pessoais foram usados de maneira incompatével com esta Política de Privacidade ou com as suas escolhas enquanto Titular destes Dados Pessoais, ou, ainda, se você tiver dúvidas, comentários ou sugestões relacionadas a esta Política, entre em contato conosco por meio dos seguintes endereços:</p>
 <p class="mt-4"><strong>Endereço para correspondências:</strong><br/>Rua Jornalista Djalma Andrade, nº.1505, Sala 01, Belvedere<br/>Belo Horizonte/MG, CEP 30.320-540, Brasil</p>
 <p class="mt-4"><strong>E-mail para contato:</strong><br/><a href="mailto:controladoria@doctor8.com.br" class="text-blue-600 underline">controladoria@doctor8.com.br</a></p>
+<p class="mt-4"><strong>Encarregado de Dados (DPO):</strong><br/><a href="mailto:dpo@doctor8.org" class="text-blue-600 underline">dpo@doctor8.org</a></p>
 `;
 
 const changesPt = `

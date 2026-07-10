@@ -20,6 +20,7 @@ import { createSignatureSession } from "@/lib/lacuna";
 import { parseLacunaError } from "@/lib/lacuna-errors";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
 import { formatLicense, getProfessionInfo, isDentistSpecialty } from "@/lib/profession-label";
+import { requireVerifiedProfessional } from "@/lib/professional-verified";
 import { getPublicBase, buildSignReturnUrl, assertPublicSignBase, resolveRequestLang } from "@/lib/sign-helpers";
 
 // Garante runtime Node (pdf-lib e Buffer não rodam em edge) e tempo extra.
@@ -111,6 +112,11 @@ export async function POST(req: NextRequest) {
   // Só o profissional dono pode assinar
   if (!prescription?.professional || prescription.professional.userId !== session.user.id) {
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+  }
+
+  const verified = await requireVerifiedProfessional(session.user.id);
+  if (!verified.ok) {
+    return NextResponse.json({ error: verified.error }, { status: verified.status });
   }
 
   // CPF do médico para a assinatura digital (do ProfessionalProfile)

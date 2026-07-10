@@ -62,6 +62,23 @@ export async function markDailyRecordingReady(params: {
   }
 }
 
+export async function markDailyMeetingEnded(params: {
+  dailyRoomName: string;
+  durationSecs?: number;
+}): Promise<void> {
+  try {
+    await db.dailyRecordingLog.updateMany({
+      where: { dailyRoomName: params.dailyRoomName },
+      data: {
+        durationSecs: params.durationSecs,
+        status: "ended",
+      },
+    });
+  } catch (e) {
+    console.error("[DAILY MEETING ENDED]", e);
+  }
+}
+
 export async function countDailyRecordingsSince(since: Date): Promise<number> {
   return db.dailyRecordingLog.count({
     where: { createdAt: { gte: since }, cloudRecording: true },

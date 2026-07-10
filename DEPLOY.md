@@ -223,7 +223,7 @@ Usuários americanos acessam `us.doctor8.app` (ou `doctor8.app`).
 - [ ] Videochamada abre no horário certo
 
 ### Operacional
-- [ ] UptimeRobot configurado para monitorar a URL
+- [ ] UptimeRobot configurado para monitorar `GET /api/health` (retorna `{ status: "ok", db: "connected" }`)
 - [ ] Sentry configurado para capturar erros
 - [ ] Backup automático do banco ativado no Railway
 

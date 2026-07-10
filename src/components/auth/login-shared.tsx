@@ -300,7 +300,9 @@ export function LoginHeader({
           <Icon className={`w-7 h-7 ${HEADER_ICON_COLOR[accent]}`} aria-hidden />
         </div>
       )}
-      <BrandLogo variant="on-dark" size="md" className="mx-auto" />
+      <div className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 shadow-lg mb-1">
+        <BrandLogo variant="on-light" size="lg" className="mx-auto" />
+      </div>
       {tagline ? <p className="text-slate-300 mt-3 text-sm leading-relaxed">{tagline}</p> : null}
     </div>
   );

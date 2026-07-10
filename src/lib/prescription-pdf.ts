@@ -6,6 +6,7 @@
 // A resolução de paciente / idioma / descriptografia continua na rota que chama isto.
 
 import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "pdf-lib";
+import { drawBrandLogoCentered } from "@/lib/pdf-brand-logo";
 
 export type Lang = "en" | "pt" | "es";
 
@@ -142,15 +143,10 @@ export async function buildPrescriptionPdf(
     }
   }
 
-  const logoSize = 26;
-  const logoDoctorW = fontBold.widthOfTextAtSize("Doctor", logoSize);
-  const logoEightW = fontBold.widthOfTextAtSize("8", logoSize);
-  const logoTotalW = logoDoctorW + logoEightW;
-  const logoX = (A4.w - logoTotalW) / 2;
-  text(page, "Doctor", logoX, y - 18, logoSize, fontBold, BLUE);
-  text(page, "8", logoX + logoDoctorW, y - 18, logoSize, fontBold, GREEN);
+  const logoH = await drawBrandLogoCentered(pdf, page, { topY: y - 4, maxWidth: 150, maxHeight: 30 });
+  const taglineY = logoH > 0 ? y - logoH - 12 : y - 32;
   const taglineW = font.widthOfTextAtSize(sanitize(tr.tagline), 8);
-  text(page, tr.tagline, (A4.w - taglineW) / 2, y - 32, 8, font, GRAY);
+  text(page, tr.tagline, (A4.w - taglineW) / 2, taglineY, 8, font, GRAY);
 
   // ── Cabeçalho: dados do médico (direita, abaixo da logo) ──
   const doctorTop = y - 52;

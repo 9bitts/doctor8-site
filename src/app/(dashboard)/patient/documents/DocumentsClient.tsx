@@ -263,19 +263,23 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     setUnsharingKey(null);
   }
 
-  async function handleDownload(id: string) {
+  async function handleDownload(id: string, sharedBy: string | null) {
     setDownloadingId(id);
     setActionError(null);
     try {
+      if (sharedBy) {
+        window.open(`/api/professional/documents/${id}/pdf`, "_blank", "noopener,noreferrer");
+        return;
+      }
       await openUrlAfterAsync(async () => {
         const res = await fetch(`/api/patient/documents?documentId=${id}`);
         const data = await res.json();
         if (res.ok && data.url) return data.url as string;
         if (data.error === "No file") {
-          setActionError(t("docs.err.downloadNoFile"));
-        } else {
-          setActionError(t("docs.err.downloadFailed"));
+          window.open(`/api/professional/documents/${id}/pdf`, "_blank", "noopener,noreferrer");
+          return null;
         }
+        setActionError(t("docs.err.downloadFailed"));
         return null;
       });
     } catch {
@@ -368,9 +372,9 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                           )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                        {it.hasFile && (
+                        {(it.hasFile || it.sharedBy) && (
                           <button
-                            onClick={() => handleDownload(it.id)}
+                            onClick={() => handleDownload(it.id, it.sharedBy)}
                             disabled={downloadingId === it.id}
                             className="text-slate-400 hover:text-emerald-500 transition p-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
                             aria-label={t("docs.openAttachment")}

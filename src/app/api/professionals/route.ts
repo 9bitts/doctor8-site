@@ -1,6 +1,7 @@
 // Returns verified health professionals + psychoanalysts for patient booking.
 
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listUnifiedProviders } from "@/lib/providers";
@@ -15,12 +16,17 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get("type") || undefined;
 
   const [providers, onlineByProId] = await Promise.all([
-    listUnifiedProviders({
-      specialty: specialty && specialty !== "All" ? specialty : null,
-      consultType: type || null,
-      verifiedOnly: true,
-      take: 80,
-    }),
+    unstable_cache(
+      async () =>
+        listUnifiedProviders({
+          specialty: specialty && specialty !== "All" ? specialty : null,
+          consultType: type || null,
+          verifiedOnly: true,
+          take: 80,
+        }),
+      [`professionals-list-${specialty || "all"}-${type || "all"}`],
+      { revalidate: 60 },
+    )(),
     getOnlineJitSessionByProfessionalId(),
   ]);
 

@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import PushNotificationSettings from "@/components/PushNotificationSettings";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
+import DataExportSection from "@/components/account/DataExportSection";
 import IncompleteSectionHighlight, {
   incompleteFieldClass,
   incompleteInputClass,
@@ -776,6 +777,8 @@ export default function AccountPage() {
           <LogOut size={15} /> {t("acct.signOut")}
         </button>
       </div>
+
+      <DataExportSection />
 
       <DeleteAccountSection />
     </div>
