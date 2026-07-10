@@ -65,12 +65,16 @@ export function StripeConnectCard({ mode = "full" }: StripeConnectCardProps) {
     setError("");
     try {
       const res = await fetch("/api/professional/stripe-connect/onboard", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { url?: string; message?: string; error?: string };
       if (!res.ok) {
-        setError(t("connect.error"));
+        setError(data.message || t("connect.error"));
         return;
       }
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) {
+        window.location.assign(data.url);
+        return;
+      }
+      setError(t("connect.error"));
     } catch {
       setError(t("connect.error"));
     } finally {

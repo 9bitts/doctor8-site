@@ -24,12 +24,44 @@ export function summarizeConnectAccount(account: Stripe.Account): StripeConnectS
   return "pending";
 }
 
+function stripeCountryCode(
+  licenseCountry: string | null | undefined,
+  userRegion?: string | null,
+  currency?: string | null,
+): string {
+  const license = (licenseCountry || "").trim().toUpperCase();
+  if (license.length === 2) return license.toLowerCase();
+
+  const region = (userRegion || "").trim().toUpperCase();
+  if (region.length === 2) return region.toLowerCase();
+
+  if ((currency || "").toUpperCase() === "BRL") return "br";
+
+  return "br";
+}
+
+export function stripeConnectErrorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = String((error as { message?: string }).message || "");
+    if (/connect/i.test(message) && /signed|enabled|activated|onboarding/i.test(message)) {
+      return "A plataforma Doctor8 ainda está finalizando a configuração do Stripe Connect. Tente novamente mais tarde.";
+    }
+    if (message) return message;
+  }
+  return "Não foi possível iniciar o cadastro Stripe. Tente novamente.";
+}
+
 export async function getStripeConnectStatusForAccountId(
   accountId: string | null | undefined,
 ): Promise<StripeConnectStatus> {
   if (!accountId) return "none";
-  const account = await stripe.accounts.retrieve(accountId);
-  return summarizeConnectAccount(account);
+  try {
+    const account = await stripe.accounts.retrieve(accountId);
+    return summarizeConnectAccount(account);
+  } catch (error) {
+    console.error("[STRIPE_CONNECT] status retrieve failed:", accountId, error);
+    return "none";
+  }
 }
 
 export async function getStripeConnectStatusForProfile(
@@ -42,12 +74,6 @@ export async function getStripeConnectStatusForProfile(
   return getStripeConnectStatusForAccountId(profile?.stripeConnectAccountId);
 }
 
-function stripeCountryCode(licenseCountry: string | null | undefined): string {
-  const c = (licenseCountry || "US").trim().toUpperCase();
-  if (c.length === 2) return c.toLowerCase();
-  return "us";
-}
-
 export async function createOrResumeConnectOnboarding(params: {
   userId: string;
   professionalProfileId: string;
@@ -57,22 +83,27 @@ export async function createOrResumeConnectOnboarding(params: {
     select: {
       stripeConnectAccountId: true,
       licenseCountry: true,
+      currency: true,
       firstName: true,
       lastName: true,
-      user: { select: { email: true } },
+      user: { select: { email: true, region: true } },
     },
   });
   if (!profile) throw new Error("PROFILE_NOT_FOUND");
 
   let accountId = profile.stripeConnectAccountId;
+  const country = stripeCountryCode(
+    profile.licenseCountry,
+    profile.user.region,
+    profile.currency,
+  );
 
   if (!accountId) {
     const account = await stripe.accounts.create({
       type: "express",
-      country: stripeCountryCode(profile.licenseCountry),
+      country,
       email: profile.user.email,
       capabilities: {
-        card_payments: { requested: true },
         transfers: { requested: true },
       },
       business_type: "individual",

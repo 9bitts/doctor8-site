@@ -3,6 +3,7 @@ import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import {
   createOrResumeConnectOnboarding,
   isStripeConnectEnabled,
+  stripeConnectErrorMessage,
 } from "@/lib/stripe-connect";
 
 export async function POST() {
@@ -21,6 +22,9 @@ export async function POST() {
     return NextResponse.json({ url });
   } catch (e) {
     console.error("[STRIPE_CONNECT] onboard error:", e);
-    return NextResponse.json({ error: "ONBOARD_FAILED" }, { status: 500 });
+    return NextResponse.json(
+      { error: "ONBOARD_FAILED", message: stripeConnectErrorMessage(e) },
+      { status: 500 },
+    );
   }
 }

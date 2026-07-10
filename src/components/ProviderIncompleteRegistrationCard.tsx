@@ -38,9 +38,9 @@ export default function ProviderIncompleteRegistrationCard({
     setStripeLoading(true);
     try {
       const res = await fetch("/api/professional/stripe-connect/onboard", { method: "POST" });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      const data = (await res.json().catch(() => ({}))) as { url?: string; message?: string };
+      if (!res.ok || !data.url) return;
+      window.location.assign(data.url);
     } finally {
       setStripeLoading(false);
     }
