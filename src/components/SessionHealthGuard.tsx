@@ -26,6 +26,8 @@ const DASHBOARD_PREFIXES = [
   "/video",
 ] as const;
 
+const REDIRECT_CONFIRM_MS = 1_500;
+
 function isDashboardPath(pathname: string): boolean {
   return DASHBOARD_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -34,24 +36,41 @@ function isDashboardPath(pathname: string): boolean {
 
 /** Redirects to login when the client detects an expired session on protected routes. */
 export default function SessionHealthGuard() {
-  const { status, data: session } = useSession();
+  const { status } = useSession();
   const pathname = usePathname();
-  const redirectingRef = useRef(false);
+  const wasAuthenticatedRef = useRef(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (status !== "unauthenticated") {
-      redirectingRef.current = false;
+    if (status === "authenticated") {
+      wasAuthenticatedRef.current = true;
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
       return;
     }
-    if (!isDashboardPath(pathname)) return;
-    if (redirectingRef.current) return;
 
-    redirectingRef.current = true;
-    const returnUrl = pathname + window.location.search;
-    const loginPath = resolveLoginPathForSession(undefined, pathname);
-    const loginUrl = `${loginPath}?callbackUrl=${encodeURIComponent(returnUrl)}&reason=session_expired`;
-    window.location.replace(loginUrl);
-  }, [pathname, session?.user?.role, status]);
+    if (status === "loading") return;
+    if (!wasAuthenticatedRef.current) return;
+    if (!isDashboardPath(pathname)) return;
+    if (redirectTimerRef.current) return;
+
+    redirectTimerRef.current = setTimeout(() => {
+      redirectTimerRef.current = null;
+      const returnUrl = pathname + window.location.search;
+      const loginPath = resolveLoginPathForSession(undefined, pathname);
+      const loginUrl = `${loginPath}?callbackUrl=${encodeURIComponent(returnUrl)}&reason=session_expired`;
+      window.location.replace(loginUrl);
+    }, REDIRECT_CONFIRM_MS);
+
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
+    };
+  }, [pathname, status]);
 
   return null;
 }

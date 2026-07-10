@@ -91,12 +91,26 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [showNaturalMedicineNav, setShowNaturalMedicineNav] = useState(true);
+  const [sessionSnapshot, setSessionSnapshot] = useState<{
+    role: string;
+    userId: string;
+    userName: string;
+  } | null>(null);
 
-  const sessionLoaded = status !== "loading";
-  const role = session?.user?.role ?? "";
-  const userId = session?.user?.id ?? "";
-  const userName = session?.user?.name
-    ?? (session?.user?.email ? session.user.email.split("@")[0] : "User");
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user) return;
+    setSessionSnapshot({
+      role: session.user.role ?? "",
+      userId: session.user.id ?? "",
+      userName: session.user.name
+        ?? (session.user.email ? session.user.email.split("@")[0] : "User"),
+    });
+  }, [session, status]);
+
+  const sessionLoaded = sessionSnapshot !== null;
+  const role = sessionSnapshot?.role ?? "";
+  const userId = sessionSnapshot?.userId ?? "";
+  const userName = sessionSnapshot?.userName ?? "User";
 
   useEffect(() => {
     const providerRoles = ["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"];
@@ -360,6 +374,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       <Link
         key={item.href}
         href={item.href}
+        scroll={false}
         onClick={() => setSidebarOpen(false)}
         className={`
           flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all

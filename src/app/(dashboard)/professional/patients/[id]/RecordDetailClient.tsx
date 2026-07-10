@@ -1640,7 +1640,7 @@ export default function RecordDetailClient({
       )}
       {chartTab === "diagnoses" && <DiagnosesPanel chartId={chart.id} readOnly={!canEdit} />}
       {chartTab === "vaccines" && (
-        <VaccinationPanel chartId={chart.id} dateOfBirth={chart.dateOfBirth} readOnly={!canEdit} />
+        <VaccinationPanel chartId={chart.id} readOnly={!canEdit} />
       )}
       {chartTab === "growth" && (
         <GrowthCurvePanel chartId={chart.id} dateOfBirth={chart.dateOfBirth} sex={chart.sex} />

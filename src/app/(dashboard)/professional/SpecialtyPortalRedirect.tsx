@@ -12,7 +12,10 @@ export default function SpecialtyPortalRedirect({ portalBase }: { portalBase: st
   useEffect(() => {
     const target = mapProfessionalPathToPortal(portalBase, pathname);
     const qs = searchParams.toString();
-    router.replace(qs ? `${target}?${qs}` : target);
+    const destination = qs ? `${target}?${qs}` : target;
+    const current = qs ? `${pathname}?${qs}` : pathname;
+    if (destination === current) return;
+    router.replace(destination);
   }, [pathname, portalBase, searchParams, router]);
 
   return (

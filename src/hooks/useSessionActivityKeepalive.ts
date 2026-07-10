@@ -2,9 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { usePathname } from "next/navigation";
 import { SESSION_INTERACTION_EVENTS } from "@/lib/session-inactivity-config";
-import { extendSessionOnActivity, extendSessionOnNavigation } from "@/lib/session-extend-client";
+import { extendSessionOnActivity } from "@/lib/session-extend-client";
 
 const EXTEND_INTERVAL_MS = 60_000;
 
@@ -14,7 +13,6 @@ export function useSessionActivityKeepalive(enabled = true) {
   const updateRef = useRef(update);
   const lastExtendRef = useRef(0);
   const lastActivityRef = useRef(Date.now());
-  const pathname = usePathname();
 
   useEffect(() => {
     updateRef.current = update;
@@ -56,7 +54,6 @@ export function useSessionActivityKeepalive(enabled = true) {
     }
 
     lastActivityRef.current = Date.now();
-    extendSessionOnNavigation(updateRef.current);
     void maybeExtend();
 
     const interval = setInterval(() => void maybeExtend(), EXTEND_INTERVAL_MS);
@@ -73,5 +70,5 @@ export function useSessionActivityKeepalive(enabled = true) {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [enabled, status, pathname]);
+  }, [enabled, status]);
 }

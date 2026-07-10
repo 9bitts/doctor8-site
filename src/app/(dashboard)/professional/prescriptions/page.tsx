@@ -1651,14 +1651,6 @@ export default function PrescriptionsPage() {
               </div>
 
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => void searchDrugs()}
-                  disabled={drugQuery.trim().length < 2 || drugSearching}
-                  className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {t("pubSearch.search")}
-                </button>
                 <input
                   type="text"
                   value={drugQuery}
@@ -1670,9 +1662,20 @@ export default function PrescriptionsPage() {
                     }
                   }}
                   placeholder={cfg.phytoOnly ? t("rx.phytoProductSelect") : t("rx2.searchDrug")}
-                  className="rx-inp pl-[6.75rem] pr-10"
+                  className="rx-inp pr-[5.75rem]"
                 />
-                {drugSearching && <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />}
+                {drugSearching ? (
+                  <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void searchDrugs()}
+                    disabled={drugQuery.trim().length < 2}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 z-10 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {t("pubSearch.search")}
+                  </button>
+                )}
               </div>
 
               <button type="button" onClick={addManual}

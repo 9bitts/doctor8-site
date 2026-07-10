@@ -2558,7 +2558,7 @@ const en = {
   "tag.kind.other": "Other",
 
   "chartTab.records": "Records",
-  "chartTab.evolution": "Evolution",
+  "chartTab.evolution": "Vital Signs",
   "chartTab.diagnoses": "Diagnoses",
   "chartTab.vaccines": "Vaccines",
   "chartTab.growth": "Growth",
@@ -8083,7 +8083,7 @@ const pt: LocaleDict = {
   "tag.kind.other": "Outro",
 
   "chartTab.records": "Registros",
-  "chartTab.evolution": "Evolução",
+  "chartTab.evolution": "Sinais Vitais",
   "chartTab.diagnoses": "Diagnósticos",
   "chartTab.vaccines": "Vacinas",
   "chartTab.growth": "Crescimento",
@@ -13591,7 +13591,7 @@ const es: LocaleDict = {
   "tag.kind.other": "Otro",
 
   "chartTab.records": "Registros",
-  "chartTab.evolution": "Evolución",
+  "chartTab.evolution": "Signos Vitales",
   "chartTab.diagnoses": "Diagnósticos",
   "chartTab.vaccines": "Vacunas",
   "chartTab.growth": "Crecimiento",
