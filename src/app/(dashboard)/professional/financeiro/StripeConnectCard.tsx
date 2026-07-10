@@ -15,6 +15,7 @@ interface StripeConnectCardProps {
 export function StripeConnectCard({ mode = "full" }: StripeConnectCardProps) {
   const t = useT();
   const [status, setStatus] = useState<ConnectStatus | null>(null);
+  const [featureEnabled, setFeatureEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [openingDashboard, setOpeningDashboard] = useState(false);
@@ -30,6 +31,7 @@ export function StripeConnectCard({ mode = "full" }: StripeConnectCardProps) {
     try {
       const res = await fetch("/api/professional/stripe-connect/status");
       if (res.status === 503) {
+        setFeatureEnabled(false);
         setStatus(null);
         return;
       }
@@ -109,6 +111,8 @@ export function StripeConnectCard({ mode = "full" }: StripeConnectCardProps) {
       </div>
     );
   }
+
+  if (!loading && !featureEnabled) return null;
 
   const statusLabel = status ? t(`connect.status.${status}`) : "";
   const showOnboardCta = status === "none" || status === "onboarding_incomplete" || status === "pending";

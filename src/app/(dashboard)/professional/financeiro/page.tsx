@@ -257,7 +257,7 @@ export function FinanceiroDashboard({
 
       {showPricingSettings && <ConsultPricingSettings {...pricingSettingsProps} />}
 
-      {stripeConnectEnabled && <StripeConnectCard mode={stripeConnectMode} />}
+      <StripeConnectCard mode={stripeConnectMode} />
 
       {error && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl flex items-center gap-2 flex-wrap">
