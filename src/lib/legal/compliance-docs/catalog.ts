@@ -3,8 +3,10 @@ import { publishedComplianceDocs } from "./published";
 import { lgpdCoreDocs } from "./content/lgpd-core";
 import { contractsAndClinicalDocs } from "./content/contracts-clinical";
 import { organizationalDocs } from "./content/organizational";
+import { cultureDocs } from "./content/culture";
 
 export const allComplianceDocs: ComplianceDoc[] = [
+  ...cultureDocs,
   ...publishedComplianceDocs,
   ...lgpdCoreDocs,
   ...contractsAndClinicalDocs,
