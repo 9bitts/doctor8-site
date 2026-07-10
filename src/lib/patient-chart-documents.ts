@@ -77,10 +77,14 @@ export async function syncChartDocuments(opts: {
   }
 }
 
-export async function loadChartMedicalDocuments(chartId: string, professionalId: string) {
+export async function loadChartMedicalDocuments(
+  chartId: string,
+  professionalId: string,
+  order: "asc" | "desc" = "desc",
+) {
   return db.medicalDocument.findMany({
     where: { professionalId, patientRecordId: chartId },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: order },
     include: {
       category: { select: { name: true, groupName: true } },
       prescriptions: {

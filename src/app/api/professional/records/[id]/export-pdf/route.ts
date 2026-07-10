@@ -3,12 +3,17 @@ import { db } from "@/lib/db";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { resolveChartAccess } from "@/lib/chart-access";
 import { loadChartMedicalDocuments, syncChartDocuments } from "@/lib/patient-chart-documents";
-import { parsePsychologyContent, safeDecrypt } from "@/lib/psychology-api";
+import { safeDecrypt } from "@/lib/psychology-api";
 import { buildClinicalChartPdf } from "@/lib/psychology-chart-pdf";
 import { resolveRequestLang } from "@/lib/sign-helpers";
 import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
 import { formatLicense, getProfessionInfo } from "@/lib/profession-label";
-import { formatRecordContentForDisplay } from "@/lib/record-content";
+import {
+  buildChartExportSections,
+  buildPatientInfoLines,
+  formatDiagnosesForExport,
+  type ChartDocForExport,
+} from "@/lib/chart-pdf-export";
 
 export async function GET(
   req: NextRequest,
@@ -44,7 +49,27 @@ export async function GET(
   });
   if (!owner) return new NextResponse("Not found", { status: 404 });
 
-  const docs = await loadChartMedicalDocuments(record.id, access.ownerProfessionalId);
+  const docs = await loadChartMedicalDocuments(record.id, access.ownerProfessionalId, "asc");
+
+  let profileAllergies: string | null = null;
+  if (record.linkedUserId) {
+    const patientProfile = await db.patientProfile.findUnique({
+      where: { userId: record.linkedUserId },
+      select: { allergies: true },
+    });
+    profileAllergies = patientProfile?.allergies ? safeDecrypt(patientProfile.allergies) : null;
+  }
+
+  const diagnoses = await db.patientDiagnosis.findMany({
+    where: { patientRecordId: record.id },
+    orderBy: { notedAt: "asc" },
+    select: {
+      cidCode: true,
+      cidLabel: true,
+      status: true,
+      notedAt: true,
+    },
+  });
 
   const lang = resolveRequestLang(req);
   const patientName = `${safeDecrypt(record.firstName)} ${safeDecrypt(record.lastName)}`.trim();
@@ -57,31 +82,42 @@ export async function GET(
     council.councilKey,
   ) || "—";
 
-  const prescriptionFallback = {
-    pt: "Prescrição / Receita",
-    en: "Prescription",
-    es: "Prescripción / Receta",
-  }[lang];
-
-  const sections = docs.map((d) => {
-    const title = safeDecrypt(d.title);
-    const raw = d.content ? safeDecrypt(d.content) : "";
-    const parsed = parsePsychologyContent(raw);
-    const renderedBody =
-      parsed && typeof parsed.renderedBody === "string" ? parsed.renderedBody : null;
-    const body = renderedBody
-      ? renderedBody
-      : raw
-        ? formatRecordContentForDisplay(raw)
-        : d.type === "PRESCRIPTION"
-          ? prescriptionFallback
-          : "—";
+  const exportDocs: ChartDocForExport[] = docs.map((d) => {
+    const rx = d.prescriptions[0];
+    let medications: ChartDocForExport["medications"] = null;
+    if (rx?.medications && Array.isArray(rx.medications)) {
+      medications = rx.medications as ChartDocForExport["medications"];
+    }
     return {
-      title,
-      body,
-      date: d.createdAt.toLocaleString(lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en"),
+      type: d.type,
+      recordKind: d.recordKind,
+      title: safeDecrypt(d.title),
+      content: d.content ? safeDecrypt(d.content) : null,
+      createdAt: d.createdAt,
+      hasFile: !!d.fileUrl,
+      categoryName: d.category?.name ?? null,
+      categoryGroup: d.category?.groupName ?? null,
+      sourceDocumentId: d.sourceDocumentId ?? null,
+      medications,
     };
   });
+
+  const sections = buildChartExportSections(lang, exportDocs);
+  const patientInfo = buildPatientInfoLines(lang, {
+    dateOfBirth: record.dateOfBirth ? safeDecrypt(record.dateOfBirth) : null,
+    cpf: record.cpf ? safeDecrypt(record.cpf) : null,
+    sex: record.sex || null,
+    phone: record.phone ? safeDecrypt(record.phone) : null,
+    email: record.email,
+    addressLine1: record.addressLine1 ? safeDecrypt(record.addressLine1) : null,
+    city: record.city || null,
+    state: record.state || null,
+    country: record.country || null,
+    zipCode: record.zipCode ? safeDecrypt(record.zipCode) : null,
+    notes: record.notes ? safeDecrypt(record.notes) : null,
+    profileAllergies,
+  });
+  const diagnosisLines = formatDiagnosesForExport(lang, diagnoses);
 
   const pdf = await buildClinicalChartPdf({
     lang,
@@ -91,6 +127,8 @@ export async function GET(
     variant: isPsych ? "psychology" : "medical",
     sections,
     exportedAt,
+    patientInfo,
+    diagnoses: diagnosisLines.length ? diagnosisLines : undefined,
   });
 
   const { createAuditLog } = await import("@/lib/audit");

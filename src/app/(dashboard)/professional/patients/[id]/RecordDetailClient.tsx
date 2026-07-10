@@ -1593,9 +1593,8 @@ export default function RecordDetailClient({
         <AnamnesisPromptBanner onCreate={openAnamnesisForm} readOnly={!canEdit} />
       )}
 
-      {/* Chart tabs — scroll horizontal no celular */}
-      <div className="max-w-full overflow-x-auto -mx-1 px-1 pb-1">
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-max min-w-full sm:min-w-0">
+      {/* Chart tabs */}
+      <div className="flex flex-wrap gap-2">
         {([
           { id: "records" as const, label: t("chartTab.records"), icon: FileText },
           { id: "evolution" as const, label: t("chartTab.evolution"), icon: Activity },
@@ -1618,17 +1617,16 @@ export default function RecordDetailClient({
             key={tab.id}
             type="button"
             onClick={() => setChartTab(tab.id)}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition ${
+            className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition border ${
               chartTab === tab.id
-                ? "bg-white text-brand-700 shadow-sm"
-                : "text-slate-600 hover:text-slate-800"
+                ? "text-brand-700 bg-brand-50 hover:bg-brand-100 border-brand-300 ring-1 ring-brand-200"
+                : "text-slate-600 bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300"
             }`}
           >
-            <tab.icon size={15} />
-            <span className="whitespace-nowrap">{tab.label}</span>
+            <tab.icon size={13} />
+            {tab.label}
           </button>
         ))}
-        </div>
       </div>
 
       {chartTab === "evolution" && (

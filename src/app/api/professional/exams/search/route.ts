@@ -1,4 +1,4 @@
-// GET — search CISMIV lab exams for exam requests (professional only).
+// GET — search lab exam catalog for exam requests (professional only).
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";

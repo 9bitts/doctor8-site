@@ -1311,7 +1311,6 @@ export default function PrescriptionsPage() {
           reuseHint={!!reuseClinical}
           initialPatient={reusePatient}
           lockPatient={lockPatient}
-          initialTitle={reuseClinical?.title || ""}
           initialBody={reuseClinical?.content || ""}
           initialType={reuseClinical?.type || "CERTIFICATE"}
           onBack={closeCreate}
@@ -1650,7 +1649,7 @@ export default function PrescriptionsPage() {
                 )}
               </div>
 
-              <div className="relative">
+              <div className="flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-brand-400 focus-within:shadow-[0_0_0_3px_rgba(33,106,134,.12)]">
                 <input
                   type="text"
                   value={drugQuery}
@@ -1662,16 +1661,16 @@ export default function PrescriptionsPage() {
                     }
                   }}
                   placeholder={cfg.phytoOnly ? t("rx.phytoProductSelect") : t("rx2.searchDrug")}
-                  className="rx-inp pr-[5.75rem]"
+                  className="flex-1 min-w-0 border-0 bg-transparent outline-none py-3 pl-3.5 pr-2 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl"
                 />
                 {drugSearching ? (
-                  <Loader2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />
+                  <Loader2 size={15} className="shrink-0 mr-3 text-slate-400 animate-spin" />
                 ) : (
                   <button
                     type="button"
                     onClick={() => void searchDrugs()}
                     disabled={drugQuery.trim().length < 2}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 z-10 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="shrink-0 mr-1.5 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t("pubSearch.search")}
                   </button>

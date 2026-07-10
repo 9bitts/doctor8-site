@@ -12,6 +12,9 @@ import type { SavedEmission } from "./EmissionPostSaveFlow";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
 import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
+import CategorySearchSelect from "@/components/professional/CategorySearchSelect";
+import { getCategoryLabel } from "@/lib/category-i18n";
+import { inferRecordKindFromCategory } from "@/lib/record-kind";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 import {
   extendSessionForWrite,
@@ -19,12 +22,15 @@ import {
   redirectToLoginAfterAuthFailure,
 } from "@/lib/session-extend-client";
 
-const DOC_TYPES = [
-  { value: "CERTIFICATE", labelKey: "rx.docTypeCertificate" },
-  { value: "REFERRAL", labelKey: "rx.docTypeReferral" },
-  { value: "CLINICAL_NOTE", labelKey: "rx.docTypeReport" },
-  { value: "OTHER", labelKey: "rx.docTypeOther" },
-] as const;
+interface CategoryGroup {
+  group: string;
+  items: {
+    id: string;
+    name: string;
+    slug: string;
+    legacyType: string | null;
+  }[];
+}
 
 interface DocTemplate {
   id: string;
@@ -41,7 +47,6 @@ interface DocumentCreateViewProps {
   reuseHint?: boolean;
   initialPatient: Chart | null;
   lockPatient?: boolean;
-  initialTitle: string;
   initialBody: string;
   initialType: string;
   onBack: () => void;
@@ -49,7 +54,7 @@ interface DocumentCreateViewProps {
 }
 
 export function DocumentCreateView({
-  t, charts, chartsLoading = false, reuseHint, initialPatient, lockPatient = false, initialTitle, initialBody, initialType,
+  t, charts, chartsLoading = false, reuseHint, initialPatient, lockPatient = false, initialBody, initialType,
   onBack, onSaved,
 }: DocumentCreateViewProps) {
   const { lang } = useI18n();
@@ -59,8 +64,9 @@ export function DocumentCreateView({
   const [patientQuery, setPatientQuery] = useState("");
   const [patientPickerOpen, setPatientPickerOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(initialPatient);
-  const [docType, setDocType] = useState(initialType || "CERTIFICATE");
-  const [title, setTitle] = useState(initialTitle || t("rx.docDefaultTitle"));
+  const [categoryId, setCategoryId] = useState("");
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [body, setBody] = useState(initialBody);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -74,6 +80,19 @@ export function DocumentCreateView({
     let active = true;
     (async () => {
       try {
+        const res = await fetch("/api/categories");
+        const data = await res.json();
+        if (active) setGroups(data.groups || []);
+      } catch { /* ignore */ }
+      if (active) setCategoriesLoading(false);
+    })();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
         const res = await fetch("/api/professional/templates/documents");
         const data = await res.json();
         if (active) setTemplates(data.templates || []);
@@ -82,6 +101,29 @@ export function DocumentCreateView({
     })();
     return () => { active = false; };
   }, []);
+
+  const sortedCategories = useMemo(() => {
+    const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en";
+    const items = groups.flatMap((g) =>
+      g.items.map((c) => ({
+        id: c.id,
+        slug: c.slug,
+        name: c.name,
+        legacyType: c.legacyType,
+        label: getCategoryLabel(lang, { slug: c.slug, name: c.name }),
+      })),
+    );
+    items.sort((a, b) => a.label.localeCompare(b.label, locale, { sensitivity: "base" }));
+    return items;
+  }, [groups, lang]);
+
+  useEffect(() => {
+    if (categoryId || !sortedCategories.length) return;
+    if (initialType) {
+      const match = sortedCategories.find((c) => c.legacyType === initialType);
+      if (match) setCategoryId(match.id);
+    }
+  }, [sortedCategories, initialType, categoryId]);
 
   const filteredCharts = useMemo(
     () => filterPatientCharts(charts, patientQuery),
@@ -103,8 +145,8 @@ export function DocumentCreateView({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t("tmpl.applyError"));
 
-      setDocType(tpl.documentType);
-      setTitle(data.preview?.title || tpl.title);
+      const match = sortedCategories.find((c) => c.legacyType === tpl.documentType);
+      if (match) setCategoryId(match.id);
       setBody(data.preview?.body || tpl.body);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("tmpl.applyError"));
@@ -123,7 +165,18 @@ export function DocumentCreateView({
   async function handleSave() {
     setError("");
     if (!selectedPatient) { setError(t("rx2.needPatient")); return; }
+    if (!categoryId) { setError(t("rec.errCategory")); return; }
     if (!body.trim()) { setError(t("rx.needDocumentBody")); return; }
+
+    const cat = sortedCategories.find((c) => c.id === categoryId);
+    if (!cat) { setError(t("rec.errCategory")); return; }
+
+    const title = cat.label;
+    const recordKind = inferRecordKindFromCategory(
+      { slug: cat.slug, name: cat.name, legacyType: cat.legacyType },
+      [],
+    );
+
     setSaving(true);
     try {
       await extendSessionForWrite(updateSession);
@@ -133,9 +186,10 @@ export function DocumentCreateView({
         credentials: "same-origin",
         body: JSON.stringify({
           patientRecordId: selectedPatient.id,
-          type: docType,
+          categoryId,
           title,
           content: body,
+          recordKind,
         }),
       });
       if (res.ok) {
@@ -157,8 +211,12 @@ export function DocumentCreateView({
     } finally { setSaving(false); }
   }
 
+  const selectedCategory = sortedCategories.find((c) => c.id === categoryId) ?? null;
   const filteredTemplates = templates.filter(
-    (tpl) => tpl.documentType === docType || templates.length <= 6,
+    (tpl) =>
+      !selectedCategory
+      || tpl.documentType === selectedCategory.legacyType
+      || templates.length <= 6,
   );
 
   return (
@@ -243,17 +301,20 @@ export function DocumentCreateView({
       </div>
 
       <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
-        <label className="text-sm font-semibold text-slate-800">{t("rx.documentType")}</label>
-        <div className="grid grid-cols-2 gap-2">
-          {DOC_TYPES.map((dt) => (
-            <button key={dt.value} type="button" onClick={() => setDocType(dt.value)}
-              className={`p-3 rounded-xl border-2 text-left text-sm font-semibold transition ${
-                docType === dt.value ? "border-brand-500 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-600 hover:border-slate-300"
-              }`}>
-              {t(dt.labelKey)}
-            </button>
-          ))}
-        </div>
+        {categoriesLoading ? (
+          <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
+            <Loader2 size={14} className="animate-spin" /> {t("docs.modal.loadingCategories")}
+          </div>
+        ) : sortedCategories.length === 0 ? (
+          <p className="text-sm text-amber-600">{t("docs.modal.noCategories")}</p>
+        ) : (
+          <CategorySearchSelect
+            label={t("docs.modal.category")}
+            options={sortedCategories.map((c) => ({ id: c.id, label: c.label }))}
+            value={categoryId}
+            onChange={setCategoryId}
+          />
+        )}
 
         {!templatesLoading && templates.length > 0 && (
           <div className="pt-2 border-t border-slate-100">
@@ -279,10 +340,6 @@ export function DocumentCreateView({
           </div>
         )}
 
-        <div>
-          <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.documentTitleLabel")}</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className="rx-inp" />
-        </div>
         <div>
           <label className="text-xs font-medium text-slate-600 block mb-1">{t("rx.documentBody")}</label>
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={10}

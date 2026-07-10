@@ -37,6 +37,7 @@ export interface ChartExportSection {
   title: string;
   body: string;
   date?: string;
+  meta?: string;
 }
 
 export async function buildPsychologyChartPdf(opts: {
@@ -66,6 +67,8 @@ export async function buildClinicalChartPdf(opts: {
   variant?: "psychology" | "medical";
   sections: ChartExportSection[];
   exportedAt: string;
+  patientInfo?: string[];
+  diagnoses?: string[];
 }): Promise<Uint8Array> {
   const variant = opts.variant ?? "medical";
   const pdf = await PDFDocument.create();
@@ -78,6 +81,10 @@ export async function buildClinicalChartPdf(opts: {
       patient: "Paciente",
       professional: variant === "psychology" ? "Psicóloga(o)" : "Profissional",
       exported: "Exportado em",
+      patientData: "Dados do paciente",
+      diagnoses: "Diagnósticos",
+      records: "Registros clínicos (ordem cronológica)",
+      noRecords: "Nenhum registro clínico na ficha.",
       footer: variant === "psychology"
         ? "CONFIDENCIAL — LGPD / CFP. Uso exclusivo do profissional habilitado."
         : "CONFIDENCIAL — LGPD / CFM. Uso exclusivo do profissional habilitado.",
@@ -87,6 +94,10 @@ export async function buildClinicalChartPdf(opts: {
       patient: "Patient",
       professional: variant === "psychology" ? "Psychologist" : "Professional",
       exported: "Exported at",
+      patientData: "Patient data",
+      diagnoses: "Diagnoses",
+      records: "Clinical records (chronological order)",
+      noRecords: "No clinical records on this chart.",
       footer: "CONFIDENTIAL — For licensed professional use only.",
     },
     es: {
@@ -94,6 +105,10 @@ export async function buildClinicalChartPdf(opts: {
       patient: "Paciente",
       professional: variant === "psychology" ? "Psicólogo/a" : "Profesional",
       exported: "Exportado el",
+      patientData: "Datos del paciente",
+      diagnoses: "Diagnósticos",
+      records: "Registros clínicos (orden cronológico)",
+      noRecords: "Sin registros clínicos en la ficha.",
       footer: "CONFIDENCIAL — Uso exclusivo del profesional habilitado.",
     },
   }[opts.lang];
@@ -119,9 +134,33 @@ export async function buildClinicalChartPdf(opts: {
   drawLine(`${labels.exported}: ${opts.exportedAt}`, 9, font, GRAY);
   y -= 8;
 
+  if (opts.patientInfo?.length) {
+    drawLine(labels.patientData, 11, bold);
+    for (const line of opts.patientInfo) {
+      drawLine(line, 9);
+    }
+    y -= 8;
+  }
+
+  if (opts.diagnoses?.length) {
+    drawLine(labels.diagnoses, 11, bold);
+    for (const line of opts.diagnoses) {
+      drawLine(line, 9);
+    }
+    y -= 8;
+  }
+
+  drawLine(labels.records, 11, bold);
+  y -= 4;
+
+  if (opts.sections.length === 0) {
+    drawLine(labels.noRecords, 9, font, GRAY);
+  }
+
   for (const section of opts.sections) {
     drawLine(section.title, 11, bold);
     if (section.date) drawLine(section.date, 8, font, GRAY);
+    if (section.meta) drawLine(section.meta, 8, font, GRAY);
     for (const line of wrapText(section.body, 90)) {
       drawLine(line, 9);
     }
