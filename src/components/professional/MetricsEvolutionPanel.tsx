@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { METRIC_FIELDS, type ClinicalMetricsSnapshot } from "@/lib/clinical-metrics";
-import { Loader2, TrendingUp } from "lucide-react";
+import { Loader2, TrendingUp, Plus } from "lucide-react";
 
 type MetricKey = (typeof METRIC_FIELDS)[number]["key"];
 
@@ -61,7 +61,15 @@ function SimpleLineChart({
   );
 }
 
-export default function MetricsEvolutionPanel({ chartId }: { chartId: string }) {
+export default function MetricsEvolutionPanel({
+  chartId,
+  onAddVitals,
+  readOnly,
+}: {
+  chartId: string;
+  onAddVitals?: () => void;
+  readOnly?: boolean;
+}) {
   const { t, lang } = useI18n();
   const [loading, setLoading] = useState(true);
   const [snapshots, setSnapshots] = useState<ClinicalMetricsSnapshot[]>([]);
@@ -112,6 +120,15 @@ export default function MetricsEvolutionPanel({ chartId }: { chartId: string }) 
       <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
         <TrendingUp className="mx-auto text-slate-300 mb-2" size={32} />
         <p className="text-sm text-slate-500">{t("metric.empty")}</p>
+        {!readOnly && onAddVitals && (
+          <button
+            type="button"
+            onClick={onAddVitals}
+            className="mt-4 inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition"
+          >
+            <Plus size={16} /> {t("metric.addVitalsCta")}
+          </button>
+        )}
       </div>
     );
   }

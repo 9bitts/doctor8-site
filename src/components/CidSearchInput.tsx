@@ -23,6 +23,7 @@ const LABELS: Record<string, Record<string, string>> = {
   hint: { pt: "O CID-10 é o padrão brasileiro para registrar diagnósticos no prontuário.", en: "ICD-10 is the standard for recording diagnoses in clinical records.", es: "La CIE-10 es el estándar para registrar diagnósticos en la historia clínica." },
   clear: { pt: "Remover", en: "Remove", es: "Quitar" },
   noResults: { pt: "Nenhum CID encontrado.", en: "No ICD codes found.", es: "No se encontraron códigos CIE." },
+  searching: { pt: "Buscando…", en: "Searching…", es: "Buscando…" },
 };
 
 export default function CidSearchInput({ value, onChange, required, onOpenChange }: CidSearchInputProps) {
@@ -33,9 +34,11 @@ export default function CidSearchInput({ value, onChange, required, onOpenChange
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CidSelection[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState("");
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const requestSeq = useRef(0);
 
   useEffect(() => {
     onOpenChange?.(open);
@@ -56,17 +59,32 @@ export default function CidSearchInput({ value, onChange, required, onOpenChange
     if (!query.trim() || query.length < 2) {
       setResults([]);
       setLoading(false);
+      setFetchError("");
+      setOpen(false);
       return;
     }
+    const seq = ++requestSeq.current;
     setLoading(true);
+    setFetchError("");
+    setOpen(true);
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(`/api/cid/search?q=${encodeURIComponent(query.trim())}`);
         const data = await res.json();
+        if (seq !== requestSeq.current) return;
+        if (!res.ok) {
+          setResults([]);
+          setFetchError(data.error || lt("noResults"));
+          setOpen(true);
+          return;
+        }
         setResults(data.results || []);
         setOpen(true);
       } catch {
+        if (seq !== requestSeq.current) return;
         setResults([]);
+        setFetchError(lt("noResults"));
+        setOpen(true);
       }
       setLoading(false);
     }, 280);
@@ -103,7 +121,7 @@ export default function CidSearchInput({ value, onChange, required, onOpenChange
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => { if (results.length) setOpen(true); }}
+          onFocus={() => { if (query.trim().length >= 2) setOpen(true); }}
           placeholder={lt("placeholder")}
           className="w-full pl-9 pr-9 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
         />
@@ -113,8 +131,13 @@ export default function CidSearchInput({ value, onChange, required, onOpenChange
 
       {open && query.length >= 2 && (
         <div className="absolute z-[100] left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
-          {results.length === 0 && !loading ? (
-            <p className="text-xs text-slate-400 px-3 py-3">{lt("noResults")}</p>
+          {loading ? (
+            <div className="flex items-center gap-2 px-3 py-3 text-xs text-slate-400">
+              <Loader2 size={14} className="animate-spin shrink-0" />
+              {lt("searching")}
+            </div>
+          ) : results.length === 0 ? (
+            <p className="text-xs text-slate-400 px-3 py-3">{fetchError || lt("noResults")}</p>
           ) : (
             results.map((r) => (
               <button

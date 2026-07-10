@@ -151,7 +151,7 @@ export default function DiagnosesPanel({ chartId, readOnly = false }: { chartId:
   return (
     <div className="space-y-4">
       {!readOnly && (
-      <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
+      <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3 overflow-visible">
         <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
           <Stethoscope size={16} className="text-brand-500" /> {t("diag.addTitle")}
         </p>

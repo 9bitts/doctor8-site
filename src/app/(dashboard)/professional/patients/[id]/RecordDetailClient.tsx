@@ -616,6 +616,29 @@ export default function RecordDetailClient({
     setShowForm(true);
   }
 
+  function openVitalsRecordForm() {
+    const draft = userId ? loadRecordDraft(userId, chart.id) : null;
+    if (draft && !isRecordDraftEmpty(draft)) {
+      applyRecordDraft(draft);
+      setDraftRestored(true);
+    } else {
+      resetForm();
+      const vitalsId = findCategoryIdByKeyword(sortedCategories, [
+        "sinais-vitais",
+        "sinais vitais",
+        "sinais",
+        "vital",
+        "vitais",
+        "signos vitales",
+        "vital signs",
+      ]);
+      if (vitalsId) setCategoryId(vitalsId);
+      setRecordKind("EVOLUTION");
+    }
+    setChartTab("records");
+    setShowForm(true);
+  }
+
   function openEditForm(doc: Doc) {
     resetForm();
     setEditingDoc(doc);
@@ -1117,6 +1140,7 @@ export default function RecordDetailClient({
     report: docs.filter((d) => matchesTimelineFilter(d, "report")).length,
     exam: docs.filter((d) => matchesTimelineFilter(d, "exam")).length,
     prescription: docs.filter((d) => matchesTimelineFilter(d, "prescription")).length,
+    patient_shared: docs.filter((d) => matchesTimelineFilter(d, "patient_shared")).length,
   }), [docs]);
 
   function scrollToRecord(id: string) {
@@ -1607,7 +1631,13 @@ export default function RecordDetailClient({
         </div>
       </div>
 
-      {chartTab === "evolution" && <MetricsEvolutionPanel chartId={chart.id} />}
+      {chartTab === "evolution" && (
+        <MetricsEvolutionPanel
+          chartId={chart.id}
+          onAddVitals={canEdit ? openVitalsRecordForm : undefined}
+          readOnly={!canEdit}
+        />
+      )}
       {chartTab === "diagnoses" && <DiagnosesPanel chartId={chart.id} readOnly={!canEdit} />}
       {chartTab === "vaccines" && (
         <VaccinationPanel chartId={chart.id} dateOfBirth={chart.dateOfBirth} readOnly={!canEdit} />

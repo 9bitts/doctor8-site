@@ -35,6 +35,7 @@ const CATALOG = [
   ["Registros clínicos", 3, [
     ["Anamnese", "ClipboardList", null],
     ["Evolução clínica", "Activity", null],
+    ["Sinais vitais", "HeartPulse", null],
     ["Nota clínica / observação", "StickyNote", "CLINICAL_NOTE"],
     ["Diagnóstico", "Stethoscope", null],
     ["Plano terapêutico", "ListChecks", null],

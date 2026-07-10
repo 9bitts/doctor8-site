@@ -2668,6 +2668,7 @@ const en = {
   "metric.temperature": "Temperature",
   "metric.spo2": "SpO2",
   "metric.empty": "No measurements yet. Add vitals when creating a clinical record.",
+  "metric.addVitalsCta": "Add vital signs",
   "metric.colDate": "Date",
 
   "diag.addTitle": "Add diagnosis",
@@ -2704,6 +2705,7 @@ const en = {
   "timeline.filter.report": "Reports",
   "timeline.filter.exam": "Exams",
   "timeline.filter.prescription": "Prescriptions",
+  "timeline.filter.patient_shared": "Shared by patient",
 
   "calc.title": "Clinical calculators",
   "calc.insert": "Click here to insert into record",
@@ -8190,6 +8192,7 @@ const pt: LocaleDict = {
   "metric.temperature": "Temperatura",
   "metric.spo2": "SpO2",
   "metric.empty": "Nenhuma medição ainda. Adicione sinais vitais ao criar um registro clínico.",
+  "metric.addVitalsCta": "Adicionar sinais vitais",
   "metric.colDate": "Data",
 
   "diag.addTitle": "Adicionar diagnóstico",
@@ -8226,6 +8229,7 @@ const pt: LocaleDict = {
   "timeline.filter.report": "Laudos",
   "timeline.filter.exam": "Exames",
   "timeline.filter.prescription": "Receitas",
+  "timeline.filter.patient_shared": "Compartilhado pelo paciente",
 
   "calc.title": "Calculadoras clínicas",
   "calc.insert": "Clique aqui para inserir no registro",
@@ -13695,6 +13699,7 @@ const es: LocaleDict = {
   "metric.temperature": "Temperatura",
   "metric.spo2": "SpO2",
   "metric.empty": "Sin mediciones aún. Agregue signos vitales al crear un registro clínico.",
+  "metric.addVitalsCta": "Agregar signos vitales",
   "metric.colDate": "Fecha",
 
   "diag.addTitle": "Agregar diagnóstico",
@@ -13731,6 +13736,7 @@ const es: LocaleDict = {
   "timeline.filter.report": "Informes",
   "timeline.filter.exam": "Exámenes",
   "timeline.filter.prescription": "Recetas",
+  "timeline.filter.patient_shared": "Compartido por el paciente",
 
   "calc.title": "Calculadoras clínicas",
   "calc.insert": "Haga clic aquí para insertar en el registro",

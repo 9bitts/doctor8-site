@@ -6,7 +6,8 @@ export type RecordTimelineFilter =
   | "evolution"
   | "report"
   | "exam"
-  | "prescription";
+  | "prescription"
+  | "patient_shared";
 
 export const RECORD_KIND_OPTIONS: ClinicalRecordKind[] = [
   "ANAMNESIS",
@@ -22,6 +23,7 @@ export const TIMELINE_FILTERS: RecordTimelineFilter[] = [
   "report",
   "exam",
   "prescription",
+  "patient_shared",
 ];
 
 export function recordKindLabelKey(kind: ClinicalRecordKind): string {
@@ -32,11 +34,22 @@ export function timelineFilterLabelKey(filter: RecordTimelineFilter): string {
   return `timeline.filter.${filter}`;
 }
 
+export function isPatientSharedChartDocument(
+  doc: { sourceDocumentId?: string | null },
+): boolean {
+  return !!doc.sourceDocumentId;
+}
+
 export function matchesTimelineFilter(
-  doc: { type: string; recordKind?: ClinicalRecordKind | string | null },
+  doc: {
+    type: string;
+    recordKind?: ClinicalRecordKind | string | null;
+    sourceDocumentId?: string | null;
+  },
   filter: RecordTimelineFilter,
 ): boolean {
   if (filter === "all") return true;
+  if (filter === "patient_shared") return isPatientSharedChartDocument(doc);
   if (filter === "anamnesis") return doc.recordKind === "ANAMNESIS";
   if (filter === "evolution") return doc.recordKind === "EVOLUTION";
   if (filter === "report") return doc.recordKind === "REPORT";
