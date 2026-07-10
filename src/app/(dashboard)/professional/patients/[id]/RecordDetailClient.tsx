@@ -82,6 +82,8 @@ import {
   isPsychologyStructuredContent, countRecordAttachments,
 } from "@/lib/record-content";
 import { isImageFile, rotateImageFile } from "@/lib/image-rotate";
+import { waPhoneDigits } from "@/lib/wa-phone";
+import { computeMissingForRx } from "@/lib/patient-rx-requirements";
 
 interface Chart {
   id: string;
@@ -102,6 +104,8 @@ interface Chart {
   state: string;
   country: string;
   zipCode: string;
+  missingForRx?: string[];
+  profileAllergies?: string | null;
 }
 interface Doc {
   id: string;
@@ -190,7 +194,7 @@ function RecordAttachmentStrip({
         </p>
       )}
       {error && !loading && (
-        <p className="text-xs text-rose-500">{t("rec.attachLoading")}</p>
+        <p className="text-xs text-rose-500">{t("rec.attachError")}</p>
       )}
       {files.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin max-w-full">
@@ -254,13 +258,9 @@ const LEGACY_KEYS: Record<string, string> = {
   OTHER: "doctype.OTHER",
 };
 
-// Clean phone for wa.me (digits only, add country code if starts with 0 or missing +)
-function waPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  // If already has country code (e.g. 5511...) keep it; else assume BR (+55)
-  if (digits.length >= 12) return digits;
-  if (digits.startsWith("0")) return "55" + digits.slice(1);
-  return "55" + digits;
+// Clean phone for wa.me — uses chart country when available.
+function waPhone(raw: string, country?: string | null): string {
+  return waPhoneDigits(raw, country);
 }
 
 export default function RecordDetailClient({
@@ -285,12 +285,6 @@ export default function RecordDetailClient({
   const isPsychologistPortal = pathname.startsWith("/psychologist");
   const isNursePortal = pathname.startsWith("/enfermeiro");
   const isPharmacistPortal = pathname.startsWith("/farmaceutico");
-  const isMedicalPortal =
-    pathname.startsWith("/professional") &&
-    !isPsychologistPortal &&
-    !isNutritionistPortal &&
-    !isNursePortal &&
-    !isPharmacistPortal;
   const portalBase = mapProfessionalPathToPortal(pathname, "/professional");
   const { data: session } = useSession();
   const userId = session?.user?.id ?? "";
@@ -298,7 +292,6 @@ export default function RecordDetailClient({
   const toast = useToast();
   const searchParams = useSearchParams();
   const consultReturnUrl = searchParams.get("returnUrl");
-  const minedImport = searchParams.get("source") === "mined";
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition" | "nursing" | "pharmacy">("records");
@@ -339,11 +332,24 @@ export default function RecordDetailClient({
     state: chart.state,
     country: chart.country || "BR",
     zipCode: chart.zipCode,
+    phone: chart.phone || "",
   });
   const [editingReg, setEditingReg] = useState(false);
   const [regDraft, setRegDraft] = useState(reg);
   const [regSaving, setRegSaving] = useState(false);
   const [regMsg, setRegMsg] = useState<string | null>(null);
+
+  const [displayFirstName, setDisplayFirstName] = useState(chart.firstName);
+  const [displayLastName, setDisplayLastName] = useState(chart.lastName);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState({ firstName: chart.firstName, lastName: chart.lastName });
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameMsg, setNameMsg] = useState<string | null>(null);
+
+  const [chartNotes, setChartNotes] = useState(chart.notes || "");
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState(chart.notes || "");
+  const [notesSaving, setNotesSaving] = useState(false);
 
   // Dynamic categories
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
@@ -432,23 +438,11 @@ export default function RecordDetailClient({
     const docType = searchParams.get("docType");
     if (docType === "EXAM_RESULT") {
       openExamResultForm();
-    } else if (searchParams.get("source") === "mined") {
-      resetForm();
-      setRecordKind("OTHER");
-      setContent("");
-      setShowForm(true);
-      setChartTab("records");
     } else {
       openNewRecordForm();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, initialDocuments, categoriesLoading, groups]);
-
-  useEffect(() => {
-    if (!showForm || !minedImport || editingDoc) return;
-    const timer = window.setTimeout(() => contentRef.current?.focus(), 80);
-    return () => window.clearTimeout(timer);
-  }, [showForm, minedImport, editingDoc]);
 
   useEffect(() => {
     const tab = searchParams.get("tab") ?? searchParams.get("view");
@@ -525,25 +519,6 @@ export default function RecordDetailClient({
 
   function insertCalcText(text: string) {
     setContent((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
-  }
-
-  async function handleMinedFile(file: File | null) {
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const trimmed = text.trim();
-      if (!trimmed) {
-        toast.error(t("rec.minedFileEmpty"));
-        return;
-      }
-      setContent(trimmed);
-      if (!title.trim()) {
-        const baseName = file.name.replace(/\.[^.]+$/, "").trim();
-        setTitle(baseName || t("rec.minedDefaultTitle"));
-      }
-    } catch {
-      toast.error(t("rec.minedFileError"));
-    }
   }
 
   function resetForm(clearDraft = false) {
@@ -705,7 +680,24 @@ export default function RecordDetailClient({
         setChartEmail(data.email);
         setHasAccount(!!data.hasAccount);
         setEditingEmail(false);
-        setEmailMsg(data.hasAccount ? "linked" : "saved");
+        if (data.hasAccount) {
+          setEmailMsg("linked");
+        } else if (data.email) {
+          setEmailMsg("saved");
+          try {
+            const inviteRes = await fetch(`/api/professional/records/${chart.id}/invite`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ language: lang }),
+            });
+            if (inviteRes.ok) {
+              setEmailMsg("invited");
+              setInviteMsg("sent");
+            }
+          } catch { /* invite is best-effort after email save */ }
+        } else {
+          setEmailMsg("saved");
+        }
       }
     } catch {
       setEmailMsg("error:" + t("rec.networkError"));
@@ -735,6 +727,7 @@ export default function RecordDetailClient({
           state: regDraft.state,
           country: regDraft.country,
           zipCode: regDraft.zipCode,
+          phone: regDraft.phone,
         }),
       });
       const data = await res.json();
@@ -751,6 +744,56 @@ export default function RecordDetailClient({
       toast.error(t("rec.networkError"));
     }
     setRegSaving(false);
+  }
+
+  async function saveName() {
+    setNameSaving(true);
+    setNameMsg(null);
+    try {
+      const res = await fetch(`/api/professional/records/${chart.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: nameDraft.firstName.trim(),
+          lastName: nameDraft.lastName.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNameMsg("error:" + (typeof data.error === "string" ? data.error : t("rec.regSaveFailed")));
+      } else {
+        setDisplayFirstName(nameDraft.firstName.trim());
+        setDisplayLastName(nameDraft.lastName.trim());
+        setEditingName(false);
+        setNameMsg("saved");
+        toast.success(t("rec.regSaved"));
+      }
+    } catch {
+      setNameMsg("error:" + t("rec.networkError"));
+    }
+    setNameSaving(false);
+  }
+
+  async function saveNotes() {
+    setNotesSaving(true);
+    try {
+      const res = await fetch(`/api/professional/records/${chart.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: notesDraft }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(typeof data.error === "string" ? data.error : t("rec.regSaveFailed"));
+      } else {
+        setChartNotes(notesDraft.trim() || "");
+        setEditingNotes(false);
+        toast.success(t("rec.regSaved"));
+      }
+    } catch {
+      toast.error(t("rec.networkError"));
+    }
+    setNotesSaving(false);
   }
 
   // ── Etapa 3c: resend prescription invite ──
@@ -986,6 +1029,21 @@ export default function RecordDetailClient({
   // Helper: is the registration data essentially empty?
   const regEmpty = !reg.dateOfBirth && !reg.addressLine1 && !reg.city && !reg.cpf && !reg.sex;
   const sexLabel = reg.sex === "F" ? t("pat.sexF") : reg.sex === "M" ? t("pat.sexM") : reg.sex === "O" ? t("pat.sexO") : "";
+  const missingRxLabels: Record<string, string> = {
+    name: t("rec.missingRxName"),
+    address: t("rec.missingRxAddress"),
+    dob: t("rec.missingRxDob"),
+  };
+  const missingForRx = useMemo(
+    () => computeMissingForRx({
+      firstName: displayFirstName || null,
+      lastName: displayLastName || null,
+      dobDecrypted: reg.dateOfBirth || null,
+      addressLine1: reg.addressLine1 || null,
+      city: reg.city || null,
+    }),
+    [displayFirstName, displayLastName, reg.dateOfBirth, reg.addressLine1, reg.city],
+  );
 
   const pinnedAnamnesis = useMemo(() => findPinnedAnamnesis(docs), [docs]);
   const filteredDocs = useMemo(
@@ -1017,7 +1075,7 @@ export default function RecordDetailClient({
     <div className="max-w-4xl mx-auto space-y-6">
       <VideoConsultReturnBanner
         returnUrl={consultReturnUrl}
-        patientName={`${chart.firstName} ${chart.lastName}`}
+        patientName={`${displayFirstName} ${displayLastName}`}
         lang={lang}
       />
       <Link
@@ -1051,21 +1109,54 @@ export default function RecordDetailClient({
             />
           ) : (
           <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-lg shrink-0">
-            {chart.firstName[0]}{chart.lastName[0]}
+            {displayFirstName[0] || "?"}{displayLastName[0] || ""}
           </div>
           )}
           <div className="flex-1 min-w-0">
+            {editingName && canEdit ? (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    value={nameDraft.firstName}
+                    onChange={(e) => setNameDraft({ ...nameDraft, firstName: e.target.value })}
+                    placeholder={t("pat.firstName")}
+                    className="px-3 py-2 rounded-xl border border-slate-200 text-sm focus:border-brand-400 outline-none"
+                  />
+                  <input
+                    value={nameDraft.lastName}
+                    onChange={(e) => setNameDraft({ ...nameDraft, lastName: e.target.value })}
+                    placeholder={t("pat.lastName")}
+                    className="px-3 py-2 rounded-xl border border-slate-200 text-sm focus:border-brand-400 outline-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => { setEditingName(false); setNameMsg(null); }} className="text-xs text-slate-500 px-3 py-1.5">{t("common.cancel")}</button>
+                  <button type="button" onClick={saveName} disabled={nameSaving} className="text-xs font-semibold text-white bg-brand-500 px-3 py-1.5 rounded-lg disabled:opacity-50 inline-flex items-center gap-1">
+                    {nameSaving ? <Loader2 size={12} className="animate-spin" /> : null}{t("lib.save")}
+                  </button>
+                </div>
+                {nameMsg?.startsWith("error:") && <p className="text-xs text-rose-600">{nameMsg.slice(6)}</p>}
+              </div>
+            ) : (
+            <>
+            <div className="flex items-start gap-2">
             <h1 className="text-xl font-bold text-slate-900">
-              {chart.firstName} {chart.lastName}
+              {displayFirstName} {displayLastName}
             </h1>
+            {canEdit && (
+              <button type="button" onClick={() => { setNameDraft({ firstName: displayFirstName, lastName: displayLastName }); setEditingName(true); }} className="text-slate-400 hover:text-brand-500 p-1" title={t("rec.editName")}>
+                <Pencil size={14} />
+              </button>
+            )}
+            </div>
             <div className="mt-1 space-y-0.5 text-sm text-slate-500">
               {chartEmail && <p>{chartEmail}</p>}
-              {chart.phone && (
+              {(reg.phone || chart.phone) && (
                 <p className="inline-flex items-center gap-2">
-                  <span>{chart.phone}</span>
+                  <span>{reg.phone || chart.phone}</span>
                   {/* P2: WhatsApp button — only shown when phone is on file */}
                   <a
-                    href={`https://wa.me/${waPhone(chart.phone)}`}
+                    href={`https://wa.me/${waPhone(reg.phone || chart.phone || "", reg.country || chart.country)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     title={t("rec.whatsapp")}
@@ -1107,61 +1198,166 @@ export default function RecordDetailClient({
                 )}
               </div>
             )}
-            {isPsychologistPortal && (
+            {canEdit && (
               <div className="mt-3">
                 <button
                   type="button"
                   onClick={() => void openAuthenticatedPdf(`/api/professional/records/${chart.id}/export-pdf`).catch(() => toast.error(t("rec.networkError")))}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-lg transition"
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition border ${
+                    isPsychologistPortal
+                      ? "text-violet-700 bg-violet-50 hover:bg-violet-100 border-violet-200"
+                      : "text-brand-700 bg-brand-50 hover:bg-brand-100 border-brand-200"
+                  }`}
                 >
-                  <Download size={13} /> {t("psy.exportChart")}
+                  <Download size={13} /> {t("rec.exportChart")}
                 </button>
               </div>
             )}
-            {canEdit && isOwner && (
+            </>
+            )}
+            {/* ── Prescription / registration data (below photo, before quick actions) ── */}
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("rec.regSection")}</p>
+                {!editingReg && canEdit && (
+                  <button
+                    onClick={openRegEditor}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
+                  >
+                    <Pencil size={13} /> {regEmpty ? t("rec.addRegData") : t("rec.editRegData")}
+                  </button>
+                )}
+              </div>
+              {missingForRx.length > 0 && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2 inline-flex items-start gap-1.5">
+                  <AlertCircle size={13} className="shrink-0 mt-0.5" />
+                  <span>
+                    {t("rec.missingRxAlert")}{" "}
+                    <strong>{missingForRx.map((m) => missingRxLabels[m] || m).join(", ")}</strong>
+                  </span>
+                </p>
+              )}
+              {chart.profileAllergies && (
+                <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 mb-2">
+                  <strong>{t("rec.profileAllergieAlert")}</strong> {chart.profileAllergies}
+                </p>
+              )}
+              {editingReg ? (
+                <div className="space-y-3 bg-slate-50 rounded-xl p-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">{t("rec.birthLabel")}</label>
+                      <input type="date" value={regDraft.dateOfBirth} onChange={(e) => setRegDraft({ ...regDraft, dateOfBirth: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.sex")}</label>
+                      <select value={regDraft.sex} onChange={(e) => setRegDraft({ ...regDraft, sex: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white">
+                        <option value="">{t("pat.sexSelect")}</option>
+                        <option value="F">{t("pat.sexF")}</option>
+                        <option value="M">{t("pat.sexM")}</option>
+                        <option value="O">{t("pat.sexO")}</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.phone")}</label>
+                    <input value={regDraft.phone} onChange={(e) => setRegDraft({ ...regDraft, phone: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.cpf")} <span className="text-slate-400">{t("pat.cpfHint")}</span></label>
+                    <input value={regDraft.cpf} onChange={(e) => setRegDraft({ ...regDraft, cpf: e.target.value })} placeholder="000.000.000-00" className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.address")}</label>
+                    <input value={regDraft.addressLine1} onChange={(e) => setRegDraft({ ...regDraft, addressLine1: e.target.value })} placeholder={t("pat.addressPlaceholder")} className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.city")}</label>
+                      <input value={regDraft.city} onChange={(e) => setRegDraft({ ...regDraft, city: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.state")}</label>
+                      <input value={regDraft.state} onChange={(e) => setRegDraft({ ...regDraft, state: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.country")}</label>
+                      <input value={regDraft.country} onChange={(e) => setRegDraft({ ...regDraft, country: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.zip")}</label>
+                      <input value={regDraft.zipCode} onChange={(e) => setRegDraft({ ...regDraft, zipCode: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white" />
+                    </div>
+                  </div>
+                  {regMsg?.startsWith("error:") && (
+                    <p className="text-xs text-rose-600 inline-flex items-center gap-1"><AlertCircle size={12} /> {regMsg.slice(6)}</p>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => { setEditingReg(false); setRegMsg(null); }} className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-white">{t("common.cancel")}</button>
+                    <button onClick={saveReg} disabled={regSaving} className="flex-1 py-2 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                      {regSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                      {t("lib.save")}
+                    </button>
+                  </div>
+                </div>
+              ) : regEmpty ? (
+                <p className="text-sm text-slate-400">{t("rec.regEmpty")}</p>
+              ) : (
+                <div className="text-sm text-slate-600 space-y-1">
+                  {(reg.phone || chart.phone) && <p><span className="text-slate-400">{t("pat.phone")}:</span> {reg.phone || chart.phone}</p>}
+                  {reg.dateOfBirth && <p><span className="text-slate-400">{t("rec.birthLabel")}:</span> {reg.dateOfBirth.split("-").reverse().join("/")}</p>}
+                  {sexLabel && <p><span className="text-slate-400">{t("pat.sex")}:</span> {sexLabel}</p>}
+                  {reg.cpf && <p><span className="text-slate-400">{t("pat.cpf")}:</span> {reg.cpf}</p>}
+                  {(reg.addressLine1 || reg.city || reg.state || reg.country || reg.zipCode) && (
+                    <p className="inline-flex items-start gap-1">
+                      <MapPin size={13} className="text-slate-400 mt-0.5 shrink-0" />
+                      <span>{[reg.addressLine1, reg.city, reg.state, reg.country, reg.zipCode].filter(Boolean).join(", ")}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+              {regMsg === "saved" && !editingReg && (
+                <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1"><CheckCircle2 size={12} /> {t("rec.regSaved")}</p>
+              )}
+            </div>
+            {canEdit && (
               <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
                 <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("chartAct.sectionTitle")}</p>
-                <ChartClinicalActions
-                  chartId={chart.id}
-                  returnUrl={professionalPatientsHref(pathname, chart.id)}
-                />
+                <button
+                  type="button"
+                  onClick={openNewRecordForm}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-sm font-bold text-white bg-brand-500 hover:bg-brand-600 px-5 py-3 rounded-xl shadow-sm transition"
+                >
+                  <Plus size={18} /> {t("chartAct.newRecordHighlight")}
+                  {pendingDraft && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide bg-white/20 px-2 py-0.5 rounded">
+                      {t("rec.draftPending")}
+                    </span>
+                  )}
+                </button>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={openExamResultForm}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition"
-                  >
+                  <button type="button" onClick={openAnamnesisForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-lg transition">
+                    <FileText size={13} /> {t("chartAct.anamnesis")}
+                  </button>
+                  <button type="button" onClick={openExamResultForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition">
                     <FileCheck size={13} /> {t("chartAct.examResult")}
                   </button>
-                  <button
-                    type="button"
-                    onClick={openNewRecordForm}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition"
-                  >
-                    <Plus size={13} /> {t("timeline.addRecord")}
-                    {pendingDraft && (
-                      <span className="text-[10px] font-bold uppercase tracking-wide bg-brand-200/60 px-1.5 py-0.5 rounded">
-                        {t("rec.draftPending")}
-                      </span>
-                    )}
-                  </button>
-                  <Link
-                    href={`${professionalPatientsHref(pathname, chart.id)}?newRecord=1&source=mined`}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg transition"
-                  >
-                    {t("rec.minedImport")}
-                  </Link>
                 </div>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <ReferralPanel chartId={chart.id} />
-                  {isMedicalPortal && <ReferralPanel chartId={chart.id} presetSpecialty="psychology" />}
-                </div>
+                <ChartClinicalActions chartId={chart.id} returnUrl={professionalPatientsHref(pathname, chart.id)} />
+                {isOwner && <ReferralPanel chartId={chart.id} />}
               </div>
             )}
           </div>
         </div>
 
-        <PatientChartTags chartId={chart.id} initialTags={initialTags} readOnly={!canEdit} />
+        <PatientChartTags
+          chartId={chart.id}
+          initialTags={initialTags}
+          readOnly={!canEdit}
+          suggestedAllergy={chart.profileAllergies}
+        />
 
         {isOwner && (
           <div className="mt-3">
@@ -1175,153 +1371,8 @@ export default function RecordDetailClient({
           </div>
         )}
 
-        {/* ── P1-b: registration data (for the prescription) ── */}
-        <div className="mt-4 pt-4 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("rec.regSection")}</p>
-            {!editingReg && canEdit && isOwner && (
-              <button
-                onClick={openRegEditor}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
-              >
-                <Pencil size={13} /> {regEmpty ? t("rec.addRegData") : t("rec.editRegData")}
-              </button>
-            )}
-          </div>
-
-          {editingReg ? (
-            <div className="space-y-3 bg-slate-50 rounded-xl p-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("rec.birthLabel")}</label>
-                  <input
-                    type="date"
-                    value={regDraft.dateOfBirth}
-                    onChange={(e) => setRegDraft({ ...regDraft, dateOfBirth: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.sex")}</label>
-                  <select
-                    value={regDraft.sex}
-                    onChange={(e) => setRegDraft({ ...regDraft, sex: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                  >
-                    <option value="">{t("pat.sexSelect")}</option>
-                    <option value="F">{t("pat.sexF")}</option>
-                    <option value="M">{t("pat.sexM")}</option>
-                    <option value="O">{t("pat.sexO")}</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.cpf")} <span className="text-slate-400">{t("pat.cpfHint")}</span></label>
-                <input
-                  value={regDraft.cpf}
-                  onChange={(e) => setRegDraft({ ...regDraft, cpf: e.target.value })}
-                  placeholder="000.000.000-00"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.address")}</label>
-                <input
-                  value={regDraft.addressLine1}
-                  onChange={(e) => setRegDraft({ ...regDraft, addressLine1: e.target.value })}
-                  placeholder={t("pat.addressPlaceholder")}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.city")}</label>
-                  <input
-                    value={regDraft.city}
-                    onChange={(e) => setRegDraft({ ...regDraft, city: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.state")}</label>
-                  <input
-                    value={regDraft.state}
-                    onChange={(e) => setRegDraft({ ...regDraft, state: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.country")}</label>
-                  <input
-                    value={regDraft.country}
-                    onChange={(e) => setRegDraft({ ...regDraft, country: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">{t("pat.zip")}</label>
-                  <input
-                    value={regDraft.zipCode}
-                    onChange={(e) => setRegDraft({ ...regDraft, zipCode: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm bg-white"
-                  />
-                </div>
-              </div>
-
-              {regMsg?.startsWith("error:") && (
-                <p className="text-xs text-rose-600 inline-flex items-center gap-1">
-                  <AlertCircle size={12} /> {regMsg.slice(6)}
-                </p>
-              )}
-
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => { setEditingReg(false); setRegMsg(null); }}
-                  className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-white"
-                >
-                  {t("common.cancel")}
-                </button>
-                <button
-                  onClick={saveReg}
-                  disabled={regSaving}
-                  className="flex-1 py-2 rounded-xl bg-brand-500 hover:bg-brand-500 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                >
-                  {regSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                  {t("lib.save")}
-                </button>
-              </div>
-            </div>
-          ) : regEmpty ? (
-            <p className="text-sm text-slate-400">
-              {t("rec.regEmpty")}
-            </p>
-          ) : (
-            <div className="text-sm text-slate-600 space-y-1">
-              {reg.dateOfBirth && <p><span className="text-slate-400">{t("rec.birthLabel")}:</span> {reg.dateOfBirth.split("-").reverse().join("/")}</p>}
-              {sexLabel && <p><span className="text-slate-400">{t("pat.sex")}:</span> {sexLabel}</p>}
-              {reg.cpf && <p><span className="text-slate-400">{t("pat.cpf")}:</span> {reg.cpf}</p>}
-              {(reg.addressLine1 || reg.city || reg.state || reg.country || reg.zipCode) && (
-                <p className="inline-flex items-start gap-1">
-                  <MapPin size={13} className="text-slate-400 mt-0.5 shrink-0" />
-                  <span>
-                    {[reg.addressLine1, reg.city, reg.state, reg.country, reg.zipCode].filter(Boolean).join(", ")}
-                  </span>
-                </p>
-              )}
-            </div>
-          )}
-
-          {regMsg === "saved" && !editingReg && (
-            <p className="text-xs text-brand-500 mt-2 inline-flex items-center gap-1">
-              <CheckCircle2 size={12} /> {t("rec.regSaved")}
-            </p>
-          )}
-        </div>
-
         {/* ── Etapa 3c: email & invite management (only meaningful when no account) ── */}
-        {isOwner && !hasAccount && (
+        {canEdit && !hasAccount && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">{t("rec.patientAccess")}</p>
 
@@ -1430,12 +1481,36 @@ export default function RecordDetailClient({
           </div>
         )}
 
-        {chart.notes && (
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">{t("rec.notes")}</p>
-            <p className="text-sm text-slate-600 whitespace-pre-wrap">{chart.notes}</p>
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("rec.notes")}</p>
+            {canEdit && !editingNotes && (
+              <button type="button" onClick={() => { setNotesDraft(chartNotes); setEditingNotes(true); }} className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-brand-500">
+                <Pencil size={12} /> {chartNotes ? t("rec.editNotes") : t("rec.addNotes")}
+              </button>
+            )}
           </div>
-        )}
+          {editingNotes ? (
+            <div className="space-y-2">
+              <textarea
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:border-brand-400 outline-none resize-none"
+              />
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setEditingNotes(false)} className="text-xs text-slate-500 px-3 py-1.5">{t("common.cancel")}</button>
+                <button type="button" onClick={saveNotes} disabled={notesSaving} className="text-xs font-semibold text-white bg-brand-500 px-3 py-1.5 rounded-lg disabled:opacity-50 inline-flex items-center gap-1">
+                  {notesSaving ? <Loader2 size={12} className="animate-spin" /> : null}{t("lib.save")}
+                </button>
+              </div>
+            </div>
+          ) : chartNotes ? (
+            <p className="text-sm text-slate-600 whitespace-pre-wrap">{chartNotes}</p>
+          ) : (
+            <p className="text-sm text-slate-400">{t("rec.notesEmpty")}</p>
+          )}
+        </div>
       </div>
 
       {!pinnedAnamnesis && chartTab === "records" && (
@@ -1509,6 +1584,15 @@ export default function RecordDetailClient({
       {/* Records section */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-lg font-bold text-slate-900">{t("chartTab.records")}</h2>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={openNewRecordForm}
+            className="inline-flex items-center gap-2 text-sm font-bold text-white bg-brand-500 hover:bg-brand-600 px-4 py-2 rounded-xl shadow-sm transition"
+          >
+            <Plus size={16} /> {t("chartAct.newRecordHighlight")}
+          </button>
+        )}
       </div>
 
       {pinnedAnamnesis && recordFilter === "all" && (
@@ -1638,7 +1722,7 @@ export default function RecordDetailClient({
                       signatureStatus={d.signatureStatus}
                       patientNotifiedAt={d.patientNotifiedAt}
                       whatsappNotifyStatus={d.whatsappNotifyStatus}
-                      patientName={`${chart.firstName} ${chart.lastName}`}
+                      patientName={`${displayFirstName} ${displayLastName}`}
                       medications={d.medications || undefined}
                       examItems={parsedContent?.items}
                       title={d.title}
@@ -1678,7 +1762,7 @@ export default function RecordDetailClient({
                       </button>
                     )}
                     <AiSummarizeButton documentId={d.id} />
-                    {isOwner && (
+                    {canEdit && (
                     <>
                     {status === "shared" ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">
@@ -1753,25 +1837,6 @@ export default function RecordDetailClient({
             </div>
             <div className="p-5 space-y-4">
               {voicePrefillActive && !editingDoc && <VoicePrefillBanner active />}
-              {!editingDoc && minedImport && (
-                <div className="space-y-2">
-                  <p className="text-xs text-cyan-800 bg-cyan-50 border border-cyan-100 rounded-lg px-3 py-2">
-                    {t("rec.minedHint")}
-                  </p>
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-600 mb-1 block">{t("rec.minedImportFile")}</span>
-                    <input
-                      type="file"
-                      accept=".txt,.json,.csv,text/plain,application/json"
-                      onChange={(e) => {
-                        void handleMinedFile(e.target.files?.[0] ?? null);
-                        e.target.value = "";
-                      }}
-                      className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-cyan-50 file:text-cyan-700 file:text-sm file:font-medium hover:file:bg-cyan-100"
-                    />
-                  </label>
-                </div>
-              )}
               {!editingDoc && draftRestored && (
                 <p className="text-xs text-brand-700 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2">
                   {t("rec.draftRestored")}
@@ -1871,8 +1936,8 @@ export default function RecordDetailClient({
                   ref={contentRef}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  rows={minedImport && !editingDoc ? 10 : 4}
-                  placeholder={minedImport && !editingDoc ? t("rec.minedPlaceholder") : undefined}
+                  rows={4}
+                  placeholder={undefined}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-none"
                 />
               </div>

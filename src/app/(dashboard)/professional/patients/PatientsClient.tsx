@@ -21,6 +21,9 @@ interface Chart {
   email: string | null;
   hasAccount: boolean;
   updatedAt: string;
+  access?: "owner" | "edit" | "view";
+  ownerName?: string;
+  sharedVia?: string;
 }
 
 type DuplicateMatch = {
@@ -109,6 +112,7 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
           email: data.email,
           hasAccount: data.hasAccount,
           updatedAt: new Date().toISOString(),
+          access: "owner" as const,
         },
         ...prev,
       ]);
@@ -200,13 +204,23 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                 className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition"
               >
                 <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
-                  {c.firstName[0]}{c.lastName[0]}
+                  {c.firstName[0] || "?"}{c.lastName[0] || ""}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800 text-sm">
                     {c.firstName} {c.lastName}
                   </p>
+                  {c.access && c.access !== "owner" && (
+                    <p className="text-[11px] text-violet-600 mt-0.5">
+                      {t("pat.sharedChart")} · {c.ownerName}
+                      {c.access === "view" ? ` · ${t("pat.accessView")}` : ` · ${t("pat.accessEdit")}`}
+                    </p>
+                  )}
                   <div className="text-xs mt-0.5">
+                    {c.access === "view" ? (
+                      <span className="text-slate-500">{t("pat.accessViewOnly")}</span>
+                    ) : (
+                    <>
                     {c.hasAccount ? (
                       <span className="text-brand-500 inline-flex items-center gap-1">
                         <CheckCircle2 size={12} /> {t("pat.hasAccount")}
@@ -217,12 +231,12 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                         <span className="leading-snug">{t("pat.noAccount")}</span>
                       </span>
                     )}
-                    {!c.hasAccount && !c.email && (
+                    {!c.hasAccount && !c.email && c.access === "owner" && (
                       <span className="text-brand-600 mt-1.5 inline-block font-medium">
                         {t("pat.openChartToAddEmail")} →
                       </span>
                     )}
-                    {!c.hasAccount && c.email && (
+                    {!c.hasAccount && c.email && (c.access === "owner" || c.access === "edit") && (
                       <div className="mt-2 flex items-center gap-2 flex-wrap">
                         <button
                           type="button"
@@ -246,6 +260,8 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                           <span className="text-xs text-rose-600">{t("pat.inviteError")}</span>
                         )}
                       </div>
+                    )}
+                    </>
                     )}
                   </div>
                 </div>

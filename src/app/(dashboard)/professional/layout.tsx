@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
-import PsychologistPortalRedirect from "./PsychologistPortalRedirect";
+import { resolveHealthProfessionalPortalBaseForUser } from "@/lib/nutritionist-portal";
+import SpecialtyPortalRedirect from "./SpecialtyPortalRedirect";
 
 export default async function ProfessionalLayout({
   children,
@@ -11,14 +10,11 @@ export default async function ProfessionalLayout({
 }) {
   const session = await auth();
   if (session?.user?.role === "PROFESSIONAL") {
-    const profile = await db.professionalProfile.findUnique({
-      where: { userId: session.user.id },
-      select: { specialty: true },
-    });
-    if (profile && isPsychologistSpecialty(profile.specialty)) {
+    const portalBase = await resolveHealthProfessionalPortalBaseForUser(session.user.id);
+    if (portalBase !== "/professional") {
       return (
         <Suspense>
-          <PsychologistPortalRedirect />
+          <SpecialtyPortalRedirect portalBase={portalBase} />
         </Suspense>
       );
     }

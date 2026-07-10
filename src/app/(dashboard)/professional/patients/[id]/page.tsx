@@ -1,14 +1,17 @@
 // src/app/(dashboard)/professional/patients/[id]/page.tsx
 // Detail of one patient chart: info + clinical records, with a form to add records.
-// P1-b: also loads the registration data (birth, sex, cpf, address) so the doctor
-// can review/complete it from the chart.
-// P4: passes linkedUserId so RecordDetailClient can show the "Send message" button.
+
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { decrypt } from "@/lib/encryption";
 import { countRecordAttachments } from "@/lib/record-content";
 import { resolveChartAccess, auditChartView } from "@/lib/chart-access";
+import {
+  computeMissingForRx,
+  loadChartMedicalDocuments,
+  syncChartDocuments,
+} from "@/lib/patient-chart-documents";
 import { Suspense } from "react";
 import RecordDetailClient from "./RecordDetailClient";
 
@@ -36,22 +39,6 @@ export default async function PatientChartDetail({
     include: {
       professional: { select: { firstName: true, lastName: true } },
       tags: { orderBy: { createdAt: "asc" } },
-      medicalDocuments: {
-        orderBy: { createdAt: "desc" },
-        include: {
-          category: { select: { name: true, groupName: true } },
-          prescriptions: {
-            select: {
-              id: true,
-              signatureStatus: true,
-              whatsappNotifyStatus: true,
-              patientNotifiedAt: true,
-              medications: true,
-            },
-            take: 1,
-          },
-        },
-      },
     },
   });
 
@@ -64,37 +51,63 @@ export default async function PatientChartDetail({
 
   const readOnly = access.level === "view";
 
+  await syncChartDocuments({
+    chartId: record.id,
+    professionalId: access.ownerProfessionalId,
+    linkedUserId: record.linkedUserId,
+    chartEmail: record.email,
+  });
+
+  const medicalDocuments = await loadChartMedicalDocuments(
+    record.id,
+    access.ownerProfessionalId,
+  );
+
   let patientAvatarUrl: string | null = null;
+  let profileAllergies: string | null = null;
   if (record.linkedUserId) {
     const patientProfile = await db.patientProfile.findUnique({
       where: { userId: record.linkedUserId },
-      select: { avatarUrl: true },
+      select: { avatarUrl: true, allergies: true },
     });
     patientAvatarUrl = patientProfile?.avatarUrl ?? null;
+    profileAllergies = patientProfile?.allergies ? safeDecrypt(patientProfile.allergies) : null;
   }
+
+  const firstName = safeDecrypt(record.firstName);
+  const lastName = safeDecrypt(record.lastName);
+  const dateOfBirth = record.dateOfBirth ? safeDecrypt(record.dateOfBirth) : "";
+  const addressLine1 = record.addressLine1 ? safeDecrypt(record.addressLine1) : "";
 
   const chart = {
     id: record.id,
-    firstName: safeDecrypt(record.firstName),
-    lastName: safeDecrypt(record.lastName),
+    firstName,
+    lastName,
     email: record.email,
     phone: record.phone ? safeDecrypt(record.phone) : null,
     notes: record.notes ? safeDecrypt(record.notes) : null,
     hasAccount: !!record.linkedUserId,
     linkedUserId: record.linkedUserId || null,
-  avatarUrl: patientAvatarUrl,
-    // P1-b registration data
-    dateOfBirth: record.dateOfBirth ? safeDecrypt(record.dateOfBirth) : "",
+    avatarUrl: patientAvatarUrl,
+    dateOfBirth,
     sex: record.sex || "",
     cpf: record.cpf ? safeDecrypt(record.cpf) : "",
-    addressLine1: record.addressLine1 ? safeDecrypt(record.addressLine1) : "",
+    addressLine1,
     city: record.city || "",
     state: record.state || "",
     country: record.country || "",
     zipCode: record.zipCode ? safeDecrypt(record.zipCode) : "",
+    missingForRx: computeMissingForRx({
+      firstName,
+      lastName,
+      dobDecrypted: dateOfBirth || null,
+      addressLine1: addressLine1 || null,
+      city: record.city || null,
+    }),
+    profileAllergies,
   };
 
-  const documents = record.medicalDocuments.map((d) => {
+  const documents = medicalDocuments.map((d) => {
     const rx = d.prescriptions[0];
     const contentRaw = d.content ? safeDecrypt(d.content) : null;
     let medications: { name: string; dosage?: string; frequency?: string }[] | null = null;

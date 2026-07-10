@@ -3,6 +3,8 @@ import { requireProfessional } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
 import { createChartShare, resolveChartAccess } from "@/lib/chart-access";
 import { audit } from "@/lib/audit";
+import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { z } from "zod";
 
 const schema = z.object({
@@ -107,20 +109,21 @@ export async function POST(
       select: { userId: true },
     });
     if (colleague?.userId) {
-      const ownerName = `${professional.firstName} ${professional.lastName}`;
-      await db.notification.create({
+      const ownerName = `${professional.firstName} ${professional.lastName}`.trim();
+      const shareCopy = storedNotificationText("notif.chartShare.title", "notif.chartShare.body", {
+        name: `Dr. ${ownerName}`,
+      });
+      await createNotification({
+        userId: colleague.userId,
+        title: shareCopy.title,
+        body: shareCopy.body,
+        type: "chart_share",
         data: {
-          userId: colleague.userId,
-          title: "Ficha compartilhada / Chart shared",
-          body: `Dr. ${ownerName} shared a patient chart with you.`,
-          type: "chart_share",
-          data: {
-            patientRecordId: params.id,
-            permission: parsed.data.permission,
-            titleKey: "notif.chartShare.title",
-            bodyKey: "notif.chartShare.body",
-            bodyParams: { doctor: ownerName },
-          },
+          patientRecordId: params.id,
+          permission: parsed.data.permission,
+          titleKey: "notif.chartShare.title",
+          bodyKey: "notif.chartShare.body",
+          bodyParams: { name: `Dr. ${ownerName}` },
         },
       }).catch(() => {});
     }

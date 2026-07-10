@@ -1,11 +1,10 @@
 // Sends an invite email to the patient of a chart who doesn't have an account yet.
-// POST body: { language?: "en" | "pt" | "es" }
-// GET — returns latest invite status for the chart.
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sendPrescriptionInvite } from "@/lib/email-prescription";
+import { sendPatientInvite } from "@/lib/email";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
+import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 import { safeDecrypt } from "@/lib/sign-helpers";
 
 export async function GET(
@@ -15,8 +14,13 @@ export async function GET(
   const ctx = await requireProfessionalApi();
   if (isApiError(ctx)) return ctx.error;
 
+  const access = await resolveChartAccess(ctx.professional.id, params.id);
+  if (!access) {
+    return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  }
+
   const record = await db.patientRecord.findFirst({
-    where: { id: params.id, professionalId: ctx.professional.id },
+    where: { id: params.id },
     select: { id: true, linkedUserId: true },
   });
   if (!record) {
@@ -50,8 +54,13 @@ export async function POST(
   if (isApiError(ctx)) return ctx.error;
   const { professional } = ctx;
 
+  const access = await resolveChartAccess(professional.id, params.id);
+  if (!canEditChart(access)) {
+    return NextResponse.json({ error: "Chart not found" }, { status: 404 });
+  }
+
   const record = await db.patientRecord.findFirst({
-    where: { id: params.id, professionalId: professional.id },
+    where: { id: params.id },
   });
   if (!record) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
@@ -76,8 +85,8 @@ export async function POST(
   const email = record.email.toLowerCase();
 
   try {
-    await sendPrescriptionInvite({
-      patientEmail: email,
+    await sendPatientInvite({
+      email,
       patientName,
       doctorName,
       language,
@@ -87,7 +96,7 @@ export async function POST(
     await db.patientChartInvite.create({
       data: {
         patientRecordId: record.id,
-        sentByProfessionalId: professional.id,
+        sentByProfessionalId: access!.ownerProfessionalId,
         email,
         status: "FAILED",
       },
@@ -98,7 +107,7 @@ export async function POST(
   const invite = await db.patientChartInvite.create({
     data: {
       patientRecordId: record.id,
-      sentByProfessionalId: professional.id,
+      sentByProfessionalId: access!.ownerProfessionalId,
       email,
       status: "SENT",
     },

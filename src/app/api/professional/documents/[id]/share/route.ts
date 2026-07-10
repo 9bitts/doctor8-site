@@ -1,9 +1,6 @@
-// src/app/api/professional/documents/[id]/share/route.ts
 // POST — share a clinical record with the patient.
-//   - If the chart's patient HAS an account: create SharedRecord + bell notification.
-//   - If NOT: return needsInvite=true so the UI can offer to send an email invite.
-//
 // PUT — send the email invite (when the patient has no account yet).
+
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
@@ -11,13 +8,13 @@ import { decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { sendPatientInvite } from "@/lib/email";
+import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
   try { return decrypt(v); } catch { return v; }
 }
 
-// Loads the document, verifies it belongs to this professional, returns context.
 async function loadContext(userId: string, documentId: string) {
   const professional = await db.professionalProfile.findUnique({ where: { userId } });
   if (!professional) return { error: "No profile", status: 404 as const };
@@ -26,13 +23,16 @@ async function loadContext(userId: string, documentId: string) {
     where: { id: documentId },
     include: { patientRecord: true },
   });
-  if (!doc || doc.professionalId !== professional.id) {
+  if (!doc?.patientRecordId || !doc.patientRecord) {
     return { error: "Not found", status: 404 as const };
   }
-  if (!doc.patientRecord) {
-    return { error: "This record is not attached to a patient chart", status: 400 as const };
+
+  const access = await resolveChartAccess(professional.id, doc.patientRecordId);
+  if (!canEditChart(access)) {
+    return { error: "Not found", status: 404 as const };
   }
-  return { professional, doc, record: doc.patientRecord };
+
+  return { professional, doc, record: doc.patientRecord, access };
 }
 
 export async function POST(
@@ -47,15 +47,12 @@ export async function POST(
 
   const { doc, record, professional } = loaded;
 
-  // Does the patient have an account?
   let linkedUserId = record.linkedUserId;
 
-  // If not linked yet but we have an email, try to find an account now (maybe they signed up since).
   if (!linkedUserId && record.email) {
     const user = await db.user.findUnique({ where: { email: record.email.toLowerCase() } });
-    if (user) {
+    if (user?.role === "PATIENT") {
       linkedUserId = user.id;
-      // Persist the link for next time
       await db.patientRecord.update({
         where: { id: record.id },
         data: { linkedUserId: user.id },
@@ -64,7 +61,6 @@ export async function POST(
   }
 
   if (!linkedUserId) {
-    // No account — cannot share yet. UI should offer invite.
     return NextResponse.json({
       shared: false,
       needsInvite: true,
@@ -72,16 +68,13 @@ export async function POST(
     });
   }
 
-  // Patient has an account — find their PatientProfile (SharedRecord requires patientId).
   const patientProfile = await db.patientProfile.findUnique({
     where: { userId: linkedUserId },
   });
   if (!patientProfile) {
-    // Account exists but no patient profile (edge case) — offer invite path instead.
     return NextResponse.json({ shared: false, needsInvite: true, hasEmail: !!record.email });
   }
 
-  // Avoid duplicate shares for the same document+patient
   const existing = await db.sharedRecord.findFirst({
     where: { documentId: doc.id, patientId: patientProfile.id },
   });
@@ -95,7 +88,6 @@ export async function POST(
     });
   }
 
-  // Bell notification (Phase 1)
   const doctorName = `${professional.firstName} ${professional.lastName}`;
   const recordCopy = storedNotificationText("notif.recordShared.title", "notif.recordShared.body", {
     doctor: doctorName,
@@ -144,7 +136,7 @@ export async function PUT(
       doctorName: `${professional.firstName} ${professional.lastName}`.trim(),
       language: sender?.language,
     });
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Could not send invite email." }, { status: 500 });
   }
 

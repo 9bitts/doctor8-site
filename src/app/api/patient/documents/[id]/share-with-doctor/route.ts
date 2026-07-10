@@ -16,6 +16,8 @@ import {
   attachSharedDocumentToChart,
   findChartForPatient,
 } from "@/lib/shared-document-attach";
+import { patientChartPathForSpecialty, professionalSharedPathForSpecialty } from "@/lib/patient-chart-path";
+import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { z } from "zod";
 
 const schema = z.object({
@@ -56,7 +58,7 @@ export async function POST(
 
   const professional = await db.professionalProfile.findUnique({
     where: { id: professionalId },
-    select: { id: true, userId: true },
+    select: { id: true, userId: true, specialty: true },
   });
   if (!professional) return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
 
@@ -88,6 +90,21 @@ export async function POST(
     return NextResponse.json({ shared: true, alreadyShared: true });
   }
 
+  let chartId = await findChartForPatient(
+    professional.id,
+    userId,
+    patientUser?.email ?? null,
+  );
+  if (!chartId) {
+    chartId = await ensurePatientRecord(professional.id, userId);
+  }
+
+  const docTitle = safeDecrypt(doc.title);
+  const patientName = `${patient.firstName} ${patient.lastName}`.trim() || "A patient";
+  const docLink = chartId
+    ? `${patientChartPathForSpecialty(professional.specialty, chartId)}?recordId=${doc.id}`
+    : `${professionalSharedPathForSpecialty(professional.specialty)}?documentId=${doc.id}`;
+
   await db.sharedRecord.create({
     data: {
       documentId: doc.id,
@@ -98,10 +115,7 @@ export async function POST(
     },
   });
 
-  const docTitle = safeDecrypt(doc.title);
-  const patientName = `${patient.firstName} ${patient.lastName}`.trim() || "A patient";
-  const docLink = `/professional/shared?documentId=${doc.id}`;
-
+  // Notify the professional.
   await db.message.create({
     data: {
       senderId: userId,
@@ -148,24 +162,18 @@ export async function POST(
     },
   });
 
-  // #40 — auto-import into existing chart when the doctor already has one for this patient.
-  const existingChartId = await findChartForPatient(
-    professional.id,
-    userId,
-    patientUser?.email ?? null,
-  );
   let autoAttached = false;
   let chartRecordId: string | null = null;
-  if (existingChartId) {
+  if (chartId) {
     const attachResult = await attachSharedDocumentToChart({
       documentId: doc.id,
-      chartId: existingChartId,
+      chartId,
       professionalId: professional.id,
     });
     if (attachResult && !attachResult.alreadyAttached) {
       autoAttached = true;
       chartRecordId = attachResult.recordId;
-      const chartLink = `${getAppUrl()}/professional/patients/${existingChartId}?recordId=${attachResult.recordId}`;
+      const chartLink = `${getAppUrl()}${patientChartPathForSpecialty(professional.specialty, chartId)}?recordId=${attachResult.recordId}`;
       await db.message.create({
         data: {
           senderId: userId,
@@ -183,7 +191,7 @@ export async function POST(
   return NextResponse.json({
     shared: true,
     autoAttached,
-    chartId: existingChartId,
+    chartId,
     chartRecordId,
   });
 }

@@ -47,33 +47,58 @@ export async function buildPsychologyChartPdf(opts: {
   sections: ChartExportSection[];
   exportedAt: string;
 }): Promise<Uint8Array> {
+  return buildClinicalChartPdf({
+    lang: opts.lang,
+    patientName: opts.patientName,
+    professionalName: opts.psychologistName,
+    licenseLine: `CRP ${opts.crp}`,
+    variant: "psychology",
+    sections: opts.sections,
+    exportedAt: opts.exportedAt,
+  });
+}
+
+export async function buildClinicalChartPdf(opts: {
+  lang: SignLang;
+  patientName: string;
+  professionalName: string;
+  licenseLine: string;
+  variant?: "psychology" | "medical";
+  sections: ChartExportSection[];
+  exportedAt: string;
+}): Promise<Uint8Array> {
+  const variant = opts.variant ?? "medical";
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
   const labels = {
     pt: {
-      title: "Prontuário Psicológico — Exportação",
+      title: variant === "psychology" ? "Prontuário Psicológico — Exportação" : "Prontuário Clínico — Exportação",
       patient: "Paciente",
-      professional: "Psicóloga(o)",
+      professional: variant === "psychology" ? "Psicóloga(o)" : "Profissional",
       exported: "Exportado em",
-      footer: "CONFIDENCIAL — LGPD / CFP. Uso exclusivo do profissional habilitado.",
+      footer: variant === "psychology"
+        ? "CONFIDENCIAL — LGPD / CFP. Uso exclusivo do profissional habilitado."
+        : "CONFIDENCIAL — LGPD / CFM. Uso exclusivo do profissional habilitado.",
     },
     en: {
-      title: "Psychological Chart — Export",
+      title: variant === "psychology" ? "Psychological Chart — Export" : "Clinical Chart — Export",
       patient: "Patient",
-      professional: "Psychologist",
+      professional: variant === "psychology" ? "Psychologist" : "Professional",
       exported: "Exported at",
       footer: "CONFIDENTIAL — For licensed professional use only.",
     },
     es: {
-      title: "Historial Psicológico — Exportación",
+      title: variant === "psychology" ? "Historial Psicológico — Exportación" : "Historial Clínico — Exportación",
       patient: "Paciente",
-      professional: "Psicólogo/a",
+      professional: variant === "psychology" ? "Psicólogo/a" : "Profesional",
       exported: "Exportado el",
       footer: "CONFIDENCIAL — Uso exclusivo del profesional habilitado.",
     },
   }[opts.lang];
+
+  const accent = variant === "psychology" ? VIOLET : rgb(0.05, 0.45, 0.35);
 
   let page = pdf.addPage([595, 842]);
   let y = 800;
@@ -87,10 +112,10 @@ export async function buildPsychologyChartPdf(opts: {
     y -= size + 6;
   };
 
-  drawLine(labels.title, 16, bold, VIOLET);
+  drawLine(labels.title, 16, bold, accent);
   y -= 4;
   drawLine(`${labels.patient}: ${opts.patientName}`, 10);
-  drawLine(`${labels.professional}: ${opts.psychologistName} — CRP ${opts.crp}`, 10);
+  drawLine(`${labels.professional}: ${opts.professionalName} — ${opts.licenseLine}`, 10);
   drawLine(`${labels.exported}: ${opts.exportedAt}`, 9, font, GRAY);
   y -= 8;
 

@@ -18,7 +18,7 @@ const createSchema = z.object({
   firstName:        z.string().min(1).max(100),
   lastName:         z.string().min(1).max(100),
   email:            z.string().email().optional().or(z.literal("")),
-  phone:            z.string().max(40).optional().or(z.literal("")),
+  phone:            z.string().min(1).max(40),
   dateOfBirth:      z.string().optional().or(z.literal("")),
   notes:            z.string().max(5000).optional().or(z.literal("")),
   sex:              z.string().max(10).optional().or(z.literal("")),
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
   let linkedUserId: string | null = null;
   if (d.email) {
     const existing = await db.user.findUnique({ where: { email: d.email.toLowerCase() } });
-    if (existing) linkedUserId = existing.id;
+    if (existing?.role === "PATIENT") linkedUserId = existing.id;
   }
 
   const record = await db.patientRecord.create({

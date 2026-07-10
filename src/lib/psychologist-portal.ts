@@ -74,7 +74,12 @@ export function isPsychologistSpecialty(
 }
 
 export function professionalPortalBase(pathname: string): ProfessionalPortalBase {
-  return pathname.startsWith("/psychologist") ? "/psychologist" : "/professional";
+  if (pathname.startsWith("/psychologist")) return "/psychologist";
+  if (pathname.startsWith("/nutricionista")) return "/nutricionista";
+  if (pathname.startsWith("/enfermeiro")) return "/enfermeiro";
+  if (pathname.startsWith("/farmaceutico")) return "/farmaceutico";
+  if (pathname.startsWith("/odontologo")) return "/odontologo";
+  return "/professional";
 }
 
 export function professionalPatientsHref(pathname: string, chartId: string): string {

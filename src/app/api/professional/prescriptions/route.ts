@@ -21,6 +21,7 @@ import { AuditAction, Prisma } from "@prisma/client";
 import { createNotification } from "@/lib/notifications";
 import { hasAcceptedLink } from "@/lib/patient-professional-link";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
+import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 
 const medicationItemSchema = z.object({
   name: z.string().min(1),
@@ -76,15 +77,19 @@ export async function POST(req: NextRequest) {
   // Resolve the patient target: prefer the chart (PatientRecord), fall back to account.
   let documentPatientId: string | null = null;
   let documentPatientRecordId: string | null = null;
+  let documentOwnerProfessionalId = ctx.professional.id;
 
   if (patientRecordId) {
-    const record = await db.patientRecord.findFirst({
-      where: { id: patientRecordId, professionalId: ctx.professional.id },
-    });
+    const access = await resolveChartAccess(ctx.professional.id, patientRecordId);
+    if (!canEditChart(access)) {
+      return NextResponse.json({ error: "Patient chart not found" }, { status: 404 });
+    }
+    const record = await db.patientRecord.findUnique({ where: { id: patientRecordId } });
     if (!record) {
       return NextResponse.json({ error: "Patient chart not found" }, { status: 404 });
     }
     documentPatientRecordId = record.id;
+    documentOwnerProfessionalId = record.professionalId;
 
     if (record.linkedUserId) {
       const profile = await db.patientProfile.findUnique({ where: { userId: record.linkedUserId } });
@@ -144,7 +149,7 @@ export async function POST(req: NextRequest) {
     data: {
       patientId: documentPatientId,
       patientRecordId: documentPatientRecordId,
-      professionalId: ctx.professional.id,
+      professionalId: documentOwnerProfessionalId,
       appointmentId: appointmentId || null,
       type: "PRESCRIPTION",
       title: encrypt(`Prescription — ${new Date().toLocaleDateString("en-US")}`),

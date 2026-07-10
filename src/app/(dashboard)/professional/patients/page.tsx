@@ -1,11 +1,11 @@
 // src/app/(dashboard)/professional/patients/page.tsx
-// Professional's patients: charts they created (PatientRecord) + people seen via appointments.
-// Server component loads the data; a client component handles the "new chart" form.
+// Professional's patients: own charts + colleague-shared charts.
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { decrypt } from "@/lib/encryption";
+import { listSharedChartsForProfessional } from "@/lib/shared-charts-list";
 import PatientsClient from "./PatientsClient";
 
 function safeDecrypt(v: string): string {
@@ -22,42 +22,41 @@ export default async function ProfessionalPatients() {
   });
   if (!professional) redirect("/onboarding");
 
-  // Charts created by the professional.
-  // TEMP DEBUG: surface the real error instead of a blank "Application error",
-  // so we can see the actual cause in production. Remove after diagnosing.
-  let charts: Array<{
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string | null;
-    hasAccount: boolean;
-    updatedAt: string;
-  }>;
-  try {
-    const records = await db.patientRecord.findMany({
-      where: { professionalId: professional.id },
-      orderBy: { updatedAt: "desc" },
-    });
+  const records = await db.patientRecord.findMany({
+    where: { professionalId: professional.id },
+    orderBy: { updatedAt: "desc" },
+  });
 
-    charts = records.map((r) => ({
-      id: r.id,
-      firstName: safeDecrypt(r.firstName),
-      lastName: safeDecrypt(r.lastName),
-      email: r.email || null,
-      hasAccount: !!r.linkedUserId,
-      updatedAt: r.updatedAt.toISOString(),
+  const ownedIds = new Set(records.map((r) => r.id));
+
+  const ownedCharts = records.map((r) => ({
+    id: r.id,
+    firstName: safeDecrypt(r.firstName),
+    lastName: safeDecrypt(r.lastName),
+    email: r.email || null,
+    hasAccount: !!r.linkedUserId,
+    updatedAt: r.updatedAt.toISOString(),
+    access: "owner" as const,
+  }));
+
+  const shared = await listSharedChartsForProfessional(professional.id);
+  const sharedCharts = shared
+    .filter((s) => !ownedIds.has(s.recordId))
+    .map((s) => ({
+      id: s.recordId,
+      firstName: s.firstName,
+      lastName: s.lastName,
+      email: null as string | null,
+      hasAccount: s.hasAccount,
+      updatedAt: s.updatedAt,
+      access: s.permission === "EDIT" ? ("edit" as const) : ("view" as const),
+      ownerName: s.ownerName,
+      sharedVia: s.sharedVia,
     }));
-  } catch (e) {
-    console.error("[PATIENTS PAGE ERROR]", e);
-    const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    return (
-      <div style={{ padding: 24, fontFamily: "monospace", whiteSpace: "pre-wrap", color: "#b91c1c" }}>
-        <strong>DEBUG — erro ao carregar pacientes:</strong>
-        {"\n\n"}
-        {msg}
-      </div>
-    );
-  }
+
+  const charts = [...ownedCharts, ...sharedCharts].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
 
   return <PatientsClient initialCharts={charts} />;
 }

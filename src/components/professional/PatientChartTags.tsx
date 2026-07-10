@@ -26,10 +26,12 @@ export default function PatientChartTags({
   chartId,
   initialTags = [],
   readOnly = false,
+  suggestedAllergy,
 }: {
   chartId: string;
   initialTags?: ChartTag[];
   readOnly?: boolean;
+  suggestedAllergy?: string | null;
 }) {
   const { t } = useI18n();
   const [tags, setTags] = useState<ChartTag[]>(initialTags);
@@ -45,6 +47,27 @@ export default function PatientChartTags({
     setLabel("");
     setError("");
   }, [chartId, initialTags]);
+
+  async function addSuggestedAllergy() {
+    const trimmed = suggestedAllergy?.trim();
+    if (!trimmed || readOnly) return;
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/professional/records/${chartId}/tags`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "ALLERGY", label: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t("tag.saveError"));
+      setTags((prev) => [...prev, data]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("tag.saveError"));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function addTag() {
     const trimmed = label.trim();
@@ -116,6 +139,16 @@ export default function PatientChartTags({
           <span className="text-xs text-slate-400">{t("tag.empty")}</span>
         )}
       </div>
+
+      {suggestedAllergy && !readOnly && !tags.some((t) => t.kind === "ALLERGY") && (
+        <button
+          type="button"
+          onClick={addSuggestedAllergy}
+          className="mt-2 text-xs font-medium text-rose-600 hover:text-rose-700 inline-flex items-center gap-1"
+        >
+          <Plus size={12} /> {t("tag.addProfileAllergy")}
+        </button>
+      )}
 
       {adding && (
         <div className="mt-3 bg-slate-50 rounded-xl p-3 space-y-2 border border-slate-100">

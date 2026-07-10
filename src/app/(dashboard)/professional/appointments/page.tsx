@@ -15,6 +15,7 @@ import ProfessionalAppointmentsView, {
 } from "@/components/professional/ProfessionalAppointmentsView";
 import { DEFAULT_TIME_ZONE } from "@/lib/timezone";
 import { parseAvailabilityJson } from "@/lib/availability-exceptions";
+import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -88,11 +89,18 @@ export default async function ProfessionalAppointments() {
       })
     : [];
 
-  const chartIdByUserId = Object.fromEntries(
+  const chartIdByUserId: Record<string, string> = Object.fromEntries(
     charts.map((c) => [c.linkedUserId!, c.id]),
   );
 
-  const chartIds = charts.map((c) => c.id);
+  for (const userId of linkedUserIds) {
+    if (!chartIdByUserId[userId]) {
+      const ensured = await ensurePatientRecord(professional.id, userId);
+      if (ensured) chartIdByUserId[userId] = ensured;
+    }
+  }
+
+  const chartIds = Object.values(chartIdByUserId);
   const summarizeDocs = chartIds.length
     ? await db.medicalDocument.findMany({
         where: { patientRecordId: { in: chartIds } },

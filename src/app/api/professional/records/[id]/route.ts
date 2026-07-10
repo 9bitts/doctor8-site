@@ -22,6 +22,10 @@ function safeDecrypt(v: string | null): string {
 }
 
 const patchSchema = z.object({
+  firstName:    z.string().min(1).max(100).optional(),
+  lastName:     z.string().min(1).max(100).optional(),
+  phone:        z.string().max(40).optional().or(z.literal("")),
+  notes:        z.string().max(5000).optional().or(z.literal("")),
   email:        z.string().email().or(z.literal("")).optional(),
   dateOfBirth:  z.string().optional().or(z.literal("")),
   sex:          z.string().max(10).optional().or(z.literal("")),
@@ -104,9 +108,38 @@ export async function PATCH(
   const wantsEmailChange = Object.prototype.hasOwnProperty.call(body, "email");
   const regKeys = ["dateOfBirth", "sex", "cpf", "addressLine1", "city", "state", "country", "zipCode"];
   const wantsRegUpdate = regKeys.some((k) => Object.prototype.hasOwnProperty.call(body, k));
+  const wantsNameUpdate =
+    Object.prototype.hasOwnProperty.call(body, "firstName") ||
+    Object.prototype.hasOwnProperty.call(body, "lastName");
+  const wantsPhoneUpdate = Object.prototype.hasOwnProperty.call(body, "phone");
+  const wantsNotesUpdate = Object.prototype.hasOwnProperty.call(body, "notes");
 
   const data: Record<string, unknown> = {};
   let linkedUserId: string | null = null;
+
+  if (wantsNameUpdate) {
+    const nextFirst = d.firstName ?? safeDecrypt(record.firstName);
+    const nextLast = d.lastName ?? safeDecrypt(record.lastName);
+    if (Object.prototype.hasOwnProperty.call(body, "firstName")) {
+      data.firstName = encrypt(nextFirst);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "lastName")) {
+      data.lastName = encrypt(nextLast);
+    }
+    data.searchText = buildPatientRecordSearchText(
+      nextFirst,
+      nextLast,
+      record.email,
+    );
+  }
+
+  if (wantsPhoneUpdate) {
+    data.phone = d.phone ? encrypt(d.phone) : null;
+  }
+
+  if (wantsNotesUpdate) {
+    data.notes = d.notes ? encrypt(d.notes) : null;
+  }
 
   // EMAIL block
   if (wantsEmailChange) {

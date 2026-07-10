@@ -30,6 +30,7 @@ import {
   zonedTimeToUtc,
 } from "@/lib/timezone";
 import { chartActionUrl } from "@/lib/video-chart-nav";
+import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import {
   isAppointmentInVolunteerBlock,
@@ -107,6 +108,10 @@ export default function ProfessionalAppointmentsView({
   const voiceHint = searchParams.get("voiceHint");
   const locale = localeOf(lang);
   const isMobileDay = useIsMobileDayView();
+  const prescriptionsPath = mapProfessionalPathToPortal(
+    `${portalBase}/appointments`,
+    "/professional/prescriptions",
+  );
 
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [appointments, setAppointments] = useState(initialAppointments);
@@ -387,7 +392,7 @@ export default function ProfessionalAppointmentsView({
               {!isPsychologistPortal && (
                 <>
                   <Link
-                    href={chartActionUrl("/professional/prescriptions", chartId, {
+                    href={chartActionUrl(prescriptionsPath, chartId, {
                       view: "prescription",
                       returnUrl: `${portalBase}/appointments`,
                     })}
@@ -396,7 +401,7 @@ export default function ProfessionalAppointmentsView({
                     <Pill size={11} /> {t("chartAct.prescribe")}
                   </Link>
                   <Link
-                    href={chartActionUrl("/professional/prescriptions", chartId, {
+                    href={chartActionUrl(prescriptionsPath, chartId, {
                       view: "exam",
                       returnUrl: `${portalBase}/appointments`,
                     })}
@@ -408,14 +413,14 @@ export default function ProfessionalAppointmentsView({
                     href={(() => {
                       const sp = new URLSearchParams({ newRecord: "1", docType: "EXAM_RESULT" });
                       sp.set("returnUrl", `${portalBase}/appointments`);
-                      return `/professional/patients/${chartId}?${sp.toString()}`;
+                      return `${portalBase}/patients/${chartId}?${sp.toString()}`;
                     })()}
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg hover:bg-indigo-100 transition"
                   >
                     <FileCheck size={11} /> {t("chartAct.examResult")}
                   </Link>
                   <Link
-                    href={chartActionUrl("/professional/prescriptions", chartId, {
+                    href={chartActionUrl(prescriptionsPath, chartId, {
                       view: "document",
                       returnUrl: `${portalBase}/appointments`,
                     })}

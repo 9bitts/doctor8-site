@@ -1,4 +1,4 @@
-// POST ? create a referral booking link for a colleague + optional chart note.
+// POST — create a referral booking link for a colleague + share full chart access.
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
+import { createChartShare } from "@/lib/chart-access";
+import { patientChartPathForSpecialty } from "@/lib/patient-chart-path";
 import { z } from "zod";
 
 const schema = z.object({
@@ -37,7 +39,7 @@ export async function POST(
 
   const professional = await db.professionalProfile.findUnique({
     where: { userId: ctx.userId },
-    select: { id: true, firstName: true, lastName: true },
+    select: { id: true, firstName: true, lastName: true, specialty: true },
   });
   if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
 
@@ -63,10 +65,20 @@ export async function POST(
     return NextResponse.json({ error: "Colleague not found" }, { status: 404 });
   }
 
+  const shareResult = await createChartShare({
+    recordId: chart.id,
+    ownerProfessionalId: ctx.professional.id,
+    target: { type: "colleague", professionalId: target.id },
+    permission: "EDIT",
+  });
+  if ("error" in shareResult) {
+    return NextResponse.json({ error: shareResult.error }, { status: 400 });
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
   const bookingPath = `/patient/appointments?pro=${target.id}&providerType=health&from=referral`;
   const bookingUrl = `${appUrl}${bookingPath}`;
-  const chartPath = `/professional/patients/${chart.id}`;
+  const targetChartPath = patientChartPathForSpecialty(target.specialty, chart.id);
 
   const patientName = `${safeDecrypt(chart.firstName)} ${safeDecrypt(chart.lastName)}`.trim();
   const referrerName = `Dr. ${professional.firstName} ${professional.lastName}`;
@@ -77,6 +89,7 @@ export async function POST(
     `Encaminhamento de ${referrerName} para ${targetName} (${target.specialty}).`,
     patientName ? `Paciente: ${patientName}` : null,
     note ? `\nObservações:\n${note}` : null,
+    `\nFicha compartilhada com acesso completo.`,
     `\nLink de agendamento:\n${bookingPath}`,
   ]
     .filter(Boolean)
@@ -123,7 +136,6 @@ export async function POST(
     });
   }
 
-  // Notify the referred colleague (direction flow #7).
   if (target.userId !== ctx.userId) {
     await db.message.create({
       data: {
@@ -134,7 +146,7 @@ export async function POST(
             `📋 Encaminhamento de ${referrerName}.`,
             patientName ? `Paciente: ${patientName}` : null,
             note ? `\nObservações:\n${note}` : null,
-            `\nFicha do paciente:\n${chartPath}`,
+            `\nFicha completa do paciente (acesso compartilhado):\n${targetChartPath}`,
             `\nAgendamento do paciente:\n${bookingPath}`,
           ]
             .filter(Boolean)
@@ -155,7 +167,7 @@ export async function POST(
       data: {
         chartId: chart.id,
         fromUserId: ctx.userId,
-        link: chartPath,
+        link: targetChartPath,
         titleKey: "notif.referralColleague.title",
         bodyKey: "notif.referralColleague.body",
         bodyParams: { doctor: referrerName, patient: patientName || "Paciente" },
@@ -165,7 +177,9 @@ export async function POST(
 
   return NextResponse.json({
     bookingUrl,
+    chartPath: targetChartPath,
     targetName,
     targetSpecialty: target.specialty,
+    chartShared: true,
   });
 }

@@ -1,5 +1,6 @@
 // src/app/api/professional/search-pros/route.ts
-// GET — search other professionals by name or specialty (for resource sharing)
+// GET — search other professionals by name or specialty (for resource sharing / referrals)
+
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
@@ -22,7 +23,9 @@ export async function GET(req: NextRequest) {
       verified: true,
       ...(specialtyFilter === "psychology"
         ? { specialty: { in: psychologySpecialties } }
-        : {}),
+        : specialtyFilter
+          ? { specialty: specialtyFilter }
+          : {}),
       ...(q.length >= 2
         ? {
             OR: [
@@ -40,7 +43,8 @@ export async function GET(req: NextRequest) {
       specialty: true,
       user: { select: { email: true } },
     },
-    take: 10,
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    take: specialtyFilter && q.length < 2 ? 50 : 10,
   });
 
   return NextResponse.json({
