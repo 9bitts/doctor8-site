@@ -48,9 +48,14 @@ class AccountLockedError extends CredentialsSignin {
   code = "AccountLocked";
 }
 
-// HIPAA: 15 minutes session timeout
+// HIPAA: 15 minutes of inactivity before session expires
 const SESSION_MAX_AGE = parseInt(
-  process.env.SESSION_MAX_AGE_SECONDS || "900"
+  process.env.SESSION_MAX_AGE_SECONDS || "900",
+  10,
+);
+const SESSION_UPDATE_AGE = parseInt(
+  process.env.SESSION_UPDATE_AGE_SECONDS || "60",
+  10,
 );
 
 const TOKEN_VERSION_CHECK_MS = 60_000;
@@ -76,6 +81,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
     maxAge: SESSION_MAX_AGE,
+    updateAge: SESSION_UPDATE_AGE,
   },
   pages: {
     signIn: "/login",
@@ -452,6 +458,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           10,
         );
         token.exp = Math.floor(Date.now() / 1000) + consultMaxAge;
+      }
+
+      // Sliding inactivity window: extend while user is active on dashboard
+      if (trigger === "update" && (session as { activityActive?: boolean })?.activityActive) {
+        token.exp = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE;
       }
 
       if (token.id) {
