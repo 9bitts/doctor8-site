@@ -15,7 +15,8 @@ type NotificationType =
   | "payment"
   | "system"
   | "favorite_online"
-  | "review_request";
+  | "review_request"
+  | "referral";
 
 export async function createNotification(params: {
   userId: string;

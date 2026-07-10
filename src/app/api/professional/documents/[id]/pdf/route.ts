@@ -144,6 +144,7 @@ export async function GET(
   const pdfBytes = await buildClinicalDocumentPdf({
     lang,
     kind: exam ? "exam" : "document",
+    documentType: document.type,
     docTitle: title,
     proFirstName: pro.firstName,
     proLastName: pro.lastName,

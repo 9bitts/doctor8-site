@@ -8,6 +8,7 @@ import type { ProviderType } from "@/lib/providers";
 import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
 import { picBySlug, picLabel } from "@/lib/pics/practices";
 import { INTEGRATIVE_SEO_SLUG } from "@/lib/public-slugs";
+import { sanitizePublicBio, sanitizePublicHeadline } from "@/lib/profile-display";
 
 export type PublicProfileProviderType = ProviderType | "integrative";
 
@@ -289,7 +290,7 @@ function mapCardToPublicProfile(
       lastName: p.lastName,
       specialty: p.specialty,
       subspecialties: p.subspecialties,
-      bio: p.bio,
+      bio: sanitizePublicBio(p.bio),
       avatarUrl: p.avatarUrl,
       license: formatLicense(p.licenseNumber, p.licenseState, info.councilKey) || null,
       trainingInstitution: null,
@@ -308,7 +309,7 @@ function mapCardToPublicProfile(
       clinicLatitude: p.clinicLatitude,
       clinicLongitude: p.clinicLongitude,
       verified: p.verified,
-      headline: card.headline,
+      headline: sanitizePublicHeadline(card.headline),
       ratingAvg: reviews.avg,
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),
@@ -332,7 +333,7 @@ function mapCardToPublicProfile(
       lastName: safeDecrypt(p.lastName),
       specialty: PSYCHOANALYSIS_SPECIALTY,
       subspecialties: [],
-      bio: p.bio,
+      bio: sanitizePublicBio(p.bio),
       avatarUrl: p.avatarUrl,
       license: null,
       trainingInstitution: p.trainingInstitution,
@@ -351,7 +352,7 @@ function mapCardToPublicProfile(
       clinicLatitude: p.clinicLatitude,
       clinicLongitude: p.clinicLongitude,
       verified: p.verified,
-      headline: card.headline,
+      headline: sanitizePublicHeadline(card.headline),
       ratingAvg: reviews.avg,
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),
@@ -383,7 +384,7 @@ function mapCardToPublicProfile(
         .map((s) => picBySlug(s))
         .filter(Boolean)
         .map((pic) => picLabel(pic!, "pt")),
-      bio: p.bio,
+      bio: sanitizePublicBio(p.bio),
       avatarUrl: p.avatarUrl,
       license: null,
       trainingInstitution: p.trainingInstitution,
@@ -402,7 +403,7 @@ function mapCardToPublicProfile(
       clinicLatitude: p.clinicLatitude,
       clinicLongitude: p.clinicLongitude,
       verified: p.verified,
-      headline: card.headline,
+      headline: sanitizePublicHeadline(card.headline),
       ratingAvg: reviews.avg,
       ratingCount: reviews.count,
       publicPath: buildPublicProfilePath(card),

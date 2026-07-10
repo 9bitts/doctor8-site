@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
+import { createNotification } from "@/lib/notifications";
+import { storedNotificationText } from "@/lib/notification-i18n";
 import { z } from "zod";
 
 const schema = z.object({
@@ -41,7 +43,13 @@ export async function POST(
 
   const chart = await db.patientRecord.findUnique({
     where: { id: params.id },
-    select: { id: true, professionalId: true, firstName: true, lastName: true },
+    select: {
+      id: true,
+      professionalId: true,
+      firstName: true,
+      lastName: true,
+      linkedUserId: true,
+    },
   });
   if (!chart || chart.professionalId !== ctx.professional.id) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
@@ -81,6 +89,36 @@ export async function POST(
       content: encrypt(content),
     },
   });
+
+  if (chart.linkedUserId) {
+    await db.message.create({
+      data: {
+        senderId: ctx.userId,
+        receiverId: chart.linkedUserId,
+        content: encrypt(
+          `📋 ${referrerName} indicou ${targetName} (${target.specialty}).\nAgende sua consulta:\n${bookingUrl}`,
+        ),
+      },
+    });
+    const notif = storedNotificationText("notif.referral.title", "notif.referral.body", {
+      doctor: referrerName,
+      specialty: target.specialty,
+    });
+    await createNotification({
+      userId: chart.linkedUserId,
+      title: notif.title,
+      body: notif.body,
+      type: "referral",
+      data: {
+        chartId: chart.id,
+        targetProfessionalId: target.id,
+        bookingUrl,
+        titleKey: "notif.referral.title",
+        bodyKey: "notif.referral.body",
+        bodyParams: { doctor: referrerName, specialty: target.specialty },
+      },
+    });
+  }
 
   return NextResponse.json({
     bookingUrl,

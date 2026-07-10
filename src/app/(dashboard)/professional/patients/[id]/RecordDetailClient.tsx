@@ -39,6 +39,7 @@ import PharmacistPatientChartPanel from "@/components/pharmacist/PharmacistPatie
 import ChartSharePanel from "@/components/professional/ChartSharePanel";
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
 import { openAuthenticatedPdf } from "@/lib/open-url-safely";
+import { uploadFileToApi } from "@/lib/upload-client";
 import {
   RecordTimelineFilters,
   PinnedAnamnesisCard,
@@ -584,16 +585,18 @@ export default function RecordDetailClient({
   }
 
   async function uploadRecordFile(f: File): Promise<string | null> {
-    const fd = new FormData();
-    fd.append("file", f);
-    fd.append("folder", `records/${chart.id}`);
-    const up = await fetch("/api/uploads", { method: "POST", body: fd, credentials: "same-origin" });
-    const upData = await up.json();
+    const up = await uploadFileToApi(f, `records/${chart.id}`);
     if (!up.ok) {
-      setError(upData.error || t("rec.uploadFailed"));
+      setError(
+        up.unauthorized
+          ? t("docs.err.sessionExpired")
+          : up.error === "UPLOAD_FAILED" || up.error === "NETWORK"
+            ? t("rec.uploadFailed")
+            : up.error,
+      );
       return null;
     }
-    return upData.key as string;
+    return up.key;
   }
 
   async function handleRotateImage(direction: "left" | "right") {
@@ -1825,6 +1828,7 @@ export default function RecordDetailClient({
                   type="file"
                   multiple
                   accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
+                  capture="environment"
                   onChange={(e) => handleFilesChange(e.target.files)}
                   className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-600 file:text-sm file:font-medium hover:file:bg-brand-100"
                 />

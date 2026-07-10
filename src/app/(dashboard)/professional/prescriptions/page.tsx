@@ -1013,6 +1013,21 @@ export default function PrescriptionsPage() {
     setFormError("");
   }
 
+  function startFreeTextPrescription() {
+    setMedications([{
+      name: "",
+      dosage: "",
+      frequency: "",
+      duration: "",
+      instructions: "",
+      itemKind: "device",
+    }]);
+    setShowBulkPaste(true);
+    setBulkPasteText("");
+    setFormError("");
+    setHighlightIncompleteMeds(false);
+  }
+
   function applyFreeTextPrescription() {
     const parsed = parseBulkMedicationLines(bulkPasteText);
     if (parsed.length === 0) {
@@ -1592,6 +1607,11 @@ export default function PrescriptionsPage() {
               <button type="button" onClick={addManual}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 hover:bg-brand-50 text-brand-600 font-semibold text-sm transition">
                 <Plus size={16} /> {t("rx2.addManual")}
+              </button>
+
+              <button type="button" onClick={startFreeTextPrescription}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition">
+                <FileText size={16} /> {t("rx.freeTextStart")}
               </button>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">

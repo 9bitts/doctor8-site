@@ -23,31 +23,36 @@ const L: Record<SignLang, Record<string, string>> = {
     tagline: "Secure Digital Health Platform",
     date: "Date", patientName: "Patient", patientAge: "Age", patientCpf: "Tax ID",
     yearsOld: "years", patientAddress: "Address", examTitle: "Exam Order",
+    examResultTitle: "Exam Result",
     documentTitle: "Clinical Document", exams: "Requested exams", notes: "Notes",
     cid: "ICD", body: "Content", confidential: "CONFIDENTIAL — Protected health information.",
-    digitalId: "Document ID",
+    digitalId: "Document ID", coverHint: "Clinical document issued via Doctor8",
   },
   pt: {
     tagline: "Plataforma Digital de Saúde Segura",
     date: "Data", patientName: "Paciente", patientAge: "Idade", patientCpf: "CPF",
     yearsOld: "anos", patientAddress: "Endereço", examTitle: "Pedido de Exames",
+    examResultTitle: "Resultado de Exame",
     documentTitle: "Documento Clínico", exams: "Exames solicitados", notes: "Observações",
     cid: "CID", body: "Conteúdo", confidential: "CONFIDENCIAL — Informação de saúde protegida.",
-    digitalId: "ID do documento",
+    digitalId: "ID do documento", coverHint: "Documento clínico emitido via Doctor8",
   },
   es: {
     tagline: "Plataforma Digital de Salud Segura",
     date: "Fecha", patientName: "Paciente", patientAge: "Edad", patientCpf: "CPF",
     yearsOld: "años", patientAddress: "Dirección", examTitle: "Pedido de Exámenes",
+    examResultTitle: "Resultado de Examen",
     documentTitle: "Documento Clínico", exams: "Exámenes solicitados", notes: "Observaciones",
     cid: "CIE", body: "Contenido", confidential: "CONFIDENCIAL — Información de salud protegida.",
-    digitalId: "ID del documento",
+    digitalId: "ID del documento", coverHint: "Documento clínico emitido via Doctor8",
   },
 };
 
 export interface ClinicalDocumentPdfData {
   lang: SignLang;
   kind: "exam" | "document";
+  /** EXAM_REQUEST | EXAM_RESULT | … — used for cover sheet (#41). */
+  documentType?: string;
   docTitle: string;
   proFirstName: string;
   proLastName: string;
@@ -110,25 +115,51 @@ export async function buildClinicalDocumentPdf(data: ClinicalDocumentPdfData): P
   const taglineW = font.widthOfTextAtSize(sanitize(tr.tagline), 8);
   text(page, tr.tagline, (A4.w - taglineW) / 2, taglineY, 8, font, GRAY);
 
-  const doctorTop = y - 52;
-  const rightX = A4.w - margin;
-  const drawRight = (s: string, yy: number, size: number, f: PDFFont, color = DARK) => {
-    const w = f.widthOfTextAtSize(sanitize(s), size);
-    text(page, s, rightX - w, yy, size, f, color);
-  };
-  drawRight(`Dr(a). ${data.proFirstName} ${data.proLastName}`, doctorTop, 13, fontBold, BLUE);
-  drawRight(data.proSpecialty, doctorTop - 14, 10, font, GRAY);
-  drawRight(data.proLicense, doctorTop - 26, 10, font, GRAY);
-  drawRight(`${tr.date}: ${data.todayText}`, doctorTop - 40, 8, font, GRAY);
-  y = doctorTop - 58;
+  const doctorTop = taglineY - 18;
+  text(page, `Dr(a). ${data.proFirstName} ${data.proLastName}`, margin, doctorTop, 12, fontBold, BLUE);
+  text(page, data.proSpecialty, margin, doctorTop - 14, 9, font, GRAY);
+  text(page, data.proLicense, margin, doctorTop - 26, 9, font, GRAY);
+  if (data.clinicAddressFull) {
+    text(page, data.clinicAddressFull, margin, doctorTop - 38, 8, font, GRAY);
+    text(page, `${tr.date}: ${data.todayText}`, margin, doctorTop - 50, 8, font, GRAY);
+    y = doctorTop - 58;
+  } else {
+    text(page, `${tr.date}: ${data.todayText}`, margin, doctorTop - 38, 8, font, GRAY);
+    y = doctorTop - 46;
+  }
 
   page.drawLine({ start: { x: margin, y }, end: { x: A4.w - margin, y }, thickness: 2, color: BLUE });
   y -= 28;
 
-  // Title
-  const heading = data.kind === "exam" ? (data.docTitle || tr.examTitle) : (data.docTitle || tr.documentTitle);
-  text(page, heading, margin, y, 16, fontBold, BLUE);
-  y -= 28;
+  const isExamResult = data.documentType === "EXAM_RESULT";
+  const heading = isExamResult
+    ? (data.docTitle || tr.examResultTitle)
+    : data.kind === "exam"
+      ? (data.docTitle || tr.examTitle)
+      : (data.docTitle || tr.documentTitle);
+
+  // ── Folha de rosto (#41) para resultados de exame ──
+  if (isExamResult) {
+    const coverH = 120;
+    page.drawRectangle({
+      x: margin,
+      y: y - coverH,
+      width: A4.w - margin * 2,
+      height: coverH,
+      color: rgb(0.97, 0.98, 0.99),
+      borderColor: BLUE,
+      borderWidth: 1.5,
+    });
+    text(page, tr.examResultTitle.toUpperCase(), margin + 16, y - 28, 14, fontBold, BLUE);
+    text(page, heading, margin + 16, y - 48, 12, fontBold, DARK);
+    text(page, `${tr.patientName}: ${data.patientName}`, margin + 16, y - 68, 10, font, DARK);
+    text(page, `${tr.date}: ${data.todayText}`, margin + 16, y - 84, 9, font, GRAY);
+    text(page, tr.coverHint, margin + 16, y - 102, 8, fontItalic, GRAY);
+    y -= coverH + 24;
+  } else {
+    text(page, heading, margin, y, 16, fontBold, BLUE);
+    y -= 28;
+  }
 
   // Patient box
   const fields: [string, string][] = [[tr.patientName, data.patientName]];

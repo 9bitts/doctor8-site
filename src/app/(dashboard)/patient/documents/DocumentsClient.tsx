@@ -14,6 +14,7 @@ import {
   Stethoscope, AlertCircle, XCircle, Trash2,
 } from "lucide-react";
 import { openUrlAfterAsync, openAuthenticatedPdf } from "@/lib/open-url-safely";
+import { uploadFileToApi } from "@/lib/upload-client";
 
 interface SharedDoctor {
   professionalId: string;
@@ -105,6 +106,14 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     el?.classList.add("ring-2", "ring-brand-400", "bg-brand-50/40");
   }, [items]);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("new") === "1") {
+      resetForm();
+      setShowForm(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function loadDoctors(force = false) {
     if (!force && doctors !== null) return doctors;
     setDoctorsLoading(true);
@@ -144,14 +153,19 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     try {
       let fileKey = "";
       if (file) {
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("folder", "patient-docs");
-        const up = await fetch("/api/uploads", { method: "POST", body: fd, credentials: "same-origin" });
-        const upData = await up.json();
-        if (!up.ok) { setError(upData.error || t("docs.err.uploadFailed")); setSaving(false); return; }
-        if (!upData.key) { setError(t("docs.err.noFileKey")); setSaving(false); return; }
-        fileKey = upData.key;
+        const up = await uploadFileToApi(file, "patient-docs");
+        if (!up.ok) {
+          setError(
+            up.unauthorized
+              ? t("docs.err.sessionExpired")
+              : up.error === "UPLOAD_FAILED" || up.error === "NETWORK"
+                ? t("docs.err.uploadFailed")
+                : up.error,
+          );
+          setSaving(false);
+          return;
+        }
+        fileKey = up.key;
       }
       const res = await fetch("/api/patient/documents", {
         method: "POST",
@@ -310,14 +324,14 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="sticky top-0 z-20 -mx-1 px-1 py-3 bg-slate-50/95 backdrop-blur-sm border-b border-slate-100 flex items-center justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-900">{t("docs.title")}</h1>
-          <p className="text-slate-500 mt-1">{t("docs.subtitle")}</p>
+          <p className="text-slate-500 mt-1 truncate">{t("docs.subtitle")}</p>
         </div>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+          className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm shrink-0"
         >
           <Plus size={18} /> {t("docs.add")}
         </button>
@@ -508,6 +522,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                 <input
                   type="file"
                   accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
+                  capture="environment"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                   className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 file:text-sm file:font-medium hover:file:bg-emerald-100"
                 />
