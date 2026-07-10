@@ -1131,7 +1131,6 @@ export async function loadPatientDetail(
   const journeyHighlight = hasHumanitarianHistory && hasFutureVolunteerScheduled;
 
   const profilePhone = safeDecrypt(profile.phone);
-  const now = Date.now();
   const accountLocked = !!profile.user.lockedUntil && profile.user.lockedUntil.getTime() > now;
 
   let anamnese: PatientDetailDto["anamnese"] = null;
