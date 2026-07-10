@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Pill, FlaskConical, ScrollText, FileCheck } from "lucide-react";
+import { Pill, FlaskConical, ScrollText } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { chartActionUrl } from "@/lib/video-chart-nav";
 import {
   mapProfessionalPathToPortal,
-  professionalPatientsHref,
 } from "@/lib/psychologist-portal";
 
 export default function ChartClinicalActions({
@@ -22,7 +21,6 @@ export default function ChartClinicalActions({
   const t = useT();
   const pathname = usePathname();
   const prescriptionsPath = mapProfessionalPathToPortal(pathname, "/professional/prescriptions");
-  const patientsPath = professionalPatientsHref(pathname, chartId);
 
   const btnClass = compact
     ? "inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-100 px-2 py-1 rounded-lg transition"
@@ -38,15 +36,6 @@ export default function ChartClinicalActions({
       href: chartActionUrl(prescriptionsPath, chartId, { view: "exam", returnUrl }),
       icon: FlaskConical,
       label: t("chartAct.exam"),
-    },
-    {
-      href: (() => {
-        const sp = new URLSearchParams({ newRecord: "1", docType: "EXAM_RESULT" });
-        if (returnUrl) sp.set("returnUrl", returnUrl);
-        return `${patientsPath}?${sp.toString()}`;
-      })(),
-      icon: FileCheck,
-      label: t("chartAct.examResult"),
     },
     {
       href: chartActionUrl(prescriptionsPath, chartId, { view: "document", returnUrl }),
