@@ -7,6 +7,10 @@
 import type Stripe from "stripe";
 import { db } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
+import {
+  cancelConsultationProfessionalPayoutByPaymentIntent,
+  isConsultationPayoutTransferred,
+} from "@/lib/consultation-professional-payout";
 
 const MAX_REASON_LEN = 500;
 
@@ -89,9 +93,17 @@ export async function refundPaymentIntentIdempotent(
       return { refunded: true, alreadyRefunded: true };
     }
 
+    const hasConnectTransfer = await isConsultationPayoutTransferred(paymentIntentId);
+    if (!hasConnectTransfer) {
+      await cancelConsultationProfessionalPayoutByPaymentIntent(paymentIntentId);
+    }
+
     const refund = await stripe.refunds.create(
       {
         payment_intent: paymentIntentId,
+        ...(hasConnectTransfer
+          ? { reverse_transfer: true, refund_application_fee: false }
+          : {}),
         metadata: { reason, source: "auto-refund" },
       },
       { idempotencyKey: `refund-${paymentIntentId}` },

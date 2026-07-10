@@ -723,8 +723,9 @@ model ProfessionalProfile {
   volunteerScheduledApprovedAt  DateTime?
   volunteerScheduledApprovedBy  String?
 
-  // Payouts (rateio) — conta Stripe Connect para receber o rateio mensal
+  // Payouts — Stripe Connect Express (85% after refund window + rateio bonus from 15% pool)
   stripeConnectAccountId String?
+  consultationPayouts    ConsultationProfessionalPayout[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1100,6 +1101,7 @@ model Appointment {
 
   documents        MedicalDocument[]
   paymentRefunds   PaymentRefund[]
+  professionalPayout ConsultationProfessionalPayout?
   tissGuides       TissGuide[]
   orgLedgerEntries OrganizationLedgerEntry[]
   orgSurveyResponses OrganizationSurveyResponse[]
@@ -1140,6 +1142,39 @@ model PaymentRefund {
 
   @@index([paymentIntentId])
   @@index([createdAt])
+}
+
+enum ConsultationPayoutStatus {
+  PENDING
+  TRANSFERRED
+  CANCELLED
+  FAILED
+}
+
+// Scheduled Connect transfer of the professional share (85%) after refund/cancel window.
+model ConsultationProfessionalPayout {
+  id                    String                   @id @default(cuid())
+  appointmentId         String                   @unique
+  appointment           Appointment              @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  professionalProfileId String
+  professionalProfile   ProfessionalProfile      @relation(fields: [professionalProfileId], references: [id], onDelete: Cascade)
+  stripePaymentIntentId String
+  grossCents            Int
+  netCents              Int
+  applicationFeeCents   Int
+  currency              String
+  connectAccountId      String
+  transferEligibleAt    DateTime
+  status                ConsultationPayoutStatus @default(PENDING)
+  stripeTransferId      String?                  @unique
+  transferredAt         DateTime?
+  cancelledAt           DateTime?
+  failureReason         String?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  @@index([status, transferEligibleAt])
+  @@index([stripePaymentIntentId])
 }
 
 // ─────────────────────────────────────────

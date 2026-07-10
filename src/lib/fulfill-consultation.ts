@@ -21,6 +21,7 @@ import {
 } from "@/lib/volunteer-slot-booking";
 import { EAP_BOOKING_SOURCE } from "@/lib/employer-eap-booking";
 import { resolveWorkforceSessionQuota } from "@/lib/employer-workforce";
+import { scheduleConsultationProfessionalPayout } from "@/lib/consultation-professional-payout";
 
 type BookingProviderType = ProviderType | "integrative";
 
@@ -452,6 +453,23 @@ export async function fulfillConsultationPayment(params: {
 
   if (!created) {
     return { appointmentId: appointment.id, created: false };
+  }
+
+  if (
+    providerType === "health" &&
+    stripePaymentId &&
+    !isZeroPriceBooking &&
+    appointment.paidAt
+  ) {
+    await scheduleConsultationProfessionalPayout({
+      appointmentId: appointment.id,
+      professionalProfileId: providerId,
+      stripePaymentIntentId: stripePaymentId,
+      grossCents: amount,
+      currency,
+      paidAt: appointment.paidAt,
+      scheduledAt: appointment.scheduledAt,
+    }).catch((e) => console.error("[PAYOUT-SCHEDULE]", appointment.id, e));
   }
 
   const user = await db.user.findUnique({

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
+import { cancelConsultationProfessionalPayout } from "@/lib/consultation-professional-payout";
 import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
@@ -171,6 +172,8 @@ export async function POST(
       refunded = true;
     }
   }
+
+  await cancelConsultationProfessionalPayout(params.id);
 
   await db.appointment.update({
     where: { id: params.id },

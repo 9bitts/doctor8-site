@@ -16,6 +16,10 @@ import {
   resolveProviderCurrency,
   toStripeCurrency,
 } from "@/lib/billing-regions";
+import {
+  ProviderPayoutNotReadyError,
+  requireActiveConnectForPaidConsultation,
+} from "@/lib/consultation-connect-split";
 import { z } from "zod";
 
 const schema = z.object({
@@ -87,6 +91,25 @@ export async function POST(req: NextRequest) {
 
   const provider = await getUnifiedProvider(providerId, providerType as ProviderType);
   if (!provider) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+
+  try {
+    await requireActiveConnectForPaidConsultation({
+      providerId,
+      providerType: providerType as ProviderType,
+    });
+  } catch (e) {
+    if (e instanceof ProviderPayoutNotReadyError) {
+      return NextResponse.json(
+        {
+          error: "PROVIDER_PAYOUT_NOT_READY",
+          message:
+            "Este profissional ainda não configurou a conta de recebimento. Escolha outro profissional ou tente mais tarde.",
+        },
+        { status: 409 },
+      );
+    }
+    throw e;
+  }
 
   try {
     await assertPaidSlotBooking(providerId, providerType as ProviderType, scheduledAt);

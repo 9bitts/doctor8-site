@@ -601,7 +601,11 @@ export default function AppointmentsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error?.general?.[0] || data.error || t("appt.errInitPayment"));
+        if (data.error === "PROVIDER_PAYOUT_NOT_READY") {
+          setError(data.message || t("appt.errProviderPayout"));
+        } else {
+          setError(data.error?.general?.[0] || data.error || t("appt.errInitPayment"));
+        }
         return;
       }
       if (data.checkoutUrl) {
@@ -635,7 +639,14 @@ export default function AppointmentsPage() {
         }),
       });
       const intentData = await intentRes.json();
-      if (!intentRes.ok) { setError(intentData.error?.general?.[0] || t("appt.errInitPayment")); return; }
+      if (!intentRes.ok) {
+        if (intentData.error === "PROVIDER_PAYOUT_NOT_READY") {
+          setError(intentData.message || t("appt.errProviderPayout"));
+        } else {
+          setError(intentData.error?.general?.[0] || t("appt.errInitPayment"));
+        }
+        return;
+      }
 
       const { error: stripeError, paymentIntent } = await stripeRef.current.confirmCardPayment(
         intentData.clientSecret,

@@ -35,6 +35,7 @@ interface Transaction {
   netCents:        number;
   currency:        string;
   status:          string;
+  payoutDirect?:   boolean;
 }
 
 interface ChartPoint {
@@ -49,6 +50,7 @@ interface FinanceData {
   period:              string;
   currency:            string;
   commissionRate:      number;
+  connectSplitEnabled?: boolean;
   totalGrossCents:     number;
   totalCommissionCents:number;
   totalNetCents:       number;
@@ -288,7 +290,9 @@ export function FinanceiroDashboard({
                 </div>
               </div>
               <p className="text-2xl font-bold text-slate-900">{fmt(data.totalNetCents, currency, locale)}</p>
-              <p className="text-xs text-slate-400 mt-1">{t("fin.afterCommission")}</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {data.connectSplitEnabled ? t("fin.netStripeDirect") : t("fin.afterCommission")}
+              </p>
             </div>
 
             {/* Bruto */}
@@ -426,7 +430,7 @@ export function FinanceiroDashboard({
           {/* ── Aviso de comissão ── */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-start gap-3 text-xs text-slate-500">
             <Info size={14} className="shrink-0 mt-0.5 text-slate-400" />
-            <p>{t("fin.commissionNote")}</p>
+            <p>{data.connectSplitEnabled ? t("fin.commissionNoteSplit") : t("fin.commissionNote")}</p>
           </div>
 
           {/* ── Lista de transações ── */}
@@ -471,6 +475,12 @@ export function FinanceiroDashboard({
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-bold text-brand-600">{fmt(tx.netCents, tx.currency, locale)}</p>
+                          {tx.payoutDirect && (
+                            <p className="text-[10px] font-semibold text-brand-500 mt-0.5">{t("fin.txStripeDirect")}</p>
+                          )}
+                          {tx.status === "pending_payout" && (
+                            <p className="text-[10px] font-semibold text-amber-600 mt-0.5">{t("fin.txPendingPayout")}</p>
+                          )}
                           <p className="text-xs text-slate-400">{t("fin.fromGross").replace("{{amount}}", fmt(tx.grossCents, tx.currency, locale))}</p>
                         </div>
                       </div>
@@ -490,7 +500,19 @@ export function FinanceiroDashboard({
                         </div>
                         <div className="col-span-2 text-right text-sm text-slate-600">{fmt(tx.grossCents, tx.currency, locale)}</div>
                         <div className="col-span-2 text-right text-sm text-rose-500">− {fmt(tx.commissionCents, tx.currency, locale)}</div>
-                        <div className="col-span-2 text-right text-sm font-bold text-brand-600">{fmt(tx.netCents, tx.currency, locale)}</div>
+                        <div className="col-span-2 text-right text-sm font-bold text-brand-600">
+                          {fmt(tx.netCents, tx.currency, locale)}
+                          {tx.payoutDirect && (
+                            <p className="text-[10px] font-semibold text-brand-500 font-normal mt-0.5">
+                              {t("fin.txStripeDirect")}
+                            </p>
+                          )}
+                          {tx.status === "pending_payout" && (
+                            <p className="text-[10px] font-semibold text-amber-600 font-normal mt-0.5">
+                              {t("fin.txPendingPayout")}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

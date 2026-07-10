@@ -107,6 +107,13 @@ export async function createOrResumeConnectOnboarding(params: {
   return { url: link.url };
 }
 
+export async function createConnectDashboardLink(
+  accountId: string,
+): Promise<{ url: string }> {
+  const link = await stripe.accounts.createLoginLink(accountId);
+  return { url: link.url };
+}
+
 export function logConnectAccountUpdated(account: Stripe.Account): void {
   console.log(
     JSON.stringify({

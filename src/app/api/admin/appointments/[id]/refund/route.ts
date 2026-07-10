@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
+import { cancelConsultationProfessionalPayout } from "@/lib/consultation-professional-payout";
 
 /** Admin — issue Stripe refund for a paid appointment. */
 export async function POST(
@@ -27,6 +28,8 @@ export async function POST(
     appointment.stripePaymentId,
     "admin_manual_refund",
   );
+
+  await cancelConsultationProfessionalPayout(params.id);
 
   return NextResponse.json({ ok: true, refund });
 }

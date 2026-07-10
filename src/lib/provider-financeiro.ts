@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { EAP_BOOKING_SOURCE } from "@/lib/employer-eap-booking";
+import { isStripeConnectEnabled } from "@/lib/stripe-connect";
+import { COMMISSION_RATE, commissionCentsOf } from "@/lib/rateio";
 
-const COMMISSION_RATE = 0.15;
 const DEFAULT_EAP_REPASSE_PERCENT = 70;
 
 export type FinanceProviderField =
@@ -132,7 +133,29 @@ export async function buildProviderFinanceiroReport(params: {
     netCents: number;
     currency: string;
     status: string;
+    payoutDirect: boolean;
   }[] = [];
+
+  const connectSplitActive = isStripeConnectEnabled();
+
+  const payoutByAppointmentId = new Map<
+    string,
+    { status: string; transferEligibleAt: Date }
+  >();
+  if (connectSplitActive && providerField === "professionalId" && appointments.length > 0) {
+    const payouts = await db.consultationProfessionalPayout.findMany({
+      where: {
+        appointmentId: { in: appointments.map((a) => a.id) },
+      },
+      select: { appointmentId: true, status: true, transferEligibleAt: true },
+    });
+    for (const p of payouts) {
+      payoutByAppointmentId.set(p.appointmentId, {
+        status: p.status,
+        transferEligibleAt: p.transferEligibleAt,
+      });
+    }
+  }
 
   for (const appt of appointments) {
     const gross = appt.priceAmount || 0;
@@ -149,7 +172,7 @@ export async function buildProviderFinanceiroReport(params: {
       commission = gross - net;
       txType = "EAP_CORPORATE";
     } else {
-      commission = Math.round(gross * COMMISSION_RATE);
+      commission = commissionCentsOf(gross);
       net = gross - commission;
       txType = appt.type === "TELECONSULT" ? "TELECONSULT" : "IN_PERSON";
     }
@@ -157,6 +180,17 @@ export async function buildProviderFinanceiroReport(params: {
     const first = safeDecrypt(p?.firstName ?? "");
     const last = safeDecrypt(p?.lastName ?? "");
     const initials = p ? `${first.charAt(0)}${last.charAt(0)}` || "??" : "??";
+    const payout = payoutByAppointmentId.get(appt.id);
+    let txStatus = "paid";
+    let payoutDirect = false;
+    if (connectSplitActive && !isEap) {
+      if (payout?.status === "TRANSFERRED") {
+        txStatus = "stripe_direct";
+        payoutDirect = true;
+      } else if (payout?.status === "PENDING") {
+        txStatus = "pending_payout";
+      }
+    }
     transactions.push({
       id: appt.id,
       date: appt.scheduledAt.toISOString(),
@@ -166,7 +200,8 @@ export async function buildProviderFinanceiroReport(params: {
       commissionCents: commission,
       netCents: net,
       currency: appt.currency || currency || "BRL",
-      status: "paid",
+      status: txStatus,
+      payoutDirect,
     });
   }
 
@@ -226,7 +261,7 @@ export async function buildProviderFinanceiroReport(params: {
         commission = gross - net;
         txType = "EAP_CORPORATE";
       } else {
-        commission = Math.round(gross * COMMISSION_RATE);
+        commission = commissionCentsOf(gross);
         net = gross - commission;
         txType = "JIT";
       }
@@ -241,7 +276,8 @@ export async function buildProviderFinanceiroReport(params: {
         commissionCents: commission,
         netCents: net,
         currency: jp.currency || currency || "BRL",
-        status: "paid",
+        status: connectSplitActive && !isEapJit ? "stripe_direct" : "paid",
+        payoutDirect: connectSplitActive && !isEapJit,
       });
     }
   }
@@ -285,6 +321,7 @@ export async function buildProviderFinanceiroReport(params: {
     to: to.toISOString(),
     currency: currency || "BRL",
     commissionRate: COMMISSION_RATE,
+    connectSplitEnabled: connectSplitActive,
     totalGrossCents,
     totalCommissionCents,
     totalNetCents,
