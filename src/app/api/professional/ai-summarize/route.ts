@@ -83,6 +83,21 @@ export async function POST(req: NextRequest) {
         patientName = `${safeDecrypt(doc.patient.firstName)} ${safeDecrypt(doc.patient.lastName)}`.trim();
       }
       if (doc.fileUrl) fileKey = safeDecrypt(doc.fileUrl);
+
+      // Attached copies may have empty content — fall back to the original shared document.
+      if (doc.sourceDocumentId && !content && !fileKey) {
+        const source = await db.medicalDocument.findUnique({
+          where: { id: doc.sourceDocumentId },
+          select: { title: true, content: true, fileUrl: true, category: { select: { name: true } }, type: true },
+        });
+        if (source) {
+          if (!title) title = safeDecrypt(source.title);
+          const sourceRaw = source.content ? safeDecrypt(source.content) : null;
+          content = sourceRaw ? formatRecordContentForDisplay(sourceRaw) : content;
+          category = category ?? source.category?.name ?? source.type ?? null;
+          if (source.fileUrl) fileKey = safeDecrypt(source.fileUrl);
+        }
+      }
     } else if (parsed.data.resourceId) {
       const resource = await db.resource.findFirst({
         where: { id: parsed.data.resourceId, professionalId: ctx.professional.id, active: true },

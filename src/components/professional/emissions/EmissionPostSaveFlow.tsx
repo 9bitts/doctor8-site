@@ -27,6 +27,7 @@ export interface SavedEmission {
   instructions?: string;
   examItems?: string[];
   examNotes?: string;
+  documentBody?: string;
 }
 
 interface EmissionPostSaveFlowProps {
@@ -152,8 +153,16 @@ export function EmissionPostSaveFlow({
     const pdfUrl = emission.kind === "prescription"
       ? `${apiBase}/prescriptions/${emission.id}/pdf?lang=${lang}`
       : `${apiBase}/documents/${emission.id}/pdf?lang=${lang}`;
-    const reviewTitle = emission.kind === "exam" ? t("rx.review.examTitle") : t("rx.review.title");
-    const reviewSubtitle = emission.kind === "exam" ? t("rx.review.examSubtitle") : t("rx.review.subtitle");
+    const reviewTitle = emission.kind === "exam"
+      ? t("rx.review.examTitle")
+      : emission.kind === "document"
+        ? t("rx.review.documentTitle")
+        : t("rx.review.title");
+    const reviewSubtitle = emission.kind === "exam"
+      ? t("rx.review.examSubtitle")
+      : emission.kind === "document"
+        ? t("rx.review.documentSubtitle")
+        : t("rx.review.subtitle");
 
     async function previewPdf() {
       setPdfLoading(true);
@@ -222,6 +231,13 @@ export function EmissionPostSaveFlow({
           <div className="bg-slate-50 rounded-xl p-4">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{t("rx.examNotes")}</p>
             <p className="text-sm text-slate-700 whitespace-pre-wrap">{emission.examNotes}</p>
+          </div>
+        )}
+
+        {emission.documentBody && (
+          <div className="bg-slate-50 rounded-xl p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{emission.label}</p>
+            <p className="text-sm text-slate-700 whitespace-pre-wrap">{emission.documentBody}</p>
           </div>
         )}
 

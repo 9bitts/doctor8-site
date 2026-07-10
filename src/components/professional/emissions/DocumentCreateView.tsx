@@ -122,6 +122,7 @@ export function DocumentCreateView({
       const res = await fetch("/api/professional/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           patientRecordId: selectedPatient.id,
           type: docType,
@@ -136,6 +137,7 @@ export function DocumentCreateView({
           id: data.id,
           patient: selectedPatient,
           label: title,
+          documentBody: body.trim(),
         });
       } else {
         const d = await res.json().catch(() => ({}));

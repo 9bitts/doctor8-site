@@ -260,6 +260,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ professionalId }),
       });
       const data = await res.json();
@@ -286,6 +287,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     try {
       const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor?professionalId=${professionalId}`, {
         method: "DELETE",
+        credentials: "same-origin",
       });
       if (res.ok) {
         setItems((prev) => prev.map((it) =>

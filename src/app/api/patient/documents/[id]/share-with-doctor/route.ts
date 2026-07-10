@@ -101,13 +101,12 @@ export async function POST(
   const docTitle = safeDecrypt(doc.title);
   const patientName = `${patient.firstName} ${patient.lastName}`.trim() || "A patient";
   const docLink = `/professional/shared?documentId=${doc.id}`;
-  const docLinkFull = `${getAppUrl()}${docLink}`;
 
   await db.message.create({
     data: {
       senderId: userId,
       receiverId: professional.userId,
-      content: encrypt(`📎 Compartilhou um documento: ${docTitle}\n${docLinkFull}`),
+      content: encrypt(`📎 Compartilhou um documento: ${docTitle}\n${docLink}`),
     },
   });
 

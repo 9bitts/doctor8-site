@@ -87,6 +87,7 @@ export async function GET(
           },
           patientRecord: {
             select: {
+              linkedUserId: true,
               firstName: true, lastName: true, dateOfBirth: true, cpf: true,
               addressLine1: true, city: true, state: true, country: true, zipCode: true,
             },
@@ -100,11 +101,19 @@ export async function GET(
 
   // Access control
   const isProfessional = prescription.professional?.userId === session.user.id;
-  const isPatient = prescription.document?.patientId &&
-    (await db.patientProfile.findFirst({
-      where: { userId: session.user.id, id: prescription.document.patientId },
-    }));
-  if (!isProfessional && !isPatient && session.user.role !== "ADMIN") {
+  const viewerPatient = session.user.role === "PATIENT"
+    ? await db.patientProfile.findUnique({ where: { userId: session.user.id } })
+    : null;
+  const isPatientByProfile = !!(
+    viewerPatient &&
+    prescription.document?.patientId &&
+    prescription.document.patientId === viewerPatient.id
+  );
+  const isLinkedChartPatient = !!(
+    viewerPatient &&
+    prescription.document?.patientRecord?.linkedUserId === session.user.id
+  );
+  if (!isProfessional && !isPatientByProfile && !isLinkedChartPatient && session.user.role !== "ADMIN") {
     return new NextResponse("Forbidden", { status: 403 });
   }
 

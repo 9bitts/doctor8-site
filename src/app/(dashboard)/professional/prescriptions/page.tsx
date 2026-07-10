@@ -790,7 +790,8 @@ export default function PrescriptionsPage() {
       setPostSaveStep("deliver");
     } else if (
       (emission.kind === "prescription" && emission.medications?.length) ||
-      (emission.kind === "exam" && emission.examItems?.length)
+      (emission.kind === "exam" && emission.examItems?.length) ||
+      (emission.kind === "document" && emission.documentBody?.trim())
     ) {
       setPostSaveStep("review");
     } else {
