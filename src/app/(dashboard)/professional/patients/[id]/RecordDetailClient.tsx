@@ -84,6 +84,11 @@ import {
 import { isImageFile, rotateImageFile } from "@/lib/image-rotate";
 import { waPhoneDigits } from "@/lib/wa-phone";
 import { computeMissingForRx } from "@/lib/patient-rx-requirements";
+import {
+  extendSessionForWrite,
+  isAuthFailureStatus,
+  redirectToLoginAfterAuthFailure,
+} from "@/lib/session-extend-client";
 
 interface Chart {
   id: string;
@@ -307,7 +312,7 @@ export default function RecordDetailClient({
   const isNursePortal = pathname.startsWith("/enfermeiro");
   const isPharmacistPortal = pathname.startsWith("/farmaceutico");
   const portalBase = mapProfessionalPathToPortal(pathname, "/professional");
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const userId = session?.user?.id ?? "";
   const { lang, t } = useI18n();
   const toast = useToast();
@@ -698,21 +703,49 @@ export default function RecordDetailClient({
     }
   }
 
+  async function patchChartRecord(
+    body: Record<string, unknown>,
+  ): Promise<
+    | { ok: true; data: Record<string, unknown> }
+    | { ok: false; error: string; authFailure?: boolean }
+  > {
+    await extendSessionForWrite(updateSession);
+    const res = await fetch(`/api/professional/records/${chart.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (isAuthFailureStatus(res.status)) {
+      return { ok: false, error: t("session.expiredOnSave"), authFailure: true };
+    }
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: typeof data.error === "string" ? data.error : t("rec.regSaveFailed"),
+      };
+    }
+    return { ok: true, data };
+  }
+
+  function notifyAuthFailure(message: string) {
+    toast.error(message);
+    redirectToLoginAfterAuthFailure();
+  }
+
   // ── Etapa 3c: save edited email ──
   async function saveEmail() {
     setEmailSaving(true);
     setEmailMsg(null);
     try {
-      const res = await fetch(`/api/professional/records/${chart.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailDraft.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setEmailMsg("error:" + (typeof data.error === "string" ? data.error : t("rec.emailUpdateFailed")));
+      const result = await patchChartRecord({ email: emailDraft.trim() });
+      if (!result.ok) {
+        if (result.authFailure) notifyAuthFailure(result.error);
+        else setEmailMsg("error:" + result.error);
       } else {
-        setChartEmail(data.email);
+        const data = result.data;
+        setChartEmail(typeof data.email === "string" ? data.email : emailDraft.trim());
         setHasAccount(!!data.hasAccount);
         setEditingEmail(false);
         if (data.hasAccount) {
@@ -750,24 +783,20 @@ export default function RecordDetailClient({
     setRegSaving(true);
     setRegMsg(null);
     try {
-      const res = await fetch(`/api/professional/records/${chart.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dateOfBirth: regDraft.dateOfBirth,
-          sex: regDraft.sex,
-          cpf: regDraft.cpf,
-          addressLine1: regDraft.addressLine1,
-          city: regDraft.city,
-          state: regDraft.state,
-          country: regDraft.country,
-          zipCode: regDraft.zipCode,
-          phone: regDraft.phone,
-        }),
+      const result = await patchChartRecord({
+        dateOfBirth: regDraft.dateOfBirth,
+        sex: regDraft.sex,
+        cpf: regDraft.cpf,
+        addressLine1: regDraft.addressLine1,
+        city: regDraft.city,
+        state: regDraft.state,
+        country: regDraft.country,
+        zipCode: regDraft.zipCode,
+        phone: regDraft.phone,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setRegMsg("error:" + (typeof data.error === "string" ? data.error : t("rec.regSaveFailed")));
+      if (!result.ok) {
+        if (result.authFailure) notifyAuthFailure(result.error);
+        else setRegMsg("error:" + result.error);
       } else {
         setReg(regDraft);
         setEditingReg(false);
@@ -785,17 +814,13 @@ export default function RecordDetailClient({
     setNameSaving(true);
     setNameMsg(null);
     try {
-      const res = await fetch(`/api/professional/records/${chart.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: nameDraft.firstName.trim(),
-          lastName: nameDraft.lastName.trim(),
-        }),
+      const result = await patchChartRecord({
+        firstName: nameDraft.firstName.trim(),
+        lastName: nameDraft.lastName.trim(),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setNameMsg("error:" + (typeof data.error === "string" ? data.error : t("rec.regSaveFailed")));
+      if (!result.ok) {
+        if (result.authFailure) notifyAuthFailure(result.error);
+        else setNameMsg("error:" + result.error);
       } else {
         setDisplayFirstName(nameDraft.firstName.trim());
         setDisplayLastName(nameDraft.lastName.trim());
@@ -812,14 +837,10 @@ export default function RecordDetailClient({
   async function saveNotes() {
     setNotesSaving(true);
     try {
-      const res = await fetch(`/api/professional/records/${chart.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: notesDraft }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(typeof data.error === "string" ? data.error : t("rec.regSaveFailed"));
+      const result = await patchChartRecord({ notes: notesDraft });
+      if (!result.ok) {
+        if (result.authFailure) notifyAuthFailure(result.error);
+        else toast.error(result.error);
       } else {
         setChartNotes(notesDraft.trim() || "");
         setEditingNotes(false);
