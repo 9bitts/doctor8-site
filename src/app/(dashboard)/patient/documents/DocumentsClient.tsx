@@ -42,6 +42,14 @@ interface Doctor {
   professionalId: string; userId: string; name: string; specialty: string;
 }
 
+function findCategoryIdByLegacyType(groups: CategoryGroup[], legacyType: string): string {
+  for (const g of groups) {
+    const found = g.items.find((c) => c.legacyType === legacyType);
+    if (found) return found.id;
+  }
+  return "";
+}
+
 const LEGACY_KEYS: Record<string, string> = {
   PRESCRIPTION: "doctype.PRESCRIPTION",
   EXAM_REQUEST: "doctype.EXAM_REQUEST",
@@ -107,12 +115,17 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   }, [items]);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("new") === "1") {
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("new") !== "1") return;
+    if (categoriesLoading) return;
+    if (sp.get("type") === "EXAM_RESULT") {
+      openNewExamResultForm();
+    } else {
       resetForm();
       setShowForm(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [categoriesLoading, groups]);
 
   async function loadDoctors(force = false) {
     if (!force && doctors !== null) return doctors;
@@ -139,10 +152,19 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     }
   }
 
-  function resetForm() {
-    const first = groups[0]?.items[0];
-    setCategoryId(first ? first.id : "");
+  function resetForm(preferLegacyType?: string) {
+    let catId = groups[0]?.items[0]?.id ?? "";
+    if (preferLegacyType) {
+      const match = findCategoryIdByLegacyType(groups, preferLegacyType);
+      if (match) catId = match;
+    }
+    setCategoryId(catId);
     setTitle(""); setContent(""); setFile(null); setError(null);
+  }
+
+  function openNewExamResultForm() {
+    resetForm("EXAM_RESULT");
+    setShowForm(true);
   }
 
   async function handleCreate() {
@@ -158,6 +180,8 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
           setError(
             up.unauthorized
               ? t("docs.err.sessionExpired")
+              : up.error === "FILE_TOO_LARGE"
+                ? t("docs.err.fileTooLarge")
               : up.error === "UPLOAD_FAILED" || up.error === "NETWORK"
                 ? t("docs.err.uploadFailed")
                 : up.error,
@@ -329,12 +353,21 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
           <h1 className="text-2xl font-bold text-slate-900">{t("docs.title")}</h1>
           <p className="text-slate-500 mt-1 truncate">{t("docs.subtitle")}</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm shrink-0"
-        >
-          <Plus size={18} /> {t("docs.add")}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={openNewExamResultForm}
+            className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+          >
+            <Plus size={18} /> {t("docs.addExamResult")}
+          </button>
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
+          >
+            <Plus size={18} /> {t("docs.add")}
+          </button>
+        </div>
       </div>
 
       {actionError && (

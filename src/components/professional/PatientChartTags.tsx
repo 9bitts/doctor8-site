@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, X, Loader2, Tag } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
@@ -38,6 +38,13 @@ export default function PatientChartTags({
   const [label, setLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setTags(initialTags);
+    setAdding(false);
+    setLabel("");
+    setError("");
+  }, [chartId, initialTags]);
 
   async function addTag() {
     const trimmed = label.trim();

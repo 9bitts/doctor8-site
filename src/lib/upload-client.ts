@@ -35,7 +35,11 @@ export async function uploadFileToApi(
   }
 
   if (!res.ok) {
-    return { ok: false, error: typeof data.error === "string" ? data.error : "UPLOAD_FAILED" };
+    const err = typeof data.error === "string" ? data.error : "UPLOAD_FAILED";
+    if (/too large|50 MB/i.test(err)) {
+      return { ok: false, error: "FILE_TOO_LARGE" };
+    }
+    return { ok: false, error: err };
   }
 
   if (!data.key) {

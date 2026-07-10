@@ -4,15 +4,17 @@
 // Patient exam requests from their doctors — read-only with PDF download + lab price search.
 
 import { useState, useEffect, type ReactNode } from "react";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import { formatShortDateWithYear } from "@/lib/timezone";
 import { getProfessionLabel } from "@/lib/professions";
+import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 import PatientLaboratorySearchPanel from "@/components/patient/PatientLaboratorySearchPanel";
 import {
   FlaskConical, Download, Loader2, Calendar, AlertCircle, RefreshCw,
-  ShieldCheck, Clock, MessageCircle, Search,
+  ShieldCheck, Clock, MessageCircle, Search, FileCheck,
 } from "lucide-react";
 
 interface ExamItem {
@@ -39,6 +41,7 @@ export default function PatientExamRequestsPage() {
   const [loadError, setLoadError] = useState(false);
   const [activeSearchExamNames, setActiveSearchExamNames] = useState<string[]>([]);
   const [showGlobalSearch, setShowGlobalSearch] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -46,7 +49,7 @@ export default function PatientExamRequestsPage() {
     setLoading(true);
     setLoadError(false);
     try {
-      const res = await fetch("/api/patient/exam-requests");
+      const res = await fetch("/api/patient/exam-requests", { credentials: "same-origin" });
       if (!res.ok) { setLoadError(true); return; }
       const d = await res.json();
       setExams(d.examRequests || []);
@@ -90,11 +93,30 @@ export default function PatientExamRequestsPage() {
     ));
   }
 
+  async function downloadPdf(examId: string) {
+    setDownloadingId(examId);
+    try {
+      await openAuthenticatedPdf(`/api/patient/documents/${examId}/pdf`);
+    } catch {
+      /* user sees empty tab closed */
+    } finally {
+      setDownloadingId(null);
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">{t("myexam.title")}</h1>
-        <p className="text-slate-500 text-sm mt-1">{t("myexam.subtitle")}</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">{t("myexam.title")}</h1>
+          <p className="text-slate-500 text-sm mt-1">{t("myexam.subtitle")}</p>
+        </div>
+        <Link
+          href="/patient/documents?new=1&type=EXAM_RESULT"
+          className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm shrink-0"
+        >
+          <FileCheck size={16} /> {t("myexam.uploadResult")}
+        </Link>
       </div>
 
       {showGlobalSearch && (
@@ -175,13 +197,19 @@ export default function PatientExamRequestsPage() {
                     </button>
                   )}
                 </div>
-                <a
-                  href={`/api/professional/documents/${p.id}/pdf`}
-                  target="_blank"
-                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shrink-0"
+                <button
+                  type="button"
+                  onClick={() => downloadPdf(p.id)}
+                  disabled={downloadingId === p.id}
+                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shrink-0"
                 >
-                  <Download size={14} /> {t("myexam.downloadPDF")}
-                </a>
+                  {downloadingId === p.id ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Download size={14} />
+                  )}
+                  {t("myexam.downloadPDF")}
+                </button>
               </div>
             </div>
           ))}

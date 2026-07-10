@@ -602,6 +602,8 @@ export default function RecordDetailClient({
       setError(
         up.unauthorized
           ? t("docs.err.sessionExpired")
+          : up.error === "FILE_TOO_LARGE"
+            ? t("docs.err.fileTooLarge")
           : up.error === "UPLOAD_FAILED" || up.error === "NETWORK"
             ? t("rec.uploadFailed")
             : up.error,
@@ -1063,19 +1065,19 @@ export default function RecordDetailClient({
             {/* P4: message buttons — only when patient has an account */}
             {chart.linkedUserId && (
               <div className="mt-3 flex gap-2 flex-wrap">
-                <a
-                  href={`${portalBase}/messages?with=${chart.linkedUserId}`}
+                <Link
+                  href={`${portalBase}/messages?with=${chart.linkedUserId}&returnUrl=${encodeURIComponent(professionalPatientsHref(pathname, chart.id))}`}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg transition"
                 >
                   <MessageCircle size={13} /> {t("rec.sendMessage")}
-                </a>
+                </Link>
                 {hasConversation && (
-                  <a
-                    href={`${portalBase}/messages?with=${chart.linkedUserId}`}
+                  <Link
+                    href={`${portalBase}/messages?with=${chart.linkedUserId}&returnUrl=${encodeURIComponent(professionalPatientsHref(pathname, chart.id))}`}
                     className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition"
                   >
                     <ExternalLink size={13} /> {t("rec.verConv")}
-                  </a>
+                  </Link>
                 )}
               </div>
             )}
@@ -1117,6 +1119,12 @@ export default function RecordDetailClient({
                       </span>
                     )}
                   </button>
+                  <Link
+                    href={`${professionalPatientsHref(pathname, chart.id)}?newRecord=1&source=mined`}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg transition"
+                  >
+                    {t("rec.minedImport")}
+                  </Link>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <ReferralPanel chartId={chart.id} />

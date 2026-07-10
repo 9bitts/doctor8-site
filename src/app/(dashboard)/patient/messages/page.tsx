@@ -146,7 +146,7 @@ export default function MessagesPage() {
   async function fetchConversations() {
     setLoadError(false);
     try {
-      const res = await fetch("/api/messages");
+      const res = await fetch("/api/messages", { credentials: "same-origin" });
       if (!res.ok) { setLoadError(true); return; }
       const d = await res.json();
       setConversations(d.conversations || []);
@@ -161,7 +161,7 @@ export default function MessagesPage() {
     if (!activeConv) return;
     const url = `/api/messages?with=${activeConv.userId}${since ? `&since=${since}` : ""}`;
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: "same-origin" });
       if (!res.ok) throw new Error("fetch messages failed");
       const d = await res.json();
       const msgs: Message[] = d.messages || [];
@@ -219,6 +219,7 @@ export default function MessagesPage() {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ receiverId: activeConv.userId, content }),
       });
       if (!res.ok) {

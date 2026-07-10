@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, ShieldAlert } from "lucide-react";
@@ -48,6 +48,7 @@ export default function LegalAcceptanceGate({ children }: { children: React.Reac
     return !readLegalOkCache();
   });
   const [pending, setPending] = useState(false);
+  const legalCheckedRef = useRef(false);
 
   useEffect(() => {
     if (EXEMPT_PREFIXES.some((p) => pathname.startsWith(p))) {
@@ -59,8 +60,16 @@ export default function LegalAcceptanceGate({ children }: { children: React.Reac
     if (readLegalOkCache()) {
       setChecking(false);
       setPending(false);
+      legalCheckedRef.current = true;
       return;
     }
+
+    if (legalCheckedRef.current) {
+      setChecking(false);
+      return;
+    }
+
+    legalCheckedRef.current = true;
 
     let cancelled = false;
     (async () => {

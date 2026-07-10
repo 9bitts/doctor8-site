@@ -661,11 +661,11 @@ export default function PrescriptionsPage() {
     setLoading(true);
     try {
       const requests: Promise<Response>[] = [
-        fetch(api("/prescriptions")),
-        fetch(api("/templates/prescriptions")),
+        fetch(api("/prescriptions"), { credentials: "same-origin" }),
+        fetch(api("/templates/prescriptions"), { credentials: "same-origin" }),
       ];
       if (!cfg.prescriptionsOnly) {
-        requests.splice(1, 0, fetch(api("/documents/issued")));
+        requests.splice(1, 0, fetch(api("/documents/issued"), { credentials: "same-origin" }));
       }
       const results = await Promise.all(requests);
       const rxRes = results[0];
