@@ -1160,6 +1160,8 @@ const en = {
   "session.inactivity.secondsLabel": "seconds remaining",
   "session.inactivity.continue": "Continue session",
   "session.inactivity.signOut": "Sign out now",
+  "session.expiredOnSave":
+    "Your session expired. Redirecting to login — your draft may be lost unless you sign in again.",
   "common.language": "Language",
   "common.save": "Save",
   "common.cancel": "Cancel",
@@ -6697,6 +6699,8 @@ const pt: LocaleDict = {
   "session.inactivity.secondsLabel": "segundos restantes",
   "session.inactivity.continue": "Continuar sessão",
   "session.inactivity.signOut": "Sair agora",
+  "session.expiredOnSave":
+    "Sua sessão expirou. Redirecionando para o login — o rascunho pode ser perdido se não entrar de novo.",
   "common.language": "Idioma",
   "common.save": "Salvar",
   "common.cancel": "Cancelar",
@@ -12200,6 +12204,8 @@ const es: LocaleDict = {
   "session.inactivity.secondsLabel": "segundos restantes",
   "session.inactivity.continue": "Continuar sesión",
   "session.inactivity.signOut": "Cerrar sesión ahora",
+  "session.expiredOnSave":
+    "Su sesión expiró. Redirigiendo al inicio de sesión — el borrador puede perderse si no vuelve a entrar.",
   "common.language": "Idioma",
   "common.save": "Guardar",
   "common.cancel": "Cancelar",

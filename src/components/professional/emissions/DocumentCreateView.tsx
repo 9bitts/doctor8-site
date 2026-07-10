@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import {
   Search, User, ChevronRight, ArrowLeft, FileText, Loader2, LayoutTemplate,
 } from "lucide-react";
@@ -12,6 +13,11 @@ import { filterPatientCharts } from "@/lib/patient-chart-search";
 import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
+import {
+  extendSessionForWrite,
+  isAuthFailureStatus,
+  redirectToLoginAfterAuthFailure,
+} from "@/lib/session-extend-client";
 
 const DOC_TYPES = [
   { value: "CERTIFICATE", labelKey: "rx.docTypeCertificate" },
@@ -47,6 +53,7 @@ export function DocumentCreateView({
   onBack, onSaved,
 }: DocumentCreateViewProps) {
   const { lang } = useI18n();
+  const { update: updateSession } = useSession();
   const locale = localeOf(lang);
 
   const [patientQuery, setPatientQuery] = useState("");
@@ -119,6 +126,7 @@ export function DocumentCreateView({
     if (!body.trim()) { setError(t("rx.needDocumentBody")); return; }
     setSaving(true);
     try {
+      await extendSessionForWrite(updateSession);
       const res = await fetch("/api/professional/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,6 +147,9 @@ export function DocumentCreateView({
           label: title,
           documentBody: body.trim(),
         });
+      } else if (isAuthFailureStatus(res.status)) {
+        setError(t("session.expiredOnSave"));
+        redirectToLoginAfterAuthFailure();
       } else {
         const d = await res.json().catch(() => ({}));
         setError(typeof d.error === "string" ? d.error : t("rx.saveError"));

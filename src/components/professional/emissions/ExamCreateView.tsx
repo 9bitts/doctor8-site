@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import {
   User, ChevronRight, Trash2, Loader2, ArrowLeft, FileText,
 } from "lucide-react";
@@ -12,6 +13,11 @@ import { filterPatientCharts } from "@/lib/patient-chart-search";
 import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
+import {
+  extendSessionForWrite,
+  isAuthFailureStatus,
+  redirectToLoginAfterAuthFailure,
+} from "@/lib/session-extend-client";
 
 interface ExamCreateViewProps {
   t: (k: string) => string;
@@ -33,6 +39,7 @@ export function ExamCreateView({
   t, charts, chartsLoading = false, reuseHint, initialPatient, lockPatient = false, initialItems, initialNotes, initialCid, initialTitle,
   onBack, onSaved,
 }: ExamCreateViewProps) {
+  const { update: updateSession } = useSession();
   const [patientQuery, setPatientQuery] = useState("");
   const [patientPickerOpen, setPatientPickerOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(initialPatient);
@@ -67,6 +74,7 @@ export function ExamCreateView({
     if (cleanItems.length === 0) { setError(t("rx.needExamItems")); return; }
     setSaving(true);
     try {
+      await extendSessionForWrite(updateSession);
       const res = await fetch("/api/professional/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -91,6 +99,9 @@ export function ExamCreateView({
           examItems: cleanItems,
           examNotes: notes,
         });
+      } else if (isAuthFailureStatus(res.status)) {
+        setError(t("session.expiredOnSave"));
+        redirectToLoginAfterAuthFailure();
       } else {
         const d = await res.json().catch(() => ({}));
         const errMsg = typeof d.error === "string"

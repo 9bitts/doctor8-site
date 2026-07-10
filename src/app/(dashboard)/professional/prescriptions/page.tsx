@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { useToast } from "@/components/ui/toast";
@@ -42,6 +43,11 @@ import {
 } from "@/lib/prescriptions-portal-config";
 import { consumeVoicePrefill } from "@/lib/voice-assistant/prefill-storage";
 import { VOICE_PRESCRIPTION_PREFILL_EVENT } from "@/lib/voice-assistant/types";
+import {
+  extendSessionForWrite,
+  isAuthFailureStatus,
+  redirectToLoginAfterAuthFailure,
+} from "@/lib/session-extend-client";
 
 type ImportablePatient = {
   patientProfileId: string;
@@ -328,6 +334,7 @@ function ClinicalDocCard({
 
 export default function PrescriptionsPage() {
   const { t, lang } = useI18n();
+  const { update: updateSession } = useSession();
   const toast = useToast();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1127,6 +1134,7 @@ export default function PrescriptionsPage() {
     setSavingTemplate(true);
     setFormError("");
     try {
+      await extendSessionForWrite(updateSession);
       const cleanMeds = medications.map((m) => ({
         name: m.name.trim(),
         dosage: m.dosage || "",
@@ -1142,6 +1150,7 @@ export default function PrescriptionsPage() {
       const res = await fetch(api("/templates/prescriptions"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           name: name.trim(),
           medications: cleanMeds,
@@ -1150,6 +1159,11 @@ export default function PrescriptionsPage() {
         }),
       });
       const data = await res.json();
+      if (isAuthFailureStatus(res.status)) {
+        setFormError(t("session.expiredOnSave"));
+        redirectToLoginAfterAuthFailure();
+        return;
+      }
       if (!res.ok) throw new Error(data.error || t("tmpl.saveError"));
       setRxTemplates((prev) => [data, ...prev]);
     } catch (e) {
@@ -1169,6 +1183,7 @@ export default function PrescriptionsPage() {
     setHighlightIncompleteMeds(false);
     setSaving(true);
     try {
+      await extendSessionForWrite(updateSession);
       const cleanMeds = medications.map((m) => ({
         name: m.name.trim(),
         dosage: m.dosage || "",
@@ -1186,6 +1201,7 @@ export default function PrescriptionsPage() {
         : { patientUserId: platformTarget!.patientUserId, medications: cleanMeds, instructions, validDays };
       const res = await fetch(api("/prescriptions"), {
         method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -1208,6 +1224,9 @@ export default function PrescriptionsPage() {
           medications: cleanMeds,
           instructions: instructions.trim() || undefined,
         });
+      } else if (isAuthFailureStatus(res.status)) {
+        setFormError(t("session.expiredOnSave"));
+        redirectToLoginAfterAuthFailure();
       } else {
         const d = await res.json().catch(() => ({}));
         setFormError(typeof d.error === "string" ? d.error : t("rx2.needMeds"));

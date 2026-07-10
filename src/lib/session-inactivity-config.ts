@@ -14,10 +14,11 @@ export const INACTIVITY_THRESHOLD_MS =
 export const INACTIVITY_WARNING_COUNTDOWN_MS =
   INACTIVITY_WARNING_SECONDS * 1000;
 
-/** Clicks and keyboard — not passive scroll (reading without interaction). */
+/** Clicks, keyboard, and form input — not passive scroll (reading without interaction). */
 export const SESSION_INTERACTION_EVENTS = [
   "mousedown",
   "keydown",
   "touchstart",
   "click",
+  "input",
 ] as const;
