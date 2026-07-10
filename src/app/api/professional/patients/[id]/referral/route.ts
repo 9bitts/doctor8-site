@@ -57,7 +57,7 @@ export async function POST(
 
   const target = await db.professionalProfile.findUnique({
     where: { id: parsed.data.targetProfessionalId, verified: true },
-    select: { id: true, firstName: true, lastName: true, specialty: true },
+    select: { id: true, userId: true, firstName: true, lastName: true, specialty: true },
   });
   if (!target) {
     return NextResponse.json({ error: "Colleague not found" }, { status: 404 });
@@ -113,9 +113,49 @@ export async function POST(
         chartId: chart.id,
         targetProfessionalId: target.id,
         bookingUrl,
+        link: `/patient/appointments?pro=${target.id}&providerType=health&from=referral`,
         titleKey: "notif.referral.title",
         bodyKey: "notif.referral.body",
         bodyParams: { doctor: referrerName, specialty: target.specialty },
+      },
+    });
+  }
+
+  // Notify the referred colleague (direction flow #7).
+  if (target.userId !== ctx.userId) {
+    await db.message.create({
+      data: {
+        senderId: ctx.userId,
+        receiverId: target.userId,
+        content: encrypt(
+          [
+            `📋 Encaminhamento de ${referrerName}.`,
+            patientName ? `Paciente: ${patientName}` : null,
+            note ? `\nObservações:\n${note}` : null,
+            `\nAgendamento do paciente:\n${bookingUrl}`,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        ),
+      },
+    });
+    const collegueNotif = storedNotificationText(
+      "notif.referralColleague.title",
+      "notif.referralColleague.body",
+      { doctor: referrerName, patient: patientName || "Paciente" },
+    );
+    await createNotification({
+      userId: target.userId,
+      title: collegueNotif.title,
+      body: collegueNotif.body,
+      type: "referral",
+      data: {
+        chartId: chart.id,
+        fromUserId: ctx.userId,
+        link: `/professional/messages?with=${ctx.userId}`,
+        titleKey: "notif.referralColleague.title",
+        bodyKey: "notif.referralColleague.body",
+        bodyParams: { doctor: referrerName, patient: patientName || "Paciente" },
       },
     });
   }

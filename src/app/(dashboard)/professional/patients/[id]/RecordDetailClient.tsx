@@ -38,7 +38,7 @@ import NursePatientChartPanel from "@/components/nurse/NursePatientChartPanel";
 import PharmacistPatientChartPanel from "@/components/pharmacist/PharmacistPatientChartPanel";
 import ChartSharePanel from "@/components/professional/ChartSharePanel";
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
-import { openAuthenticatedPdf } from "@/lib/open-url-safely";
+import { openAuthenticatedPdf, openAuthenticatedBlob } from "@/lib/open-url-safely";
 import { uploadFileToApi } from "@/lib/upload-client";
 import {
   RecordTimelineFilters,
@@ -195,11 +195,16 @@ function RecordAttachmentStrip({
       {files.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin max-w-full">
           {files.map((f) => (
-            <a
+            <button
               key={f.index}
-              href={f.url}
-              target="_blank"
-              rel="noopener noreferrer"
+              type="button"
+              onClick={() => {
+                if (f.url.startsWith("/api/")) {
+                  void openAuthenticatedBlob(f.url).catch(() => {});
+                } else {
+                  window.open(f.url, "_blank", "noopener,noreferrer");
+                }
+              }}
               title={f.name || t("rec.openFile")}
               className="flex-shrink-0 snap-start w-20 h-20 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden hover:border-brand-300 hover:ring-2 hover:ring-brand-100 transition"
             >
@@ -209,7 +214,7 @@ function RecordAttachmentStrip({
               ) : (
                 <RecordFileThumbnail kind={f.kind} name={f.name} />
               )}
-            </a>
+            </button>
           ))}
         </div>
       )}
@@ -293,6 +298,7 @@ export default function RecordDetailClient({
   const toast = useToast();
   const searchParams = useSearchParams();
   const consultReturnUrl = searchParams.get("returnUrl");
+  const minedImport = searchParams.get("source") === "mined";
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition" | "nursing" | "pharmacy">("records");
@@ -425,6 +431,12 @@ export default function RecordDetailClient({
     const docType = searchParams.get("docType");
     if (docType === "EXAM_RESULT") {
       openExamResultForm();
+    } else if (searchParams.get("source") === "mined") {
+      resetForm();
+      setRecordKind("OTHER");
+      setContent("");
+      setShowForm(true);
+      setChartTab("records");
     } else {
       openNewRecordForm();
     }
@@ -1069,12 +1081,13 @@ export default function RecordDetailClient({
             )}
             {isPsychologistPortal && (
               <div className="mt-3">
-                <a
-                  href={`/api/professional/records/${chart.id}/export-pdf`}
+                <button
+                  type="button"
+                  onClick={() => void openAuthenticatedPdf(`/api/professional/records/${chart.id}/export-pdf`).catch(() => toast.error(t("rec.networkError")))}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-lg transition"
                 >
                   <Download size={13} /> {t("psy.exportChart")}
-                </a>
+                </button>
               </div>
             )}
             {canEdit && isOwner && (
@@ -1706,6 +1719,11 @@ export default function RecordDetailClient({
             </div>
             <div className="p-5 space-y-4">
               {voicePrefillActive && !editingDoc && <VoicePrefillBanner active />}
+              {!editingDoc && minedImport && (
+                <p className="text-xs text-cyan-800 bg-cyan-50 border border-cyan-100 rounded-lg px-3 py-2">
+                  {t("rec.minedHint")}
+                </p>
+              )}
               {!editingDoc && draftRestored && (
                 <p className="text-xs text-brand-700 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2">
                   {t("rec.draftRestored")}

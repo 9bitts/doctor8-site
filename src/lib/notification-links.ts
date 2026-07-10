@@ -101,6 +101,25 @@ export function resolveNotificationHref(
       return messagesPath(role, professionalSpecialty);
     }
 
+    case "referral": {
+      if (isPro && typeof d.fromUserId === "string") {
+        return `${messagesPath(role, professionalSpecialty)}?with=${d.fromUserId}`;
+      }
+      if (typeof d.bookingUrl === "string") {
+        const internal = d.bookingUrl.startsWith("/")
+          ? d.bookingUrl
+          : internalPathFromUrl(d.bookingUrl);
+        if (internal) return internal;
+      }
+      if (typeof d.targetProfessionalId === "string") {
+        return `/patient/appointments?pro=${d.targetProfessionalId}&from=referral`;
+      }
+      if (typeof d.link === "string" && d.link.startsWith("/")) {
+        return mapProPath(role, professionalSpecialty, d.link);
+      }
+      return role === "PATIENT" ? "/patient/appointments" : messagesPath(role, professionalSpecialty);
+    }
+
     case "shared_record": {
       if (typeof d.documentId === "string") {
         return isPro

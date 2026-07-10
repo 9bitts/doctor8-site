@@ -6,10 +6,12 @@
 //     URL param ?with=<userId> opens a conversation directly.
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel, specialtyMatchesSearch } from "@/lib/professions";
 import { MESSAGE_DRAFT_STORAGE_KEY } from "@/lib/pro-cancel-appointment";
+import { MessageBody } from "@/components/messages/MessageBody";
 import { Send, Search, Loader2, MessageSquare, ArrowLeft, Plus, X, Users, AlertCircle, RefreshCw } from "lucide-react";
 
 interface Conversation {
@@ -26,24 +28,6 @@ interface Message {
   isMine: boolean;
   createdAt: string;
   readAt?: string;
-}
-
-function MessageBody({ content, isMine }: { content: string; isMine: boolean }) {
-  const parts = content.split(/(https?:\/\/[^\s]+)/g);
-  const linkClass = isMine ? "underline text-white/95 break-all" : "underline text-brand-600 break-all";
-  return (
-    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-      {parts.map((part, i) =>
-        /^https?:\/\//.test(part) ? (
-          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={linkClass}>
-            {part}
-          </a>
-        ) : (
-          <span key={i}>{part}</span>
-        )
-      )}
-    </p>
-  );
 }
 
 interface PatientChart {
@@ -89,6 +73,7 @@ export default function MessagesPage() {
   const [professionals, setProfessionals] = useState<ProfessionalContact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
+  const [backHref, setBackHref] = useState<string | null>(null);
 
   useEffect(() => {
     // Detect role
@@ -100,6 +85,10 @@ export default function MessagesPage() {
       // P4: handle ?with= param to open conversation directly
       const params = new URLSearchParams(window.location.search);
       const withUserId = params.get("with");
+      const returnUrl = params.get("returnUrl");
+      if (returnUrl && returnUrl.startsWith("/")) {
+        setBackHref(returnUrl);
+      }
       if (withUserId) {
         // Try to find existing conversation, or create a stub
         setConversations(prev => {
@@ -470,9 +459,15 @@ export default function MessagesPage() {
       {activeConv ? (
         <div className="flex-1 flex flex-col min-w-0">
           <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-3 bg-white">
-            <button onClick={() => setActiveConv(null)} className="text-slate-500 hover:text-slate-700 shrink-0" aria-label="Voltar">
-              <ArrowLeft size={20} />
-            </button>
+            {backHref ? (
+              <Link href={backHref} className="text-slate-500 hover:text-slate-700 shrink-0" aria-label="Voltar">
+                <ArrowLeft size={20} />
+              </Link>
+            ) : (
+              <button onClick={() => setActiveConv(null)} className="text-slate-500 hover:text-slate-700 shrink-0" aria-label="Voltar">
+                <ArrowLeft size={20} />
+              </button>
+            )}
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
               {activeConv.name.charAt(0)}
             </div>

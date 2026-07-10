@@ -9,6 +9,35 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 const EXEMPT_PREFIXES = ["/legal/reaccept", "/login", "/register", "/signup"];
 
 const LEGAL_OK_SESSION_KEY = "d8_legal_acceptance_ok";
+const LEGAL_OK_LOCAL_KEY = "d8_legal_acceptance_ok_at";
+const LEGAL_OK_TTL_MS = 12 * 60 * 60 * 1000;
+
+function readLegalOkCache(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if (sessionStorage.getItem(LEGAL_OK_SESSION_KEY)) return true;
+    const raw = localStorage.getItem(LEGAL_OK_LOCAL_KEY);
+    if (!raw) return false;
+    const ts = Number.parseInt(raw, 10);
+    if (Number.isFinite(ts) && Date.now() - ts < LEGAL_OK_TTL_MS) {
+      sessionStorage.setItem(LEGAL_OK_SESSION_KEY, "1");
+      return true;
+    }
+    localStorage.removeItem(LEGAL_OK_LOCAL_KEY);
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+function writeLegalOkCache(): void {
+  try {
+    sessionStorage.setItem(LEGAL_OK_SESSION_KEY, "1");
+    localStorage.setItem(LEGAL_OK_LOCAL_KEY, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+}
 
 export default function LegalAcceptanceGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -16,7 +45,7 @@ export default function LegalAcceptanceGate({ children }: { children: React.Reac
   const { t } = useI18n();
   const [checking, setChecking] = useState(() => {
     if (typeof window === "undefined") return true;
-    return !sessionStorage.getItem(LEGAL_OK_SESSION_KEY);
+    return !readLegalOkCache();
   });
   const [pending, setPending] = useState(false);
 
@@ -27,7 +56,7 @@ export default function LegalAcceptanceGate({ children }: { children: React.Reac
       return;
     }
 
-    if (sessionStorage.getItem(LEGAL_OK_SESSION_KEY)) {
+    if (readLegalOkCache()) {
       setChecking(false);
       setPending(false);
       return;
@@ -44,7 +73,7 @@ export default function LegalAcceptanceGate({ children }: { children: React.Reac
         const data = (await res.json()) as { needsAny?: boolean };
         if (!cancelled) {
           if (!data.needsAny) {
-            sessionStorage.setItem(LEGAL_OK_SESSION_KEY, "1");
+            writeLegalOkCache();
           }
           setPending(!!data.needsAny);
           setChecking(false);

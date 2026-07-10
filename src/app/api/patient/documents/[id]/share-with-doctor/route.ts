@@ -100,13 +100,14 @@ export async function POST(
 
   const docTitle = safeDecrypt(doc.title);
   const patientName = `${patient.firstName} ${patient.lastName}`.trim() || "A patient";
-  const docLink = `${getAppUrl()}/professional/shared?documentId=${doc.id}`;
+  const docLink = `/professional/shared?documentId=${doc.id}`;
+  const docLinkFull = `${getAppUrl()}${docLink}`;
 
   await db.message.create({
     data: {
       senderId: userId,
       receiverId: professional.userId,
-      content: encrypt(`📎 Compartilhou um documento: ${docTitle}\n${docLink}`),
+      content: encrypt(`📎 Compartilhou um documento: ${docTitle}\n${docLinkFull}`),
     },
   });
 
@@ -122,10 +123,29 @@ export async function POST(
     data: {
       fromUserId: userId,
       documentId: doc.id,
+      link: docLink,
       kind: "patient_shared_document",
       titleKey: "notif.docShared.title",
       bodyKey: "notif.docShared.body",
       bodyParams: { name: patientName, title: docTitle },
+    },
+  });
+
+  const msgCopy = storedNotificationText("notif.message.title", "notif.message.body", {
+    name: patientName,
+  });
+  await createNotification({
+    userId: professional.userId,
+    title: msgCopy.title,
+    body: msgCopy.body,
+    type: "message",
+    data: {
+      fromUserId: userId,
+      link: docLink,
+      documentId: doc.id,
+      titleKey: "notif.message.title",
+      bodyKey: "notif.message.body",
+      bodyParams: { name: patientName },
     },
   });
 

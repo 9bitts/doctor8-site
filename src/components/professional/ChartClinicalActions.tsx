@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Pill, FlaskConical, ScrollText, FileCheck } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { chartActionUrl } from "@/lib/video-chart-nav";
+import {
+  mapProfessionalPathToPortal,
+  professionalPatientsHref,
+} from "@/lib/psychologist-portal";
 
 export default function ChartClinicalActions({
   chartId,
@@ -15,18 +20,22 @@ export default function ChartClinicalActions({
   compact?: boolean;
 }) {
   const t = useT();
+  const pathname = usePathname();
+  const prescriptionsPath = mapProfessionalPathToPortal(pathname, "/professional/prescriptions");
+  const patientsPath = professionalPatientsHref(pathname, chartId);
+
   const btnClass = compact
     ? "inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-100 px-2 py-1 rounded-lg transition"
     : "inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition";
 
   const items = [
     {
-      href: chartActionUrl("/professional/prescriptions", chartId, { view: "prescription", returnUrl }),
+      href: chartActionUrl(prescriptionsPath, chartId, { view: "prescription", returnUrl }),
       icon: Pill,
       label: t("chartAct.prescribe"),
     },
     {
-      href: chartActionUrl("/professional/prescriptions", chartId, { view: "exam", returnUrl }),
+      href: chartActionUrl(prescriptionsPath, chartId, { view: "exam", returnUrl }),
       icon: FlaskConical,
       label: t("chartAct.exam"),
     },
@@ -34,13 +43,13 @@ export default function ChartClinicalActions({
       href: (() => {
         const sp = new URLSearchParams({ newRecord: "1", docType: "EXAM_RESULT" });
         if (returnUrl) sp.set("returnUrl", returnUrl);
-        return `/professional/patients/${chartId}?${sp.toString()}`;
+        return `${patientsPath}?${sp.toString()}`;
       })(),
       icon: FileCheck,
       label: t("chartAct.examResult"),
     },
     {
-      href: chartActionUrl("/professional/prescriptions", chartId, { view: "document", returnUrl }),
+      href: chartActionUrl(prescriptionsPath, chartId, { view: "document", returnUrl }),
       icon: ScrollText,
       label: t("chartAct.document"),
     },

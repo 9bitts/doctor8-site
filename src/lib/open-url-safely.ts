@@ -5,6 +5,11 @@
  * redirect issues and empty popup pages).
  */
 export async function openAuthenticatedPdf(url: string): Promise<void> {
+  return openAuthenticatedBlob(url);
+}
+
+/** Opens a same-origin authenticated URL (PDF, image, etc.) in a new tab. */
+export async function openAuthenticatedBlob(url: string): Promise<void> {
   const win = window.open("", "_blank");
   if (win) {
     try {

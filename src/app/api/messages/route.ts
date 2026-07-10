@@ -9,6 +9,10 @@ import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
+import {
+  extractDocumentIdFromText,
+  extractNotificationLinkFromMessage,
+} from "@/lib/message-links";
 import { canUsersExchangeMessages } from "@/lib/message-relationship";
 import { z } from "zod";
 
@@ -177,6 +181,8 @@ export async function POST(req: NextRequest) {
   const messageCopy = storedNotificationText("notif.message.title", "notif.message.body", {
     name: senderName,
   });
+  const messageLink = extractNotificationLinkFromMessage(content);
+  const documentId = extractDocumentIdFromText(content);
   await createNotification({
     userId: receiverId,
     title: messageCopy.title,
@@ -184,6 +190,8 @@ export async function POST(req: NextRequest) {
     type: "message",
     data: {
       fromUserId: session.user.id,
+      ...(messageLink ? { link: messageLink } : {}),
+      ...(documentId ? { documentId } : {}),
       titleKey: "notif.message.title",
       bodyKey: "notif.message.body",
       bodyParams: { name: senderName },
