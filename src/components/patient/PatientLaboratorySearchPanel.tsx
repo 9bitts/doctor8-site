@@ -68,7 +68,10 @@ export default function PatientLaboratorySearchPanel({
     const params = new URLSearchParams();
     if (labName.trim()) params.set("labName", labName.trim());
     if (examQ.trim()) params.set("examQ", examQ.trim());
-    if (cep.trim()) params.set("cep", cep.replace(/\D/g, ""));
+    const cepDigits = cep.replace(/\D/g, "");
+    if (cepDigits.length === 8 && !/^0+$/.test(cepDigits)) {
+      params.set("cep", cepDigits);
+    }
     if (highlightExamNames.length > 0) {
       params.set("examNames", highlightExamNames.join("|"));
     }
@@ -231,7 +234,9 @@ export default function PatientLaboratorySearchPanel({
                     </div>
                   ) : exams.length === 0 ? (
                     <p className="text-sm text-slate-500 py-4 text-center">
-                      Nenhum exame publicado com estes filtros.
+                      {lab.examCount === 0
+                        ? "Este laboratório ainda não publicou exames na rede Doctor8."
+                        : "Nenhum exame publicado com estes filtros."}
                     </p>
                   ) : (
                     <ul className="space-y-2 max-h-72 overflow-y-auto">

@@ -29,6 +29,12 @@ export type LaboratoryExamPrice = {
 
 const MAX_RADIUS_KM = 50;
 
+function isPlaceholderCep(cep?: string): boolean {
+  const digits = cep?.replace(/\D/g, "") ?? "";
+  if (digits.length !== 8) return true;
+  return /^0+$/.test(digits);
+}
+
 function normalizeSearch(value: string): string {
   return value
     .trim()
@@ -47,7 +53,7 @@ async function resolvePatientPoint(opts: {
   if (opts.latitude != null && opts.longitude != null) {
     return { latitude: opts.latitude, longitude: opts.longitude };
   }
-  if (opts.cep) {
+  if (opts.cep && !isPlaceholderCep(opts.cep)) {
     return geocodeCep(opts.cep, opts.city, opts.state);
   }
   return null;
@@ -114,16 +120,26 @@ export async function searchLaboratories(opts: {
         }
       : undefined;
 
+  const searchingByName = Boolean(labNameNorm);
+  const searchingByExam = Boolean(examCatalogFilter);
+  const requirePublishedExams = searchingByExam && !searchingByName;
+
+  const nameFilter: Prisma.LaboratoryWhereInput | undefined = labNameNorm
+    ? {
+        OR: [
+          { nomeFantasia: { contains: opts.labName!, mode: "insensitive" } },
+          { razaoSocial: { contains: opts.labName!, mode: "insensitive" } },
+          { responsibleFirstName: { contains: opts.labName!, mode: "insensitive" } },
+          { responsibleLastName: { contains: opts.labName!, mode: "insensitive" } },
+          { slug: { contains: labNameNorm.replace(/\s+/g, "-") } },
+          { slug: { contains: labNameNorm.replace(/\s+/g, "") } },
+        ],
+      }
+    : undefined;
+
   const where: Prisma.LaboratoryWhereInput = {
     status: "ACTIVE",
-    ...(labNameNorm
-      ? {
-          OR: [
-            { nomeFantasia: { contains: opts.labName!, mode: "insensitive" } },
-            { razaoSocial: { contains: opts.labName!, mode: "insensitive" } },
-          ],
-        }
-      : {}),
+    ...(nameFilter ?? {}),
     ...(examCatalogFilter
       ? {
           exams: {
@@ -133,9 +149,9 @@ export async function searchLaboratories(opts: {
             },
           },
         }
-      : {
-          exams: { some: { available: true } },
-        }),
+      : requirePublishedExams
+        ? { exams: { some: { available: true } } }
+        : {}),
     ...(opts.city && !patientPoint
       ? { addressCity: { equals: opts.city, mode: "insensitive" } }
       : {}),
@@ -275,6 +291,12 @@ export function getLaboratoryNetworkMinLabs(): number {
 }
 
 export async function countActiveLaboratories(): Promise<number> {
+  return db.laboratory.count({
+    where: { status: "ACTIVE" },
+  });
+}
+
+export async function countActiveLaboratoriesWithExams(): Promise<number> {
   return db.laboratory.count({
     where: {
       status: "ACTIVE",

@@ -60,7 +60,10 @@ export default function LaboratoriosBuscarClient() {
     const params = new URLSearchParams();
     if (labName.trim()) params.set("labName", labName.trim());
     if (examQ.trim()) params.set("examQ", examQ.trim());
-    if (cep.trim()) params.set("cep", cep.replace(/\D/g, ""));
+    const cepDigits = cep.replace(/\D/g, "");
+    if (cepDigits.length === 8 && !/^0+$/.test(cepDigits)) {
+      params.set("cep", cepDigits);
+    }
 
     const res = await fetch(`/api/public/laboratory/network/search?${params}`);
     const data = await res.json();
