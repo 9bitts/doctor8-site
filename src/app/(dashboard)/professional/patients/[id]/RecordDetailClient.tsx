@@ -565,7 +565,7 @@ export default function RecordDetailClient({
     const fd = new FormData();
     fd.append("file", f);
     fd.append("folder", `records/${chart.id}`);
-    const up = await fetch("/api/uploads", { method: "POST", body: fd });
+    const up = await fetch("/api/uploads", { method: "POST", body: fd, credentials: "same-origin" });
     const upData = await up.json();
     if (!up.ok) {
       setError(upData.error || t("rec.uploadFailed"));

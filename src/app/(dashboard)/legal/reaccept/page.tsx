@@ -28,6 +28,7 @@ export default function LegalReacceptPage() {
         setError(typeof data.error === "string" ? data.error : t("legalReaccept.errGeneric"));
         return;
       }
+      sessionStorage.setItem("d8_legal_acceptance_ok", "1");
       window.location.href = "/patient";
     } catch {
       setError(t("legalReaccept.errGeneric"));

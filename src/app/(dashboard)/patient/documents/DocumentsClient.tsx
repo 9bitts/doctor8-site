@@ -13,7 +13,7 @@ import {
   FileText, Plus, X, Download, Loader2, UserCheck, Tag, Share2, CheckCircle2,
   Stethoscope, AlertCircle, XCircle, Trash2,
 } from "lucide-react";
-import { openUrlAfterAsync } from "@/lib/open-url-safely";
+import { openUrlAfterAsync, openAuthenticatedPdf } from "@/lib/open-url-safely";
 
 interface SharedDoctor {
   professionalId: string;
@@ -147,7 +147,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         const fd = new FormData();
         fd.append("file", file);
         fd.append("folder", "patient-docs");
-        const up = await fetch("/api/uploads", { method: "POST", body: fd });
+        const up = await fetch("/api/uploads", { method: "POST", body: fd, credentials: "same-origin" });
         const upData = await up.json();
         if (!up.ok) { setError(upData.error || t("docs.err.uploadFailed")); setSaving(false); return; }
         if (!upData.key) { setError(t("docs.err.noFileKey")); setSaving(false); return; }
@@ -156,6 +156,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       const res = await fetch("/api/patient/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ categoryId, title, content, fileKey }),
       });
       const data = await res.json();
@@ -268,15 +269,15 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     setActionError(null);
     try {
       if (sharedBy) {
-        window.open(`/api/professional/documents/${id}/pdf`, "_blank", "noopener,noreferrer");
+        await openAuthenticatedPdf(`/api/patient/documents/${id}/pdf`);
         return;
       }
       await openUrlAfterAsync(async () => {
-        const res = await fetch(`/api/patient/documents?documentId=${id}`);
+        const res = await fetch(`/api/patient/documents?documentId=${id}`, { credentials: "same-origin" });
         const data = await res.json();
         if (res.ok && data.url) return data.url as string;
         if (data.error === "No file") {
-          window.open(`/api/professional/documents/${id}/pdf`, "_blank", "noopener,noreferrer");
+          await openAuthenticatedPdf(`/api/patient/documents/${id}/pdf`);
           return null;
         }
         setActionError(t("docs.err.downloadFailed"));

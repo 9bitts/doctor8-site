@@ -1,8 +1,4 @@
 import { db } from "@/lib/db";
-import {
-  REQUIRED_PRIVACY_VERSION,
-  REQUIRED_TERMS_VERSION,
-} from "@/lib/legal/versions";
 
 export type PendingLegalAcceptance = {
   needsTerms: boolean;
@@ -24,8 +20,11 @@ export async function getPendingLegalAcceptance(userId: string): Promise<Pending
   const termsVersion = consents.find((c) => c.type === "TERMS_OF_SERVICE")?.version;
   const privacyVersion = consents.find((c) => c.type === "PRIVACY_POLICY")?.version;
 
-  const needsTerms = !termsVersion || termsVersion < REQUIRED_TERMS_VERSION;
-  const needsPrivacy = !privacyVersion || privacyVersion < REQUIRED_PRIVACY_VERSION;
+  // Beta / continuity: require acceptance once, not re-acceptance on every policy
+  // minor bump. Users who already accepted any version keep dashboard access;
+  // new registrations still store REQUIRED_* versions at signup.
+  const needsTerms = !termsVersion;
+  const needsPrivacy = !privacyVersion;
 
   return {
     needsTerms,

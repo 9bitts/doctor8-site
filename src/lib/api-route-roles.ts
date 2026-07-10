@@ -40,6 +40,15 @@ export function isApiRoleAllowed(pathname: string, role: string | undefined | nu
     return true;
   }
 
+  // PDF handlers on professional routes already enforce patient/pro ownership.
+  if (
+    role === "PATIENT" &&
+    (/^\/api\/professional\/prescriptions\/[^/]+\/pdf$/.test(pathname) ||
+      /^\/api\/professional\/documents\/[^/]+\/pdf$/.test(pathname))
+  ) {
+    return true;
+  }
+
   for (const { prefix, roles } of API_ROLE_RULES) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
       return roles.includes(role);

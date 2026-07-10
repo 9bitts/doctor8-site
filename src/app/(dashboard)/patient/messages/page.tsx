@@ -28,6 +28,24 @@ interface Message {
   readAt?: string;
 }
 
+function MessageBody({ content, isMine }: { content: string; isMine: boolean }) {
+  const parts = content.split(/(https?:\/\/[^\s]+)/g);
+  const linkClass = isMine ? "underline text-white/95 break-all" : "underline text-brand-600 break-all";
+  return (
+    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+      {parts.map((part, i) =>
+        /^https?:\/\//.test(part) ? (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={linkClass}>
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </p>
+  );
+}
+
 interface PatientChart {
   id: string;
   firstName: string;
@@ -452,7 +470,7 @@ export default function MessagesPage() {
       {activeConv ? (
         <div className="flex-1 flex flex-col min-w-0">
           <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-3 bg-white">
-            <button onClick={() => setActiveConv(null)} className="sm:hidden text-slate-500">
+            <button onClick={() => setActiveConv(null)} className="text-slate-500 hover:text-slate-700 shrink-0" aria-label="Voltar">
               <ArrowLeft size={20} />
             </button>
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
@@ -477,7 +495,7 @@ export default function MessagesPage() {
                       ? "bg-emerald-500 text-white rounded-br-sm"
                       : "bg-white text-slate-800 shadow-sm border border-slate-100 rounded-bl-sm"
                   }`}>
-                    <p className="text-sm leading-relaxed">{msg.content}</p>
+                    <MessageBody content={msg.content} isMine={msg.isMine} />
                     <p className={`text-xs mt-1 ${msg.isMine ? "text-emerald-100" : "text-slate-400"}`}>
                       {formatTime(msg.createdAt)}
                       {msg.isMine && msg.readAt && " · ✓✓"}

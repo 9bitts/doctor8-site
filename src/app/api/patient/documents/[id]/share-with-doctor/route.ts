@@ -11,6 +11,7 @@ import { encrypt, decrypt } from "@/lib/encryption";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { patientDoctorEligibleAppointmentWhere } from "@/lib/patient-doctor-eligibility";
+import { getAppUrl } from "@/lib/email-core";
 import { z } from "zod";
 
 const schema = z.object({
@@ -90,12 +91,13 @@ export async function POST(
 
   const docTitle = safeDecrypt(doc.title);
   const patientName = `${patient.firstName} ${patient.lastName}`.trim() || "A patient";
+  const docLink = `${getAppUrl()}/professional/shared?documentId=${doc.id}`;
 
   await db.message.create({
     data: {
       senderId: userId,
       receiverId: professional.userId,
-      content: encrypt(`📎 Shared a document with you: ${docTitle}`),
+      content: encrypt(`📎 Compartilhou um documento: ${docTitle}\n${docLink}`),
     },
   });
 
