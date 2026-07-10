@@ -12,6 +12,10 @@ import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { patientDoctorEligibleAppointmentWhere } from "@/lib/patient-doctor-eligibility";
 import { getAppUrl } from "@/lib/email-core";
+import {
+  attachSharedDocumentToChart,
+  findChartForPatient,
+} from "@/lib/shared-document-attach";
 import { z } from "zod";
 
 const schema = z.object({
@@ -55,6 +59,11 @@ export async function POST(
     select: { id: true, userId: true },
   });
   if (!professional) return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
+
+  const patientUser = await db.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
 
   const eligible = await db.appointment.findFirst({
     where: patientDoctorEligibleAppointmentWhere(patientProfileId, professional.id),
@@ -120,7 +129,44 @@ export async function POST(
     },
   });
 
-  return NextResponse.json({ shared: true });
+  // #40 — auto-import into existing chart when the doctor already has one for this patient.
+  const existingChartId = await findChartForPatient(
+    professional.id,
+    userId,
+    patientUser?.email ?? null,
+  );
+  let autoAttached = false;
+  let chartRecordId: string | null = null;
+  if (existingChartId) {
+    const attachResult = await attachSharedDocumentToChart({
+      documentId: doc.id,
+      chartId: existingChartId,
+      professionalId: professional.id,
+    });
+    if (attachResult && !attachResult.alreadyAttached) {
+      autoAttached = true;
+      chartRecordId = attachResult.recordId;
+      const chartLink = `${getAppUrl()}/professional/patients/${existingChartId}?recordId=${attachResult.recordId}`;
+      await db.message.create({
+        data: {
+          senderId: userId,
+          receiverId: professional.userId,
+          content: encrypt(
+            `✅ Documento adicionado automaticamente à ficha: ${docTitle}\n${chartLink}`,
+          ),
+        },
+      });
+    } else if (attachResult?.alreadyAttached) {
+      chartRecordId = attachResult.recordId;
+    }
+  }
+
+  return NextResponse.json({
+    shared: true,
+    autoAttached,
+    chartId: existingChartId,
+    chartRecordId,
+  });
 }
 
 // DELETE ?professionalId=...  — un-share a document from a doctor.

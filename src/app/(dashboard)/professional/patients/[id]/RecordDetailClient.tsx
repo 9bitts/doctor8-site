@@ -91,6 +91,7 @@ interface Chart {
   notes: string | null;
   hasAccount: boolean;
   linkedUserId: string | null;
+  avatarUrl: string | null;
   // P1-b registration data
   dateOfBirth: string;
   sex: string;
@@ -344,7 +345,7 @@ export default function RecordDetailClient({
   // Share state, keyed by document id
   const [shareStatus, setShareStatus] = useState<Record<string, string>>({});
   const [sharingId, setSharingId] = useState<string | null>(null);
-  const [signConfig, setSignConfig] = useState<{ configured: boolean; cpfMasked: string } | null>(null);
+  const [signConfig, setSignConfig] = useState<{ configured: boolean; cpfMasked: string; recentAuth?: boolean } | null>(null);
   const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
 
   // Form fields
@@ -999,9 +1000,17 @@ export default function RecordDetailClient({
       {/* Chart header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
         <div className="flex items-start gap-4">
+          {chart.avatarUrl ? (
+            <img
+              src={chart.avatarUrl}
+              alt=""
+              className="w-14 h-14 rounded-2xl object-cover shrink-0 border border-slate-100"
+            />
+          ) : (
           <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-lg shrink-0">
             {chart.firstName[0]}{chart.lastName[0]}
           </div>
+          )}
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-slate-900">
               {chart.firstName} {chart.lastName}

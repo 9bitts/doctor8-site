@@ -64,6 +64,15 @@ export default async function PatientChartDetail({
 
   const readOnly = access.level === "view";
 
+  let patientAvatarUrl: string | null = null;
+  if (record.linkedUserId) {
+    const patientProfile = await db.patientProfile.findUnique({
+      where: { userId: record.linkedUserId },
+      select: { avatarUrl: true },
+    });
+    patientAvatarUrl = patientProfile?.avatarUrl ?? null;
+  }
+
   const chart = {
     id: record.id,
     firstName: safeDecrypt(record.firstName),
@@ -73,6 +82,7 @@ export default async function PatientChartDetail({
     notes: record.notes ? safeDecrypt(record.notes) : null,
     hasAccount: !!record.linkedUserId,
     linkedUserId: record.linkedUserId || null,
+  avatarUrl: patientAvatarUrl,
     // P1-b registration data
     dateOfBirth: record.dateOfBirth ? safeDecrypt(record.dateOfBirth) : "",
     sex: record.sex || "",

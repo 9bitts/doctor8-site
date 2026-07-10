@@ -148,23 +148,18 @@ export async function buildPrescriptionPdf(
   const taglineW = font.widthOfTextAtSize(sanitize(tr.tagline), 8);
   text(page, tr.tagline, (A4.w - taglineW) / 2, taglineY, 8, font, GRAY);
 
-  // ── Cabeçalho: dados do médico (direita, abaixo da logo) ──
-  const doctorTop = y - 52;
-  const rightX = A4.w - margin;
-  const drawRight = (s: string, yy: number, size: number, f: PDFFont, color = DARK) => {
-    const w = f.widthOfTextAtSize(sanitize(s), size);
-    text(page, s, rightX - w, yy, size, f, color);
-  };
-  drawRight(`Dr(a). ${data.proFirstName} ${data.proLastName}`, doctorTop, 13, fontBold, BLUE);
-  drawRight(data.proSpecialty, doctorTop - 14, 10, font, GRAY);
-  drawRight(data.proLicense, doctorTop - 26, 10, font, GRAY);
+  // ── Dados do médico (esquerda, logo abaixo — mais próximo do Rx/paciente) ──
+  const doctorTop = taglineY - 18;
+  text(page, `Dr(a). ${data.proFirstName} ${data.proLastName}`, margin, doctorTop, 12, fontBold, BLUE);
+  text(page, data.proSpecialty, margin, doctorTop - 14, 9, font, GRAY);
+  text(page, data.proLicense, margin, doctorTop - 26, 9, font, GRAY);
   if (data.clinicAddressFull) {
-    drawRight(data.clinicAddressFull, doctorTop - 38, 8, font, GRAY);
-    drawRight(`${tr.date}: ${data.todayText}`, doctorTop - 50, 8, font, GRAY);
-    y = doctorTop - 50;
+    text(page, data.clinicAddressFull, margin, doctorTop - 38, 8, font, GRAY);
+    text(page, `${tr.date}: ${data.todayText}`, margin, doctorTop - 50, 8, font, GRAY);
+    y = doctorTop - 58;
   } else {
-    drawRight(`${tr.date}: ${data.todayText}`, doctorTop - 38, 8, font, GRAY);
-    y = doctorTop - 38;
+    text(page, `${tr.date}: ${data.todayText}`, margin, doctorTop - 38, 8, font, GRAY);
+    y = doctorTop - 46;
   }
 
   y -= 24;

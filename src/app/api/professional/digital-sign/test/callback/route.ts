@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getSignatureSession } from "@/lib/lacuna";
+import { markDigitalSignTrust } from "@/lib/digital-sign-session";
 import { getPublicBase } from "@/lib/sign-helpers";
 
 export const runtime = "nodejs";
@@ -20,7 +21,9 @@ function redirectAfterTest(req: NextRequest, signTest: string) {
   const url = new URL(`${getPublicBase(req)}${returnTo}`);
   url.hash = "digital-sign";
   url.searchParams.set("signTest", signTest);
-  return NextResponse.redirect(url);
+  const response = NextResponse.redirect(url);
+  if (signTest === "success") markDigitalSignTrust(response);
+  return response;
 }
 
 export async function GET(req: NextRequest) {

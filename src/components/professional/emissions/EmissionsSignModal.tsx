@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   PenLine, Smartphone, Lock, Loader2, AlertCircle, X, ExternalLink,
 } from "lucide-react";
@@ -23,7 +23,7 @@ export function EmissionsSignModal({
   onClose,
 }: {
   target: SignTarget;
-  signConfig: { configured: boolean; cpfMasked: string } | null;
+  signConfig: { configured: boolean; cpfMasked: string; recentAuth?: boolean } | null;
   deliverAfter?: boolean;
   onClose: () => void;
 }) {
@@ -32,8 +32,9 @@ export function EmissionsSignModal({
   const accountHref = mapProfessionalPathToPortal(pathname, "/professional/account#digital-sign");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const autoStarted = useRef(false);
 
-  async function handleStartSign() {
+  const handleStartSign = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -64,7 +65,13 @@ export function EmissionsSignModal({
       setError(t("digSign.modalErrNetwork"));
       setLoading(false);
     }
-  }
+  }, [target.kind, target.id, deliverAfter, t]);
+
+  useEffect(() => {
+    if (!signConfig?.configured || !signConfig.recentAuth || autoStarted.current) return;
+    autoStarted.current = true;
+    void handleStartSign();
+  }, [signConfig?.configured, signConfig?.recentAuth, handleStartSign]);
 
   if (!signConfig?.configured) {
     return (

@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { getSignatureSession, getSignedLocation, downloadSignedPdf } from "@/lib/lacuna";
+import { markDigitalSignTrust } from "@/lib/digital-sign-session";
 import { getPublicBase } from "@/lib/sign-helpers";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
@@ -28,7 +29,9 @@ function redirectTo(req: NextRequest, status: string, opts?: { flow?: string; ki
     url.searchParams.set("kind", opts.kind);
     url.searchParams.set("id", opts.id);
   }
-  return NextResponse.redirect(url);
+  const response = NextResponse.redirect(url);
+  if (status === "success") markDigitalSignTrust(response);
+  return response;
 }
 
 export async function GET(req: NextRequest) {

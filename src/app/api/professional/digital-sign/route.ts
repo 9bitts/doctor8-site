@@ -8,6 +8,7 @@ import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
+import { hasRecentDigitalSignTrust } from "@/lib/digital-sign-session";
 
 const schema = z.object({
   provider: z.enum(["BirdID", "VIDaaS"]),
@@ -43,6 +44,7 @@ export async function GET() {
     configured: !!p.digitalSignCpf,
     provider:   p.digitalSignProvider || null,
     cpfMasked:  cpfDecrypted ? maskCpf(cpfDecrypted) : null,
+    recentAuth: hasRecentDigitalSignTrust(),
   });
 }
 

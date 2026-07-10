@@ -12,6 +12,7 @@ import { z } from "zod";
 import { buildPatientRecordSearchText } from "@/lib/patient-record-search";
 import { findPossibleDuplicateCharts } from "@/lib/patient-record-dedup";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
+import { attachSharedDocumentToChart } from "@/lib/shared-document-attach";
 
 const createSchema = z.object({
   firstName:        z.string().min(1).max(100),
@@ -171,30 +172,13 @@ export async function POST(req: NextRequest) {
 
   let attachedDocumentId: string | null = null;
   if (d.attachDocumentId) {
-    const share = await db.sharedRecord.findFirst({
-      where: { documentId: d.attachDocumentId, sharedWithProfessionalId: professional.id },
-      select: { id: true },
+    const attachResult = await attachSharedDocumentToChart({
+      documentId: d.attachDocumentId,
+      chartId: record.id,
+      professionalId: professional.id,
     });
-    if (share) {
-      const original = await db.medicalDocument.findUnique({
-        where: { id: d.attachDocumentId },
-        select: { type: true, categoryId: true, title: true, content: true, fileUrl: true },
-      });
-      if (original) {
-        const copy = await db.medicalDocument.create({
-          data: {
-            patientRecordId:  record.id,
-            professionalId:   professional.id,
-            type:             original.type,
-            categoryId:       original.categoryId,
-            title:            original.title,
-            content:          original.content,
-            fileUrl:          original.fileUrl,
-            sourceDocumentId: d.attachDocumentId,
-          },
-        });
-        attachedDocumentId = copy.id;
-      }
+    if (attachResult) {
+      attachedDocumentId = attachResult.recordId;
     }
   }
 
