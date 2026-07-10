@@ -11,7 +11,7 @@ import { getUserLang } from "@/lib/i18n/server-lang";
 import {
   Calendar, Users, DollarSign, Clock, ChevronRight, Video, Radio,
   Inbox, MessageSquare, Stethoscope, BookOpen, UserCog, Settings,
-  Layers, TrendingUp, Activity, Sparkles,
+  TrendingUp, Activity, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import MarketPricingCard from "@/components/professional/MarketPricingCard";
@@ -193,7 +193,6 @@ export default async function ProfessionalDashboard() {
       items: [
         { href: "/professional/patients", labelKey: "nav.patients", icon: <Users size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
         { href: "/professional/shared", labelKey: "nav.sharedWithMe", icon: <Inbox size={20} />, accent: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200", badge: sharedPending || undefined },
-        { href: "/professional/categories", labelKey: "nav.categories", icon: <Layers size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
       ],
     },
     {

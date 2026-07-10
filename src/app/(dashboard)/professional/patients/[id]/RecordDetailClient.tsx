@@ -16,7 +16,7 @@ import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film, Download,
-  Activity, Stethoscope, Columns2, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck,
+  Activity, Stethoscope, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { EmissionCardActions } from "@/components/professional/emissions/EmissionCardActions";
@@ -36,9 +36,9 @@ import ClinicalCalculators from "@/components/professional/ClinicalCalculators";
 import NutritionPatientChartPanel from "@/components/nutritionist/NutritionPatientChartPanel";
 import NursePatientChartPanel from "@/components/nurse/NursePatientChartPanel";
 import PharmacistPatientChartPanel from "@/components/pharmacist/PharmacistPatientChartPanel";
-import ImageCompareModal from "@/components/professional/ImageCompareModal";
 import ChartSharePanel from "@/components/professional/ChartSharePanel";
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
+import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 import {
   RecordTimelineFilters,
   PinnedAnamnesisCard,
@@ -356,7 +356,6 @@ export default function RecordDetailClient({
   const [metrics, setMetrics] = useState<ClinicalMetricsInput>(emptyMetrics());
   const [addToDiagnoses, setAddToDiagnoses] = useState(true);
   const [recordKind, setRecordKind] = useState<ClinicalRecordKind>("EVOLUTION");
-  const [showImageCompare, setShowImageCompare] = useState(false);
   const [pendingDraft, setPendingDraft] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [voicePrefillActive, setVoicePrefillActive] = useState(false);
@@ -637,8 +636,12 @@ export default function RecordDetailClient({
     } catch { /* ignore */ }
   }
 
-  function handlePrint(docId: string) {
-    window.open(`/api/professional/documents/${docId}/pdf`, "_blank", "noopener,noreferrer");
+  async function handlePrint(docId: string) {
+    try {
+      await openAuthenticatedPdf(`/api/professional/documents/${docId}/pdf`);
+    } catch {
+      toast.error(t("docs.err.downloadFailed"));
+    }
   }
 
   // ── Etapa 3c: save edited email ──
@@ -1063,10 +1066,34 @@ export default function RecordDetailClient({
               </div>
             )}
             {canEdit && isOwner && (
-              <ChartClinicalActions
-                chartId={chart.id}
-                returnUrl={professionalPatientsHref(pathname, chart.id)}
-              />
+              <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{t("chartAct.sectionTitle")}</p>
+                <ChartClinicalActions
+                  chartId={chart.id}
+                  returnUrl={professionalPatientsHref(pathname, chart.id)}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={openExamResultForm}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition"
+                  >
+                    <FileCheck size={13} /> {t("chartAct.examResult")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openNewRecordForm}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition"
+                  >
+                    <Plus size={13} /> {t("timeline.addRecord")}
+                    {pendingDraft && (
+                      <span className="text-[10px] font-bold uppercase tracking-wide bg-brand-200/60 px-1.5 py-0.5 rounded">
+                        {t("rec.draftPending")}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -1424,37 +1451,6 @@ export default function RecordDetailClient({
       {/* Records section */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-lg font-bold text-slate-900">{t("chartTab.records")}</h2>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowImageCompare(true)}
-            className="inline-flex items-center gap-2 border border-slate-200 hover:border-brand-200 text-slate-700 hover:text-brand-600 font-semibold px-4 py-2.5 rounded-xl transition text-sm"
-          >
-            <Columns2 size={18} /> {t("compare.open")}
-          </button>
-          {canEdit && (
-          <>
-          <button
-            type="button"
-            onClick={openExamResultForm}
-            className="inline-flex items-center gap-2 border border-cyan-200 hover:border-cyan-300 text-cyan-700 hover:text-cyan-800 font-semibold px-4 py-2.5 rounded-xl transition text-sm"
-          >
-            <FileCheck size={18} /> {t("chartAct.examResult")}
-          </button>
-          <button
-            onClick={openNewRecordForm}
-            className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-sm"
-          >
-            <Plus size={18} /> {t("timeline.addRecord")}
-            {pendingDraft && (
-              <span className="text-[10px] font-bold uppercase tracking-wide bg-white/20 px-1.5 py-0.5 rounded">
-                {t("rec.draftPending")}
-              </span>
-            )}
-          </button>
-          </>
-          )}
-        </div>
       </div>
 
       {pinnedAnamnesis && recordFilter === "all" && (
@@ -1891,12 +1887,6 @@ export default function RecordDetailClient({
           onClose={() => setSignTarget(null)}
         />
       )}
-
-      <ImageCompareModal
-        chartId={chart.id}
-        open={showImageCompare}
-        onClose={() => setShowImageCompare(false)}
-      />
     </div>
   );
 }

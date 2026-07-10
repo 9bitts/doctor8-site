@@ -130,6 +130,24 @@ function isMedsFormValid(medications: MedItem[]): boolean {
   return medications.length > 0 && medications.every(isMedItemValid);
 }
 
+function parseBulkMedicationLines(text: string): MedItem[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split(/\t|;\s*|\s+-\s+/).map((p) => p.trim()).filter(Boolean);
+      return {
+        name: parts[0] || line,
+        dosage: parts[1] || "",
+        frequency: parts[2] || "",
+        duration: parts[3] || "",
+        instructions: parts[4] || "",
+        itemKind: "medication" as const,
+      };
+    });
+}
+
 function rxFieldClass(invalid: boolean): string {
   return invalid ? " !border-rose-400 !bg-rose-50" : "";
 }
@@ -364,6 +382,8 @@ export default function PrescriptionsPage() {
   const [pendingFloralProductId, setPendingFloralProductId] = useState<string | null>(null);
   const [floralOnlyMode, setFloralOnlyMode] = useState(false);
   const [voicePrefillActive, setVoicePrefillActive] = useState(false);
+  const [bulkPasteText, setBulkPasteText] = useState("");
+  const [showBulkPaste, setShowBulkPaste] = useState(false);
 
   useEffect(() => {
     if (cfg.prescriptionsOnly && (view === "exam" || view === "document")) {
@@ -790,6 +810,7 @@ export default function PrescriptionsPage() {
 
   async function openCreate() {
     resetForm();
+    setShowBulkPaste(true);
     setView("prescription");
     await loadCharts();
   }
@@ -978,6 +999,30 @@ export default function PrescriptionsPage() {
       instructions: "",
       itemKind: kind,
     }]);
+  }
+
+  function importBulkMedications() {
+    const parsed = parseBulkMedicationLines(bulkPasteText);
+    if (parsed.length === 0) {
+      setFormError(t("rx.bulkPaste.empty"));
+      return;
+    }
+    setMedications((prev) => [...prev, ...parsed]);
+    setBulkPasteText("");
+    setShowBulkPaste(false);
+    setFormError("");
+  }
+
+  function applyFreeTextPrescription() {
+    const parsed = parseBulkMedicationLines(bulkPasteText);
+    if (parsed.length === 0) {
+      setFormError(t("rx.bulkPaste.empty"));
+      return;
+    }
+    setMedications(parsed);
+    setBulkPasteText("");
+    setShowBulkPaste(false);
+    setFormError("");
   }
 
   function removeMedication(index: number) { setMedications((prev) => prev.filter((_, i) => i !== index)); }
@@ -1548,6 +1593,51 @@ export default function PrescriptionsPage() {
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 hover:bg-brand-50 text-brand-600 font-semibold text-sm transition">
                 <Plus size={16} /> {t("rx2.addManual")}
               </button>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{t("rx.bulkPaste.title")}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{t("rx.bulkPaste.hint")}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkPaste((v) => !v)}
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-700 shrink-0"
+                  >
+                    {showBulkPaste ? t("rx.bulkPaste.hide") : t("rx.bulkPaste.show")}
+                  </button>
+                </div>
+                {showBulkPaste && (
+                  <>
+                    <textarea
+                      value={bulkPasteText}
+                      onChange={(e) => setBulkPasteText(e.target.value)}
+                      rows={6}
+                      placeholder={t("rx.bulkPaste.placeholder")}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-y bg-white"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={importBulkMedications}
+                        disabled={!bulkPasteText.trim()}
+                        className="flex-1 min-w-[140px] py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm disabled:opacity-50"
+                      >
+                        {t("rx.bulkPaste.addToList")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applyFreeTextPrescription}
+                        disabled={!bulkPasteText.trim()}
+                        className="flex-1 min-w-[140px] py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm disabled:opacity-50"
+                      >
+                        {t("rx.bulkPaste.replaceList")}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
               {!cfg.phytoOnly && (
                 <div className="grid sm:grid-cols-2 gap-2">
                   <button type="button" onClick={() => addSpecialItem("device")}

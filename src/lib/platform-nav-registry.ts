@@ -165,7 +165,6 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/professional/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
       { href: "/professional/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
-      { href: "/professional/categories", labelKey: "nav.categories", roles: ["PROFESSIONAL"], iconKey: "Layers" },
       { href: "/professional/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
     ],
   },
@@ -217,7 +216,6 @@ export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/psychologist/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
       { href: "/psychologist/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
-      { href: "/psychologist/categories", labelKey: "nav.categories", roles: ["PROFESSIONAL"], iconKey: "Layers" },
       { href: "/psychologist/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
     ],
   },

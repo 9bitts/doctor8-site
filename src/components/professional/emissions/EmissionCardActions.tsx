@@ -14,6 +14,7 @@ import {
   EMISSION_BTN_BRAND,
   EMISSION_BTN_NEUTRAL,
 } from "./emission-button-styles";
+import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 
 type MedItem = { name: string; dosage?: string; frequency?: string; duration?: string; instructions?: string };
 
@@ -34,7 +35,7 @@ function PdfDownloadButton({
   async function download() {
     setLoading(true);
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: "same-origin" });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         onError(typeof d.error === "string" ? d.error : t("rx.signedPdfUnavailable"));
@@ -114,6 +115,14 @@ export function EmissionCardActions({
   const shareUrl = emissionShareUrl(kind);
   const delivered = !!patientNotifiedAt;
 
+  async function defaultPrint() {
+    try {
+      await openAuthenticatedPdf(pdfUrl);
+    } catch {
+      onPdfError?.(t("rx.signedPdfUnavailable"));
+    }
+  }
+
   function defaultCopy() {
     const lines: string[] = [];
     if (title) lines.push(title);
@@ -135,11 +144,9 @@ export function EmissionCardActions({
         <Copy size={14} /> {t("rec.copy")}
       </button>
 
-      {onPrint && (
-        <button type="button" onClick={onPrint} className={EMISSION_BTN_NEUTRAL}>
-          <Printer size={14} /> {t("rec.print")}
-        </button>
-      )}
+      <button type="button" onClick={onPrint || defaultPrint} className={EMISSION_BTN_NEUTRAL}>
+        <Printer size={14} /> {t("rec.print")}
+      </button>
 
       {onReuse && (
         <button type="button" onClick={onReuse} className={EMISSION_BTN_NEUTRAL}>
