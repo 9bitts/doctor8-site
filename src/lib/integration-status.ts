@@ -171,7 +171,7 @@ export function getIntegrationStatuses(): IntegrationRow[] {
       health: cronOk ? "ok" : qstashOk ? "partial" : "missing",
       configured: cronOk,
       detail: cronOk
-        ? "CRON_SECRET set — schedule POST /api/cron/reminders and /api/cron/post-consult-notes (header x-cron-secret)."
+        ? "CRON_SECRET set — schedule POST /api/cron/reminders, /api/cron/post-consult-notes, and /api/cron/consultation-payouts (header x-cron-secret)."
         : "Generate CRON_SECRET for backup cron; QStash is primary when configured.",
     },
     {
