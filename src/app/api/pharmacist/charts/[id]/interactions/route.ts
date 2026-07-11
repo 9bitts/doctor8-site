@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { checkDrugInteractions, maxInteractionSeverity } from "@/lib/pharmacy/interaction-engine";
+import { checkMnCatalogInteractions } from "@/lib/pharmacy/mn-interactions";
 import { interactionCheckBodySchema } from "@/lib/pharmacy/types";
 import { requireChartAccess, requirePharmacistProfessional } from "@/lib/pharmacy/pharmacy-api";
 
@@ -52,7 +53,9 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const interactions = checkDrugInteractions(parsed.data.medications);
+  const ruleInteractions = checkDrugInteractions(parsed.data.medications);
+  const mnInteractions = await checkMnCatalogInteractions(parsed.data.medications);
+  const interactions = [...ruleInteractions, ...mnInteractions];
   const severity = maxInteractionSeverity(interactions);
 
   const check = await db.pharmacyInteractionCheck.create({

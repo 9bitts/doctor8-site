@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, ShieldCheck, Pill, CheckCircle2 } from "lucide-react";
+import {
+  MN_ITEM_KIND_LABELS_PT,
+  type PrescriptionMedicationLine,
+} from "@/lib/pharmacy/prescription-medication-lines";
 
 type RxData = {
   token: string;
@@ -76,7 +80,7 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
     );
   }
 
-  const meds = (data?.prescription.medications as { name: string; dosage?: string }[]) || [];
+  const meds = (data?.prescription.medications as PrescriptionMedicationLine[]) || [];
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
@@ -101,9 +105,21 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
             <p className="text-xs text-slate-500 uppercase font-semibold mb-2">Medicamentos</p>
             <ul className="space-y-2">
               {meds.map((m, i) => (
-                <li key={i} className="text-sm bg-slate-50 rounded-lg px-3 py-2">
-                  <span className="font-medium">{m.name}</span>
-                  {m.dosage ? <span className="text-slate-500"> · {m.dosage}</span> : null}
+                <li key={i} className="text-sm bg-slate-50 rounded-lg px-3 py-2 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{m.name}</span>
+                    {m.itemKind && MN_ITEM_KIND_LABELS_PT[m.itemKind] && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        {MN_ITEM_KIND_LABELS_PT[m.itemKind]}
+                      </span>
+                    )}
+                    {m.renisus && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+                        RENISUS
+                      </span>
+                    )}
+                  </div>
+                  {m.dosage ? <span className="text-slate-500">{m.dosage}</span> : null}
                 </li>
               ))}
             </ul>

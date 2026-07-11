@@ -4,6 +4,7 @@ import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { buildQuoteForStore, resolvePrescriptionDrugIds, calcDeliveryFeeCents } from "@/lib/pharmacy-network/quote";
 import { ensurePrescriptionToken } from "@/lib/pharmacy-network/prescription-token";
+import { normalizePrescriptionMedicationLines } from "@/lib/pharmacy/prescription-medication-lines";
 
 const createSchema = z.object({
   pharmacyStoreId: z.string(),
@@ -82,10 +83,8 @@ export async function POST(req: NextRequest) {
     if (!rx) {
       return NextResponse.json({ error: "Prescrição inválida" }, { status: 400 });
     }
-    const meds = (rx.medications as { name: string; dosage?: string }[]) || [];
-    const resolved = await resolvePrescriptionDrugIds(
-      meds.map((m) => ({ name: m.name, dosage: m.dosage })),
-    );
+    const meds = normalizePrescriptionMedicationLines(rx.medications);
+    const resolved = await resolvePrescriptionDrugIds(meds);
     drugCatalogIds = resolved.map((r) => r.drugCatalogId);
   } else if (parsed.data.medications?.length) {
     const resolved = await resolvePrescriptionDrugIds(parsed.data.medications);

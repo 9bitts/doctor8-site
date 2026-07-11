@@ -7,6 +7,19 @@ export const medicationItemSchema = z.object({
   frequency: z.string().optional(),
   duration: z.string().optional(),
   instructions: z.string().optional(),
+  itemKind: z
+    .enum([
+      "medication",
+      "device",
+      "phytotherapy",
+      "floral",
+      "homeopathy",
+      "aromatherapy",
+      "apitherapy",
+    ])
+    .optional(),
+  mnSlug: z.string().optional(),
+  renisus: z.boolean().optional(),
 });
 
 export const medReviewBodySchema = z.object({

@@ -1,27 +1,37 @@
 import { db } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { distanceKm, geocodeCep } from "./geocode";
+import type { PrescriptionMedicationLine } from "@/lib/pharmacy/prescription-medication-lines";
 
-export type MedicationLine = {
-  name: string;
-  dosage?: string;
-  presentation?: string;
-};
+export type MedicationLine = PrescriptionMedicationLine;
 
 export async function matchMedicationToDrugCatalog(med: MedicationLine): Promise<string | null> {
   const name = med.name?.trim().toLowerCase();
   if (!name) return null;
 
+  // MN catalog items are rarely in drugCatalog; prefer name match using catalog nome when mnSlug exists.
+  let searchName = med.name?.trim() || "";
+  if (med.mnSlug) {
+    const mn = await db.medicinaNaturalItem.findUnique({
+      where: { slug: med.mnSlug },
+      select: { nome: true, nomeCientifico: true },
+    });
+    if (mn?.nome) searchName = mn.nome;
+  }
+
   const presentation = (med.presentation || med.dosage || "").trim().toLowerCase();
+  const nameForQuery = searchName.toLowerCase();
 
   const candidates = await db.drugCatalog.findMany({
     where: {
       active: true,
       country: "BR",
       OR: [
+        { searchName: { contains: nameForQuery } },
+        { name: { contains: searchName, mode: "insensitive" } },
+        { searchIngredient: { contains: nameForQuery } },
         { searchName: { contains: name } },
         { name: { contains: med.name, mode: "insensitive" } },
-        { searchIngredient: { contains: name } },
       ],
     },
     select: { id: true, presentation: true, searchPresentation: true },
