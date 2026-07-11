@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { PICS_PRACTICES } from "@/lib/pics/practices";
 import { Loader2, Plus, ChevronRight } from "lucide-react";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
+import { initials } from "@/lib/format-name";
 
 interface Client {
   id: string;
@@ -192,8 +193,7 @@ export default function IntegrativeClientsPage() {
                 className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition"
               >
                 <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 font-bold flex items-center justify-center text-sm">
-                  {c.firstName[0]}
-                  {c.lastName[0]}
+                  {initials(c.firstName, c.lastName)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800 text-sm">

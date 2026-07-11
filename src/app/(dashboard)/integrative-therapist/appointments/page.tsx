@@ -2,20 +2,11 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
-import { decrypt } from "@/lib/encryption";
+import { safeDecrypt } from "@/lib/integrative-therapist-api";
 import { DEFAULT_TIME_ZONE } from "@/lib/timezone";
 import { picBySlug, picLabel } from "@/lib/pics/practices";
 import { getIntegrativeVisitMetaByPatientUserIds } from "@/lib/integrative-appointment-meta";
 import IntegrativeAppointmentsView from "@/components/integrative-therapist/IntegrativeAppointmentsView";
-
-function safeDecrypt(v: string | null): string {
-  if (!v) return "";
-  try {
-    return decrypt(v);
-  } catch {
-    return v;
-  }
-}
 
 export default async function IntegrativeTherapistAppointmentsPage() {
   const session = await auth();
@@ -86,7 +77,7 @@ export default async function IntegrativeTherapistAppointmentsPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">{t("proappt.title")}</h1>
-        <p className="text-slate-500 mt-1">{t("it.dash.subtitle")}</p>
+        <p className="text-slate-500 mt-1">{t("it.appt.subtitle")}</p>
       </div>
       <IntegrativeAppointmentsView appointments={rows} practiceOptions={practiceOptions} timeZone={providerTz} />
     </div>

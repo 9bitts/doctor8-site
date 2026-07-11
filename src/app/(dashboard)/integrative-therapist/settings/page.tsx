@@ -38,6 +38,7 @@ import {
   Calendar,
   Sparkles,
 } from "lucide-react";
+import { initials as nameInitials } from "@/lib/format-name";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40";
@@ -258,7 +259,7 @@ export default function IntegrativeTherapistSettingsPage() {
     );
   }
 
-  const initials = (firstName[0] || "") + (lastName[0] || "");
+  const avatarInitials = nameInitials(firstName, lastName);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-10">
@@ -360,7 +361,7 @@ export default function IntegrativeTherapistSettingsPage() {
               <img src={avatarUrl} alt="" className="w-24 h-24 rounded-2xl object-cover border border-slate-200" />
             ) : (
               <div className="w-24 h-24 rounded-2xl bg-teal-100 flex items-center justify-center text-teal-600 text-2xl font-bold">
-                {initials || <Camera size={28} />}
+                {avatarInitials !== "?" ? avatarInitials : <Camera size={28} />}
               </div>
             )}
             {avatarUrl && (

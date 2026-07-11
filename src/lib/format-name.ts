@@ -1,4 +1,8 @@
 /** Uppercase initials from first/last name, with "?" fallback when empty. */
+export function initials(first?: string | null, last?: string | null): string {
+  return initialsOf(first ?? "", last ?? "");
+}
+
 export function initialsOf(first: string, last: string): string {
   const f = first.trim();
   const l = last.trim();

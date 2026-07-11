@@ -17,6 +17,7 @@ export default function IntegrativeProductionReport() {
   const [period, setPeriod] = useState<Period>("this_month");
   const [data, setData] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async (p: Period) => {
     setLoading(true);
@@ -32,11 +33,25 @@ export default function IntegrativeProductionReport() {
     void load(period);
   }, [period, load]);
 
-  function exportCsv() {
-    window.open(
-      `/api/integrative-therapist/reports/production?period=${period}&format=csv`,
-      "_blank",
-    );
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const res = await fetch(
+        `/api/integrative-therapist/reports/production?period=${period}&format=csv`,
+      );
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `production-report-${period}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
   }
 
   const maxCount = Math.max(1, ...(data?.practices.map((p) => p.count) ?? [1]));
@@ -61,7 +76,7 @@ export default function IntegrativeProductionReport() {
           <button
             type="button"
             onClick={exportCsv}
-            disabled={loading || !data || data.totalSessions === 0}
+            disabled={loading || exporting || !data || data.totalSessions === 0}
             className="flex items-center gap-1.5 border border-teal-200 text-teal-800 bg-teal-50 hover:bg-teal-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl px-3 py-2 text-sm font-medium transition-colors"
           >
             <Download size={15} />

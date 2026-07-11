@@ -116,7 +116,7 @@ export default function IntegrativeConsultPage() {
             {context.clientFirstName} {context.clientLastName}
             {context.appointment && (
               <>
-                {" ? "}
+                {" · "}
                 {new Date(context.appointment.scheduledAt).toLocaleString(locale)}
               </>
             )}

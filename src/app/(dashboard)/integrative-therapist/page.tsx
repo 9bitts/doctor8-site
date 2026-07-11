@@ -39,9 +39,10 @@ export default async function IntegrativeTherapistDashboard() {
 
   const userRow = await db.user.findUnique({
     where: { id: userId },
-    select: { timezone: true },
+    select: { timezone: true, region: true },
   });
   const providerTz = userRow?.timezone || DEFAULT_TIME_ZONE;
+  const regionForCampaign = userRow?.region ?? session.user.region ?? null;
   const { start: todayStart, end: todayEnd } = providerDayBounds(providerTz);
 
   const [todayCount, clientCount, upcoming, humanitarianCampaign, humanitarianVolunteer] =
@@ -64,7 +65,7 @@ export default async function IntegrativeTherapistDashboard() {
         orderBy: { scheduledAt: "asc" },
         take: 5,
       }),
-      getActiveCampaignForRegion(null),
+      getActiveCampaignForRegion(regionForCampaign),
       getVolunteerDashboardState(userId),
     ]);
 

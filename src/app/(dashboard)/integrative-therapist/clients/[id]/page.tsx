@@ -66,6 +66,7 @@ export default function IntegrativeClientDetailPage() {
   const [sharingId, setSharingId] = useState<string | null>(null);
 
   const langCode = lang.startsWith("pt") ? "pt" : lang.startsWith("es") ? "es" : "en";
+  const locale = lang.startsWith("pt") ? "pt-BR" : lang.startsWith("es") ? "es-ES" : "en-US";
   const usesStructured = hasStructuredTemplate(practiceSlug);
 
   useEffect(() => {
@@ -381,7 +382,7 @@ export default function IntegrativeClientDetailPage() {
                       <p className="font-semibold text-slate-800 text-sm">{n.title}</p>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[10px] text-slate-400">
-                          {new Date(n.createdAt).toLocaleString()}
+                          {new Date(n.createdAt).toLocaleString(locale)}
                         </span>
                         {n.shared ? (
                           <span className="text-[10px] font-bold text-teal-700">
