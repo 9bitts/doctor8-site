@@ -185,6 +185,9 @@ export default async function PatientDashboard() {
 
   const userMeta = userRow as { region?: string | null; timezone?: string } | null;
 
+  const venezuelaOperationActive =
+    humanitarianCampaign?.active || userMeta?.region === "VE";
+
   const hasActiveClub =
     !!subscription && ["active", "trialing"].includes(subscription.status);
 
@@ -292,9 +295,9 @@ export default async function PatientDashboard() {
   else if (historyIncomplete) pendingBanner = "history";
   else if (!hasActiveClub) pendingBanner = "club";
 
-  const showActiveQueueCard = queueActive;
+  const showActiveQueueCard = queueActive && !venezuelaOperationActive;
   const showSoonConsultCard = !showActiveQueueCard && !!soonConsultProps;
-  const showUrgentHero = !showActiveQueueCard && !showSoonConsultCard;
+  const showUrgentHero = !showActiveQueueCard && !showSoonConsultCard && !venezuelaOperationActive;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -415,20 +418,22 @@ export default async function PatientDashboard() {
       </div>
 
       {/* 3 — Two primary actions */}
-      <div className="grid sm:grid-cols-2 gap-4">
-        <Link
-          href="/urgent"
-          className="flex items-center gap-4 rounded-2xl border border-accent-500/20 bg-accent-500 text-white shadow-sm p-5 sm:p-6 transition hover:bg-accent-600 hover:shadow-md"
-        >
-          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-            <Radio size={24} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-base">{t("nav.urgent")}</p>
-            <p className="text-sm text-white/80 mt-0.5">{t("pdash.urgent.desc.available")}</p>
-          </div>
-          <ChevronRight size={18} className="shrink-0 opacity-80" />
-        </Link>
+      <div className={`grid gap-4 ${venezuelaOperationActive ? "grid-cols-1" : "sm:grid-cols-2"}`}>
+        {!venezuelaOperationActive && (
+          <Link
+            href="/urgent"
+            className="flex items-center gap-4 rounded-2xl border border-accent-500/20 bg-accent-500 text-white shadow-sm p-5 sm:p-6 transition hover:bg-accent-600 hover:shadow-md"
+          >
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <Radio size={24} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-base">{t("nav.urgent")}</p>
+              <p className="text-sm text-white/80 mt-0.5">{t("pdash.urgent.desc.available")}</p>
+            </div>
+            <ChevronRight size={18} className="shrink-0 opacity-80" />
+          </Link>
+        )}
 
         <div className="flex flex-col rounded-2xl border border-brand-200 bg-brand-500 text-white shadow-sm overflow-hidden transition hover:shadow-md">
           <Link

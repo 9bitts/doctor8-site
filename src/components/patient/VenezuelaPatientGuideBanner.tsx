@@ -12,6 +12,10 @@ import {
 
 const DISMISS_PREFIX = "doctor8:vePatientGuide:dismissed";
 
+const VE_YELLOW = "#ffcc00";
+const VE_BLUE = "#00308f";
+const VE_RED = "#cf142b";
+
 type Props = {
   userId: string;
   lang: Lang;
@@ -80,46 +84,61 @@ export default function VenezuelaPatientGuideBanner({ userId, lang }: Props) {
 
   return (
     <div
-      className="border-b border-[#00308f]/20 shadow-sm"
+      className="border-b shadow-sm"
+      style={{ borderColor: `${VE_BLUE}33`, backgroundColor: "#ffffff" }}
       role="region"
       aria-label={t("veGuide.eyebrow")}
     >
-      <div className="h-1 bg-gradient-to-r from-[#ffcc00] via-[#00308f] to-[#cf142b]" aria-hidden />
+      <div
+        className="h-1.5"
+        style={{
+          background: `linear-gradient(to right, ${VE_YELLOW}, ${VE_BLUE}, ${VE_RED})`,
+        }}
+        aria-hidden
+      />
 
-      <div className="bg-gradient-to-br from-[#fffbeb] via-[#eff6ff] to-[#fff1f2] px-4 lg:px-8 py-4">
+      <div className="px-4 lg:px-8 py-4">
         <div className="flex items-start gap-3 sm:gap-4">
-          <div className="w-11 h-11 rounded-xl bg-white border-2 border-[#00308f]/30 flex items-center justify-center shrink-0 shadow-sm">
-            <Heart size={22} className="text-[#cf142b]" fill="#cf142b" fillOpacity={0.15} />
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+            style={{ backgroundColor: "#fff8e1", border: `2px solid ${VE_BLUE}` }}
+          >
+            <Heart size={22} style={{ color: VE_RED }} fill={VE_RED} fillOpacity={0.2} />
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-[#00308f]">
+            <p
+              className="text-xs font-bold uppercase tracking-wide"
+              style={{ color: VE_BLUE }}
+            >
               {t("veGuide.eyebrow")}
             </p>
             <p className="text-base sm:text-lg font-bold text-slate-900 mt-0.5 leading-snug">
               {t("veGuide.question")}
             </p>
 
-            <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="mt-3 flex flex-col sm:flex-row gap-2.5 sm:gap-3">
               <Link
                 href={PATIENT_HUMANITARIAN_ENTRY.href}
-                className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] bg-gradient-to-r from-[#cf142b] to-[#b91c1c]"
+                className="inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold shadow-md transition hover:brightness-95 active:scale-[0.98]"
+                style={{ backgroundColor: VE_RED, color: "#ffffff" }}
               >
-                <Zap size={16} strokeWidth={2.5} className="shrink-0" />
-                <span>
-                  {t("veGuide.now")}
-                  <span className="font-normal opacity-90"> {t("veGuide.nowSub")}</span>
+                <Zap size={18} strokeWidth={2.5} className="shrink-0" />
+                <span className="leading-tight">
+                  <span className="block font-bold">{t("veGuide.now")}</span>
+                  <span className="block text-xs font-normal opacity-95">{t("veGuide.nowSub")}</span>
                 </span>
               </Link>
 
               <Link
                 href={PATIENT_SCHEDULED_VOLUNTEER_ENTRY.href}
-                className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] bg-gradient-to-r from-[#00308f] to-[#001d66]"
+                className="inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold shadow-md transition hover:brightness-95 active:scale-[0.98]"
+                style={{ backgroundColor: VE_BLUE, color: "#ffffff" }}
               >
-                <Calendar size={16} strokeWidth={2.5} className="shrink-0" />
-                <span>
-                  {t("veGuide.schedule")}
-                  <span className="font-normal opacity-90"> {t("veGuide.scheduleSub")}</span>
+                <Calendar size={18} strokeWidth={2.5} className="shrink-0" />
+                <span className="leading-tight">
+                  <span className="block font-bold">{t("veGuide.schedule")}</span>
+                  <span className="block text-xs font-normal opacity-95">{t("veGuide.scheduleSub")}</span>
                 </span>
               </Link>
             </div>
@@ -127,7 +146,7 @@ export default function VenezuelaPatientGuideBanner({ userId, lang }: Props) {
             <button
               type="button"
               onClick={dismiss}
-              className="mt-3 text-xs font-medium text-slate-500 hover:text-slate-700 underline underline-offset-2 transition"
+              className="mt-3 text-xs font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-2 transition"
             >
               {t("veGuide.dismiss")}
             </button>
@@ -136,10 +155,11 @@ export default function VenezuelaPatientGuideBanner({ userId, lang }: Props) {
           <button
             type="button"
             onClick={dismiss}
-            className="p-2 rounded-lg text-[#00308f]/70 hover:text-[#00308f] hover:bg-white/60 transition shrink-0 -mr-1"
+            className="p-2 rounded-lg transition shrink-0 -mr-1 hover:bg-slate-100"
+            style={{ color: VE_BLUE }}
             aria-label={t("veGuide.dismiss")}
           >
-            <X size={18} strokeWidth={2.5} />
+            <X size={20} strokeWidth={2.5} />
           </button>
         </div>
       </div>
