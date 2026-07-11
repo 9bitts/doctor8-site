@@ -203,3 +203,46 @@ export const MN_ADD_PARAM_TO_ITEM_KIND: Record<string, PrescriptionItemKind> = {
   aromatherapy: "aromatherapy",
   apitherapy: "apitherapy",
 };
+
+/** i18n key for catalog search input placeholder by active MN mode. */
+export function mnCatalogSearchI18nKey(
+  mode: PrescriptionItemSearchMode,
+  floralOnly: boolean,
+): string {
+  if (floralOnly || mode === "floral") return "rx.floralCatalogSearch";
+  const keys: Partial<Record<PrescriptionItemSearchMode, string>> = {
+    phytotherapy: "rx.phytoCatalogSearch",
+    homeopathy: "rx.homeopathyCatalogSearch",
+    aromatherapy: "rx.aromatherapyCatalogSearch",
+    apitherapy: "rx.apitherapyCatalogSearch",
+  };
+  return keys[mode] || "rx.phytoCatalogSearch";
+}
+
+/** i18n key for MN catalog search modal title by active mode. */
+export function mnSearchModalTitleI18nKey(
+  mode: PrescriptionItemSearchMode,
+  floralOnly: boolean,
+): string {
+  if (floralOnly || mode === "floral") return "rx.mnSearchModalTitle.floral";
+  const keys: Partial<Record<PrescriptionItemSearchMode, string>> = {
+    phytotherapy: "rx.mnSearchModalTitle.phytotherapy",
+    homeopathy: "rx.mnSearchModalTitle.homeopathy",
+    aromatherapy: "rx.mnSearchModalTitle.aromatherapy",
+    apitherapy: "rx.mnSearchModalTitle.apitherapy",
+  };
+  return keys[mode] || "rx.mnSearchModalTitle.phytotherapy";
+}
+
+/** i18n key for free-text item placeholder by MN item kind. */
+export function mnFreeTextPlaceholderI18nKey(
+  kind: PrescriptionItemKind,
+): string | null {
+  const keys: Partial<Record<PrescriptionItemKind, string>> = {
+    phytotherapy: "rx.phytoFreeTextPlaceholder",
+    homeopathy: "rx.homeopathyFreeTextPlaceholder",
+    aromatherapy: "rx.aromatherapyFreeTextPlaceholder",
+    apitherapy: "rx.apitherapyFreeTextPlaceholder",
+  };
+  return keys[kind] ?? null;
+}

@@ -13,6 +13,7 @@ import { TEMPLATE_CATEGORIES } from "@/lib/clinical-template-utils";
 import MedicinaNaturalSearchResults from "@/components/medicina-natural-catalog/MedicinaNaturalSearchResults";
 import {
   fetchMnByCategoriaForPrescription,
+  mnCatalogSearchI18nKey,
   mnMedItemFromListItemForMode,
   resolveMnCatalogCategoria,
   type PrescriptionItemSearchMode,
@@ -118,6 +119,11 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
     floralOnly: floralOnlyMode,
   });
   const mnCatalogMode = !!mnSearchCategoria;
+  const mnSearchModeForUi: PrescriptionItemSearchMode = floralOnlyMode
+    ? "floral"
+    : itemSearchMode === "medication" && mnCatalogMode
+      ? "phytotherapy"
+      : itemSearchMode;
 
   const searchDrugs = useCallback(async () => {
     const q = drugQuery.trim();
@@ -354,7 +360,7 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
           })}
         </div>
         <p className="text-xs font-medium text-slate-600">
-          {mnCatalogMode ? t("rx.phytoCatalogSearch") : t("rx2.searchDrug")}
+          {mnCatalogMode ? t(mnCatalogSearchI18nKey(mnSearchModeForUi, floralOnlyMode)) : t("rx2.searchDrug")}
         </p>
         {!mnCatalogMode && (
         <div className="flex flex-wrap gap-2">
@@ -384,7 +390,7 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
             value={drugQuery}
             onChange={(e) => setDrugQuery(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void searchDrugs(); } }}
-            placeholder={mnCatalogMode ? t("rx.phytoCatalogSearch") : t("rx2.searchDrug")}
+            placeholder={mnCatalogMode ? t(mnCatalogSearchI18nKey(mnSearchModeForUi, floralOnlyMode)) : t("rx2.searchDrug")}
             className="flex-1 border-0 bg-transparent outline-none py-2.5 pl-3 text-sm"
           />
           {drugSearching ? (

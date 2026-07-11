@@ -2,24 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireIntegrativeTherapist } from "@/lib/integrative-therapist-api";
+import { integrativeMedicationItemSchema } from "@/lib/prescription-medication-schema";
 
-const medicationItemSchema = z.object({
-  name: z.string().min(1),
-  dosage: z.string().optional(),
-  frequency: z.string().optional(),
-  duration: z.string().optional(),
-  instructions: z.string().optional(),
-  presentation: z.string().optional(),
-  pharmaceuticalForm: z.string().optional(),
-  itemKind: z.enum(["medication", "device", "phytotherapy", "floral"]).optional(),
-  phytoProductId: z.string().optional(),
-  floralProductId: z.string().optional(),
-}).superRefine((item, ctx) => {
-  const kind = item.itemKind || "medication";
-  if (kind !== "phytotherapy" && kind !== "floral") {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "only phytotherapy or floral allowed", path: ["itemKind"] });
-  }
-});
+const medicationItemSchema = integrativeMedicationItemSchema();
 
 const createSchema = z.object({
   name: z.string().min(1).max(120),

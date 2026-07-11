@@ -42,8 +42,10 @@ import {
   floralMedItemFromDrugResult,
   floralMedItemFromMnListItem,
   mapMnItemsToDrugResults,
+  mnCatalogSearchI18nKey,
   mnMedItemFromDrugResultForMode,
   mnMedItemFromListItemForMode,
+  mnSearchModalTitleI18nKey,
   MN_ADD_PARAM_TO_ITEM_KIND,
   phytoMedItemFromDrugResult,
   phytoMedItemFromMnListItem,
@@ -436,6 +438,11 @@ export default function PrescriptionsPage() {
     floralOnly: floralOnlyMode,
   });
   const mnCatalogSearch = !!mnSearchCategoria;
+  const mnSearchModeForUi: PrescriptionItemSearchMode = floralOnlyMode
+    ? "floral"
+    : itemSearchMode === "medication" && mnCatalogSearch
+      ? "phytotherapy"
+      : itemSearchMode;
 
   const [medications, setMedications] = useState<MedItem[]>([]);
   const [highlightIncompleteMeds, setHighlightIncompleteMeds] = useState(false);
@@ -563,6 +570,8 @@ export default function PrescriptionsPage() {
 
     if (params.get("add") === "phytotherapy") {
       setView("prescription");
+      setItemSearchMode("phytotherapy");
+      setFloralOnlyMode(false);
       const mnSlug = params.get("mnSlug");
       if (mnSlug) {
         void (async () => {
@@ -618,6 +627,7 @@ export default function PrescriptionsPage() {
 
     if (params.get("add") === "floral") {
       setView("prescription");
+      setItemSearchMode("floral");
       setFloralOnlyMode(true);
       const mnSlug = params.get("mnSlug");
       if (mnSlug) {
@@ -685,6 +695,8 @@ export default function PrescriptionsPage() {
     for (const addKey of ["homeopathy", "aromatherapy", "apitherapy"] as const) {
       if (params.get("add") !== addKey) continue;
       setView("prescription");
+      setItemSearchMode(addKey);
+      setFloralOnlyMode(false);
       const mnSlug = params.get("mnSlug");
       const itemKind = MN_ADD_PARAM_TO_ITEM_KIND[addKey];
       if (mnSlug) {
@@ -1935,7 +1947,39 @@ export default function PrescriptionsPage() {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-800">{t("rx2.addItem")}</label>
                 {cfg.phytoOnly ? (
-                  <p className="text-xs text-slate-500">{t("rx.addPhytotherapy")} · {t("rx.addFloral")}</p>
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {MN_RX_SEARCH_TABS.filter(
+                        (tab) => !tab.floralOnly || cfg.allowFloral,
+                      ).map((tab) => {
+                        const Icon = tab.icon;
+                        const active =
+                          itemSearchMode === tab.mode &&
+                          (tab.mode !== "floral" || floralOnlyMode);
+                        return (
+                          <button
+                            key={tab.mode}
+                            type="button"
+                            onClick={() => {
+                              setItemSearchMode(tab.mode);
+                              setFloralOnlyMode(tab.mode === "floral");
+                              setDrugQuery("");
+                              setDrugResults([]);
+                              setMnSearchResults([]);
+                            }}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                              active
+                                ? tab.activeClass
+                                : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200"
+                            }`}
+                          >
+                            <Icon size={16} /> {t(tab.labelKey)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-slate-500">{t("rx.phytoSearchHint")}</p>
+                  </>
                 ) : (
                   <>
                     <div className="flex flex-wrap gap-2">
@@ -2037,11 +2081,9 @@ export default function PrescriptionsPage() {
                     }
                   }}
                   placeholder={
-                    floralCatalogSearch
-                      ? t("rx.floralCatalogSearch")
-                      : mnCatalogSearch
-                        ? t("rx.phytoCatalogSearch")
-                        : t("rx2.searchDrug")
+                    mnCatalogSearch
+                      ? t(mnCatalogSearchI18nKey(mnSearchModeForUi, floralOnlyMode))
+                      : t("rx2.searchDrug")
                   }
                   className="flex-1 min-w-0 border-0 bg-transparent outline-none py-3 pl-3.5 pr-2 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl"
                 />
@@ -2263,7 +2305,9 @@ export default function PrescriptionsPage() {
               <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-100">
                 <div className="min-w-0">
                   <h3 className="font-bold text-slate-900">
-                    {mnCatalogSearch ? t("rx.mnSearchModalTitle") : t("rx2.drugSearchModalTitle")}
+                    {mnCatalogSearch
+                      ? t(mnSearchModalTitleI18nKey(mnSearchModeForUi, floralOnlyMode))
+                      : t("rx2.drugSearchModalTitle")}
                   </h3>
                   <p className="text-sm text-slate-500 mt-0.5 truncate">&ldquo;{drugQuery.trim()}&rdquo;</p>
                 </div>

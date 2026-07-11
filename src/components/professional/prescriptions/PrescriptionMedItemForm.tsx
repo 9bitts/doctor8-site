@@ -6,6 +6,7 @@ import {
   type FloralProductCategory,
 } from "@/lib/pics/reference-library/floral-products";
 import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
+import { mnFreeTextPlaceholderI18nKey } from "@/lib/medicina-natural-catalog/prescription-search";
 
 export type PrescriptionMedItem = {
   name: string;
@@ -96,9 +97,13 @@ export default function PrescriptionMedItemForm({
               <button
                 type="button"
                 onClick={() => onOpenPhytoSearch(index)}
-                className="inline-flex text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                className={`inline-flex text-xs font-semibold ${
+                  kind === "phytotherapy"
+                    ? "text-emerald-700 hover:text-emerald-900"
+                    : "text-brand-700 hover:text-brand-900"
+                }`}
               >
-                {t("rx.phytoBrowseCatalog")}
+                {kind === "phytotherapy" ? t("rx.phytoBrowseCatalog") : t("rx.mnBrowseCatalog")}
               </button>
             )}
             <label
@@ -113,8 +118,8 @@ export default function PrescriptionMedItemForm({
               onChange={(e) => onUpdate(index, "name", e.target.value)}
               rows={5}
               placeholder={
-                kind === "phytotherapy"
-                  ? t("rx.phytoFreeTextPlaceholder")
+                mnFreeTextPlaceholderI18nKey(kind)
+                  ? t(mnFreeTextPlaceholderI18nKey(kind)!)
                   : t("rx.bulkPaste.devicePlaceholder")
               }
               className={`w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-y bg-white${rxFieldClass(showErrors && fieldErrors.name)}`}
