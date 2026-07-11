@@ -86,9 +86,20 @@ export function slugFromScientific(nome) {
 }
 
 export function searchTextFrom(nome, nomeCientifico, alternativos = []) {
-  return [nome, nomeCientifico, ...alternativos]
+  const safeAlt = alternativos
+    .map((a) => a.replace(/\s+/g, " ").trim())
+    .filter(
+      (a) =>
+        a.length > 0 &&
+        a.length <= 80 &&
+        !/-- \d+ of/i.test(a) &&
+        !/^(PREPARA|TINTURA|F[OÓ]RMULA|ORIENTA|ADVERT)/i.test(a),
+    )
+    .slice(0, 8);
+  const text = [nome, nomeCientifico, ...safeAlt]
     .join(" ")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+  return text.slice(0, 480);
 }

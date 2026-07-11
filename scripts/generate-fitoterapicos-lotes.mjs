@@ -13,7 +13,7 @@
 
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { generateMffbLote2, splitMffbMonographs, mffbToLoteItem, MFFB_LOTE1, MFFB_SPECIES_ORDER } from "./parse-mffb-monografias.mjs";
 import { normalizeSciKey } from "./fitoterapicos-encoding.mjs";
 import {
@@ -178,8 +178,13 @@ function buildFffbLotes() {
 
 async function validateWithZod(files) {
   try {
+    const { register } = await import("tsx/esm/api");
+    register();
+    const itemTypesUrl = pathToFileURL(
+      path.join(ROOT, "src/lib/medicina-natural/item-types.ts"),
+    ).href;
     const { FitoterapicosLoteInputSchema, FitoterapicosSeedInputSchema } = await import(
-      "../src/lib/medicina-natural/item-types.ts"
+      itemTypesUrl
     );
     for (const file of files) {
       if (!fs.existsSync(file)) continue;

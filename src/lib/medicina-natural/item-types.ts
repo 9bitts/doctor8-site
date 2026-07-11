@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  buildMedicinaNaturalSearchText,
+  sanitizeNomeAlternativo,
+} from "./search-text";
 
 /** Espelha CategoriaPraticaMedicinaNatural do Prisma (proposta). */
 export const CATEGORIA_PRATICA = [
@@ -220,10 +224,14 @@ export function isFitoterapicosLoteInput(
 export function normalizeFitoterapicoLoteItem(
   item: FitoterapicoLoteItem,
 ): MedicinaNaturalItemRecord {
+  const nomesAlternativos = item.nomesAlternativos
+    .map(sanitizeNomeAlternativo)
+    .filter((x): x is string => Boolean(x));
+
   return {
     slug: item.slug,
     nome: item.nome,
-    nomesAlternativos: item.nomesAlternativos,
+    nomesAlternativos,
     nomeCientifico: item.nomeCientifico,
     categoriaPratica: "FITOTERAPICO",
     indicacoes: item.indicacoes,
@@ -237,13 +245,10 @@ export function normalizeFitoterapicoLoteItem(
     alertaGestacaoPediatria: item.alertaGestacaoPediatria ?? null,
     renisus: item.renisus,
     detalhesEspecificos: item.detalhesEspecificos,
-    searchText:
-      item.searchText?.trim() ||
-      [item.nome, item.nomeCientifico, ...item.nomesAlternativos]
-        .join(" ")
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, ""),
+    searchText: buildMedicinaNaturalSearchText(
+      [item.nome, item.nomeCientifico],
+      nomesAlternativos.length ? nomesAlternativos : item.nomesAlternativos,
+    ),
   };
 }
 

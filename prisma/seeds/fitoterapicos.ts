@@ -23,7 +23,12 @@ import {
   type MffbMonografiaInput,
   type StatusRegulatorio,
 } from "@/lib/medicina-natural/item-types";
-import { normalizeSearchText, slugFromNomeCientifico } from "@/lib/medicina-natural/search-text";
+import {
+  buildMedicinaNaturalSearchText,
+  normalizeSearchText,
+  sanitizeNomeAlternativo,
+  slugFromNomeCientifico,
+} from "@/lib/medicina-natural/search-text";
 import {
   EDICAO_FFFB,
   EDICAO_MFFB,
@@ -64,7 +69,10 @@ function buildSearchText(
   nomeCientifico: string,
   alternativos: string[],
 ): string {
-  return normalizeSearchText([nome, nomeCientifico, ...alternativos]);
+  const safe = alternativos
+    .map(sanitizeNomeAlternativo)
+    .filter((x): x is string => Boolean(x));
+  return buildMedicinaNaturalSearchText([nome, nomeCientifico], safe);
 }
 
 /** Normaliza nome científico para chave de merge (sem acentos, minúsculas). */

@@ -6,13 +6,24 @@ export const MFFB_KEYS = new Set(MFFB_SPECIES_ORDER.map((s) => normalizeSciKey(s
 
 const FFFB_SECTION_MARKERS = [
   { key: "popular", pattern: /^NOMENCLATURA POPULAR/im },
-  { key: "preparacao", pattern: /^PREPARA.{1,8}O EXTEMPOR.{1,8}NEA/im },
+  { key: "preparacao", pattern: /^(?:PREPARA.{1,8}O EXTEMPOR.{1,8}NEA|TINTURA|C[ÜU]PSULA)/im },
   { key: "orientacoes", pattern: /^ORIENTA.{1,8}OES PARA O PREPARO/im },
   { key: "embalagem", pattern: /^EMBALAGEM E ARMAZENAMENTO/im },
   { key: "advertencias", pattern: /^ADVERT.{1,8}NCIAS/im },
   { key: "indicacoes", pattern: /^INDICA.{1,12}(?:\s|$)/im },
   { key: "modoUsar", pattern: /^MODO DE USAR/im },
   { key: "referencias", pattern: /^REFER.{1,8}NCIAS/im },
+];
+
+const FFFB_SECTION_UNTIL = [
+  /^(?:PREPARA|TINTURA|C[ÜU]PSULA|ORIENTA|EMBALAGEM|ADVERT|MODO)/im,
+  /^(?:ORIENTA|EMBALAGEM|ADVERT|INDICA|MODO)/im,
+  /^(?:EMBALAGEM|ADVERT|INDICA|MODO)/im,
+  /^(?:ADVERT|INDICA|MODO)/im,
+  /^(?:INDICA|MODO)/im,
+  /^MODO/im,
+  /^REFER/im,
+  /^REFER/im,
 ];
 
 function extractSection(text, pattern, nextPattern) {
@@ -29,18 +40,28 @@ function parseFffbBody(body) {
   const sections = {};
   for (let i = 0; i < FFFB_SECTION_MARKERS.length; i++) {
     const { key, pattern } = FFFB_SECTION_MARKERS[i];
-    const next = FFFB_SECTION_MARKERS[i + 1]?.pattern ?? /^REFER[EÊ]NCIAS/m;
-    sections[key] = extractSection(body, pattern, next);
+    const until = FFFB_SECTION_UNTIL[i] ?? /^REFER/im;
+    sections[key] = extractSection(body, pattern, until);
   }
   return sections;
 }
 
 function parsePopularNames(text) {
   if (!text) return [];
-  return text
-    .split(/[.;]/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 1 && !/^f[oó]rmula/i.test(s));
+  const names = [];
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^(PREPARA|TINTURA|C[ÜU]PSULA|ORIENTA|EMBALAGEM|ADVERT|MODO|F[OÓ]RMULA|Componentes|-- \d+ of)/i.test(trimmed)) {
+      break;
+    }
+    if (trimmed.length > 120) break;
+    for (const part of trimmed.split(/[,;]/)) {
+      const name = part.trim();
+      if (name.length > 1 && name.length <= 80) names.push(name);
+    }
+  }
+  return [...new Set(names)].slice(0, 10);
 }
 
 function parseFormasFromPreparacao(text) {
