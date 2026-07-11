@@ -5535,6 +5535,7 @@ model EmailCampaign {
   batchSize  Int      @default(300)
   lastError  String?  @db.Text
   batchLockAt DateTime?
+  scheduledBatchAt DateTime?
   createdBy  String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -5553,10 +5554,12 @@ model EmailCampaignRecipient {
   sentAt       DateTime?
   registeredAt DateTime?
   errorMessage String?
+  resendEmailId String?
   userId       String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@unique([campaignId, email])
   @@index([campaignId, status])
+  @@index([resendEmailId])
 }

@@ -30,6 +30,21 @@ export function encrypt(plaintext: string): string {
   return `${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
 }
 
+/** AES-256-GCM payloads stored as iv:authTag:ciphertext (hex segments). */
+export function looksLikeEncryptedPayload(text: string): boolean {
+  if (!text || !text.includes(":")) return false;
+  const parts = text.split(":");
+  if (parts.length < 3) return false;
+  const [iv, authTag, ...rest] = parts;
+  const payload = rest.join(":");
+  if (iv.length < 24 || authTag.length < 24 || payload.length < 16) return false;
+  return (
+    /^[0-9a-f]+$/i.test(iv) &&
+    /^[0-9a-f]+$/i.test(authTag) &&
+    /^[0-9a-f]+$/i.test(payload)
+  );
+}
+
 export function decrypt(ciphertext: string): string {
   if (!ciphertext || !ciphertext.includes(":")) return ciphertext;
 

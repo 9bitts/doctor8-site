@@ -138,7 +138,11 @@ export default function MedicinaNaturalCatalog({ practice }: MedicinaNaturalCata
       {loading ? (
         <p className="text-center text-sm text-slate-400 py-12">{t("nm.catalog.loading")}</p>
       ) : sorted.length === 0 ? (
-        <p className="text-center text-sm text-slate-500 py-12">{t("nm.catalog.empty")}</p>
+        <p className="text-center text-sm text-slate-500 py-12">
+          {total === 0 && !debouncedQuery && !renisusOnly
+            ? t("nm.catalog.emptyPending")
+            : t("nm.catalog.empty")}
+        </p>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {sorted.map((item) => (

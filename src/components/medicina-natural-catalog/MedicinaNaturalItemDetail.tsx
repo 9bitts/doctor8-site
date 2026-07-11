@@ -8,6 +8,23 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import type { NaturalMedicinePracticeConfig } from "@/lib/natural-medicine/config";
 import type { DetalhesFitoterapico, FonteReferencia } from "@/lib/medicina-natural/item-types";
+
+type DetalhesFloral = {
+  sistema?: string;
+  grupoEmocional?: string;
+  estadoNegativo?: string;
+  estadoPositivo?: string;
+};
+
+function floralCategoryLabel(
+  sistema: string | undefined,
+  t: (key: string) => string,
+): string | null {
+  if (!sistema) return null;
+  const key = `fl.cat.${sistema}`;
+  const label = t(key);
+  return label === key ? sistema : label;
+}
 import {
   acaoPrescricaoMedicinaNatural,
   labelAcaoPrescricao,
@@ -98,15 +115,19 @@ export default function MedicinaNaturalItemDetail({
   }
 
   const status = item.statusRegulatorio as StatusRegulatorio;
-  const detalhes = (item.detalhesEspecificos || {}) as DetalhesFitoterapico;
+  const detalhes = (item.detalhesEspecificos || {}) as DetalhesFitoterapico & DetalhesFloral;
   const fontes = (Array.isArray(item.fontes) ? item.fontes : []) as FonteReferencia[];
   const canPrescribeFitoterapico =
     practice.id === "fitoterapia" &&
     (portal === "professional" || portal === "integrative-therapist");
+  const canPrescribeFloral =
+    practice.id === "terapia-florais" && portal === "integrative-therapist";
 
   const prescribeHref = canPrescribeFitoterapico
     ? `${prescriptionsBasePath(portal)}?add=phytotherapy&mnSlug=${encodeURIComponent(item.slug)}`
-    : null;
+    : canPrescribeFloral
+      ? `${prescriptionsBasePath(portal)}?add=floral&mnSlug=${encodeURIComponent(item.slug)}`
+      : null;
 
   const acao = acaoPrescricaoMedicinaNatural(status);
 
@@ -196,6 +217,37 @@ export default function MedicinaNaturalItemDetail({
               <p className="mt-2">
                 <span className="font-semibold">{t("nm.detail.formas")}: </span>
                 {detalhes.formaFarmaceutica.join(", ")}
+              </p>
+            )}
+          </Section>
+        )}
+        {(detalhes.sistema ||
+          detalhes.grupoEmocional ||
+          detalhes.estadoNegativo ||
+          detalhes.estadoPositivo) && (
+          <Section title={t("nm.detail.especificos")}>
+            {detalhes.sistema && (
+              <p>
+                <span className="font-semibold">{t("nm.detail.sistema")}: </span>
+                {floralCategoryLabel(detalhes.sistema, t) ?? detalhes.sistema}
+              </p>
+            )}
+            {detalhes.grupoEmocional && (
+              <p className={detalhes.sistema ? "mt-2" : ""}>
+                <span className="font-semibold">{t("nm.detail.grupoEmocional")}: </span>
+                {detalhes.grupoEmocional}
+              </p>
+            )}
+            {detalhes.estadoNegativo && (
+              <p className="mt-2">
+                <span className="font-semibold">{t("nm.detail.estadoNegativo")}: </span>
+                {detalhes.estadoNegativo}
+              </p>
+            )}
+            {detalhes.estadoPositivo && (
+              <p className="mt-2">
+                <span className="font-semibold">{t("nm.detail.estadoPositivo")}: </span>
+                → {detalhes.estadoPositivo}
               </p>
             )}
           </Section>

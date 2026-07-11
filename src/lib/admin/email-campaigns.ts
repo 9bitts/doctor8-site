@@ -7,6 +7,10 @@ import {
   sendTransactionalEmail,
   type EmailLang,
 } from "@/lib/email-core";
+import {
+  scheduleCampaignBatchDelayed,
+  scheduleCampaignBatchNow,
+} from "@/lib/qstash-campaign";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CIRCUIT_BREAKER_MIN = 10;
@@ -22,6 +26,10 @@ export type CampaignStats = {
   sendFailed: number;
   registered: number;
   optedOut: number;
+  bounced: number;
+  complained: number;
+  opened: number;
+  clicked: number;
   conversionRate: number;
   byStatus: Record<string, number>;
 };
@@ -133,6 +141,10 @@ export async function getCampaignStats(campaignId: string): Promise<CampaignStat
   const sendFailed = byStatus.SEND_FAILED ?? 0;
   const registered = byStatus.REGISTERED ?? 0;
   const optedOut = byStatus.OPTED_OUT ?? 0;
+  const bounced = byStatus.BOUNCED ?? 0;
+  const complained = byStatus.COMPLAINED ?? 0;
+  const opened = byStatus.OPENED ?? 0;
+  const clicked = byStatus.CLICKED ?? 0;
   const eligible = Math.max(total - optedOut, 0);
   const conversionRate = eligible > 0 ? Math.round((registered / eligible) * 1000) / 10 : 0;
 
@@ -143,6 +155,10 @@ export async function getCampaignStats(campaignId: string): Promise<CampaignStat
     sendFailed,
     registered,
     optedOut,
+    bounced,
+    complained,
+    opened,
+    clicked,
     conversionRate,
     byStatus,
   };
@@ -254,9 +270,19 @@ export async function claimCampaignBatchLock(campaignId: string): Promise<boolea
       status: { not: "PAUSED" },
       OR: [{ batchLockAt: null }, { batchLockAt: { lt: staleBefore } }],
     },
-    data: { batchLockAt: new Date(), status: "SENDING", lastError: null },
+    data: { batchLockAt: new Date(), status: "SENDING", lastError: null, scheduledBatchAt: null },
   });
   return result.count > 0;
+}
+
+export async function isCampaignBatchLocked(campaignId: string): Promise<boolean> {
+  const campaign = await db.emailCampaign.findUnique({
+    where: { id: campaignId },
+    select: { batchLockAt: true },
+  });
+  if (!campaign?.batchLockAt) return false;
+  const staleBefore = new Date(Date.now() - BATCH_LOCK_STALE_MS);
+  return campaign.batchLockAt >= staleBefore;
 }
 
 async function releaseCampaignBatchLock(campaignId: string): Promise<void> {
@@ -267,6 +293,12 @@ async function releaseCampaignBatchLock(campaignId: string): Promise<void> {
 }
 
 export async function processCampaignBatch(campaignId: string): Promise<void> {
+  const claimed = await claimCampaignBatchLock(campaignId);
+  if (!claimed) {
+    console.warn("[CAMPAIGN BATCH] Lock not acquired for", campaignId);
+    return;
+  }
+
   try {
     const campaign = await db.emailCampaign.findUnique({ where: { id: campaignId } });
     if (!campaign || campaign.status === "PAUSED") return;
@@ -311,7 +343,7 @@ export async function processCampaignBatch(campaignId: string): Promise<void> {
           inviteToken: recipient.token,
         });
 
-        await sendTransactionalEmail({
+        const sendResult = await sendTransactionalEmail({
           to: recipient.email,
           subject,
           html,
@@ -325,6 +357,7 @@ export async function processCampaignBatch(campaignId: string): Promise<void> {
             sentAt: new Date(),
             batchNumber,
             errorMessage: null,
+            resendEmailId: sendResult.id,
           },
         });
       } catch (err) {
@@ -517,6 +550,67 @@ export function recipientsToCsv(
     ].join(",");
   });
   return [header, ...lines].join("\n");
+}
+
+/** Prefer QStash worker; fallback to inline processing on this Node process. */
+export async function queueOrProcessCampaignBatch(
+  campaignId: string,
+): Promise<"qstash" | "inline"> {
+  const viaQStash = await scheduleCampaignBatchNow(campaignId);
+  if (viaQStash) return "qstash";
+
+  void processCampaignBatch(campaignId).catch((err) => {
+    console.error("[CAMPAIGN BATCH inline]", err);
+  });
+  return "inline";
+}
+
+export async function scheduleCampaignBatch(
+  campaignId: string,
+  delayMinutes: number,
+): Promise<{ ok: boolean; scheduledAt?: Date; error?: string }> {
+  const campaign = await db.emailCampaign.findUnique({ where: { id: campaignId } });
+  if (!campaign) return { ok: false, error: "NOT_FOUND" };
+  if (campaign.status === "PAUSED") return { ok: false, error: "PAUSED" };
+  if (await isCampaignBatchLocked(campaignId)) {
+    return { ok: false, error: "BATCH_IN_PROGRESS" };
+  }
+
+  const delaySeconds = Math.max(60, Math.floor(delayMinutes * 60));
+  const scheduledAt = new Date(Date.now() + delaySeconds * 1000);
+
+  const ok = await scheduleCampaignBatchDelayed(campaignId, delaySeconds);
+  if (!ok) return { ok: false, error: "QSTASH_UNAVAILABLE" };
+
+  await db.emailCampaign.update({
+    where: { id: campaignId },
+    data: { scheduledBatchAt: scheduledAt },
+  });
+
+  return { ok: true, scheduledAt };
+}
+
+export async function deleteCampaign(campaignId: string): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
+  const campaign = await db.emailCampaign.findUnique({ where: { id: campaignId } });
+  if (!campaign) return { ok: false, error: "NOT_FOUND" };
+
+  if (campaign.status === "SENDING" && (await isCampaignBatchLocked(campaignId))) {
+    return { ok: false, error: "BATCH_IN_PROGRESS" };
+  }
+
+  const sentCount = await db.emailCampaignRecipient.count({
+    where: { campaignId, status: "SENT" },
+  });
+
+  if (sentCount > 0 && campaign.status !== "DRAFT") {
+    return { ok: false, error: "HAS_SENT_RECIPIENTS" };
+  }
+
+  await db.emailCampaign.delete({ where: { id: campaignId } });
+  return { ok: true };
 }
 
 export async function processCampaignUnsubscribe(token: string): Promise<{

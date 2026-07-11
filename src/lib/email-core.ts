@@ -115,11 +115,11 @@ export async function sendTransactionalEmail({
   html: string;
   text?: string;
   tag?: string;
-}) {
+}): Promise<{ id: string | null }> {
   const replyTo = getReplyTo();
   const plainText = text ?? htmlToPlainText(html);
 
-  await getResend().emails.send({
+  const result = await getResend().emails.send({
     from: getFrom(),
     to,
     subject,
@@ -132,6 +132,8 @@ export async function sendTransactionalEmail({
     },
     ...(tag ? { tags: [{ name: "category", value: tag }] } : {}),
   });
+
+  return { id: result.data?.id ?? null };
 }
 
 export function emailFooter(lang: EmailLang): string {

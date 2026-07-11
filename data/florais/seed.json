@@ -1,0 +1,1856 @@
+[
+  {
+    "slug": "bach_rock_rose",
+    "nome": "Rock Rose (Heliantemo)",
+    "nomesAlternativos": [],
+    "indicacoes": "Terror",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para o medo",
+      "estadoNegativo": "Terror",
+      "estadoPositivo": "Coragem"
+    }
+  },
+  {
+    "slug": "bach_mimulus",
+    "nome": "Mimulus (Mímulo)",
+    "nomesAlternativos": [],
+    "indicacoes": "Medos concretos / timidez",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para o medo",
+      "estadoNegativo": "Medos concretos / timidez",
+      "estadoPositivo": "Segurança / empatia"
+    }
+  },
+  {
+    "slug": "bach_cherry_plum",
+    "nome": "Cherry Plum (Cerejeira)",
+    "nomesAlternativos": [],
+    "indicacoes": "Desespero / medo de perder o controle",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para o medo",
+      "estadoNegativo": "Desespero / medo de perder o controle",
+      "estadoPositivo": "Serenidade / clareza"
+    }
+  },
+  {
+    "slug": "bach_aspen",
+    "nome": "Aspen (Álamo)",
+    "nomesAlternativos": [],
+    "indicacoes": "Medos desconhecidos / apreensão",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para o medo",
+      "estadoNegativo": "Medos desconhecidos / apreensão",
+      "estadoPositivo": "Calma / tranquilidade"
+    }
+  },
+  {
+    "slug": "bach_red_chestnut",
+    "nome": "Red Chestnut (Castanheiro-vermelho)",
+    "nomesAlternativos": [],
+    "indicacoes": "Temor excessivo pelos outros",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para o medo",
+      "estadoNegativo": "Temor excessivo pelos outros",
+      "estadoPositivo": "Confiança na segurança dos outros"
+    }
+  },
+  {
+    "slug": "bach_cerato",
+    "nome": "Cerato",
+    "nomesAlternativos": [],
+    "indicacoes": "Hesitação",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para a incerteza",
+      "estadoNegativo": "Hesitação",
+      "estadoPositivo": "Confiança na intuição"
+    }
+  },
+  {
+    "slug": "bach_scleranthus",
+    "nome": "Scleranthus",
+    "nomesAlternativos": [],
+    "indicacoes": "Indecisão",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para a incerteza",
+      "estadoNegativo": "Indecisão",
+      "estadoPositivo": "Determinação"
+    }
+  },
+  {
+    "slug": "bach_gentian",
+    "nome": "Gentian (Gentiana)",
+    "nomesAlternativos": [],
+    "indicacoes": "Dúvida por falta de fé",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para a incerteza",
+      "estadoNegativo": "Dúvida por falta de fé",
+      "estadoPositivo": "Perseverança"
+    }
+  },
+  {
+    "slug": "bach_gorse",
+    "nome": "Gorse (Tojo)",
+    "nomesAlternativos": [],
+    "indicacoes": "Desesperança",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para a incerteza",
+      "estadoNegativo": "Desesperança",
+      "estadoPositivo": "Otimismo"
+    }
+  },
+  {
+    "slug": "bach_hornbeam",
+    "nome": "Hornbeam (Carpino)",
+    "nomesAlternativos": [],
+    "indicacoes": "Sentir-se sobrecarregado",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para a incerteza",
+      "estadoNegativo": "Sentir-se sobrecarregado",
+      "estadoPositivo": "Força interior"
+    }
+  },
+  {
+    "slug": "bach_wild_oat",
+    "nome": "Wild Oat (Aveia-brava)",
+    "nomesAlternativos": [],
+    "indicacoes": "Incerteza / desorientação",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para a incerteza",
+      "estadoNegativo": "Incerteza / desorientação",
+      "estadoPositivo": "Rumo claro / propósito de vida"
+    }
+  },
+  {
+    "slug": "bach_clematis",
+    "nome": "Clematis",
+    "nomesAlternativos": [],
+    "indicacoes": "Indiferença / dispersão",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Falta de interesse nas circunstâncias atuais",
+      "estadoNegativo": "Indiferença / dispersão",
+      "estadoPositivo": "Foco / ancoramento"
+    }
+  },
+  {
+    "slug": "bach_honeysuckle",
+    "nome": "Honeysuckle (Madressilva)",
+    "nomesAlternativos": [],
+    "indicacoes": "Nostalgia",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Falta de interesse nas circunstâncias atuais",
+      "estadoNegativo": "Nostalgia",
+      "estadoPositivo": "Viver o tempo presente"
+    }
+  },
+  {
+    "slug": "bach_wild_rose",
+    "nome": "Wild Rose (Roseira-brava)",
+    "nomesAlternativos": [],
+    "indicacoes": "Apatia",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Falta de interesse nas circunstâncias atuais",
+      "estadoNegativo": "Apatia",
+      "estadoPositivo": "Entusiasmo e vitalidade"
+    }
+  },
+  {
+    "slug": "bach_olive",
+    "nome": "Olive (Oliva)",
+    "nomesAlternativos": [],
+    "indicacoes": "Exaustão total",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Falta de interesse nas circunstâncias atuais",
+      "estadoNegativo": "Exaustão total",
+      "estadoPositivo": "Vitalidade"
+    }
+  },
+  {
+    "slug": "bach_white_chestnut",
+    "nome": "White Chestnut (Castanheiro-branco)",
+    "nomesAlternativos": [],
+    "indicacoes": "Pensamentos repetitivos",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Falta de interesse nas circunstâncias atuais",
+      "estadoNegativo": "Pensamentos repetitivos",
+      "estadoPositivo": "Mente tranquila"
+    }
+  },
+  {
+    "slug": "bach_mustard",
+    "nome": "Mustard (Mostarda)",
+    "nomesAlternativos": [],
+    "indicacoes": "Súbita melancolia",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Falta de interesse nas circunstâncias atuais",
+      "estadoNegativo": "Súbita melancolia",
+      "estadoPositivo": "Estabilidade e alegria de viver"
+    }
+  },
+  {
+    "slug": "bach_chestnut_bud",
+    "nome": "Chestnut Bud (Broto-de-castanheiro)",
+    "nomesAlternativos": [],
+    "indicacoes": "Fracasso em aprender pela experiência",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Falta de interesse nas circunstâncias atuais",
+      "estadoNegativo": "Fracasso em aprender pela experiência",
+      "estadoPositivo": "Autoconsciência"
+    }
+  },
+  {
+    "slug": "bach_water_violet",
+    "nome": "Water Violet (Violeta-d'água)",
+    "nomesAlternativos": [],
+    "indicacoes": "Alienação / orgulho",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para a solidão",
+      "estadoNegativo": "Alienação / orgulho",
+      "estadoPositivo": "Envolvimento / servir ao próximo"
+    }
+  },
+  {
+    "slug": "bach_impatiens",
+    "nome": "Impatiens (Impaciência)",
+    "nomesAlternativos": [],
+    "indicacoes": "Impaciência",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para a solidão",
+      "estadoNegativo": "Impaciência",
+      "estadoPositivo": "Ritmo"
+    }
+  },
+  {
+    "slug": "bach_heather",
+    "nome": "Heather (Urze)",
+    "nomesAlternativos": [],
+    "indicacoes": "Egocentrismo",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Para a solidão",
+      "estadoNegativo": "Egocentrismo",
+      "estadoPositivo": "Atencioso / cooperativo"
+    }
+  },
+  {
+    "slug": "bach_agrimony",
+    "nome": "Agrimony (Agrimony)",
+    "nomesAlternativos": [],
+    "indicacoes": "Felicidade aparente",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Susceptibilidade a influências e ideias",
+      "estadoNegativo": "Felicidade aparente",
+      "estadoPositivo": "Paz interior"
+    }
+  },
+  {
+    "slug": "bach_centaury",
+    "nome": "Centaury (Centáuria)",
+    "nomesAlternativos": [],
+    "indicacoes": "Vontade enfraquecida",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Susceptibilidade a influências e ideias",
+      "estadoNegativo": "Vontade enfraquecida",
+      "estadoPositivo": "Força e poder interior"
+    }
+  },
+  {
+    "slug": "bach_walnut",
+    "nome": "Walnut (Nogueira)",
+    "nomesAlternativos": [],
+    "indicacoes": "Limitação por influências externas",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Susceptibilidade a influências e ideias",
+      "estadoNegativo": "Limitação por influências externas",
+      "estadoPositivo": "Liberdade para mudar"
+    }
+  },
+  {
+    "slug": "bach_holly",
+    "nome": "Holly (Azevinho)",
+    "nomesAlternativos": [],
+    "indicacoes": "Ciúme / raiva / ódio",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Susceptibilidade a influências e ideias",
+      "estadoNegativo": "Ciúme / raiva / ódio",
+      "estadoPositivo": "Amor e bondade"
+    }
+  },
+  {
+    "slug": "bach_larch",
+    "nome": "Larch (Larício)",
+    "nomesAlternativos": [],
+    "indicacoes": "Sentimento de inferioridade",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Desânimo e desespero",
+      "estadoNegativo": "Sentimento de inferioridade",
+      "estadoPositivo": "Autoconfiança"
+    }
+  },
+  {
+    "slug": "bach_pine",
+    "nome": "Pine (Pinheiro)",
+    "nomesAlternativos": [],
+    "indicacoes": "Culpa e autocensura",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Desânimo e desespero",
+      "estadoNegativo": "Culpa e autocensura",
+      "estadoPositivo": "Aceitação das responsabilidades"
+    }
+  },
+  {
+    "slug": "bach_elm",
+    "nome": "Elm (Olmo)",
+    "nomesAlternativos": [],
+    "indicacoes": "Desalento",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Desânimo e desespero",
+      "estadoNegativo": "Desalento",
+      "estadoPositivo": "Aceitação de responsabilidade"
+    }
+  },
+  {
+    "slug": "bach_sweet_chestnut",
+    "nome": "Sweet Chestnut (Castanheiro)",
+    "nomesAlternativos": [],
+    "indicacoes": "Angústia mental e desolação",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Desânimo e desespero",
+      "estadoNegativo": "Angústia mental e desolação",
+      "estadoPositivo": "Fé em encontrar consolo"
+    }
+  },
+  {
+    "slug": "bach_star_of_bethlehem",
+    "nome": "Star of Bethlehem (Estrela-de-Belém)",
+    "nomesAlternativos": [],
+    "indicacoes": "Choque extremo",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Desânimo e desespero",
+      "estadoNegativo": "Choque extremo",
+      "estadoPositivo": "Paz / consolo"
+    }
+  },
+  {
+    "slug": "bach_willow",
+    "nome": "Willow (Salgueiro)",
+    "nomesAlternativos": [],
+    "indicacoes": "Ressentimento e amargura",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Desânimo e desespero",
+      "estadoNegativo": "Ressentimento e amargura",
+      "estadoPositivo": "Perdão e autorresponsabilidade"
+    }
+  },
+  {
+    "slug": "bach_oak",
+    "nome": "Oak (Carvalho)",
+    "nomesAlternativos": [],
+    "indicacoes": "Uso excessivo das forças",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Desânimo e desespero",
+      "estadoNegativo": "Uso excessivo das forças",
+      "estadoPositivo": "Consciência dos limites"
+    }
+  },
+  {
+    "slug": "bach_crab_apple",
+    "nome": "Crab Apple (Maçã-silvestre)",
+    "nomesAlternativos": [],
+    "indicacoes": "Aversão a si próprio",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Desânimo e desespero",
+      "estadoNegativo": "Aversão a si próprio",
+      "estadoPositivo": "Autoestima equilibrada"
+    }
+  },
+  {
+    "slug": "bach_chicory",
+    "nome": "Chicory (Chicória)",
+    "nomesAlternativos": [],
+    "indicacoes": "Possessividade / autopiedade",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Preocupação excessiva com o bem-estar dos outros",
+      "estadoNegativo": "Possessividade / autopiedade",
+      "estadoPositivo": "Amor incondicional"
+    }
+  },
+  {
+    "slug": "bach_vervain",
+    "nome": "Vervain (Verbena)",
+    "nomesAlternativos": [],
+    "indicacoes": "Entusiasmo exacerbado",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Preocupação excessiva com o bem-estar dos outros",
+      "estadoNegativo": "Entusiasmo exacerbado",
+      "estadoPositivo": "Respeito à opinião alheia"
+    }
+  },
+  {
+    "slug": "bach_vine",
+    "nome": "Vine (Videira)",
+    "nomesAlternativos": [],
+    "indicacoes": "Autoritarismo",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Preocupação excessiva com o bem-estar dos outros",
+      "estadoNegativo": "Autoritarismo",
+      "estadoPositivo": "Liderança positiva"
+    }
+  },
+  {
+    "slug": "bach_beech",
+    "nome": "Beech (Faia)",
+    "nomesAlternativos": [],
+    "indicacoes": "Intolerância / crítica",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Preocupação excessiva com o bem-estar dos outros",
+      "estadoNegativo": "Intolerância / crítica",
+      "estadoPositivo": "Perfeita tolerância"
+    }
+  },
+  {
+    "slug": "bach_rock_water",
+    "nome": "Rock Water (Água-de-rocha)",
+    "nomesAlternativos": [],
+    "indicacoes": "Negação de si / padrões rígidos",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach",
+      "grupoEmocional": "Preocupação excessiva com o bem-estar dos outros",
+      "estadoNegativo": "Negação de si / padrões rígidos",
+      "estadoPositivo": "Autorrealização / flexibilidade"
+    }
+  },
+  {
+    "slug": "bach_rescue",
+    "nome": "Rescue Remedy",
+    "nomesAlternativos": [],
+    "indicacoes": "Estresse agudo, choque, acidentes e provas.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach_rescue"
+    }
+  },
+  {
+    "slug": "bach_rescue_night",
+    "nome": "Rescue Night",
+    "nomesAlternativos": [],
+    "indicacoes": "Dificuldade de sono com ansiedade.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "bach_rescue"
+    }
+  },
+  {
+    "slug": "sg_abies_lourdes",
+    "nome": "Abies de Lourdes",
+    "nomesAlternativos": [],
+    "indicacoes": "Força e coragem diante de grandes fardos e sacrifícios.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_abrico",
+    "nome": "Abriçó",
+    "nomesAlternativos": [],
+    "indicacoes": "Desconexão, solidão e dificuldade de concretizar; reconexão com a alma.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_abundancia",
+    "nome": "Abundância",
+    "nomesAlternativos": [],
+    "indicacoes": "Conexão com a fonte divina de abundância; neutraliza escassez.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_alcachofra",
+    "nome": "Alcachofra SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Transformação da consciência; vergonha, medo e limpeza energética.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_algodao",
+    "nome": "Algodão",
+    "nomesAlternativos": [],
+    "indicacoes": "Reconexão com o Eu Superior; limpeza da aura; dependências.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_allium",
+    "nome": "Allium",
+    "nomesAlternativos": [],
+    "indicacoes": "Desobsessão; proteção psíquica; calma e discernimento.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_aloe",
+    "nome": "Aloe SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Baixa autoestima após traição; compreensão do propósito de vida.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_ameixa",
+    "nome": "Ameixa",
+    "nomesAlternativos": [],
+    "indicacoes": "Perturbação mental por manipulação ou toxinas; equilíbrio da mente.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_amygdalus",
+    "nome": "Amygdalus",
+    "nomesAlternativos": [],
+    "indicacoes": "Equilíbrio espiritual, mental e material; desejos e fantasias.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_anis",
+    "nome": "Anis",
+    "nomesAlternativos": [],
+    "indicacoes": "Medo da entrega plena; tranquilizante; insônia e agitação nervosa.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_arnica_silvestre",
+    "nome": "Arnica Silvestre",
+    "nomesAlternativos": [],
+    "indicacoes": "Traumas físicos e morais; pré e pós-operatório.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_aveia_selvagem",
+    "nome": "Aveia Selvagem",
+    "nomesAlternativos": [],
+    "indicacoes": "Indecisão; contato com orientações do Eu Superior.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_bambusa",
+    "nome": "Bambusa",
+    "nomesAlternativos": [],
+    "indicacoes": "Desvio do propósito; distração e vampirismo energético.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_begonia",
+    "nome": "Begônia",
+    "nomesAlternativos": [],
+    "indicacoes": "Pureza da criança interior; oráculo interno.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_boa_deusa",
+    "nome": "Boa Deusa",
+    "nomesAlternativos": [],
+    "indicacoes": "Abalos por calúnia, inveja e traição.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_boa_sorte",
+    "nome": "Boa Sorte",
+    "nomesAlternativos": [],
+    "indicacoes": "Prosperidade cósmica; proteção e remoção de obstáculos.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_bom_dia",
+    "nome": "Bom Dia",
+    "nomesAlternativos": [],
+    "indicacoes": "Dificuldade de acordar; disposição e alegria matinal.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_canela",
+    "nome": "Canela SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Visão ampla; pessoa presa nos detalhes e aflição.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_capim_luz",
+    "nome": "Capim Luz",
+    "nomesAlternativos": [],
+    "indicacoes": "Conexão vontade-coração; traumas de asfixia.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_capim_seda",
+    "nome": "Capim Seda",
+    "nomesAlternativos": [],
+    "indicacoes": "Bloqueio do fluxo energético; caminho da alma.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_carrapichao",
+    "nome": "Carrapichão",
+    "nomesAlternativos": [],
+    "indicacoes": "Vampirismo por sondas astrais; expressão do verdadeiro Eu.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_chapeu_sol",
+    "nome": "Chapéu de Sol",
+    "nomesAlternativos": [],
+    "indicacoes": "Proteção contra inveja ao se destacar.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_cidreira",
+    "nome": "Cidreira",
+    "nomesAlternativos": [],
+    "indicacoes": "Controle dos pensamentos; ansiedade, insônia e estresse.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_cocos",
+    "nome": "Cocos",
+    "nomesAlternativos": [],
+    "indicacoes": "Personalidade passiva; força, fibra e discernimento.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_coronarium",
+    "nome": "Coronarium",
+    "nomesAlternativos": [],
+    "indicacoes": "Agitação interna; chakra coronário; lucidez.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_curculigum",
+    "nome": "Curculigum",
+    "nomesAlternativos": [],
+    "indicacoes": "Limites saudáveis; dizer não; terapeutas.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_dulcis",
+    "nome": "Dulcis",
+    "nomesAlternativos": [],
+    "indicacoes": "Elevação vibratória; medos indefinidos no peito.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_embauba",
+    "nome": "Embaúba",
+    "nomesAlternativos": [],
+    "indicacoes": "Mágoas, perdas e rejeição; estagnação emocional.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_erbum",
+    "nome": "Erbum",
+    "nomesAlternativos": [],
+    "indicacoes": "Perda de cadência rítmica após grandes reveses.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_erianthum",
+    "nome": "Erianthum",
+    "nomesAlternativos": [],
+    "indicacoes": "Egoísmo, mau humor e maus hábitos alimentares.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_flor_branca",
+    "nome": "Flor Branca",
+    "nomesAlternativos": [],
+    "indicacoes": "Limpeza de cargas mentais e emocionais inúteis.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_focum",
+    "nome": "Focum",
+    "nomesAlternativos": [],
+    "indicacoes": "Traumas de mortes violentas; medo de dirigir.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_geranio",
+    "nome": "Gerânio SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Depressão, ansiedade e imaturidade; ancoramento no aqui-agora.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_gloxinia",
+    "nome": "Gloxínia",
+    "nomesAlternativos": [],
+    "indicacoes": "Angústia por acúmulo de afazeres; organização de prioridades.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_goiaba",
+    "nome": "Goiaba",
+    "nomesAlternativos": [],
+    "indicacoes": "Medos concretos; coragem em situações de perigo.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_gracilis",
+    "nome": "Gracilis",
+    "nomesAlternativos": [],
+    "indicacoes": "Reorganização energética; missão espiritual.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_grandiflora",
+    "nome": "Grandiflora",
+    "nomesAlternativos": [],
+    "indicacoes": "Sadismo e máscaras; purificação da essência.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_grevilea",
+    "nome": "Grevílea",
+    "nomesAlternativos": [],
+    "indicacoes": "Raiva por invasão de limites; intolerância alheia.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_heliconia",
+    "nome": "Helicônia",
+    "nomesAlternativos": [],
+    "indicacoes": "Narcisismo, vaidade e exibicionismo.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_incensum",
+    "nome": "Incensum",
+    "nomesAlternativos": [],
+    "indicacoes": "Limpeza da aura e ambientes; elevação vibratória.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_indica",
+    "nome": "Indica",
+    "nomesAlternativos": [],
+    "indicacoes": "Intuição; revelar o oculto atrás das aparências.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_ipe_roxo",
+    "nome": "Ipê Roxo",
+    "nomesAlternativos": [],
+    "indicacoes": "Traumas e estresse sem saída; esperança e fortalecimento do Eu.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_jasmim_madagascar",
+    "nome": "Jasmim Madagascar",
+    "nomesAlternativos": [],
+    "indicacoes": "Situação de engolir sapo; bloqueio laríngeo.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_laurus_nobilis",
+    "nome": "Laurus Nobilis",
+    "nomesAlternativos": [],
+    "indicacoes": "Romper ligações com o passado; medos profundos.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_lavanda",
+    "nome": "Lavanda de Saint Germain",
+    "nomesAlternativos": [],
+    "indicacoes": "Harmonização mental; bebês e cólicas.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_leucantha",
+    "nome": "Leucantha SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Vínculo materno; maturação do instinto maternal.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_limao",
+    "nome": "Limão SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Personalidade amarga; depurativo e limpeza.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_lirio_paz",
+    "nome": "Lírio da Paz",
+    "nomesAlternativos": [],
+    "indicacoes": "Proteção de envolvimentos prejudiciais; paz interna.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_lirio_real",
+    "nome": "Lírio Real",
+    "nomesAlternativos": [],
+    "indicacoes": "Libertação de traumas; reorganização dos chakras.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_lisiandra",
+    "nome": "Lisiandra",
+    "nomesAlternativos": [],
+    "indicacoes": "Padrão de pressa e desorganização; calma no viver diário.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_lotus_azul",
+    "nome": "Lótus Azul",
+    "nomesAlternativos": [],
+    "indicacoes": "Expansão de consciência; desobstrução energética profunda.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_lotus_egito",
+    "nome": "Lótus do Egito",
+    "nomesAlternativos": [],
+    "indicacoes": "Expansão da consciência; purificação psíquica.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_lotus_magnolia",
+    "nome": "Lótus Magnólia",
+    "nomesAlternativos": [],
+    "indicacoes": "Proteção; desespero antigo; paixão à pureza.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_maca",
+    "nome": "Maçã SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Estagnação e acúmulo do inútil; ação e disposição.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_madressilva",
+    "nome": "Madressilva SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Libertação do passado astral; apego a lembranças.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_mangifera",
+    "nome": "Mangífera",
+    "nomesAlternativos": [],
+    "indicacoes": "Perda de fé após sofrimento; retomada de esperança.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_margarida",
+    "nome": "Margarida de Saint Germain",
+    "nomesAlternativos": [],
+    "indicacoes": "Cura misericordiosa; dislexia e transtornos de aprendizagem.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_melissa",
+    "nome": "Melissa SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Alegria, criança interior e superação de obstáculos.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_mimosinha",
+    "nome": "Mimosinha",
+    "nomesAlternativos": [],
+    "indicacoes": "Timidez; coragem para se expor e comunicar.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_monterey",
+    "nome": "Monterey",
+    "nomesAlternativos": [],
+    "indicacoes": "Culpa consciente ou inconsciente; autoamor.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_myrtus",
+    "nome": "Myrtus",
+    "nomesAlternativos": [],
+    "indicacoes": "Libertação de egrégoras e mental dominante alheio.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_oliva_fatima",
+    "nome": "Oliva de Fátima",
+    "nomesAlternativos": [],
+    "indicacoes": "Perseverança e forças vitais sob pressão.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_panicum",
+    "nome": "Panicum SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Síndrome do pânico; controle sobre a mente.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_patiens",
+    "nome": "Patiens",
+    "nomesAlternativos": [],
+    "indicacoes": "Paciência, flexibilidade e tolerância sob pressão.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_pau_brasil",
+    "nome": "Pau Brasil",
+    "nomesAlternativos": [],
+    "indicacoes": "Descoberta de vocação e talentos latentes.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_pectus",
+    "nome": "Pectus",
+    "nomesAlternativos": [],
+    "indicacoes": "Submissão e resignação; mágoas por humilhação.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_pepo",
+    "nome": "Pepo",
+    "nomesAlternativos": [],
+    "indicacoes": "Apego material; medo da pobreza.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_perpetua",
+    "nome": "Perpétua",
+    "nomesAlternativos": [],
+    "indicacoes": "Perdas irreparáveis; lição do desapego.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_pinheiro_liberacao",
+    "nome": "Pinheiro Libertação",
+    "nomesAlternativos": [],
+    "indicacoes": "Libertação de prisões energéticas de vidas passadas.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_piper",
+    "nome": "Piper",
+    "nomesAlternativos": [],
+    "indicacoes": "Rigidez mental; hérnia de disco; criatividade bloqueada.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_poaia_rosa",
+    "nome": "Poaia Rosa",
+    "nomesAlternativos": [],
+    "indicacoes": "Sincronicidade e nova ordem planetária.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_populus_panicum",
+    "nome": "Populus Panicum",
+    "nomesAlternativos": [],
+    "indicacoes": "Pânico coletivo em catástrofes.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_purpureum",
+    "nome": "Purpureum",
+    "nomesAlternativos": [],
+    "indicacoes": "Limpeza profunda; TPM e atitudes extremas.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_rosa_rosa",
+    "nome": "Rosa Rosa",
+    "nomesAlternativos": [],
+    "indicacoes": "Amor incondicional; remove ódio.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_saint_germain",
+    "nome": "Saint Germain",
+    "nomesAlternativos": [],
+    "indicacoes": "Misericórdia divina; depressão profunda e reconexão espiritual.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_sao_miguel",
+    "nome": "São Miguel",
+    "nomesAlternativos": [],
+    "indicacoes": "Proteção; desmanchar trabalhos de magia negra.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_sapientum",
+    "nome": "Sapientum",
+    "nomesAlternativos": [],
+    "indicacoes": "Sabedoria de vidas passadas; maturidade e impotência sexual.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_scorpius",
+    "nome": "Scorpius",
+    "nomesAlternativos": [],
+    "indicacoes": "Personalidade escorpião; crítica destrutiva.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_sergipe",
+    "nome": "Sergipe",
+    "nomesAlternativos": [],
+    "indicacoes": "Abertura mental; clareza em sofrimento.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_sorgo",
+    "nome": "Sorgo",
+    "nomesAlternativos": [],
+    "indicacoes": "Carência afetiva; integração e pertencimento.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_thea",
+    "nome": "Thea",
+    "nomesAlternativos": [],
+    "indicacoes": "Estudante; concentração e combate à dispersão.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_tuia",
+    "nome": "Tuia SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Impulsos sexuais descontrolados; pureza.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_triunfo",
+    "nome": "Triunfo",
+    "nomesAlternativos": [],
+    "indicacoes": "Negativismo materialista; intuição e Eu Superior.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_umbellata",
+    "nome": "Umbellata",
+    "nomesAlternativos": [],
+    "indicacoes": "Proteção profunda; medos infundados e espectros.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_unitatum",
+    "nome": "Unitatum",
+    "nomesAlternativos": [],
+    "indicacoes": "Rejeição na infância; integração masculino-feminino.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_varus",
+    "nome": "Varus",
+    "nomesAlternativos": [],
+    "indicacoes": "Alinhamento da coluna; culpa e conflito ideal vs. realidade.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_verbena",
+    "nome": "Verbena SG",
+    "nomesAlternativos": [],
+    "indicacoes": "Rigidez mental; convicções inflexíveis.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_vitoria",
+    "nome": "Vitória",
+    "nomesAlternativos": [],
+    "indicacoes": "Inferioridade e inadequação; autenticidade.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sg_wedelia",
+    "nome": "Wedélia",
+    "nomesAlternativos": [],
+    "indicacoes": "Corrupção, ganância e materialismo desviado.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain"
+    }
+  },
+  {
+    "slug": "sgf_emergencial",
+    "nome": "Fórmula Emergencial",
+    "nomesAlternativos": [],
+    "indicacoes": "Desalinhos drásticos; acidentes, traumas e emergências.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_animo_equilibrio",
+    "nome": "Ânimo e Equilíbrio",
+    "nomesAlternativos": [],
+    "indicacoes": "Depressão profunda; força interior e esperança.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_anti_estresse",
+    "nome": "Anti-Estresse",
+    "nomesAlternativos": [],
+    "indicacoes": "Estresse e desânimo; domínio em momentos de pressão.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_auto_estima",
+    "nome": "Autoestima e Vitalidade",
+    "nomesAlternativos": [],
+    "indicacoes": "Amor próprio, autoconfiança e vitalidade.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_bom_sono",
+    "nome": "Bom Sono",
+    "nomesAlternativos": [],
+    "indicacoes": "Insônia por preocupação e ansiedade noturna.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_calma",
+    "nome": "Calma e Tranquilidade",
+    "nomesAlternativos": [],
+    "indicacoes": "Nervosismo e agitação interna.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_detox",
+    "nome": "Detox",
+    "nomesAlternativos": [],
+    "indicacoes": "Limpeza de toxinas físicas e energéticas; mudança de hábitos.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_espiritualidade",
+    "nome": "Espiritualidade e Meditação",
+    "nomesAlternativos": [],
+    "indicacoes": "Intuição, foco e conexão espiritual.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_estudante",
+    "nome": "Estudante",
+    "nomesAlternativos": [],
+    "indicacoes": "Concentração, memória e perseverança nos estudos.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_integracao_familiar",
+    "nome": "Integração Familiar",
+    "nomesAlternativos": [],
+    "indicacoes": "Harmonia, perdão e reestruturação familiar.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_leucantha",
+    "nome": "Leucantha 20ml",
+    "nomesAlternativos": [],
+    "indicacoes": "Insegurança, rejeição materna e dificuldades vocacionais.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_meia_idade",
+    "nome": "Meia Idade",
+    "nomesAlternativos": [],
+    "indicacoes": "TPM, menopausa, andropausa e variações hormonais.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_panicum",
+    "nome": "Panicum (fórmula)",
+    "nomesAlternativos": [],
+    "indicacoes": "Síndrome do pânico; medo irracional.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_prosperidade",
+    "nome": "Prosperidade",
+    "nomesAlternativos": [],
+    "indicacoes": "Abundância e propósito de vida.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_protecao",
+    "nome": "Proteção",
+    "nomesAlternativos": [],
+    "indicacoes": "Proteção energética; vampirismo e limpeza ambiental.",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  },
+  {
+    "slug": "sgf_ansiedade",
+    "nome": "Sensação de Ansiedade",
+    "nomesAlternativos": [],
+    "indicacoes": "Preocupação excessiva; paciência e flexibilidade (não ansiolítico).",
+    "contraindicacoes": "",
+    "precaucoes": "Conservar em local fresco, protegido da luz. Uso sublingual ou diluído em água. Não substitui avaliação clínica ou tratamento convencional quando indicado.",
+    "posologia": "4 gotas, 4 vezes ao dia, em água ou sob a língua. Rescue: conforme necessidade em situações agudas.",
+    "detalhes": {
+      "sistema": "saint_germain_formula"
+    }
+  }
+]

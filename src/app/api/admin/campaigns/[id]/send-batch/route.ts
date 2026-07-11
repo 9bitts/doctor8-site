@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
 import {
-  claimCampaignBatchLock,
-  processCampaignBatch,
+  isCampaignBatchLocked,
+  queueOrProcessCampaignBatch,
 } from "@/lib/admin/email-campaigns";
 
 export async function POST(
@@ -33,17 +33,14 @@ export async function POST(
       return NextResponse.json({ error: "No pending recipients" }, { status: 409 });
     }
 
-    const claimed = await claimCampaignBatchLock(params.id);
-    if (!claimed) {
+    if (await isCampaignBatchLocked(params.id)) {
       return NextResponse.json({ error: "Batch already in progress" }, { status: 409 });
     }
 
-    void processCampaignBatch(params.id).catch((err) => {
-      console.error("[CAMPAIGN BATCH]", err);
-    });
+    const mode = await queueOrProcessCampaignBatch(params.id);
 
     return NextResponse.json(
-      { ok: true, message: "Batch started" },
+      { ok: true, message: "Batch started", mode },
       { status: 202 },
     );
   } catch (error) {

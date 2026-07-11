@@ -139,6 +139,7 @@ function isPublicApi(pathname: string): boolean {
     || pathname.startsWith("/api/webhooks/")
     || pathname.startsWith("/api/cron/")
     || pathname.startsWith("/api/reminders/")
+    || pathname.startsWith("/api/campaigns/")
     || pathname.startsWith("/api/shared/")
     || pathname.startsWith("/api/integrations/")
   );
@@ -516,6 +517,7 @@ export default auth((req) => {
   if (pathname.startsWith("/api/webhooks/")) return NextResponse.next();
   if (pathname.startsWith("/api/cron/")) return NextResponse.next();
   if (pathname.startsWith("/api/reminders/")) return NextResponse.next();
+  if (pathname.startsWith("/api/campaigns/")) return NextResponse.next();
 
   // Token-based shared records (no session)
   if (pathname.startsWith("/api/shared/")) return NextResponse.next();

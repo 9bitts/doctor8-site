@@ -6,7 +6,7 @@ import Papa from "papaparse";
 import {
   Mail, ArrowLeft, Loader2, AlertTriangle, Pause, RotateCcw,
   Send, TestTube, Search, Pencil, Upload, Eye, ChevronDown, ChevronUp,
-  Download, Copy,
+  Download, Copy, Clock, Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -21,6 +21,7 @@ type Campaign = {
   batchSize: number;
   lastError: string | null;
   batchLockAt: string | null;
+  scheduledBatchAt: string | null;
 };
 
 type Recipient = {
@@ -41,6 +42,10 @@ type Stats = {
   sendFailed: number;
   registered: number;
   optedOut: number;
+  bounced: number;
+  complained: number;
+  opened: number;
+  clicked: number;
   conversionRate: number;
   byStatus: Record<string, number>;
 };
@@ -57,10 +62,15 @@ const STATUS_COLORS: Record<string, string> = {
   SEND_FAILED: "bg-red-50 text-red-700",
   REGISTERED: "bg-brand-50 text-brand-700",
   OPTED_OUT: "bg-slate-100 text-slate-500",
+  BOUNCED: "bg-orange-50 text-orange-800",
+  COMPLAINED: "bg-red-100 text-red-800",
+  OPENED: "bg-blue-50 text-blue-700",
+  CLICKED: "bg-indigo-50 text-indigo-700",
 };
 
 const RECIPIENT_STATUSES = [
   "", "PENDING", "SENT", "SEND_FAILED", "REGISTERED", "OPTED_OUT",
+  "BOUNCED", "COMPLAINED", "OPENED", "CLICKED",
 ];
 
 function htmlToTextarea(html: string): string {
@@ -194,9 +204,15 @@ export default function CampaignDetailClient({ campaignId }: { campaignId: strin
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok && res.status !== 202) {
-        const msg = data.error === "Batch already in progress"
-          ? t("admin.campaigns.batchInProgress")
-          : (data.error || t("admin.campaigns.errAction"));
+        const errCode = data.error as string | undefined;
+        const msg =
+          errCode === "Batch already in progress" || errCode === "BATCH_IN_PROGRESS"
+            ? t("admin.campaigns.batchInProgress")
+            : errCode === "HAS_SENT_RECIPIENTS"
+              ? t("admin.campaigns.errDeleteHasSent")
+              : errCode === "QSTASH_UNAVAILABLE"
+                ? t("admin.campaigns.errSchedule")
+                : (data.error || t("admin.campaigns.errAction"));
         setErr(msg);
         return false;
       }
@@ -298,6 +314,36 @@ export default function CampaignDetailClient({ campaignId }: { campaignId: strin
   const batchRunning = Boolean(campaign.batchLockAt);
   const canEdit = campaign.status === "DRAFT" || campaign.status === "PAUSED";
   const canSendBatch = !isPaused && !batchRunning && stats.pending + stats.sendFailed > 0;
+  const canSchedule = canSendBatch && !campaign.scheduledBatchAt;
+  const canDelete = !batchRunning && (campaign.status === "DRAFT" || stats.sent === 0);
+
+  function formatScheduledAt(iso: string): string {
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return iso;
+    }
+  }
+
+  async function handleScheduleBatch() {
+    const raw = window.prompt(t("admin.campaigns.schedulePrompt"), "60");
+    if (!raw?.trim()) return;
+    const delayMinutes = parseInt(raw.trim(), 10);
+    if (!Number.isFinite(delayMinutes) || delayMinutes < 1) {
+      setErr(t("admin.campaigns.errSchedule"));
+      return;
+    }
+    const ok = await action("schedule", `/api/admin/campaigns/${campaignId}/schedule-batch`, {
+      body: { delayMinutes },
+    });
+    if (ok) setSuccessMsg(t("admin.campaigns.scheduledSuccess"));
+  }
+
+  async function handleDelete() {
+    if (!confirm(t("admin.campaigns.deleteConfirm"))) return;
+    const ok = await action("delete", `/api/admin/campaigns/${campaignId}`, { method: "DELETE" });
+    if (ok) router.push("/admin/campaigns");
+  }
 
   function handleExportCsv() {
     const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : "";
@@ -359,6 +405,13 @@ export default function CampaignDetailClient({ campaignId }: { campaignId: strin
         <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{successMsg}</div>
       )}
 
+      {campaign.scheduledBatchAt && !batchRunning && (
+        <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <Clock size={16} />
+          {t("admin.campaigns.scheduledAt").replace("{{at}}", formatScheduledAt(campaign.scheduledBatchAt))}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: t("admin.campaigns.colTotal"), value: stats.total },
@@ -373,6 +426,20 @@ export default function CampaignDetailClient({ campaignId }: { campaignId: strin
         ))}
       </div>
 
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: t("admin.campaigns.colOpened"), value: stats.opened },
+          { label: t("admin.campaigns.colClicked"), value: stats.clicked },
+          { label: t("admin.campaigns.colBounced"), value: stats.bounced },
+          { label: t("admin.campaigns.colComplained"), value: stats.complained },
+        ].map((card) => (
+          <div key={card.label} className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+            <p className="text-xs text-slate-500">{card.label}</p>
+            <p className="text-xl font-semibold text-slate-800 tabular-nums">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={handleSendTest} disabled={!!busy}
           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50">
@@ -383,6 +450,11 @@ export default function CampaignDetailClient({ campaignId }: { campaignId: strin
           className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
           {busy === "batch" ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
           {t("admin.campaigns.sendBatch").replace("{{n}}", String(campaign.batchSize))}
+        </button>
+        <button type="button" onClick={handleScheduleBatch} disabled={!!busy || !canSchedule}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50">
+          {busy === "schedule" ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
+          {t("admin.campaigns.scheduleBatch")}
         </button>
         {isSending && (
           <button type="button" onClick={() => action("pause", `/api/admin/campaigns/${campaignId}/pause`)} disabled={!!busy}
@@ -414,6 +486,13 @@ export default function CampaignDetailClient({ campaignId }: { campaignId: strin
           {busy === "duplicate" ? <Loader2 size={14} className="animate-spin" /> : <Copy size={14} />}
           {t("admin.campaigns.duplicate")}
         </button>
+        {canDelete && (
+          <button type="button" onClick={handleDelete} disabled={!!busy}
+            className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 hover:bg-red-100 disabled:opacity-50">
+            {busy === "delete" ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            {t("admin.campaigns.delete")}
+          </button>
+        )}
       </div>
 
       {canEdit && (

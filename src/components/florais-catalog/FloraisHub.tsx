@@ -9,6 +9,7 @@ import {
   Flower2,
   Info,
   LayoutTemplate,
+  Library,
   Search,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -22,12 +23,14 @@ import {
   floralCategoryLabelKey,
 } from "@/lib/florais-catalog/data";
 import { detectFloraisPortal, floraisBasePath } from "@/lib/florais-catalog/portal-config";
+import { mnCatalogBasePath } from "@/lib/medicina-natural-catalog/portal-config";
 
 export default function FloraisHub() {
   const { t, lang } = useI18n();
   const pathname = usePathname();
   const portal = detectFloraisPortal(pathname);
   const base = floraisBasePath(portal);
+  const mnCatalog = `${mnCatalogBasePath(portal)}/terapia-florais/catalogo`;
   const href = (path: string) =>
     portal === "professional" ? mapProfessionalPathToPortal(pathname, path) : path;
 
@@ -49,6 +52,12 @@ export default function FloraisHub() {
       </div>
 
       <div className="flex flex-wrap gap-2">
+        <Link
+          href={href(mnCatalog)}
+          className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl border border-pink-200 bg-pink-50 hover:bg-pink-100 text-pink-800"
+        >
+          <Library size={16} /> {t("fl.hub.navCatalogo")}
+        </Link>
         <Link
           href={href(`${base}/biblioteca`)}
           className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-pink-50 text-slate-700"

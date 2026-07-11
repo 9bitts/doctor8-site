@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
-import { getCampaignStats } from "@/lib/admin/email-campaigns";
+import { getCampaignStats, deleteCampaign } from "@/lib/admin/email-campaigns";
 
 const patchSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -112,6 +112,26 @@ export async function PATCH(
     return NextResponse.json({ campaign: updated });
   } catch (error) {
     console.error("[PATCH /api/admin/campaigns/[id]]", error);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } },
+) {
+  const session = await getAdminSession();
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  try {
+    const result = await deleteCampaign(params.id);
+    if (!result.ok) {
+      const status = result.error === "NOT_FOUND" ? 404 : 409;
+      return NextResponse.json({ error: result.error }, { status });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("[DELETE /api/admin/campaigns/[id]]", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
