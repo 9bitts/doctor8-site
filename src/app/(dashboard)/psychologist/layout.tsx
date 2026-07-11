@@ -23,6 +23,9 @@ export default async function PsychologistPortalLayout({
     if (profile && !isPsychologistSpecialty(profile.specialty)) {
       redirect("/professional");
     }
+    if (!profile) {
+      redirect("/onboarding?portal=psychologist");
+    }
   }
 
   return children;

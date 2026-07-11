@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
 
   const invite = await db.psychologyAnamnesisInvite.create({
     data: {
+      token: randomBytes(32).toString("base64url"),
       patientRecordId: record.id,
       professionalId: professional.id,
       expiresAt,
@@ -95,9 +97,14 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const ctx = await requirePsychologist();
   if ("error" in ctx && ctx.error) return ctx.error;
+  const { professional } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
 
   const { patientRecordId } = await req.json() as { patientRecordId?: string };
   if (!patientRecordId) return NextResponse.json({ error: "patientRecordId required" }, { status: 400 });
+
+  const record = await db.patientRecord.findUnique({ where: { id: patientRecordId } });
+  if (!record || record.professionalId !== professional.id)
+    return NextResponse.json({ error: "Chart not found" }, { status: 404 });
 
   const docs = await db.medicalDocument.findMany({
     where: { patientRecordId, type: "CLINICAL_NOTE" },

@@ -115,4 +115,6 @@ export const RATE_LIMITS = {
   /** Partner email lookup (ACURA / SOS Venezuela) */
   partnerEmailCheckIp: { limit: 60, windowMs: 60 * 1000 },
   partnerEmailCheckToken: { limit: 120, windowMs: 60 * 1000 },
+  /** Public psychology anamnesis form (per IP) */
+  anamnesisPublicIp: { limit: 30, windowMs: 60 * 60 * 1000 },
 } as const;

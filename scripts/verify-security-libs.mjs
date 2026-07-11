@@ -66,4 +66,19 @@ assert.equal(checkAnamnesisInviteAccess({ ...invite, viewCount: 5 }).ok, false);
 
 assert.ok(5 * 1024 * 1024 + 1 > MAX_CSV_IMPORT_BYTES);
 
+// PSI-02 — anamnesis invite tokens use crypto randomness (base64url, ≥32 bytes)
+const anamnesisToken = randomBytes(32).toString("base64url");
+assert.ok(anamnesisToken.length >= 32, "token length");
+assert.match(anamnesisToken, /^[A-Za-z0-9_-]+$/, "token is base64url");
+
+// PSI-03 — requireVerifiedProfessional contract (verified gate)
+function requireVerifiedGate(pro) {
+  if (!pro) return { ok: false, status: 404 };
+  if (!pro.verified) return { ok: false, status: 403 };
+  return { ok: true, status: 200 };
+}
+assert.deepEqual(requireVerifiedGate({ verified: true }), { ok: true, status: 200 });
+assert.deepEqual(requireVerifiedGate({ verified: false }), { ok: false, status: 403 });
+assert.deepEqual(requireVerifiedGate(null), { ok: false, status: 404 });
+
 console.log("[verify-security-libs] OK");

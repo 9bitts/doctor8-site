@@ -14,6 +14,7 @@ import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import PsychologyRiskAlertsBanner from "@/components/psychologist/PsychologyRiskAlertsBanner";
 import { getPsychologyRiskAlerts } from "@/lib/psychology-risk-alerts";
+import { isPsychologyRiskAlertsEnabled } from "@/lib/psychology-feature-flags";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import ProfessionalInsightsBanner from "@/components/professional/ProfessionalInsightsBanner";
@@ -105,7 +106,7 @@ export default async function PsychologistDashboard() {
       select: { region: true },
     }),
     getProfessionalDashboardInsights(professional.id),
-    getPsychologyRiskAlerts(professional.id),
+    isPsychologyRiskAlertsEnabled() ? getPsychologyRiskAlerts(professional.id) : Promise.resolve([]),
   ]);
 
   const hasActiveSubscription =
@@ -135,7 +136,7 @@ export default async function PsychologistDashboard() {
 
       <ProfessionalInsightsBanner insights={dashboardInsights} />
 
-      <PsychologyRiskAlertsBanner alerts={riskAlerts} />
+      <PsychologyRiskAlertsBanner alerts={isPsychologyRiskAlertsEnabled() ? riskAlerts : []} />
 
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">

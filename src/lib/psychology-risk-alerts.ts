@@ -1,7 +1,10 @@
 import { decrypt } from "@/lib/encryption";
-import { parsePsychologyContent } from "@/lib/psychology-api";
+import { parsePsychologyContent, psychologyRecordKindWhere } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
 import type { RiskAlertItem } from "@/components/psychologist/PsychologyRiskAlertsBanner";
+
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const alertCache = new Map<string, { at: number; data: RiskAlertItem[] }>();
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -9,6 +12,11 @@ function safeDecrypt(v: string | null): string {
 }
 
 export async function getPsychologyRiskAlerts(professionalId: string): Promise<RiskAlertItem[]> {
+  const cached = alertCache.get(professionalId);
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   const since = new Date();
   since.setDate(since.getDate() - 30);
 
@@ -17,6 +25,7 @@ export async function getPsychologyRiskAlerts(professionalId: string): Promise<R
       professionalId,
       patientRecordId: { not: null },
       createdAt: { gte: since },
+      ...psychologyRecordKindWhere("SCALE"),
     },
     orderBy: { createdAt: "desc" },
     take: 80,
@@ -55,5 +64,11 @@ export async function getPsychologyRiskAlerts(professionalId: string): Promise<R
     if (alerts.length >= 8) break;
   }
 
+  alertCache.set(professionalId, { at: Date.now(), data: alerts });
   return alerts;
+}
+
+/** Clear cached alerts after a new scale with risk is saved (optional hook). */
+export function invalidatePsychologyRiskAlertCache(professionalId: string): void {
+  alertCache.delete(professionalId);
 }

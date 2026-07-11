@@ -19,6 +19,7 @@ export function isPsychologyReceitaSaudeEnabled(): boolean {
 }
 
 export function isPsychology24hWhatsAppEnabled(): boolean {
+  // Reserved for future Pro WhatsApp appointment reminders (not wired in UI/API yet).
   return envOn(process.env.PSYCHOLOGY_24H_WHATSAPP_ENABLED);
 }
 

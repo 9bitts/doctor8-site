@@ -12,7 +12,12 @@ import {
   auditAnamnesisInviteView,
   checkAnamnesisInviteAccess,
 } from "@/lib/anamnesis-invite-access";
-import { clientIp } from "@/lib/rate-limit";
+import {
+  checkRateLimit,
+  clientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 const submitSchema = z.object({
   fields: z.record(z.string(), z.string()),
@@ -35,6 +40,14 @@ export async function GET(
   if (!isPsychologyAnamnesisEnabled()) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 503 });
   }
+
+  const ip = clientIp(req);
+  const rate = await checkRateLimit({
+    namespace: "anamnesis-public:ip",
+    key: ip,
+    ...RATE_LIMITS.anamnesisPublicIp,
+  });
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
 
   const invite = await db.psychologyAnamnesisInvite.findUnique({
     where: { token: params.token },
@@ -60,7 +73,7 @@ export async function GET(
     fields: PSYCHOLOGY_ANAMNESIS_FIELDS,
     psychologistName: `${invite.professional.firstName} ${invite.professional.lastName}`.trim(),
     patientName: invite.patientRecord
-      ? `${safeDecrypt(invite.patientRecord.firstName)} ${safeDecrypt(invite.patientRecord.lastName)}`.trim()
+      ? safeDecrypt(invite.patientRecord.firstName).trim().split(/\s+/)[0] || ""
       : "",
     status: expired && !completed ? "EXPIRED" : invite.status,
     canSubmit: !completed && !expired,
@@ -74,6 +87,14 @@ export async function POST(
   if (!isPsychologyAnamnesisEnabled()) {
     return NextResponse.json({ error: "Feature disabled" }, { status: 503 });
   }
+
+  const ip = clientIp(req);
+  const rate = await checkRateLimit({
+    namespace: "anamnesis-public:ip",
+    key: ip,
+    ...RATE_LIMITS.anamnesisPublicIp,
+  });
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
 
   const invite = await db.psychologyAnamnesisInvite.findUnique({
     where: { token: params.token },

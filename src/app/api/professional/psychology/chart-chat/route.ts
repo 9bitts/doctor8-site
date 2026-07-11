@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { answerChartQuestion, buildChartContext } from "@/lib/ai-chart-chat";
+import { createAuditLog } from "@/lib/audit";
 import { requirePsychologist, safeDecrypt } from "@/lib/psychology-api";
 import { isPsychologyChartChatEnabled } from "@/lib/psychology-feature-flags";
 import { getPsychologyPlanTier } from "@/lib/psychology-plan-limits";
 import type { Lang } from "@/lib/i18n/translations";
+import { AuditAction } from "@prisma/client";
 
 const schema = z.object({
   patientRecordId: z.string(),
@@ -57,6 +59,15 @@ export async function POST(req: NextRequest) {
       chartContext,
       question: parsed.data.question,
     });
+
+    await createAuditLog({
+      userId: professional.userId,
+      action: AuditAction.VIEW_RECORD,
+      resource: "PatientRecord",
+      resourceId: parsed.data.patientRecordId,
+      details: { aiChartChat: true },
+    });
+
     return NextResponse.json({ answer });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "AI_ERROR";

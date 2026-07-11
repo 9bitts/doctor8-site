@@ -7,6 +7,7 @@ import {
   isGoogleCalendarOAuthConfigured,
 } from "@/lib/google-calendar-oauth";
 import { isPsychologyGoogleCalendarEnabled } from "@/lib/psychology-feature-flags";
+import { assertPsychologyProFeature } from "@/lib/psychology-plan-limits";
 
 export async function GET() {
   if (!isPsychologyGoogleCalendarEnabled()) {
@@ -20,9 +21,14 @@ export async function GET() {
 
   const professional = await db.professionalProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true },
+    select: { id: true, specialty: true },
   });
   if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
+
+  const proGate = await assertPsychologyProFeature(session.user.id, professional.specialty);
+  if (!proGate.ok) {
+    return NextResponse.json({ error: proGate.code }, { status: 402 });
+  }
 
   if (!isGoogleCalendarOAuthConfigured()) {
     return NextResponse.json({ error: "GOOGLE_OAUTH_NOT_CONFIGURED" }, { status: 503 });

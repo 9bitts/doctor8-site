@@ -331,6 +331,8 @@ enum DentalPhotoCategory {
 
 enum ClinicalRecordKind {
   ANAMNESIS
+  SESSION_NOTE
+  SCALE
   EVOLUTION
   REPORT
   OTHER

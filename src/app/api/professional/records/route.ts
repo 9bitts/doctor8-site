@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       const gate = await assertCanAddPsychologyPatient(userId, professional.id, proFull.specialty);
       if (!gate.ok) {
         return NextResponse.json(
-          { code: gate.code, limit: gate.limit, current: gate.current },
+          { code: gate.code, limit: gate.limit, current: gate.current, remaining: gate.remaining },
           { status: 402 },
         );
       }

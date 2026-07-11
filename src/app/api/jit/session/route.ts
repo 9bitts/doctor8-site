@@ -10,6 +10,8 @@ import { decrypt } from "@/lib/encryption";
 import { JitQueueStatus } from "@prisma/client";
 import { z } from "zod";
 import { touchJitHeartbeat } from "@/lib/jit-session-lifecycle";
+import { requireVerifiedProfessional } from "@/lib/professional-verified";
+import { assertPsychologyProFeature } from "@/lib/psychology-plan-limits";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -144,6 +146,19 @@ export async function POST(req: NextRequest) {
     where: { userId: session.user.id },
   });
   if (!professional) return NextResponse.json({ error: "No profile" }, { status: 404 });
+
+  const verified = await requireVerifiedProfessional(session.user.id);
+  if (!verified.ok) {
+    return NextResponse.json(
+      { error: verified.error, code: "PROVIDER_NOT_VERIFIED" },
+      { status: verified.status },
+    );
+  }
+
+  const proGate = await assertPsychologyProFeature(session.user.id, professional.specialty);
+  if (!proGate.ok) {
+    return NextResponse.json({ error: proGate.code }, { status: 402 });
+  }
 
   // Close any existing active session first
   await db.jitSession.updateMany({

@@ -4,9 +4,10 @@ import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { getScale, scoreScale, type ScaleId } from "@/lib/psychology-scales";
 import { buildScalePayload } from "@/lib/psychology-templates";
-import { parsePsychologyContent, requirePsychologist, safeDecrypt } from "@/lib/psychology-api";
+import { parsePsychologyContent, psychologyRecordKindWhere, requirePsychologist, safeDecrypt } from "@/lib/psychology-api";
 import { assessScaleRisk } from "@/lib/psychology-risk";
-import { isPsychologyRiskAlertsEnabled } from "@/lib/psychology-feature-flags";
+import { notifyPsychologyCriticalRisk } from "@/lib/psychology-critical-risk-notify";
+import { invalidatePsychologyRiskAlertCache } from "@/lib/psychology-risk-alerts";
 
 const createSchema = z.object({
   patientRecordId: z.string(),
@@ -23,6 +24,7 @@ export async function GET() {
     where: {
       professionalId: professional.id,
       patientRecordId: { not: null },
+      ...psychologyRecordKindWhere("SCALE"),
     },
     orderBy: { createdAt: "desc" },
     take: 200,
@@ -76,15 +78,13 @@ export async function POST(req: NextRequest) {
 
   const score = scoreScale(d.scaleId as ScaleId, d.responses);
   const interpretation = scale.interpret(score);
-  const risk = isPsychologyRiskAlertsEnabled()
-    ? assessScaleRisk(d.scaleId as ScaleId, d.responses, score)
-    : null;
+  const risk = assessScaleRisk(d.scaleId as ScaleId, d.responses, score);
   const payload = buildScalePayload(
     d.scaleId,
     d.responses,
     score,
     interpretation,
-    risk && risk.level !== "none" ? risk : null,
+    risk.level !== "none" ? risk : null,
   );
   const title = `${scale.namePt} — score ${score}`;
 
@@ -93,10 +93,23 @@ export async function POST(req: NextRequest) {
       patientRecordId: d.patientRecordId,
       professionalId: professional.id,
       type: "CLINICAL_NOTE",
+      recordKind: "SCALE",
       title: encrypt(title),
       content: encrypt(JSON.stringify(payload)),
     },
   });
+
+  if (risk.level === "critical") {
+    notifyPsychologyCriticalRisk({
+      professionalId: professional.id,
+      patientRecordId: d.patientRecordId,
+      scaleId: d.scaleId,
+      documentId: doc.id,
+      risk,
+    }).catch((e) => console.error("[PSYCHOLOGY-CRITICAL-RISK]", e));
+  }
+
+  invalidatePsychologyRiskAlertCache(professional.id);
 
   return NextResponse.json({
     id: doc.id,
@@ -104,7 +117,7 @@ export async function POST(req: NextRequest) {
     scaleId: d.scaleId,
     score,
     interpretation,
-    risk: risk && risk.level !== "none" ? risk : null,
+    risk: risk.level !== "none" ? risk : null,
     createdAt: doc.createdAt.toISOString(),
   }, { status: 201 });
 }

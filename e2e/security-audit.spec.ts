@@ -30,6 +30,11 @@ test.describe("Security audit — public API hardening", () => {
     expect([404, 410]).toContain(res.status());
   });
 
+  test("GET public psychology anamnesis returns 404 for invalid token", async ({ request }) => {
+    const res = await request.get("/api/public/psychology/anamnesis/not-a-real-token");
+    expect([404, 503]).toContain(res.status());
+  });
+
   test("support rejects empty messages", async ({ request }) => {
     const res = await request.post("/api/support", {
       data: { messages: [] },

@@ -61,7 +61,7 @@ export async function generatePsychologyNoteDraft(params: {
   const keysList = params.fieldKeys.map((k) => `"${k}"`).join(", ");
 
   const userText = [
-    params.patientName ? `Patient: ${params.patientName}` : "",
+    "Patient: Paciente",
     params.durationMins ? `Session duration: ${params.durationMins} min` : "",
     `Required JSON field keys: ${keysList}`,
     "",

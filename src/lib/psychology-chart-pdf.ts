@@ -198,6 +198,8 @@ export async function buildHonorariumReceiptPdf(opts: {
       date: "Data do atendimento",
       city: "Local e data",
       signature: "Assinatura do(a) profissional",
+      footerDisclaimer:
+        "Este recibo não substitui o recibo oficial do app Receita Saúde.",
     },
     en: {
       title: "PROFESSIONAL FEE RECEIPT",
@@ -208,6 +210,8 @@ export async function buildHonorariumReceiptPdf(opts: {
       date: "Service date",
       city: "Place and date",
       signature: "Professional signature",
+      footerDisclaimer:
+        "This receipt does not replace the official receipt from the Receita Saúde app.",
     },
     es: {
       title: "RECIBO DE HONORARIOS PROFESIONALES",
@@ -218,6 +222,8 @@ export async function buildHonorariumReceiptPdf(opts: {
       date: "Fecha del servicio",
       city: "Lugar y fecha",
       signature: "Firma del/de la profesional",
+      footerDisclaimer:
+        "Este recibo no sustituye el recibo oficial de la app Receita Saúde.",
     },
   }[opts.lang];
 
@@ -239,6 +245,8 @@ export async function buildHonorariumReceiptPdf(opts: {
   y -= 30;
   line(`${opts.psychologistName} — CRP ${opts.crp}`);
   line(L.signature);
+  y -= 16;
+  line(L.footerDisclaimer, 7, font);
 
   return pdf.save();
 }

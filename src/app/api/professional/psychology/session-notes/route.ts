@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { buildSessionNotePayload, type SessionFormat } from "@/lib/psychology-templates";
-import { parsePsychologyContent, requirePsychologist, safeDecrypt } from "@/lib/psychology-api";
+import { parsePsychologyContent, psychologyRecordKindWhere, requirePsychologist, safeDecrypt } from "@/lib/psychology-api";
 
 const createSchema = z.object({
   patientRecordId: z.string(),
@@ -23,6 +23,7 @@ export async function GET() {
       professionalId: professional.id,
       type: "CLINICAL_NOTE",
       patientRecordId: { not: null },
+      ...psychologyRecordKindWhere("SESSION_NOTE"),
     },
     orderBy: { createdAt: "desc" },
     take: 200,
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
       professionalId: professional.id,
       appointmentId: d.appointmentId || null,
       type: "CLINICAL_NOTE",
+      recordKind: "SESSION_NOTE",
       title: encrypt(title),
       content: encrypt(JSON.stringify(payload)),
     },

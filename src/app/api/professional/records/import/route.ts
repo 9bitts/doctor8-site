@@ -129,6 +129,28 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const proFull = await db.professionalProfile.findUnique({
+    where: { id: ctx.professional.id },
+    select: { specialty: true },
+  });
+  if (proFull) {
+    const { assertCanAddPsychologyPatient } = await import("@/lib/psychology-plan-limits");
+    const { isPsychologistSpecialty } = await import("@/lib/psychologist-portal");
+    if (isPsychologistSpecialty(proFull.specialty)) {
+      const gate = await assertCanAddPsychologyPatient(
+        ctx.userId,
+        ctx.professional.id,
+        proFull.specialty,
+      );
+      if (!gate.ok) {
+        return NextResponse.json(
+          { code: gate.code, limit: gate.limit, current: gate.current, remaining: gate.remaining },
+          { status: 402 },
+        );
+      }
+    }
+  }
+
   const record = await db.patientRecord.create({
     data: {
       professionalId: ctx.professional.id,
