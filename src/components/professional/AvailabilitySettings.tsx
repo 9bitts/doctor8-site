@@ -8,7 +8,7 @@ import { validateAvailabilityBlocks, validatePaidVolunteerOverlap } from "@/lib/
 import { interpolate } from "@/lib/notification-i18n";
 import { DEFAULT_TIME_ZONE, listTimeZoneOptions } from "@/lib/timezone";
 import type { DateAvailabilityBlock, VolunteerWeeklyBlock } from "@/lib/availability-exceptions";
-import { Save, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { Save, Loader2, CheckCircle2, Plus, Trash2, AlertTriangle, X } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 interface TimeBlock {
@@ -90,6 +90,19 @@ export type AvailabilitySettingsProps = {
   onSaved?: () => void;
 };
 
+type VolunteerBlockConflict = {
+  appointmentId: string;
+  scheduledAt: string;
+  dateLabel: string;
+  timeLabel: string;
+  patientFirstName: string;
+};
+
+type PersistOptions = {
+  confirmVolunteerBlockRemoval?: boolean;
+  cancelAppointmentIds?: string[];
+};
+
 export default function AvailabilitySettings({
   apiPath = "/api/professional/availability",
   embedded = false,
@@ -122,6 +135,10 @@ export default function AvailabilitySettings({
   const [timezone, setTimezone] = useState(DEFAULT_TIME_ZONE);
   const [dateBlocks, setDateBlocks] = useState<DateAvailabilityBlock[]>([]);
   const [volunteerBlocks, setVolunteerBlocks] = useState<VolunteerWeeklyBlock[]>([]);
+  const [blockConflicts, setBlockConflicts] = useState<VolunteerBlockConflict[]>([]);
+  const [showBlockConflictModal, setShowBlockConflictModal] = useState(false);
+  const [confirmingBlockRemoval, setConfirmingBlockRemoval] = useState(false);
+  const volunteerBlocksSnapshotRef = useRef<VolunteerWeeklyBlock[]>([]);
   const [blockStartDate, setBlockStartDate] = useState("");
   const [blockEndDate, setBlockEndDate] = useState("");
   const [blockStartTime, setBlockStartTime] = useState("");
@@ -219,9 +236,10 @@ export default function AvailabilitySettings({
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
   }
 
-  const persist = useCallback(async () => {
+  const persist = useCallback(async (opts?: PersistOptions) => {
     setSaving(true);
     setSaveError("");
+    volunteerBlocksSnapshotRef.current = volunteerBlocks;
     try {
       const slots = schedules
         .filter((s) => s.enabled)
@@ -251,10 +269,26 @@ export default function AvailabilitySettings({
       const res = await fetch(apiPath, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots, timezone, dateBlocks, volunteerBlocks }),
+        body: JSON.stringify({
+          slots,
+          timezone,
+          dateBlocks,
+          volunteerBlocks,
+          confirmVolunteerBlockRemoval: opts?.confirmVolunteerBlockRemoval,
+          cancelAppointmentIds: opts?.cancelAppointmentIds,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        if (
+          !opts?.confirmVolunteerBlockRemoval &&
+          Array.isArray(data.conflicts) &&
+          data.conflicts.length > 0
+        ) {
+          setBlockConflicts(data.conflicts as VolunteerBlockConflict[]);
+          setShowBlockConflictModal(true);
+          return;
+        }
         if (Array.isArray(data.conflicts) && data.conflicts.length > 0) {
           const lines = (
             data.conflicts as { dateLabel: string; timeLabel: string; patientFirstName: string }[]
@@ -277,6 +311,8 @@ export default function AvailabilitySettings({
         toast.error(t(key));
         return;
       }
+      setShowBlockConflictModal(false);
+      setBlockConflicts([]);
       setSaved(true);
       toast.success(t("avail.saved"));
       setTimeout(() => setSaved(false), 3000);
@@ -285,6 +321,25 @@ export default function AvailabilitySettings({
       setSaving(false);
     }
   }, [schedules, timezone, dateBlocks, volunteerBlocks, apiPath, t, onSaved, toast]);
+
+  async function confirmVolunteerBlockRemoval() {
+    setConfirmingBlockRemoval(true);
+    try {
+      await persist({
+        confirmVolunteerBlockRemoval: true,
+        cancelAppointmentIds: blockConflicts.map((c) => c.appointmentId),
+      });
+    } finally {
+      setConfirmingBlockRemoval(false);
+    }
+  }
+
+  function dismissVolunteerBlockConflict() {
+    setVolunteerBlocks(volunteerBlocksSnapshotRef.current);
+    setShowBlockConflictModal(false);
+    setBlockConflicts([]);
+    setSaveError("");
+  }
 
   useEffect(() => {
     if (!autoSave || !readyRef.current) return;
@@ -877,6 +932,64 @@ export default function AvailabilitySettings({
         </p>
         {badgeVisible && <p className="text-green-700">{t("avail.volunteerBlockHint")}</p>}
       </div>
+
+      {showBlockConflictModal && blockConflicts.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="text-amber-500 shrink-0 mt-0.5" size={22} />
+                <div>
+                  <h3 className="font-semibold text-slate-900">{t("avail.volunteerBlockConflictModalTitle")}</h3>
+                  <p className="text-sm text-slate-600 mt-1">{t("avail.volunteerBlockConflictModalBody")}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={dismissVolunteerBlockConflict}
+                className="text-slate-400 hover:text-slate-600"
+                aria-label={t("avail.volunteerBlockConflictKeep")}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <ul className="text-sm text-slate-700 space-y-1 bg-amber-50 border border-amber-100 rounded-xl p-3">
+              {blockConflicts.map((c) => (
+                <li key={c.appointmentId}>
+                  {interpolate(t("avail.volunteerBlockConflictItem"), {
+                    date: c.dateLabel,
+                    time: c.timeLabel,
+                    name: c.patientFirstName,
+                  })}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <button
+                type="button"
+                onClick={dismissVolunteerBlockConflict}
+                disabled={confirmingBlockRemoval}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {t("avail.volunteerBlockConflictKeep")}
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmVolunteerBlockRemoval()}
+                disabled={confirmingBlockRemoval}
+                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {confirmingBlockRemoval && <Loader2 size={16} className="animate-spin" />}
+                {t("avail.volunteerBlockConflictConfirmCancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

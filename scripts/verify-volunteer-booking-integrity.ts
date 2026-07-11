@@ -16,6 +16,10 @@ import {
   SCHEDULED_VOLUNTEER_BOOKING_SOURCE,
 } from "../src/lib/scheduled-volunteer";
 import { VolunteerSlotBookingError } from "../src/lib/volunteer-slot-booking";
+import {
+  isAppointmentInVolunteerBlock,
+  isRemovedFromVolunteerSchedule,
+} from "../src/lib/availability-exceptions";
 
 console.log("[verify-volunteer-booking-integrity] unit checks…");
 
@@ -85,6 +89,33 @@ assert.equal(err.name, "VolunteerSlotBookingError");
 
 const slotErr = new AppointmentSlotTakenError();
 assert.equal(slotErr.name, "AppointmentSlotTakenError");
+
+// AGD-01 — volunteer block removal detection
+const tuesdayBlock = [{ id: "b1", dayOfWeek: 2, startTime: "09:00", endTime: "12:00", slotDuration: 30, slotGap: 0 }];
+const tz = "America/Sao_Paulo";
+const tuesdayNineAm = new Date("2026-07-14T12:00:00.000Z"); // Tue 09:00 BRT
+const wednesdayNineAm = new Date("2026-07-15T12:00:00.000Z"); // Wed 09:00 BRT
+
+assert.equal(
+  isAppointmentInVolunteerBlock(tuesdayNineAm, tz, tuesdayBlock),
+  true,
+  "Tuesday 09:00 inside Tue volunteer block",
+);
+assert.equal(
+  isAppointmentInVolunteerBlock(wednesdayNineAm, tz, tuesdayBlock),
+  false,
+  "Wednesday 09:00 not in Tue block",
+);
+assert.equal(
+  isRemovedFromVolunteerSchedule(tuesdayNineAm, tz, tuesdayBlock, []),
+  true,
+  "removing block leaves Tuesday appointment uncovered",
+);
+assert.equal(
+  isRemovedFromVolunteerSchedule(tuesdayNineAm, tz, tuesdayBlock, tuesdayBlock),
+  false,
+  "unchanged blocks are not a removal",
+);
 
 console.log("[verify-volunteer-booking-integrity] unit checks OK");
 

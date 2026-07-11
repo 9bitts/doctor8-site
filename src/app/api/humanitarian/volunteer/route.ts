@@ -271,7 +271,15 @@ export async function POST(req: NextRequest) {
         },
       },
     });
-    if (vol) await releaseVolunteer(vol.id);
+    if (vol) {
+      const { notifyAdminsIfVolunteerHasFutureP8bAppointments } = await import(
+        "@/lib/humanitarian/p8b-reconciliation"
+      );
+      await notifyAdminsIfVolunteerHasFutureP8bAppointments(profile).catch((err) =>
+        console.error("[HUMANITARIAN-VOLUNTEER] P8b reconciliation notify failed:", err),
+      );
+      await releaseVolunteer(vol.id);
+    }
     return NextResponse.json({ success: true, status: "OFFLINE" });
   }
 

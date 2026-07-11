@@ -8,19 +8,18 @@ import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 import {
   isValidIanaTimeZone,
   DEFAULT_TIME_ZONE,
-  formatAppointmentTimeWithLabel,
-  formatShortDateWithYear,
 } from "@/lib/timezone";
 import {
   mergeAvailabilityJson,
   mergeVolunteerBlocksJson,
   parseAvailabilityJson,
-  isRemovedFromVolunteerSchedule,
   type DateAvailabilityBlock,
   type VolunteerWeeklyBlock,
 } from "@/lib/availability-exceptions";
-import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
-import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import {
+  cancelVolunteerBlockConflicts,
+  findVolunteerBlockConflicts,
+} from "@/lib/volunteer-block-removal";
 import { localeOf } from "@/lib/i18n/translations";
 import { z } from "zod";
 
@@ -56,6 +55,8 @@ const putAvailabilitySchema = z.object({
   timezone: z.string().optional(),
   dateBlocks: z.array(dateBlockSchema).optional(),
   volunteerBlocks: z.array(volunteerBlockSchema).optional(),
+  confirmVolunteerBlockRemoval: z.boolean().optional(),
+  cancelAppointmentIds: z.array(z.string()).optional(),
 });
 
 export async function GET() {
@@ -120,7 +121,8 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: parsedBody.error.flatten() }, { status: 400 });
   }
 
-  const { slots, timezone, dateBlocks, volunteerBlocks } = parsedBody.data;
+  const { slots, timezone, dateBlocks, volunteerBlocks, confirmVolunteerBlockRemoval, cancelAppointmentIds } =
+    parsedBody.data;
 
   const professional = await db.professionalProfile.findUnique({
     where: { id: ctx.professional.id },
@@ -172,42 +174,43 @@ export async function PUT(req: NextRequest) {
     const proTz = proRow.timezone ?? DEFAULT_TIME_ZONE;
     const locale = localeOf("pt");
 
-    const futureAppointments = await db.appointment.findMany({
-      where: {
-        professionalId: proRow.id,
-        bookingSource: SCHEDULED_VOLUNTEER_BOOKING_SOURCE,
-        status: { in: ["CONFIRMED", "PENDING"] },
-        scheduledAt: { gte: new Date() },
-      },
-      select: {
-        id: true,
-        scheduledAt: true,
-        patient: { select: { firstName: true } },
-      },
-    });
-
-    const conflicts = futureAppointments
-      .filter((apt) =>
-        isRemovedFromVolunteerSchedule(
-          apt.scheduledAt,
-          proTz,
-          oldVolunteerBlocks,
-          normalizedVolunteer,
-        ),
-      )
-      .map((apt) => ({
-        appointmentId: apt.id,
-        scheduledAt: apt.scheduledAt.toISOString(),
-        dateLabel: formatShortDateWithYear(apt.scheduledAt, proTz, locale),
-        timeLabel: formatAppointmentTimeWithLabel(apt.scheduledAt, proTz, locale),
-        patientFirstName: safeDecrypt(apt.patient.firstName).split(/\s+/)[0] || "Paciente",
-      }));
+    const conflicts = await findVolunteerBlockConflicts(
+      proRow.id,
+      proTz,
+      oldVolunteerBlocks,
+      normalizedVolunteer,
+      locale,
+    );
 
     if (conflicts.length > 0) {
-      return NextResponse.json(
-        { error: "VOLUNTEER_BLOCK_CONFLICT", conflicts },
-        { status: 409 },
-      );
+      if (!confirmVolunteerBlockRemoval) {
+        return NextResponse.json(
+          { error: "VOLUNTEER_BLOCK_CONFLICT", conflicts },
+          { status: 409 },
+        );
+      }
+
+      const expectedIds = conflicts.map((c) => c.appointmentId).sort();
+      const providedIds = [...(cancelAppointmentIds ?? [])].sort();
+      const idsMatch =
+        expectedIds.length === providedIds.length &&
+        expectedIds.every((id, i) => id === providedIds[i]);
+
+      if (!idsMatch) {
+        return NextResponse.json(
+          { error: "VOLUNTEER_BLOCK_CANCEL_MISMATCH", conflicts },
+          { status: 400 },
+        );
+      }
+
+      try {
+        await cancelVolunteerBlockConflicts(proRow.id, ctx.userId, expectedIds);
+      } catch (e) {
+        if (e instanceof Error && e.message === "VOLUNTEER_BLOCK_CANCEL_MISMATCH") {
+          return NextResponse.json({ error: "VOLUNTEER_BLOCK_CANCEL_MISMATCH" }, { status: 400 });
+        }
+        throw e;
+      }
     }
 
     const currentPaid = await db.availabilitySlot.findMany({
