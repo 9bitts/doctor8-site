@@ -6,7 +6,7 @@ export const MFFB_KEYS = new Set(MFFB_SPECIES_ORDER.map((s) => normalizeSciKey(s
 
 const FFFB_SECTION_MARKERS = [
   { key: "popular", pattern: /^NOMENCLATURA POPULAR/im },
-  { key: "preparacao", pattern: /^(?:PREPARA.{1,8}O EXTEMPOR.{1,8}NEA|TINTURA|C[ÜU]PSULA)/im },
+  { key: "preparacao", pattern: /^(?:PREPARA.{1,8}O EXTEMPOR.{1,8}NEA|TINTURA|C[ÜU]PSULA|GEL|CREME)/im },
   { key: "orientacoes", pattern: /^ORIENTA.{1,8}OES PARA O PREPARO/im },
   { key: "embalagem", pattern: /^EMBALAGEM E ARMAZENAMENTO/im },
   { key: "advertencias", pattern: /^ADVERT.{1,8}NCIAS/im },
@@ -15,8 +15,11 @@ const FFFB_SECTION_MARKERS = [
   { key: "referencias", pattern: /^REFER.{1,8}NCIAS/im },
 ];
 
+const FFFB_AFTER_TITLE =
+  /(?:SINON|NOMENCLATURA POPULAR|PREPARA|TINTURA|C[ÜU]PSULA|GEL|CREME|ADVERT)/im;
+
 const FFFB_SECTION_UNTIL = [
-  /^(?:PREPARA|TINTURA|C[ÜU]PSULA|ORIENTA|EMBALAGEM|ADVERT|MODO)/im,
+  /^(?:PREPARA|TINTURA|C[ÜU]PSULA|GEL|CREME|ORIENTA|EMBALAGEM|ADVERT|MODO)/im,
   /^(?:ORIENTA|EMBALAGEM|ADVERT|INDICA|MODO)/im,
   /^(?:EMBALAGEM|ADVERT|INDICA|MODO)/im,
   /^(?:ADVERT|INDICA|MODO)/im,
@@ -52,7 +55,7 @@ function parsePopularNames(text) {
   for (const line of text.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    if (/^(PREPARA|TINTURA|C[ÜU]PSULA|ORIENTA|EMBALAGEM|ADVERT|MODO|F[OÓ]RMULA|Componentes|-- \d+ of)/i.test(trimmed)) {
+    if (/^(PREPARA|TINTURA|C[ÜU]PSULA|GEL|CREME|ORIENTA|EMBALAGEM|ADVERT|MODO|F[OÓ]RMULA|Componentes|-- \d+ of)/i.test(trimmed)) {
       break;
     }
     if (trimmed.length > 120) break;
@@ -116,6 +119,7 @@ export function extractFffbSpeciesFromToc(rawText) {
 
   const slice = text.slice(tocStart, tocEnd > tocStart ? tocEnd : tocStart + 12000);
   const species = [];
+  let pending = "";
 
   for (const line of slice.split("\n")) {
     const trimmed = line.trim();
@@ -124,38 +128,57 @@ export function extractFffbSpeciesFromToc(rawText) {
 
     const dotted = trimmed.match(/^(.+?)\s*\.{3,}\s*\d+\s*$/);
     if (dotted) {
-      const name = dotted[1].trim();
-      if (/^[A-Z][a-zA-Z]+/.test(name) && name.length > 8 && name.length < 200) {
-        species.push(name);
+      const full = pending
+        ? `${pending} ${dotted[1]}`.replace(/\s+/g, " ").trim()
+        : dotted[1].trim();
+      if (/^[A-Z]/.test(full) && full.length > 8 && full.length < 400) {
+        species.push(full);
       }
+      pending = "";
       continue;
     }
 
-    // Linha sem paginação: continuação do nome anterior (ex. Crataegus multi-linha)
-    if (species.length > 0 && /^[A-Z][a-z]/.test(trimmed) && !trimmed.includes("....")) {
-      const prev = species.pop();
-      species.push(`${prev} ${trimmed}`.replace(/\s+/g, " ").trim());
+    if (/^[A-Z]/.test(trimmed) && trimmed.length > 3 && !trimmed.includes("....")) {
+      pending = pending ? `${pending} ${trimmed}`.replace(/\s+/g, " ").trim() : trimmed;
     }
   }
 
   return [...new Set(species)];
 }
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function titleSearchKey(title) {
+  return title.split(";")[0].trim().replace(/\s*\([^)]+\)\s*$/, "");
+}
+
 function findFffbMonographStart(text, title) {
-  const genus = title.split(/[ (;]/)[0];
-  const epithet = (title.split(/[ (;]/)[1] ?? "").replace(/\.$/, "");
-  const titleKey = normalizeSciKey(title.replace(/\s*\([^)]+\)\s*$/, ""));
+  const searchTitle = titleSearchKey(title);
+  const genus = searchTitle.split(/[ (;]/)[0];
+  const epithet = (searchTitle.split(/[ (;]/)[1] ?? "").replace(/\.$/, "");
+
+  const afterBlock = `[\\s\\S]{0,1200}?${FFFB_AFTER_TITLE.source}`;
 
   if (epithet) {
     const re = new RegExp(
-      `\\n(${genus}\\s+${epithet}[^\\n]{0,80})\\s*\\n(?:NOMENCLATURA POPULAR|PREPARA|ADVERT)`,
+      `\\n(${escapeRegex(genus)}\\s+${escapeRegex(epithet)}[^\\n]{0,120})${afterBlock}`,
       "i",
     );
     const m = re.exec(text);
     if (m && !/\.{5,}/.test(m[1])) return m.index + 1;
   }
 
-  const re = /\n([A-Z][^\n]{5,200})\n(?:NOMENCLATURA POPULAR|PREPARA|ADVERT)/gi;
+  const titleRe = new RegExp(
+    `\\n(${escapeRegex(searchTitle)}[^\\n]{0,200})${afterBlock}`,
+    "i",
+  );
+  const direct = titleRe.exec(text);
+  if (direct && !/\.{5,}/.test(direct[1])) return direct.index + 1;
+
+  const titleKey = normalizeSciKey(searchTitle);
+  const re = /\n([A-Z][^\n]{5,220})\n[\s\S]{0,1200}?(?:SINON|NOMENCLATURA POPULAR|PREPARA|ADVERT|GEL|TINTURA|C[ÜU]PSULA|CREME)/gi;
   for (const m of text.matchAll(re)) {
     const line = m[1].trim();
     if (/Formul[aá]rio|MONOGRAFIAS|SUM[AÁ]RIO/i.test(line)) continue;

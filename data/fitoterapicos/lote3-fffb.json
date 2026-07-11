@@ -1,15 +1,99 @@
 {
   "_meta": {
-    "lote": "3 de 3 (FFFB)",
+    "lote": "3 de 4 (FFFB)",
     "fonte_primaria": "Formulário de Fitoterápicos da Farmacopeia Brasileira (FFFB), 2ª edição, 2021 — RDC nº 463/2021",
     "url_fonte": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
     "extracao": "parser automático sobre raw-fffb.txt — revisar antes de produção",
     "observacao": "statusRegulatorio=PRODUTO_TRADICIONAL_NOTIFICADO (PTF/manipulação). Overlap MFFB em lote1-fffb-merge.json. Itens sem indicacoes/posologia foram filtrados.",
     "gerado_em": "2026-07-11",
-    "total_fffb_sumario": 80,
-    "total_parseados": 62,
-    "total_validos_novos": 45,
+    "total_fffb_sumario": 83,
+    "total_parseados": 83,
+    "total_validos_novos": 58,
     "inferencias": [
+      {
+        "nomeCientifico": "Olea europaea L.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "cápsulas",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Panax ginseng C. A. Mey.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "cápsulas",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Persea americana Mill.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Phyllanthus niruri L.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "tintura",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Pimpinella anisum L.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Plantago lanceolata L.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "cápsulas",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Plantago major L.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "tintura",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Plectranthus barbatus Andrews",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "tintura",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Polygala senega L.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Punica granatum L.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "tintura",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Rosmarinus officinalis L.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "infusão, tintura",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Salix [várias espécies incluindo S. purpurea L., S. daphnoides Vill., S. fragilis L.]",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "tintura, cápsulas",
+        "alertaGestacaoPediatria": "sim"
+      },
       {
         "nomeCientifico": "Salvia officinalis L.",
         "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
@@ -32,10 +116,17 @@
         "alertaGestacaoPediatria": "sim"
       },
       {
+        "nomeCientifico": "Silybum marianum (L.) Gaertn.",
+        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+        "renisus": false,
+        "formas": "cápsulas",
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
         "nomeCientifico": "Symphytum officinale L.",
         "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
         "renisus": false,
-        "formas": "",
+        "formas": "uso tópico",
         "alertaGestacaoPediatria": "sim"
       },
       {
@@ -44,38 +135,500 @@
         "renisus": false,
         "formas": "cápsulas",
         "alertaGestacaoPediatria": "sim"
-      },
-      {
-        "nomeCientifico": "Taraxacum officinale F. H. Wigg.",
-        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
-        "renisus": false,
-        "formas": "comprimidos",
-        "alertaGestacaoPediatria": "sim"
-      },
-      {
-        "nomeCientifico": "Vaccinium macrocarpon Aiton",
-        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
-        "renisus": false,
-        "formas": "cápsulas",
-        "alertaGestacaoPediatria": "sim"
-      },
-      {
-        "nomeCientifico": "Vaccinium myrtillus L.",
-        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
-        "renisus": false,
-        "formas": "",
-        "alertaGestacaoPediatria": "sim"
-      },
-      {
-        "nomeCientifico": "Vitex agnus-castus L.",
-        "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
-        "renisus": false,
-        "formas": "cápsulas",
-        "alertaGestacaoPediatria": "sim"
       }
     ]
   },
   "itens": [
+    {
+      "slug": "fitoterapico-olea-europaea-l",
+      "nome": "Olea europaea L.",
+      "nomesAlternativos": [
+        "Oliveira."
+      ],
+      "nomeCientifico": "Olea europaea L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Auxiliar no aumento do fluxo urinário em casos de retenção hídrica leve desde que situações graves\ntenham sido descartadas por um médico (BLUMENTHAL et al, 1998; VANACLOCHA &\nCA├æIGUERAL, 2006; EMA, 2017; HEALTH CANADA, 2018).",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação\ne ás espécies da família Oleaceae, assim como aos portadores de desordens cardíacas ou renais,\nquando demandarem redução da ingestúo de líquidos. Tradicionalmente, o fitoterápico é utilizado\ndurante duas a quatro semanas. Se os sintomas persistirem após uma semana ou piorarem durante o\nuso do fitoterápico, um médico deverá ser consultado. Polinose (febre do feno) manifestada sob a\nforma de rinite ou asma brõnquica pode ocorrer. O uso é contraindicado durante a gestação, lactação\ne para menores de 18 anos, devido á falta de dados adequados que comprovem a segurança nessas\nsituações (EMA, 2017). Em caso de uso prévio de diuréticos ou patologias renais preexistentes, deve\nser considerada a avaliação de um médico para a utilização do fitoterápico (HEALTH CANADA,\n2018). Núo utilizar em doses acima das recomendadas. Em caso de aparecimento de eventos adversos,\nsuspender o uso do produto e consultar um médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nFórmula 1: tomar 100 mL do decocto duas vezes ao dia, ou seja, pela manhú e á noite (EMA, 2017).\nFórmula 2: tomar o infuso até três vezes ao dia, respeitando a dose máxima diária de até 30 g de\nfolhas (EMA, 2017).\nFórmula 3: tomar uma cápsula, de três a cinco vezes ao dia (EMA, 2017).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 18 anos, devido á falta de dados adequados que comprovem a segurança nessas.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (EMA, 2017)\nComponentes Quantidade\nFolha 5 g\n├Água q.s.p. 150 mL\nFórmula 2 (EMA, 2017)\nComponentes Quantidade\nFolha 6 a 10 g\n├Água q.s.\nCüPSULA COM DROGA VEGETAL\nFórmula 3 (EMA, 2017)\nComponentes Quantidade\nFolha 275 mg\nExcipiente q.s.p. uma cápsula\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada em\nmaterial que núo reaja com os componentes da droga vegetal.\nPara a forma farmacêutica cápsula: é recomendável que em cada frasco contendo cápsulas seja\nadicionado um sachê ou cápsula com dessecante (ex. sílica gel) e um chumaço de algodúo hidrófobo\npor cima das cápsulas, de modo a preencher o espaço vazio entre as cápsulas e a tampa do pote.",
+        "formaFarmaceutica": [
+          "cápsulas"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "olea europaea l. olea europaea l. oliveira."
+    },
+    {
+      "slug": "fitoterapico-panax-ginseng-c-a-mey",
+      "nome": "Panax ginseng C. A. Mey.",
+      "nomesAlternativos": [
+        "Ginseng."
+      ],
+      "nomeCientifico": "Panax ginseng C. A. Mey.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "No alívio dos sintomas decorrentes da astenia, tais como fadiga e fraqueza (WICHTL, 2004;\nHEALTH CANADA, 2009; EMA, 2014a).",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado a pessoas que apresentam hipersensibilidade aos componentes da formulação. O\nuso é contraindicado durante a gestação, lactação e para menores de 18 anos, devido á falta de dados\nadequados que comprovem a segurança nessas situações. A duração recomendada é de até 3 meses.\nSe os sintomas persistirem por mais de 2 semanas durante o uso do fitoterápico, um médico deverá\nser consultado (EMA, 2014a). Efeitos adversos como hipersensibilidade (prurido, urticária), insõnia\ne desordens gastrointestinais (desconforto gástrico, náuseas, võmito, diarreia e constipação) foram\nrelatados, porém a frequência de manifestação núo é conhecida (EMA, 2014a). Núo utilizar em doses\nacima das recomendadas. Em caso de aparecimento de eventos adversos, suspender o uso do produto\ne consultar um médico. O ginseng branco consiste na raiz seca inteira ou cortada, enquanto o ginseng\nvermelho é tratado com vapor e depois seco (EMA, 2014b)",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\n\n-- 150 of 223 --\n\n145\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nFórmula 1: tomar uma cápsula, de uma a quatro vezes ao dia. A dose diária recomendada é de 200 a\n670 mg (EMA, 2014a).\nFórmula 2: tomar uma cápsula, até duas vezes ao dia. A dose máxima diária recomendada é de 200\nmg, porém em situações específicas pode ser elevada a 600 mg, durante os cinco primeiros dias de\nuso (EMA, 2014a).\nFórmula 3: tomar uma cápsula, de duas a quatro vezes ao dia. A dose diária recomendada é de 196\na 525 mg (EMA, 2014a).\nFórmula 4: tomar uma cápsula, até duas vezes ao dia. A dose diária recomendada é de 360 a 500 mg\n(EMA, 2014a).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 18 anos, devido á falta de dados.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (EMA, 2014a)\nComponentes Quantidade\nExtrato seco da raiz 90 a 360 mg\nExcipiente q.s.p. uma cápsula\nFórmula 2 (EMA, 2014a)\nComponentes Quantidade\nExtrato seco da raiz 40 a 200 mg\nExcipiente q.s.p. uma cápsula\nFórmula 3 (EMA, 2014a)\nComponentes Quantidade\nExtrato seco da raiz 98 a 220 mg\nExcipiente q.s.p. uma cápsula\nFórmula 4 (EMA, 2014a)\nComponentes Quantidade\nExtrato seco da raiz 180 a 500 mg\nExcipiente q.s.p. uma cápsula\n\n-- 149 of 223 --\n\n144\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto. É recomendável que\nem cada frasco contendo cápsulas seja adicionado um sachê ou cápsula com dessecante (ex. sílica\ngel) e um chumaço de algodúo hidrófobo por cima das cápsulas, de modo a preencher o espaço vazio\nentre as cápsulas e a tampa do pote.",
+        "formaFarmaceutica": [
+          "cápsulas"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "panax ginseng c. a. mey. panax ginseng c. a. mey. ginseng."
+    },
+    {
+      "slug": "fitoterapico-persea-americana-mill",
+      "nome": "Persea americana Mill.",
+      "nomesAlternativos": [
+        "Abacateiro."
+      ],
+      "nomeCientifico": "Persea americana Mill.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Auxiliar no aumento do fluxo urinário, atuando como adjuvante no tratamento de queixas urinárias\nmenores (CüCERES, 1996; MELO-DINIZ et al., 2006; LORENZI & MATOS, 2008; PEREIRA et\nal., 2017).",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação\ne as espécies da família Lauraceae. Ao persistirem os sintomas, um médico deverá ser consultado. O\nuso é contraindicado durante a gestação, lactação e para menores de 18 anos. Pode reduzir a produção\nde leite e causar atrofia dos condutos galactóforos. O uso núo deve ultrapassar 30 dias, o tratamento\npode ser repetido, se necessário, após intervalo de 7 dias. Como possui tiamina, esta planta núo deve\nser utilizada com Inibidores da Monoaminoxidase (IMAO), pois pode favorecer o surgimento de\ncrises hipertensivas. O uso da espécie em associação com anticoagulantes, tipo varfarina, pode\npotencializar o efeito anticoagulante, com risco de hemorragia (PEREIRA et al., 2017). O uso do\nfruto ou extratos pode ocasionar hipotensúo arterial (OWOLABI et al., 2005; FILHO et al., 2015).\nNúo utilizar as folhas mais jovens para o preparo, pois podem apresentar compostos tóxicos\n(MORTON, 1981). Núo utilizar em doses acima das recomendadas. Em caso de aparecimento de\neventos adversos, suspender o uso do produto e consultar um médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nTomar o infuso de três a seis vezes ao dia (PEREIRA et al., 2017).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 18 anos.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula (PEREIRA et al., 2017)\nComponentes Quantidade\nFolha 0,4 a 0,6 g\n├Água q.s.p. 150 mL\n\n-- 156 of 223 --\n\n151\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto. A embalagem deverá\nser confeccionada em material que núo reaja com os componentes da droga vegetal.",
+        "formaFarmaceutica": [],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "persea americana mill. persea americana mill. abacateiro."
+    },
+    {
+      "slug": "fitoterapico-phyllanthus-niruri-l",
+      "nome": "Phyllanthus niruri L.",
+      "nomesAlternativos": [
+        "Quebra-pedra."
+      ],
+      "nomeCientifico": "Phyllanthus niruri L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "-- 161 of 223 --\n\n156\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nAuxiliar no aumento do fluxo urinário, atuando como adjuvante no tratamento de queixas urinárias\nleves (BARROS et al., 2003; DINIZ et al., 2006; ALONSO, 2007; LORENZI & MATOS, 2008,\nCARVALHO & SILVEIRA, 2010; PEREIRA et al., 2014).",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado a pessoas que apresentam hipersensibilidade aos componentes da formulação e\nás espécies da família Euphorbiaceae (DINIZ et al., 2006). Ao persistirem os sintomas, um médico\ndeverá ser consultado. O uso é contraindicado durante a gestação, lactação e para menores de 18 anos,\ndevido á falta de dados adequados que comprovem a segurança nessas situações. O uso da preparação\nde tintura é especialmente contraindicado para gestantes, lactantes, alcoolistas e diabéticos, em função\ndo teor alcoólico na formulação. Concentrações acima das recomendadas podem causar diarreia,\nhipotensúo arterial (CARVALHO & SILVEIRA, 2010) e diurese pronunciada (ALONSO, 2007).\nPelo risco de obstrução dos canais urinários, é contraindicado o uso para pessoas com cálculos renais\nde grandes dimensões. Núo deve ser usado por mais de três semanas (GUPTA, 1995; MATOS, 1997;\nMATOS, 1998; MATOS et al., 2001; GILBERT et al., 2005; ALONSO, 2007; CARVALHO &\nSILVEIRA, 2010), devido á presença de alcaloides pirrolizidínicos (ALONSO, 2007). Em\ntratamentos prolongados, o uso do chá deve ser interrompido por uma semana após cada período de\ntrês semanas de uso (DINIZ et al., 2006). Pode potencializar o efeito de medicamentos\nhipoglicêmicos (BRINKER, 2001). Utilizar conjuntamente a diuréticos, hipotensores,\nhipoglicemiantes e insulina, apenas sob acompanhamento médico (PANIZZA et al., 2012). Núo\nutilizar em doses acima das recomendadas. Em caso de aparecimento de eventos adversos, suspender\no uso do produto e consultar um médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nFórmula 1: tomar 150 mL do infuso, 10 a 15 minutos após o preparo, de duas a três vezes ao dia\n(CARVALHO & SILVEIRA, 2010).\nFórmula 2: tomar 150 mL do decocto três vezes ao dia (GILBERT et al., 2005; DINIZ et al., 2006;\nALONSO, 2007; LORENZI & MATOS, 2008).\nFórmula 3: tomar 150 mL do decocto, de duas a três vezes ao dia (DINIZ et al., 2006; ALONSO,\n2007; LORENZI & MATOS, 2008).\nFórmula 4: tomar 1 a 3 mL da tintura, diluídos em 50 mL de água, três vezes ao dia (PEREIRA et\nal., 2014).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 18 anos,.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (CARVALHO & SILVEIRA, 2010)\nComponentes Quantidade\nParte aérea 3 g\n├Água q.s.p. 150 mL\nFórmula 2 (GILBERT et al., 2005; DINIZ et al., 2006; ALONSO, 2007; LORENZI & MATOS,\n2008)\nComponentes Quantidade\nPlanta inteira 1,5 a 3 g\n├Água q.s.p. 150 mL\nFórmula 3 (DINIZ et al., 2006; ALONSO, 2007; LORENZI & MATOS, 2008)\nComponentes Quantidade\nPlanta inteira 4,5 a 6 g\n├Água q.s.p. 150 mL\nTINTURA\nFórmula 4 (BRASIL, 2010; PEREIRA et al., 2014)\nComponentes Quantidade\nParte aérea 10 g\n\n-- 160 of 223 --\n\n155\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nülcool etílico 70% q.s.p. 100 mL\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada em\nmaterial que núo reaja com os componentes da droga vegetal.\nPara a forma farmacêutica tintura: acondicionar em frasco de vidro ômbar.",
+        "formaFarmaceutica": [
+          "tintura"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "phyllanthus niruri l. phyllanthus niruri l. quebra-pedra."
+    },
+    {
+      "slug": "fitoterapico-pimpinella-anisum-l",
+      "nome": "Pimpinella anisum L.",
+      "nomesAlternativos": [
+        "Anis e erva-doce."
+      ],
+      "nomeCientifico": "Pimpinella anisum L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Como auxiliar no tratamento sintomático de queixas gastrintestinais leves; tais como distensúo\nabdominal e flatulência; como auxiliar no alívio da tosse produtiva associada ao resfriado comum\n(LORENZI & MATOS, 2008; EMA, 2013; H├äNSEL et al., 2015).",
+      "contraindicacoes": "Uso adulto e pediátrico acima de 12 anos.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação.\nAo persistirem os sintomas durante o uso do fitoterápico, um médico deverá ser consultado. A\nutilização em crianças menores de 12 anos, lactantes e gestantes núo é recomendada, devido á\nausência de dados suficientes para avaliação de segurança. Em gestantes pode ocasionar alterações\nhormonais (BRINKER, 2001). Foi relatada a toxicidade do anetol em crianças com sintomas clínicos\nde hipertonia, choro contínuo, movimentos oculares atípicos, espasmos, cianose e inapetência (WHO,\n2007). Utilizar por, no máximo, duas semanas. Ao persistirem os sintomas durante o uso do\nfitoterápico, um médico deverá ser consultado (EMA, 2013). Podem ocorrer reações cutôneas,\nrespiratórias e gastrintestinais á erva-doce (BRINKER, 2001; WHO, 2007, EMA, 2013; H├äNSEL et\nal., 2015). O uso é contraindicado no caso de hipersensibilidade a outras espécies da família Apiaceae\nou a substôncia isolada anetol (EMA, 2013), uma vez que há relatos de que essa substôncia induz á\ndepuração, incluindo conversões metabólicas, influencia na atividade da glutationa-S-transferase, ou\nsuas isoenzimas, induz a atividade e/ou o conteúdo de UDP-glicurosiltransferases (BRINKER, 2001).\nNúo utilizar em doses acima das recomendadas. Em caso de aparecimento de eventos adversos,\nsuspender o uso do produto e consultar um médico.\n\n-- 163 of 223 --\n\n158\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nTomar 150 mL do infuso, três vezes ao dia (EMA, 2013).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Menores de 12 anos, lactantes e gestantes núo é recomendada, devido á.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula (EMA, 2013)\nComponentes Quantidade\nFruto 1,0 a 3,5 g\n├Água q.s.p. 150 mL\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto. A embalagem deverá\nser confeccionada em material que núo reaja com os componentes da droga vegetal.",
+        "formaFarmaceutica": [],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "pimpinella anisum l. pimpinella anisum l. anis e erva-doce."
+    },
+    {
+      "slug": "fitoterapico-plantago-lanceolata-l",
+      "nome": "Plantago lanceolata L.",
+      "nomesAlternativos": [
+        "Tanchagem."
+      ],
+      "nomeCientifico": "Plantago lanceolata L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Como auxiliar no tratamento sintomático de irritações orais e da faringe associadas á tosse seca\n(WICHTL, 2004; VANACLOCHA & CA├æIGUERAL, 2006; EMA, 2014).",
+      "contraindicacoes": "Fórmula 1: uso adulto e pediátrico acima de 12 anos.\nFórmulas 2 e 3: uso adulto e pediátrico acima de 3 anos.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação.\nSe os sintomas persistirem por mais de uma semana, caso ocorra dispneia, secreção purulenta ou febre\nenquanto estiver fazendo uso desse fitoterápico, um médico deverá ser consultado (EMA, 2014). O\nuso é contraindicado durante a gestação, lactação e para menores de 12 anos, devido á falta de dados\nadequados que comprovem a segurança nessas situações (EMA, 2014). P. lanceolata pode\npotencializar os efeitos dos digitálicos, aumentando o risco de intoxicação. Evitar o uso em pessoas\nhipotensas e com obstrução intestinal. O uso contínuo núo pode ultrapassar 30 dias, podendo-se\nrepetir o tratamento, se necessário, após intervalo de 7 dias. Devido ao moderado conteúdo de tanino,\nem doses e concentrações mais elevadas, pode causar náuseas e võmitos. Dermatite de contato e\nreações de hipersensibilidade foram relatadas. Doses acima das recomendadas podem causar\n\n-- 165 of 223 --\n\n160\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nbradicardia e hipotensúo arterial (PEREIRA et al., 2017). Núo utilizar em doses acima das\nrecomendadas. Em caso de aparecimento de eventos adversos, suspender o uso do produto e consultar\num médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nFórmula 1: tomar 150 mL do infuso de duas a três vezes ao dia (EMA, 2014).\nFórmula 2. Uso adulto e pediátrico acima de 12 anos: tomar uma cápsula de 233 mg de três vezes ao\ndia. A dose diária é de 699 mg (EMA, 2014).\nFórmula 2. Uso pediátrico de 5 a 11 anos: tomar uma cápsula de 233 mg de duas a três vezes ao dia.\nA dose diária é de 466 a 699 mg (EMA, 2014).\nFórmula 2. Uso pediátrico de 3 a 4 anos: tomar uma cápsula de 177 mg três vezes ao dia. A dose\ndiária máxima é de 351 mg (EMA, 2014).\nFórmula 3. Uso adulto e pediátrico acima de 12 anos: tomar uma cápsula de 300 mg de três a quatro\nvezes ao dia. A dose diária é de 900 a 1200 mg (EMA, 2014).\nFórmula 3. Uso pediátrico de 5 a 11 anos: tomar uma cápsula de 300 mg três vezes ao dia. A dose\ndiária máxima é de até 1200 mg (EMA, 2014).\nFórmula 3. Uso pediátrico de 3 a 4 anos: tomar uma cápsula de 150 mg três vezes ao dia. A dose\ndiária máxima é de 450 mg (EMA, 2014).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 12 anos, devido á falta de dados.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (EMA, 2014)\nComponentes Quantidade\nFolha 2 g\n├Água q.s.p. 150 mL\nCüPSULA COM DERIVADO\n\n-- 164 of 223 --\n\n159\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nFórmula 2 (EMA, 2014)\nComponentes Quantidade\nExtrato seco da folha 177 a 233 mg\nExcipiente q.s.p. 1 cápsula\nFórmula 3 (EMA, 2014)\nComponentes Quantidade\nExtrato seco da folha 150 a 300 mg\nExcipiente q.s.p. 1 cápsula\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada em\nmaterial que núo reaja com os componentes da droga vegetal.\nPara a forma farmacêutica cápsula: é recomendável que em cada frasco contendo cápsulas seja\nadicionado um sachê ou cápsula com dessecante (ex. sílica gel) e um chumaço de algodúo hidrófobo\npor cima das cápsulas, de modo a preencher o espaço vazio entre as cápsulas e a tampa do pote.",
+        "formaFarmaceutica": [
+          "cápsulas"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "plantago lanceolata l. plantago lanceolata l. tanchagem."
+    },
+    {
+      "slug": "fitoterapico-plantago-major-l",
+      "nome": "Plantago major L.",
+      "nomesAlternativos": [
+        "Tanchagem."
+      ],
+      "nomeCientifico": "Plantago major L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Auxiliar no tratamento sintomático decorrente de afecções da cavidade oral como anti-inflamatório e\nantisséptico (GARCIA et al., 1999; TYLER et al., 2004; MATOS, 2007; LORENZI & MATOS,\n2008; CüCERES, 2009; PEREIRA et al., 2014; CARVALHO & SILVEIRA, 2010; CARVALHO,\n2017; PEREIRA et al., 2017).",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação.\nAo persistirem os sintomas, um médico deverá ser consultado. O uso é contraindicado durante a\ngestação, lactação e para menores de 18 anos, devido á falta de dados adequados que comprovem a\nsegurança nessas situações. O uso da preparação de tintura é especialmente contraindicado para\ngestantes, lactantes, alcoolistas e diabéticos, em função do teor alcoólico na formulação. A\nmanipulação dessa espécie deve ser realizada cuidadosamente, pois o pólen e a casca da semente\npodem causar reações anafiláticas ou alérgicas (ALONSO, 2007). Núo deve ser utilizado em\npacientes com hipotensúo arterial e obstrução intestinal (PEREIRA et al., 2017). Núo engolir a\npreparação após o bochecho e gargarejo (MATOS, 1997; GARCIA et al., 1999; GILBERT et al.,\n\n-- 167 of 223 --\n\n162\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\n2005; BIESKI & MARI GEMMA, 2005). Nunca utilizar a casca da semente (CARVALHO &\nSILVEIRA, 2010). É recomendável que a administração de outros medicamentos seja realizada com\nintervalo mínimo de 3 horas em relação a esse fitoterápico. Núo utilizar em doses acima das\nrecomendadas. Em caso de aparecimento de eventos adversos, suspender o uso do produto e consultar\num médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso externo.\nFórmula 1: após higienização, aplicar o infuso sobre o local afetado, ou fazer bochechos ou\ngargarejos (CüCERES, 2009).\nFórmula 2: fazer bochechos ou gargarejos com 2 a 4 mL da tintura, diluídos em 50 mL de água\n(CüCERES, 2009).",
+      "viaAdministracao": [
+        "tópica"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 18 anos, devido á falta de dados adequados que comprovem a.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (CüCERES, 2009)\nComponentes Quantidade\nFolha 2 a 6 g\n├Água q.s.p. 150 mL\nTINTURA\nFórmula 2 (CüCERES, 2009)\nComponentes Quantidade\nParte aérea 20 g\nülcool etílico 45% q.s.p. 100 mL\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada\nem material que núo reaja com os componentes da droga vegetal.\nPara a forma farmacêutica tintura: acondicionar em frasco de vidro ômbar.",
+        "formaFarmaceutica": [
+          "tintura"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "plantago major l. plantago major l. tanchagem."
+    },
+    {
+      "slug": "fitoterapico-plectranthus-barbatus-andrews",
+      "nome": "Plectranthus barbatus Andrews",
+      "nomesAlternativos": [
+        "Boldo-africano",
+        "boldo-brasileiro e boldo-nacional."
+      ],
+      "nomeCientifico": "Plectranthus barbatus Andrews",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "-- 170 of 223 --\n\n165\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nAuxiliar no alívio dos sintomas dispépticos (NOGUEIRA, 2000; MELO-DINIZ et al., 2006;\nLORENZI & MATOS, 2008; CARVALHO & SILVEIRA, 2010; SILVEIRA et al., 2013; PEREIRA\net al., 2014).",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação.\nAo persistirem os sintomas, um médico deverá ser consultado. Núo deve ser utilizado por gestantes,\nlactantes, menores de 18 anos, hipertensos, portadores de obstruções das vias biliares, portadores de\ndoença renal policística ou hepatite (PUTNAM et al, 2007; CARVALHO & SILVEIRA, 2010). O\nuso da preparação de tintura é especialmente contraindicado para gestantes, lactantes, alcoolistas e\ndiabéticos, em função do teor alcoólico na formulação. Estudos realizados em animais demonstraram\nredução do tempo de sono induzido por pentobarbital com o uso do extrato aquoso, dessa forma, uma\npotencial interação com barbitúricos deve ser considerada (SILVEIRA et al., 2013). Núo utilizar esse\nfitoterápico juntamente com metronidazol ou dissulfiram, medicamentos depressores do SNC, antihipertensivos, digoxina, antiarrítmicos e moduladores da tireoide (ALMEIDA & LEMONICA, 2000;\nMELO-DINIZ et al., 2006; CARVALHO & SILVEIRA, 2010). Doses acima das recomendadas, ou\nutilizadas por um período maior que o recomendado, podem causar irritação gástrica e desconforto\ngastrointestinal (MELO-DINIZ et al., 2006; CARVALHO & SILVEIRA, 2010). Devido a sua ação\nantiácida, esse medicamento pode reduzir a biodisponibilidade de fármacos que necessitem desta\ncondição, cuja absorção é influenciada pelo pH gástrico (MELO-DINIZ et al., 2006). Foram relatados\ncasos de dermatite de contato (SILVEIRA et al., 2013). O uso contínuo núo deve ultrapassar 30 dias,\no tratamento pode ser repetido, se for necessário, após intervalo de 7 dias (PEREIRA et al., 2017).\nNúo utilizar em doses acima das recomendadas. Em caso de aparecimento de eventos adversos,\nsuspender o uso do produto e consultar um médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nFórmula 1: tomar 150 mL do infuso, logo após o preparo, de duas a três vezes ao dia (MELO-DINIZ\net al., 2006; CARVALHO & SILVEIRA, 2010; SILVEIRA et al., 2013).\nFórmula 2: Tomar 3 a 10 mL da alcoolatura, diluídos em 50 mL de água, três vezes ao dia (PEREIRA\net al., 2014).\nFórmula 3: tomar 2,5 mL da tintura, diluídos em 75 mL de água, três vezes ao dia (MELO-DINIZ et\nal., 2006).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 18 anos, hipertensos, portadores de obstruções das vias biliares, portadores de.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (MELO-DINIZ et al., 2006; CARVALHO & SILVEIRA, 2010; SILVEIRA et al., 2013)\nComponentes Quantidade\nFolha 1 a 3 g\n├Água q.s.p. 150 mL\nALCOOLATURA\nFórmula 2 (PEREIRA et al., 2014)\nComponentes Quantidade\nFolha 20 g\nülcool etílico 80 % q.s.p. 100 mL\nTINTURA\nFórmula 3 (NETTO-JUNIOR, 1998; MELO-DINIZ et al., 2006; CAMPOS et al., 2015)\nComponentes Quantidade\nFolha 20 g\nülcool etílico 70% q.s.p. 100 mL\n\n-- 169 of 223 --\n\n164\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada em\nmaterial que núo reaja com os componentes da droga vegetal.\nPara a forma farmacêutica tintura e alcoolatura: acondicionar em frasco de vidro ômbar.",
+        "formaFarmaceutica": [
+          "tintura"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "plectranthus barbatus andrews plectranthus barbatus andrews boldo-africano boldo-brasileiro e boldo-nacional."
+    },
+    {
+      "slug": "fitoterapico-polygala-senega-l",
+      "nome": "Polygala senega L.",
+      "nomesAlternativos": [
+        "Polígala."
+      ],
+      "nomeCientifico": "Polygala senega L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Auxiliar como expectorante (WHO, 2004; ALONSO, 2007; CARVALHO & SILVEIRA, 2010).\n\n-- 172 of 223 --\n\n167\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação.\nAo persistirem os sintomas por período superior a 7 dias, um médico deverá ser consultado (WHO,\n2004). O uso de P. senega pode exacerbar inflamações gastrointestinais pré-existentes, tais como\ngastrite ou úlcera gástrica, assim como doses excessivas podem provocar võmitos (WHO, 2004). Em\nestudos realizados em animais foi observada a ocorrência de contração uterina, devido a esse risco, o\nuso por gestantes é contraindicado (WHO, 2004; ALONSO, 2007). A administração a lactantes deve\nser supervisionada por um médico (WHO, 2004). Quando utilizado em altas dosagens pode causar\nnáuseas, võmitos e diarreia, sendo que, em indivíduos sensíveis, tais efeitos adversos podem ocorrer\nmesmo em doses terapêuticas (WHO, 2004; ALONSO, 2007). Núo utilizar em doses acima das\nrecomendadas. Em caso de aparecimento de eventos adversos, suspender o uso do produto e consultar\num médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nTomar o infuso ou decocto, três vezes ao dia. Ingerir logo após o preparo (WHO, 2004).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula (WHO, 2004)\nComponentes Quantidade\nRaiz 0,5 a 1 g\n├Água q.s.p. 150 mL\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto. A embalagem deverá\nser confeccionada em material que núo reaja com os componentes da droga vegetal.",
+        "formaFarmaceutica": [],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "polygala senega l. polygala senega l. poligala."
+    },
+    {
+      "slug": "fitoterapico-punica-granatum-l",
+      "nome": "Punica granatum L.",
+      "nomesAlternativos": [
+        "Romú."
+      ],
+      "nomeCientifico": "Punica granatum L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Auxiliar no tratamento sintomático decorrente de afecções da cavidade oral como anti-inflamatório e\nantisséptico (MATOS et al. 2001; PROPLAM, 2004; RICCI et al., 2006; CüRCERES, 2009;\nCARVALHO & SILVEIRA, 2010; PANIZZA et al. 2012; PEREIRA et al., 2017).",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação.\nAo persistirem os sintomas durante o uso do fitoterápico, um médico deverá ser consultado. O uso é\ncontraindicado durante a gestação, lactação e para menores de 18 anos, devido á falta de dados\nadequados que comprovem a segurança nessas situações (MATOS et al., 2001). O uso da preparação\nde tintura é especialmente contraindicado para gestantes, lactantes, alcoolistas e diabéticos, em função\ndo teor alcoólico na formulação. O uso contínuo núo deve ultrapassar 15 dias, o tratamento pode ser\nrepetido após 7 dias (PEREIRA et al., 2017). Núo ingerir o fitoterápico após o bochecho e gargarejo\n(VIANA et al., 1998; BIESKI & MARI GEMMA, 2005; WHO, 2009). Núo utilizar em doses acima\ndas recomendadas. Em caso de aparecimento de eventos adversos, suspender o uso do produto e\nconsultar um médico.\n\n-- 175 of 223 --\n\n170\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso externo.\nFórmula 1: fazer bochechos ou gargarejos três vezes ao dia (PEREIRA et al., 2017).\nFórmula 2: diluir 15 mL da tintura em 150 mL de água. Fazer bochechos e gargarejos três vezes ao\ndia (PANIZZA et al. 2012).",
+      "viaAdministracao": [
+        "tópica"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 18 anos, devido á falta de dados.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (PEREIRA et al., 2017)\nComponentes Quantidade\nPericarpo 0,9 a 1,1 g\n├Água q.s.p. 150 mL\nTINTURA\nFórmula 2 (MATOS et al., 2001)\nComponentes Quantidade\nPericarpo 20 g\nülcool etílico 70% q.s.p. 100 mL\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada em\nmaterial que núo reaja com os componentes da droga vegetal.\nPara a forma farmacêutica tintura: acondicionar em frasco de vidro ômbar.",
+        "formaFarmaceutica": [
+          "tintura"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "punica granatum l. punica granatum l. romu."
+    },
+    {
+      "slug": "fitoterapico-rosmarinus-officinalis-l",
+      "nome": "Rosmarinus officinalis L.",
+      "nomesAlternativos": [
+        "Alecrim."
+      ],
+      "nomeCientifico": "Rosmarinus officinalis L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Fórmula 1: auxiliar no alívio de sintomas dispépticos; auxiliar nas desordens espasmódicas leves do\ntrato gastrointestinal (EMA, 2010).\nFórmula 2: auxiliar no alívio de sintomas dispépticos (HOFFMANN, 2003; VANACLOCHA &\nCA├æIGUERAL, 2006; ALONSO, 2007; PEREIRA et al., 2014).\nFórmula 3: auxiliar no alívio de sintomas dispépticos; auxiliar nas desordens espasmódicas leves do\ntrato gastrointestinal (EMA, 2010).",
+      "contraindicacoes": "-- 177 of 223 --\n\n172\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nFórmula 1: uso adulto e pediátrico acima de 12 anos.\nFórmulas 2 e 3: uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação,\nassim como ás crianças menores de 12 anos, gestantes e lactantes, devido á falta de dados adequados\nque comprovem a segurança nessas situações. Se após duas semanas de uso oral, do fitoterápico os\nsintomas persistirem, um médico deverá ser consultado. Pessoas com obstrução dos ductos biliares\nou qualquer outra disfunção biliar (VANACLOCHA & CA├æIGUERAL, 2006), colangite ou doenças\nhepáticas, necessitam de supervisúo de um médico para o uso seguro desse fitoterápico por via oral.\nEsse medicamento pode desencadear quadros de dermatite e episódios de asma (EMA, 2010). Pode\nalterar o sono se utilizada á noite, antes de dormir. Utilizar com cautela em hipertensos, diabéticos e\nportadores de adenomas prostáticos. Pode reduzir o limiar convulsígeno em pacientes epilépticos\n(PEREIRA et al., 2014). Núo utilizar em doses acima das recomendadas. Em caso de aparecimento\nde eventos adversos, suspender o uso do produto e consultar um médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nFórmula 1: tomar de 150 a 250 mL do infuso, conforme preparado, 15 minutos após o preparo, duas\na três vezes ao dia entre as refeições (EMA, 2010).\nFórmula 2: tomar de 3 a 8,5 mL da tintura, diluídos em 50 mL de água, ao dia (VANACLOCHA &\nCA├æIGUERAL, 2006).\nFórmula 3: tomar de 2 a 4 mL do extrato fluido, diluídos em 50 mL de água, ao dia (EMA, 2010).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Menores de 12 anos, gestantes e lactantes, devido á falta de dados adequados.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (EMA, 2010)\nComponentes Quantidade\nFolha 1 a 2 g\n├Água q.s.p. 150 a 250 mL\nTINTURA\nFórmula 2 (VANACLOCHA & CA├æIGUERAL, 2006, PEREIRA, 2014)\nComponentes Quantidade\nFolha 10 a 20 g\nülcool etílico a 70% q.s.p. 100 mL\nEXTRATO FLUIDO\nFórmula 3 (VANACLOCHA & CA├æIGUERAL, 2006; EMA, 2010)\nComponentes Quantidade\nFolha 100 g\nülcool etílico a 45% 100 mL\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara as formas farmacêuticas tintura e extrato fluido: acondicionar em frasco de vidro ômbar.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada em\nmaterial que núo reaja com os componentes da droga vegetal.",
+        "formaFarmaceutica": [
+          "infusão",
+          "tintura"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "rosmarinus officinalis l. rosmarinus officinalis l. alecrim."
+    },
+    {
+      "slug": "fitoterapico-salix-varias-especies-incluindo-s-purpurea-l-s-daphnoides-vill-s-fragilis-l",
+      "nome": "Salix [várias espécies incluindo S. purpurea L., S. daphnoides Vill., S. fragilis L.]",
+      "nomesAlternativos": [
+        "Salgueiro",
+        "salgueiro-branco."
+      ],
+      "nomeCientifico": "Salix [várias espécies incluindo S. purpurea L., S. daphnoides Vill., S. fragilis L.]",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Fórmulas 1 a 6: auxiliar no alívio dos sintomas da dor articular leve; auxiliar no alívio da febre\nassociada ao resfriado comum (EMA, 2017).",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação,\ná outras espécies do gênero Salix, salicilatos ou outros anti-inflamatórios núo esteroidais (EMA,\n2017). Ao persistirem os sintomas por período maior que uma semana, um médico deverá ser\nconsultado. O uso é contraindicado para pessoas que, após exposição á salicilatos ou outros antiinflamatórios núo esteroidais, apresentaram angioedema, broncoespasmo, asma ou urticária crõnica\n(EMA, 2017). Uso contraindicado para pessoas que apresentam úlcera péptica (EMA, 2017).\nContraindicado para gestantes, pois os salicilatos súo capazes de ultrapassar a barreira placentária e\nlactantes, por serem excretados no leite. Uso contraindicado para pessoas com deficiência da enzima\nglicose-6-fosfato desidrogenase (G6PD), crianças e adolescentes menores de 18 anos, devido ao risco\nde desenvolverem a síndrome de Reye, pessoas com comprometimento renal ou hepático e desordens\n\n-- 180 of 223 --\n\n175\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nde coagulação (EMA, 2017). Para alívio da dor articular, núo utilizar por período maior que quatro\nsemanas (EMA, 2017). Para o alívio da febre relacionada ao resfriado, o período máximo de uso\npermitido é de três dias, porém, para o alívio da cefaleia, é de um dia. Ao persistirem os sintomas um\nmédico deverá ser consultado (EMA, 2017). Caso a febre exceda 39┬║ C, acompanhada de cefaleia,\num médico deverá ser consultado. Núo usar concomitantemente com anticoagulantes, antiácidos,\ncorticoides e anti-inflamatórios núo esteroidais, assim como para pessoas com distúrbios\ngastrintestinais e sensíveis ao ácido salicílico, asmáticos ou com função trombocítica prejudicada\n(BLUMENTHAL, 2000; KRIVOY et al., 2001; ESCOP, 2003; WICHTL, 2004; EMA, 2017). Pode\npotencializar o efeito de anticoagulantes, tais como derivados cumarínicos. O uso do fitoterápico pode\ncausar rash cutôneo, prurido, urticária, asma, exantema, além de sintomas gastrointestinais, tais\ncomo: náusea, võmito, dor abdominal, diarreia, dispepsia e pirose (EMA, 2017). Núo utilizar em\ndoses acima das recomendadas. Em caso de aparecimento de eventos adversos, suspender o uso do\nproduto e consultar um médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nFórmula 1: tomar 150 mL do infuso, três vezes ao dia (EMA, 2017).\nFórmula 2: tomar 200 mL do decocto, recentemente preparado, ainda morno, três vezes ao dia, após\nas refeições (EMA, 2017).\nFórmula 3: tomar 15 a 24 mL da tintura, diluídos em 50 mL de água, ao dia (EMA, 2017).\nFórmula 4: tomar 1 a 3 mL do extrato fluido, diluídos em 50 mL de água, três vezes ao dia (EMA,\n2017).\nFórmula 5: tomar uma cápsula, duas vezes ao dia (EMA, 2017).\nFórmula 6: tomar uma cápsula, duas vezes ao dia (EMA, 2017).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 18 anos, devido ao risco.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (EMA, 2017)\nComponentes Quantidade\nCasca do caule 1 a 3 g\n├Água q.s.p. 150 mL\nFórmula 2 (EMA, 2017)\nComponentes Quantidade\nCasca do caule 4 g\n├Água q.s.p. 200 mL\nTINTURA\nFórmula 3 (EMA, 2017)\nComponentes Quantidade\nCasca do caule 20 g\nülcool etílico a 25% q.s.p. 100 mL\nEXTRATO FLUIDO\nFórmula 4 (EMA, 2017)\nComponentes Quantidade\nCasca do caule 100 g\nülcool etílico a 25% q.s.p. 100 mL\nCüPSULA COM DERIVADO\nFórmula 5 (EMA, 2017)\nComponentes Quantidade\nExtrato aquoso seco da casca 600 mg\nExcipiente q.s.p. uma cápsula\n\n-- 179 of 223 --\n\n174\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nFórmula 6 (EMA, 2017)\nComponentes Quantidade\nExtrato aquoso seco da casca 480 mg\nExcipiente q.s.p. uma cápsula\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada em\nmaterial que núo reaja com os componentes da droga vegetal.\nPara as formas farmacêuticas tintura e extrato fluido: acondicionar em frasco de vidro ômbar.\nPara a forma farmacêutica cápsula: é recomendável que em cada frasco contendo cápsulas seja\nadicionado um sachê ou cápsula com dessecante (ex. sílica gel) e um chumaço de algodúo hidrófobo\npor cima das cápsulas, de modo a preencher o espaço vazio entre as cápsulas e a tampa do pote.",
+        "formaFarmaceutica": [
+          "tintura",
+          "cápsulas"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "salix [varias especies incluindo s. purpurea l., s. daphnoides vill., s. fragilis l.] salix [varias especies incluindo s. purpurea l., s. daphnoides vill., s. fragilis l.] salgueiro salgueiro-branco."
+    },
     {
       "slug": "fitoterapico-salvia-officinalis-l",
       "nome": "Salvia officinalis L.",
@@ -198,11 +751,51 @@
       "searchText": "sambucus nigra l. sambucus nigra l."
     },
     {
+      "slug": "fitoterapico-silybum-marianum-l-gaertn",
+      "nome": "Silybum marianum (L.) Gaertn.",
+      "nomesAlternativos": [
+        "Cardo-mariano."
+      ],
+      "nomeCientifico": "Silybum marianum (L.) Gaertn.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Auxiliar no alívio dos sintomas dispépticos (BLUMENTHAL et al., 2003; WHO, 2004; WICHTL,\n2004; HEALTH CANADA, 2015; OZTURK et al., 2015; EMA, 2018).",
+      "contraindicacoes": "Uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação\ne ás espécies da família Asteraceae (WHO, 2004). Se os sintomas persistirem por mais de 2 semanas\nou se agravarem durante a utilização deste fitoterápico, um médico deverá ser consultado (HEALTH\nCANADA, 2015, EMA, 2018). O uso é contraindicado durante a gestação, lactação e para menores\nde 18 anos, devido á falta de dados adequados que comprovem a segurança nessas situações (WHO,\n2004; EMA, 2018). Esse produto pode desencadear efeitos adversos leves e sintomas\ngastrointestinais, tais como, xerostomia (boca seca), irritação gástrica e diarreia (VANACLOCHA &\nCA├æIGUERAL, 2006); cefaleia e reações alérgicas, tais como, dermatite, urticaria, rash cutôneo,\nprurido, anafilaxia (WHO, 2004). Núo utilizar em doses acima das recomendadas. Em caso de\naparecimento de eventos adversos, suspender o uso do produto e consultar um médico.",
+      "precaucoes": "",
+      "interacoesMedicamentosas": null,
+      "posologia": "Uso oral.\nFórmula 1: tomar 100 mL do infuso, de duas a três vezes ao dia, antes das refeições (EMA, 2018).\nFórmula 2: tomar uma cápsula, duas vezes ao dia (EMA, 2018).\nFórmula 3: tomar uma cápsula, uma vez ao dia (EMA, 2018).\n\n-- 193 of 223 --\n\n188\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
+      "fontes": [
+        {
+          "fonte": "FFFB",
+          "edicao": "2ª ed. 2021",
+          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
+          "dataConsulta": "2026-07-11",
+          "campos": [
+            "modoPreparo",
+            "indicacoes",
+            "advertencias"
+          ]
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "modoPreparo": "Fórmula 1 (EMA, 2018)\nComponentes Quantidade\nFruto 3-5 g\n├Água q.s.p. 100 mL\nCüPSULA COM DERIVADO\nFórmula 2 (EMA, 2018)\nComponentes Quantidade\nExtrato mole 392 mg\nExcipiente q.s.p. uma cápsula\nFórmula 3 (EMA, 2018)\nComponentes Quantidade\nExtrato seco do fruto maduro\nsem papilo\n200 mg\nExcipiente q.s.p. uma cápsula\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada em\nmaterial que núo reaja com os componentes da droga vegetal.\nPara a forma farmacêutica cápsula: é recomendável que em cada frasco contendo cápsulas seja\nadicionado um sachê ou cápsula com dessecante (ex. sílica gel) e um chumaço de algodúo hidrófobo\npor cima das cápsulas, de modo a preencher o espaço vazio entre as cápsulas e a tampa do pote.",
+        "formaFarmaceutica": [
+          "cápsulas"
+        ],
+        "preparacaoExtemporanea": true
+      },
+      "searchText": "silybum marianum (l.) gaertn. silybum marianum (l.) gaertn. cardo-mariano."
+    },
+    {
       "slug": "fitoterapico-symphytum-officinale-l",
       "nome": "Symphytum officinale L.",
       "nomesAlternativos": [
-        "Confrei.",
-        "GEL"
+        "Confrei."
       ],
       "nomeCientifico": "Symphytum officinale L.",
       "categoriaPratica": "FITOTERAPICO",
@@ -231,11 +824,13 @@
       "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Menores de 18 anos, gestantes e lactantes (ema, 2015).",
       "renisus": false,
       "detalhesEspecificos": {
-        "modoPreparo": "A embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto. Acondicionar em\nrecipiente adequado bem fechado. Armazenar em local fresco, seco e ao abrigo da luz. Caso o\nacondicionamento for em pote, utilizar preferencialmente espátula para retirar o produto.",
-        "formaFarmaceutica": [],
-        "preparacaoExtemporanea": false
+        "modoPreparo": "Fórmula 1 (EMA, 2015)\nComponentes Quantidade\nExtrato fluido de confrei 10 mL\nGel base q.s.p. 100 g\nPOMADA\nFórmula 2 (EMA, 2015)\nComponentes Quantidade\nExtrato fluido de confrei 10 mL\nPomada base q.s.p. 100 g\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto. Acondicionar em\nrecipiente adequado bem fechado. Armazenar em local fresco, seco e ao abrigo da luz. Caso o\nacondicionamento for em pote, utilizar preferencialmente espátula para retirar o produto.",
+        "formaFarmaceutica": [
+          "uso tópico"
+        ],
+        "preparacaoExtemporanea": true
       },
-      "searchText": "symphytum officinale l. symphytum officinale l. confrei. gel"
+      "searchText": "symphytum officinale l. symphytum officinale l. confrei."
     },
     {
       "slug": "fitoterapico-tanacetum-parthenium-l-sch-bip",
@@ -277,169 +872,6 @@
         "preparacaoExtemporanea": true
       },
       "searchText": "tanacetum parthenium (l.) sch.bip. tanacetum parthenium (l.) sch.bip. tanaceto."
-    },
-    {
-      "slug": "fitoterapico-taraxacum-officinale-f-h-wigg",
-      "nome": "Taraxacum officinale F. H. Wigg.",
-      "nomesAlternativos": [
-        "Dente-de-leúo."
-      ],
-      "nomeCientifico": "Taraxacum officinale F. H. Wigg.",
-      "categoriaPratica": "FITOTERAPICO",
-      "indicacoes": "Fórmulas 1 a 5: auxiliar no alívio de sintomas dispépticos, tais como sensação de plenitude,\nflatulência e digestúo lenta (BLUMENTHAL et al., 2000; WICHTL, 2004; MILLS & BONE, 2005;\nWHO, 2007; LORENZI & MATOS, 2008; CARVALHO & SILVEIRA, 2010; PEREIRA et al.,\n2014; HEALTH CANADA, 2018; EMA, 2019).\nFórmulas 1 e 2: auxiliar no aumento do fluxo urinário, atuando como adjuvante no tratamento de\nqueixas menores do trato urinário, desde que situações graves tenham sido descartadas por um médico\n(BLUMENTHAL et al., 2000; WICHTL, 2004; MILLS & BONE, 2005; LORENZI & MATOS,\n2008; CARVALHO & SILVEIRA, 2010 PEREIRA et al., 2014; EMA, 2019).",
-      "contraindicacoes": "-- 202 of 223 --\n\n197\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nFórmulas 1, 2 e 5: uso adulto e pediátrico acima de 12 anos.\nFórmulas 3 e 4: uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação\ne ás espécies da família Asteraceae. Se os sintomas persistirem por mais de duas semanas de uso do\nfitoterápico, um médico deverá ser consultado (EMA, 2019). O uso é contraindicado durante a\ngestação, lactação e para crianças menores de 12 anos, devido á falta de dados adequados que\ncomprovem a segurança nessas situações. O uso da preparação de extrato fluido é especialmente\ncontraindicado para gestantes, lactantes, alcoolistas, diabéticos e menores de 18 anos, em função do\nteor alcoólico na formulação. Para garantir aumento do fluxo urinário, a ingestúo adequada de\nlíquidos deve ser assegurada durante o tratamento. O uso é contraindicado para pessoas\ndiagnosticadas com gastrite, úlcera gastroduodenal, cálculos biliares, obstrução dos ductos biliares e\ndo trato intestinal, colangite e hepatopatia (EMA, 2019; CARVALHO & SILVEIRA, 2010). Pessoas\ndiabéticas ou portadoras de patologias renais ou cardíacas, devem evitar utilizar esse produto, devido\nao risco de provocar hipocalemia (EMA, 2019). Dor epigástrica e hiperacidez podem ocorrer, contudo\na frequência núo é conhecida (EMA, 2019). Caso ocorra febre, disúria, dor espasmódica ou hematúria\n(sangue na urina) ou demais eventos adversos, o uso do produto deve ser interrompido e um médico\ndeverá ser consultado (EMA, 2019). Um médico deve ser consultado caso ocorram reações alérgicas\n(WHO, 2007; EMA, 2019). Pode diminuir a absorção de antibióticos tais como ciprofloxacino,\nlevofloxacino e moxifloxacino. A coadministração com medicamentos tais como aspirina, varfarina,\nclopidogrel, enoxaparina, diclofenaco, ibuprofeno e naproxeno deve ser feita com cautela (WHO,\n2007). A toxicidade do lítio pode ser aumentada no uso concomitante. É contraindicado em pessoas\ncom doenças hepáticas, agudas ou severas, côncer de fígado, icterícia por anemia hemolítica ou outras\ncausadas por hiperbilirrubinemia núo conjugada, com espasmos intestinais, obstrução intestinal,\ncolecistite aguda, litíase biliar, obstrução do ducto biliar, gastrite, intestino irritável e úlcera duodenal\n(BRINKER, 2001). Núo deve ser utilizado por pessoas que apresentam obstrução dos ductos biliares\ne empiema da vesícula biliar. Na presença de litíase biliar, deve-se consultar um médico antes de\nutilizar o fitoterápico (BLUMENTHAL et al., 2000). Núo utilizar em doses acima das recomendadas.\nEm caso de aparecimento de eventos adversos, suspender o uso do produto e consultar um médico.",
-      "precaucoes": "",
-      "interacoesMedicamentosas": null,
-      "posologia": "Uso oral.\nFórmulas 1 e 2: tomar o decocto ou infuso, logo após o preparo, até três vezes ao dia (WICHTL,\n2004; EMA, 2019).\nFórmula 3: tomar 3,15 mL de extrato fluido, diluídos em 50 mL de água, três vezes ao dia (EMA,\n\n-- 203 of 223 --\n\n198\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\n2019; HEALTH CANADA, 2018).\nFórmula 4: tomar 1,75 mL de extrato fluido, diluídos em 50 mL de água, três vezes ao dia (EMA,\n2019).\nFórmula 5: tomar de 1 a 2 comprimidos de 150 mg três vezes ao dia ou tomar 1 comprimido de 300\nmg duas vezes ao dia (EMA, 2019).",
-      "viaAdministracao": [
-        "oral"
-      ],
-      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
-      "fontes": [
-        {
-          "fonte": "FFFB",
-          "edicao": "2ª ed. 2021",
-          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
-          "dataConsulta": "2026-07-11",
-          "campos": [
-            "modoPreparo",
-            "indicacoes",
-            "advertencias"
-          ]
-        }
-      ],
-      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 12 anos, devido á falta de dados adequados que.",
-      "renisus": false,
-      "detalhesEspecificos": {
-        "modoPreparo": "Fórmula 1 (WICHTL, 2004; EMA, 2019)\nComponentes Quantidade\nPlanta inteira com raiz 3 a 4 g\n├Água q.s.\nFórmula 2 (WICHTL, 2004; EMA, 2019)\nComponentes Quantidade\nPlanta inteira com raiz 4 a 10 g\n├Água q.s.\nEXTRATO FLUIDO\n\n-- 201 of 223 --\n\n196\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nFórmula 3 (EMA, 2019)\nComponentes Quantidade\nPlanta inteira com raiz 100 g\nülcool etílico 30% q.s.p. 100 mL\nFórmula 4 (EMA, 2019)\nComponentes Quantidade\nPlanta inteira com raiz 75 g\nülcool etílico 36% q.s.p. 100 mL\nCOMPRIMIDO COM DERIVADO\nFórmula 5 (EMA, 2019)\nComponentes Quantidade\nExtrato seco da planta inteira 150 a 300 mg\nExcipiente q.s.p. Um comprimido\nrevestido\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica preparação extemporônea: a embalagem deverá ser confeccionada em\nmaterial que núo reaja com os componentes da droga vegetal.\nPara a forma farmacêutica extrato fluido: acondicionar em frasco de vidro ômbar.\nPara a forma farmacêutica comprimidos: é recomendado acondicionar em blister.",
-        "formaFarmaceutica": [
-          "comprimidos"
-        ],
-        "preparacaoExtemporanea": true
-      },
-      "searchText": "taraxacum officinale f. h. wigg. taraxacum officinale f. h. wigg. dente-de-leuo."
-    },
-    {
-      "slug": "fitoterapico-vaccinium-macrocarpon-aiton",
-      "nome": "Vaccinium macrocarpon Aiton",
-      "nomesAlternativos": [
-        "Cranberry."
-      ],
-      "nomeCientifico": "Vaccinium macrocarpon Aiton",
-      "categoriaPratica": "FITOTERAPICO",
-      "indicacoes": "Auxiliar na prevenção e tratamento sintomático de infecções do trato urinário, desde que situações\ngraves tenham sido descartadas por um médico (BARRETT, 2004; WHO, 2009; SHAAHEN et al.,\n2011; GONZüLEZ DE LLANO et al., 2015; HEALTH CANADA, 2015; LEDDA et al., 2015).",
-      "contraindicacoes": "Uso adulto.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação.\nAo persistirem os sintomas, um médico deverá ser consultado. O uso de V. macrocarpon em\npopulações pediátricas é ineficaz no tratamento de doenças do trato urinário, sendo núo recomendado\n(WHO, 2009). Deve ser utilizado com extrema precaução na gravidez, lactação e por diabéticos\n(WHO, 2009). Pessoas que apresentam litíase urinária, insuficiência renal ou pielonefrite devem usar\nprodutos contendo a espécie vegetal somente após consultar um médico (WHO, 2009). O uso\nconcomitante de cranberry e varfarina deve ser evitado (SUVARNA et al, 2003). Altas doses\n(equivalentes a mais que 3 a 4 litros do suco diariamente) podem causar diarreia ou distúrbios\ngastrintestinais leves (Núo utilizar em doses acima das recomendadas) (BLUMENTHAL, 2003). Em\ncaso de aparecimento de eventos adversos, suspender o uso do produto e consultar um médico.\n\n-- 207 of 223 --\n\n202\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição",
-      "precaucoes": "",
-      "interacoesMedicamentosas": null,
-      "posologia": "Uso oral.\nTomar uma cápsula, duas vezes ao dia (BARRETT, 2004).",
-      "viaAdministracao": [
-        "oral"
-      ],
-      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
-      "fontes": [
-        {
-          "fonte": "FFFB",
-          "edicao": "2ª ed. 2021",
-          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
-          "dataConsulta": "2026-07-11",
-          "campos": [
-            "modoPreparo",
-            "indicacoes",
-            "advertencias"
-          ]
-        }
-      ],
-      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação.",
-      "renisus": false,
-      "detalhesEspecificos": {
-        "modoPreparo": "Fórmula (BARRETT, 2004; HEALTH CANADA, 2015; MILLS & BONE, 2005)\nComponentes Quantidade\nExtrato seco do fruto 400 a 450 mg\nExcipiente q.s.p. uma cápsula\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto. É recomendável que\nem cada frasco contendo cápsulas seja adicionado um sachê ou cápsula com dessecante (ex. sílica\ngel) e um chumaço de algodúo hidrófobo por cima das cápsulas, de modo a preencher o espaço vazio\nentre as cápsulas e a tampa do pote.",
-        "formaFarmaceutica": [
-          "cápsulas"
-        ],
-        "preparacaoExtemporanea": true
-      },
-      "searchText": "vaccinium macrocarpon aiton vaccinium macrocarpon aiton cranberry."
-    },
-    {
-      "slug": "fitoterapico-vaccinium-myrtillus-l",
-      "nome": "Vaccinium myrtillus L.",
-      "nomesAlternativos": [
-        "Mirtilo."
-      ],
-      "nomeCientifico": "Vaccinium myrtillus L.",
-      "categoriaPratica": "FITOTERAPICO",
-      "indicacoes": "Fórmula 1: auxiliar no tratamento sintomático da diarreia leve núo infecciosa (WHO, 2009;\nBARNES et al., 2012; EMA, 2015).\n\n-- 209 of 223 --\n\n204\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nFórmula 2: auxiliar no tratamento das inflamações leves da cavidade oral (WHO, 2009; EMA, 2015).",
-      "contraindicacoes": "Uso adulto e pediátrico acima de 12 anos.\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação.\nContraindicado para menores de 12 anos devido á falta de estudos adequados nesta faixa etária.\nAmbas as formulações apresentam segurança durante gestação e lactação (EMA, 2015). No caso de\nuso oral, se os sintomas persistirem por mais de três dias durante a utilização do fitoterápico (EMA,\n2015), ou se associado a dor abdominal ou sangramento retal (WHO, 2009), um médico deverá ser\nconsultado (WHO, 2009; EMA, 2015). No caso de uso externo, se os sintomas persistirem por mais\nde uma semana, durante a utilização do fitoterápico, um médico deverá ser consultado (EMA, 2015).\nEvitar o uso concomitantemente com medicamentos antiplaquetários ou anticoagulantes, devido ao\nrisco aumentado de ocorrência de sangramento (WHO, 2009; BARNES et al., 2012). Núo utilizar em\ndoses acima das recomendadas. Em caso de aparecimento de eventos adversos, suspender o uso do\nproduto e consultar um médico.",
-      "precaucoes": "",
-      "interacoesMedicamentosas": null,
-      "posologia": "Uso oral.\nFórmula 1: tomar 250 mL do decocto, de três a quatro vezes ao dia (EMA, 2015).\nUso externo.\nFórmula 2: fazer bochechos ou gargarejos, várias vezes ao dia (EMA, 2015).",
-      "viaAdministracao": [
-        "oral",
-        "tópica"
-      ],
-      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
-      "fontes": [
-        {
-          "fonte": "FFFB",
-          "edicao": "2ª ed. 2021",
-          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
-          "dataConsulta": "2026-07-11",
-          "campos": [
-            "modoPreparo",
-            "indicacoes",
-            "advertencias"
-          ]
-        }
-      ],
-      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Menores de 12 anos devido á falta de estudos adequados nesta faixa etária.",
-      "renisus": false,
-      "detalhesEspecificos": {
-        "modoPreparo": "Fórmula 1 (EMA, 2015)\nComponentes Quantidade\nFruto 5 a 15 g\n├Água q.s.p. 250 mL\nFórmula 2 (EMA, 2015)\nComponentes Quantidade\nFruto 20 g\n├Água q.s.p. 200 mL\n\nA embalagem deve garantir proteção do fitoterápico contra contaminações, efeitos da luz e umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto. A embalagem deverá\nser confeccionada em material que núo reaja com os componentes da droga vegetal.",
-        "formaFarmaceutica": [],
-        "preparacaoExtemporanea": true
-      },
-      "searchText": "vaccinium myrtillus l. vaccinium myrtillus l. mirtilo."
-    },
-    {
-      "slug": "fitoterapico-vitex-agnus-castus-l",
-      "nome": "Vitex agnus-castus L.",
-      "nomesAlternativos": [
-        "Agno-casto."
-      ],
-      "nomeCientifico": "Vitex agnus-castus L.",
-      "categoriaPratica": "FITOTERAPICO",
-      "indicacoes": "Fórmula 1: auxiliar no alívio dos sintomas leves da tensúo pré-menstrual (BLUMENTHAL et al.,\n2003; WICHTL, 2004; WHO, 2009; HEALTH CANADA, 2010; IBRAHIM et al., 2012; RANI &\nSHARMA, 2013; ARENTZ et al., 2014; JANG et al., 2014; EMA, 2018).\nFórmula 2: auxiliar no alívio dos sintomas da tensúo pré-menstrual (EMA, 2018; HEALTH\nCANADA, 2010).\nFórmulas 3 e 4: auxiliar no alívio dos sintomas leves da tensúo pré-menstrual (IBRAHIM et al.,\n2012; RANI & SHARMA, 2013; ARENTZ et al., 2014; JANG et al., 2014; EMA, 2018).",
-      "contraindicacoes": "Uso adulto.\n\n-- 215 of 223 --\n\n210\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nUso contraindicado para pessoas que apresentam hipersensibilidade aos componentes da formulação.\nAo persistirem os sintomas após três meses de uso contínuo desse fitoterápico, um médico deverá ser\nconsultado. O uso é contraindicado durante a gestação e lactação, devido á falta de dados adequados\nque comprovem a segurança nessas situações. O uso da preparação de tintura é especialmente\ncontraindicado para gestantes, lactantes, alcoolistas e diabéticos, em função do teor alcoólico na\nformulação. Esse fitoterápico é contraindicado para pessoas em tratamento com terapias hormonais\n(reposição hormonal, anticoncepcionais orais, hormõnios sexuais) e para aqueles que utilizam\nantagonistas de receptores dopaminérgicos (WHO, 2009; EMA, 2018). Os efeitos benéficos desse\nfitoterápico súo alcançados, normalmente, após três meses de uso contínuo (HEALTH CANADA,\n2010). Se os sintomas piorarem durante o uso, um médico deverá ser consultado (EMA, 2018).\nPessoas com histórico de neoplasia estrógeno-dependente devem consultar seu médico antes de usar\nesse fitoterápico. Esse fitoterápico age sobre no eixo hipotálamo-hipófise e, portanto, pessoas com\nhistórico de transtorno da glôndula pituitária devem consultar um médico antes de utilizar esse\nfitoterápico. Em casos de tumores da glôndula pituitária, secretores de prolactina, a utilização de\nderivados da espécie vegetal pode mascarar os sintomas do tumor (EMA, 2018). Esse produto pode\ncausar severas reações alérgicas, dispneia, dificuldade de deglutição; pode ocorrer rash cutôneo e\nurticária, cefaleia, tontura, náusea, dor abdominal, acne e desordens menstruais (EMA, 2018). Núo\nutilizar em doses acima das recomendadas. Em caso de aparecimento de eventos adversos, suspender\no uso do produto e consultar um médico.",
-      "precaucoes": "",
-      "interacoesMedicamentosas": null,
-      "posologia": "Uso oral.\nFórmula 1: tomar 0,15 mL da tintura, diluídos em 50 mL de água, uma vez ao dia (EMA, 2018).\nFórmula 2: tomar uma cápsula, duas vezes ao dia (EMA, 2018).\nFórmulas 3 e 4: tomar uma cápsula, uma vez ao dia (WHO, 2009; EMA, 2018).",
-      "viaAdministracao": [
-        "oral"
-      ],
-      "statusRegulatorio": "PRODUTO_TRADICIONAL_NOTIFICADO",
-      "fontes": [
-        {
-          "fonte": "FFFB",
-          "edicao": "2ª ed. 2021",
-          "url": "https://www.gov.br/anvisa/pt-br/assuntos/farmacopeia/farmacopeia-brasileira",
-          "dataConsulta": "2026-07-11",
-          "campos": [
-            "modoPreparo",
-            "indicacoes",
-            "advertencias"
-          ]
-        }
-      ],
-      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação.",
-      "renisus": false,
-      "detalhesEspecificos": {
-        "modoPreparo": "Fórmula 1 (EMA, 2018)\nComponentes Quantidade\nFruto 20 g\nülcool etílico 68-70% q.s.p 100 mL\n\n-- 214 of 223 --\n\n209\tFormulário de Fitoterápicos da Farmacopeia Brasileira, 2ª edição\nCüPSULA COM DROGA VEGETAL\nFórmula 2 (EMA, 2018)\nComponentes Quantidade\nFruto 400 mg\nExcipiente q.s.p. uma cápsula\nCüPSULA COM DERIVADO\nFórmula 3 (WHO, 2009; EMA, 2018)\nComponentes Quantidade\nExtrato seco do fruto 4 mg\nExcipiente q.s.p. uma cápsula\nFórmula 4 (WHO, 2009; EMA, 2018)\nComponentes Quantidade\nExtrato seco do fruto 2 - 3 mg\nExcipiente q.s.p. uma cápsula\n\nA embalagem deve garantir a proteção do fitoterápico contra contaminações, efeitos da luz, umidade\ne apresentar lacre ou selo de segurança que garanta a inviolabilidade do produto.\nPara a forma farmacêutica tintura: acondicionar em frasco de vidro ômbar.\nPara a forma farmacêutica cápsula: é recomendável que em cada frasco contendo cápsulas seja\nadicionado um sachê ou cápsula com dessecante (ex. sílica gel) e um chumaço de algodúo hidrófobo\npor cima das cápsulas, de modo a preencher o espaço vazio entre as cápsulas e a tampa do pote.",
-        "formaFarmaceutica": [
-          "cápsulas"
-        ],
-        "preparacaoExtemporanea": true
-      },
-      "searchText": "vitex agnus-castus l. vitex agnus-castus l. agno-casto."
     }
   ]
 }

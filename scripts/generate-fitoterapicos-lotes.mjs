@@ -229,6 +229,7 @@ async function main() {
   console.log("  npm run seed:fitoterapicos -- data/fitoterapicos/lote1-fffb.json");
   console.log("  npm run seed:fitoterapicos -- data/fitoterapicos/lote2-fffb.json");
   console.log("  npm run seed:fitoterapicos -- data/fitoterapicos/lote3-fffb.json");
+  console.log("  npm run seed:fitoterapicos -- data/fitoterapicos/lote4-fffb.json");
   console.log("  npm run seed:fitoterapicos -- data/fitoterapicos/lote1-fffb-merge.json");
 }
 
