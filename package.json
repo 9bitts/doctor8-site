@@ -37,6 +37,7 @@
     "seed:fitoterapicos": "tsx prisma/seeds/fitoterapicos.ts",
     "seed:florais": "tsx prisma/seeds/florais.ts",
     "seed:aromaterapia": "tsx prisma/seeds/aromaterapia.ts",
+    "seed:homeopatia": "tsx prisma/seeds/homeopatia.ts",
     "seed:apiterapia": "tsx prisma/seeds/apiterapia.ts",
     "generate:fitoterapicos-lotes": "node scripts/generate-fitoterapicos-lotes.mjs --validate",
     "generate:florais-seed": "tsx scripts/generate-florais-seed.ts",

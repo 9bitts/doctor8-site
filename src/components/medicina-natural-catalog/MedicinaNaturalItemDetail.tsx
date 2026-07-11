@@ -41,6 +41,13 @@ type DetalhesApiterapia = {
   alertaAlergiaAnafilaxia?: string;
 };
 
+type DetalhesHomeopatia = {
+  potencia?: string;
+  dinamizacao?: string;
+  baseRegulatoria?: string;
+  farmacopeiaLink?: string;
+};
+
 function floralCategoryLabel(
   sistema: string | undefined,
   t: (key: string) => string,
@@ -132,7 +139,8 @@ export default function MedicinaNaturalItemDetail({
   const detalhes = (item.detalhesEspecificos || {}) as DetalhesFitoterapico &
     DetalhesFloral &
     DetalhesAromaterapia &
-    DetalhesApiterapia;
+    DetalhesApiterapia &
+    DetalhesHomeopatia;
   const fontes = (Array.isArray(item.fontes) ? item.fontes : []) as FonteReferencia[];
   const canPrescribeFitoterapico =
     practice.id === "fitoterapia" &&
@@ -304,6 +312,44 @@ export default function MedicinaNaturalItemDetail({
               <p className="mt-2 text-rose-800">
                 <span className="font-semibold">{t("nm.detail.alertaAlergia")}: </span>
                 {detalhes.alertaAlergiaAnafilaxia}
+              </p>
+            )}
+          </Section>
+        )}
+        {(detalhes.potencia ||
+          detalhes.dinamizacao ||
+          detalhes.baseRegulatoria ||
+          detalhes.farmacopeiaLink) && (
+          <Section title={t("nm.detail.especificos")}>
+            {detalhes.potencia && (
+              <p>
+                <span className="font-semibold">{t("nm.detail.potencia")}: </span>
+                {detalhes.potencia}
+              </p>
+            )}
+            {detalhes.dinamizacao && (
+              <p className={detalhes.potencia ? "mt-2" : ""}>
+                <span className="font-semibold">{t("nm.detail.dinamizacao")}: </span>
+                {detalhes.dinamizacao}
+              </p>
+            )}
+            {detalhes.baseRegulatoria && (
+              <p className="mt-2">
+                <span className="font-semibold">{t("nm.detail.baseRegulatoria")}: </span>
+                {detalhes.baseRegulatoria}
+              </p>
+            )}
+            {detalhes.farmacopeiaLink && (
+              <p className="mt-2">
+                <span className="font-semibold">{t("nm.detail.farmacopeia")}: </span>
+                <a
+                  href={detalhes.farmacopeiaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-700 underline"
+                >
+                  {t("nm.detail.farmacopeiaLink")}
+                </a>
               </p>
             )}
           </Section>

@@ -132,6 +132,11 @@ export const naturalMedicineEn: Record<string, string> = {
   "nm.detail.fototoxicidade": "Phototoxicity",
   "nm.detail.produtoOrigem": "Bee product",
   "nm.detail.alertaAlergia": "Allergy alert",
+  "nm.detail.potencia": "Potency",
+  "nm.detail.dinamizacao": "Dynamization",
+  "nm.detail.baseRegulatoria": "Regulatory basis",
+  "nm.detail.farmacopeia": "Official pharmacopoeia",
+  "nm.detail.farmacopeiaLink": "Brazilian Homeopathic Pharmacopoeia (ANVISA)",
 
   "nm.prescribe.actionPrescrever": "Prescribe",
   "nm.prescribe.actionOrientacao": "Add as clinical guidance",
@@ -378,6 +383,11 @@ export const naturalMedicinePt: Record<string, string> = {
   "nm.detail.fototoxicidade": "Fototoxicidade",
   "nm.detail.produtoOrigem": "Produto de origem",
   "nm.detail.alertaAlergia": "Alerta de alergia",
+  "nm.detail.potencia": "Potência",
+  "nm.detail.dinamizacao": "Dinamização",
+  "nm.detail.baseRegulatoria": "Base regulatória",
+  "nm.detail.farmacopeia": "Farmacopeia oficial",
+  "nm.detail.farmacopeiaLink": "Farmacopeia Homeopática Brasileira (Anvisa)",
 
   "nm.prescribe.actionPrescrever": "Prescrever",
   "nm.prescribe.actionOrientacao": "Adicionar como orientação",
