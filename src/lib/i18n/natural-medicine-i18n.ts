@@ -2,6 +2,7 @@
 
 export const naturalMedicineEn: Record<string, string> = {
   "nav.naturalMedicine": "Natural Medicine",
+  "nav.naturalMedicineHint": "Monograph catalog · 5 practices",
   "nav.fitoterapicos": "Phytotherapeutics",
   "rx.phytoProductSelect": "Phytotherapeutic (reference list)",
   "rx.phytoProductPlaceholder": "Select or type below…",
@@ -22,6 +23,8 @@ export const naturalMedicineEn: Record<string, string> = {
   "nm.hub.setupAction": "Open profile settings",
   "nm.hub.disclaimerTitle": "Professional responsibility",
   "nm.hub.disclaimer": "Prescription authority depends on your professional council and training. Use registered products when possible and document interactions, pregnancy and pediatric cautions.",
+  "nm.hub.seuEnesioLink": "Seu Enésio tea protocols",
+  "nm.hub.seuEnesioHint": "Separate module — exclusive Seu Enésio blends, not the official MFFB/FFFB catalog.",
   "nm.hub.globalSearchTitle": "Search all practices",
   "nm.hub.searchPlaceholder": "Search monographs across all practices…",
   "nm.hub.noSearchResults": "No items found for this search.",
@@ -245,6 +248,7 @@ export const naturalMedicineEn: Record<string, string> = {
 
 export const naturalMedicinePt: Record<string, string> = {
   "nav.naturalMedicine": "Medicina Natural",
+  "nav.naturalMedicineHint": "Catálogo monográfico · 5 práticas",
   "nav.fitoterapicos": "Fitoterápicos",
   "rx.phytoProductSelect": "Fitoterápico (lista de referência)",
   "rx.phytoProductPlaceholder": "Selecione ou digite abaixo…",
@@ -265,6 +269,8 @@ export const naturalMedicinePt: Record<string, string> = {
   "nm.hub.setupAction": "Abrir configurações",
   "nm.hub.disclaimerTitle": "Responsabilidade profissional",
   "nm.hub.disclaimer": "A autoridade de prescrição depende do seu conselho e formação. Prefira produtos registrados e documente interações, gestação e pediatria.",
+  "nm.hub.seuEnesioLink": "Chás Seu Enésio",
+  "nm.hub.seuEnesioHint": "Módulo separado — protocolos exclusivos Seu Enésio, distinto do catálogo MFFB/FFFB.",
   "nm.hub.globalSearchTitle": "Buscar em todas as práticas",
   "nm.hub.searchPlaceholder": "Buscar monografias em todas as práticas…",
   "nm.hub.noSearchResults": "Nenhum item encontrado para esta busca.",
@@ -489,6 +495,7 @@ export const naturalMedicinePt: Record<string, string> = {
 export const naturalMedicineEs: Record<string, string> = {
   ...naturalMedicineEn,
   "nav.naturalMedicine": "Medicina Natural",
+  "nav.naturalMedicineHint": "Catálogo monográfico · 5 prácticas",
   "nav.fitoterapicos": "Fitoterápicos",
   "rx.phytoProductSelect": "Fitoterápico (lista de referencia)",
   "rx.phytoProductPlaceholder": "Seleccione o escriba abajo…",
@@ -508,6 +515,8 @@ export const naturalMedicineEs: Record<string, string> = {
   "nm.hub.setupAction": "Abrir configuración",
   "nm.hub.disclaimerTitle": "Responsabilidad profesional",
   "nm.hub.disclaimer": "La autoridad de prescripción depende de su consejo y formación. Prefiera productos registrados y documente interacciones, embarazo y pediatría.",
+  "nm.hub.seuEnesioLink": "Tés Seu Enésio",
+  "nm.hub.seuEnesioHint": "Módulo separado — protocolos exclusivos Seu Enésio, distinto del catálogo MFFB/FFFB.",
   "nm.hub.globalSearchTitle": "Buscar en todas las prácticas",
   "nm.hub.searchPlaceholder": "Buscar monografías en todas las prácticas…",
   "nm.hub.noSearchResults": "Ningún ítem encontrado para esta búsqueda.",

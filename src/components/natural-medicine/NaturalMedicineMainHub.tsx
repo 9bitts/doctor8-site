@@ -42,6 +42,7 @@ const ICONS = {
   Flower2,
   Wind,
   Droplets,
+  FlaskConical,
   Hexagon,
 } as const;
 
@@ -67,6 +68,11 @@ export default function NaturalMedicineMainHub({
 
   const href = (path: string) =>
     portal === "professional" ? mapProfessionalPathToPortal(pathname, path) : path;
+
+  const seuEnesioBase =
+    portal === "professional"
+      ? "/professional/chas-medicinais"
+      : "/integrative-therapist/chas-medicinais";
 
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [query, setQuery] = useState("");
@@ -241,6 +247,24 @@ export default function NaturalMedicineMainHub({
           </div>
         </section>
       )}
+
+      <section className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+            <FlaskConical size={20} className="text-amber-700" />
+          </div>
+          <div>
+            <p className="font-semibold text-slate-900">{t("nm.hub.seuEnesioLink")}</p>
+            <p className="text-sm text-slate-600 mt-0.5 leading-relaxed">{t("nm.hub.seuEnesioHint")}</p>
+          </div>
+        </div>
+        <Link
+          href={href(seuEnesioBase)}
+          className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border border-amber-300 bg-white hover:bg-amber-50 text-amber-900 shrink-0"
+        >
+          {t("nm.hub.seuEnesioLink")} <ArrowRight size={16} />
+        </Link>
+      </section>
 
       <section className="bg-white rounded-2xl border border-slate-200 p-5">
         <h3 className="font-semibold text-slate-900 text-sm">{t("nm.hub.disclaimerTitle")}</h3>
