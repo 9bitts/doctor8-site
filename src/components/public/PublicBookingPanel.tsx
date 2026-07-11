@@ -32,11 +32,14 @@ function fmtPrice(cents: number, currency: string, locale: string): string {
 }
 
 function readUrlParams() {
-  if (typeof window === "undefined") return { slot: null as string | null, service: null as string | null };
+  if (typeof window === "undefined") {
+    return { slot: null as string | null, service: null as string | null, volunteer: false };
+  }
   const params = new URLSearchParams(window.location.search);
   return {
     slot: params.get("slot"),
     service: params.get("service"),
+    volunteer: params.get("volunteer") === "1",
   };
 }
 
@@ -73,6 +76,7 @@ export default function PublicBookingPanel({
   const [selectedDay, setSelectedDay] = useState(0);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [volunteerMode, setVolunteerMode] = useState(false);
 
   const activeServices = profile.services.filter((s) => s.isActive);
 
@@ -104,11 +108,17 @@ export default function PublicBookingPanel({
   }, [resolveServiceId]);
 
   useEffect(() => {
+    const { volunteer } = readUrlParams();
+    setVolunteerMode(volunteer);
+  }, []);
+
+  useEffect(() => {
     async function load() {
       setLoading(true);
       try {
+        const volunteerQuery = volunteerMode ? "&volunteer=1" : "";
         const res = await fetch(
-          `/api/public/professionals/${profile.slug}/slots?lang=${lang}`
+          `/api/public/professionals/${profile.slug}/slots?lang=${lang}${volunteerQuery}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -123,7 +133,7 @@ export default function PublicBookingPanel({
       setLoading(false);
     }
     load();
-  }, [profile.slug, lang]);
+  }, [profile.slug, lang, volunteerMode]);
 
   const activeDay = days[selectedDay];
   const availableSlots = activeDay?.slots.filter((s) => s.available) ?? [];
@@ -146,6 +156,7 @@ export default function PublicBookingPanel({
     from: bookingFrom,
     ...(selectedSlot ? { slot: selectedSlot } : {}),
     ...(selectedServiceId ? { service: selectedServiceId } : {}),
+    ...(volunteerMode ? { volunteersOnly: "1" } : {}),
   });
   const loginUrl = `/login?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
   const registerUrl = `/register?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
@@ -161,7 +172,7 @@ export default function PublicBookingPanel({
           {t("pub.bookTitle")}
         </h2>
         <p className={`font-bold text-brand-600 ${embed ? "text-sm" : "text-sm"}`}>
-          {displayPriceLabel}
+          {volunteerMode ? t("consultServices.volunteerPrice") : displayPriceLabel}
         </p>
       </div>
 

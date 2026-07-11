@@ -268,6 +268,15 @@ export default function AppointmentsPage() {
     setStep("payment");
   }
 
+  // Deep link: /patient/appointments?pro=ID&providerType=...&slot=...&volunteersOnly=1&from=public_profile
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("volunteersOnly") === "1") {
+      setVolunteersOnly(true);
+    }
+  }, []);
+
   // Deep link: /patient/appointments?pro=ID&providerType=...&slot=...&from=public_profile
   useEffect(() => {
     if (professionals.length === 0 || selectedPro) return;
@@ -490,8 +499,9 @@ export default function AppointmentsPage() {
         planSlug && planSlug !== "particular"
           ? `&healthPlan=${encodeURIComponent(planSlug)}`
           : "";
+      const volunteerParam = volunteersOnly ? "&volunteer=1" : "";
       const slotsRes = await fetch(
-        `/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${providerType}${planParam}`
+        `/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${providerType}${planParam}${volunteerParam}`
       );
       const d = await slotsRes.json();
       const rawDays = (d.days || []) as SlotDay[];
