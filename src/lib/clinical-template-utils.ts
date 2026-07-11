@@ -44,7 +44,7 @@ export function isExamTemplateCategory(category: string | null | undefined): boo
   return category === TEMPLATE_CATEGORIES.EXAM_CLINICAL || category === TEMPLATE_CATEGORIES.EXAM_PREOP;
 }
 
-export function useTemplateUrl(category: TemplateCategory, id: string): string {
+export function getTemplateUrl(category: TemplateCategory, id: string): string {
   switch (category) {
     case TEMPLATE_CATEGORIES.EXAM_CLINICAL:
     case TEMPLATE_CATEGORIES.EXAM_PREOP:

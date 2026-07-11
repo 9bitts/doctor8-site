@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Pencil, Trash2, LayoutTemplate } from "lucide-react";
-import { useTemplateUrl, type TemplateCategory } from "@/lib/clinical-template-utils";
+import { getTemplateUrl, type TemplateCategory } from "@/lib/clinical-template-utils";
 
 interface TemplateListItem {
   id: string;
@@ -42,7 +42,7 @@ export function TemplateSectionList({
             )}
           </div>
           <Link
-            href={useTemplateUrl(category, item.id)}
+            href={getTemplateUrl(category, item.id)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition shrink-0"
           >
             <LayoutTemplate size={14} />
