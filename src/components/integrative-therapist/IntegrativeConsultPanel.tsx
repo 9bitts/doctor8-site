@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Clock, Leaf, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { translate } from "@/lib/i18n/translations";
+import { useToast } from "@/components/ui/toast";
 import { PICS_PRACTICES } from "@/lib/pics/practices";
 import {
   type IntegrativeConsultContext,
@@ -63,6 +64,7 @@ export default function IntegrativeConsultPanel({
   onVisitTypeChange,
 }: IntegrativeConsultPanelProps) {
   const t = (key: string) => translate(lang, key);
+  const toast = useToast();
 
   const [context, setContext] = useState<IntegrativeConsultContext | null>(initialContext ?? null);
   const [loading, setLoading] = useState(!initialContext);
@@ -109,11 +111,15 @@ export default function IntegrativeConsultPanel({
         setPracticeSlug(defaultPractice);
         onPracticeChangeRef.current?.(defaultPractice);
         onVisitTypeChangeRef.current?.(d.context.defaultVisitType);
+      } else {
+        toast.error(typeof d.error === "string" ? d.error : t("it.err.loadConsult"));
       }
+    } catch {
+      toast.error(t("it.err.loadConsult"));
     } finally {
       setLoading(false);
     }
-  }, [appointmentId, clientId]);
+  }, [appointmentId, clientId, t, toast]);
 
   useEffect(() => {
     if (initialContext) {
@@ -231,7 +237,12 @@ export default function IntegrativeConsultPanel({
         setNoteSaved(true);
         setTimeout(() => setNoteSaved(false), 2500);
         onNoteSaved?.();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast.error(typeof d.error === "string" ? d.error : t("it.err.saveNote"));
       }
+    } catch {
+      toast.error(t("it.err.saveNote"));
     } finally {
       setNoteSaving(false);
     }

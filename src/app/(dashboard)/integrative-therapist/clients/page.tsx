@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { useToast } from "@/components/ui/toast";
 import { PICS_PRACTICES } from "@/lib/pics/practices";
 import { Loader2, Plus, ChevronRight } from "lucide-react";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
@@ -22,6 +23,7 @@ const inputClass =
 
 export default function IntegrativeClientsPage() {
   const { t, lang } = useI18n();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -37,7 +39,13 @@ export default function IntegrativeClientsPage() {
     try {
       const res = await fetch("/api/integrative-therapist/clients");
       const d = await res.json();
+      if (!res.ok) {
+        toast.error(typeof d.error === "string" ? d.error : t("it.err.loadClients"));
+        return;
+      }
       setClients(d.clients || []);
+    } catch {
+      toast.error(t("it.err.loadClients"));
     } finally {
       setLoading(false);
     }
@@ -69,7 +77,17 @@ export default function IntegrativeClientsPage() {
         setEmail("");
         setMainPractice("");
         setChiefComplaint("");
+        toast.success(t("toast.saveSuccess"));
         load();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        const msg =
+          typeof d.error === "string"
+            ? d.error
+            : typeof d.error === "object" && d.error?.formErrors?.[0]
+              ? d.error.formErrors[0]
+              : t("it.err.createClient");
+        toast.error(msg);
       }
     } finally {
       setSaving(false);

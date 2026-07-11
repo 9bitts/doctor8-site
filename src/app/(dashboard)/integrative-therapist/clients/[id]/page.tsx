@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { useToast } from "@/components/ui/toast";
 import { PICS_PRACTICES } from "@/lib/pics/practices";
 import {
   hasStructuredTemplate,
@@ -44,12 +45,14 @@ type Tab = "summary" | "sessions";
 
 export default function IntegrativeClientDetailPage() {
   const { t, lang } = useI18n();
+  const toast = useToast();
   const params = useParams();
   const clientId = params.id as string;
   const [tab, setTab] = useState<Tab>("summary");
   const [client, setClient] = useState<ClientData | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<"not_found" | "generic" | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -76,19 +79,35 @@ export default function IntegrativeClientDetailPage() {
   async function loadClient() {
     const res = await fetch(`/api/integrative-therapist/clients/${clientId}`);
     const d = await res.json();
-    if (res.ok && d.client) {
+    if (res.status === 404) {
+      setLoadError("not_found");
+      setClient(null);
+      return false;
+    }
+    if (!res.ok) {
+      setLoadError("generic");
+      toast.error(typeof d.error === "string" ? d.error : t("it.err.loadClient"));
+      return false;
+    }
+    if (d.client) {
       setClient(d.client);
       setMainPractice(d.client.mainPractice || "");
       setChiefComplaint(d.client.chiefComplaint || "");
       setTreatmentGoals(d.client.treatmentGoals || "");
       setClientNotes(d.client.notes || "");
       setPhone(d.client.phone || "");
+      setLoadError(null);
     }
+    return true;
   }
 
   async function loadNotes() {
     const res = await fetch(`/api/integrative-therapist/session-notes?clientId=${clientId}`);
     const d = await res.json();
+    if (!res.ok) {
+      toast.error(typeof d.error === "string" ? d.error : t("it.err.loadNotes"));
+      return;
+    }
     setNotes(d.notes || []);
   }
 
@@ -122,7 +141,11 @@ export default function IntegrativeClientDetailPage() {
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+        toast.success(t("toast.saveSuccess"));
         await loadClient();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast.error(typeof d.error === "string" ? d.error : t("it.err.saveSummary"));
       }
     } finally {
       setSaving(false);
@@ -136,13 +159,34 @@ export default function IntegrativeClientDetailPage() {
         method: "POST",
       });
       const data = await res.json();
+      if (!res.ok) {
+        toast.error(typeof data.error === "string" ? data.error : t("it.err.shareNote"));
+        return;
+      }
       if (data.shared) {
+        toast.success(t("it.share.shared"));
         await loadNotes();
-      } else if (data.needsInvite && data.hasEmail) {
-        await fetch(`/api/integrative-therapist/session-notes/${noteId}/share`, {
+        return;
+      }
+      if (data.needsInvite && data.hasEmail) {
+        const inviteRes = await fetch(`/api/integrative-therapist/session-notes/${noteId}/share`, {
           method: "PUT",
         });
+        const inviteData = await inviteRes.json();
+        if (inviteRes.ok) {
+          toast.success(
+            t("it.share.inviteSent").replace("{{email}}", client?.email ?? ""),
+          );
+        } else {
+          toast.error(
+            typeof inviteData.error === "string" ? inviteData.error : t("it.err.shareNote"),
+          );
+        }
+        return;
       }
+      toast.error(t("it.share.noEmail"));
+    } catch {
+      toast.error(t("it.err.shareNote"));
     } finally {
       setSharingId(null);
     }
@@ -171,7 +215,11 @@ export default function IntegrativeClientDetailPage() {
       if (res.ok) {
         setContent("");
         if (usesStructured) setStructuredValues(emptyStructuredValues(practiceSlug));
+        toast.success(t("toast.saveSuccess"));
         await Promise.all([loadNotes(), loadClient()]);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast.error(typeof d.error === "string" ? d.error : t("it.err.saveNote"));
       }
     } finally {
       setNoteSaving(false);
@@ -191,6 +239,21 @@ export default function IntegrativeClientDetailPage() {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (loadError === "not_found" || !client) {
+    return (
+      <div className="max-w-lg mx-auto text-center py-16 space-y-4">
+        <p className="text-lg font-semibold text-slate-800">{t("it.client.notFound")}</p>
+        <p className="text-sm text-slate-500">{t("it.client.notFoundDesc")}</p>
+        <Link
+          href="/integrative-therapist/clients"
+          className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-800"
+        >
+          <ArrowLeft size={16} /> {t("it.clients.back")}
+        </Link>
       </div>
     );
   }
