@@ -11,6 +11,11 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import {
+  isPsychoanalystVariant,
+  variantI18nKey,
+  type ProviderSettingsVariant,
+} from "@/lib/provider-settings-variant";
 
 type LicenseDoc = {
   id: string;
@@ -28,8 +33,31 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function LicenseDocumentsUpload({ incomplete = false }: { incomplete?: boolean }) {
+export default function LicenseDocumentsUpload({
+  incomplete = false,
+  variant,
+}: {
+  incomplete?: boolean;
+  variant?: ProviderSettingsVariant;
+}) {
   const { t } = useI18n();
+  const isPa = isPsychoanalystVariant(variant);
+  const tk = (defaultKey: string, paKey: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey));
+  const labelPresets = isPa
+    ? [
+        t("pa.licenseDocs.chip.certificate"),
+        t("pa.licenseDocs.chip.affiliation"),
+        t("pa.licenseDocs.chip.institute"),
+      ]
+    : [t("licenseDocs.front"), t("licenseDocs.back")];
+  const iconAccent = isPa ? "text-violet-500" : "text-brand-500";
+  const btnClass = isPa
+    ? "bg-violet-600 hover:bg-violet-700"
+    : "bg-brand-500 hover:bg-brand-400";
+  const chipActive = isPa
+    ? "bg-violet-50 border-violet-200 text-violet-700"
+    : "bg-brand-50 border-brand-200 text-brand-700";
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -130,15 +158,15 @@ export default function LicenseDocumentsUpload({ incomplete = false }: { incompl
             incomplete ? "text-red-700" : "text-slate-800"
           }`}
         >
-          <Award size={18} className={incomplete ? "text-red-500 shrink-0" : "text-brand-500 shrink-0"} />
-          {t("licenseDocs.title")}
+          <Award size={18} className={incomplete ? "text-red-500 shrink-0" : `${iconAccent} shrink-0`} />
+          {tk("licenseDocs.title", "pa.licenseDocs.title")}
           {incomplete && (
             <span className="text-[10px] font-semibold text-red-600 uppercase tracking-wide ml-1">
               {t("reg.incompleteSection")}
             </span>
           )}
         </h2>
-        <p className="text-sm text-slate-500 mt-1">{t("licenseDocs.subtitle")}</p>
+        <p className="text-sm text-slate-500 mt-1">{tk("licenseDocs.subtitle", "pa.licenseDocs.subtitle")}</p>
         <p className="text-xs text-slate-400 mt-1">{t("licenseDocs.types")}</p>
       </div>
 
@@ -219,15 +247,13 @@ export default function LicenseDocumentsUpload({ incomplete = false }: { incompl
                 {t("licenseDocs.labelOptional")}
               </label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {[t("licenseDocs.front"), t("licenseDocs.back")].map((preset) => (
+                {labelPresets.map((preset) => (
                   <button
                     key={preset}
                     type="button"
                     onClick={() => setLabel(preset)}
                     className={`text-xs px-3 py-1.5 rounded-full border transition ${
-                      label === preset
-                        ? "bg-brand-50 border-brand-200 text-brand-700"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                      label === preset ? chipActive : "border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                   >
                     {preset}
@@ -235,10 +261,12 @@ export default function LicenseDocumentsUpload({ incomplete = false }: { incompl
                 ))}
               </div>
               <input
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                className={`w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                  isPa ? "focus:ring-violet-500/40" : "focus:ring-brand-500/40"
+                }`}
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder={t("licenseDocs.labelPlaceholder")}
+                placeholder={tk("licenseDocs.labelPlaceholder", "pa.licenseDocs.labelPlaceholder")}
                 maxLength={80}
               />
             </div>
@@ -258,7 +286,7 @@ export default function LicenseDocumentsUpload({ incomplete = false }: { incompl
               type="button"
               disabled={uploading || atLimit}
               onClick={() => fileRef.current?.click()}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition"
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 ${btnClass} disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition`}
             >
               {uploading ? (
                 <Loader2 size={16} className="animate-spin" />

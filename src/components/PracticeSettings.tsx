@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { MapPin, Plus, Trash2, Loader2, Check } from "lucide-react";
 import type { PracticeLocationDto } from "@/lib/practice";
+import {
+  isPsychoanalystVariant,
+  variantI18nKey,
+  type ProviderSettingsVariant,
+} from "@/lib/provider-settings-variant";
 
 const emptyLocation = (): Omit<PracticeLocationDto, "id"> => ({
   name: "",
@@ -18,8 +23,21 @@ const emptyLocation = (): Omit<PracticeLocationDto, "id"> => ({
   sortOrder: 0,
 });
 
-export default function PracticeSettings({ apiPath }: { apiPath: string }) {
+export default function PracticeSettings({
+  apiPath,
+  variant,
+}: {
+  apiPath: string;
+  variant?: ProviderSettingsVariant;
+}) {
   const { t } = useI18n();
+  const isPa = isPsychoanalystVariant(variant);
+  const tk = (defaultKey: string, paKey: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey));
+  const accentIcon = isPa ? "text-violet-500" : "text-brand-500";
+  const accentText = isPa ? "text-violet-600" : "text-brand-600";
+  const accentCheck = isPa ? "accent-violet-600" : "accent-brand-500";
+  const accentBtn = isPa ? "bg-violet-600 hover:bg-violet-700" : "bg-brand-500 hover:bg-brand-400";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -63,14 +81,16 @@ export default function PracticeSettings({ apiPath }: { apiPath: string }) {
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
       <div>
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <MapPin size={18} className="text-brand-500" />
-          {t("pubPhase3.locationsTitle")}
+          <MapPin size={18} className={accentIcon} />
+          {tk("pubPhase3.locationsTitle", "pa.settings.practiceTitle")}
         </h2>
-        <p className="text-sm text-slate-500 mt-1">{t("pubPhase3.locationsSubtitle")}</p>
+        <p className="text-sm text-slate-500 mt-1">
+          {tk("pubPhase3.locationsSubtitle", "pa.settings.practiceSubtitle")}
+        </p>
       </div>
 
       {saved && (
-        <p className="text-sm text-brand-600 flex items-center gap-1">
+        <p className={`text-sm flex items-center gap-1 ${accentText}`}>
           <Check size={14} /> {t("pubPhase3.saved")}
         </p>
       )}
@@ -94,7 +114,7 @@ export default function PracticeSettings({ apiPath }: { apiPath: string }) {
             </div>
             <input
               className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
-              placeholder={t("pubPhase3.locName")}
+              placeholder={tk("pubPhase3.locName", "pa.settings.practiceLocName")}
               value={loc.name}
               onChange={(e) => {
                 const next = [...locations];
@@ -145,7 +165,7 @@ export default function PracticeSettings({ apiPath }: { apiPath: string }) {
                   }));
                   setLocations(next);
                 }}
-                className="accent-brand-500"
+                className={accentCheck}
               />
               {t("pubPhase3.locPrimary")}
             </label>
@@ -154,7 +174,7 @@ export default function PracticeSettings({ apiPath }: { apiPath: string }) {
         <button
           type="button"
           onClick={() => setLocations([...locations, emptyLocation()])}
-          className="text-sm text-brand-600 font-medium flex items-center gap-1"
+          className={`text-sm font-medium flex items-center gap-1 ${accentText}`}
         >
           <Plus size={14} /> {t("pubPhase3.addLocation")}
         </button>
@@ -164,7 +184,7 @@ export default function PracticeSettings({ apiPath }: { apiPath: string }) {
         type="button"
         onClick={save}
         disabled={saving}
-        className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2"
+        className={`${accentBtn} disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2`}
       >
         {saving && <Loader2 size={14} className="animate-spin" />}
         {t("pubPhase3.save")}

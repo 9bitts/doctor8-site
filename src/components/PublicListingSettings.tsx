@@ -8,6 +8,11 @@ import {
   BarChart3, MousePointerClick, CalendarCheck, Code2, DollarSign, Users, Repeat,
 } from "lucide-react";
 import { localeOf } from "@/lib/i18n/translations";
+import {
+  isPsychoanalystVariant,
+  variantI18nKey,
+  type ProviderSettingsVariant,
+} from "@/lib/provider-settings-variant";
 
 type ProfileAnalytics = {
   views7d: number;
@@ -38,12 +43,16 @@ export default function PublicListingSettings({
   apiPath,
   hideToggle = false,
   embedded = false,
+  variant,
 }: {
   apiPath: string;
   hideToggle?: boolean;
   embedded?: boolean;
+  variant?: ProviderSettingsVariant;
 }) {
   const { t, lang } = useI18n();
+  const tk = (defaultKey: string, paKey: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingGoogle, setSavingGoogle] = useState(false);
@@ -159,7 +168,7 @@ export default function PublicListingSettings({
             <h2 className="font-semibold text-slate-800 flex items-center gap-2">
               <Globe size={18} className="text-brand-500" /> {t("pub.title")}
             </h2>
-            <p className="text-sm text-slate-500 mt-1">{t("pub.subtitle")}</p>
+            <p className="text-sm text-slate-500 mt-1">{tk("pub.subtitle", "pa.pub.subtitle")}</p>
           </div>
           <span className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${statusColors[info.status]}`}>
             {t(`pub.status.${info.status}`)}
@@ -282,7 +291,7 @@ export default function PublicListingSettings({
               icon={<DollarSign size={14} className="text-emerald-600" />}
             />
             <StatCard
-              label={t("pubAnalytics.newPatients30d")}
+              label={tk("pubAnalytics.newPatients30d", "pa.pubAnalytics.newAnalysands30d")}
               value={info.analytics.newPatients30d}
               icon={<Users size={14} className="text-blue-500" />}
             />

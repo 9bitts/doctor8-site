@@ -32,6 +32,11 @@ import {
   type DoctorImageThemePreset,
 } from "@/lib/doctor-image";
 import { resizeImageToDataUrl } from "@/lib/client/resize-image";
+import {
+  isPsychoanalystVariant,
+  variantI18nKey,
+  type ProviderSettingsVariant,
+} from "@/lib/provider-settings-variant";
 
 const EMPTY: DoctorImageData = {
   headline: null,
@@ -50,8 +55,25 @@ function newBlockId(): string {
   return `blk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export default function DoctorImageSettings({ apiPath }: { apiPath: string }) {
+export default function DoctorImageSettings({
+  apiPath,
+  variant,
+}: {
+  apiPath: string;
+  variant?: ProviderSettingsVariant;
+}) {
   const { t } = useI18n();
+  const isPa = isPsychoanalystVariant(variant);
+  const tk = (defaultKey: string, paKey: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey));
+  const themeKey = (preset: string) =>
+    t(isPa ? `pa.doctorImage.theme.${preset}` : `doctorImage.theme.${preset}`);
+  const accentIcon = isPa ? "text-violet-500" : "text-brand-500";
+  const accentSelected = isPa
+    ? "border-violet-500 bg-violet-50 text-violet-700"
+    : "border-brand-500 bg-brand-50 text-brand-700";
+  const accentBtn = isPa ? "bg-violet-600 hover:bg-violet-700" : "bg-brand-500 hover:bg-brand-400";
+  const inputRing = isPa ? "focus:ring-violet-500/30" : "focus:ring-brand-500/30";
   const coverRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
@@ -223,11 +245,11 @@ export default function DoctorImageSettings({ apiPath }: { apiPath: string }) {
   }
 
   const inputClass =
-    "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30";
+    `w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${inputRing}`;
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-500">{t("doctorImage.subtitle")}</p>
+      <p className="text-sm text-slate-500">{tk("doctorImage.subtitle", "pa.doctorImage.subtitle")}</p>
 
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-700">
@@ -238,7 +260,7 @@ export default function DoctorImageSettings({ apiPath }: { apiPath: string }) {
       {/* Theme */}
       <section className="space-y-3">
         <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-          <Palette size={16} className="text-brand-500" />
+          <Palette size={16} className={accentIcon} />
           {t("doctorImage.themeTitle")}
         </h3>
         <p className="text-xs text-slate-500">{t("doctorImage.themeHint")}</p>
@@ -249,12 +271,10 @@ export default function DoctorImageSettings({ apiPath }: { apiPath: string }) {
               type="button"
               onClick={() => setData((prev) => ({ ...prev, themePreset: preset }))}
               className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
-                data.themePreset === preset
-                  ? "border-brand-500 bg-brand-50 text-brand-700"
-                  : "border-slate-200 text-slate-600 hover:border-slate-300"
+                data.themePreset === preset ? accentSelected : "border-slate-200 text-slate-600 hover:border-slate-300"
               }`}
             >
-              {t(`doctorImage.theme.${preset}`)}
+              {themeKey(preset)}
             </button>
           ))}
         </div>
@@ -283,7 +303,7 @@ export default function DoctorImageSettings({ apiPath }: { apiPath: string }) {
       {/* Headline & links */}
       <section className="space-y-3 border-t border-slate-100 pt-5">
         <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-          <Type size={16} className="text-brand-500" />
+          <Type size={16} className={accentIcon} />
           {t("doctorImage.textTitle")}
         </h3>
         <div>
@@ -297,7 +317,7 @@ export default function DoctorImageSettings({ apiPath }: { apiPath: string }) {
             onChange={(e) =>
               setData((prev) => ({ ...prev, headline: e.target.value || null }))
             }
-            placeholder={t("doctorImage.headlinePlaceholder")}
+            placeholder={tk("doctorImage.headlinePlaceholder", "pa.doctorImage.headlinePlaceholder")}
           />
           <p className="text-[10px] text-slate-400 mt-1">
             {(data.headline?.length || 0)}/{MAX_HEADLINE_LENGTH}
@@ -473,7 +493,7 @@ export default function DoctorImageSettings({ apiPath }: { apiPath: string }) {
             </button>
           )}
         </div>
-        <p className="text-xs text-slate-500">{t("doctorImage.blocksHint")}</p>
+        <p className="text-xs text-slate-500">{tk("doctorImage.blocksHint", "pa.doctorImage.blocksHint")}</p>
 
         {data.contentBlocks.length === 0 && (
           <p className="text-xs text-slate-400 italic">{t("doctorImage.blocksEmpty")}</p>
@@ -528,7 +548,7 @@ export default function DoctorImageSettings({ apiPath }: { apiPath: string }) {
                 className={`${inputClass} min-h-[100px] resize-y`}
                 value={block.body}
                 onChange={(e) => updateBlock(block.id, { body: e.target.value })}
-                placeholder={t("doctorImage.blockBodyPlaceholder")}
+                placeholder={tk("doctorImage.blockBodyPlaceholder", "pa.doctorImage.blockBodyPlaceholder")}
                 rows={4}
               />
             </div>
@@ -542,20 +562,22 @@ export default function DoctorImageSettings({ apiPath }: { apiPath: string }) {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-400 text-white font-semibold text-sm px-5 py-2.5 rounded-xl disabled:opacity-50 transition"
+          className={`inline-flex items-center gap-2 ${accentBtn} text-white font-semibold text-sm px-5 py-2.5 rounded-xl disabled:opacity-50 transition`}
         >
           {saving ? (
             <Loader2 size={16} className="animate-spin" />
           ) : saved ? (
             <CheckCircle2 size={16} />
           ) : null}
-          {saved ? t("doctorImage.saved") : t("doctorImage.save")}
+          {saved ? t("doctorImage.saved") : tk("doctorImage.save", "pa.doctorImage.save")}
         </button>
         {publicUrl && (
           <Link
             href={publicUrl}
             target="_blank"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-500"
+            className={`inline-flex items-center gap-2 text-sm font-semibold hover:opacity-80 ${
+              isPa ? "text-violet-600" : "text-brand-600 hover:text-brand-500"
+            }`}
           >
             <ExternalLink size={16} />
             {t("doctorImage.preview")}

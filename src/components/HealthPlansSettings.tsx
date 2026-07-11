@@ -3,7 +3,12 @@
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { dedupeHealthPlanList } from "@/lib/health-plan-display";
-import { Loader2, Shield, Check } from "lucide-react";
+import { Loader2, Shield, Check, Info } from "lucide-react";
+import {
+  isPsychoanalystVariant,
+  variantI18nKey,
+  type ProviderSettingsVariant,
+} from "@/lib/provider-settings-variant";
 
 type Plan = {
   id: string;
@@ -16,8 +21,24 @@ type Plan = {
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
-export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
+export default function HealthPlansSettings({
+  apiPath,
+  variant,
+}: {
+  apiPath: string;
+  variant?: ProviderSettingsVariant;
+}) {
   const { t } = useI18n();
+  const isPa = isPsychoanalystVariant(variant);
+  const tk = (defaultKey: string, paKey: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey));
+  const accentIcon = isPa ? "text-violet-500" : "text-brand-500";
+  const accentSelected = isPa
+    ? "bg-violet-50 border-violet-300 text-violet-700 font-medium"
+    : "bg-brand-50 border-brand-300 text-brand-700 font-medium";
+  const accentHover = isPa ? "hover:border-violet-200" : "hover:border-brand-200";
+  const accentBtn = isPa ? "bg-violet-600 hover:bg-violet-700" : "bg-brand-500 hover:bg-brand-400";
+  const accentWeekday = isPa ? "bg-violet-500 border-violet-500" : "bg-brand-500 border-brand-500";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -98,11 +119,21 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
       <div>
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Shield size={18} className="text-brand-500" /> {t("pubSearch.healthPlansTitle")}
+          <Shield size={18} className={accentIcon} />{" "}
+          {tk("pubSearch.healthPlansTitle", "pa.settings.healthPlansTitle")}
           <span className="text-slate-400 text-sm font-normal">{t("set.optional")}</span>
         </h2>
-        <p className="text-sm text-slate-500 mt-1">{t("pubSearch.healthPlansSubtitle")}</p>
+        <p className="text-sm text-slate-500 mt-1">
+          {tk("pubSearch.healthPlansSubtitle", "pa.settings.healthPlansSubtitle")}
+        </p>
       </div>
+
+      {isPa && (
+        <p className="text-xs text-violet-800 bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5 flex gap-2">
+          <Info size={14} className="shrink-0 mt-0.5 text-violet-500" />
+          {t("pa.settings.healthPlansNote")}
+        </p>
+      )}
 
       {saved && (
         <p className="text-sm text-brand-600 flex items-center gap-1">
@@ -117,9 +148,7 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
             type="button"
             onClick={() => toggle(p.id)}
             className={`text-sm px-3 py-2 rounded-xl border transition ${
-              p.selected
-                ? "bg-brand-50 border-brand-300 text-brand-700 font-medium"
-                : "border-slate-200 text-slate-600 hover:border-brand-200"
+              p.selected ? accentSelected : `border-slate-200 text-slate-600 ${accentHover}`
             }`}
           >
             {p.name}
@@ -156,8 +185,8 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
                           onClick={() => toggleWeekday(p.id, day)}
                           className={`text-xs px-2.5 py-1.5 rounded-lg border transition ${
                             p.allowedWeekdays.includes(day)
-                              ? "bg-brand-500 border-brand-500 text-white"
-                              : "bg-white border-slate-200 text-slate-500 hover:border-brand-200"
+                              ? `${accentWeekday} text-white`
+                              : `bg-white border-slate-200 text-slate-500 ${accentHover}`
                           }`}
                         >
                           {t(`healthPlanRules.weekday.${key}`)}
@@ -193,10 +222,10 @@ export default function HealthPlansSettings({ apiPath }: { apiPath: string }) {
         type="button"
         onClick={save}
         disabled={saving}
-        className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2"
+        className={`${accentBtn} disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2`}
       >
         {saving && <Loader2 size={14} className="animate-spin" />}
-        {t("pubSearch.healthPlansSave")}
+        {tk("pubSearch.healthPlansSave", "pa.settings.healthPlansSave")}
       </button>
     </div>
   );

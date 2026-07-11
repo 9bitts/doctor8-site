@@ -12,12 +12,18 @@ import {
   Plus,
   Trash2,
   Stethoscope,
+  Brain,
 } from "lucide-react";
 import type { ProviderServiceDto } from "@/lib/practice";
+import {
+  isPsychoanalystVariant,
+  variantI18nKey,
+  type ProviderSettingsVariant,
+} from "@/lib/provider-settings-variant";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL"];
-const inputClass =
-  "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40";
+const inputClassBase =
+  "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2";
 
 type ServiceRow = Omit<ProviderServiceDto, "id">;
 
@@ -27,6 +33,13 @@ const SERVICE_PRESETS = [
   { key: "consultServices.preset.specialty", defaultName: "Especialidade" },
   { key: "consultServices.preset.surgery", defaultName: "Cirurgia / procedimento" },
   { key: "consultServices.preset.volunteer", defaultName: "Consulta voluntária", volunteer: true },
+] as const;
+
+const PA_SERVICE_PRESETS = [
+  { key: "pa.consultServices.preset.analytic", defaultName: "Sessão analítica" },
+  { key: "pa.consultServices.preset.preliminary", defaultName: "Entrevistas preliminares" },
+  { key: "pa.consultServices.preset.highFreq", defaultName: "Sessão de alta frequência" },
+  { key: "pa.consultServices.preset.volunteer", defaultName: "Sessão voluntária", volunteer: true },
 ] as const;
 
 function emptyService(currency: string): ServiceRow {
@@ -51,7 +64,8 @@ function fmtPrice(cents: number, currency: string, locale: string): string {
 export type ConsultPricingSettingsProps = {
   consultServicesApiPath?: string;
   showSessionDuration?: boolean;
-  accent?: "brand" | "teal";
+  accent?: "brand" | "teal" | "violet";
+  variant?: ProviderSettingsVariant;
   embedded?: boolean;
   autoSave?: boolean;
   hideSaveButton?: boolean;
@@ -62,6 +76,7 @@ export default function ConsultPricingSettings({
   consultServicesApiPath = "/api/professional/consult-services",
   showSessionDuration = false,
   accent = "brand",
+  variant,
   embedded = false,
   autoSave = false,
   hideSaveButton = false,
@@ -69,6 +84,10 @@ export default function ConsultPricingSettings({
 }: ConsultPricingSettingsProps) {
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
+  const isPa = isPsychoanalystVariant(variant);
+  const presets = isPa ? PA_SERVICE_PRESETS : SERVICE_PRESETS;
+  const tk = (defaultKey: string, paKey: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -82,18 +101,40 @@ export default function ConsultPricingSettings({
   const skipAutoSaveRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const accentText = accent === "teal" ? "text-teal-500" : "text-brand-500";
+  const accentText =
+    accent === "violet" ? "text-violet-500" : accent === "teal" ? "text-teal-500" : "text-brand-500";
   const accentBg =
-    accent === "teal"
-      ? "bg-teal-50 border-teal-200 text-teal-600"
-      : "bg-brand-50 border-brand-200 text-brand-600";
-  const accentBtn = accent === "teal" ? "bg-teal-600 hover:bg-teal-700" : "bg-brand-500 hover:bg-brand-400";
-  const accentRing = accent === "teal" ? "focus:ring-teal-500/40" : "focus:ring-brand-500/40";
-  const accentCheck = accent === "teal" ? "accent-teal-600" : "accent-brand-500";
+    accent === "violet"
+      ? "bg-violet-50 border-violet-200 text-violet-600"
+      : accent === "teal"
+        ? "bg-teal-50 border-teal-200 text-teal-600"
+        : "bg-brand-50 border-brand-200 text-brand-600";
+  const accentBtn =
+    accent === "violet"
+      ? "bg-violet-600 hover:bg-violet-700"
+      : accent === "teal"
+        ? "bg-teal-600 hover:bg-teal-700"
+        : "bg-brand-500 hover:bg-brand-400";
+  const accentRing =
+    accent === "violet"
+      ? "focus:ring-violet-500/40"
+      : accent === "teal"
+        ? "focus:ring-teal-500/40"
+        : "focus:ring-brand-500/40";
+  const accentCheck =
+    accent === "violet" ? "accent-violet-600" : accent === "teal" ? "accent-teal-600" : "accent-brand-500";
   const accentPreset =
-    accent === "teal"
-      ? "bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100"
-      : "bg-brand-50 border-brand-200 text-brand-700 hover:bg-brand-100";
+    accent === "violet"
+      ? "bg-violet-50 border-violet-200 text-violet-700 hover:bg-violet-100"
+      : accent === "teal"
+        ? "bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100"
+        : "bg-brand-50 border-brand-200 text-brand-700 hover:bg-brand-100";
+  const inputRingClass =
+    accent === "violet"
+      ? "focus:ring-violet-500/40"
+      : accent === "teal"
+        ? "focus:ring-teal-500/40"
+        : "focus:ring-brand-500/40";
 
   useEffect(() => {
     fetch(consultServicesApiPath)
@@ -130,7 +171,7 @@ export default function ConsultPricingSettings({
   const persist = useCallback(async () => {
     setError("");
     if (validServices.length === 0) {
-      setError(t("consultServices.errRequired"));
+      setError(tk("consultServices.errRequired", "pa.consultServices.errRequired"));
       return;
     }
     setSaving(true);
@@ -203,7 +244,7 @@ export default function ConsultPricingSettings({
     };
   }, [services, currency, acceptsTeleconsult, acceptsInPerson, sessionDurationMins, autoSave, persist, validServices.length]);
 
-  function addPreset(preset: (typeof SERVICE_PRESETS)[number]) {
+  function addPreset(preset: (typeof SERVICE_PRESETS)[number] | (typeof PA_SERVICE_PRESETS)[number]) {
     const name = t(preset.key) !== preset.key ? t(preset.key) : preset.defaultName;
     if (services.some((s) => s.name.trim().toLowerCase() === name.toLowerCase())) return;
     setServices([
@@ -246,9 +287,12 @@ export default function ConsultPricingSettings({
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-              <DollarSign size={18} className={accentText} /> {t("set.consultation")}
+              <DollarSign size={18} className={accentText} />{" "}
+              {tk("set.consultation", "pa.consultServices.title")}
             </h2>
-            <p className="text-sm text-slate-500 mt-1">{t("consultServices.subtitle")}</p>
+            <p className="text-sm text-slate-500 mt-1">
+              {tk("consultServices.subtitle", "pa.consultServices.subtitle")}
+            </p>
           </div>
           {saved && !autoSave && (
             <span
@@ -260,7 +304,11 @@ export default function ConsultPricingSettings({
         </div>
       )}
 
-      {embedded && <p className="text-sm text-slate-500">{t("consultServices.subtitle")}</p>}
+      {embedded && (
+        <p className="text-sm text-slate-500">
+          {tk("consultServices.subtitle", "pa.consultServices.subtitle")}
+        </p>
+      )}
 
       {error && (
         <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
@@ -269,9 +317,11 @@ export default function ConsultPricingSettings({
       )}
 
       <div>
-        <p className="text-xs font-semibold text-slate-600 mb-2">{t("consultServices.quickAdd")}</p>
+        <p className="text-xs font-semibold text-slate-600 mb-2">
+          {tk("consultServices.quickAdd", "pa.consultServices.quickAdd")}
+        </p>
         <div className="flex flex-wrap gap-2">
-          {SERVICE_PRESETS.map((preset) => (
+          {presets.map((preset) => (
             <button
               key={preset.key}
               type="button"
@@ -286,8 +336,12 @@ export default function ConsultPricingSettings({
 
       <div className="space-y-3">
         <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-          <Stethoscope size={16} className={accentText} />
-          {t("consultServices.typesTitle")}
+          {isPa ? (
+            <Brain size={16} className={accentText} />
+          ) : (
+            <Stethoscope size={16} className={accentText} />
+          )}
+          {tk("consultServices.typesTitle", "pa.consultServices.typesTitle")}
         </p>
 
         {services.map((svc, i) => {
@@ -314,15 +368,15 @@ export default function ConsultPricingSettings({
               </div>
 
               <input
-                className={`${inputClass} ${accentRing}`}
-                placeholder={t("consultServices.namePlaceholder")}
+                className={`${inputClassBase} ${inputRingClass}`}
+                placeholder={tk("consultServices.namePlaceholder", "pa.consultServices.namePlaceholder")}
                 value={svc.name}
                 onChange={(e) => updateService(i, { name: e.target.value })}
               />
 
               <input
-                className={`${inputClass} ${accentRing}`}
-                placeholder={t("consultServices.descPlaceholder")}
+                className={`${inputClassBase} ${inputRingClass}`}
+                placeholder={tk("consultServices.descPlaceholder", "pa.consultServices.descPlaceholder")}
                 value={svc.description || ""}
                 onChange={(e) => updateService(i, { description: e.target.value || null })}
               />
@@ -330,15 +384,15 @@ export default function ConsultPricingSettings({
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">
-                    {t("consultServices.priceLabel")}
+                    {tk("consultServices.priceLabel", "pa.consultServices.priceLabel")}
                   </label>
                   <input
                     type="number"
                     min={0}
                     step="0.01"
                     disabled={isVolunteer}
-                    className={`${inputClass} ${accentRing} disabled:bg-slate-100 disabled:text-slate-400`}
-                    placeholder={isVolunteer ? t("consultServices.volunteerPrice") : "0,00"}
+                    className={`${inputClassBase} ${inputRingClass} disabled:bg-slate-100 disabled:text-slate-400`}
+                    placeholder={isVolunteer ? tk("consultServices.volunteerPrice", "pa.consultServices.volunteerPrice") : "0,00"}
                     value={
                       isVolunteer
                         ? ""
@@ -364,7 +418,7 @@ export default function ConsultPricingSettings({
                       }
                       className={accentCheck}
                     />
-                    {t("consultServices.volunteerToggle")}
+                    {tk("consultServices.volunteerToggle", "pa.consultServices.volunteerToggle")}
                   </label>
                 </div>
               </div>
@@ -372,7 +426,7 @@ export default function ConsultPricingSettings({
               {svc.priceCents != null && svc.name.trim() && (
                 <p className="text-xs text-slate-500">
                   {isVolunteer
-                    ? t("consultServices.volunteerHint")
+                    ? tk("consultServices.volunteerHint", "pa.consultServices.volunteerHint")
                     : fmtPrice(svc.priceCents, currency, locale)}
                 </p>
               )}
@@ -385,12 +439,14 @@ export default function ConsultPricingSettings({
           onClick={() => setServices([...services, emptyService(currency)])}
           className={`text-sm font-medium flex items-center gap-1 ${accentText}`}
         >
-          <Plus size={14} /> {t("consultServices.addType")}
+          <Plus size={14} /> {tk("consultServices.addType", "pa.consultServices.addType")}
         </button>
       </div>
 
       <div className="border-t border-slate-100 pt-4 space-y-4">
-        <p className="text-sm font-semibold text-slate-800">{t("consultServices.generalTitle")}</p>
+        <p className="text-sm font-semibold text-slate-800">
+          {tk("consultServices.generalTitle", "pa.consultServices.generalTitle")}
+        </p>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -398,7 +454,7 @@ export default function ConsultPricingSettings({
               {t("set.currency")}
             </label>
             <select
-              className={`${inputClass} bg-white ${accentRing}`}
+              className={`${inputClassBase} bg-white ${inputRingClass}`}
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             >
@@ -412,15 +468,20 @@ export default function ConsultPricingSettings({
           {showSessionDuration && (
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1.5">
-                {t("it.settings.duration")}
+                {tk("it.settings.duration", "pa.consultServices.sessionDuration")}
               </label>
               <input
                 type="number"
                 min={15}
-                className={`${inputClass} ${accentRing}`}
+                className={`${inputClassBase} ${inputRingClass}`}
                 value={sessionDurationMins}
                 onChange={(e) => setSessionDurationMins(e.target.value)}
               />
+              {isPa && (
+                <p className="text-[11px] text-slate-400 mt-1">
+                  {t("pa.consultServices.sessionDurationHint")}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -434,7 +495,7 @@ export default function ConsultPricingSettings({
               className={`w-4 h-4 ${accentCheck}`}
             />
             <span className="text-sm text-slate-700 flex items-center gap-2">
-              <Video size={15} /> {t("set.acceptTele")}
+              <Video size={15} /> {tk("set.acceptTele", "pa.consultServices.acceptOnline")}
             </span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer">
@@ -445,7 +506,7 @@ export default function ConsultPricingSettings({
               className={`w-4 h-4 ${accentCheck}`}
             />
             <span className="text-sm text-slate-700 flex items-center gap-2">
-              <Building2 size={15} /> {t("set.acceptInPerson")}
+              <Building2 size={15} /> {tk("set.acceptInPerson", "pa.consultServices.acceptInPerson")}
             </span>
           </label>
         </div>
@@ -459,7 +520,7 @@ export default function ConsultPricingSettings({
           className={`${accentBtn} disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2`}
         >
           {saving && <Loader2 size={14} className="animate-spin" />}
-          {saving ? t("set.saving") : t("consultServices.save")}
+          {saving ? t("set.saving") : tk("consultServices.save", "pa.consultServices.save")}
         </button>
       )}
 
