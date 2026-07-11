@@ -9,6 +9,8 @@ export type AdminOverviewStats = {
   unverifiedUsers: number;
   occupationalPhysicians: number;
   humanitarianWaiting: number | null;
+  emailCampaignsAttention: number;
+  emailCampaignsPendingRecipients: number;
 };
 
 export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
@@ -21,6 +23,8 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
     occupationalPhysicians,
     pendingAngels,
     humanitarianWaiting,
+    emailCampaignsAttention,
+    emailCampaignsPendingRecipients,
   ] = await Promise.all([
     listAdminProviders("pendentes"),
     db.user.count({
@@ -51,6 +55,15 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
     db.humanitarianQueueEntry
       .count({ where: { status: "WAITING" } })
       .catch(() => null),
+    db.emailCampaign.count({
+      where: { status: { in: ["SENDING", "PAUSED"] } },
+    }).catch(() => 0),
+    db.emailCampaignRecipient.count({
+      where: {
+        status: { in: ["PENDING", "SEND_FAILED"] },
+        campaign: { status: { not: "DONE" } },
+      },
+    }).catch(() => 0),
   ]);
 
   const incompletePayload = await listAdminProviders("incompletos");
@@ -63,5 +76,7 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
     unverifiedUsers,
     occupationalPhysicians,
     humanitarianWaiting,
+    emailCampaignsAttention,
+    emailCampaignsPendingRecipients,
   };
 }

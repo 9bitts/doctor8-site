@@ -183,6 +183,26 @@ export function RegisterAccountForm({
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [inviteEmailLocked, setInviteEmailLocked] = useState(false);
+
+  useEffect(() => {
+    if (!inviteToken?.trim()) return;
+    let cancelled = false;
+    fetch(`/api/auth/campaign-invite?token=${encodeURIComponent(inviteToken.trim())}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.email) return;
+        setEmail(data.email);
+        setInviteEmailLocked(true);
+        if (data.name?.trim()) {
+          const parts = String(data.name).trim().split(/\s+/);
+          setFirstName(parts[0] || "");
+          setLastName(parts.slice(1).join(" ") || "");
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [inviteToken]);
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
@@ -536,8 +556,9 @@ export function RegisterAccountForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            readOnly={inviteEmailLocked}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+            className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition ${inviteEmailLocked ? "opacity-70 cursor-not-allowed" : ""}`}
           />
           {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email[0]}</p>}
         </div>
