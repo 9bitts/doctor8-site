@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   ArrowRight,
   Droplets,
+  FlaskConical,
   Flower2,
   Hexagon,
   Leaf,
