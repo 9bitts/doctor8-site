@@ -7,7 +7,7 @@ import IntegrativeUpcomingList from "@/components/integrative-therapist/Integrat
 import { getUserLang } from "@/lib/i18n/server-lang";
 import { decryptIntegrativeNameFields, safeDecrypt } from "@/lib/integrative-therapist-api";
 import { picBySlug, picLabel } from "@/lib/pics/practices";
-import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf, TrendingUp, Clock, BookOpen, ClipboardList, AlertCircle, Sprout } from "lucide-react";
+import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf, TrendingUp, Clock, BookOpen, ClipboardList, AlertCircle, Sprout, MessageSquare, Stethoscope, FlaskConical } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
@@ -31,7 +31,6 @@ export default async function IntegrativeTherapistDashboard() {
   if (!profile) redirect("/integrative-therapist/settings");
 
   const displayProfile = decryptIntegrativeNameFields(profile);
-  await audit.viewRecord(userId, "IntegrativeTherapistProfile", profile.id);
 
   const userRow = await db.user.findUnique({
     where: { id: userId },
@@ -63,6 +62,9 @@ export default async function IntegrativeTherapistDashboard() {
       }),
       getActiveCampaignForRegion(regionForCampaign),
       getVolunteerDashboardState(userId),
+      audit.viewRecord(userId, "IntegrativeTherapistProfile", profile.id).catch((err) => {
+        console.error("[AUDIT] IntegrativeTherapistProfile view failed:", err);
+      }),
     ]);
 
   const practiceLabels = profile.picsPractices
@@ -203,12 +205,16 @@ export default async function IntegrativeTherapistDashboard() {
         {[
           { href: "/integrative-therapist/clients", icon: Users, label: t("it.nav.clients") },
           { href: "/integrative-therapist/appointments", icon: Calendar, label: t("nav.appointments") },
+          { href: "/integrative-therapist/messages", icon: MessageSquare, label: t("nav.messages") },
+          { href: "/integrative-therapist/prescriptions", icon: Stethoscope, label: t("nav.prescriptions") },
           ...(showNaturalMedicine
             ? [{ href: "/integrative-therapist/medicina-natural", icon: Sprout, label: t("nav.naturalMedicine") }]
             : []),
+          { href: "/integrative-therapist/chas-medicinais", icon: FlaskConical, label: t("nav.medicinalTeas") },
+          { href: "/integrative-therapist/meeting-rooms", icon: Video, label: t("nav.meetingRooms") },
           { href: "/integrative-therapist/financeiro", icon: TrendingUp, label: t("nav.financeiro") },
           { href: "/integrative-therapist/settings", icon: Settings, label: t("nav.myProfile") },
-          { href: "/integrative-therapist/settings/availability", icon: Video, label: t("nav.availability") },
+          { href: "/integrative-therapist/settings/availability", icon: Calendar, label: t("nav.availability") },
         ].map((item) => (
           <Link
             key={item.href}
