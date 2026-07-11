@@ -43,10 +43,19 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid timezone" }, { status: 400 });
   }
 
+  const timezone = parsed.data.timezone;
+
   await db.user.update({
     where: { id: session.user.id },
-    data: { timezone: parsed.data.timezone } as never,
+    data: { timezone } as never,
   });
 
-  return NextResponse.json({ success: true, timezone: parsed.data.timezone });
+  if (session.user.role === "PROFESSIONAL") {
+    await db.professionalProfile.update({
+      where: { userId: session.user.id },
+      data: { timezone } as never,
+    });
+  }
+
+  return NextResponse.json({ success: true, timezone });
 }
