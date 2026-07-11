@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useI18n } from "@/lib/i18n/I18nProvider";
-import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
+import { useState, useEffect, useRef } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
 import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
@@ -13,8 +12,8 @@ import ProfileSettingsSection from "@/components/professional/ProfileSettingsSec
 import DoctorImageSettings from "@/components/DoctorImageSettings";
 import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
 import { registrationChecklistHash } from "@/lib/provider-registration-complete";
-import { Loader2, CheckCircle2, Sparkles } from "lucide-react";
-
+import { Loader2, CheckCircle2, Sparkles, User, Camera, X } from "lucide-react";
+import { initials as nameInitials } from "@/lib/format-name";
 const PA_VARIANT = "psychoanalyst" as const;
 
 const inputClass =
@@ -22,14 +21,14 @@ const inputClass =
 
 export default function PsychoanalystSettingsPage() {
   const { t } = useI18n();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(true);  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [trainingInstitution, setTrainingInstitution] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");  const [trainingInstitution, setTrainingInstitution] = useState("");
   const [yearsOfPractice, setYearsOfPractice] = useState("0");
   const [personalAnalysisDone, setPersonalAnalysisDone] = useState(false);
   const [theoreticalStudyDone, setTheoreticalStudyDone] = useState(false);
@@ -67,7 +66,7 @@ export default function PsychoanalystSettingsPage() {
           if (p) {
             setFirstName(p.firstName || "");
             setLastName(p.lastName || "");
-            setTrainingInstitution(p.trainingInstitution || "");
+            setAvatarUrl(p.avatarUrl || "");            setTrainingInstitution(p.trainingInstitution || "");
             setYearsOfPractice(String(p.yearsOfPractice ?? 0));
             setPersonalAnalysisDone(!!p.personalAnalysisDone);
             setTheoreticalStudyDone(!!p.theoreticalStudyDone);
@@ -88,8 +87,42 @@ export default function PsychoanalystSettingsPage() {
     load();
   }, []);
 
-  async function handleSave() {
-    setError("");
+  function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError(t("set.errPhoto"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 400;
+        let width = img.width;
+        let height = img.height;
+        if (width > height && width > max) {
+          height = (height * max) / width;
+          width = max;
+        } else if (height > max) {
+          width = (width * max) / height;
+          height = max;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          setAvatarUrl(canvas.toDataURL("image/jpeg", 0.85));
+        }
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSave() {    setError("");
     if (!firstName || !lastName || !trainingInstitution) {
       setError(t("pa.settings.errRequired"));
       return;
@@ -102,8 +135,8 @@ export default function PsychoanalystSettingsPage() {
         body: JSON.stringify({
           firstName,
           lastName,
-          trainingInstitution,
-          yearsOfPractice: Number(yearsOfPractice),
+          avatarUrl,
+          trainingInstitution,          yearsOfPractice: Number(yearsOfPractice),
           personalAnalysisDone,
           theoreticalStudyDone,
           clinicalSupervision,
@@ -136,6 +169,8 @@ export default function PsychoanalystSettingsPage() {
     );
   }
 
+  const avatarInitials = nameInitials(firstName, lastName);
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
@@ -153,8 +188,43 @@ export default function PsychoanalystSettingsPage() {
         incomplete={missingProfessionalData}
       >
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-sm">
-          <div className="grid sm:grid-cols-2 gap-4">
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <User size={18} className="text-violet-500" />
+            {t("pa.settings.photoIdentity")}
+          </h2>
+          <div className="flex items-center gap-5">
+            <div className="relative">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-24 h-24 rounded-2xl object-cover border border-slate-200" />
+              ) : (
+                <div className="w-24 h-24 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-600 text-2xl font-bold">
+                  {avatarInitials !== "?" ? avatarInitials : <Camera size={28} />}
+                </div>
+              )}
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl("")}
+                  className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-1 shadow hover:bg-rose-50"
+                >
+                  <X size={14} className="text-rose-500" />
+                </button>
+              )}
+            </div>
             <div>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="bg-white border border-slate-200 hover:border-violet-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm flex items-center gap-2"
+              >
+                <Camera size={15} /> {avatarUrl ? t("set.changePhoto") : t("set.uploadPhoto")}
+              </button>
+              <p className="text-xs text-slate-400 mt-2">{t("set.photoHint")}</p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">            <div>
               <label className="text-xs font-medium text-slate-600">{t("reg.firstName")}</label>
               <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
             </div>

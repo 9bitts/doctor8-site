@@ -33,6 +33,7 @@ const DURATION_LABEL_KEYS: Record<number, string> = {
   15: "avail.min15",
   30: "avail.min30",
   45: "avail.min45",
+  50: "avail.min50",
   60: "avail.hour1",
 };
 
@@ -45,12 +46,12 @@ const GAP_LABEL_KEYS: Record<number, string> = {
   30: "avail.min30",
 };
 
-function newBlock(volunteerOnly = false): TimeBlock {
+function newBlock(slotDuration = 30, volunteerOnly = false): TimeBlock {
   return {
     id: crypto.randomUUID(),
     startTime: "09:00",
     endTime: "12:00",
-    slotDuration: 30,
+    slotDuration,
     slotGap: 0,
     volunteerOnly,
   };
@@ -67,11 +68,11 @@ function newVolunteerBlock(dayOfWeek = 1): VolunteerWeeklyBlock {
   };
 }
 
-const defaultSchedules = (): DaySchedule[] =>
+const defaultSchedules = (slotDuration = 30): DaySchedule[] =>
   Array.from({ length: 7 }, (_, i) => ({
     dayOfWeek: i,
     enabled: i >= 1 && i <= 5,
-    blocks: [newBlock()],
+    blocks: [newBlock(slotDuration)],
   }));
 
 function formatTimeLabel(time: string, locale: string): string {
@@ -87,6 +88,9 @@ export type AvailabilitySettingsProps = {
   embedded?: boolean;
   autoSave?: boolean;
   hideSaveButton?: boolean;
+  hideAdvancedSections?: boolean;
+  durationOptions?: number[];
+  defaultSlotDuration?: number;
   onSaved?: () => void;
 };
 
@@ -108,6 +112,9 @@ export default function AvailabilitySettings({
   embedded = false,
   autoSave = false,
   hideSaveButton = false,
+  hideAdvancedSections = false,
+  durationOptions = DURATION_OPTIONS,
+  defaultSlotDuration = 30,
   onSaved,
 }: AvailabilitySettingsProps) {
   const { t, lang } = useI18n();
@@ -126,7 +133,7 @@ export default function AvailabilitySettings({
     [locale],
   );
 
-  const [schedules, setSchedules] = useState<DaySchedule[]>(defaultSchedules());
+  const [schedules, setSchedules] = useState<DaySchedule[]>(() => defaultSchedules(defaultSlotDuration));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -146,7 +153,18 @@ export default function AvailabilitySettings({
   const [blockLabel, setBlockLabel] = useState("");
   const timeZoneOptions = useMemo(() => listTimeZoneOptions(), []);
   const readyRef = useRef(false);
+  const skipAutoSaveRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const durationLabelKeys = useMemo(() => {
+    const keys = { ...DURATION_LABEL_KEYS };
+    for (const mins of durationOptions) {
+      if (!keys[mins]) {
+        keys[mins] = mins === 60 ? "avail.hour1" : `avail.min${mins}`;
+      }
+    }
+    return keys;
+  }, [durationOptions]);
 
   const fetchAvailability = useCallback(async () => {
     try {
@@ -157,44 +175,55 @@ export default function AvailabilitySettings({
         if (d.timezone) setTimezone(d.timezone);
         if (Array.isArray(d.dateBlocks)) setDateBlocks(d.dateBlocks);
         if (Array.isArray(d.volunteerBlocks)) setVolunteerBlocks(d.volunteerBlocks);
-        if (d.slots?.length) {
-          setSchedules(
-            defaultSchedules().map((def) => {
-              const daySlots = d.slots.filter(
-                (s: { dayOfWeek: number }) => s.dayOfWeek === def.dayOfWeek,
-              );
-              if (daySlots.length === 0) return def;
-              return {
-                ...def,
-                enabled: true,
-                blocks: daySlots.map(
-                  (s: {
-                    startTime: string;
-                    endTime: string;
-                    slotDuration?: number;
-                    slotDurationMins?: number;
-                    slotGap?: number;
-                    slotGapMins?: number;
-                    volunteerOnly?: boolean;
-                  }) => ({
-                    id: crypto.randomUUID(),
-                    startTime: s.startTime,
-                    endTime: s.endTime,
-                    slotDuration: s.slotDuration ?? s.slotDurationMins ?? 30,
-                    slotGap: s.slotGap ?? s.slotGapMins ?? 0,
-                    volunteerOnly: !!s.volunteerOnly,
-                  }),
-                ),
-              };
-            }),
-          );
+        if (Array.isArray(d.slots)) {
+          skipAutoSaveRef.current = true;
+          if (d.slots.length === 0) {
+            setSchedules(defaultSchedules(defaultSlotDuration));
+          } else {
+            setSchedules(
+              defaultSchedules(defaultSlotDuration).map((def) => {
+                const daySlots = d.slots.filter(
+                  (s: { dayOfWeek: number }) => s.dayOfWeek === def.dayOfWeek,
+                );
+                if (daySlots.length === 0) {
+                  return {
+                    ...def,
+                    enabled: false,
+                    blocks: [newBlock(defaultSlotDuration)],
+                  };
+                }
+                return {
+                  ...def,
+                  enabled: true,
+                  blocks: daySlots.map(
+                    (s: {
+                      startTime: string;
+                      endTime: string;
+                      slotDuration?: number;
+                      slotDurationMins?: number;
+                      slotGap?: number;
+                      slotGapMins?: number;
+                      volunteerOnly?: boolean;
+                    }) => ({
+                      id: crypto.randomUUID(),
+                      startTime: s.startTime,
+                      endTime: s.endTime,
+                      slotDuration: s.slotDuration ?? s.slotDurationMins ?? defaultSlotDuration,
+                      slotGap: s.slotGap ?? s.slotGapMins ?? 0,
+                      volunteerOnly: !!s.volunteerOnly,
+                    }),
+                  ),
+                };
+              }),
+            );
+          }
         }
       }
     } finally {
       setLoading(false);
       readyRef.current = true;
     }
-  }, [apiPath]);
+  }, [apiPath, defaultSlotDuration]);
 
   useEffect(() => {
     fetchAvailability();
@@ -214,14 +243,14 @@ export default function AvailabilitySettings({
   function addBlock(dayOfWeek: number) {
     updateSchedule(dayOfWeek, (s) => ({
       ...s,
-      blocks: [...s.blocks, { ...newBlock(), startTime: "14:00", endTime: "17:00" }],
+      blocks: [...s.blocks, { ...newBlock(defaultSlotDuration), startTime: "14:00", endTime: "17:00" }],
     }));
   }
 
   function removeBlock(dayOfWeek: number, blockId: string) {
     updateSchedule(dayOfWeek, (s) => {
       const blocks = s.blocks.filter((b) => b.id !== blockId);
-      return { ...s, blocks: blocks.length > 0 ? blocks : [newBlock()] };
+      return { ...s, blocks: blocks.length > 0 ? blocks : [newBlock(defaultSlotDuration)] };
     });
   }
 
@@ -269,14 +298,18 @@ export default function AvailabilitySettings({
       const res = await fetch(apiPath, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slots,
-          timezone,
-          dateBlocks,
-          volunteerBlocks,
-          confirmVolunteerBlockRemoval: opts?.confirmVolunteerBlockRemoval,
-          cancelAppointmentIds: opts?.cancelAppointmentIds,
-        }),
+        body: JSON.stringify(
+          hideAdvancedSections
+            ? { slots }
+            : {
+                slots,
+                timezone,
+                dateBlocks,
+                volunteerBlocks,
+                confirmVolunteerBlockRemoval: opts?.confirmVolunteerBlockRemoval,
+                cancelAppointmentIds: opts?.cancelAppointmentIds,
+              },
+        ),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -314,13 +347,15 @@ export default function AvailabilitySettings({
       setShowBlockConflictModal(false);
       setBlockConflicts([]);
       setSaved(true);
-      toast.success(t("avail.saved"));
+      if (!autoSave) {
+        toast.success(t("avail.saved"));
+      }
       setTimeout(() => setSaved(false), 3000);
       onSaved?.();
     } finally {
       setSaving(false);
     }
-  }, [schedules, timezone, dateBlocks, volunteerBlocks, apiPath, t, onSaved, toast]);
+  }, [schedules, timezone, dateBlocks, volunteerBlocks, apiPath, hideAdvancedSections, autoSave, t, onSaved, toast]);
 
   async function confirmVolunteerBlockRemoval() {
     setConfirmingBlockRemoval(true);
@@ -343,6 +378,10 @@ export default function AvailabilitySettings({
 
   useEffect(() => {
     if (!autoSave || !readyRef.current) return;
+    if (skipAutoSaveRef.current) {
+      skipAutoSaveRef.current = false;
+      return;
+    }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       void persist();
@@ -443,6 +482,7 @@ export default function AvailabilitySettings({
         </p>
       )}
 
+      {!hideAdvancedSections && (
       <div className={`${embedded ? "" : "bg-white rounded-2xl border border-slate-200 shadow-sm "}p-0 space-y-3`}>
         {!embedded && (
           <div className="p-5 space-y-3">
@@ -478,7 +518,9 @@ export default function AvailabilitySettings({
           </div>
         )}
       </div>
+      )}
 
+      {!hideAdvancedSections && (
       <div className={`${embedded ? "border border-slate-200 rounded-xl p-4" : "bg-white rounded-2xl border border-slate-200 shadow-sm p-5"} space-y-4`}>
         <div>
           <h2 className="text-sm font-semibold text-slate-800">{t("avail.blocksTitle")}</h2>
@@ -581,7 +623,9 @@ export default function AvailabilitySettings({
           <Plus size={14} /> {t("avail.addDateBlock")}
         </button>
       </div>
+      )}
 
+      {!hideAdvancedSections && (
       <div className={`${embedded ? "border border-green-200 rounded-xl p-4 bg-green-50/40" : "bg-green-50/50 rounded-2xl border border-green-200 shadow-sm p-5"} space-y-4`}>
         <div>
           <h2 className="text-sm font-semibold text-green-900">{t("avail.voluntaryHoursTitle")}</h2>
@@ -711,6 +755,7 @@ export default function AvailabilitySettings({
           <Plus size={14} /> {t("avail.voluntaryHoursAdd")}
         </button>
       </div>
+      )}
 
       <div className={`${embedded ? "border border-slate-200 rounded-xl" : "bg-white rounded-2xl border border-slate-200 shadow-sm"} overflow-hidden divide-y divide-slate-100`}>
         {schedules.map((schedule) => {
@@ -807,9 +852,9 @@ export default function AvailabilitySettings({
                             }
                             className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-white"
                           >
-                            {DURATION_OPTIONS.map((mins) => (
+                            {durationOptions.map((mins) => (
                               <option key={mins} value={mins}>
-                                {t(DURATION_LABEL_KEYS[mins])}
+                                {t(durationLabelKeys[mins] ?? `avail.min${mins}`)}
                               </option>
                             ))}
                           </select>
