@@ -35,7 +35,7 @@ import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 import DrugSearchResults, { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
 import PrescriptionMedItemForm, { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
-import { phytotherapyProductByValue, PHYTOTHERAPY_REFERENCE_PRODUCTS } from "@/lib/pics/reference-library/phytotherapy-products";
+import { phytotherapyProductByValue } from "@/lib/pics/reference-library/phytotherapy-products";
 import { floralProductByValue } from "@/lib/pics/reference-library/floral-products";
 import {
   resolveFloralStarter,
@@ -514,22 +514,57 @@ export default function PrescriptionsPage() {
       })();
     }
 
-    if (params.get("add") === "phytotherapy" && !patientRecordId) {
+    if (params.get("add") === "phytotherapy") {
       setView("prescription");
-      setMedications((prev) => {
-        if (prev.some((m) => m.itemKind === "phytotherapy")) return prev;
-        return [
-          ...prev,
-          {
-            name: "",
-            dosage: "",
-            frequency: "",
-            duration: "",
-            instructions: "",
-            itemKind: "phytotherapy" as const,
-          },
-        ];
-      });
+      const mnSlug = params.get("mnSlug");
+      if (mnSlug) {
+        void (async () => {
+          try {
+            const res = await fetch(apiPath(cfg, `/medicina-natural/${encodeURIComponent(mnSlug)}`));
+            const data = await res.json();
+            if (!data.item) return;
+            const item = data.item as {
+              slug: string;
+              nome: string;
+              posologia: string;
+              indicacoes: string;
+            };
+            setMedications((prev) => {
+              if (prev.some((m) => m.mnSlug === item.slug)) return prev;
+              return [
+                ...prev,
+                {
+                  name: item.nome,
+                  dosage: "",
+                  frequency: "",
+                  duration: "",
+                  instructions: [item.posologia, item.indicacoes].filter(Boolean).join("\n\n").slice(0, 2000),
+                  itemKind: "phytotherapy" as const,
+                  mnSlug: item.slug,
+                },
+              ];
+            });
+            setFreeTextMode(true);
+          } catch {
+            /* prefill optional */
+          }
+        })();
+      } else if (!patientRecordId) {
+        setMedications((prev) => {
+          if (prev.some((m) => m.itemKind === "phytotherapy")) return prev;
+          return [
+            ...prev,
+            {
+              name: "",
+              dosage: "",
+              frequency: "",
+              duration: "",
+              instructions: "",
+              itemKind: "phytotherapy" as const,
+            },
+          ];
+        });
+      }
     }
 
     if (params.get("add") === "floral" && !patientRecordId) {
@@ -1031,21 +1066,33 @@ export default function PrescriptionsPage() {
     setDrugResults([]);
     try {
       if (cfg.phytoOnly) {
-        const matches = PHYTOTHERAPY_REFERENCE_PRODUCTS.filter((p) => {
-          const label = t(p.labelKey).toLowerCase();
-          return label.includes(q.toLowerCase()) || p.value.includes(q.toLowerCase());
-        }).map((p) => ({
-          id: p.value,
-          name: t(p.labelKey),
-          activeIngredient: t(p.labelKey),
-          dosage: "",
-          presentation: "",
-          pharmaceuticalForm: "",
-          manufacturer: "",
-          controlled: false,
-          prescriptionType: null,
-        }));
-        setDrugResults(matches);
+        const url = `${apiPath(cfg, "/medicina-natural/search")}?q=${encodeURIComponent(q)}&categoria=FITOTERAPICO&take=20`;
+        const res = await fetch(url);
+        const d = await res.json();
+        if (!res.ok) {
+          toast.error(typeof d.error === "string" ? d.error : t("rx2.noDrugsFound"));
+          setDrugResults([]);
+        } else {
+          const matches = (d.items || []).map((item: {
+            slug: string;
+            nome: string;
+            nomeCientifico: string | null;
+            posologia: string;
+            indicacoes: string;
+            statusRegulatorio: string;
+          }) => ({
+            id: item.slug,
+            name: item.nome,
+            activeIngredient: item.nomeCientifico || item.nome,
+            dosage: item.posologia?.slice(0, 120) || "",
+            presentation: item.indicacoes?.slice(0, 200) || "",
+            pharmaceuticalForm: item.statusRegulatorio || "",
+            manufacturer: "",
+            controlled: false,
+            prescriptionType: null,
+          }));
+          setDrugResults(matches);
+        }
       } else {
         const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`;
         const res = await fetch(url);
@@ -1074,6 +1121,21 @@ export default function PrescriptionsPage() {
 
   function addDrug(drug: DrugSearchResult) {
     setFreeTextMode(false);
+    if (cfg.phytoOnly) {
+      setMedications((prev) => [...prev, {
+        name: drug.name,
+        dosage: drug.dosage?.trim() || "",
+        frequency: "",
+        duration: "",
+        instructions: drug.presentation?.trim() || "",
+        itemKind: "phytotherapy" as const,
+        mnSlug: drug.id,
+      }]);
+      setDrugQuery("");
+      setDrugResults([]);
+      setDrugSearchModalOpen(false);
+      return;
+    }
     const substance = drug.activeIngredient?.trim() || drug.name;
     setMedications((prev) => [...prev, {
       name: substance,
@@ -1781,12 +1843,7 @@ export default function PrescriptionsPage() {
 
               <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{t("rx.bulkPaste.title")}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {freeTextMode ? t("rx.bulkPaste.deviceHint") : t("rx.bulkPaste.hint")}
-                    </p>
-                  </div>
+                  <p className="text-sm font-semibold text-slate-800">{t("rx.bulkPaste.title")}</p>
                   <button
                     type="button"
                     onClick={() => setShowBulkPaste((v) => !v)}

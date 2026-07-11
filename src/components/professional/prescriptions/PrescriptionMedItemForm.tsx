@@ -19,6 +19,7 @@ export type PrescriptionMedItem = {
   prescriptionType?: string | null;
   itemKind?: "medication" | "device" | "phytotherapy" | "floral";
   phytoProductId?: string;
+  mnSlug?: string;
   floralProductId?: string;
 };
 

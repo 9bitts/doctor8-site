@@ -14,6 +14,7 @@ import {
   Hexagon,
   LayoutTemplate,
   Leaf,
+  Library,
   Stethoscope,
   Users,
   Wind,
@@ -52,6 +53,12 @@ export default function PicsPracticeHub({ portal, practice }: PicsPracticeHubPro
     portal === "professional"
       ? [
           {
+            path: `${practiceBase}/catalogo`,
+            icon: Library,
+            color: "bg-emerald-100 text-emerald-600",
+            key: "nm.mod.catalog",
+          },
+          {
             path: `${practiceBase}/reference`,
             icon: BookOpen,
             color: "bg-teal-100 text-teal-600",
@@ -76,6 +83,12 @@ export default function PicsPracticeHub({ portal, practice }: PicsPracticeHubPro
         ]
       : [
           {
+            path: `${practiceBase}/catalogo`,
+            icon: Library,
+            color: "bg-emerald-100 text-emerald-600",
+            key: "nm.mod.catalog",
+          },
+          {
             path: `${practiceBase}/reference`,
             icon: BookOpen,
             color: "bg-teal-100 text-teal-600",
@@ -87,6 +100,16 @@ export default function PicsPracticeHub({ portal, practice }: PicsPracticeHubPro
             color: "bg-emerald-100 text-emerald-600",
             key: "nm.mod.sessions",
           },
+          ...(practice.id === "fitoterapia"
+            ? [
+                {
+                  path: "/integrative-therapist/prescriptions?add=phytotherapy",
+                  icon: Stethoscope,
+                  color: "bg-emerald-100 text-emerald-600",
+                  key: "nm.mod.prescriptions",
+                },
+              ]
+            : []),
           ...(practice.id === "terapia_florais"
             ? [
                 {
