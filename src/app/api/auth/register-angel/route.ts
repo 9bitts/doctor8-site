@@ -52,7 +52,7 @@ const registerAngelSchema = z.object({
   acceptedGdpr: z.boolean().optional(),
 });
 
-function certificateErrorMessage(error: LicenseDocValidationError): string {
+function idDocumentErrorMessage(error: LicenseDocValidationError): string {
   if (error === "CERTIFICATE_TOO_LARGE") {
     return "File too large. Maximum is 50 MB.";
   }
@@ -61,7 +61,7 @@ function certificateErrorMessage(error: LicenseDocValidationError): string {
 
 async function parseRegisterBody(req: NextRequest): Promise<{
   data: z.infer<typeof registerAngelSchema> | null;
-  certificate: File | null;
+  idDocument: File | null;
   fieldErrors: Record<string, string[]> | null;
 }> {
   const contentType = req.headers.get("content-type") || "";
@@ -73,7 +73,7 @@ async function parseRegisterBody(req: NextRequest): Promise<{
     try {
       languages = JSON.parse(String(languagesRaw || "[]"));
     } catch {
-      return { data: null, certificate: null, fieldErrors: { languages: ["Invalid languages"] } };
+      return { data: null, idDocument: null, fieldErrors: { languages: ["Invalid languages"] } };
     }
 
     const parsed = registerAngelSchema.safeParse({
@@ -95,24 +95,24 @@ async function parseRegisterBody(req: NextRequest): Promise<{
       acceptedGdpr: form.get("acceptedGdpr") === "true",
     });
 
-    const certificate = form.get("certificate");
-    const certFile = certificate instanceof File && certificate.size > 0 ? certificate : null;
+    const idDocumentRaw = form.get("idDocument");
+    const idDocumentFile = idDocumentRaw instanceof File && idDocumentRaw.size > 0 ? idDocumentRaw : null;
 
     if (!parsed.success) {
-      return { data: null, certificate: certFile, fieldErrors: parsed.error.flatten().fieldErrors };
+      return { data: null, idDocument: idDocumentFile, fieldErrors: parsed.error.flatten().fieldErrors };
     }
-    return { data: parsed.data, certificate: certFile, fieldErrors: null };
+    return { data: parsed.data, idDocument: idDocumentFile, fieldErrors: null };
   }
 
   const body = await req.json();
   const parsed = registerAngelSchema.safeParse(body);
   if (!parsed.success) {
-    return { data: null, certificate: null, fieldErrors: parsed.error.flatten().fieldErrors };
+    return { data: null, idDocument: null, fieldErrors: parsed.error.flatten().fieldErrors };
   }
-  return { data: parsed.data, certificate: null, fieldErrors: null };
+  return { data: parsed.data, idDocument: null, fieldErrors: null };
 }
 
-async function storeAngelCertificate(
+async function storeAngelIdDocument(
   userId: string,
   file: File,
   mimeType: string,
@@ -125,7 +125,7 @@ async function storeAngelCertificate(
   await db.providerLicenseDocument.create({
     data: {
       userId,
-      label: "Certificado profissional",
+      label: "Documento de identificação",
       fileKey: key,
       fileName: file.name.slice(0, 255),
       mimeType,
@@ -137,9 +137,9 @@ async function storeAngelCertificate(
     userId,
     role: "ANGEL",
     fileName: file.name,
-    label: "Certificado profissional",
+    label: "Documento de identificação",
     totalDocs: 1,
-  }).catch((err) => console.error("[angel-register] cert notify failed:", err));
+  }).catch((err) => console.error("[angel-register] id doc notify failed:", err));
 }
 
 async function issueVerificationEmail(opts: {
@@ -170,7 +170,7 @@ async function issueVerificationEmail(opts: {
 
 export async function POST(req: NextRequest) {
   try {
-    const { data, certificate, fieldErrors } = await parseRegisterBody(req);
+    const { data, idDocument, fieldErrors } = await parseRegisterBody(req);
 
     if (!data) {
       return NextResponse.json({ error: fieldErrors }, { status: 400 });
@@ -183,19 +183,16 @@ export async function POST(req: NextRequest) {
     ]);
     if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
 
-    if (!certificate) {
-      return NextResponse.json(
-        { error: { certificate: ["Certificate is required"] } },
-        { status: 400 },
-      );
-    }
-
-    const certCheck = validateLicenseDocFile(certificate);
-    if (!certCheck.ok) {
-      return NextResponse.json(
-        { error: { certificate: [certificateErrorMessage(certCheck.error)] } },
-        { status: 400 },
-      );
+    let idDocCheck: { ok: true; mimeType: string } | null = null;
+    if (idDocument) {
+      const check = validateLicenseDocFile(idDocument);
+      if (!check.ok) {
+        return NextResponse.json(
+          { error: { idDocument: [idDocumentErrorMessage(check.error)] } },
+          { status: 400 },
+        );
+      }
+      idDocCheck = check;
     }
 
     const {
@@ -260,10 +257,12 @@ export async function POST(req: NextRequest) {
           console.error("[ANGEL REGISTER EMAIL RESEND]", emailError);
         }
 
-        try {
-          await storeAngelCertificate(existing.id, certificate, certCheck.mimeType);
-        } catch (certErr) {
-          console.error("[ANGEL REGISTER CERT RESEND]", certErr);
+        if (idDocument && idDocCheck) {
+          try {
+            await storeAngelIdDocument(existing.id, idDocument, idDocCheck.mimeType);
+          } catch (docErr) {
+            console.error("[ANGEL REGISTER ID DOC RESEND]", docErr);
+          }
         }
 
         return registerAckResponse();
@@ -338,10 +337,12 @@ export async function POST(req: NextRequest) {
       emailSent = false;
     }
 
-    try {
-      await storeAngelCertificate(user.id, certificate, certCheck.mimeType);
-    } catch (certErr) {
-      console.error("[ANGEL REGISTER CERT]", certErr);
+    if (idDocument && idDocCheck) {
+      try {
+        await storeAngelIdDocument(user.id, idDocument, idDocCheck.mimeType);
+      } catch (docErr) {
+        console.error("[ANGEL REGISTER ID DOC]", docErr);
+      }
     }
 
     return NextResponse.json({ success: true, userId: user.id, emailSent }, { status: 201 });

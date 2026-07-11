@@ -49,7 +49,7 @@ export default function RegisterAngelPage() {
   });
   const [profession, setProfession] = useState("");
   const [volunteerHelp, setVolunteerHelp] = useState("");
-  const [certificate, setCertificate] = useState<File | null>(null);
+  const [idDocument, setIdDocument] = useState<File | null>(null);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [motivation, setMotivation] = useState("");
@@ -100,15 +100,13 @@ export default function RegisterAngelPage() {
     languages.length > 0 &&
     isPhoneValid &&
     profession.trim().length > 0 &&
-    volunteerHelp.trim().length > 0 &&
-    !!certificate;
+    volunteerHelp.trim().length > 0;
 
   const missingFields: string[] = [];
   if (!isPhoneValid) missingFields.push(t("angel.register.missing.phone"));
   if (!isPasswordValid) missingFields.push(t("angel.register.missing.password"));
   if (!profession.trim()) missingFields.push(t("angel.register.missing.profession"));
   if (!volunteerHelp.trim()) missingFields.push(t("angel.register.missing.volunteerHelp"));
-  if (!certificate) missingFields.push(t("angel.register.missing.certificate"));
   if (!acceptedTerms || !acceptedPrivacy) missingFields.push(t("angel.register.missing.terms"));
   if (languages.length === 0) missingFields.push(t("angel.register.missing.languages"));
 
@@ -145,7 +143,7 @@ export default function RegisterAngelPage() {
       form.append("language", lang);
       form.append("acceptedTerms", "true");
       form.append("acceptedPrivacy", "true");
-      if (certificate) form.append("certificate", certificate);
+      if (idDocument) form.append("idDocument", idDocument);
 
       const res = await fetch("/api/auth/register-angel", {
         method: "POST",
@@ -251,16 +249,15 @@ export default function RegisterAngelPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.certificate")}</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.idDocument")}</label>
               <input
                 type="file"
                 accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
-                required
-                onChange={(e) => setCertificate(e.target.files?.[0] ?? null)}
+                onChange={(e) => setIdDocument(e.target.files?.[0] ?? null)}
                 className="w-full text-sm text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-rose-500/20 file:text-rose-200 file:font-medium"
               />
-              <p className="text-xs text-slate-500 mt-1">{t("angel.register.certificateHint")}</p>
-              {errors.certificate && <p className="text-red-400 text-xs mt-1">{errors.certificate[0]}</p>}
+              <p className="text-xs text-slate-500 mt-1">{t("angel.register.idDocumentHint")}</p>
+              {errors.idDocument && <p className="text-red-400 text-xs mt-1">{errors.idDocument[0]}</p>}
             </div>
 
             <div>
