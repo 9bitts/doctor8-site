@@ -107,6 +107,11 @@ export default function MedicinaNaturalCatalog({ practice }: MedicinaNaturalCata
 
       <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
         <p className="text-xs text-amber-900 leading-relaxed">{t("nm.ref.disclaimer")}</p>
+        {categoria === "FITOTERAPICO" && (
+          <p className="text-xs text-amber-800 leading-relaxed mt-2 border-t border-amber-200/80 pt-2">
+            {t("nm.catalog.fitoterapiaDistinction")}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">

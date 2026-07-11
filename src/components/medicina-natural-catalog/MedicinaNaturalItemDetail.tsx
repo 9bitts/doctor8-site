@@ -2,12 +2,25 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, BookOpen, Stethoscope } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import type { NaturalMedicinePracticeConfig } from "@/lib/natural-medicine/config";
-import type { DetalhesFitoterapico, FonteReferencia } from "@/lib/medicina-natural/item-types";
+import type { DetalhesFitoterapico, FonteReferencia, StatusRegulatorio } from "@/lib/medicina-natural/item-types";
+import {
+  acaoPrescricaoMedicinaNatural,
+  labelAcaoPrescricao,
+} from "@/lib/medicina-natural/prescribability";
+import {
+  detectMnCatalogPortal,
+  mnCatalogBasePath,
+  prescriptionsBasePath,
+} from "@/lib/medicina-natural-catalog/portal-config";
+import { fetchMedicinaNaturalBySlug } from "@/lib/medicina-natural-catalog/api";
+import type { MedicinaNaturalDetailItem } from "@/lib/medicina-natural-catalog/api";
+import StatusRegulatorioBadge from "./StatusRegulatorioBadge";
+import PrescricaoMedicinaNaturalModal from "./PrescricaoMedicinaNaturalModal";
 
 type DetalhesFloral = {
   sistema?: string;
@@ -37,19 +50,6 @@ function floralCategoryLabel(
   const label = t(key);
   return label === key ? sistema : label;
 }
-import {
-  acaoPrescricaoMedicinaNatural,
-  labelAcaoPrescricao,
-} from "@/lib/medicina-natural/prescribability";
-import type { StatusRegulatorio } from "@/lib/medicina-natural/item-types";
-import {
-  detectMnCatalogPortal,
-  mnCatalogBasePath,
-  prescriptionsBasePath,
-} from "@/lib/medicina-natural-catalog/portal-config";
-import { fetchMedicinaNaturalBySlug } from "@/lib/medicina-natural-catalog/api";
-import type { MedicinaNaturalDetailItem } from "@/lib/medicina-natural-catalog/api";
-import StatusRegulatorioBadge from "./StatusRegulatorioBadge";
 
 interface MedicinaNaturalItemDetailProps {
   practice: NaturalMedicinePracticeConfig;
@@ -81,6 +81,7 @@ export default function MedicinaNaturalItemDetail({
 }: MedicinaNaturalItemDetailProps) {
   const { t } = useI18n();
   const pathname = usePathname();
+  const router = useRouter();
   const portal = detectMnCatalogPortal(pathname);
   const base = mnCatalogBasePath(portal);
   const practiceBase = `${base}/${practice.urlSlug}`;
@@ -90,6 +91,7 @@ export default function MedicinaNaturalItemDetail({
 
   const [item, setItem] = useState<MedicinaNaturalDetailItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [prescribeModalOpen, setPrescribeModalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -323,18 +325,32 @@ export default function MedicinaNaturalItemDetail({
         )}
       </div>
 
-      {prescribeHref && (
-        <Link
-          href={href(prescribeHref)}
-          className={`inline-flex items-center gap-2 font-semibold text-sm px-5 py-3 rounded-xl shadow-md transition ${
-            acao === "prescrever"
-              ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
-              : "bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300"
-          }`}
-        >
-          <Stethoscope size={16} />
-          {labelAcaoPrescricao(status, t)}
-        </Link>
+      {prescribeHref && item && (
+        <>
+          <button
+            type="button"
+            onClick={() => setPrescribeModalOpen(true)}
+            className={`inline-flex items-center gap-2 font-semibold text-sm px-5 py-3 rounded-xl shadow-md transition ${
+              acao === "prescrever"
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+                : "bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300"
+            }`}
+          >
+            <Stethoscope size={16} />
+            {labelAcaoPrescricao(status, t)}
+          </button>
+          <PrescricaoMedicinaNaturalModal
+            open={prescribeModalOpen}
+            item={item}
+            actionLabel={labelAcaoPrescricao(status, t)}
+            onClose={() => setPrescribeModalOpen(false)}
+            onConfirm={() => {
+              setPrescribeModalOpen(false);
+              router.push(href(prescribeHref));
+            }}
+            t={t}
+          />
+        </>
       )}
 
       <p className="text-xs text-slate-500 leading-relaxed border-t border-slate-100 pt-4">

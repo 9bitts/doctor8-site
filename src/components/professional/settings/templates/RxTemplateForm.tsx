@@ -10,6 +10,13 @@ import DrugSearchResults, {
 } from "@/components/professional/prescriptions/DrugSearchResults";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
 import { TEMPLATE_CATEGORIES } from "@/lib/clinical-template-utils";
+import MedicinaNaturalSearchResults from "@/components/medicina-natural-catalog/MedicinaNaturalSearchResults";
+import {
+  fetchMnFitoterapicosForPrescription,
+  phytoMedItemFromMnListItem,
+  type PrescriptionItemSearchMode,
+} from "@/lib/medicina-natural-catalog/prescription-search";
+import type { MedicinaNaturalListItem } from "@/lib/medicina-natural-catalog/search-server";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40";
@@ -83,6 +90,10 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
   const [drugSearchDone, setDrugSearchDone] = useState(false);
   const [drugSearchModalOpen, setDrugSearchModalOpen] = useState(false);
   const [drugCountry, setDrugCountry] = useState<DrugCountryCode>("BR");
+  const [itemSearchMode, setItemSearchMode] = useState<PrescriptionItemSearchMode>("medication");
+  const [mnSearchResults, setMnSearchResults] = useState<MedicinaNaturalListItem[]>([]);
+  const [mnPickerTargetIndex, setMnPickerTargetIndex] = useState<number | null>(null);
+  const phytoMode = itemSearchMode === "phytotherapy";
 
   const searchDrugs = useCallback(async () => {
     const q = drugQuery.trim();
@@ -91,19 +102,41 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
     setDrugSearching(true);
     setDrugSearchDone(false);
     setDrugResults([]);
+    setMnSearchResults([]);
     try {
-      const res = await fetch(
-        `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`,
-      );
-      const d = await res.json();
-      setDrugResults(res.ok ? (d.drugs || []) : []);
+      if (phytoMode) {
+        const items = await fetchMnFitoterapicosForPrescription("/api/professional", q);
+        setMnSearchResults(items);
+      } else {
+        const res = await fetch(
+          `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`,
+        );
+        const d = await res.json();
+        setDrugResults(res.ok ? (d.drugs || []) : []);
+      }
     } catch {
       setDrugResults([]);
+      setMnSearchResults([]);
     } finally {
       setDrugSearching(false);
       setDrugSearchDone(true);
     }
-  }, [drugQuery, drugCountry]);
+  }, [drugQuery, drugCountry, phytoMode]);
+
+  function addPhytoItem(item: PrescriptionMedItem) {
+    if (mnPickerTargetIndex !== null) {
+      setMedications((prev) =>
+        prev.map((m, i) => (i === mnPickerTargetIndex ? { ...m, ...item } : m)),
+      );
+    } else {
+      setMedications((prev) => [...prev, item]);
+    }
+    setDrugQuery("");
+    setDrugResults([]);
+    setMnSearchResults([]);
+    setDrugSearchModalOpen(false);
+    setMnPickerTargetIndex(null);
+  }
 
   function addDrug(drug: DrugSearchResult) {
     const substance = drug.activeIngredient?.trim() || drug.name;
@@ -132,10 +165,22 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
       frequency: "",
       duration: "",
       instructions: "",
-      itemKind: "medication",
+      itemKind: phytoMode ? "phytotherapy" : "medication",
     }]);
     setDrugQuery("");
     setDrugSearchModalOpen(false);
+  }
+
+  function addSpecialPhyto() {
+    setItemSearchMode("phytotherapy");
+    setMedications((prev) => [...prev, {
+      name: "",
+      dosage: "",
+      frequency: "",
+      duration: "",
+      instructions: "",
+      itemKind: "phytotherapy",
+    }]);
   }
 
   function removeMedication(index: number) {
@@ -168,6 +213,7 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
         presentation: m.presentation || "",
         pharmaceuticalForm: m.pharmaceuticalForm || "",
         itemKind: m.itemKind || "medication",
+        mnSlug: m.mnSlug,
       }));
       const payload = {
         name: name.trim(),
@@ -209,7 +255,34 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
       </div>
 
       <div className="space-y-3">
-        <p className="text-xs font-medium text-slate-600">{t("rx2.searchDrug")}</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setItemSearchMode("medication")}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+              itemSearchMode === "medication"
+                ? "border-brand-500 bg-brand-50 text-brand-700"
+                : "border-slate-200 bg-white text-slate-600"
+            }`}
+          >
+            {t("rx.searchMode.medication")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setItemSearchMode("phytotherapy")}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+              itemSearchMode === "phytotherapy"
+                ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                : "border-slate-200 bg-white text-slate-600"
+            }`}
+          >
+            {t("rx.searchMode.phytotherapy")}
+          </button>
+        </div>
+        <p className="text-xs font-medium text-slate-600">
+          {phytoMode ? t("rx.phytoCatalogSearch") : t("rx2.searchDrug")}
+        </p>
+        {!phytoMode && (
         <div className="flex flex-wrap gap-2">
           {DRUG_COUNTRIES.map((c) => (
             <button
@@ -227,13 +300,14 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
             </button>
           ))}
         </div>
+        )}
         <div className="flex items-center rounded-xl border border-slate-200 bg-white">
           <input
             type="text"
             value={drugQuery}
             onChange={(e) => setDrugQuery(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void searchDrugs(); } }}
-            placeholder={t("rx2.searchDrug")}
+            placeholder={phytoMode ? t("rx.phytoCatalogSearch") : t("rx2.searchDrug")}
             className="flex-1 border-0 bg-transparent outline-none py-2.5 pl-3 text-sm"
           />
           {drugSearching ? (
@@ -249,12 +323,22 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
             </button>
           )}
         </div>
-        {drugSearchModalOpen && drugSearchDone && drugResults.length === 0 && (
+        {drugSearchModalOpen && drugSearchDone && !phytoMode && drugResults.length === 0 && (
           <p className="text-xs text-slate-500">{t("rx2.noDrugsFound")}</p>
         )}
-        {drugSearchModalOpen && drugResults.length > 0 && (
+        {drugSearchModalOpen && mnSearchResults.length > 0 && (
+          <MedicinaNaturalSearchResults
+            results={mnSearchResults}
+            onSelect={(item) => addPhytoItem(phytoMedItemFromMnListItem(item))}
+          />
+        )}
+        {drugSearchModalOpen && !phytoMode && drugResults.length > 0 && (
           <DrugSearchResults results={drugResults} onSelect={addDrug} controlInfo={controlInfo} />
         )}
+        <button type="button" onClick={() => addSpecialPhyto()}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 text-emerald-800 font-semibold text-sm">
+          <Plus size={16} /> {t("rx.addPhytotherapy")}
+        </button>
         <button type="button" onClick={addManual}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 text-brand-600 font-semibold text-sm">
           <Plus size={16} /> {t("rx2.addManual")}
@@ -270,9 +354,20 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
               index={i}
               showErrors={showErrors}
               fieldErrors={medItemFieldErrors(med)}
-              kindLabel={null}
+              kindLabel={
+                med.itemKind === "phytotherapy" ? t("rx.itemKind.phytotherapy") : null
+              }
               controlInfo={controlInfo(med.prescriptionType)}
               onUpdate={updateMedication}
+              onOpenPhytoSearch={(index) => {
+                setItemSearchMode("phytotherapy");
+                setMnPickerTargetIndex(index);
+                setDrugQuery("");
+                setMnSearchResults([]);
+                setDrugResults([]);
+                setDrugSearchDone(false);
+                setDrugSearchModalOpen(false);
+              }}
               onRemove={removeMedication}
               t={t}
               rxFieldClass={rxFieldClass}

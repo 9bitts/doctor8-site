@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -8,6 +9,7 @@ import {
   Flower2,
   Hexagon,
   Leaf,
+  Search,
   Sprout,
   Wind,
 } from "lucide-react";
@@ -19,6 +21,21 @@ import {
   NATURAL_MEDICINE_PRACTICES,
   naturalMedicineBasePath,
 } from "@/lib/natural-medicine/config";
+import {
+  fetchMedicinaNaturalCount,
+  fetchMedicinaNaturalSearch,
+} from "@/lib/medicina-natural-catalog/api";
+import {
+  categoriaFromPracticeUrl,
+  practiceUrlFromCategoria,
+} from "@/lib/medicina-natural-catalog/practice-map";
+import {
+  mnCatalogBasePath,
+  naturalPortalToCatalogPortal,
+} from "@/lib/medicina-natural-catalog/portal-config";
+import type { MedicinaNaturalListItem } from "@/lib/medicina-natural-catalog/search-server";
+import type { CategoriaPratica } from "@/lib/medicina-natural/item-types";
+import StatusRegulatorioBadge from "@/components/medicina-natural-catalog/StatusRegulatorioBadge";
 
 const ICONS = {
   Leaf,
@@ -41,6 +58,8 @@ export default function NaturalMedicineMainHub({
   const { t } = useI18n();
   const pathname = usePathname();
   const base = naturalMedicineBasePath(portal);
+  const catalogPortal = naturalPortalToCatalogPortal(portal);
+  const catalogBase = mnCatalogBasePath(catalogPortal);
 
   const practices =
     enabledPractices ??
@@ -48,6 +67,65 @@ export default function NaturalMedicineMainHub({
 
   const href = (path: string) =>
     portal === "professional" ? mapProfessionalPathToPortal(pathname, path) : path;
+
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<MedicinaNaturalListItem[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        practices.map(async (p) => {
+          const categoria = categoriaFromPracticeUrl(p.urlSlug);
+          if (!categoria) return [p.urlSlug, 0] as const;
+          const n = await fetchMedicinaNaturalCount(catalogPortal, categoria);
+          return [p.urlSlug, n] as const;
+        }),
+      );
+      if (!cancelled) setCounts(Object.fromEntries(entries));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [practices, catalogPortal]);
+
+  const runGlobalSearch = useCallback(async () => {
+    if (debouncedQuery.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const items = await fetchMedicinaNaturalSearch(catalogPortal, {
+        q: debouncedQuery,
+        take: 24,
+      });
+      setSearchResults(items);
+    } finally {
+      setSearching(false);
+    }
+  }, [catalogPortal, debouncedQuery]);
+
+  useEffect(() => {
+    void runGlobalSearch();
+  }, [runGlobalSearch]);
+
+  const practiceByCategoria = useMemo(() => {
+    const map = new Map<CategoriaPratica, NaturalMedicinePracticeConfig>();
+    for (const p of practices) {
+      const cat = categoriaFromPracticeUrl(p.urlSlug);
+      if (cat) map.set(cat, p);
+    }
+    return map;
+  }, [practices]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -64,6 +142,59 @@ export default function NaturalMedicineMainHub({
       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
         <p className="text-sm text-emerald-800 leading-relaxed">{t("nm.hub.banner")}</p>
       </div>
+
+      {practices.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+            {t("nm.hub.globalSearchTitle")}
+          </h2>
+          <div className="relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("nm.hub.searchPlaceholder")}
+              className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            />
+          </div>
+          {debouncedQuery.length >= 2 && (
+            <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+              {searching ? (
+                <p className="text-sm text-slate-400 text-center py-8">{t("nm.catalog.loading")}</p>
+              ) : searchResults.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-8">{t("nm.hub.noSearchResults")}</p>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {searchResults.map((item) => {
+                    const practice = practiceByCategoria.get(item.categoriaPratica);
+                    const practiceSlug = practiceUrlFromCategoria(item.categoriaPratica);
+                    return (
+                      <li key={item.slug}>
+                        <Link
+                          href={href(`${catalogBase}/${practiceSlug}/${item.slug}`)}
+                          className="flex items-start gap-3 px-4 py-3 hover:bg-emerald-50 transition"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-slate-900">{item.nome}</p>
+                            {practice && (
+                              <p className="text-xs text-slate-500 mt-0.5">{t(practice.hubTitleKey)}</p>
+                            )}
+                            {item.indicacoes && (
+                              <p className="text-xs text-slate-400 mt-1 line-clamp-2">{item.indicacoes}</p>
+                            )}
+                          </div>
+                          <StatusRegulatorioBadge status={item.statusRegulatorio} />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {practices.length === 0 ? (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center space-y-3">
@@ -97,6 +228,11 @@ export default function NaturalMedicineMainHub({
                       {t(p.hubTitleKey)}
                     </p>
                     <p className="text-sm text-slate-500 mt-0.5">{t(p.cardDescKey)}</p>
+                    {counts[p.urlSlug] !== undefined && (
+                      <p className="text-xs text-emerald-600 font-medium mt-2">
+                        {t("nm.hub.catalogCount").replace("{n}", String(counts[p.urlSlug]))}
+                      </p>
+                    )}
                   </div>
                   <ArrowRight size={18} className="text-slate-300 group-hover:text-emerald-400 mt-1 shrink-0" />
                 </Link>

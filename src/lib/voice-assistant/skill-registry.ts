@@ -118,7 +118,7 @@ const BASE_SKILLS: Partial<Record<VoicePortalId, VoiceSkill[]>> = {
       description: "Create phytotherapy / floral prescription",
       examples: ["Receita fitoterápica para Maria, valeriana"],
     },
-    { id: "navigate", labelKey: "voice.skill.navigate", description: "Open a portal section", examples: ["Abrir chás medicinais", "Abrir florais"] },
+    { id: "navigate", labelKey: "voice.skill.navigate", description: "Open a portal section", examples: ["Abrir chás Seu Enésio", "Abrir florais"] },
     { id: "search_patient", labelKey: "voice.skill.searchPatient", route: "/integrative-therapist/clients", description: "Find a client", examples: ["Buscar cliente João"] },
     { id: "schedule", labelKey: "voice.skill.schedule", route: "/integrative-therapist/appointments", description: "Open appointments", examples: ["Abrir agenda"] },
   ],

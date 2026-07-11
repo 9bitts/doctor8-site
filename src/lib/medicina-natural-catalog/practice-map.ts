@@ -12,3 +12,15 @@ export const CATEGORIA_BY_PRACTICE_URL: Record<string, CategoriaPratica> = {
 export function categoriaFromPracticeUrl(urlSlug: string): CategoriaPratica | null {
   return CATEGORIA_BY_PRACTICE_URL[urlSlug] ?? null;
 }
+
+export const PRACTICE_URL_BY_CATEGORIA: Record<CategoriaPratica, string> = {
+  FITOTERAPICO: "fitoterapia",
+  FLORAL: "terapia-florais",
+  AROMATERAPIA: "aromaterapia",
+  HOMEOPATIA: "homeopatia",
+  APITERAPIA: "apiterapia",
+};
+
+export function practiceUrlFromCategoria(categoria: CategoriaPratica): string {
+  return PRACTICE_URL_BY_CATEGORIA[categoria];
+}
