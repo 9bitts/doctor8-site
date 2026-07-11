@@ -1,6 +1,11 @@
 "use client";
 
-import { ACURA_STATUS_LABELS, type AcuraIntakeAdminDto } from "@/lib/partner/acura-intake";
+import { Phone } from "lucide-react";
+import {
+  ACURA_STATUS_LABELS,
+  partnerIntakeWhatsAppHref,
+  type AcuraIntakeAdminDto,
+} from "@/lib/partner/acura-intake";
 import type { PartnerIntakeStatus } from "@prisma/client";
 
 function fmtTs(iso: string | null): string {
@@ -11,6 +16,7 @@ function fmtTs(iso: string | null): string {
 export default function AcuraIntakePanel({ intake }: { intake: AcuraIntakeAdminDto }) {
   const statusLabel =
     ACURA_STATUS_LABELS[intake.acuraStatus as PartnerIntakeStatus] ?? intake.acuraStatus;
+  const whatsappHref = partnerIntakeWhatsAppHref(intake.phoneDisplay);
 
   return (
     <section className="bg-white rounded-2xl border border-violet-100 shadow-sm p-5 space-y-4">
@@ -29,6 +35,26 @@ export default function AcuraIntakePanel({ intake }: { intake: AcuraIntakeAdminD
           <p className="text-xs text-slate-400 uppercase font-semibold">Solicitante</p>
           <p className="text-slate-800">{intake.requesterName}</p>
           <p className="text-xs text-slate-500">{intake.email}</p>
+          {intake.phoneDisplay ? (
+            <p className="text-xs mt-1 flex items-center gap-1.5">
+              <Phone size={12} className="text-slate-400 shrink-0" />
+              {whatsappHref ? (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-600 hover:text-brand-700 font-medium"
+                  title="Abrir WhatsApp"
+                >
+                  {intake.phoneDisplay}
+                </a>
+              ) : (
+                <span className="text-slate-600">{intake.phoneDisplay}</span>
+              )}
+            </p>
+          ) : (
+            <p className="text-xs text-slate-400 mt-1">Telefone não informado no formulário</p>
+          )}
         </div>
         <div>
           <p className="text-xs text-slate-400 uppercase font-semibold">Paciente</p>

@@ -34,6 +34,7 @@ import {
   getPartnerIntakeEvents,
   partnerIntakeTimelineEvents,
   partnerIntakeToAdminDto,
+  resolvePartnerIntakePhoneDisplay,
   type AcuraIntakeAdminDto,
 } from "@/lib/partner/acura-intake";
 import { resolveDisplayAcquisitionChannel } from "@/lib/humanitarian/acquisition-channel";
@@ -623,8 +624,7 @@ function contextToListRow(ctx: PatientContext): PatientListRow & { kind: "patien
 }
 
 function phoneHintFromIntake(intake: PartnerIntake): string | null {
-  const phone = intake.phoneJson as { display?: string; e164?: string } | null;
-  const raw = phone?.display ?? phone?.e164 ?? "";
+  const raw = resolvePartnerIntakePhoneDisplay(intake.phoneJson) ?? "";
   const digits = raw.replace(/\D/g, "");
   if (!digits) return null;
   if (digits.length >= 4) return `***${digits.slice(-4)}`;

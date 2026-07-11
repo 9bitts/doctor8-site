@@ -158,6 +158,34 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+type PartnerPhoneJson = {
+  display?: string;
+  e164?: string;
+  ddi?: string;
+  ddd?: string;
+  telefone?: string;
+  whatsapp?: boolean;
+};
+
+/** Resolve phone label from ACURA form phoneJson. */
+export function resolvePartnerIntakePhoneDisplay(phoneJson: unknown): string | null {
+  const phone = phoneJson as PartnerPhoneJson | null;
+  if (!phone) return null;
+  if (phone.display?.trim()) return phone.display.trim();
+  if (phone.e164?.trim()) return phone.e164.trim();
+  const parts = [phone.ddi, phone.ddd, phone.telefone].filter((p) => p?.trim());
+  if (parts.length > 0) return parts.join(" ").trim();
+  return null;
+}
+
+/** WhatsApp deep link from display/e164 phone string. */
+export function partnerIntakeWhatsAppHref(phoneDisplay: string | null | undefined): string | null {
+  if (!phoneDisplay) return null;
+  const digits = phoneDisplay.replace(/\D/g, "");
+  if (digits.length < 8) return null;
+  return `https://wa.me/${digits}`;
+}
+
 function mapIntakeData(input: AcuraIntakeUpsertInput) {
   return {
     partner: "acura" as const,
@@ -427,14 +455,14 @@ export type AcuraIntakeAdminDto = {
 };
 
 export function partnerIntakeToAdminDto(intake: PartnerIntake): AcuraIntakeAdminDto {
-  const phone = intake.phoneJson as { display?: string } | null;
+  const phoneDisplay = resolvePartnerIntakePhoneDisplay(intake.phoneJson);
   return {
     protocolo: intake.protocolo,
     acuraStatus: intake.acuraStatus,
     submittedAt: intake.submittedAt.toISOString(),
     requesterName: intake.requesterName,
     email: intake.email,
-    phoneDisplay: phone?.display ?? null,
+    phoneDisplay,
     patientName: safeDecrypt(intake.patientNameEnc),
     age: safeDecrypt(intake.ageEnc) || null,
     relationship: intake.relationship,
