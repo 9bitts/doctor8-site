@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
-import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import { decrypt } from "@/lib/encryption";
 import { DEFAULT_TIME_ZONE } from "@/lib/timezone";
 import PsychoanalystAppointmentsView, {
@@ -56,7 +55,6 @@ export default async function PsychoanalystAppointmentsPage() {
   );
 
   const rows: PsychoanalystAppointmentRow[] = appointments.map((apt) => {
-    const intake = parseAppointmentIntake(apt.chiefComplaint);
     return {
       id: apt.id,
       scheduledAt: apt.scheduledAt.toISOString(),
@@ -67,9 +65,9 @@ export default async function PsychoanalystAppointmentsPage() {
       patientUserId: apt.patient.userId,
       patientPhone: safeDecrypt(apt.patient.phone) || null,
       patientConfirmedAt: apt.patientConfirmedAt?.toISOString() ?? null,
-      intakeHealthPlanLabel: intake?.healthPlanLabel ?? null,
-      intakeServiceName: intake?.serviceName ?? null,
-      intakeVisitReason: intake?.visitReason ?? null,
+      intakeHealthPlanLabel: null,
+      intakeServiceName: null,
+      intakeVisitReason: null,
       analysandId: analysandByUserId.get(apt.patient.userId) ?? null,
     };
   });

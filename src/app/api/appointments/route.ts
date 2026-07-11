@@ -36,11 +36,11 @@ const appointmentListSelect = {
   priceAmount: true,
   paidAt: true,
   meetingUrl: true,
-  chiefComplaint: true,
-  notes: true,
   cancelledAt: true,
   cancelReason: true,
   cancelledBy: true,
+  /** Fetched internally; mapped to hasNotes before response (AGD-14/15). */
+  notes: true,
 } as const;
 
 const UPCOMING_ACTIVE_STATUSES = ["CONFIRMED", "PENDING"] as const;
@@ -136,23 +136,27 @@ export async function GET(req: NextRequest) {
   }
 
   const normalized = appointments.map((a) => {
-    if ("psychoanalyst" in a && a.psychoanalyst && !a.professional) {
+    const hasNotes = Boolean(a.notes);
+    const { notes: _notes, ...rest } = a;
+    const base = { ...rest, hasNotes };
+
+    if ("psychoanalyst" in base && base.psychoanalyst && !base.professional) {
       const row = {
-        ...a,
+        ...base,
         providerType: "psychoanalyst",
         professional: {
-          firstName: safeDecrypt(a.psychoanalyst.firstName),
-          lastName: safeDecrypt(a.psychoanalyst.lastName),
+          firstName: safeDecrypt(base.psychoanalyst.firstName),
+          lastName: safeDecrypt(base.psychoanalyst.lastName),
           specialty: PSYCHOANALYSIS_SPECIALTY,
-          avatarUrl: a.psychoanalyst.avatarUrl,
+          avatarUrl: base.psychoanalyst.avatarUrl,
         },
-        psychoanalystId: a.psychoanalystId,
+        psychoanalystId: base.psychoanalystId,
       };
       return isPsychoanalystAppointmentRequest(session.user.role)
         ? stripPsychoanalystAppointmentFields(row)
         : row;
     }
-    const row = { ...a, providerType: "health" as const, professionalId: a.professionalId };
+    const row = { ...base, providerType: "health" as const, professionalId: base.professionalId };
     if ("patient" in row && row.patient) {
       row.patient = {
         ...row.patient,

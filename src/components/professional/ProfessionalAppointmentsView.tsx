@@ -36,6 +36,7 @@ import {
   isAppointmentInVolunteerBlock,
   type VolunteerWeeklyBlock,
 } from "@/lib/availability-exceptions";
+import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import { isScheduledVolunteerAppointment } from "@/lib/scheduled-volunteer";
 import { ProCancelAppointmentButton } from "@/components/professional/ProfessionalCancelAppointmentModal";
 
@@ -45,8 +46,7 @@ export type ProfessionalAppointmentRow = {
   durationMins: number;
   type: string;
   status: string;
-  chiefComplaint: string | null;
-  notes: string | null;
+  hasNotes: boolean;
   patientConfirmedAt: string | null;
   patientFirstName: string;
   patientLastName: string;
@@ -188,28 +188,34 @@ export default function ProfessionalAppointmentsView({
           durationMins: number;
           type: string;
           status: string;
-          chiefComplaint: string | null;
-          notes: string | null;
+          hasNotes?: boolean;
           patientConfirmedAt: string | null;
           patient: { firstName: string; lastName: string };
         }) => {
           const meta = metaByIdRef.current.get(a.id);
+          const withinWindow = isWithinAppointmentJoinWindow(
+            new Date(a.scheduledAt),
+            a.durationMins,
+          );
           return {
             id: a.id,
             scheduledAt: a.scheduledAt,
             durationMins: a.durationMins,
             type: a.type,
             status: a.status,
-            chiefComplaint: a.chiefComplaint,
-            notes: a.notes,
+            hasNotes: a.hasNotes ?? false,
             patientConfirmedAt: a.patientConfirmedAt,
             patientFirstName: a.patient?.firstName ?? "",
             patientLastName: a.patient?.lastName ?? "",
+            patientUserId: null,
+            patientPhone: null,
+            patientJoinedAt: null,
+            professionalJoinedAt: null,
             chartId: meta?.chartId ?? null,
             summarizeDocumentId: meta?.summarizeDocumentId ?? null,
-            intakeHealthPlanLabel: meta?.intakeHealthPlanLabel ?? null,
-            intakeServiceName: meta?.intakeServiceName ?? null,
-            intakeVisitReason: meta?.intakeVisitReason ?? null,
+            intakeHealthPlanLabel: withinWindow ? meta?.intakeHealthPlanLabel ?? null : null,
+            intakeServiceName: withinWindow ? meta?.intakeServiceName ?? null : null,
+            intakeVisitReason: withinWindow ? meta?.intakeVisitReason ?? null : null,
           };
         },
       );
@@ -273,7 +279,7 @@ export default function ProfessionalAppointmentsView({
         id={`appt-${apt.id}`}
         className={`px-5 py-4 hover:bg-slate-50 transition scroll-mt-24 ${
           highlightIntake && apt.intakeVisitReason ? "bg-amber-50/40" : ""
-        } ${!apt.notes && apt.status === "COMPLETED" ? "ring-1 ring-inset ring-violet-100" : ""}`}
+        } ${!apt.hasNotes && apt.status === "COMPLETED" ? "ring-1 ring-inset ring-violet-100" : ""}`}
       >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
           <div className="flex items-start gap-4 flex-1 min-w-0">

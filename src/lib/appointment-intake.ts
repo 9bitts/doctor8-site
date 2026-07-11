@@ -58,3 +58,32 @@ export function buildAppointmentIntakePayload(opts: {
     acceptedAt: new Date().toISOString(),
   });
 }
+
+export type AppointmentIntakeDisplay = {
+  intakeHealthPlanLabel: string | null;
+  intakeServiceName: string | null;
+  intakeVisitReason: string | null;
+};
+
+const emptyIntakeDisplay: AppointmentIntakeDisplay = {
+  intakeHealthPlanLabel: null,
+  intakeServiceName: null,
+  intakeVisitReason: null,
+};
+
+/** Provider-facing intake fields — only within the teleconsult join window (AGD-14/15). */
+export function intakeDisplayForProvider(
+  chiefComplaint: string | null,
+  scheduledAt: Date,
+  durationMins: number,
+  withinJoinWindow: (scheduledAt: Date, durationMins: number) => boolean,
+): AppointmentIntakeDisplay {
+  if (!withinJoinWindow(scheduledAt, durationMins)) return emptyIntakeDisplay;
+  const intake = parseAppointmentIntake(chiefComplaint);
+  if (!intake) return emptyIntakeDisplay;
+  return {
+    intakeHealthPlanLabel: intake.healthPlanLabel,
+    intakeServiceName: intake.serviceName,
+    intakeVisitReason: intake.visitReason,
+  };
+}

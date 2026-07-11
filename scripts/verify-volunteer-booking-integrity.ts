@@ -20,6 +20,8 @@ import {
   isAppointmentInVolunteerBlock,
   isRemovedFromVolunteerSchedule,
 } from "../src/lib/availability-exceptions";
+import { intakeDisplayForProvider, buildAppointmentIntakePayload } from "../src/lib/appointment-intake";
+import { isWithinAppointmentJoinWindow } from "../src/lib/appointment-join-window";
 
 console.log("[verify-volunteer-booking-integrity] unit checks…");
 
@@ -115,6 +117,26 @@ assert.equal(
   isRemovedFromVolunteerSchedule(tuesdayNineAm, tz, tuesdayBlock, tuesdayBlock),
   false,
   "unchanged blocks are not a removal",
+);
+
+// AGD-14/15 — intake gated to join window
+const intakePayload = buildAppointmentIntakePayload({
+  visitReason: "Headache",
+  healthPlanSlug: "private",
+  healthPlanLabel: "Private",
+  policyAccepted: true,
+});
+const farFuture = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+assert.deepEqual(
+  intakeDisplayForProvider(intakePayload, farFuture, 30, isWithinAppointmentJoinWindow),
+  { intakeHealthPlanLabel: null, intakeServiceName: null, intakeVisitReason: null },
+  "intake hidden outside join window",
+);
+const soonStart = new Date(Date.now() + 5 * 60 * 1000);
+assert.equal(
+  intakeDisplayForProvider(intakePayload, soonStart, 30, isWithinAppointmentJoinWindow).intakeVisitReason,
+  "Headache",
+  "intake visible within join window",
 );
 
 console.log("[verify-volunteer-booking-integrity] unit checks OK");

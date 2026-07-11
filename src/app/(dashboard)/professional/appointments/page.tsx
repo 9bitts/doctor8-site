@@ -5,7 +5,8 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
 import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
-import { parseAppointmentIntake } from "@/lib/appointment-intake";
+import { intakeDisplayForProvider } from "@/lib/appointment-intake";
+import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import { decrypt } from "@/lib/encryption";
 import { resolveHealthProfessionalPortalBaseForUser } from "@/lib/nutritionist-portal";
 import { isDentistSpecialty } from "@/lib/profession-label";
@@ -118,7 +119,12 @@ export default async function ProfessionalAppointments() {
   await audit.viewRecord(session.user.id, "Appointment", "list");
 
   const rows: ProfessionalAppointmentRow[] = appointments.map((apt) => {
-    const intake = parseAppointmentIntake(apt.chiefComplaint);
+    const intakeFields = intakeDisplayForProvider(
+      apt.chiefComplaint,
+      apt.scheduledAt,
+      apt.durationMins,
+      isWithinAppointmentJoinWindow,
+    );
     const patientUserId = apt.patient.userId;
     const chartId = patientUserId ? chartIdByUserId[patientUserId] ?? null : null;
 
@@ -128,8 +134,7 @@ export default async function ProfessionalAppointments() {
       durationMins: apt.durationMins,
       type: apt.type,
       status: apt.status,
-      chiefComplaint: apt.chiefComplaint,
-      notes: apt.notes,
+      hasNotes: Boolean(apt.notes),
       patientConfirmedAt: apt.patientConfirmedAt?.toISOString() ?? null,
       patientFirstName: safeDecrypt(apt.patient.firstName),
       patientLastName: safeDecrypt(apt.patient.lastName),
@@ -139,9 +144,7 @@ export default async function ProfessionalAppointments() {
       professionalJoinedAt: apt.professionalJoinedAt?.toISOString() ?? null,
       chartId,
       summarizeDocumentId: chartId ? summarizeDocumentIdByChartId[chartId] ?? null : null,
-      intakeHealthPlanLabel: intake?.healthPlanLabel ?? null,
-      intakeServiceName: intake?.serviceName ?? null,
-      intakeVisitReason: intake?.visitReason ?? null,
+      ...intakeFields,
       bookingSource: apt.bookingSource,
       priceAmount: apt.priceAmount,
       dentalChairId: apt.dentalChairId,
