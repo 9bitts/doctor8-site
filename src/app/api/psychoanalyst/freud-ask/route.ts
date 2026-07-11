@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requirePsychoanalyst } from "@/lib/psychoanalyst-api";
 import { askFreud } from "@/lib/ai-freud";
 import { normalizeLang } from "@/lib/i18n/translations";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 const schema = z.object({
   question: z.string().min(3).max(2000),
@@ -12,6 +13,16 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   const ctx = await requirePsychoanalyst();
   if ("error" in ctx) return ctx.error;
+
+  const rate = await checkRateLimit({
+    namespace: "freud-ask",
+    key: ctx.session.user.id,
+    limit: 20,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!rate.allowed) {
+    return rateLimitResponse(rate.retryAfterSec);
+  }
 
   let body: unknown;
   try {

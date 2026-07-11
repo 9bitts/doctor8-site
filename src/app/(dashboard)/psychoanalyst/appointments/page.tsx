@@ -65,9 +65,6 @@ export default async function PsychoanalystAppointmentsPage() {
       patientUserId: apt.patient.userId,
       patientPhone: safeDecrypt(apt.patient.phone) || null,
       patientConfirmedAt: apt.patientConfirmedAt?.toISOString() ?? null,
-      intakeHealthPlanLabel: null,
-      intakeServiceName: null,
-      intakeVisitReason: null,
       analysandId: analysandByUserId.get(apt.patient.userId) ?? null,
     };
   });
@@ -76,7 +73,7 @@ export default async function PsychoanalystAppointmentsPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">{t("proappt.title")}</h1>
-        <p className="text-slate-500 mt-1">{t("pa.dash.subtitle")}</p>
+        <p className="text-slate-500 mt-1">{t("pa.appt.subtitle")}</p>
       </div>
       <PsychoanalystAppointmentsView initialAppointments={rows} timeZone={providerTz} />
     </div>

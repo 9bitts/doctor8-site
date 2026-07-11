@@ -30,10 +30,14 @@ export default function PsychoanalystResourcesPage() {
 
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading]     = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showForm, setShowForm]   = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [formTitle, setFormTitle] = useState("");
   const [formDesc,  setFormDesc]  = useState("");
@@ -49,16 +53,25 @@ export default function PsychoanalystResourcesPage() {
   const [shareMsg,      setShareMsg]      = useState<Record<string, string>>({});
   const [expanded,      setExpanded]      = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/psychoanalyst/resources");
-        const data = await res.json();
-        setResources(data.resources || []);
-      } catch { /* ignore */ }
+  async function loadResources() {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const res = await fetch("/api/psychoanalyst/resources");
+      if (!res.ok) {
+        setLoadError(true);
+        return;
+      }
+      const data = await res.json();
+      setResources(data.resources || []);
+    } catch {
+      setLoadError(true);
+    } finally {
       setLoading(false);
-    })();
-  }, []);
+    }
+  }
+
+  useEffect(() => { loadResources(); }, []);
 
   async function openSharePanel(resId: string) {
     setShareResId(resId);
@@ -97,10 +110,23 @@ export default function PsychoanalystResourcesPage() {
     setSharingId(null);
   }
 
-  async function deleteResource(id: string) {
-    if (!confirm(t("lib.deleteConfirm"))) return;
-    await fetch(`/api/psychoanalyst/resources/${id}`, { method: "DELETE" });
-    setResources((prev) => prev.filter((r) => r.id !== id));
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/psychoanalyst/resources/${deleteTargetId}`, { method: "DELETE" });
+      if (res.ok) {
+        setResources((prev) => prev.filter((r) => r.id !== deleteTargetId));
+        setDeleteTargetId(null);
+      } else {
+        setDeleteError(t("pa.resources.deleteError"));
+      }
+    } catch {
+      setDeleteError(t("pa.resources.deleteError"));
+    } finally {
+      setDeleting(false);
+    }
   }
 
   function openEditForm(r: Resource) {
@@ -201,6 +227,18 @@ export default function PsychoanalystResourcesPage() {
         <div className="flex items-center gap-2 text-slate-400 py-10 justify-center">
           <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
         </div>
+      ) : loadError ? (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center space-y-3">
+          <AlertCircle className="mx-auto text-rose-400" size={36} />
+          <p className="text-slate-600 text-sm">{t("pa.resources.loadError")}</p>
+          <button
+            type="button"
+            onClick={() => loadResources()}
+            className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm px-4 py-2 rounded-xl"
+          >
+            {t("common.retry")}
+          </button>
+        </div>
       ) : resources.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">
           <BookOpen className="mx-auto text-slate-300 mb-3" size={40} />
@@ -272,7 +310,7 @@ export default function PsychoanalystResourcesPage() {
                     <Share2 size={13} /> {t("lib.shareWithAnalysand")}
                   </button>
                   <button
-                    onClick={() => deleteResource(r.id)}
+                    onClick={() => { setDeleteError(null); setDeleteTargetId(r.id); }}
                     className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition"
                     title={t("lib.delete")}
                   >
@@ -332,6 +370,34 @@ export default function PsychoanalystResourcesPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {deleteTargetId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4">
+            <p className="font-semibold text-slate-800">{t("lib.deleteConfirm")}</p>
+            {deleteError && (
+              <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{deleteError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setDeleteTargetId(null); setDeleteError(null); }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
+              >
+                {t("lib.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmDelete()}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white font-semibold text-sm hover:bg-rose-700 disabled:opacity-50"
+              >
+                {deleting ? <Loader2 size={14} className="animate-spin inline" /> : t("lib.delete")}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

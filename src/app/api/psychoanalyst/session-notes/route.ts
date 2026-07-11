@@ -3,6 +3,9 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requirePsychoanalyst, safeDecrypt } from "@/lib/psychoanalyst-api";
 import { savePsychoanalystSessionNote } from "@/lib/save-psychoanalyst-session-note";
+import { getUserLang } from "@/lib/i18n/server-lang";
+import { translate, localeOf } from "@/lib/i18n/translations";
+import { DEFAULT_TIME_ZONE, formatShortDateWithYear } from "@/lib/timezone";
 
 const noteSchema = z.object({
   analysandRecordId: z.string(),
@@ -71,16 +74,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Analysand not found" }, { status: 404 });
   }
 
+  const userId = ctx.session.user.id;
+  const [userRow, lang] = await Promise.all([
+    db.user.findUnique({ where: { id: userId }, select: { timezone: true } }),
+    getUserLang(userId),
+  ]);
+  const tz = userRow?.timezone || DEFAULT_TIME_ZONE;
+  const title = translate(lang, "pa.sessions.autoTitle").replace(
+    "{date}",
+    formatShortDateWithYear(new Date(), tz, localeOf(lang)),
+  );
+
   const doc = await savePsychoanalystSessionNote({
     psychoanalystId: psychoanalyst.id,
     analysandRecordId: d.analysandRecordId,
     content: d.content,
     appointmentId: d.appointmentId,
+    title,
   });
 
   return NextResponse.json({
     id: doc.id,
-    title: `Sess\u00e3o \u2014 ${new Date(doc.createdAt).toLocaleDateString("pt-BR")}`,
+    title,
     body: d.content,
     createdAt: doc.createdAt.toISOString(),
   }, { status: 201 });

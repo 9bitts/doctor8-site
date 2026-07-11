@@ -36,6 +36,8 @@ export default function FreudPageClient() {
         setAnswer(parsed.data.answer);
       } else if (parsed.data?.error === "AI_NOT_CONFIGURED") {
         setError(t("pa.freud.err.notConfigured"));
+      } else if (parsed.data?.error === "RATE_LIMITED" || res.status === 429) {
+        setError(t("pa.freud.err.rateLimited"));
       } else {
         setError(t("pa.freud.err.failed"));
       }

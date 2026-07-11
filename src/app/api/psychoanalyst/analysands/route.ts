@@ -11,6 +11,7 @@ const createSchema = z.object({
   phone: z.string().optional(),
   notes: z.string().optional(),
   sessionFrequency: z.string().optional(),
+  linkedUserId: z.string().optional(),
 });
 
 export async function GET() {
@@ -51,7 +52,13 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
   let linkedUserId: string | null = null;
-  if (d.email) {
+  if (d.linkedUserId) {
+    const linkedUser = await db.user.findUnique({ where: { id: d.linkedUserId } });
+    if (!linkedUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 400 });
+    }
+    linkedUserId = linkedUser.id;
+  } else if (d.email) {
     const existing = await db.user.findUnique({ where: { email: d.email.toLowerCase() } });
     if (existing) linkedUserId = existing.id;
   }
