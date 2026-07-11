@@ -499,6 +499,7 @@ model User {
   humanitarianQueueEntries HumanitarianQueueEntry[] @relation("HumanitarianQueuePatient")
   humanitarianVolunteers   HumanitarianVolunteer[]  @relation("HumanitarianVolunteer")
   humanitarianIntakes        HumanitarianIntake[]     @relation("HumanitarianIntakePatient")
+  humanitarianVolunteerOnlineAlerts HumanitarianVolunteerOnlineAlert[] @relation("HumanitarianVolunteerOnlineAlert")
   partnerIntakes             PartnerIntake[]          @relation("PartnerIntakePatient")
   angelProfile               AngelProfile?
   humanitarianAngels         HumanitarianAngel[]      @relation("HumanitarianAngelUser")
@@ -3592,6 +3593,7 @@ model HumanitarianCampaign {
   intakes                  HumanitarianIntake[]
   angelFollowUps           HumanitarianAngelFollowUp[]
   angelAssignments         HumanitarianAngelAssignment[]
+  volunteerOnlineAlerts    HumanitarianVolunteerOnlineAlert[]
 
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
@@ -3683,6 +3685,22 @@ model HumanitarianVolunteer {
   @@unique([campaignId, userId, poolId])
   @@index([poolId, status])
   @@index([userId])
+}
+
+/// Patient opt-in: notify when the first volunteer goes online on a campaign (AGD-35).
+model HumanitarianVolunteerOnlineAlert {
+  id             String               @id @default(cuid())
+  campaignId     String
+  campaign       HumanitarianCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User                 @relation("HumanitarianVolunteerOnlineAlert", fields: [userId], references: [id], onDelete: Cascade)
+  active         Boolean              @default(true)
+  lastNotifiedAt DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@unique([campaignId, userId])
+  @@index([campaignId, active])
 }
 
 model HumanitarianQueueEntry {

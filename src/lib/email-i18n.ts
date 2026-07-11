@@ -406,6 +406,40 @@ export const EMAIL_SLOT_ALERT: Record<EmailLang, {
   },
 };
 
+export const EMAIL_HUMANITARIAN_VOLUNTEER_ONLINE: Record<EmailLang, {
+  subject: string;
+  heading: string;
+  hi: string;
+  body: string;
+  cta: string;
+  footnote: string;
+}> = {
+  en: {
+    subject: "A humanitarian volunteer is online",
+    heading: "Volunteer available",
+    hi: "Hello,",
+    body: "A volunteer is now online for humanitarian care. Join the queue when you are ready.",
+    cta: "Open queue",
+    footnote: "You received this because you asked to be notified on Doctor8.",
+  },
+  pt: {
+    subject: "Um voluntário humanitário está online",
+    heading: "Voluntário disponível",
+    hi: "Olá,",
+    body: "Um voluntário está online para atendimento humanitário. Entre na fila quando estiver pronto.",
+    cta: "Abrir fila",
+    footnote: "Você recebeu este e-mail porque pediu para ser avisado no Doctor8.",
+  },
+  es: {
+    subject: "Hay un voluntario humanitario en línea",
+    heading: "Voluntario disponible",
+    hi: "Hola,",
+    body: "Un voluntario está en línea para atención humanitaria. Entra en la fila cuando estés listo.",
+    cta: "Abrir fila",
+    footnote: "Recibiste este correo porque pediste aviso en Doctor8.",
+  },
+};
+
 export const EMAIL_REVIEW_REQUEST: Record<EmailLang, {
   subject: (provider: string) => string;
   heading: string;

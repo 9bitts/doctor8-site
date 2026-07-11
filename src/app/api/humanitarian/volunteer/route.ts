@@ -314,6 +314,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const { countActiveHumanitarianVolunteers, notifyVolunteerOnlineAlertSubscribers } = await import(
+    "@/lib/humanitarian/volunteer-online-alert"
+  );
+  const volunteersActiveBefore = await countActiveHumanitarianVolunteers(campaign.id);
+
   const volunteer = await db.humanitarianVolunteer.upsert({
     where: {
       campaignId_userId_poolId: {
@@ -341,6 +346,12 @@ export async function POST(req: NextRequest) {
 
   await expireHumanitarianNoShows(pool.id);
   await assignNextInPool(pool.id);
+
+  if (volunteersActiveBefore === 0) {
+    await notifyVolunteerOnlineAlertSubscribers(campaign.id, campaignSlug).catch((err) =>
+      console.error("[HUMANITARIAN-VOLUNTEER] volunteer online alert notify failed:", err),
+    );
+  }
 
   const refreshed = await db.humanitarianVolunteer.findUnique({
     where: { id: volunteer.id },

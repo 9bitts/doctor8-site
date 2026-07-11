@@ -29,6 +29,7 @@ import {
   EMAIL_EMPLOYER_PSYCHOLOGIST_NETWORK,
   employerRoleLabel,
   EMAIL_SLOT_ALERT,
+  EMAIL_HUMANITARIAN_VOLUNTEER_ONLINE,
   EMAIL_REVIEW_REQUEST,
   EMAIL_MAGIC_LINK,
 } from "./email-i18n";
@@ -687,6 +688,37 @@ export async function sendSlotAvailableAlert({
       c.footnote,
     ].join("\n\n"),
     tag: "slot-alert",
+  });
+}
+
+export async function sendHumanitarianVolunteerOnlineAlertEmail({
+  email,
+  queueUrl,
+  language,
+}: {
+  email: string;
+  queueUrl: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_HUMANITARIAN_VOLUNTEER_ONLINE[lang];
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${queueUrl}" style="background:#216a86;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.5;">${c.footnote}</p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject,
+    html: emailShell(c.heading, body, lang),
+    text: [c.hi, c.body, `${c.cta}: ${queueUrl}`, c.footnote].join("\n\n"),
+    tag: "humanitarian-volunteer-online",
   });
 }
 

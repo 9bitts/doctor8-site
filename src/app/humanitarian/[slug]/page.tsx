@@ -20,10 +20,19 @@ import {
 } from "@/lib/humanitarian/offline-draft";
 import { humanitarianApiErrorMessage } from "@/lib/humanitarian/api-error-message";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
+import HumanitarianVolunteerOnlineAlertButton from "@/components/humanitarian/HumanitarianVolunteerOnlineAlertButton";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import { MAIN_LOGIN } from "@/lib/auth-portals";
 
-function NoVolunteersScheduledCta({ lang }: { lang: Lang }) {
+function NoVolunteersScheduledCta({
+  lang,
+  campaignSlug,
+  userId,
+}: {
+  lang: Lang;
+  campaignSlug: string;
+  userId: string | null;
+}) {
   return (
     <div className="mt-3 pt-3 border-t border-amber-500/20 space-y-2">
       <p className="text-xs text-amber-100/90 leading-relaxed">{t(lang, "hum.noVolunteersScheduledHint")}</p>
@@ -33,6 +42,12 @@ function NoVolunteersScheduledCta({ lang }: { lang: Lang }) {
       >
         <Calendar size={14} /> {t(lang, "hum.noVolunteersScheduledCta")}
       </Link>
+      <HumanitarianVolunteerOnlineAlertButton
+        lang={lang}
+        campaignSlug={campaignSlug}
+        userId={userId}
+        returnPath={`/humanitarian/${campaignSlug}`}
+      />
     </div>
   );
 }
@@ -386,6 +401,7 @@ export default function HumanitarianCampaignPage() {
           onSwitchPool={switchPool}
           onRejoin={() => { setEntry(null); loadCampaign(); }}
           campaignSlug={slug}
+          patientUserId={userId || null}
           showAnamneseReminder={!anamneseComplete}
         />
       </HumanitarianShell>
@@ -509,7 +525,7 @@ export default function HumanitarianCampaignPage() {
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 space-y-1">
             <p className="text-sm font-semibold text-amber-100">{t(lang, "hum.noVolunteersTitle")}</p>
             <p className="text-xs text-amber-200/80 leading-relaxed">{t(lang, "hum.noVolunteersText")}</p>
-            <NoVolunteersScheduledCta lang={lang} />
+            <NoVolunteersScheduledCta lang={lang} campaignSlug={slug} userId={userId || null} />
           </div>
         )}
 
@@ -590,6 +606,7 @@ function QueueScreen({
   onSwitchPool,
   onRejoin,
   campaignSlug,
+  patientUserId,
   showAnamneseReminder,
   queueStale = false,
 }: {
@@ -606,6 +623,7 @@ function QueueScreen({
   onSwitchPool: (poolSlug: string, currentPoolLabel: string) => void;
   onRejoin: () => void;
   campaignSlug: string;
+  patientUserId: string | null;
   showAnamneseReminder?: boolean;
 }) {
   const card = "bg-slate-900 border rounded-2xl p-6 sm:p-8 text-center w-full";
@@ -779,7 +797,7 @@ function QueueScreen({
           <div className="bg-white/5 rounded-xl p-4 col-span-1 space-y-2">
             <p className="text-sm font-semibold text-amber-200/90 leading-snug">{t(lang, "hum.noVolunteersTitle")}</p>
             <p className="text-xs text-slate-500">{t(lang, "hum.noVolunteersText")}</p>
-            <NoVolunteersScheduledCta lang={lang} />
+            <NoVolunteersScheduledCta lang={lang} campaignSlug={campaignSlug} userId={patientUserId} />
           </div>
         ) : (
           <div className="bg-white/5 rounded-xl p-4">
