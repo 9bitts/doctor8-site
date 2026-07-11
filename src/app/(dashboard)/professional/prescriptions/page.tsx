@@ -38,9 +38,13 @@ import PrescriptionMedItemForm, { type PrescriptionMedItem } from "@/components/
 import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
 import {
   fetchMnFitoterapicosForPrescription,
+  fetchMnFloraisForPrescription,
+  floralMedItemFromDrugResult,
+  floralMedItemFromMnListItem,
   mapMnItemsToDrugResults,
   phytoMedItemFromDrugResult,
   phytoMedItemFromMnListItem,
+  usesFloralCatalogSearch,
   usesPhytoCatalogSearch,
   type PrescriptionItemSearchMode,
 } from "@/lib/medicina-natural-catalog/prescription-search";
@@ -401,7 +405,9 @@ export default function PrescriptionsPage() {
   const [mnSearchResults, setMnSearchResults] = useState<MedicinaNaturalListItem[]>([]);
   const [mnPickerTargetIndex, setMnPickerTargetIndex] = useState<number | null>(null);
 
-  const phytoCatalogSearch = usesPhytoCatalogSearch(cfg.phytoOnly, itemSearchMode);
+  const floralCatalogSearch = usesFloralCatalogSearch(cfg.allowFloral, floralOnlyMode);
+  const phytoCatalogSearch = usesPhytoCatalogSearch(cfg.phytoOnly, itemSearchMode, floralOnlyMode);
+  const mnCatalogSearch = floralCatalogSearch || phytoCatalogSearch;
 
   const [medications, setMedications] = useState<MedItem[]>([]);
   const [highlightIncompleteMeds, setHighlightIncompleteMeds] = useState(false);
@@ -581,9 +587,42 @@ export default function PrescriptionsPage() {
       }
     }
 
-    if (params.get("add") === "floral" && !patientRecordId) {
+    if (params.get("add") === "floral") {
       setView("prescription");
       setFloralOnlyMode(true);
+      const mnSlug = params.get("mnSlug");
+      if (mnSlug) {
+        void (async () => {
+          try {
+            const res = await fetch(apiPath(cfg, `/medicina-natural/${encodeURIComponent(mnSlug)}`));
+            const data = await res.json();
+            if (!data.item) return;
+            const item = data.item as {
+              slug: string;
+              nome: string;
+              posologia: string;
+              indicacoes: string;
+            };
+            setMedications((prev) => {
+              if (prev.some((m) => m.mnSlug === item.slug && m.itemKind === "floral")) return prev;
+              return [
+                ...prev,
+                {
+                  name: item.nome,
+                  dosage: item.posologia?.slice(0, 200) || "4 gotas, 4x/dia",
+                  frequency: "",
+                  duration: "",
+                  instructions: item.indicacoes?.slice(0, 2000) || "",
+                  itemKind: "floral" as const,
+                  mnSlug: item.slug,
+                },
+              ];
+            });
+          } catch {
+            /* prefill optional */
+          }
+        })();
+      } else if (!patientRecordId) {
       const starter = params.get("starter");
       const templateId = params.get("templateId");
       const floralProduct = params.get("floralProduct");
@@ -608,6 +647,7 @@ export default function PrescriptionsPage() {
             },
           ];
         });
+      }
       }
     }
 
@@ -1081,7 +1121,11 @@ export default function PrescriptionsPage() {
     setDrugResults([]);
     setMnSearchResults([]);
     try {
-      if (phytoCatalogSearch) {
+      if (floralCatalogSearch) {
+        const items = await fetchMnFloraisForPrescription(cfg.apiBase, q);
+        setMnSearchResults(items);
+        setDrugResults(mapMnItemsToDrugResults(items));
+      } else if (phytoCatalogSearch) {
         const items = await fetchMnFitoterapicosForPrescription(cfg.apiBase, q);
         setMnSearchResults(items);
         setDrugResults(mapMnItemsToDrugResults(items));
@@ -1103,7 +1147,7 @@ export default function PrescriptionsPage() {
       setDrugSearching(false);
       setDrugSearchDone(true);
     }
-  }, [drugQuery, drugCountry, phytoCatalogSearch, cfg.apiBase, t, toast]);
+  }, [drugQuery, drugCountry, floralCatalogSearch, phytoCatalogSearch, cfg.apiBase, t, toast]);
 
   function closeDrugSearchModal() {
     setDrugSearchModalOpen(false);
@@ -1129,7 +1173,27 @@ export default function PrescriptionsPage() {
     setMnPickerTargetIndex(null);
   }
 
+  function applyFloralCatalogItem(item: PrescriptionMedItem) {
+    setFreeTextMode(false);
+    if (mnPickerTargetIndex !== null) {
+      setMedications((prev) =>
+        prev.map((m, i) => (i === mnPickerTargetIndex ? { ...m, ...item } : m)),
+      );
+    } else {
+      setMedications((prev) => [...prev, item]);
+    }
+    setDrugQuery("");
+    setDrugResults([]);
+    setMnSearchResults([]);
+    setDrugSearchModalOpen(false);
+    setMnPickerTargetIndex(null);
+  }
+
   function addDrug(drug: DrugSearchResult) {
+    if (floralCatalogSearch) {
+      applyFloralCatalogItem(floralMedItemFromDrugResult(drug));
+      return;
+    }
     if (phytoCatalogSearch) {
       applyPhytoCatalogItem(phytoMedItemFromDrugResult(drug));
       return;
@@ -1166,6 +1230,15 @@ export default function PrescriptionsPage() {
     setDrugQuery(""); setDrugResults([]); setMnSearchResults([]); setDrugSearchModalOpen(false);
   }
 
+  function openFloralSearchForIndex(index: number) {
+    setFloralOnlyMode(true);
+    setMnPickerTargetIndex(index);
+    setDrugQuery("");
+    setDrugResults([]);
+    setMnSearchResults([]);
+    setDrugSearchDone(false);
+  }
+
   function openPhytoSearchForIndex(index: number) {
     setItemSearchMode("phytotherapy");
     setMnPickerTargetIndex(index);
@@ -1181,6 +1254,9 @@ export default function PrescriptionsPage() {
     }
     if (kind === "phytotherapy" && !cfg.phytoOnly) {
       setItemSearchMode("phytotherapy");
+    }
+    if (kind === "floral") {
+      setFloralOnlyMode(true);
     }
     setMedications((prev) => [...prev, {
       name: "",
@@ -1851,7 +1927,11 @@ export default function PrescriptionsPage() {
                     }
                   }}
                   placeholder={
-                    phytoCatalogSearch ? t("rx.phytoCatalogSearch") : t("rx2.searchDrug")
+                    floralCatalogSearch
+                      ? t("rx.floralCatalogSearch")
+                      : phytoCatalogSearch
+                        ? t("rx.phytoCatalogSearch")
+                        : t("rx2.searchDrug")
                   }
                   className="flex-1 min-w-0 border-0 bg-transparent outline-none py-3 pl-3.5 pr-2 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl"
                 />
@@ -1986,6 +2066,11 @@ export default function PrescriptionsPage() {
                             ? openPhytoSearchForIndex
                             : undefined
                         }
+                        onOpenFloralSearch={
+                          med.itemKind === "floral" && cfg.allowFloral
+                            ? openFloralSearchForIndex
+                            : undefined
+                        }
                         onFloralProductSelect={selectFloralProduct}
                         onRemove={removeMedication}
                         t={t}
@@ -2055,7 +2140,7 @@ export default function PrescriptionsPage() {
               <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-100">
                 <div className="min-w-0">
                   <h3 className="font-bold text-slate-900">
-                    {phytoCatalogSearch ? t("rx.mnSearchModalTitle") : t("rx2.drugSearchModalTitle")}
+                    {mnCatalogSearch ? t("rx.mnSearchModalTitle") : t("rx2.drugSearchModalTitle")}
                   </h3>
                   <p className="text-sm text-slate-500 mt-0.5 truncate">&ldquo;{drugQuery.trim()}&rdquo;</p>
                 </div>
@@ -2077,14 +2162,18 @@ export default function PrescriptionsPage() {
                 ) : mnSearchResults.length > 0 ? (
                   <MedicinaNaturalSearchResults
                     results={mnSearchResults}
-                    onSelect={(item) => applyPhytoCatalogItem(phytoMedItemFromMnListItem(item))}
+                    onSelect={(item) =>
+                      floralCatalogSearch
+                        ? applyFloralCatalogItem(floralMedItemFromMnListItem(item))
+                        : applyPhytoCatalogItem(phytoMedItemFromMnListItem(item))
+                    }
                     className="max-h-[60vh]"
                   />
                 ) : drugResults.length > 0 ? (
                   <DrugSearchResults
                     results={drugResults}
                     onSelect={addDrug}
-                    controlInfo={phytoCatalogSearch ? () => null : controlInfo}
+                    controlInfo={mnCatalogSearch ? () => null : controlInfo}
                     className="max-h-[60vh]"
                   />
                 ) : drugSearchDone ? (

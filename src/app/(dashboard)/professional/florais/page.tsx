@@ -1,5 +1,5 @@
-import FloraisHub from "@/components/florais-catalog/FloraisHub";
+import { redirect } from "next/navigation";
 
 export default function ProfessionalFloraisPage() {
-  return <FloraisHub />;
+  redirect("/professional/medicina-natural/terapia-florais/catalogo");
 }

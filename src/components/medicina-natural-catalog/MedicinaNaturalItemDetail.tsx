@@ -16,6 +16,18 @@ type DetalhesFloral = {
   estadoPositivo?: string;
 };
 
+type DetalhesAromaterapia = {
+  diluicaoRecomendada?: string;
+  viaUso?: string[];
+  fototoxicidade?: boolean;
+  alertaUsoInterno?: string;
+};
+
+type DetalhesApiterapia = {
+  produtoOrigem?: string;
+  alertaAlergiaAnafilaxia?: string;
+};
+
 function floralCategoryLabel(
   sistema: string | undefined,
   t: (key: string) => string,
@@ -115,7 +127,10 @@ export default function MedicinaNaturalItemDetail({
   }
 
   const status = item.statusRegulatorio as StatusRegulatorio;
-  const detalhes = (item.detalhesEspecificos || {}) as DetalhesFitoterapico & DetalhesFloral;
+  const detalhes = (item.detalhesEspecificos || {}) as DetalhesFitoterapico &
+    DetalhesFloral &
+    DetalhesAromaterapia &
+    DetalhesApiterapia;
   const fontes = (Array.isArray(item.fontes) ? item.fontes : []) as FonteReferencia[];
   const canPrescribeFitoterapico =
     practice.id === "fitoterapia" &&
@@ -248,6 +263,45 @@ export default function MedicinaNaturalItemDetail({
               <p className="mt-2">
                 <span className="font-semibold">{t("nm.detail.estadoPositivo")}: </span>
                 → {detalhes.estadoPositivo}
+              </p>
+            )}
+          </Section>
+        )}
+        {(detalhes.diluicaoRecomendada ||
+          detalhes.fototoxicidade ||
+          detalhes.alertaUsoInterno) && (
+          <Section title={t("nm.detail.especificos")}>
+            {detalhes.diluicaoRecomendada && (
+              <p>
+                <span className="font-semibold">{t("nm.detail.diluicao")}: </span>
+                {detalhes.diluicaoRecomendada}
+              </p>
+            )}
+            {detalhes.fototoxicidade && (
+              <p className="mt-2 text-amber-800">
+                <span className="font-semibold">{t("nm.detail.fototoxicidade")}: </span>
+                Sim — evitar exposição solar após uso tópico.
+              </p>
+            )}
+            {detalhes.alertaUsoInterno && (
+              <p className="mt-2">
+                {detalhes.alertaUsoInterno}
+              </p>
+            )}
+          </Section>
+        )}
+        {(detalhes.produtoOrigem || detalhes.alertaAlergiaAnafilaxia) && (
+          <Section title={t("nm.detail.especificos")}>
+            {detalhes.produtoOrigem && (
+              <p>
+                <span className="font-semibold">{t("nm.detail.produtoOrigem")}: </span>
+                {detalhes.produtoOrigem.replace(/_/g, " ")}
+              </p>
+            )}
+            {detalhes.alertaAlergiaAnafilaxia && (
+              <p className="mt-2 text-rose-800">
+                <span className="font-semibold">{t("nm.detail.alertaAlergia")}: </span>
+                {detalhes.alertaAlergiaAnafilaxia}
               </p>
             )}
           </Section>

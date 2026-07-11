@@ -1,0 +1,52 @@
+[
+  {
+    "slug": "mel",
+    "nome": "Mel",
+    "nomesAlternativos": ["mel de abelhas", "honey"],
+    "indicacoes": "Tosse irritativa adjuvante, feridas leves (mel medicinal estéril), nutrição.",
+    "contraindicacoes": "ALERGIA A MEL OU PRODUTOS APÍCOLAS. Diabetes descompensada (uso oral frequente). Lactentes <1 ano (botulismo).",
+    "precaucoes": "Preferir mel com certificação quando uso tópico em feridas.",
+    "posologia": "Oral: 1 colher de chá, 2–3x/dia; tópico: camada fina em ferida estéril conforme orientação.",
+    "produtoOrigem": "mel"
+  },
+  {
+    "slug": "propolis",
+    "nome": "Própolis",
+    "nomesAlternativos": ["propolis extract", "extrato de própolis"],
+    "indicacoes": "Imunidade adjuvante, garganta irritada, cicatrização tópica leve.",
+    "contraindicacoes": "ALERGIA A PRÓPOLIS, MEL OU PICADAS DE ABELHA. Asma com sensibilidade a resinas.",
+    "precaucoes": "Pode conter solventes no extrato — verificar composição e concentração.",
+    "posologia": "Extrato 20–30%: 10–20 gotas diluídas em água, 1–3x/dia (adultos).",
+    "produtoOrigem": "propolis"
+  },
+  {
+    "slug": "geleia_real",
+    "nome": "Geléia real",
+    "nomesAlternativos": ["royal jelly"],
+    "indicacoes": "Fadiga adjuvante, convalescença, menopausa (dados limitados).",
+    "contraindicacoes": "ALERGIA A GELÉIA REAL OU PRODUTOS APÍCOLAS. Asma.",
+    "precaucoes": "Reações anafiláticas descritas — iniciar com doses mínimas.",
+    "posologia": "Oral: 250–500 mg/dia (fresco ou liofilizado), preferir sob língua.",
+    "produtoOrigem": "geleia_real"
+  },
+  {
+    "slug": "polen",
+    "nome": "Pólen apícola",
+    "nomesAlternativos": ["bee pollen", "pólen de abelha"],
+    "indicacoes": "Suplementação proteica/micro nutrientes, fadiga adjuvante.",
+    "contraindicacoes": "ALERGIA A PÓLEN OU PRODUTOS APÍCOLAS. Polinose grave.",
+    "precaucoes": "Iniciar com 1/4 de dose para testar tolerância.",
+    "posologia": "Oral: 1 colher de chá a 1 colher de sopa/dia, mastigar.",
+    "produtoOrigem": "polen"
+  },
+  {
+    "slug": "apiterapia_picada",
+    "nome": "Veneno de abelha (apiterapia)",
+    "nomesAlternativos": ["bee venom therapy", "BVT"],
+    "indicacoes": "Artrite reumatoide e neuralgia adjuvante — APENAS em centros especializados.",
+    "contraindicacoes": "ALERGIA A PICADA DE ABELHA OU ANAFILAXIA PRÉVIA. Uso domiciliar contraindicado.",
+    "precaucoes": "Procedimento médico com kit de emergência anafilaxia. Não prescrever para automedicação.",
+    "posologia": "Somente em serviço especializado — esquema individualizado.",
+    "produtoOrigem": "veneno_abelha"
+  }
+]
