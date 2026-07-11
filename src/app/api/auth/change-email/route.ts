@@ -5,6 +5,11 @@ import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { z } from "zod";
+import {
+  checkRateLimits,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 const schema = z
   .object({
@@ -27,6 +32,15 @@ export async function POST(req: NextRequest) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rate = await checkRateLimits([
+    {
+      namespace: "change-email:user",
+      key: session.user.id,
+      ...RATE_LIMITS.changeEmail,
+    },
+  ]);
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
 
   const body = await req.json();
   const parsed = schema.safeParse(body);

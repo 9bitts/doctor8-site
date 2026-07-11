@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (isAccountVerified(user)) {
-      return NextResponse.json({ success: true, alreadyVerified: true });
+      return NextResponse.json({ success: true });
     }
 
     const firstName =

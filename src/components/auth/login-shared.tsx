@@ -202,7 +202,7 @@ export function navigateAfterAuth(destination: string, role?: string | null) {
 export function parseLoginError(err: string | null): LoginErrorCode {
   if (!err) return "";
   if (err === "EmailNotVerified") return "unverified";
-  if (err === "AccountLocked") return "locked";
+  if (err === "AccountLocked") return "invalid";
   if (err === "InvalidVerificationLink") return "invalidLink";
   if (err === "VerificationFailed") return "verificationFailed";
   if (err === "WrongRole" || err === "AccessDenied") return "roleOnly";
@@ -226,10 +226,10 @@ export function resolveCredentialSignInError(result: {
 }): LoginErrorCode {
   const code = result.code?.trim();
   if (code === "EmailNotVerified") return "unverified";
-  if (code === "AccountLocked") return "locked";
+  if (code === "AccountLocked") return "invalid";
   const err = result.error ?? "";
   if (err.includes("EmailNotVerified")) return "unverified";
-  if (err.includes("AccountLocked")) return "locked";
+  if (err.includes("AccountLocked")) return "invalid";
   return parseLoginError(err || null);
 }
 

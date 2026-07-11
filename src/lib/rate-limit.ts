@@ -97,6 +97,10 @@ export const RATE_LIMITS = {
   /** Email/password reset and magic link */
   authEmail: { limit: 3, windowMs: 60 * 60 * 1000 },
   authIp: { limit: 15, windowMs: 60 * 60 * 1000 },
+  /** Credential login callbacks (per IP; generous for shared clinic/CGNAT IPs) */
+  authLogin: { limit: 20, windowMs: 15 * 60 * 1000 },
+  /** Authenticated email change (password/OTP attempts per user) */
+  changeEmail: { limit: 5, windowMs: 15 * 60 * 1000 },
   /** Support chat (Anthropic proxy) */
   supportIp: { limit: 30, windowMs: 60 * 60 * 1000 },
   /** Humanitarian queue joins per patient */

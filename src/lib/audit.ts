@@ -66,6 +66,9 @@ export const audit = {
   login: (userId: string) =>
     createAuditLog({ userId, action: AuditAction.LOGIN, resource: "Session" }),
 
+  loginFailed: (userId: string, details: Record<string, unknown>) =>
+    createAuditLog({ userId, action: AuditAction.LOGIN_FAILED, resource: "Session", details }),
+
   logout: (userId: string) =>
     createAuditLog({ userId, action: AuditAction.LOGOUT, resource: "Session" }),
 

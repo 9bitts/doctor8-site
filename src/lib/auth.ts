@@ -204,6 +204,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // HIPAA: account lockout after failed attempts
         if (user.lockedUntil && user.lockedUntil > new Date()) {
+          await audit.loginFailed(user.id, { reason: "account_locked" });
           throw new AccountLockedError();
         }
 
@@ -220,6 +221,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               data: { lockedUntil: new Date(Date.now() + 30 * 60 * 1000) },
             });
           }
+          await audit.loginFailed(user.id, { reason: "wrong_password" });
           return null;
         }
 
