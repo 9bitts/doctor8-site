@@ -6,6 +6,7 @@ import { localeOf } from "@/lib/i18n/translations";
 import { formatAppointmentTimeWithLabel, formatShortDateWithYear, formatShortTime } from "@/lib/timezone";
 import { Calendar, ChevronLeft, ChevronRight, List, MapPin, Video } from "lucide-react";
 import { ProCancelAppointmentButton } from "@/components/professional/ProfessionalCancelAppointmentModal";
+import IntegrativeAppointmentStatusActions from "@/components/integrative-therapist/IntegrativeAppointmentStatusActions";
 
 export type IntegrativeAppointmentRow = {
   id: string;
@@ -114,9 +115,20 @@ export default function IntegrativeAppointmentsView({
   }
 
   function renderActions(apt: IntegrativeAppointmentRow) {
+    const isUpcoming = new Date(apt.scheduledAt).getTime() >= Date.now();
     return (
       <div className="flex flex-wrap items-center gap-2 shrink-0">
-        {apt.status === "CONFIRMED" && (
+        <IntegrativeAppointmentStatusActions
+          appointmentId={apt.id}
+          status={apt.status}
+          scheduledAt={apt.scheduledAt}
+          onStatusChange={(id, status) => {
+            setAppointments((prev) =>
+              prev.map((row) => (row.id === id ? { ...row, status } : row)),
+            );
+          }}
+        />
+        {apt.status === "CONFIRMED" && isUpcoming && (
           <a
             href={
               apt.type === "TELECONSULT"

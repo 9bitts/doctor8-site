@@ -7,6 +7,7 @@ import {
   ArrowLeft, Loader2, ClipboardList, ExternalLink, FileText, Leaf,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { useToast } from "@/components/ui/toast";
 import IntegrativeConsultPanel from "@/components/integrative-therapist/IntegrativeConsultPanel";
 import ConsultNotesAssistant from "@/components/professional/ConsultNotesAssistant";
 import type { IntegrativeConsultContext } from "@/lib/integrative-consult-context";
@@ -22,6 +23,7 @@ interface SessionNote {
 
 export default function IntegrativeConsultPage() {
   const { t, lang } = useI18n();
+  const toast = useToast();
   const params = useParams();
   const router = useRouter();
   const appointmentId = params.appointmentId as string;
@@ -32,6 +34,7 @@ export default function IntegrativeConsultPage() {
   const [notes, setNotes] = useState<SessionNote[]>([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [practiceSlug, setPracticeSlug] = useState("");
+  const [finishing, setFinishing] = useState(false);
 
   const loadContext = useCallback(async () => {
     setLoading(true);
@@ -97,6 +100,33 @@ export default function IntegrativeConsultPage() {
   const returnUrl = `/integrative-therapist/consult/${appointmentId}`;
   const chartLinks = buildVideoChartLinks(context.clientId, returnUrl, "integrative_therapist");
   const locale = lang.startsWith("pt") ? "pt-BR" : lang.startsWith("es") ? "es-ES" : "en-US";
+
+  async function handleFinish() {
+    setFinishing(true);
+    try {
+      if (context?.appointment?.status === "CONFIRMED") {
+        const res = await fetch(
+          `/api/integrative-therapist/appointments/${appointmentId}/status`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "complete" }),
+          },
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(typeof data.error === "string" ? data.error : t("it.appt.statusError"));
+          return;
+        }
+        toast.success(t("it.appt.completeSuccess"));
+      }
+      router.push("/integrative-therapist/appointments");
+    } catch {
+      toast.error(t("it.appt.statusError"));
+    } finally {
+      setFinishing(false);
+    }
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-10">
@@ -192,9 +222,11 @@ export default function IntegrativeConsultPage() {
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => router.push("/integrative-therapist/appointments")}
-          className="text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl"
+          disabled={finishing}
+          onClick={() => void handleFinish()}
+          className="text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl disabled:opacity-50 inline-flex items-center gap-2"
         >
+          {finishing && <Loader2 size={14} className="animate-spin" />}
           {t("it.consult.finish")}
         </button>
       </div>

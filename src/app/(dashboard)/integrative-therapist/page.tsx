@@ -2,7 +2,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
-import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
+import { translate, greetingKey, Lang } from "@/lib/i18n/translations";
+import IntegrativeUpcomingList from "@/components/integrative-therapist/IntegrativeUpcomingList";
 import { getUserLang } from "@/lib/i18n/server-lang";
 import { decryptIntegrativeNameFields, safeDecrypt } from "@/lib/integrative-therapist-api";
 import { picBySlug, picLabel } from "@/lib/pics/practices";
@@ -15,11 +16,7 @@ import { getIntegrativeVisitMetaByPatientUserIds } from "@/lib/integrative-appoi
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 import { hasAnyNaturalMedicinePractice } from "@/lib/natural-medicine/config";
 import { providerDayBounds } from "@/lib/provider-day-bounds";
-import {
-  DEFAULT_TIME_ZONE,
-  formatShortDate,
-  formatAppointmentTimeWithLabel,
-} from "@/lib/timezone";
+import { DEFAULT_TIME_ZONE } from "@/lib/timezone";
 
 export default async function IntegrativeTherapistDashboard() {
   const session = await auth();
@@ -29,7 +26,6 @@ export default async function IntegrativeTherapistDashboard() {
   const userId = session.user.id;
   const lang: Lang = await getUserLang(userId);
   const t = (key: string) => translate(lang, key);
-  const locale = localeOf(lang);
 
   const profile = await db.integrativeTherapistProfile.findUnique({ where: { userId } });
   if (!profile) redirect("/integrative-therapist/settings");
@@ -85,6 +81,23 @@ export default async function IntegrativeTherapistDashboard() {
     profile.id,
     upcoming.map((a) => a.patient.userId),
   );
+
+  const upcomingRows = upcoming.map((apt) => {
+    const meta = visitMetaByUser.get(apt.patient.userId);
+    const mainPractice = meta?.mainPractice ?? null;
+    const p = mainPractice ? picBySlug(mainPractice) : undefined;
+    return {
+      id: apt.id,
+      scheduledAt: apt.scheduledAt.toISOString(),
+      status: apt.status,
+      type: apt.type,
+      patientName: `${safeDecrypt(apt.patient.firstName)} ${safeDecrypt(apt.patient.lastName)}`.trim(),
+      visitLabel:
+        meta?.visitType === "first" ? t("it.consult.firstVisit") : t("it.consult.returnVisit"),
+      practiceLabel: p ? picLabel(p, lang) : mainPractice,
+      durationMins: meta?.suggestedDurationMins ?? 60,
+    };
+  });
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -216,81 +229,7 @@ export default async function IntegrativeTherapistDashboard() {
           <FileText size={18} className="text-teal-500" />
           <h2 className="font-semibold text-slate-800">{t("it.dash.upcoming")}</h2>
         </div>
-        {upcoming.length === 0 ? (
-          <div className="text-center py-10 px-5 space-y-3">
-            <p className="text-slate-400 text-sm">{t("proappt.empty")}</p>
-            <p className="text-slate-500 text-xs max-w-md mx-auto leading-relaxed">
-              {t("it.dash.consultMode.emptyHint")}
-            </p>
-            <Link
-              href="/integrative-therapist/clients"
-              className="inline-flex text-xs font-bold text-teal-600 hover:text-teal-800"
-            >
-              {t("it.dash.consultMode.ctaClients")} →
-            </Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {upcoming.map((apt) => {
-              const meta = visitMetaByUser.get(apt.patient.userId);
-              const visitLabel =
-                meta?.visitType === "first"
-                  ? t("it.consult.firstVisit")
-                  : t("it.consult.returnVisit");
-              return (
-              <div
-                key={apt.id}
-                className="px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-slate-800 text-sm truncate">
-                    {safeDecrypt(apt.patient.firstName)} {safeDecrypt(apt.patient.lastName)}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {formatShortDate(new Date(apt.scheduledAt), providerTz, locale)}{" "}
-                    {formatAppointmentTimeWithLabel(new Date(apt.scheduledAt), providerTz, locale)}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">
-                      {visitLabel}
-                    </span>
-                    {meta?.mainPractice && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                        {(() => {
-                          const p = picBySlug(meta.mainPractice!);
-                          return p ? picLabel(p, lang) : meta.mainPractice;
-                        })()}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-slate-400">
-                      {meta?.suggestedDurationMins ?? 60} min
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                {apt.status === "CONFIRMED" && (
-                  apt.type === "TELECONSULT" ? (
-                    <a
-                      href={`/video/${apt.id}`}
-                      className="w-full sm:w-auto text-center text-xs font-bold bg-teal-500 text-white px-3 py-2.5 rounded-xl hover:bg-teal-600 min-h-[44px] inline-flex items-center justify-center"
-                    >
-                      {t("proappt.join")}
-                    </a>
-                  ) : (
-                    <a
-                      href={`/integrative-therapist/consult/${apt.id}`}
-                      className="w-full sm:w-auto text-center text-xs font-bold bg-slate-800 text-white px-3 py-2.5 rounded-xl hover:bg-slate-700 min-h-[44px] inline-flex items-center justify-center"
-                    >
-                      {t("it.consult.start")}
-                    </a>
-                  )
-                )}
-                </div>
-              </div>
-            );
-            })}
-          </div>
-        )}
+        <IntegrativeUpcomingList appointments={upcomingRows} timeZone={providerTz} />
       </div>
     </div>
   );

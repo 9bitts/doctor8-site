@@ -270,3 +270,74 @@ export async function notifyProfessionalAttendanceConfirmed(params: {
     },
   });
 }
+
+export async function notifyPatientAppointmentConfirmed(params: {
+  appointmentId: string;
+  scheduledAt: Date;
+  type: string;
+  meetingUrl?: string | null;
+  integrativeTherapistId: string;
+  patientUserId: string;
+  patientFirstName: string;
+  patientLastName: string;
+  patientEmail: string;
+  patientLanguage?: string | null;
+  patientTimezone?: string | null;
+}): Promise<void> {
+  const therapist = await db.integrativeTherapistProfile.findUnique({
+    where: { id: params.integrativeTherapistId },
+    select: { firstName: true, lastName: true },
+  });
+  if (!therapist) return;
+
+  const providerName = `${safeDecrypt(therapist.firstName)} ${safeDecrypt(therapist.lastName)}`.trim();
+  const lang = normEmailLang(params.patientLanguage);
+  const tz = params.patientTimezone || DEFAULT_TIME_ZONE;
+  const locale = EMAIL_LOCALE[lang];
+  const { date, time } = {
+    date: formatShortDateWithYear(params.scheduledAt, tz, locale),
+    time: formatAppointmentTimeWithLabel(params.scheduledAt, tz, locale),
+  };
+
+  const copy = storedNotificationText(
+    "notif.apptConfirmedPatient.title",
+    "notif.apptConfirmedPatient.body",
+    { provider: providerName, date, time },
+  );
+
+  await createNotification({
+    userId: params.patientUserId,
+    title: copy.title,
+    body: copy.body,
+    type: "appointment_confirmed",
+    data: {
+      appointmentId: params.appointmentId,
+      href: `/patient/appointments?id=${params.appointmentId}`,
+      titleKey: "notif.apptConfirmedPatient.title",
+      bodyKey: "notif.apptConfirmedPatient.body",
+      bodyParams: { provider: providerName, date, time },
+    },
+  });
+
+  try {
+    const { sendAppointmentConfirmation } = await import("@/lib/email");
+    const { teleconsultJoinUrl } = await import("@/lib/appointment-join-window");
+    await sendAppointmentConfirmation({
+      patientEmail: params.patientEmail,
+      patientName: `${safeDecrypt(params.patientFirstName)} ${safeDecrypt(params.patientLastName)}`.trim(),
+      doctorName: providerName,
+      specialty: "Integrative therapy",
+      scheduledAt: params.scheduledAt,
+      type: params.type,
+      appointmentId: params.appointmentId,
+      language: params.patientLanguage ?? undefined,
+      patientTimezone: params.patientTimezone ?? undefined,
+      meetingUrl:
+        params.type === "TELECONSULT"
+          ? teleconsultJoinUrl(params.appointmentId, params.meetingUrl)
+          : undefined,
+    });
+  } catch (e) {
+    console.error("[IT-APPT-NOTIFY] Patient confirm email failed:", e);
+  }
+}
