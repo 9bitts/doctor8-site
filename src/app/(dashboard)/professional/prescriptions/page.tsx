@@ -404,6 +404,7 @@ export default function PrescriptionsPage() {
   const [itemSearchMode, setItemSearchMode] = useState<PrescriptionItemSearchMode>("medication");
   const [mnSearchResults, setMnSearchResults] = useState<MedicinaNaturalListItem[]>([]);
   const [mnPickerTargetIndex, setMnPickerTargetIndex] = useState<number | null>(null);
+  const [floralOnlyMode, setFloralOnlyMode] = useState(false);
 
   const floralCatalogSearch = usesFloralCatalogSearch(cfg.allowFloral, floralOnlyMode);
   const phytoCatalogSearch = usesPhytoCatalogSearch(cfg.phytoOnly, itemSearchMode, floralOnlyMode);
@@ -438,7 +439,6 @@ export default function PrescriptionsPage() {
   } | null>(null);
   const [templateAppliedHint, setTemplateAppliedHint] = useState(false);
   const [pendingFloralProductId, setPendingFloralProductId] = useState<string | null>(null);
-  const [floralOnlyMode, setFloralOnlyMode] = useState(false);
   const [voicePrefillActive, setVoicePrefillActive] = useState(false);
   const [bulkPasteText, setBulkPasteText] = useState("");
   const [freeTextMode, setFreeTextMode] = useState(false);
