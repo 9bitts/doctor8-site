@@ -5525,3 +5525,37 @@ model MedicinaNaturalItem {
   @@index([nomeCientifico])
   @@index([statusRegulatorio])
 }
+
+model EmailCampaign {
+  id         String   @id @default(cuid())
+  name       String
+  subject    String
+  bodyHtml   String   @db.Text
+  status     String   @default("DRAFT") // DRAFT | SENDING | PAUSED | DONE
+  batchSize  Int      @default(300)
+  lastError  String?  @db.Text
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  recipients EmailCampaignRecipient[]
+}
+
+model EmailCampaignRecipient {
+  id           String        @id @default(cuid())
+  campaignId   String
+  campaign     EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email        String
+  name         String?
+  token        String        @unique @default(cuid())
+  status       String        @default("PENDING") // PENDING | SENT | SEND_FAILED | BOUNCED | COMPLAINED | OPTED_OUT | OPENED | CLICKED | REGISTERED
+  batchNumber  Int?
+  sentAt       DateTime?
+  registeredAt DateTime?
+  errorMessage String?
+  userId       String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([campaignId, email])
+  @@index([campaignId, status])
+}

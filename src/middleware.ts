@@ -67,6 +67,7 @@ const PUBLIC_ROUTES = [
   "/verify-email",
   "/verify-account",
   "/verify-sms",
+  "/unsubscribe",
   "/signup/role",
   "/auth/magic",
   "/unauthorized",

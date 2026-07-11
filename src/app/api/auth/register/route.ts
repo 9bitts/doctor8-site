@@ -52,6 +52,7 @@ import {
   resolveAcquisitionReferrer,
 } from "@/lib/humanitarian/acquisition-channel";
 import { linkPartnerIntakesToPatient } from "@/lib/partner/acura-intake";
+import { markCampaignRecipientRegistered } from "@/lib/admin/email-campaigns";
 
 // HIPAA: strong password requirements
 const passwordSchema = z
@@ -95,6 +96,7 @@ const registerSchema = z.object({
     "cuidados_paliativos",
   ] as const).optional(),
   callbackUrl: z.string().optional(),
+  inviteToken: z.string().optional(),
 });
 
 type RegisterProfileInput = {
@@ -189,6 +191,7 @@ export async function POST(req: NextRequest) {
       professionalKind,
       profession,
       callbackUrl,
+      inviteToken,
     } = data.data;
 
     const normalizedLanguage = language === "pt" || language === "es" || language === "en"
@@ -402,6 +405,8 @@ export async function POST(req: NextRequest) {
         alreadyVerified,
       });
 
+      void markCampaignRecipientRegistered(existing.id, inviteToken);
+
       return NextResponse.json(
         {
           success: true,
@@ -462,6 +467,8 @@ export async function POST(req: NextRequest) {
     } catch (linkError) {
       console.error("[REGISTER LINK ERROR]", linkError);
     }
+
+    void markCampaignRecipientRegistered(user.id, inviteToken);
 
     if (role === "PATIENT") {
       try {

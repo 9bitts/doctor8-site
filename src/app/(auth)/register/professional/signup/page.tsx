@@ -33,10 +33,13 @@ export default function RegisterProfessionalSignupPage() {
   const [professionSlug, setProfessionSlug] = useState<
     "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "dentista" | "cuidados_paliativos" | undefined
   >(undefined);
+  const [inviteToken, setInviteToken] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setCallbackUrl(params.get("callbackUrl") || "");
+    const invite = params.get("invite");
+    if (invite) setInviteToken(invite);
 
     const r = params.get("region");
     if (r) {
@@ -336,6 +339,7 @@ export default function RegisterProfessionalSignupPage() {
               lang={lang}
               callbackUrl={callbackUrl}
               initialRegion={initialRegion}
+              inviteToken={inviteToken || undefined}
               onBack={() => setStep(1)}
             />
           </div>

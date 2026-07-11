@@ -140,6 +140,7 @@ export function RegisterAccountForm({
   lang,
   callbackUrl,
   initialRegion = "US",
+  inviteToken,
   onBack,
 }: {
   role: RegisterRole;
@@ -148,6 +149,7 @@ export function RegisterAccountForm({
   lang: Lang;
   callbackUrl: string;
   initialRegion?: Region;
+  inviteToken?: string;
   onBack?: () => void;
 }) {
   const router = useRouter();
@@ -301,6 +303,7 @@ export function RegisterAccountForm({
           acceptedGdpr: requiresGdpr(region) ? acceptedGdpr : undefined,
           acceptedLgpd: requiresLgpd(region) ? acceptedLgpd : undefined,
           callbackUrl: authCallback || undefined,
+          inviteToken: inviteToken || undefined,
         }),
       });
 

@@ -181,6 +181,7 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.clinical",
     items: [
       { href: "/professional/prescriptions", labelKey: "nav.prescriptions", roles: ["PROFESSIONAL"], iconKey: "Stethoscope" },
+      { href: "/professional/medicina-natural/fitoterapia/catalogo", labelKey: "nav.fitoterapicos", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/professional/chas-medicinais", labelKey: "nav.medicinalTeas", roles: ["PROFESSIONAL"], iconKey: "FlaskConical" },
       { href: "/professional/florais", labelKey: "nav.florais", roles: ["PROFESSIONAL"], iconKey: "Flower2" },
       { href: "/professional/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["PROFESSIONAL"], iconKey: "Leaf" },
@@ -493,6 +494,7 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.clinical",
     items: [
       { href: "/integrative-therapist/prescriptions", labelKey: "nav.prescriptions", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Stethoscope" },
+      { href: "/integrative-therapist/medicina-natural/fitoterapia/catalogo", labelKey: "nav.fitoterapicos", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "BookOpen" },
       { href: "/integrative-therapist/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Leaf" },
       { href: "/integrative-therapist/chas-medicinais", labelKey: "nav.medicinalTeas", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "FlaskConical" },
       { href: "/integrative-therapist/florais", labelKey: "nav.florais", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Flower2" },
@@ -604,6 +606,7 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", roles: ["ADMIN"], iconKey: "Radio" },
   { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", roles: ["ADMIN"], iconKey: "Heart" },
   { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", roles: ["ADMIN"], iconKey: "ShoppingBag" },
+  { href: "/admin/campaigns", labelKey: "nav.adminCampaigns", roles: ["ADMIN"], iconKey: "Megaphone" },
   { href: "/admin/integrations", labelKey: "nav.adminIntegrations", roles: ["ADMIN"], iconKey: "Plug" },
   { href: "/admin/audit", labelKey: "nav.adminAudit", roles: ["ADMIN"], iconKey: "ScrollText" },
   { href: "/admin/rateio", labelKey: "nav.adminRateio", roles: ["ADMIN"], iconKey: "PieChart" },
@@ -638,6 +641,7 @@ export const ADMIN_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/admin/categories", labelKey: "nav.adminCategories", roles: ["ADMIN"], iconKey: "Layers" },
       { href: "/admin/courses", labelKey: "nav.adminCourses", roles: ["ADMIN"], iconKey: "BookOpen" },
       { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", roles: ["ADMIN"], iconKey: "ShoppingBag" },
+      { href: "/admin/campaigns", labelKey: "nav.adminCampaigns", roles: ["ADMIN"], iconKey: "Megaphone" },
       { href: "/admin/integrations", labelKey: "nav.adminIntegrations", roles: ["ADMIN"], iconKey: "Plug" },
     ],
   },
