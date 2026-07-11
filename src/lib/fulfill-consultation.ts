@@ -524,14 +524,18 @@ export async function fulfillConsultationPayment(params: {
       scheduledAt: new Date(scheduledAt),
     }).catch((e) => console.error("[POST-BOOKING]", e));
   } else {
-    onAppointmentBooked({
-      appointmentId: appointment.id,
-      providerType: "health",
-      providerId,
-      patientUserId: userId,
-      chiefComplaint: intakePayload,
-      scheduledAt: new Date(scheduledAt),
-    }).catch((e) => console.error("[POST-BOOKING]", e));
+    try {
+      await onAppointmentBooked({
+        appointmentId: appointment.id,
+        providerType: "health",
+        providerId,
+        patientUserId: userId,
+        chiefComplaint: intakePayload,
+        scheduledAt: new Date(scheduledAt),
+      });
+    } catch (e) {
+      console.error("[POST-BOOKING]", appointment.id, e);
+    }
   }
 
   if (user) {
