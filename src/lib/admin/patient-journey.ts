@@ -23,6 +23,8 @@ export type AdminJourneyStepState =
 export type PartnerIntakeJourneySnapshot = {
   submittedAt: Date;
   acuraStatus: PartnerIntakeStatus;
+  clickedDoctor8RegisterAt?: Date | null;
+  clickedDoctor8LoginAt?: Date | null;
 };
 
 export type IntakeJourneySnapshot = {
@@ -112,6 +114,7 @@ function consultInProgress(
 
 type JourneyStepContext = {
   userCreatedAt: Date;
+  hasPatientAccount: boolean;
   partnerIntake: PartnerIntakeJourneySnapshot | null;
   intake: IntakeJourneySnapshot | null;
   entries: {
@@ -171,7 +174,7 @@ function isStepComplete(
         ? isAcuraTriageComplete(opts.partnerIntake.acuraStatus)
         : false;
     case "d8_register":
-      return true;
+      return opts.hasPatientAccount;
     case "d8_triage":
       return triageValid(opts.intake);
     case "d8_tcle":
@@ -195,6 +198,7 @@ function isStepSkipped(key: AdminJourneyStepKey, partner: PartnerIntakeJourneySn
 /** Build admin journey steps (ACURA + Doctor8). */
 export function buildAdminPatientJourney(opts: {
   userCreatedAt: Date;
+  hasPatientAccount?: boolean;
   partnerIntake: PartnerIntakeJourneySnapshot | null;
   intake: IntakeJourneySnapshot | null;
   entries: {
@@ -205,12 +209,14 @@ export function buildAdminPatientJourney(opts: {
   }[];
   stuckStepKeys?: Set<AdminJourneyStepKey>;
 }): AdminPatientJourney {
+  const hasPatientAccount = opts.hasPatientAccount !== false;
   const inQueue = opts.entries.some((e) => ["WAITING", "CALLED"].includes(e.status));
   const inConsult = consultInProgress(opts.entries);
   const flowStep = deriveFlowStep(opts.intake, inQueue, inConsult);
 
   const stepOpts = {
     userCreatedAt: opts.userCreatedAt,
+    hasPatientAccount,
     partnerIntake: opts.partnerIntake,
     intake: opts.intake,
     entries: opts.entries,

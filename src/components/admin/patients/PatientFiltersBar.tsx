@@ -66,6 +66,7 @@ export default function PatientFiltersBar({
             <option value="IN_CONSULT">Em atendimento</option>
             <option value="ATTENDED">Atendido</option>
             <option value="INACTIVE">Sem atividade</option>
+            <option value="PENDING_D8_REGISTRATION">ACURA sem cadastro D8</option>
             <option value="PROBLEM">Problema</option>
           </select>
         </label>

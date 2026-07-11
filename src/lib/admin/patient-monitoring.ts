@@ -11,6 +11,7 @@ import {
   type Appointment,
   type HumanitarianQueueEntry,
   type HumanitarianQueueStatus,
+  type PartnerIntake,
   type PatientProfile,
   type User,
 } from "@prisma/client";
@@ -42,7 +43,8 @@ export type PatientMonitorStatus =
   | "IN_CONSULT"
   | "ATTENDED"
   | "INACTIVE"
-  | "PROBLEM";
+  | "PROBLEM"
+  | "PENDING_D8_REGISTRATION";
 
 export type PatientOrigin = "humanitarian" | "regular";
 
@@ -92,6 +94,36 @@ export interface PatientListRow {
   anamneseStatus: string | null;
 }
 
+export interface UnlinkedIntakeListRow {
+  kind: "unlinked_intake";
+  id: string;
+  protocolo: string;
+  name: string;
+  email: string;
+  phoneHint: string | null;
+  country: string | null;
+  origin: "humanitarian";
+  acquisitionChannel: "ACURA_SOS_FORM";
+  acuraProtocolo: string;
+  currentJourneyStep: AdminJourneyStepKey;
+  stuckAlertCount: number;
+  status: PatientMonitorStatus;
+  statusDetail: string | null;
+  registeredAt: string;
+  lastActivityAt: string | null;
+  lastSpecialty: string | null;
+  appointments: number;
+  documents: number;
+  hasAnamnese: boolean;
+  anamneseStatus: string | null;
+  adminReviewedAt: null;
+  problemReasons: string[];
+}
+
+export type MonitoringListRow =
+  | (PatientListRow & { kind: "patient" })
+  | UnlinkedIntakeListRow;
+
 export interface MonitoringCounters {
   total: number;
   inQueue: number;
@@ -99,13 +131,16 @@ export interface MonitoringCounters {
   completedToday: number;
   withProblem: number;
   pendingReview: number;
+  pendingAcuraRegistration: number;
 }
 
 export interface MonitoringAlert {
   id: string;
-  type: "queue_wait" | "stuck_consult" | "no_documents" | "video_incident";
-  patientProfileId: string;
-  patientUserId: string;
+  type: "queue_wait" | "stuck_consult" | "no_documents" | "video_incident" | "acura_pending";
+  patientProfileId?: string;
+  patientUserId?: string;
+  partnerIntakeId?: string;
+  protocolo?: string;
   patientName: string;
   message: string;
   severity: "warning" | "critical";
@@ -327,14 +362,33 @@ interface PatientContext {
   problemReasons: string[];
 }
 
+interface UnlinkedIntakeContext {
+  intake: PartnerIntake;
+  journey: AdminPatientJourney;
+  stuckAlerts: StuckAlert[];
+  status: PatientMonitorStatus;
+  statusDetail: string | null;
+  problemReasons: string[];
+  lastActivityAt: Date | null;
+  partnerIntakeSnapshot: PartnerIntakeJourneySnapshot;
+  priorityLabel: string | null;
+}
+
 function partnerSnapshotFromRow(row: {
   submittedAt: Date;
   acuraStatus: import("@prisma/client").PartnerIntakeStatus;
   protocolo: string;
   priorityEnc: string | null;
+  clickedDoctor8RegisterAt?: Date | null;
+  clickedDoctor8LoginAt?: Date | null;
 }): { snapshot: PartnerIntakeJourneySnapshot; protocolo: string; priorityLabel: string | null } {
   return {
-    snapshot: { submittedAt: row.submittedAt, acuraStatus: row.acuraStatus },
+    snapshot: {
+      submittedAt: row.submittedAt,
+      acuraStatus: row.acuraStatus,
+      clickedDoctor8RegisterAt: row.clickedDoctor8RegisterAt ?? null,
+      clickedDoctor8LoginAt: row.clickedDoctor8LoginAt ?? null,
+    },
     protocolo: row.protocolo,
     priorityLabel: safeDecrypt(row.priorityEnc) || null,
   };
@@ -399,6 +453,7 @@ function derivePatientContext(
 
   const journey = buildAdminPatientJourney({
     userCreatedAt: profile.user.createdAt,
+    hasPatientAccount: true,
     partnerIntake: partnerIntakeSnapshot,
     intake: intakeSnapshot,
     entries: humanitarianEntries.map((e) => ({
@@ -535,9 +590,10 @@ function derivePatientContext(
   };
 }
 
-function contextToListRow(ctx: PatientContext): PatientListRow {
+function contextToListRow(ctx: PatientContext): PatientListRow & { kind: "patient" } {
   const p = ctx.profile;
   return {
+    kind: "patient",
     id: p.id,
     userId: p.userId,
     name: `${safeDecrypt(p.firstName)} ${safeDecrypt(p.lastName)}`.trim() || "?",
@@ -563,6 +619,191 @@ function contextToListRow(ctx: PatientContext): PatientListRow {
     adminReviewedAt: p.adminReviewedAt?.toISOString() ?? null,
     hasAnamnese: ctx.hasIntake,
     anamneseStatus: ctx.intakeStatus,
+  };
+}
+
+function phoneHintFromIntake(intake: PartnerIntake): string | null {
+  const phone = intake.phoneJson as { display?: string; e164?: string } | null;
+  const raw = phone?.display ?? phone?.e164 ?? "";
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  if (digits.length >= 4) return `***${digits.slice(-4)}`;
+  return "***";
+}
+
+function unlinkedDisplayName(intake: PartnerIntake): string {
+  const patientName = safeDecrypt(intake.patientNameEnc).trim();
+  if (patientName) return patientName;
+  return intake.requesterName.trim() || "Solicitante ACURA";
+}
+
+function deriveUnlinkedIntakeContext(
+  intake: PartnerIntake,
+  queueAlertMinutes: number,
+): UnlinkedIntakeContext {
+  const now = new Date();
+  const partnerBundle = partnerSnapshotFromRow(intake);
+  const partnerIntakeSnapshot = partnerBundle.snapshot;
+
+  const stuckAlerts = computeStuckAlerts({
+    now,
+    userCreatedAt: intake.submittedAt,
+    acquisitionChannel: PatientAcquisitionChannel.ACURA_SOS_FORM,
+    partnerIntake: partnerIntakeSnapshot,
+    hasPatientAccount: false,
+    intake: null,
+    queueWaitingSince: null,
+    queueAlertMinutes,
+    priority: priorityFromPartnerIntake(partnerBundle.priorityLabel),
+  });
+
+  const journey = buildAdminPatientJourney({
+    userCreatedAt: intake.submittedAt,
+    hasPatientAccount: false,
+    partnerIntake: partnerIntakeSnapshot,
+    intake: null,
+    entries: [],
+    stuckStepKeys: stuckStepKeys(stuckAlerts),
+  });
+
+  const problemReasons = stuckAlertsToProblemReasons(stuckAlerts);
+  const status: PatientMonitorStatus =
+    stuckAlerts.length > 0 ? "PROBLEM" : "PENDING_D8_REGISTRATION";
+  const statusDetail = problemReasons[0] ?? "Aguardando cadastro na Doctor8";
+
+  const clickDates = [
+    intake.clickedDoctor8RegisterAt,
+    intake.clickedDoctor8LoginAt,
+    intake.clickedWhatsappHelpAt,
+    intake.lastSyncedAt,
+  ].filter(Boolean) as Date[];
+  const lastActivityAt =
+    clickDates.length > 0
+      ? new Date(Math.max(...clickDates.map((d) => d.getTime())))
+      : intake.submittedAt;
+
+  return {
+    intake,
+    journey,
+    stuckAlerts,
+    status,
+    statusDetail,
+    problemReasons,
+    lastActivityAt,
+    partnerIntakeSnapshot,
+    priorityLabel: partnerBundle.priorityLabel,
+  };
+}
+
+function unlinkedContextToListRow(ctx: UnlinkedIntakeContext): UnlinkedIntakeListRow {
+  const intake = ctx.intake;
+  const careType = safeDecrypt(intake.careTypeEnc);
+  return {
+    kind: "unlinked_intake",
+    id: intake.id,
+    protocolo: intake.protocolo,
+    name: unlinkedDisplayName(intake),
+    email: intake.email,
+    phoneHint: phoneHintFromIntake(intake),
+    country: intake.location || null,
+    origin: "humanitarian",
+    acquisitionChannel: "ACURA_SOS_FORM",
+    acuraProtocolo: intake.protocolo,
+    currentJourneyStep: ctx.journey.currentStep,
+    stuckAlertCount: ctx.stuckAlerts.length,
+    status: ctx.status,
+    statusDetail: ctx.statusDetail,
+    registeredAt: intake.submittedAt.toISOString(),
+    lastActivityAt: ctx.lastActivityAt?.toISOString() ?? null,
+    lastSpecialty: careType || null,
+    appointments: 0,
+    documents: 0,
+    hasAnamnese: false,
+    anamneseStatus: null,
+    adminReviewedAt: null,
+    problemReasons: ctx.problemReasons,
+  };
+}
+
+export async function loadUnlinkedPartnerIntakeContexts(queueAlertMinutes: number) {
+  const intakes = await db.partnerIntake.findMany({
+    where: { patientUserId: null },
+    orderBy: { submittedAt: "desc" },
+  });
+  return intakes.map((intake) => deriveUnlinkedIntakeContext(intake, queueAlertMinutes));
+}
+
+export async function loadFullMonitoringData(queueAlertMinutes: number) {
+  const [patientContexts, unlinkedIntakeContexts] = await Promise.all([
+    loadPatientMonitoringData(queueAlertMinutes),
+    loadUnlinkedPartnerIntakeContexts(queueAlertMinutes),
+  ]);
+  return { patientContexts, unlinkedIntakeContexts };
+}
+
+export interface UnlinkedIntakeDetailDto {
+  kind: "unlinked_intake";
+  id: string;
+  protocolo: string;
+  name: string;
+  email: string;
+  registeredAt: string;
+  status: PatientMonitorStatus;
+  statusDetail: string | null;
+  journey: AdminPatientJourney;
+  stuckAlerts: StuckAlert[];
+  problemReasons: string[];
+  acuraIntake: AcuraIntakeAdminDto;
+  timeline: TimelineEvent[];
+}
+
+export async function loadUnlinkedIntakeDetail(
+  protocolo: string,
+  queueAlertMinutes: number,
+): Promise<
+  | { kind: "redirect"; profileId: string }
+  | { kind: "detail"; detail: UnlinkedIntakeDetailDto }
+  | null
+> {
+  const intake = await db.partnerIntake.findUnique({ where: { protocolo } });
+  if (!intake) return null;
+
+  if (intake.patientUserId) {
+    const profile = await db.patientProfile.findUnique({
+      where: { userId: intake.patientUserId },
+      select: { id: true },
+    });
+    if (profile) return { kind: "redirect", profileId: profile.id };
+  }
+
+  const ctx = deriveUnlinkedIntakeContext(intake, queueAlertMinutes);
+  const partnerEvents = await getPartnerIntakeEvents(intake.id);
+  const acuraTimeline = partnerIntakeTimelineEvents(intake, partnerEvents);
+
+  return {
+    kind: "detail",
+    detail: {
+      kind: "unlinked_intake",
+      id: intake.id,
+      protocolo: intake.protocolo,
+      name: unlinkedDisplayName(intake),
+      email: intake.email,
+      registeredAt: intake.submittedAt.toISOString(),
+      status: ctx.status,
+      statusDetail: ctx.statusDetail,
+      journey: ctx.journey,
+      stuckAlerts: ctx.stuckAlerts,
+      problemReasons: ctx.problemReasons,
+      acuraIntake: partnerIntakeToAdminDto(intake),
+      timeline: acuraTimeline.map((ev) => ({
+        id: ev.id,
+        type: ev.type as TimelineEvent["type"],
+        at: ev.at,
+        title: ev.title,
+        detail: ev.detail,
+        link: null,
+      })),
+    },
   };
 }
 
@@ -626,6 +867,8 @@ export async function loadPatientMonitoringData(queueAlertMinutes: number) {
         submittedAt: true,
         acuraStatus: true,
         priorityEnc: true,
+        clickedDoctor8RegisterAt: true,
+        clickedDoctor8LoginAt: true,
       },
       orderBy: { submittedAt: "desc" },
     }),
@@ -712,6 +955,9 @@ export function filterAndSortPatients(
 
   if (filters.status) {
     filtered = filtered.filter((ctx) => ctx.status === filters.status);
+    if (filters.status === "PENDING_D8_REGISTRATION") {
+      filtered = [];
+    }
   }
   if (filters.country) {
     filtered = filtered.filter(
@@ -775,6 +1021,140 @@ export function filterAndSortPatients(
   return rows;
 }
 
+export function filterAndSortMonitoringRows(
+  patientContexts: PatientContext[],
+  unlinkedContexts: UnlinkedIntakeContext[],
+  filters: PatientListFilters,
+): MonitoringListRow[] {
+  const patientRows = filterAndSortPatients(patientContexts, filters).map((row) => ({
+    ...row,
+    kind: "patient" as const,
+  }));
+
+  const q = filters.q?.trim().toLowerCase() ?? "";
+  const qDigits = q.replace(/\D/g, "");
+
+  let filteredUnlinked = unlinkedContexts;
+
+  if (q) {
+    filteredUnlinked = unlinkedContexts.filter((ctx) => {
+      const name = unlinkedDisplayName(ctx.intake).toLowerCase();
+      return (
+        name.includes(q) ||
+        ctx.intake.email.toLowerCase().includes(q) ||
+        ctx.intake.protocolo.toLowerCase().includes(q) ||
+        ctx.intake.requesterName.toLowerCase().includes(q) ||
+        (qDigits && phoneHintFromIntake(ctx.intake)?.includes(qDigits.slice(-4)))
+      );
+    });
+  }
+
+  if (filters.status) {
+    if (filters.status === "PENDING_D8_REGISTRATION") {
+      // All unlinked ACURA intakes are pending D8 registration
+    } else {
+      filteredUnlinked = filteredUnlinked.filter((ctx) => ctx.status === filters.status);
+    }
+  }
+  if (filters.origin === "regular") {
+    filteredUnlinked = [];
+  }
+  if (filters.acquisitionChannel && filters.acquisitionChannel !== "ACURA_SOS_FORM") {
+    filteredUnlinked = [];
+  }
+  if (filters.journeyStep) {
+    filteredUnlinked = filteredUnlinked.filter(
+      (ctx) => ctx.journey.currentStep === filters.journeyStep,
+    );
+  }
+  if (filters.needsAttention) {
+    filteredUnlinked = filteredUnlinked.filter(
+      (ctx) => ctx.stuckAlerts.length > 0 || ctx.status === "PROBLEM",
+    );
+  }
+  if (filters.lastSpecialty) {
+    filteredUnlinked = filteredUnlinked.filter((ctx) =>
+      (safeDecrypt(ctx.intake.careTypeEnc) ?? "")
+        .toLowerCase()
+        .includes(filters.lastSpecialty!.toLowerCase()),
+    );
+  }
+  if (filters.registeredFrom) {
+    const from = new Date(filters.registeredFrom);
+    filteredUnlinked = filteredUnlinked.filter((ctx) => ctx.intake.submittedAt >= from);
+  }
+  if (filters.registeredTo) {
+    const to = endOfDay(new Date(filters.registeredTo));
+    filteredUnlinked = filteredUnlinked.filter((ctx) => ctx.intake.submittedAt <= to);
+  }
+  if (filters.reviewed === "yes") {
+    filteredUnlinked = [];
+  }
+
+  const unlinkedRows = filteredUnlinked.map(unlinkedContextToListRow);
+  const merged = [...patientRows, ...unlinkedRows];
+
+  const sort = filters.sort ?? "newest";
+  merged.sort((a, b) => {
+    if (sort === "oldest") {
+      return new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime();
+    }
+    if (sort === "lastActivity") {
+      const ta = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
+      const tb = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
+      return tb - ta;
+    }
+    return new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime();
+  });
+
+  return merged;
+}
+
+export function buildFullMonitoringCounters(
+  patientContexts: PatientContext[],
+  unlinkedContexts: UnlinkedIntakeContext[],
+): MonitoringCounters {
+  const base = buildMonitoringCounters(patientContexts);
+  let extraProblems = 0;
+  for (const ctx of unlinkedContexts) {
+    if (ctx.status === "PROBLEM") extraProblems++;
+  }
+  return {
+    ...base,
+    total: base.total + unlinkedContexts.length,
+    withProblem: base.withProblem + extraProblems,
+    pendingAcuraRegistration: unlinkedContexts.length,
+  };
+}
+
+export function buildFullMonitoringAlerts(
+  patientContexts: PatientContext[],
+  unlinkedContexts: UnlinkedIntakeContext[],
+): MonitoringAlert[] {
+  const alerts = buildMonitoringAlerts(patientContexts);
+
+  for (const ctx of unlinkedContexts) {
+    const name = unlinkedDisplayName(ctx.intake);
+    for (const reason of ctx.problemReasons) {
+      alerts.push({
+        id: `${ctx.intake.id}-acura-${reason.slice(0, 20)}`,
+        type: "acura_pending",
+        partnerIntakeId: ctx.intake.id,
+        protocolo: ctx.intake.protocolo,
+        patientName: name,
+        message: reason,
+        severity:
+          reason.includes("Emergência") || reason.includes("crític") ? "critical" : "warning",
+        createdAt: ctx.lastActivityAt?.toISOString() ?? ctx.intake.submittedAt.toISOString(),
+      });
+    }
+  }
+
+  return alerts.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
+
 export function buildMonitoringCounters(contexts: PatientContext[]): MonitoringCounters {
   const todayStart = startOfDay();
   let inQueue = 0;
@@ -805,6 +1185,7 @@ export function buildMonitoringCounters(contexts: PatientContext[]): MonitoringC
     completedToday,
     withProblem,
     pendingReview,
+    pendingAcuraRegistration: 0,
   };
 }
 

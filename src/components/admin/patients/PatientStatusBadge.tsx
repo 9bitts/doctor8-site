@@ -27,6 +27,10 @@ const STATUS_CONFIG: Record<
     label: "Problema",
     className: "bg-rose-100 text-rose-700",
   },
+  PENDING_D8_REGISTRATION: {
+    label: "ACURA sem cadastro D8",
+    className: "bg-amber-50 text-amber-800 border border-amber-200",
+  },
 };
 
 export default function PatientStatusBadge({

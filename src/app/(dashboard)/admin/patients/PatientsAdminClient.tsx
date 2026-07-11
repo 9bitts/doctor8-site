@@ -9,9 +9,8 @@ import PatientFiltersBar, {
   filtersToQuery,
   type PatientFiltersState,
 } from "@/components/admin/patients/PatientFiltersBar";
-import PatientListTable, {
-  type PatientRow,
-} from "@/components/admin/patients/PatientListTable";
+import PatientListTable from "@/components/admin/patients/PatientListTable";
+import type { MonitoringListRow } from "@/lib/admin/patient-monitoring";
 import PatientConsultationsExportBar from "@/components/admin/patients/PatientConsultationsExportBar";
 import LastUpdatedIndicator from "@/components/admin/patients/LastUpdatedIndicator";
 
@@ -19,7 +18,7 @@ const POLL_MS = 12000;
 const STORAGE_KEY = "admin-patients-queue-alert-min";
 
 interface ListResponse {
-  patients: PatientRow[];
+  patients: MonitoringListRow[];
   counters: {
     total: number;
     inQueue: number;
@@ -27,11 +26,13 @@ interface ListResponse {
     completedToday: number;
     withProblem: number;
     pendingReview: number;
+    pendingAcuraRegistration: number;
   };
   alerts: {
     id: string;
     type: string;
-    patientProfileId: string;
+    patientProfileId?: string;
+    protocolo?: string;
     patientName: string;
     message: string;
     severity: "warning" | "critical";
@@ -124,6 +125,18 @@ export default function PatientsAdminClient() {
     setAppliedFilters({ ...filters });
   }
 
+  function filterPendingAcura() {
+    const next: PatientFiltersState = {
+      ...appliedFilters,
+      status: "PENDING_D8_REGISTRATION",
+      acquisitionChannel: "ACURA_SOS_FORM",
+      journeyStep: "d8_register",
+      origin: "humanitarian",
+    };
+    setFilters(next);
+    setAppliedFilters(next);
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-10">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -143,7 +156,10 @@ export default function PatientsAdminClient() {
       </div>
 
       {data ? (
-        <PatientMonitoringCards counters={data.counters} />
+        <PatientMonitoringCards
+          counters={data.counters}
+          onFilterPendingAcura={filterPendingAcura}
+        />
       ) : (
         <div className="h-24 flex items-center justify-center text-slate-400 text-sm">
           <Loader2 size={18} className="animate-spin mr-2" /> Carregando contadores...

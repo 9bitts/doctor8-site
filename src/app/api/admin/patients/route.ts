@@ -2,13 +2,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPatientAdminSession } from "@/lib/admin";
 import {
-  buildMonitoringAlerts,
-  buildMonitoringCounters,
-  filterAndSortPatients,
+  buildFullMonitoringAlerts,
+  buildFullMonitoringCounters,
+  filterAndSortMonitoringRows,
   getDefaultQueueAlertMinutes,
   listDistinctCountries,
   listDistinctSpecialties,
-  loadPatientMonitoringData,
+  loadFullMonitoringData,
   type PatientListFilters,
   type PatientMonitorStatus,
   type PatientOrigin,
@@ -47,9 +47,19 @@ function parseFilters(req: NextRequest): PatientListFilters {
     "d8_consult",
   ];
 
+  const validStatuses: PatientMonitorStatus[] = [
+    "IN_QUEUE",
+    "IN_CONSULT",
+    "ATTENDED",
+    "INACTIVE",
+    "PROBLEM",
+    "PENDING_D8_REGISTRATION",
+  ];
+
   return {
     q: sp.get("q") ?? undefined,
-    status: status ?? undefined,
+    status:
+      status && validStatuses.includes(status) ? status : undefined,
     country: sp.get("country") ?? undefined,
     origin: origin === "humanitarian" || origin === "regular" ? origin : undefined,
     acquisitionChannel:
@@ -75,18 +85,23 @@ export async function GET(req: NextRequest) {
   const filters = parseFilters(req);
   const queueAlertMinutes = filters.queueAlertMinutes ?? getDefaultQueueAlertMinutes();
 
-  const contexts = await loadPatientMonitoringData(queueAlertMinutes);
-  const patients = filterAndSortPatients(contexts, filters);
-  const counters = buildMonitoringCounters(contexts);
-  const alerts = buildMonitoringAlerts(contexts);
+  const { patientContexts, unlinkedIntakeContexts } =
+    await loadFullMonitoringData(queueAlertMinutes);
+  const patients = filterAndSortMonitoringRows(
+    patientContexts,
+    unlinkedIntakeContexts,
+    filters,
+  );
+  const counters = buildFullMonitoringCounters(patientContexts, unlinkedIntakeContexts);
+  const alerts = buildFullMonitoringAlerts(patientContexts, unlinkedIntakeContexts);
 
   return NextResponse.json({
     patients,
     counters,
     alerts,
     filters: {
-      countries: listDistinctCountries(contexts),
-      specialties: listDistinctSpecialties(contexts),
+      countries: listDistinctCountries(patientContexts),
+      specialties: listDistinctSpecialties(patientContexts),
       queueAlertMinutes,
     },
     fetchedAt: new Date().toISOString(),
