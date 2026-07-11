@@ -23,13 +23,23 @@ type DrugHit = {
   inInventory?: boolean;
 };
 
+type MnHit = {
+  slug: string;
+  nome: string;
+  categoriaPratica: string;
+  posologia?: string | null;
+  inInventory?: boolean;
+};
+
 type InventoryItem = {
   id: string;
-  drugCatalogId: string;
+  drugCatalogId: string | null;
+  mnSlug: string | null;
+  mnDisplayName: string | null;
   priceCents: number;
   stockQty: number | null;
   available: boolean;
-  drug: DrugHit;
+  drug: DrugHit | null;
 };
 
 function formatBrl(cents: number): string {
@@ -63,6 +73,14 @@ export default function PharmacyInventoryClient() {
   const [addStock, setAddStock] = useState("");
   const [selectedDrug, setSelectedDrug] = useState<DrugHit | null>(null);
   const [adding, setAdding] = useState(false);
+
+  const [mnQuery, setMnQuery] = useState("");
+  const [mnResults, setMnResults] = useState<MnHit[]>([]);
+  const [mnSearching, setMnSearching] = useState(false);
+  const [mnPrice, setMnPrice] = useState("");
+  const [mnStock, setMnStock] = useState("");
+  const [selectedMn, setSelectedMn] = useState<MnHit | null>(null);
+  const [addingMn, setAddingMn] = useState(false);
 
   const loadInventory = useCallback(async (q?: string) => {
     setLoading(true);
@@ -113,6 +131,46 @@ export default function PharmacyInventoryClient() {
       setAddResults(data.results || []);
     } finally {
       setAddSearching(false);
+    }
+  }
+
+  async function searchMn(q: string) {
+    setMnSearching(true);
+    try {
+      const res = await fetch(`/api/pharmacy-store/medicina-natural/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setMnResults(data.items || []);
+    } finally {
+      setMnSearching(false);
+    }
+  }
+
+  async function handleAddMnItem() {
+    if (!selectedMn) return;
+    const priceCents = parsePriceInput(mnPrice);
+    if (!priceCents) return;
+    setAddingMn(true);
+    try {
+      const res = await fetch("/api/pharmacy-store/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mnSlug: selectedMn.slug,
+          mnDisplayName: selectedMn.nome,
+          priceCents,
+          stockQty: mnStock ? parseInt(mnStock, 10) : undefined,
+        }),
+      });
+      if (res.ok) {
+        setSelectedMn(null);
+        setMnPrice("");
+        setMnStock("");
+        setMnQuery("");
+        setMnResults([]);
+        await loadInventory(searchQ);
+      }
+    } finally {
+      setAddingMn(false);
     }
   }
 
@@ -304,6 +362,85 @@ export default function PharmacyInventoryClient() {
         )}
       </section>
 
+      {/* Medicina Natural add */}
+      <section className="rounded-2xl border border-violet-200 bg-violet-50/30 p-6 space-y-4">
+        <h2 className="font-bold text-slate-900 flex items-center gap-2">
+          <Plus size={18} className="text-violet-600" /> Adicionar Medicina Natural
+        </h2>
+        <p className="text-sm text-slate-600">
+          Fitoterápicos, florais, homeopatia, aromaterapia e apiterapia do catálogo Doctor8 — vinculados por{" "}
+          <code className="text-xs bg-white px-1 rounded">mnSlug</code> para cotação de prescrições integrativas.
+        </p>
+        <div className="flex gap-2">
+          <input
+            value={mnQuery}
+            onChange={(e) => setMnQuery(e.target.value)}
+            placeholder="Buscar no catálogo Medicina Natural..."
+            className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm"
+          />
+          <button
+            type="button"
+            disabled={mnQuery.trim().length < 2 || mnSearching}
+            onClick={() => searchMn(mnQuery)}
+            className="px-4 py-2.5 rounded-xl bg-violet-700 text-white text-sm font-semibold disabled:opacity-50"
+          >
+            {mnSearching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+          </button>
+        </div>
+
+        {mnResults.length > 0 && (
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {mnResults.map((item) => (
+              <button
+                key={item.slug}
+                type="button"
+                onClick={() => setSelectedMn(item)}
+                className={`w-full text-left p-3 rounded-xl border text-sm transition ${
+                  selectedMn?.slug === item.slug
+                    ? "border-violet-400 bg-violet-50"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <p className="font-semibold text-slate-900">{item.nome}</p>
+                <p className="text-slate-500 text-xs">{item.categoriaPratica} · {item.slug}</p>
+                {item.inInventory && <span className="text-xs text-amber-600">Já no estoque</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {selectedMn && (
+          <div className="flex flex-wrap gap-3 items-end pt-2 border-t border-violet-100">
+            <div>
+              <label className="text-xs font-medium text-slate-600 block mb-1">Preço (R$)</label>
+              <input
+                value={mnPrice}
+                onChange={(e) => setMnPrice(e.target.value)}
+                placeholder="12,90"
+                className="border border-slate-200 rounded-lg px-3 py-2 text-sm w-28"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 block mb-1">Estoque (opc.)</label>
+              <input
+                value={mnStock}
+                onChange={(e) => setMnStock(e.target.value)}
+                placeholder="50"
+                className="border border-slate-200 rounded-lg px-3 py-2 text-sm w-24"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={addingMn || !mnPrice}
+              onClick={handleAddMnItem}
+              className="px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold disabled:opacity-50"
+            >
+              {addingMn ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
+        )}
+      </section>
+
       {/* Inventory list */}
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -330,16 +467,16 @@ export default function PharmacyInventoryClient() {
         ) : items.length === 0 ? (
           <div className="text-center py-12 rounded-2xl border border-dashed border-slate-300 text-slate-500">
             <AlertCircle className="mx-auto mb-2 text-slate-400" size={28} />
-            <p>Nenhum medicamento cadastrado ainda.</p>
-            <p className="text-sm mt-1">Importe um CSV ou adicione manualmente acima.</p>
+            <p>Nenhum item cadastrado ainda.</p>
+            <p className="text-sm mt-1">Importe um CSV, adicione medicamentos ou itens de Medicina Natural.</p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-slate-200">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-left text-slate-600">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Medicamento</th>
-                  <th className="px-4 py-3 font-semibold">GGREM</th>
+                  <th className="px-4 py-3 font-semibold">Item</th>
+                  <th className="px-4 py-3 font-semibold">Tipo</th>
                   <th className="px-4 py-3 font-semibold">Preço</th>
                   <th className="px-4 py-3 font-semibold">Estoque</th>
                   <th className="px-4 py-3 w-10" />
@@ -349,10 +486,21 @@ export default function PharmacyInventoryClient() {
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/50">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900">{item.drug.name}</p>
-                      <p className="text-xs text-slate-500">{item.drug.presentation}</p>
+                      {item.drug ? (
+                        <>
+                          <p className="font-medium text-slate-900">{item.drug.name}</p>
+                          <p className="text-xs text-slate-500">{item.drug.presentation}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-medium text-slate-900">{item.mnDisplayName || item.mnSlug}</p>
+                          <p className="text-xs text-slate-500">{item.mnSlug}</p>
+                        </>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs">{item.drug.ggremCode || "—"}</td>
+                    <td className="px-4 py-3 text-slate-500 text-xs">
+                      {item.drug ? item.drug.ggremCode || "Anvisa" : "MN"}
+                    </td>
                     <td className="px-4 py-3">
                       <input
                         key={`${item.id}-${item.priceCents}`}

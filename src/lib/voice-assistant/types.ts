@@ -131,6 +131,7 @@ export type ParsedVoiceIntent = {
     frequency?: string;
     duration?: string;
     instructions?: string;
+    itemKind?: string;
   }>;
   clinicalText?: string | null;
   targetRoute?: string | null;

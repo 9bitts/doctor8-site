@@ -57,14 +57,47 @@ export async function resolvePrescriptionDrugIds(
 ): Promise<{ drugCatalogId: string; med: MedicationLine }[]> {
   const out: { drugCatalogId: string; med: MedicationLine }[] = [];
   for (const med of medications) {
+    if (med.mnSlug) continue;
     const drugCatalogId = await matchMedicationToDrugCatalog(med);
     if (drugCatalogId) out.push({ drugCatalogId, med });
   }
   return out;
 }
 
+export type PrescriptionQuoteTargets = {
+  drugCatalogIds: string[];
+  mnSlugs: string[];
+};
+
+export async function resolvePrescriptionQuoteTargets(
+  medications: MedicationLine[],
+): Promise<PrescriptionQuoteTargets> {
+  const drugCatalogIds: string[] = [];
+  const mnSlugs: string[] = [];
+  const seenDrug = new Set<string>();
+  const seenMn = new Set<string>();
+
+  for (const med of medications) {
+    if (med.mnSlug) {
+      if (!seenMn.has(med.mnSlug)) {
+        seenMn.add(med.mnSlug);
+        mnSlugs.push(med.mnSlug);
+      }
+      continue;
+    }
+    const drugCatalogId = await matchMedicationToDrugCatalog(med);
+    if (drugCatalogId && !seenDrug.has(drugCatalogId)) {
+      seenDrug.add(drugCatalogId);
+      drugCatalogIds.push(drugCatalogId);
+    }
+  }
+
+  return { drugCatalogIds, mnSlugs };
+}
+
 export type PharmacyQuoteItem = {
-  drugCatalogId: string;
+  drugCatalogId?: string;
+  mnSlug?: string;
   drugName: string;
   presentation: string;
   unitPriceCents: number;
@@ -105,18 +138,30 @@ type StoreRow = Prisma.PharmacyStoreGetPayload<{
 
 export function buildQuoteForStore(
   store: StoreRow,
-  drugCatalogIds: string[],
+  targets: PrescriptionQuoteTargets | string[],
   patientPoint: { latitude: number; longitude: number } | null,
   maxRadiusKm = 50,
 ): PharmacyQuote | null {
+  const drugCatalogIds = Array.isArray(targets) ? targets : targets.drugCatalogIds;
+  const mnSlugs = Array.isArray(targets) ? [] : targets.mnSlugs;
+  const requestedCount = drugCatalogIds.length + mnSlugs.length;
+  if (requestedCount === 0) return null;
+
   const inventoryByDrug = new Map(
-    store.inventory.filter((i) => i.available).map((i) => [i.drugCatalogId, i]),
+    store.inventory
+      .filter((i) => i.available && i.drugCatalogId)
+      .map((i) => [i.drugCatalogId!, i]),
+  );
+  const inventoryByMn = new Map(
+    store.inventory
+      .filter((i) => i.available && i.mnSlug)
+      .map((i) => [i.mnSlug!, i]),
   );
 
   const items: PharmacyQuoteItem[] = [];
   for (const drugId of drugCatalogIds) {
     const inv = inventoryByDrug.get(drugId);
-    if (!inv) continue;
+    if (!inv?.drugCatalog) continue;
     items.push({
       drugCatalogId: drugId,
       drugName: inv.drugCatalog.name,
@@ -126,10 +171,22 @@ export function buildQuoteForStore(
       available: true,
     });
   }
+  for (const slug of mnSlugs) {
+    const inv = inventoryByMn.get(slug);
+    if (!inv) continue;
+    items.push({
+      mnSlug: slug,
+      drugName: inv.mnDisplayName || slug,
+      presentation: "",
+      unitPriceCents: inv.priceCents,
+      inventoryItemId: inv.id,
+      available: true,
+    });
+  }
 
   if (items.length === 0) return null;
 
-  const coveragePercent = Math.round((items.length / drugCatalogIds.length) * 100);
+  const coveragePercent = Math.round((items.length / requestedCount) * 100);
   const subtotalCents = items.reduce((s, i) => s + i.unitPriceCents, 0);
 
   let distKm: number | null = null;
@@ -157,7 +214,7 @@ export function buildQuoteForStore(
     distanceKm: distKm,
     items,
     matchedCount: items.length,
-    requestedCount: drugCatalogIds.length,
+    requestedCount,
     subtotalCents,
     platformFeeCents: store.platformFeeCents,
     coveragePercent,
@@ -166,7 +223,9 @@ export function buildQuoteForStore(
 }
 
 export async function searchPharmacyQuotes(opts: {
-  drugCatalogIds: string[];
+  drugCatalogIds?: string[];
+  mnSlugs?: string[];
+  targets?: PrescriptionQuoteTargets;
   cep?: string;
   city?: string;
   state?: string;
@@ -174,8 +233,9 @@ export async function searchPharmacyQuotes(opts: {
   longitude?: number;
   limit?: number;
 }): Promise<PharmacyQuote[]> {
-  const { drugCatalogIds } = opts;
-  if (drugCatalogIds.length === 0) return [];
+  const drugCatalogIds = opts.targets?.drugCatalogIds ?? opts.drugCatalogIds ?? [];
+  const mnSlugs = opts.targets?.mnSlugs ?? opts.mnSlugs ?? [];
+  if (drugCatalogIds.length === 0 && mnSlugs.length === 0) return [];
 
   let patientPoint: { latitude: number; longitude: number } | null = null;
   if (opts.latitude != null && opts.longitude != null) {
@@ -189,8 +249,11 @@ export async function searchPharmacyQuotes(opts: {
       status: "ACTIVE",
       inventory: {
         some: {
-          drugCatalogId: { in: drugCatalogIds },
           available: true,
+          OR: [
+            ...(drugCatalogIds.length ? [{ drugCatalogId: { in: drugCatalogIds } }] : []),
+            ...(mnSlugs.length ? [{ mnSlug: { in: mnSlugs } }] : []),
+          ],
         },
       },
       ...(opts.city && !patientPoint
@@ -202,7 +265,13 @@ export async function searchPharmacyQuotes(opts: {
     },
     include: {
       inventory: {
-        where: { drugCatalogId: { in: drugCatalogIds }, available: true },
+        where: {
+          available: true,
+          OR: [
+            ...(drugCatalogIds.length ? [{ drugCatalogId: { in: drugCatalogIds } }] : []),
+            ...(mnSlugs.length ? [{ mnSlug: { in: mnSlugs } }] : []),
+          ],
+        },
         include: {
           drugCatalog: { select: { id: true, name: true, presentation: true } },
         },
@@ -211,9 +280,10 @@ export async function searchPharmacyQuotes(opts: {
     take: 100,
   });
 
+  const quoteTargets: PrescriptionQuoteTargets = { drugCatalogIds, mnSlugs };
   const quotes: PharmacyQuote[] = [];
   for (const store of stores) {
-    const quote = buildQuoteForStore(store, drugCatalogIds, patientPoint);
+    const quote = buildQuoteForStore(store, quoteTargets, patientPoint);
     if (quote) quotes.push(quote);
   }
 
@@ -297,7 +367,8 @@ export type PharmacyStoreSearchHit = {
 
 export type PharmacyStoreInventoryPrice = {
   itemId: string;
-  drugCatalogId: string;
+  drugCatalogId: string | null;
+  mnSlug: string | null;
   name: string;
   presentation: string;
   priceCents: number;
@@ -483,8 +554,11 @@ export async function getPharmacyStoreInventoryPrices(
 ): Promise<PharmacyStoreInventoryPrice[]> {
   const drugQNorm = drugQ ? normalizeDrugSearch(drugQ) : "";
   let highlightDrugIds: string[] = [];
+  let highlightMnSlugs: string[] = [];
   if (medications?.length) {
-    highlightDrugIds = await resolveDrugCatalogIdsFromMedications(medications);
+    const targets = await resolvePrescriptionQuoteTargets(medications);
+    highlightDrugIds = targets.drugCatalogIds;
+    highlightMnSlugs = targets.mnSlugs;
   }
 
   const items = await db.pharmacyStoreInventoryItem.findMany({
@@ -493,17 +567,34 @@ export async function getPharmacyStoreInventoryPrices(
       available: true,
       ...(drugQNorm
         ? {
-            drugCatalog: {
-              OR: [
-                { searchName: { contains: drugQNorm } },
-                { name: { contains: drugQ!, mode: "insensitive" } },
-                { searchIngredient: { contains: drugQNorm } },
-              ],
-            },
+            OR: [
+              {
+                drugCatalog: {
+                  OR: [
+                    { searchName: { contains: drugQNorm } },
+                    { name: { contains: drugQ!, mode: "insensitive" } },
+                    { searchIngredient: { contains: drugQNorm } },
+                  ],
+                },
+              },
+              { mnSlug: { contains: drugQNorm } },
+              { mnDisplayName: { contains: drugQ!, mode: "insensitive" } },
+            ],
           }
         : {}),
-      ...(highlightDrugIds.length > 0 && !drugQNorm
-        ? { drugCatalogId: { in: highlightDrugIds } }
+      ...(highlightDrugIds.length > 0 || highlightMnSlugs.length > 0
+        ? !drugQNorm
+          ? {
+              OR: [
+                ...(highlightDrugIds.length > 0
+                  ? [{ drugCatalogId: { in: highlightDrugIds } }]
+                  : []),
+                ...(highlightMnSlugs.length > 0
+                  ? [{ mnSlug: { in: highlightMnSlugs } }]
+                  : []),
+              ],
+            }
+          : {}
         : {}),
     },
     include: {
@@ -511,24 +602,29 @@ export async function getPharmacyStoreInventoryPrices(
         select: { id: true, name: true, presentation: true },
       },
     },
-    orderBy: { drugCatalog: { name: "asc" } },
+    orderBy: [{ mnDisplayName: "asc" }, { drugCatalog: { name: "asc" } }],
     take: 200,
   });
 
   const prices: PharmacyStoreInventoryPrice[] = items.map((item) => ({
     itemId: item.id,
     drugCatalogId: item.drugCatalogId,
-    name: item.drugCatalog.name,
-    presentation: item.drugCatalog.presentation,
+    mnSlug: item.mnSlug,
+    name: item.drugCatalog?.name || item.mnDisplayName || item.mnSlug || "—",
+    presentation: item.drugCatalog?.presentation || "",
     priceCents: item.priceCents,
     stockQty: item.stockQty,
   }));
 
-  if (highlightDrugIds.length === 0) return prices;
+  if (highlightDrugIds.length === 0 && highlightMnSlugs.length === 0) return prices;
 
   return prices.sort((a, b) => {
-    const aHit = highlightDrugIds.includes(a.drugCatalogId);
-    const bHit = highlightDrugIds.includes(b.drugCatalogId);
+    const aHit =
+      (a.drugCatalogId && highlightDrugIds.includes(a.drugCatalogId)) ||
+      (a.mnSlug && highlightMnSlugs.includes(a.mnSlug));
+    const bHit =
+      (b.drugCatalogId && highlightDrugIds.includes(b.drugCatalogId)) ||
+      (b.mnSlug && highlightMnSlugs.includes(b.mnSlug));
     if (aHit && !bHit) return -1;
     if (!aHit && bHit) return 1;
     return a.name.localeCompare(b.name, "pt");

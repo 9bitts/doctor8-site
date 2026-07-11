@@ -5186,8 +5186,11 @@ model PharmacyStoreInventoryItem {
   id              String        @id @default(cuid())
   pharmacyStoreId String
   pharmacyStore   PharmacyStore @relation(fields: [pharmacyStoreId], references: [id], onDelete: Cascade)
-  drugCatalogId   String
-  drugCatalog     DrugCatalog   @relation(fields: [drugCatalogId], references: [id], onDelete: Restrict)
+  drugCatalogId   String?
+  drugCatalog     DrugCatalog?  @relation(fields: [drugCatalogId], references: [id], onDelete: Restrict)
+  /// Medicina Natural catalog slug when item is not in drugCatalog
+  mnSlug          String?
+  mnDisplayName   String?
 
   priceCents      Int
   stockQty        Int?
@@ -5199,8 +5202,10 @@ model PharmacyStoreInventoryItem {
   updatedAt       DateTime      @updatedAt
 
   @@unique([pharmacyStoreId, drugCatalogId])
+  @@unique([pharmacyStoreId, mnSlug])
   @@index([pharmacyStoreId])
   @@index([drugCatalogId])
+  @@index([mnSlug])
   @@index([pharmacyStoreId, available])
 }
 
@@ -5289,7 +5294,8 @@ model PharmacyOrderItem {
   id                      String        @id @default(cuid())
   orderId                 String
   order                   PharmacyOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  drugCatalogId           String
+  drugCatalogId           String?
+  mnSlug                  String?
   pharmacyInventoryItemId String?
   quantity                Int           @default(1)
   unitPriceCents          Int
@@ -5298,6 +5304,7 @@ model PharmacyOrderItem {
 
   @@index([orderId])
   @@index([drugCatalogId])
+  @@index([mnSlug])
 }
 
 model PharmacyPrescriptionToken {

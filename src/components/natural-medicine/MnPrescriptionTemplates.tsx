@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -9,6 +9,7 @@ import {
   BookmarkPlus,
   LayoutTemplate,
   Loader2,
+  Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import {
 } from "@/lib/natural-medicine/config";
 import {
   MN_PRACTICE_THEME,
+  searchModeForPractice,
   templateMatchesPractice,
 } from "@/lib/medicina-natural-catalog/mn-template-utils";
 import { mnStartersForPractice } from "@/lib/medicina-natural-catalog/mn-starter-templates";
@@ -28,6 +30,8 @@ import {
   templateHasFloralItems,
 } from "@/lib/pics/reference-library/floral-starter-templates";
 import { floralProductByValue } from "@/lib/pics/reference-library/floral-products";
+import { RxTemplateForm, type RxTemplateData } from "@/components/professional/settings/templates/RxTemplateForm";
+import type { PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 
 interface SavedRxTemplate {
   id: string;
@@ -38,9 +42,43 @@ interface SavedRxTemplate {
     floralProductId?: string;
     mnSlug?: string;
     dosage?: string;
+    frequency?: string;
+    duration?: string;
+    instructions?: string;
+    presentation?: string;
+    pharmaceuticalForm?: string;
+    controlled?: boolean;
+    prescriptionType?: string | null;
+    renisus?: boolean;
   }[];
   instructions: string;
   validDays: number;
+}
+
+function toRxTemplateData(tpl: SavedRxTemplate): RxTemplateData {
+  return {
+    id: tpl.id,
+    name: tpl.name,
+    instructions: tpl.instructions,
+    validDays: tpl.validDays,
+    medications: tpl.medications.map(
+      (m): PrescriptionMedItem => ({
+        name: m.name,
+        dosage: m.dosage || "",
+        frequency: m.frequency || "",
+        duration: m.duration || "",
+        instructions: m.instructions || "",
+        presentation: m.presentation,
+        pharmaceuticalForm: m.pharmaceuticalForm,
+        controlled: m.controlled,
+        prescriptionType: m.prescriptionType,
+        itemKind: m.itemKind as PrescriptionMedItem["itemKind"],
+        mnSlug: m.mnSlug,
+        renisus: m.renisus,
+        floralProductId: m.floralProductId,
+      }),
+    ),
+  };
 }
 
 interface MnPrescriptionTemplatesProps {
@@ -66,30 +104,37 @@ export default function MnPrescriptionTemplates({
   const [saved, setSaved] = useState<SavedRxTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editor, setEditor] = useState<"create" | RxTemplateData | null>(null);
 
   const isFloral = practice.id === "terapia_florais";
   const catalogStarters = mnStartersForPractice(practice.id);
+  const practiceSearchMode = searchModeForPractice(practice.id);
+
+  async function reloadSaved() {
+    setLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/templates/prescriptions`);
+      const data = await res.json();
+      if (res.ok) {
+        const all = (data.templates || []) as SavedRxTemplate[];
+        setSaved(
+          all.filter((tpl) =>
+            isFloral
+              ? templateHasFloralItems(tpl.medications)
+              : templateMatchesPractice(tpl.medications, practice.id),
+          ),
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const reloadSavedStable = useCallback(reloadSaved, [apiBase, isFloral, practice.id]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${apiBase}/templates/prescriptions`);
-        const data = await res.json();
-        if (res.ok) {
-          const all = (data.templates || []) as SavedRxTemplate[];
-          setSaved(
-            all.filter((tpl) =>
-              isFloral
-                ? templateHasFloralItems(tpl.medications)
-                : templateMatchesPractice(tpl.medications, practice.id),
-            ),
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [apiBase, isFloral, practice.id]);
+    reloadSavedStable();
+  }, [reloadSavedStable]);
 
   function openPrescription(query: string) {
     const q = query ? `&${query}` : "";
@@ -107,6 +152,34 @@ export default function MnPrescriptionTemplates({
     } finally {
       setDeletingId(null);
     }
+  }
+
+  if (editor) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6">
+        <button
+          type="button"
+          onClick={() => setEditor(null)}
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-emerald-700 transition"
+        >
+          <ArrowLeft size={16} />
+          {t("nm.mod.mnTemplates.backToList")}
+        </button>
+        <RxTemplateForm
+          editing={editor === "create" ? null : editor}
+          t={t}
+          apiBase={apiBase}
+          practiceSearchMode={practiceSearchMode}
+          showMedicationTab={false}
+          includeTemplateCategory={portal === "professional"}
+          onSaved={async () => {
+            setEditor(null);
+            await reloadSavedStable();
+          }}
+          onCancel={() => setEditor(null)}
+        />
+      </div>
+    );
   }
 
   return (
@@ -133,18 +206,28 @@ export default function MnPrescriptionTemplates({
 
       <div className={`border rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 ${theme.card}`}>
         <p className="text-xs leading-relaxed flex-1">{t("nm.mod.mnTemplates.hint")}</p>
-        <button
-          type="button"
-          onClick={() => openPrescription("")}
-          className={`shrink-0 inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white px-4 py-2.5 rounded-xl ${theme.button}`}
-        >
-          <Plus size={14} />
-          {t(
-            practice.id === "terapia_florais"
-              ? "nm.mod.floralPrescriptions.title"
-              : "nm.mod.prescriptions.title",
-          )}
-        </button>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setEditor("create")}
+            className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold text-white px-4 py-2.5 rounded-xl ${theme.button}`}
+          >
+            <Plus size={14} />
+            {t("nm.mod.mnTemplates.createTemplate")}
+          </button>
+          <button
+            type="button"
+            onClick={() => openPrescription("")}
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+          >
+            <ArrowRight size={14} />
+            {t(
+              practice.id === "terapia_florais"
+                ? "nm.mod.floralPrescriptions.title"
+                : "nm.mod.prescriptions.title",
+            )}
+          </button>
+        </div>
       </div>
 
       {(isFloral ? FLORAL_STARTER_TEMPLATES.length > 0 : catalogStarters.length > 0) && (
@@ -230,6 +313,14 @@ export default function MnPrescriptionTemplates({
                     {tpl.medications.length} {t("nm.mod.mnTemplates.items")} · {tpl.validDays}{" "}
                     {t("nm.mod.mnTemplates.days")}
                   </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditor(toRxTemplateData(tpl))}
+                  className="text-slate-400 hover:text-emerald-600 p-2 shrink-0"
+                  aria-label={t("nm.mod.mnTemplates.editTemplate")}
+                >
+                  <Pencil size={16} />
                 </button>
                 <button
                   type="button"

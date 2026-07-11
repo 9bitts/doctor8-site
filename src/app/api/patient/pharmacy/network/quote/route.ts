@@ -3,12 +3,13 @@ import { z } from "zod";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import {
-  resolvePrescriptionDrugIds,
+  resolvePrescriptionQuoteTargets,
   searchPharmacyQuotes,
   isPharmacyNetworkEnabled,
   countActivePharmacyStores,
   isPharmacyNetworkPublic,
 } from "@/lib/pharmacy-network/quote";
+import { normalizePrescriptionMedicationLines } from "@/lib/pharmacy/prescription-medication-lines";
 
 const bodySchema = z.object({
   prescriptionId: z.string().optional(),
@@ -41,7 +42,10 @@ export async function POST(req: NextRequest) {
   const networkPublic = await isPharmacyNetworkPublic();
   const storeCount = await countActivePharmacyStores();
 
-  let drugCatalogIds = parsed.data.drugCatalogIds ?? [];
+  let targets = {
+    drugCatalogIds: parsed.data.drugCatalogIds ?? [],
+    mnSlugs: [] as string[],
+  };
 
   if (parsed.data.prescriptionId) {
     const rx = await db.prescription.findFirst({
@@ -53,17 +57,13 @@ export async function POST(req: NextRequest) {
     if (!rx) {
       return NextResponse.json({ error: "Prescrição não encontrada" }, { status: 404 });
     }
-    const meds = (rx.medications as { name: string; dosage?: string }[]) || [];
-    const resolved = await resolvePrescriptionDrugIds(
-      meds.map((m) => ({ name: m.name, dosage: m.dosage })),
-    );
-    drugCatalogIds = resolved.map((r) => r.drugCatalogId);
+    const meds = normalizePrescriptionMedicationLines(rx.medications);
+    targets = await resolvePrescriptionQuoteTargets(meds);
   } else if (parsed.data.medications?.length) {
-    const resolved = await resolvePrescriptionDrugIds(parsed.data.medications);
-    drugCatalogIds = resolved.map((r) => r.drugCatalogId);
+    targets = await resolvePrescriptionQuoteTargets(parsed.data.medications);
   }
 
-  if (drugCatalogIds.length === 0) {
+  if (targets.drugCatalogIds.length === 0 && targets.mnSlugs.length === 0) {
     return NextResponse.json({
       networkEnabled,
       storeCount,
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
   }
 
   const quotes = await searchPharmacyQuotes({
-    drugCatalogIds,
+    targets,
     cep: parsed.data.cep,
     city: parsed.data.city,
     state: parsed.data.state,
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     networkEnabled,
     networkPublic,
     storeCount,
-    requestedDrugs: drugCatalogIds.length,
+    requestedDrugs: targets.drugCatalogIds.length + targets.mnSlugs.length,
     quotes,
   });
 }

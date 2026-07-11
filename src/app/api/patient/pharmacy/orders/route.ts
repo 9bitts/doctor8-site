@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
-import { buildQuoteForStore, resolvePrescriptionDrugIds, calcDeliveryFeeCents } from "@/lib/pharmacy-network/quote";
+import { buildQuoteForStore, resolvePrescriptionQuoteTargets, calcDeliveryFeeCents } from "@/lib/pharmacy-network/quote";
 import { ensurePrescriptionToken } from "@/lib/pharmacy-network/prescription-token";
 import { normalizePrescriptionMedicationLines } from "@/lib/pharmacy/prescription-medication-lines";
 
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Farmácia não encontrada" }, { status: 404 });
   }
 
-  let drugCatalogIds = parsed.data.drugCatalogIds ?? [];
+  let quoteTargets = { drugCatalogIds: parsed.data.drugCatalogIds ?? [], mnSlugs: [] as string[] };
   let prescriptionId: string | undefined = parsed.data.prescriptionId;
 
   if (prescriptionId) {
@@ -84,18 +84,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Prescrição inválida" }, { status: 400 });
     }
     const meds = normalizePrescriptionMedicationLines(rx.medications);
-    const resolved = await resolvePrescriptionDrugIds(meds);
-    drugCatalogIds = resolved.map((r) => r.drugCatalogId);
+    quoteTargets = await resolvePrescriptionQuoteTargets(meds);
   } else if (parsed.data.medications?.length) {
-    const resolved = await resolvePrescriptionDrugIds(parsed.data.medications);
-    drugCatalogIds = resolved.map((r) => r.drugCatalogId);
+    quoteTargets = await resolvePrescriptionQuoteTargets(parsed.data.medications);
   }
 
-  if (drugCatalogIds.length === 0) {
+  const { drugCatalogIds, mnSlugs } = quoteTargets;
+  if (drugCatalogIds.length === 0 && mnSlugs.length === 0) {
     return NextResponse.json({ error: "Nenhum medicamento para pedido" }, { status: 400 });
   }
 
-  const quote = buildQuoteForStore(store, drugCatalogIds, null);
+  const quote = buildQuoteForStore(store, quoteTargets, null);
   if (!quote || quote.items.length === 0) {
     return NextResponse.json({ error: "Farmácia sem estoque para estes itens" }, { status: 400 });
   }
@@ -126,7 +125,8 @@ export async function POST(req: NextRequest) {
       totalCents,
       items: {
         create: quote.items.map((item) => ({
-          drugCatalogId: item.drugCatalogId,
+          drugCatalogId: item.drugCatalogId ?? null,
+          mnSlug: item.mnSlug ?? null,
           pharmacyInventoryItemId: item.inventoryItemId,
           unitPriceCents: item.unitPriceCents,
           drugName: item.drugName,

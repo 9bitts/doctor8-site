@@ -89,9 +89,30 @@ interface RxTemplateFormProps {
   t: (k: string) => string;
   onSaved: () => void;
   onCancel: () => void;
+  /** API root, e.g. /api/professional or /api/integrative-therapist */
+  apiBase?: string;
+  /** Lock search/add flow to a single MN practice (hides medication tab when set). */
+  practiceSearchMode?: PrescriptionItemSearchMode;
+  showMedicationTab?: boolean;
+  /** Omit templateCategory on integrative portal */
+  includeTemplateCategory?: boolean;
 }
 
-export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateFormProps) {
+export function RxTemplateForm({
+  editing,
+  t,
+  onSaved,
+  onCancel,
+  apiBase = "/api/professional",
+  practiceSearchMode,
+  showMedicationTab = true,
+  includeTemplateCategory = true,
+}: RxTemplateFormProps) {
+  const lockedMn = practiceSearchMode && practiceSearchMode !== "medication";
+  const visibleMnTabs = lockedMn
+    ? MN_RX_SEARCH_TABS.filter((tab) => tab.mode === practiceSearchMode)
+    : MN_RX_SEARCH_TABS;
+
   const [name, setName] = useState(editing?.name || "");
   const [medications, setMedications] = useState<PrescriptionMedItem[]>(
     editing?.medications?.map((m) => ({ ...m })) || [],
@@ -108,8 +129,10 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
   const [drugSearchDone, setDrugSearchDone] = useState(false);
   const [drugSearchModalOpen, setDrugSearchModalOpen] = useState(false);
   const [drugCountry, setDrugCountry] = useState<DrugCountryCode>("BR");
-  const [itemSearchMode, setItemSearchMode] = useState<PrescriptionItemSearchMode>("medication");
-  const [floralOnlyMode, setFloralOnlyMode] = useState(false);
+  const [itemSearchMode, setItemSearchMode] = useState<PrescriptionItemSearchMode>(
+    practiceSearchMode ?? "medication",
+  );
+  const [floralOnlyMode, setFloralOnlyMode] = useState(practiceSearchMode === "floral");
   const [mnSearchResults, setMnSearchResults] = useState<MedicinaNaturalListItem[]>([]);
   const [mnPickerTargetIndex, setMnPickerTargetIndex] = useState<number | null>(null);
   const mnSearchCategoria = resolveMnCatalogCategoria({
@@ -136,7 +159,7 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
     try {
       if (mnCatalogMode && mnSearchCategoria) {
         const items = await fetchMnByCategoriaForPrescription(
-          "/api/professional",
+          apiBase,
           q,
           mnSearchCategoria,
         );
@@ -155,7 +178,7 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
       setDrugSearching(false);
       setDrugSearchDone(true);
     }
-  }, [drugQuery, drugCountry, mnCatalogMode, mnSearchCategoria]);
+  }, [drugQuery, drugCountry, mnCatalogMode, mnSearchCategoria, apiBase]);
 
   function addPhytoItem(item: PrescriptionMedItem) {
     if (mnPickerTargetIndex !== null) {
@@ -278,18 +301,18 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
       }));
       const payload = {
         name: name.trim(),
-        templateCategory: TEMPLATE_CATEGORIES.RX_POSTOP,
+        ...(includeTemplateCategory ? { templateCategory: TEMPLATE_CATEGORIES.RX_POSTOP } : {}),
         medications: cleanMeds,
         instructions,
         validDays,
       };
       const res = editing
-        ? await fetch(`/api/professional/templates/prescriptions/${editing.id}`, {
+        ? await fetch(`${apiBase}/templates/prescriptions/${editing.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           })
-        : await fetch("/api/professional/templates/prescriptions", {
+        : await fetch(`${apiBase}/templates/prescriptions`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -317,6 +340,7 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
 
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
+          {showMedicationTab && !lockedMn && (
           <button
             type="button"
             onClick={() => {
@@ -334,7 +358,8 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
           >
             <Pill size={14} /> {t("rx.searchMode.medication")}
           </button>
-          {MN_RX_SEARCH_TABS.map((tab) => {
+          )}
+          {visibleMnTabs.map((tab) => {
             const Icon = tab.icon;
             const active =
               itemSearchMode === tab.mode &&
@@ -422,7 +447,7 @@ export function RxTemplateForm({ editing, t, onSaved, onCancel }: RxTemplateForm
           <DrugSearchResults results={drugResults} onSelect={addDrug} controlInfo={controlInfo} />
         )}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {MN_RX_SEARCH_TABS.map((tab) => (
+          {visibleMnTabs.map((tab) => (
             <button
               key={`add-${tab.mode}`}
               type="button"

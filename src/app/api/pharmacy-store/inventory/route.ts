@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { requirePharmacyStore } from "@/lib/pharmacy-store-auth";
 import { db } from "@/lib/db";
+import { getMedicinaNaturalItemBySlug } from "@/lib/medicina-natural-catalog/search-server";
 
 export async function GET(req: NextRequest) {
   const ctx = await requirePharmacyStore();
@@ -17,13 +18,19 @@ export async function GET(req: NextRequest) {
     pharmacyStoreId: ctx.pharmacyStoreId,
     ...(q
       ? {
-          drugCatalog: {
-            OR: [
-              { searchName: { contains: q } },
-              { searchIngredient: { contains: q } },
-              { name: { contains: q, mode: "insensitive" } },
-            ],
-          },
+          OR: [
+            {
+              drugCatalog: {
+                OR: [
+                  { searchName: { contains: q } },
+                  { searchIngredient: { contains: q } },
+                  { name: { contains: q, mode: "insensitive" } },
+                ],
+              },
+            },
+            { mnSlug: { contains: q } },
+            { mnDisplayName: { contains: q, mode: "insensitive" } },
+          ],
         }
       : {}),
   };
@@ -56,6 +63,8 @@ export async function GET(req: NextRequest) {
     items: items.map((item) => ({
       id: item.id,
       drugCatalogId: item.drugCatalogId,
+      mnSlug: item.mnSlug,
+      mnDisplayName: item.mnDisplayName,
       priceCents: item.priceCents,
       stockQty: item.stockQty,
       available: item.available,
@@ -68,7 +77,7 @@ export async function GET(req: NextRequest) {
   });
 }
 
-const createSchema = z.object({
+const drugCreateSchema = z.object({
   drugCatalogId: z.string().min(1),
   priceCents: z.number().int().positive(),
   stockQty: z.number().int().min(0).optional(),
@@ -76,6 +85,18 @@ const createSchema = z.object({
   sku: z.string().optional(),
   available: z.boolean().optional(),
 });
+
+const mnCreateSchema = z.object({
+  mnSlug: z.string().min(1),
+  mnDisplayName: z.string().optional(),
+  priceCents: z.number().int().positive(),
+  stockQty: z.number().int().min(0).optional(),
+  ean: z.string().optional(),
+  sku: z.string().optional(),
+  available: z.boolean().optional(),
+});
+
+const createSchema = z.union([drugCreateSchema, mnCreateSchema]);
 
 export async function POST(req: NextRequest) {
   const ctx = await requirePharmacyStore();
@@ -85,6 +106,42 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  if ("mnSlug" in parsed.data) {
+    const mn = await getMedicinaNaturalItemBySlug(parsed.data.mnSlug);
+    if (!mn) {
+      return NextResponse.json({ error: "Item não encontrado no catálogo Medicina Natural" }, { status: 404 });
+    }
+
+    const item = await db.pharmacyStoreInventoryItem.upsert({
+      where: {
+        pharmacyStoreId_mnSlug: {
+          pharmacyStoreId: ctx.pharmacyStoreId,
+          mnSlug: parsed.data.mnSlug,
+        },
+      },
+      create: {
+        pharmacyStoreId: ctx.pharmacyStoreId,
+        mnSlug: parsed.data.mnSlug,
+        mnDisplayName: parsed.data.mnDisplayName || mn.nome,
+        priceCents: parsed.data.priceCents,
+        stockQty: parsed.data.stockQty,
+        ean: parsed.data.ean,
+        sku: parsed.data.sku,
+        available: parsed.data.available ?? true,
+      },
+      update: {
+        mnDisplayName: parsed.data.mnDisplayName || mn.nome,
+        priceCents: parsed.data.priceCents,
+        stockQty: parsed.data.stockQty,
+        ean: parsed.data.ean,
+        sku: parsed.data.sku,
+        available: parsed.data.available ?? true,
+      },
+    });
+
+    return NextResponse.json({ item }, { status: 201 });
   }
 
   const drug = await db.drugCatalog.findFirst({

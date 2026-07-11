@@ -1,13 +1,24 @@
 import type { NaturalMedicinePracticeId } from "@/lib/natural-medicine/config";
 import type { PrescriptionItemKind } from "@/lib/prescription-item-kind";
 import { PRACTICE_RX_ADD_PARAM } from "./practice-prescriptions";
-import { MN_ADD_PARAM_TO_ITEM_KIND } from "./prescription-search";
+import {
+  MN_ADD_PARAM_TO_MODE,
+  MN_ADD_PARAM_TO_ITEM_KIND,
+  type PrescriptionItemSearchMode,
+} from "./prescription-search";
 
 export function itemKindForPractice(
   practiceId: NaturalMedicinePracticeId,
 ): PrescriptionItemKind {
   const add = PRACTICE_RX_ADD_PARAM[practiceId];
   return MN_ADD_PARAM_TO_ITEM_KIND[add] || "phytotherapy";
+}
+
+export function searchModeForPractice(
+  practiceId: NaturalMedicinePracticeId,
+): PrescriptionItemSearchMode {
+  const add = PRACTICE_RX_ADD_PARAM[practiceId];
+  return MN_ADD_PARAM_TO_MODE[add] || "phytotherapy";
 }
 
 export function templateMatchesPractice(

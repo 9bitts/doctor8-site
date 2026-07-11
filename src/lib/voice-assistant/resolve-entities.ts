@@ -2,6 +2,11 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
 import type { PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
+import {
+  itemKindFromMnCategoria,
+  resolveMnCatalogMatches,
+} from "@/lib/medicina-natural-catalog/voice-resolve";
+import { isNaturalMedicineItemKind } from "@/lib/prescription-item-kind";
 import type { ParsedVoiceIntent, PatientMatch, PrescriptionPrefill, VoicePortalId } from "./types";
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -183,15 +188,49 @@ export async function buildPrescriptionPrefill(params: {
     if (!spoken.name?.trim()) continue;
 
     if (params.phytoOnly) {
-      meds.push({
-        name: spoken.name.trim(),
-        dosage: spoken.dosage?.trim() || "",
-        frequency: spoken.frequency?.trim() || "",
-        duration: spoken.duration?.trim() || "",
-        instructions: spoken.instructions?.trim() || "",
-        itemKind: "phytotherapy",
-      });
+      const mnMatches = await resolveMnCatalogMatches(spoken.name.trim());
+      const best = mnMatches[0];
+      if (best) {
+        meds.push({
+          name: best.nome,
+          dosage: spoken.dosage?.trim() || best.posologia?.slice(0, 200) || "",
+          frequency: spoken.frequency?.trim() || "",
+          duration: spoken.duration?.trim() || "",
+          instructions: spoken.instructions?.trim() || "",
+          itemKind: itemKindFromMnCategoria(best.categoriaPratica),
+          mnSlug: best.slug,
+          renisus: best.renisus,
+        });
+      } else {
+        meds.push({
+          name: spoken.name.trim(),
+          dosage: spoken.dosage?.trim() || "",
+          frequency: spoken.frequency?.trim() || "",
+          duration: spoken.duration?.trim() || "",
+          instructions: spoken.instructions?.trim() || "",
+          itemKind: "phytotherapy",
+        });
+      }
       continue;
+    }
+
+    const mnHint = spoken.itemKind && isNaturalMedicineItemKind(spoken.itemKind as PrescriptionMedItem["itemKind"]);
+    if (mnHint) {
+      const mnMatches = await resolveMnCatalogMatches(spoken.name.trim());
+      const best = mnMatches[0];
+      if (best) {
+        meds.push({
+          name: best.nome,
+          dosage: spoken.dosage?.trim() || best.posologia?.slice(0, 200) || "",
+          frequency: spoken.frequency?.trim() || "",
+          duration: spoken.duration?.trim() || "",
+          instructions: spoken.instructions?.trim() || "",
+          itemKind: itemKindFromMnCategoria(best.categoriaPratica),
+          mnSlug: best.slug,
+          renisus: best.renisus,
+        });
+        continue;
+      }
     }
 
     const catalog = await resolveDrugMatches(spoken.name);
