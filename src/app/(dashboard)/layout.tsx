@@ -54,6 +54,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import LegalAcceptanceGate from "@/components/compliance/LegalAcceptanceGate";
 import VoiceAssistantPromoBanner from "@/components/voice-assistant/VoiceAssistantPromoBanner";
 import VoiceAssistantShell from "@/components/voice-assistant/VoiceAssistantShell";
+import VenezuelaPatientGuideBanner from "@/components/patient/VenezuelaPatientGuideBanner";
 import { resolveVoicePortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
 import { isValidIanaTimeZone } from "@/lib/timezone";
 import { hasAnyNaturalMedicinePractice } from "@/lib/natural-medicine/config";
@@ -96,6 +97,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     role: string;
     userId: string;
     userName: string;
+    region: string;
   } | null>(null);
 
   useEffect(() => {
@@ -105,6 +107,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       userId: session.user.id ?? "",
       userName: session.user.name
         ?? (session.user.email ? session.user.email.split("@")[0] : "User"),
+      region: session.user.region ?? "",
     });
   }, [session, status]);
 
@@ -112,6 +115,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const role = sessionSnapshot?.role ?? "";
   const userId = sessionSnapshot?.userId ?? "";
   const userName = sessionSnapshot?.userName ?? "User";
+  const userRegion = sessionSnapshot?.region ?? "";
 
   useEffect(() => {
     const providerRoles = ["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"];
@@ -598,6 +602,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
+
+        {isPatient && userId && userRegion === "VE" && (
+          <VenezuelaPatientGuideBanner userId={userId} lang={lang} />
+        )}
 
         {showVoiceAssistant && voicePortalId && userId && (
           <VoiceAssistantPromoBanner userId={userId} />

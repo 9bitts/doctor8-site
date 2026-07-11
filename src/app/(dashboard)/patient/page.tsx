@@ -25,6 +25,7 @@ import PatientUpcomingConsultBanner from "@/components/patient/PatientUpcomingCo
 import ConfirmAttendanceButton from "@/components/patient/ConfirmAttendanceButton";
 import PatientPostConsultReview from "@/components/patient/PatientPostConsultReview";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
+import ScheduledVolunteerBanner from "@/components/patient/ScheduledVolunteerBanner";
 import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
 import HumanitarianAngelOptOutCard from "@/components/humanitarian/HumanitarianAngelOptOutCard";
 import PatientIncompleteRegistrationCard from "@/components/PatientIncompleteRegistrationCard";
@@ -384,7 +385,7 @@ export default async function PatientDashboard() {
 
       {/* Humanitarian campaign — contextual, above greeting */}
       {(humanitarianCampaign?.active || userMeta?.region === "VE") && (
-        <>
+        <div className="space-y-3">
           <HumanitarianBanner
             lang={lang}
             campaign={{
@@ -395,6 +396,7 @@ export default async function PatientDashboard() {
             triageValid={humanitarianIntake.triageValid}
             tcleAccepted={humanitarianIntake.tcleAccepted}
           />
+          <ScheduledVolunteerBanner lang={lang} />
           {humanitarianIntake.triageValid && !humanitarianIntake.anamneseComplete && (
             <HumanitarianAnamneseReminder
               lang={lang}
@@ -402,7 +404,7 @@ export default async function PatientDashboard() {
             />
           )}
           <HumanitarianAngelOptOutCard lang={lang} />
-        </>
+        </div>
       )}
 
       {/* 2 — Greeting */}
