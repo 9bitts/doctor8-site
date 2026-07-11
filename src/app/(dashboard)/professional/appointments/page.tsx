@@ -16,7 +16,6 @@ import ProfessionalAppointmentsView, {
 } from "@/components/professional/ProfessionalAppointmentsView";
 import { DEFAULT_TIME_ZONE } from "@/lib/timezone";
 import { parseAvailabilityJson } from "@/lib/availability-exceptions";
-import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -94,27 +93,20 @@ export default async function ProfessionalAppointments() {
     charts.map((c) => [c.linkedUserId!, c.id]),
   );
 
-  for (const userId of linkedUserIds) {
-    if (!chartIdByUserId[userId]) {
-      const ensured = await ensurePatientRecord(professional.id, userId);
-      if (ensured) chartIdByUserId[userId] = ensured;
-    }
-  }
-
   const chartIds = Object.values(chartIdByUserId);
   const summarizeDocs = chartIds.length
     ? await db.medicalDocument.findMany({
         where: { patientRecordId: { in: chartIds } },
         orderBy: { createdAt: "desc" },
+        distinct: ["patientRecordId"],
         select: { id: true, patientRecordId: true },
       })
     : [];
-  const summarizeDocumentIdByChartId: Record<string, string> = {};
-  for (const doc of summarizeDocs) {
-    if (doc.patientRecordId && !summarizeDocumentIdByChartId[doc.patientRecordId]) {
-      summarizeDocumentIdByChartId[doc.patientRecordId] = doc.id;
-    }
-  }
+  const summarizeDocumentIdByChartId: Record<string, string> = Object.fromEntries(
+    summarizeDocs
+      .filter((doc) => doc.patientRecordId)
+      .map((doc) => [doc.patientRecordId!, doc.id]),
+  );
 
   await audit.viewRecord(session.user.id, "Appointment", "list");
 

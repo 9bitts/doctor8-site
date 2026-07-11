@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Calendar,
   ChevronLeft,
@@ -17,8 +17,10 @@ import {
   ScrollText,
   Video,
   FileCheck,
+  Search,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { useToast } from "@/components/ui/toast";
 import { localeOf } from "@/lib/i18n/translations";
 import {
   addCalendarDays,
@@ -37,6 +39,7 @@ import {
   type VolunteerWeeklyBlock,
 } from "@/lib/availability-exceptions";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
+import { initialsOf } from "@/lib/format-name";
 import { isScheduledVolunteerAppointment } from "@/lib/scheduled-volunteer";
 import { ProCancelAppointmentButton } from "@/components/professional/ProfessionalCancelAppointmentModal";
 
@@ -66,6 +69,7 @@ export type ProfessionalAppointmentRow = {
 };
 
 type ViewMode = "list" | "week";
+type StatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
 
 function startOfWeekDateStr(ref: Date, timeZone: string): string {
   const todayStr = calendarDateInTimeZone(ref, timeZone);
@@ -104,6 +108,8 @@ export default function ProfessionalAppointmentsView({
   volunteerBlocks?: VolunteerWeeklyBlock[];
 }) {
   const { t, lang } = useI18n();
+  const toast = useToast();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const voiceHint = searchParams.get("voiceHint");
   const locale = localeOf(lang);
@@ -114,7 +120,10 @@ export default function ProfessionalAppointmentsView({
   );
 
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
   const [appointments, setAppointments] = useState(initialAppointments);
+  const [openingChartId, setOpeningChartId] = useState<string | null>(null);
   const [weekStartStr, setWeekStartStr] = useState(() => startOfWeekDateStr(new Date(), timeZone));
   const [mobileDayStr, setMobileDayStr] = useState(() => calendarDateInTimeZone(new Date(), timeZone));
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -149,20 +158,34 @@ export default function ProfessionalAppointmentsView({
     CANCELLED: "bg-rose-100 text-rose-700",
   };
 
+  const filteredAppointments = useMemo(() => {
+    let list = appointments;
+    if (statusFilter !== "ALL") {
+      list = list.filter((a) => a.status === statusFilter);
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter((a) =>
+        `${a.patientFirstName} ${a.patientLastName}`.toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [appointments, statusFilter, searchQuery]);
+
   const now = Date.now();
   const upcoming = useMemo(
     () =>
-      appointments.filter(
+      filteredAppointments.filter(
         (a) =>
           a.status === "CONFIRMED" &&
           new Date(a.scheduledAt).getTime() >= now - 60 * 60 * 1000,
       ),
-    [appointments, now],
+    [filteredAppointments, now],
   );
   const upcomingIds = useMemo(() => new Set(upcoming.map((a) => a.id)), [upcoming]);
   const rest = useMemo(
-    () => appointments.filter((a) => !upcomingIds.has(a.id)),
-    [appointments, upcomingIds],
+    () => filteredAppointments.filter((a) => !upcomingIds.has(a.id)),
+    [filteredAppointments, upcomingIds],
   );
 
   const weekEndStr = addCalendarDays(weekStartStr, 7);
@@ -253,7 +276,10 @@ export default function ProfessionalAppointmentsView({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dentalChairId: dentalChairId || null }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      toast.error(t("proappt.cancelError"));
+      return;
+    }
     const data = await res.json();
     setAppointments((prev) =>
       prev.map((row) =>
@@ -266,6 +292,47 @@ export default function ProfessionalAppointmentsView({
           : row,
       ),
     );
+  }
+
+  async function openChart(apt: ProfessionalAppointmentRow) {
+    if (apt.chartId) {
+      router.push(`${portalBase}/patients/${apt.chartId}`);
+      return;
+    }
+    if (!apt.patientUserId) return;
+    setOpeningChartId(apt.id);
+    try {
+      const res = await fetch("/api/professional/records/ensure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientUserId: apt.patientUserId }),
+      });
+      if (!res.ok) {
+        toast.error(t("proappt.ensureChartError"));
+        return;
+      }
+      const data = (await res.json()) as { chartId: string };
+      setAppointments((prev) =>
+        prev.map((row) =>
+          row.id === apt.id ? { ...row, chartId: data.chartId } : row,
+        ),
+      );
+      metaByIdRef.current.set(apt.id, {
+        ...(metaByIdRef.current.get(apt.id) ?? {
+          chartId: null,
+          summarizeDocumentId: null,
+          intakeHealthPlanLabel: null,
+          intakeServiceName: null,
+          intakeVisitReason: null,
+        }),
+        chartId: data.chartId,
+      });
+      router.push(`${portalBase}/patients/${data.chartId}`);
+    } catch {
+      toast.error(t("proappt.ensureChartError"));
+    } finally {
+      setOpeningChartId(null);
+    }
   }
 
   function renderRow(apt: ProfessionalAppointmentRow, highlightIntake = false) {
@@ -284,8 +351,7 @@ export default function ProfessionalAppointmentsView({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
           <div className="flex items-start gap-4 flex-1 min-w-0">
             <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
-              {firstName[0]}
-              {lastName[0]}
+              {initialsOf(firstName, lastName)}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-slate-800 text-sm truncate">
@@ -380,60 +446,66 @@ export default function ProfessionalAppointmentsView({
         </div>
 
         <div className="mt-2 ml-0 sm:ml-[3.75rem] flex flex-wrap gap-2 items-center">
-          {chartId && (
+          {apt.patientUserId && (
             <>
-              <Link
-                href={`${portalBase}/patients/${chartId}`}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
+              <button
+                type="button"
+                onClick={() => void openChart(apt)}
+                disabled={openingChartId === apt.id}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline disabled:opacity-50"
               >
                 <FileText size={11} /> {t("proappt.viewChart")}
-              </Link>
-              {apt.summarizeDocumentId && (
-                <AiSummarizeButton
-                  documentId={apt.summarizeDocumentId}
-                  variant="compact"
-                  labelKey="proappt.patientSummary"
-                />
-              )}
-              {!isPsychologistPortal && (
+              </button>
+              {chartId && (
                 <>
-                  <Link
-                    href={chartActionUrl(prescriptionsPath, chartId, {
-                      view: "prescription",
-                      returnUrl: `${portalBase}/appointments`,
-                    })}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
-                  >
-                    <Pill size={11} /> {t("chartAct.prescribe")}
-                  </Link>
-                  <Link
-                    href={chartActionUrl(prescriptionsPath, chartId, {
-                      view: "exam",
-                      returnUrl: `${portalBase}/appointments`,
-                    })}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
-                  >
-                    <FlaskConical size={11} /> {t("chartAct.exam")}
-                  </Link>
-                  <Link
-                    href={(() => {
-                      const sp = new URLSearchParams({ newRecord: "1", docType: "EXAM_RESULT" });
-                      sp.set("returnUrl", `${portalBase}/appointments`);
-                      return `${portalBase}/patients/${chartId}?${sp.toString()}`;
-                    })()}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg hover:bg-indigo-100 transition"
-                  >
-                    <FileCheck size={11} /> {t("chartAct.examResult")}
-                  </Link>
-                  <Link
-                    href={chartActionUrl(prescriptionsPath, chartId, {
-                      view: "document",
-                      returnUrl: `${portalBase}/appointments`,
-                    })}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
-                  >
-                    <ScrollText size={11} /> {t("chartAct.document")}
-                  </Link>
+                  {apt.summarizeDocumentId && (
+                    <AiSummarizeButton
+                      documentId={apt.summarizeDocumentId}
+                      variant="compact"
+                      labelKey="proappt.patientSummary"
+                    />
+                  )}
+                  {!isPsychologistPortal && (
+                    <>
+                      <Link
+                        href={chartActionUrl(prescriptionsPath, chartId, {
+                          view: "prescription",
+                          returnUrl: `${portalBase}/appointments`,
+                        })}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
+                      >
+                        <Pill size={11} /> {t("chartAct.prescribe")}
+                      </Link>
+                      <Link
+                        href={chartActionUrl(prescriptionsPath, chartId, {
+                          view: "exam",
+                          returnUrl: `${portalBase}/appointments`,
+                        })}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
+                      >
+                        <FlaskConical size={11} /> {t("chartAct.exam")}
+                      </Link>
+                      <Link
+                        href={(() => {
+                          const sp = new URLSearchParams({ newRecord: "1", docType: "EXAM_RESULT" });
+                          sp.set("returnUrl", `${portalBase}/appointments`);
+                          return `${portalBase}/patients/${chartId}?${sp.toString()}`;
+                        })()}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg hover:bg-indigo-100 transition"
+                      >
+                        <FileCheck size={11} /> {t("chartAct.examResult")}
+                      </Link>
+                      <Link
+                        href={chartActionUrl(prescriptionsPath, chartId, {
+                          view: "document",
+                          returnUrl: `${portalBase}/appointments`,
+                        })}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-lg hover:bg-brand-100 transition"
+                      >
+                        <ScrollText size={11} /> {t("chartAct.document")}
+                      </Link>
+                    </>
+                  )}
                 </>
               )}
             </>
@@ -637,6 +709,46 @@ export default function ProfessionalAppointmentsView({
 
       {viewMode === "list" ? (
         <>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ["ALL", "proappt.filter.all"],
+                  ["PENDING", "proappt.filter.pending"],
+                  ["CONFIRMED", "proappt.filter.confirmed"],
+                  ["COMPLETED", "proappt.filter.completed"],
+                  ["CANCELLED", "proappt.filter.cancelled"],
+                ] as const
+              ).map(([value, labelKey]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatusFilter(value)}
+                  className={`text-xs font-medium px-3 py-1.5 rounded-full border transition ${
+                    statusFilter === value
+                      ? "bg-brand-500 text-white border-brand-500"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-brand-200"
+                  }`}
+                >
+                  {t(labelKey)}
+                </button>
+              ))}
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("proappt.searchPlaceholder")}
+                className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-sm text-slate-700 placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+
           {upcoming.length > 0 && (
             <div className="bg-white rounded-2xl border border-amber-100 shadow-sm overflow-hidden">
               <div className="px-5 py-3 border-b border-amber-100 bg-amber-50/60">

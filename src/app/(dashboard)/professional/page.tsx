@@ -11,7 +11,7 @@ import { getUserLang } from "@/lib/i18n/server-lang";
 import {
   Calendar, Users, DollarSign, Clock, ChevronRight, Video, Radio,
   Inbox, MessageSquare, Stethoscope, BookOpen, UserCog, Settings,
-  TrendingUp, Activity, Sparkles,
+  TrendingUp, Activity, Sparkles, FileSignature,
 } from "lucide-react";
 import Link from "next/link";
 import MarketPricingCard from "@/components/professional/MarketPricingCard";
@@ -28,7 +28,10 @@ import { resolveRoleHome } from "@/lib/role-home";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import { providerDayBounds } from "@/lib/provider-day-bounds";
 import { buildProviderFinanceiroReport } from "@/lib/provider-financeiro";
+import ProfessionalTourWrapper from "./ProfessionalTourWrapper";
+import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
 import { formatMoneyCents } from "@/lib/safe-format-currency";
+import { initialsOf } from "@/lib/format-name";
 import {
   DEFAULT_TIME_ZONE,
   formatShortDate,
@@ -50,39 +53,47 @@ export default async function ProfessionalDashboard() {
   const t = (key: string) => translate(lang, key);
   const locale = localeOf(lang);
 
-  const professional = await db.professionalProfile.findUnique({
-    where: { userId },
-    include: {
-      appointments: {
-        where: {
-          status: { in: ["CONFIRMED", "PENDING"] },
-          scheduledAt: { gte: new Date() },
+  const [professional, userRow] = await Promise.all([
+    db.professionalProfile.findUnique({
+      where: { userId },
+      include: {
+        appointments: {
+          where: {
+            status: { in: ["CONFIRMED", "PENDING"] },
+            scheduledAt: { gte: new Date() },
+          },
+          include: {
+            patient: { select: { firstName: true, lastName: true } },
+          },
+          orderBy: { scheduledAt: "asc" },
+          take: 5,
         },
-        include: {
-          patient: { select: { firstName: true, lastName: true } },
-        },
-        orderBy: { scheduledAt: "asc" },
-        take: 5,
       },
-    },
-  });
+    }),
+    db.user.findUnique({
+      where: { id: userId },
+      select: { region: true },
+    }),
+  ]);
 
   if (!professional) redirect("/onboarding");
 
   const providerTz = professional.timezone || DEFAULT_TIME_ZONE;
   const { start: todayStart, end: todayEnd } = providerDayBounds(providerTz);
-
-  await audit.viewRecord(userId, "ProfessionalProfile", professional.id);
+  const regionForCampaign = userRow?.region ?? session.user.region ?? null;
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const [
     completedToday,
+    remainingToday,
     patientCount,
     upcomingCount,
+    pendingApprovalCount,
+    awaitingSignatureCount,
     jitSession,
     sharedPending,
     unreadMessages,
     subscription,
-    userRow,
     humanitarianCampaign,
     humanitarianVolunteer,
     dashboardInsights,
@@ -92,7 +103,14 @@ export default async function ProfessionalDashboard() {
       where: {
         professionalId: professional.id,
         scheduledAt: { gte: todayStart, lte: todayEnd },
-        status: { in: ["CONFIRMED", "COMPLETED"] },
+        status: "COMPLETED",
+      },
+    }),
+    db.appointment.count({
+      where: {
+        professionalId: professional.id,
+        scheduledAt: { gte: new Date(), lte: todayEnd },
+        status: "CONFIRMED",
       },
     }),
     db.patientRecord.count({ where: { professionalId: professional.id } }),
@@ -103,6 +121,29 @@ export default async function ProfessionalDashboard() {
         scheduledAt: { gte: new Date() },
       },
     }),
+    db.appointment.count({
+      where: {
+        professionalId: professional.id,
+        status: "PENDING",
+        scheduledAt: { gte: new Date() },
+      },
+    }),
+    Promise.all([
+      db.prescription.count({
+        where: {
+          professionalId: professional.id,
+          signatureStatus: "PENDING",
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      }),
+      db.medicalDocument.count({
+        where: {
+          professionalId: professional.id,
+          signatureStatus: "PENDING",
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      }),
+    ]).then(([rx, docs]) => rx + docs),
     db.jitSession.findFirst({
       where: { professionalId: professional.id },
       orderBy: { updatedAt: "desc" },
@@ -131,11 +172,7 @@ export default async function ProfessionalDashboard() {
       where: { userId },
       select: { status: true },
     }),
-    db.user.findUnique({
-      where: { id: userId },
-      select: { region: true },
-    }),
-    getActiveCampaignForRegion(null),
+    getActiveCampaignForRegion(regionForCampaign),
     getVolunteerDashboardState(userId),
     getProfessionalDashboardInsights(professional.id),
     buildProviderFinanceiroReport({
@@ -145,6 +182,7 @@ export default async function ProfessionalDashboard() {
       period: "this_month",
       includeJit: true,
     }),
+    audit.viewRecord(userId, "ProfessionalProfile", professional.id),
   ]);
 
   const hasActiveSubscription =
@@ -214,6 +252,11 @@ export default async function ProfessionalDashboard() {
     },
   ];
 
+  const displayName = `${professional.firstName} ${professional.lastName}`.trim();
+  const greetingText = t("prodash.greetingName")
+    .replace("{{greeting}}", t(greetingKey()))
+    .replace("{{name}}", displayName);
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
 
@@ -233,10 +276,13 @@ export default async function ProfessionalDashboard() {
         defaultRegion={userRow?.region || session.user.region}
       />
 
+      <ProfessionalChecklistWrapper />
+      <ProfessionalTourWrapper lang={lang} />
+
       {/* Header */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 break-words">
-          {t(greetingKey())}, Dr. {professional.firstName} 👋
+          {greetingText} 👋
         </h1>
         <p className="text-slate-500 mt-1">{getProfessionLabel(lang, professional.specialty) || t("prodash.subtitle")}</p>
       </div>
@@ -286,6 +332,11 @@ export default async function ProfessionalDashboard() {
           icon={<Calendar className="text-brand-500" size={20} />}
           label={t("prodash.stat.today")}
           value={completedToday}
+          subtext={
+            remainingToday > 0
+              ? t("prodash.stat.todayRemaining").replace("{{count}}", String(remainingToday))
+              : undefined
+          }
           bg="bg-brand-50"
           href="/professional/appointments"
         />
@@ -346,7 +397,7 @@ export default async function ProfessionalDashboard() {
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
-                      {firstName[0]}{lastName[0]}
+                      {initialsOf(firstName, lastName)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-800 text-sm truncate">
@@ -390,6 +441,24 @@ export default async function ProfessionalDashboard() {
           viewAllLabel={t("common.viewAll")}
         >
           <div className="space-y-3">
+            <AttentionRow
+              href="/professional/appointments"
+              icon={<Calendar size={18} className={pendingApprovalCount > 0 ? "text-amber-600" : "text-slate-400"} />}
+              label={t("prodash.attention.pendingApproval")}
+              count={pendingApprovalCount}
+              emptyLabel={t("prodash.attention.none")}
+              pendingLabel={t("prodash.attention.pending").replace("{{count}}", String(pendingApprovalCount))}
+              pendingTone="amber"
+            />
+            <AttentionRow
+              href="/professional/prescriptions"
+              icon={<FileSignature size={18} className={awaitingSignatureCount > 0 ? "text-amber-600" : "text-slate-400"} />}
+              label={t("prodash.attention.awaitingSignature")}
+              count={awaitingSignatureCount}
+              emptyLabel={t("prodash.attention.none")}
+              pendingLabel={t("prodash.attention.pending").replace("{{count}}", String(awaitingSignatureCount))}
+              pendingTone="amber"
+            />
             <AttentionRow
               href="/professional/shared"
               icon={<Inbox size={18} className="text-amber-600" />}
@@ -449,14 +518,15 @@ export default async function ProfessionalDashboard() {
   );
 }
 
-function StatCard({ icon, label, value, bg, href }: {
-  icon: React.ReactNode; label: string; value: string | number; bg: string; href: string;
+function StatCard({ icon, label, value, subtext, bg, href }: {
+  icon: React.ReactNode; label: string; value: string | number; subtext?: string; bg: string; href: string;
 }) {
   return (
     <Link href={href} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition block min-w-0">
       <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-3`}>{icon}</div>
       <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{value}</p>
       <p className="text-xs text-slate-500 mt-1">{label}</p>
+      {subtext ? <p className="text-[10px] text-slate-400 mt-0.5">{subtext}</p> : null}
     </Link>
   );
 }
@@ -494,7 +564,7 @@ function EmptyState({ icon, message, action, href }: {
   );
 }
 
-function AttentionRow({ href, icon, label, count, detail, emptyLabel, pendingLabel }: {
+function AttentionRow({ href, icon, label, count, detail, emptyLabel, pendingLabel, pendingTone = "rose" }: {
   href: string;
   icon: React.ReactNode;
   label: string;
@@ -502,7 +572,9 @@ function AttentionRow({ href, icon, label, count, detail, emptyLabel, pendingLab
   detail?: string;
   emptyLabel?: string;
   pendingLabel?: string;
+  pendingTone?: "rose" | "amber";
 }) {
+  const pendingClass = pendingTone === "amber" ? "text-amber-600" : "text-rose-600";
   return (
     <Link
       href={href}
@@ -516,7 +588,7 @@ function AttentionRow({ href, icon, label, count, detail, emptyLabel, pendingLab
         {detail ? (
           <p className="text-xs text-slate-500 mt-0.5">{detail}</p>
         ) : count && count > 0 ? (
-          <p className="text-xs text-rose-600 font-medium mt-0.5">{pendingLabel}</p>
+          <p className={`text-xs font-medium mt-0.5 ${pendingClass}`}>{pendingLabel}</p>
         ) : (
           <p className="text-xs text-slate-400 mt-0.5">{emptyLabel}</p>
         )}
