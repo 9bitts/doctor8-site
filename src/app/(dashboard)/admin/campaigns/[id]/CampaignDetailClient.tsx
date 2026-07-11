@@ -6,7 +6,9 @@ import Papa from "papaparse";
 import {
   Mail, ArrowLeft, Loader2, AlertTriangle, Pause, RotateCcw,
   Send, TestTube, Search, Pencil, Upload, Eye, ChevronDown, ChevronUp,
+  Download, Copy,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { emailShell, getAppUrl } from "@/lib/email-core";
 
@@ -18,6 +20,7 @@ type Campaign = {
   status: string;
   batchSize: number;
   lastError: string | null;
+  batchLockAt: string | null;
 };
 
 type Recipient = {
@@ -104,6 +107,7 @@ function buildPreviewHtml(subject: string, bodyHtml: string): string {
 
 export default function CampaignDetailClient({ campaignId }: { campaignId: string }) {
   const { t } = useI18n();
+  const router = useRouter();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
@@ -190,7 +194,10 @@ export default function CampaignDetailClient({ campaignId }: { campaignId: strin
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok && res.status !== 202) {
-        setErr(data.error || t("admin.campaigns.errAction"));
+        const msg = data.error === "Batch already in progress"
+          ? t("admin.campaigns.batchInProgress")
+          : (data.error || t("admin.campaigns.errAction"));
+        setErr(msg);
         return false;
       }
       await load();
@@ -288,8 +295,32 @@ export default function CampaignDetailClient({ campaignId }: { campaignId: strin
 
   const isPaused = campaign.status === "PAUSED";
   const isSending = campaign.status === "SENDING";
+  const batchRunning = Boolean(campaign.batchLockAt);
   const canEdit = campaign.status === "DRAFT" || campaign.status === "PAUSED";
-  const canSendBatch = !isPaused && stats.pending + stats.sendFailed > 0;
+  const canSendBatch = !isPaused && !batchRunning && stats.pending + stats.sendFailed > 0;
+
+  function handleExportCsv() {
+    const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : "";
+    window.open(`/api/admin/campaigns/${campaignId}/export${qs}`, "_blank");
+  }
+
+  async function handleDuplicate() {
+    if (!confirm(t("admin.campaigns.duplicateConfirm"))) return;
+    setBusy("duplicate");
+    setErr(null);
+    try {
+      const res = await fetch(`/api/admin/campaigns/${campaignId}/duplicate`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.id) {
+        router.push(`/admin/campaigns/${data.id}`);
+      } else {
+        setErr(data.error || t("admin.campaigns.errAction"));
+      }
+    } catch {
+      setErr(t("common.loadError"));
+    }
+    setBusy(null);
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-10">
@@ -367,12 +398,22 @@ export default function CampaignDetailClient({ campaignId }: { campaignId: strin
             {t("admin.campaigns.resume")}
           </button>
         )}
-        {isSending && (
+        {isSending && batchRunning && (
           <span className="inline-flex items-center gap-2 text-sm text-blue-600 px-2">
             <Loader2 size={14} className="animate-spin" />
             {t("admin.campaigns.sending")}
           </span>
         )}
+        <button type="button" onClick={handleExportCsv}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">
+          <Download size={14} />
+          {t("admin.campaigns.exportCsv")}
+        </button>
+        <button type="button" onClick={handleDuplicate} disabled={!!busy}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50">
+          {busy === "duplicate" ? <Loader2 size={14} className="animate-spin" /> : <Copy size={14} />}
+          {t("admin.campaigns.duplicate")}
+        </button>
       </div>
 
       {canEdit && (

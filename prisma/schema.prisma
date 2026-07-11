@@ -5534,6 +5534,7 @@ model EmailCampaign {
   status     String   @default("DRAFT") // DRAFT | SENDING | PAUSED | DONE
   batchSize  Int      @default(300)
   lastError  String?  @db.Text
+  batchLockAt DateTime?
   createdBy  String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

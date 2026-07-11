@@ -11,6 +11,7 @@ import {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CIRCUIT_BREAKER_MIN = 10;
 const CIRCUIT_BREAKER_RATE = 0.3;
+const BATCH_LOCK_STALE_MS = 15 * 60 * 1000;
 
 export type CampaignRow = { name?: string; email: string };
 
@@ -237,106 +238,130 @@ async function finalizeCampaignStatus(campaignId: string): Promise<void> {
 
   await db.emailCampaign.update({
     where: { id: campaignId },
-    data: { status: remaining === 0 ? "DONE" : "SENDING" },
+    data: {
+      status: remaining === 0 ? "DONE" : "SENDING",
+      batchLockAt: null,
+    },
+  });
+}
+
+/** Atomically claim batch lock — returns false if another batch is running. */
+export async function claimCampaignBatchLock(campaignId: string): Promise<boolean> {
+  const staleBefore = new Date(Date.now() - BATCH_LOCK_STALE_MS);
+  const result = await db.emailCampaign.updateMany({
+    where: {
+      id: campaignId,
+      status: { not: "PAUSED" },
+      OR: [{ batchLockAt: null }, { batchLockAt: { lt: staleBefore } }],
+    },
+    data: { batchLockAt: new Date(), status: "SENDING", lastError: null },
+  });
+  return result.count > 0;
+}
+
+async function releaseCampaignBatchLock(campaignId: string): Promise<void> {
+  await db.emailCampaign.update({
+    where: { id: campaignId },
+    data: { batchLockAt: null },
   });
 }
 
 export async function processCampaignBatch(campaignId: string): Promise<void> {
-  const campaign = await db.emailCampaign.findUnique({ where: { id: campaignId } });
-  if (!campaign || campaign.status === "PAUSED") return;
+  try {
+    const campaign = await db.emailCampaign.findUnique({ where: { id: campaignId } });
+    if (!campaign || campaign.status === "PAUSED") return;
 
-  await db.emailCampaign.update({
-    where: { id: campaignId },
-    data: { status: "SENDING", lastError: null },
-  });
-
-  const recipients = await db.emailCampaignRecipient.findMany({
-    where: {
-      campaignId,
-      status: { in: ["PENDING", "SEND_FAILED"] },
-    },
-    orderBy: { createdAt: "asc" },
-    take: campaign.batchSize,
-  });
-
-  if (recipients.length === 0) {
-    await db.emailCampaign.update({
-      where: { id: campaignId },
-      data: { status: "DONE" },
+    const recipients = await db.emailCampaignRecipient.findMany({
+      where: {
+        campaignId,
+        status: { in: ["PENDING", "SEND_FAILED"] },
+      },
+      orderBy: { createdAt: "asc" },
+      take: campaign.batchSize,
     });
-    return;
-  }
 
-  const maxBatch = await db.emailCampaignRecipient.aggregate({
-    where: { campaignId, batchNumber: { not: null } },
-    _max: { batchNumber: true },
-  });
-  const batchNumber = (maxBatch._max.batchNumber ?? 0) + 1;
-
-  let processed = 0;
-  let failed = 0;
-  let circuitTripped = false;
-
-  for (const recipient of recipients) {
-    if (await isCampaignPaused(campaignId)) break;
-
-    processed++;
-    try {
-      const { subject, html } = renderCampaignEmail({
-        subject: campaign.subject,
-        bodyHtml: campaign.bodyHtml,
-        name: recipient.name,
-        email: recipient.email,
-        inviteToken: recipient.token,
-      });
-
-      await sendTransactionalEmail({
-        to: recipient.email,
-        subject,
-        html,
-        tag: `campaign-${campaignId}`,
-      });
-
-      await db.emailCampaignRecipient.update({
-        where: { id: recipient.id },
-        data: {
-          status: "SENT",
-          sentAt: new Date(),
-          batchNumber,
-          errorMessage: null,
-        },
-      });
-    } catch (err) {
-      failed++;
-      const message = err instanceof Error ? err.message : "Send failed";
-      await db.emailCampaignRecipient.update({
-        where: { id: recipient.id },
-        data: {
-          status: "SEND_FAILED",
-          errorMessage: message.slice(0, 500),
-          batchNumber,
-        },
-      });
-    }
-
-    if (processed >= CIRCUIT_BREAKER_MIN && failed / processed > CIRCUIT_BREAKER_RATE) {
-      const rate = Math.round((failed / processed) * 100);
+    if (recipients.length === 0) {
       await db.emailCampaign.update({
         where: { id: campaignId },
-        data: {
-          status: "PAUSED",
-          lastError: `Lote pausado automaticamente: taxa de falha de ${rate}% — verifique configuração do Resend antes de retomar.`,
-        },
+        data: { status: "DONE", batchLockAt: null },
       });
-      circuitTripped = true;
-      break;
+      return;
     }
 
-    await sleep(500 + Math.random() * 500);
-  }
+    const maxBatch = await db.emailCampaignRecipient.aggregate({
+      where: { campaignId, batchNumber: { not: null } },
+      _max: { batchNumber: true },
+    });
+    const batchNumber = (maxBatch._max.batchNumber ?? 0) + 1;
 
-  if (!circuitTripped) {
-    await finalizeCampaignStatus(campaignId);
+    let processed = 0;
+    let failed = 0;
+    let circuitTripped = false;
+
+    for (const recipient of recipients) {
+      if (await isCampaignPaused(campaignId)) break;
+
+      processed++;
+      try {
+        const { subject, html } = renderCampaignEmail({
+          subject: campaign.subject,
+          bodyHtml: campaign.bodyHtml,
+          name: recipient.name,
+          email: recipient.email,
+          inviteToken: recipient.token,
+        });
+
+        await sendTransactionalEmail({
+          to: recipient.email,
+          subject,
+          html,
+          tag: `campaign-${campaignId}`,
+        });
+
+        await db.emailCampaignRecipient.update({
+          where: { id: recipient.id },
+          data: {
+            status: "SENT",
+            sentAt: new Date(),
+            batchNumber,
+            errorMessage: null,
+          },
+        });
+      } catch (err) {
+        failed++;
+        const message = err instanceof Error ? err.message : "Send failed";
+        await db.emailCampaignRecipient.update({
+          where: { id: recipient.id },
+          data: {
+            status: "SEND_FAILED",
+            errorMessage: message.slice(0, 500),
+            batchNumber,
+          },
+        });
+      }
+
+      if (processed >= CIRCUIT_BREAKER_MIN && failed / processed > CIRCUIT_BREAKER_RATE) {
+        const rate = Math.round((failed / processed) * 100);
+        await db.emailCampaign.update({
+          where: { id: campaignId },
+          data: {
+            status: "PAUSED",
+            lastError: `Lote pausado automaticamente: taxa de falha de ${rate}% — verifique configuração do Resend antes de retomar.`,
+            batchLockAt: null,
+          },
+        });
+        circuitTripped = true;
+        break;
+      }
+
+      await sleep(500 + Math.random() * 500);
+    }
+
+    if (!circuitTripped) {
+      await finalizeCampaignStatus(campaignId);
+    }
+  } finally {
+    await releaseCampaignBatchLock(campaignId).catch(() => {});
   }
 }
 
@@ -369,7 +394,7 @@ export async function resumeCampaign(campaignId: string): Promise<{
 
   await db.emailCampaign.update({
     where: { id: campaignId },
-    data: { status: newStatus, lastError: null },
+    data: { status: newStatus, lastError: null, batchLockAt: null },
   });
 
   return { ok: true, newStatus };
@@ -441,6 +466,57 @@ export function unsubscribeConfirmationHtml(message: string): string {
   </div>
 </body>
 </html>`;
+}
+
+export async function duplicateCampaign(
+  sourceId: string,
+  createdBy: string,
+): Promise<{ id: string }> {
+  const source = await db.emailCampaign.findUnique({ where: { id: sourceId } });
+  if (!source) throw new Error("NOT_FOUND");
+
+  const copy = await db.emailCampaign.create({
+    data: {
+      name: `${source.name} (cópia)`,
+      subject: source.subject,
+      bodyHtml: source.bodyHtml,
+      batchSize: source.batchSize,
+      createdBy,
+      status: "DRAFT",
+    },
+  });
+
+  return { id: copy.id };
+}
+
+export function recipientsToCsv(
+  rows: Array<{
+    email: string;
+    name: string | null;
+    status: string;
+    batchNumber: number | null;
+    sentAt: Date | null;
+    registeredAt: Date | null;
+    errorMessage: string | null;
+  }>,
+): string {
+  const header = "email,nome,status,lote,enviado_em,cadastrado_em,erro";
+  const lines = rows.map((r) => {
+    const esc = (v: string | null | undefined) => {
+      const s = v ?? "";
+      return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return [
+      esc(r.email),
+      esc(r.name),
+      esc(r.status),
+      r.batchNumber ?? "",
+      r.sentAt?.toISOString() ?? "",
+      r.registeredAt?.toISOString() ?? "",
+      esc(r.errorMessage),
+    ].join(",");
+  });
+  return [header, ...lines].join("\n");
 }
 
 export async function processCampaignUnsubscribe(token: string): Promise<{

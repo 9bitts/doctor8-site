@@ -16,7 +16,7 @@ export async function POST(
 
     await db.emailCampaign.update({
       where: { id: params.id },
-      data: { status: "PAUSED" },
+      data: { status: "PAUSED", batchLockAt: null },
     });
 
     return NextResponse.json({ ok: true, status: "PAUSED" });

@@ -2,7 +2,10 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
-import { processCampaignBatch } from "@/lib/admin/email-campaigns";
+import {
+  claimCampaignBatchLock,
+  processCampaignBatch,
+} from "@/lib/admin/email-campaigns";
 
 export async function POST(
   _req: Request,
@@ -26,8 +29,13 @@ export async function POST(
       },
     });
 
-    if (pending === 0 && campaign.status === "DONE") {
+    if (pending === 0) {
       return NextResponse.json({ error: "No pending recipients" }, { status: 409 });
+    }
+
+    const claimed = await claimCampaignBatchLock(params.id);
+    if (!claimed) {
+      return NextResponse.json({ error: "Batch already in progress" }, { status: 409 });
     }
 
     void processCampaignBatch(params.id).catch((err) => {
