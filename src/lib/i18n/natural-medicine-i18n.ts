@@ -2,6 +2,7 @@
 
 export const naturalMedicineEn: Record<string, string> = {
   "nav.naturalMedicine": "Natural Medicine",
+  "nav.fitoterapicos": "Phytotherapeutics",
   "rx.phytoProductSelect": "Phytotherapeutic (reference list)",
   "rx.phytoProductPlaceholder": "Select or type below…",
 
@@ -216,6 +217,7 @@ export const naturalMedicineEn: Record<string, string> = {
 
 export const naturalMedicinePt: Record<string, string> = {
   "nav.naturalMedicine": "Medicina Natural",
+  "nav.fitoterapicos": "Fitoterápicos",
   "rx.phytoProductSelect": "Fitoterápico (lista de referência)",
   "rx.phytoProductPlaceholder": "Selecione ou digite abaixo…",
 
@@ -431,6 +433,7 @@ export const naturalMedicinePt: Record<string, string> = {
 export const naturalMedicineEs: Record<string, string> = {
   ...naturalMedicineEn,
   "nav.naturalMedicine": "Medicina Natural",
+  "nav.fitoterapicos": "Fitoterápicos",
   "rx.phytoProductSelect": "Fitoterápico (lista de referencia)",
   "rx.phytoProductPlaceholder": "Seleccione o escriba abajo…",
 

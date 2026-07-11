@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function FitoterapiaLegacyRedirect() {
-  redirect("/professional/medicina-natural/fitoterapia");
+  redirect("/professional/medicina-natural/fitoterapia/catalogo");
 }
