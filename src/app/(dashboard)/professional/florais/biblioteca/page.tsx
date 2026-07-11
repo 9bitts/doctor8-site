@@ -1,5 +1,5 @@
-import FloraisBiblioteca from "@/components/florais-catalog/FloraisBiblioteca";
+import { redirect } from "next/navigation";
 
 export default function ProfessionalFloraisBibliotecaPage() {
-  return <FloraisBiblioteca />;
+  redirect("/professional/medicina-natural/terapia-florais/catalogo");
 }

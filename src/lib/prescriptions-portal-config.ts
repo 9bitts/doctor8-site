@@ -21,7 +21,7 @@ const CONFIG: Record<PrescriptionsPortalId, PrescriptionsPortalConfig> = {
     portal: "professional",
     apiBase: "/api/professional",
     phytoOnly: false,
-    allowFloral: false,
+    allowFloral: true,
     skipDigitalSign: false,
     prescriptionsOnly: false,
     accountSignHref: "/professional/account#digital-sign",

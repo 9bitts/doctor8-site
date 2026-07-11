@@ -35,6 +35,7 @@ export interface PrescriptionPdfData {
     instructions?: string;
     presentation?: string;
     pharmaceuticalForm?: string;
+    regulatoryBadge?: string;
   }[];
   instructions: string;
   // Assinatura (se já assinada)
@@ -53,6 +54,7 @@ const L: Record<Lang, Record<string, string>> = {
     prescriptionDate: "Prescription Date", validUntil: "Valid Until", noExpiry: "No expiry",
     dosage: "Dosage", frequency: "Frequency", duration: "Duration", instructions: "Instructions",
     presentation: "Presentation", pharmaceuticalForm: "Pharmaceutical form",
+    regulatoryBadge: "Regulatory reference",
     generalInstructions: "General Instructions", digitalId: "Digital Prescription ID",
     digitalSignature: "Digitally signed (ICP-Brasil)",
     confidential: "CONFIDENTIAL — Protected health information.",
@@ -65,6 +67,7 @@ const L: Record<Lang, Record<string, string>> = {
     prescriptionDate: "Data da prescrição", validUntil: "Válida até", noExpiry: "Sem validade",
     dosage: "Dosagem", frequency: "Frequência", duration: "Duração", instructions: "Instruções",
     presentation: "Apresenta\u00e7\u00e3o", pharmaceuticalForm: "Forma farmac\u00eautica",
+    regulatoryBadge: "Referência regulatória",
     generalInstructions: "Instruções gerais", digitalId: "ID da prescrição digital",
     digitalSignature: "Assinado digitalmente (ICP-Brasil)",
     confidential: "CONFIDENCIAL — Informação de saúde protegida.",
@@ -77,6 +80,7 @@ const L: Record<Lang, Record<string, string>> = {
     prescriptionDate: "Fecha de la receta", validUntil: "Válida hasta", noExpiry: "Sin caducidad",
     dosage: "Dosis", frequency: "Frecuencia", duration: "Duración", instructions: "Instrucciones",
     presentation: "Presentaci\u00f3n", pharmaceuticalForm: "Forma farmac\u00e9utica",
+    regulatoryBadge: "Referencia regulatoria",
     generalInstructions: "Instrucciones generales", digitalId: "ID de la receta digital",
     digitalSignature: "Firmado digitalmente (ICP-Brasil)",
     confidential: "CONFIDENCIAL — Información de salud protegida.",
@@ -245,6 +249,13 @@ export async function buildPrescriptionPdf(
       : `${i + 1}. ${med.name}`;
     text(page, title, margin, y, 13, fontBold, BLUE);
     y -= 18;
+    if (med.regulatoryBadge) {
+      for (const ln of wrap(med.regulatoryBadge, maxW, 9, font)) {
+        ensureSpace(14);
+        text(page, ln, margin + 12, y, 9, font, rgb(0.45, 0.35, 0.65));
+        y -= 12;
+      }
+    }
     const detail = (label: string, value: string) => {
       if (!value) return;
       const line = `${label}: ${value}`;

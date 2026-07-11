@@ -17,9 +17,10 @@ export type PrescriptionMedItem = {
   pharmaceuticalForm?: string;
   controlled?: boolean;
   prescriptionType?: string | null;
-  itemKind?: "medication" | "device" | "phytotherapy" | "floral";
+  itemKind?: "medication" | "device" | "phytotherapy" | "floral" | "homeopathy" | "aromatherapy" | "apitherapy";
   phytoProductId?: string;
   mnSlug?: string;
+  renisus?: boolean;
   floralProductId?: string;
 };
 

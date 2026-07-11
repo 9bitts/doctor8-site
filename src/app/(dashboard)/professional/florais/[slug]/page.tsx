@@ -1,4 +1,4 @@
-import FloralItemDetail from "@/components/florais-catalog/FloralItemDetail";
+import { redirect } from "next/navigation";
 
 export default async function ProfessionalFloralDetailPage({
   params,
@@ -6,5 +6,5 @@ export default async function ProfessionalFloralDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return <FloralItemDetail slug={slug} />;
+  redirect(`/professional/medicina-natural/terapia-florais/${encodeURIComponent(slug)}`);
 }

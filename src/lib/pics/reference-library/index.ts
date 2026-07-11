@@ -5,7 +5,6 @@ import {
   SAINT_GERMAIN_COMPOUND_FORMULAS,
   SAINT_GERMAIN_ESSENCES,
 } from "./florais-saint-germain";
-import { PHYTOTHERAPY_REFERENCE_PRODUCTS } from "./phytotherapy-products";
 
 export type ReferenceSectionId =
   | "phyto_formulary"
@@ -50,7 +49,7 @@ export interface ReferenceSection {
   titleKey: string;
   bodyKeys: string[];
   /** For formulary: dynamic product lines */
-  products?: typeof PHYTOTHERAPY_REFERENCE_PRODUCTS;
+  products?: Array<{ value: string; labelKey: string; indicationKey: string }>;
 }
 
 const SHARED_PHYTO: ReferenceSectionId[] = [
@@ -101,8 +100,7 @@ const SECTIONS_BY_PRACTICE: Record<string, ReferenceSectionId[]> = {
 const SECTION_DEFS: Record<ReferenceSectionId, Omit<ReferenceSection, "id">> = {
   phyto_formulary: {
     titleKey: "it.ref.phytoFormulary",
-    bodyKeys: [],
-    products: PHYTOTHERAPY_REFERENCE_PRODUCTS,
+    bodyKeys: ["it.ref.phyto.catalogNote", "it.ref.phyto.renameNote"],
   },
   tea_preparation: {
     titleKey: "it.ref.teaPrep",

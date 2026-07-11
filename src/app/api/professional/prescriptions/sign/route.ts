@@ -19,6 +19,7 @@ import { audit } from "@/lib/audit";
 import { createSignatureSession } from "@/lib/lacuna";
 import { parseLacunaError } from "@/lib/lacuna-errors";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
+import { enrichMedsForPrescriptionPdf } from "@/lib/medicina-natural-catalog/enrich-meds-for-pdf";
 import { formatLicense, getProfessionInfo, isDentistSpecialty } from "@/lib/profession-label";
 import { requireVerifiedProfessional } from "@/lib/professional-verified";
 import { getPublicBase, buildSignReturnUrl, assertPublicSignBase, resolveRequestLang } from "@/lib/sign-helpers";
@@ -161,12 +162,23 @@ export async function POST(req: NextRequest) {
     (pro as { clinicZip?: string | null }).clinicZip,
   ]);
 
-  const meds = (prescription.medications as {
-    name: string; dosage: string; frequency: string; duration?: string; instructions?: string;
-  }[]).map((m) => ({
-    ...m,
-    frequency: FREQ[lang][m.frequency] || m.frequency,
-  }));
+  const meds = await enrichMedsForPrescriptionPdf(
+    (prescription.medications as {
+      name: string;
+      dosage: string;
+      frequency: string;
+      duration?: string;
+      instructions?: string;
+      presentation?: string;
+      pharmaceuticalForm?: string;
+      mnSlug?: string;
+      renisus?: boolean;
+    }[]).map((m) => ({
+      ...m,
+      frequency: FREQ[lang][m.frequency] || m.frequency,
+    })),
+    lang,
+  );
 
   const today = new Date().toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
   const validUntil = prescription.validUntil

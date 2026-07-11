@@ -64,6 +64,16 @@ const RULES: InteractionRule[] = [
     severity: "MODERATE",
     description: "IBP pode reduzir efeito antiplaquetário do clopidogrel.",
   },
+  {
+    patterns: [/hypericum|hipérico|st\.?\s*john/i, /sertralina|fluoxetina|paroxetina|venlafaxina/i],
+    severity: "MAJOR",
+    description: "Hipérico pode reduzir eficácia de ISRS — interação fitoterápica.",
+  },
+  {
+    patterns: [/ginkgo/i, /warfarin|varfarina|clopidogrel|aspirina|aas/i],
+    severity: "MODERATE",
+    description: "Ginkgo pode aumentar risco de sangramento com anticoagulantes.",
+  },
 ];
 
 function normalizeName(name: string): string {

@@ -22,23 +22,9 @@ import { createNotification } from "@/lib/notifications";
 import { hasAcceptedLink } from "@/lib/patient-professional-link";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
+import { prescriptionMedicationItemSchema } from "@/lib/prescription-medication-schema";
 
-const medicationItemSchema = z.object({
-  name: z.string().min(1),
-  dosage: z.string().optional(),
-  frequency: z.string().optional(),
-  duration: z.string().optional(),
-  instructions: z.string().optional(),
-  presentation: z.string().optional(),
-  pharmaceuticalForm: z.string().optional(),
-  itemKind: z.enum(["medication", "device", "phytotherapy"]).optional(),
-}).superRefine((item, ctx) => {
-  const kind = item.itemKind || "medication";
-  if (kind === "medication") {
-    if (!item.dosage?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "dosage required", path: ["dosage"] });
-    if (!item.frequency?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "frequency required", path: ["frequency"] });
-  }
-});
+const medicationItemSchema = prescriptionMedicationItemSchema;
 
 const prescriptionSchema = z.object({
   // Either one of these identifies the patient. patientRecordId is preferred (new flow).

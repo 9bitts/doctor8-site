@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { audit } from "@/lib/audit";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
+import { enrichMedsForPrescriptionPdf } from "@/lib/medicina-natural-catalog/enrich-meds-for-pdf";
 import { resolveRequestLang } from "@/lib/sign-helpers";
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -113,9 +114,20 @@ export async function GET(
     therapist.clinicZip,
   ]);
 
-  const meds = (prescription.medications as {
-    name: string; dosage: string; frequency: string; duration?: string; instructions?: string;
-  }[]).map((m) => ({ ...m, frequency: FREQ[lang][m.frequency] || m.frequency }));
+  const meds = await enrichMedsForPrescriptionPdf(
+    (prescription.medications as {
+      name: string;
+      dosage: string;
+      frequency: string;
+      duration?: string;
+      instructions?: string;
+      presentation?: string;
+      pharmaceuticalForm?: string;
+      mnSlug?: string;
+      renisus?: boolean;
+    }[]).map((m) => ({ ...m, frequency: FREQ[lang][m.frequency] || m.frequency })),
+    lang,
+  );
 
   const today = new Date().toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
   const validUntil = prescription.validUntil

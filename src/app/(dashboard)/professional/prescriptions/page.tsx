@@ -37,17 +37,22 @@ import MedicinaNaturalSearchResults from "@/components/medicina-natural-catalog/
 import PrescriptionMedItemForm, { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
 import {
-  fetchMnFitoterapicosForPrescription,
-  fetchMnFloraisForPrescription,
+  fetchMnByCategoriaForPrescription,
   floralMedItemFromDrugResult,
   floralMedItemFromMnListItem,
   mapMnItemsToDrugResults,
+  mnMedItemFromDrugResultForMode,
+  mnMedItemFromListItemForMode,
+  MN_ADD_PARAM_TO_ITEM_KIND,
   phytoMedItemFromDrugResult,
   phytoMedItemFromMnListItem,
-  usesFloralCatalogSearch,
-  usesPhytoCatalogSearch,
+  resolveMnCatalogCategoria,
   type PrescriptionItemSearchMode,
 } from "@/lib/medicina-natural-catalog/prescription-search";
+import {
+  checkPhytoDrugInteractions,
+  extractMnHerbNames,
+} from "@/lib/medicina-natural/phyto-interactions";
 import type { MedicinaNaturalListItem } from "@/lib/medicina-natural-catalog/search-server";
 import { floralProductByValue } from "@/lib/pics/reference-library/floral-products";
 import {
@@ -406,9 +411,14 @@ export default function PrescriptionsPage() {
   const [mnPickerTargetIndex, setMnPickerTargetIndex] = useState<number | null>(null);
   const [floralOnlyMode, setFloralOnlyMode] = useState(false);
 
-  const floralCatalogSearch = usesFloralCatalogSearch(cfg.allowFloral, floralOnlyMode);
-  const phytoCatalogSearch = usesPhytoCatalogSearch(cfg.phytoOnly, itemSearchMode, floralOnlyMode);
-  const mnCatalogSearch = floralCatalogSearch || phytoCatalogSearch;
+  const floralCatalogSearch = floralOnlyMode && cfg.allowFloral;
+  const mnSearchCategoria = resolveMnCatalogCategoria({
+    allowFloral: cfg.allowFloral,
+    phytoOnly: cfg.phytoOnly,
+    itemSearchMode,
+    floralOnly: floralOnlyMode,
+  });
+  const mnCatalogSearch = !!mnSearchCategoria;
 
   const [medications, setMedications] = useState<MedItem[]>([]);
   const [highlightIncompleteMeds, setHighlightIncompleteMeds] = useState(false);
@@ -548,6 +558,7 @@ export default function PrescriptionsPage() {
               nome: string;
               posologia: string;
               indicacoes: string;
+              renisus?: boolean;
             };
             setMedications((prev) => {
               if (prev.some((m) => m.mnSlug === item.slug)) return prev;
@@ -561,6 +572,7 @@ export default function PrescriptionsPage() {
                   instructions: [item.posologia, item.indicacoes].filter(Boolean).join("\n\n").slice(0, 2000),
                   itemKind: "phytotherapy" as const,
                   mnSlug: item.slug,
+                  renisus: item.renisus,
                 },
               ];
             });
@@ -602,6 +614,7 @@ export default function PrescriptionsPage() {
               nome: string;
               posologia: string;
               indicacoes: string;
+              renisus?: boolean;
             };
             setMedications((prev) => {
               if (prev.some((m) => m.mnSlug === item.slug && m.itemKind === "floral")) return prev;
@@ -615,6 +628,7 @@ export default function PrescriptionsPage() {
                   instructions: item.indicacoes?.slice(0, 2000) || "",
                   itemKind: "floral" as const,
                   mnSlug: item.slug,
+                  renisus: item.renisus,
                 },
               ];
             });
@@ -648,6 +662,64 @@ export default function PrescriptionsPage() {
           ];
         });
       }
+      }
+    }
+
+    for (const addKey of ["homeopathy", "aromatherapy", "apitherapy"] as const) {
+      if (params.get("add") !== addKey) continue;
+      setView("prescription");
+      const mnSlug = params.get("mnSlug");
+      const itemKind = MN_ADD_PARAM_TO_ITEM_KIND[addKey];
+      if (mnSlug) {
+        void (async () => {
+          try {
+            const res = await fetch(apiPath(cfg, `/medicina-natural/${encodeURIComponent(mnSlug)}`));
+            const data = await res.json();
+            if (!data.item) return;
+            const item = data.item as {
+              slug: string;
+              nome: string;
+              posologia: string;
+              indicacoes: string;
+              renisus?: boolean;
+            };
+            setMedications((prev) => {
+              if (prev.some((m) => m.mnSlug === item.slug && m.itemKind === itemKind)) return prev;
+              return [
+                ...prev,
+                {
+                  name: item.nome,
+                  dosage: item.posologia?.slice(0, 200) || "",
+                  frequency: "",
+                  duration: "",
+                  instructions: [item.posologia, item.indicacoes].filter(Boolean).join("\n\n").slice(0, 2000),
+                  itemKind,
+                  mnSlug: item.slug,
+                  renisus: item.renisus,
+                },
+              ];
+            });
+            setFreeTextMode(isFreeTextPrescriptionItem(itemKind));
+          } catch {
+            /* prefill optional */
+          }
+        })();
+      } else if (!patientRecordId) {
+        setMedications((prev) => {
+          if (prev.some((m) => m.itemKind === itemKind)) return prev;
+          return [
+            ...prev,
+            {
+              name: "",
+              dosage: "",
+              frequency: "",
+              duration: "",
+              instructions: "",
+              itemKind,
+            },
+          ];
+        });
+        setFreeTextMode(isFreeTextPrescriptionItem(itemKind));
       }
     }
 
@@ -1122,11 +1194,11 @@ export default function PrescriptionsPage() {
     setMnSearchResults([]);
     try {
       if (floralCatalogSearch) {
-        const items = await fetchMnFloraisForPrescription(cfg.apiBase, q);
+        const items = await fetchMnByCategoriaForPrescription(cfg.apiBase, q, "FLORAL");
         setMnSearchResults(items);
         setDrugResults(mapMnItemsToDrugResults(items));
-      } else if (phytoCatalogSearch) {
-        const items = await fetchMnFitoterapicosForPrescription(cfg.apiBase, q);
+      } else if (mnSearchCategoria) {
+        const items = await fetchMnByCategoriaForPrescription(cfg.apiBase, q, mnSearchCategoria);
         setMnSearchResults(items);
         setDrugResults(mapMnItemsToDrugResults(items));
       } else {
@@ -1147,7 +1219,7 @@ export default function PrescriptionsPage() {
       setDrugSearching(false);
       setDrugSearchDone(true);
     }
-  }, [drugQuery, drugCountry, floralCatalogSearch, phytoCatalogSearch, cfg.apiBase, t, toast]);
+  }, [drugQuery, drugCountry, floralCatalogSearch, mnSearchCategoria, cfg.apiBase, t, toast]);
 
   function closeDrugSearchModal() {
     setDrugSearchModalOpen(false);
@@ -1157,8 +1229,8 @@ export default function PrescriptionsPage() {
     setMnPickerTargetIndex(null);
   }
 
-  function applyPhytoCatalogItem(item: PrescriptionMedItem) {
-    setFreeTextMode(false);
+  function applyMnCatalogItem(item: PrescriptionMedItem) {
+    setFreeTextMode(isFreeTextPrescriptionItem(item.itemKind));
     if (mnPickerTargetIndex !== null) {
       setMedications((prev) =>
         prev.map((m, i) => (i === mnPickerTargetIndex ? { ...m, ...item } : m)),
@@ -1171,31 +1243,21 @@ export default function PrescriptionsPage() {
     setMnSearchResults([]);
     setDrugSearchModalOpen(false);
     setMnPickerTargetIndex(null);
+  }
+
+  function applyPhytoCatalogItem(item: PrescriptionMedItem) {
+    applyMnCatalogItem(item);
   }
 
   function applyFloralCatalogItem(item: PrescriptionMedItem) {
-    setFreeTextMode(false);
-    if (mnPickerTargetIndex !== null) {
-      setMedications((prev) =>
-        prev.map((m, i) => (i === mnPickerTargetIndex ? { ...m, ...item } : m)),
-      );
-    } else {
-      setMedications((prev) => [...prev, item]);
-    }
-    setDrugQuery("");
-    setDrugResults([]);
-    setMnSearchResults([]);
-    setDrugSearchModalOpen(false);
-    setMnPickerTargetIndex(null);
+    applyMnCatalogItem(item);
   }
 
   function addDrug(drug: DrugSearchResult) {
-    if (floralCatalogSearch) {
-      applyFloralCatalogItem(floralMedItemFromDrugResult(drug));
-      return;
-    }
-    if (phytoCatalogSearch) {
-      applyPhytoCatalogItem(phytoMedItemFromDrugResult(drug));
+    if (mnSearchCategoria) {
+      const mode: PrescriptionItemSearchMode =
+        floralOnlyMode ? "floral" : itemSearchMode === "medication" ? "phytotherapy" : itemSearchMode;
+      applyMnCatalogItem(mnMedItemFromDrugResultForMode(drug, mode));
       return;
     }
     setFreeTextMode(false);
@@ -1225,7 +1287,13 @@ export default function PrescriptionsPage() {
     setMedications((prev) => [...prev, {
       name: name || "",
       dosage: "", frequency: "", duration: "", instructions: "",
-      itemKind: phytoCatalogSearch ? "phytotherapy" : "medication",
+      itemKind: mnCatalogSearch
+        ? (floralOnlyMode
+          ? "floral"
+          : itemSearchMode === "medication"
+            ? "phytotherapy"
+            : itemSearchMode)
+        : "medication",
     }]);
     setDrugQuery(""); setDrugResults([]); setMnSearchResults([]); setDrugSearchModalOpen(false);
   }
@@ -1361,6 +1429,8 @@ export default function PrescriptionsPage() {
         presentation: m.presentation || "",
         pharmaceuticalForm: m.pharmaceuticalForm || "",
         itemKind: m.itemKind || "medication",
+        mnSlug: m.mnSlug || undefined,
+        renisus: m.renisus || undefined,
         phytoProductId: m.phytoProductId || undefined,
         floralProductId: m.floralProductId || undefined,
       }));
@@ -1410,9 +1480,22 @@ export default function PrescriptionsPage() {
         presentation: m.presentation || "",
         pharmaceuticalForm: m.pharmaceuticalForm || "",
         itemKind: m.itemKind || "medication",
+        mnSlug: m.mnSlug || undefined,
+        renisus: m.renisus || undefined,
         phytoProductId: m.phytoProductId || undefined,
         floralProductId: m.floralProductId || undefined,
       }));
+
+      const herbNames = extractMnHerbNames(cleanMeds);
+      const drugNames = cleanMeds
+        .filter((m) => (m.itemKind || "medication") === "medication")
+        .map((m) => m.name.trim())
+        .filter(Boolean);
+      const phytoWarnings = checkPhytoDrugInteractions(herbNames, drugNames);
+      if (phytoWarnings.length > 0) {
+        toast.error(phytoWarnings.map((w) => w.description).join(" · "));
+      }
+
       const payload = selectedPatient
         ? { [cfg.patientRecordField]: selectedPatient.id, medications: cleanMeds, instructions, validDays }
         : { patientUserId: platformTarget!.patientUserId, medications: cleanMeds, instructions, validDays };
@@ -1929,7 +2012,7 @@ export default function PrescriptionsPage() {
                   placeholder={
                     floralCatalogSearch
                       ? t("rx.floralCatalogSearch")
-                      : phytoCatalogSearch
+                      : mnCatalogSearch
                         ? t("rx.phytoCatalogSearch")
                         : t("rx2.searchDrug")
                   }
@@ -2010,6 +2093,12 @@ export default function PrescriptionsPage() {
                     className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 font-medium text-sm transition">
                     <Plus size={14} /> {t("rx.addPhytotherapy")}
                   </button>
+                  {cfg.allowFloral && (
+                    <button type="button" onClick={() => addSpecialItem("floral")}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-pink-200 bg-pink-50/50 hover:bg-pink-50 text-pink-800 font-medium text-sm transition sm:col-span-2">
+                      <Plus size={14} /> {t("rx.addFloral")}
+                    </button>
+                  )}
                 </div>
               )}
               {cfg.phytoOnly && (
@@ -2047,7 +2136,11 @@ export default function PrescriptionsPage() {
                     const kind = med.itemKind || "medication";
                     const kindLabel = kind === "device" ? t("rx.itemKind.device")
                       : kind === "phytotherapy" ? t("rx.itemKind.phytotherapy")
-                      : kind === "floral" ? t("rx.itemKind.floral") : null;
+                      : kind === "floral" ? t("rx.itemKind.floral")
+                      : kind === "homeopathy" ? t("rx.itemKind.homeopathy")
+                      : kind === "aromatherapy" ? t("rx.itemKind.aromatherapy")
+                      : kind === "apitherapy" ? t("rx.itemKind.apitherapy")
+                      : null;
                     const fieldErrors = medItemFieldErrors(med);
                     const itemInvalid = !isMedItemValid(med);
                     const showErrors = highlightIncompleteMeds && itemInvalid;
@@ -2162,11 +2255,14 @@ export default function PrescriptionsPage() {
                 ) : mnSearchResults.length > 0 ? (
                   <MedicinaNaturalSearchResults
                     results={mnSearchResults}
-                    onSelect={(item) =>
-                      floralCatalogSearch
-                        ? applyFloralCatalogItem(floralMedItemFromMnListItem(item))
-                        : applyPhytoCatalogItem(phytoMedItemFromMnListItem(item))
-                    }
+                    onSelect={(item) => {
+                      const mode: PrescriptionItemSearchMode = floralOnlyMode
+                        ? "floral"
+                        : itemSearchMode === "medication"
+                          ? "phytotherapy"
+                          : itemSearchMode;
+                      applyMnCatalogItem(mnMedItemFromListItemForMode(item, mode));
+                    }}
                     className="max-h-[60vh]"
                   />
                 ) : drugResults.length > 0 ? (

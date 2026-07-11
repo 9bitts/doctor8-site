@@ -1,18 +1,67 @@
 import type { DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
 import type { PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
+import type { CategoriaPratica } from "@/lib/medicina-natural/item-types";
+import type { PrescriptionItemKind } from "@/lib/prescription-item-kind";
 import type { MedicinaNaturalListItem } from "./search-server";
 
-export type PrescriptionItemSearchMode = "medication" | "phytotherapy" | "floral";
+export type PrescriptionItemSearchMode =
+  | "medication"
+  | "phytotherapy"
+  | "floral"
+  | "homeopathy"
+  | "aromatherapy"
+  | "apitherapy";
 
+const SEARCH_MODE_TO_CATEGORIA: Partial<
+  Record<PrescriptionItemSearchMode, CategoriaPratica>
+> = {
+  phytotherapy: "FITOTERAPICO",
+  floral: "FLORAL",
+  homeopathy: "HOMEOPATIA",
+  aromatherapy: "AROMATERAPIA",
+  apitherapy: "APITERAPIA",
+};
+
+const SEARCH_MODE_TO_ITEM_KIND: Partial<
+  Record<PrescriptionItemSearchMode, PrescriptionItemKind>
+> = {
+  phytotherapy: "phytotherapy",
+  floral: "floral",
+  homeopathy: "homeopathy",
+  aromatherapy: "aromatherapy",
+  apitherapy: "apitherapy",
+};
+
+export function resolveMnCatalogCategoria(params: {
+  allowFloral: boolean;
+  phytoOnly: boolean;
+  itemSearchMode: PrescriptionItemSearchMode;
+  floralOnly: boolean;
+}): CategoriaPratica | null {
+  const { allowFloral, phytoOnly, itemSearchMode, floralOnly } = params;
+  if (floralOnly && allowFloral) return "FLORAL";
+  if (phytoOnly && itemSearchMode === "medication") return "FITOTERAPICO";
+  const cat = SEARCH_MODE_TO_CATEGORIA[itemSearchMode];
+  if (!cat) return null;
+  if (cat === "FLORAL" && !allowFloral) return null;
+  return cat;
+}
+
+/** @deprecated use resolveMnCatalogCategoria */
 export function usesPhytoCatalogSearch(
   phytoOnly: boolean,
   mode: PrescriptionItemSearchMode,
   floralOnly = false,
 ): boolean {
-  if (floralOnly) return false;
-  return phytoOnly || mode === "phytotherapy";
+  return resolveMnCatalogCategoria({
+    allowFloral: true,
+    phytoOnly,
+    itemSearchMode: mode,
+    floralOnly,
+  }) === "FITOTERAPICO";
 }
 
+/** @deprecated use resolveMnCatalogCategoria */
 export function usesFloralCatalogSearch(allowFloral: boolean, floralOnly: boolean): boolean {
   return allowFloral && floralOnly;
 }
@@ -33,18 +82,27 @@ export function mapMnItemsToDrugResults(
   }));
 }
 
-export function phytoMedItemFromMnListItem(
+function mnMedItemFromListItem(
   item: MedicinaNaturalListItem,
+  itemKind: PrescriptionItemKind,
+  defaultDosage?: string,
 ): PrescriptionMedItem {
   return {
     name: item.nome,
-    dosage: item.posologia?.slice(0, 200) || "",
+    dosage: item.posologia?.slice(0, 200) || defaultDosage || "",
     frequency: "",
     duration: "",
     instructions: item.indicacoes?.slice(0, 500) || "",
-    itemKind: "phytotherapy",
+    itemKind,
     mnSlug: item.slug,
+    renisus: item.renisus,
   };
+}
+
+export function phytoMedItemFromMnListItem(
+  item: MedicinaNaturalListItem,
+): PrescriptionMedItem {
+  return mnMedItemFromListItem(item, "phytotherapy");
 }
 
 export function phytoMedItemFromDrugResult(drug: DrugSearchResult): PrescriptionMedItem {
@@ -55,6 +113,51 @@ export function phytoMedItemFromDrugResult(drug: DrugSearchResult): Prescription
     duration: "",
     instructions: drug.presentation?.trim() || "",
     itemKind: "phytotherapy",
+    mnSlug: drug.id,
+  };
+}
+
+export function floralMedItemFromMnListItem(
+  item: MedicinaNaturalListItem,
+): PrescriptionMedItem {
+  return mnMedItemFromListItem(item, "floral", "4 gotas, 4x/dia");
+}
+
+export function floralMedItemFromDrugResult(drug: DrugSearchResult): PrescriptionMedItem {
+  return {
+    name: drug.name,
+    dosage: drug.dosage?.trim() || "4 gotas, 4x/dia",
+    frequency: "",
+    duration: "",
+    instructions: drug.presentation?.trim() || "",
+    itemKind: "floral",
+    mnSlug: drug.id,
+  };
+}
+
+export function mnMedItemFromListItemForMode(
+  item: MedicinaNaturalListItem,
+  mode: PrescriptionItemSearchMode,
+): PrescriptionMedItem {
+  const kind = SEARCH_MODE_TO_ITEM_KIND[mode] || "phytotherapy";
+  const defaultDosage = mode === "floral" ? "4 gotas, 4x/dia" : "";
+  return mnMedItemFromListItem(item, kind, defaultDosage);
+}
+
+export function mnMedItemFromDrugResultForMode(
+  drug: DrugSearchResult,
+  mode: PrescriptionItemSearchMode,
+): PrescriptionMedItem {
+  if (mode === "floral") return floralMedItemFromDrugResult(drug);
+  if (mode === "phytotherapy") return phytoMedItemFromDrugResult(drug);
+  const kind = SEARCH_MODE_TO_ITEM_KIND[mode] || "phytotherapy";
+  return {
+    name: drug.name,
+    dosage: drug.dosage?.trim() || "",
+    frequency: "",
+    duration: "",
+    instructions: drug.presentation?.trim() || "",
+    itemKind: kind,
     mnSlug: drug.id,
   };
 }
@@ -73,10 +176,10 @@ export async function fetchMnFloraisForPrescription(
   return fetchMnByCategoriaForPrescription(apiBase, q, "FLORAL");
 }
 
-async function fetchMnByCategoriaForPrescription(
+export async function fetchMnByCategoriaForPrescription(
   apiBase: string,
   q: string,
-  categoria: string,
+  categoria: CategoriaPratica,
 ): Promise<MedicinaNaturalListItem[]> {
   const url = `${apiBase}/medicina-natural/search?q=${encodeURIComponent(q)}&categoria=${categoria}&take=20`;
   const res = await fetch(url);
@@ -85,28 +188,18 @@ async function fetchMnByCategoriaForPrescription(
   return data.items ?? [];
 }
 
-export function floralMedItemFromMnListItem(
-  item: MedicinaNaturalListItem,
-): PrescriptionMedItem {
-  return {
-    name: item.nome,
-    dosage: item.posologia?.slice(0, 200) || "4 gotas, 4x/dia",
-    frequency: "",
-    duration: "",
-    instructions: item.indicacoes?.slice(0, 500) || "",
-    itemKind: "floral",
-    mnSlug: item.slug,
-  };
-}
+export const MN_ADD_PARAM_TO_MODE: Record<string, PrescriptionItemSearchMode> = {
+  phytotherapy: "phytotherapy",
+  floral: "floral",
+  homeopathy: "homeopathy",
+  aromatherapy: "aromatherapy",
+  apitherapy: "apitherapy",
+};
 
-export function floralMedItemFromDrugResult(drug: DrugSearchResult): PrescriptionMedItem {
-  return {
-    name: drug.name,
-    dosage: drug.dosage?.trim() || "4 gotas, 4x/dia",
-    frequency: "",
-    duration: "",
-    instructions: drug.presentation?.trim() || "",
-    itemKind: "floral",
-    mnSlug: drug.id,
-  };
-}
+export const MN_ADD_PARAM_TO_ITEM_KIND: Record<string, PrescriptionItemKind> = {
+  phytotherapy: "phytotherapy",
+  floral: "floral",
+  homeopathy: "homeopathy",
+  aromatherapy: "aromatherapy",
+  apitherapy: "apitherapy",
+};

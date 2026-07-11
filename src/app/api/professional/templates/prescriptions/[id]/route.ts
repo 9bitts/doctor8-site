@@ -3,17 +3,9 @@ import { z } from "zod";
 import { requireProfessional } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
 import { TEMPLATE_CATEGORIES } from "@/lib/clinical-template-utils";
+import { prescriptionMedicationItemSchema } from "@/lib/prescription-medication-schema";
 
-const medicationItemSchema = z.object({
-  name: z.string().min(1),
-  dosage: z.string().min(1),
-  frequency: z.string().min(1),
-  duration: z.string().optional(),
-  instructions: z.string().optional(),
-  presentation: z.string().optional(),
-  pharmaceuticalForm: z.string().optional(),
-  itemKind: z.enum(["medication", "device", "phytotherapy"]).optional(),
-});
+const medicationItemSchema = prescriptionMedicationItemSchema;
 
 const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),

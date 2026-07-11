@@ -214,5 +214,77 @@
     "diluicaoRecomendada": "0,25–0,5% tópico",
     "viaUso": ["topica", "difusao"],
     "fototoxicidade": false
+  },
+  {
+    "slug": "geranio",
+    "nome": "Gerânio (Pelargonium graveolens)",
+    "nomesAlternativos": ["geranium", "gerânio-roza"],
+    "indicacoes": "Equilíbrio hormonal adjuvante, pele mista, ambientação relaxante.",
+    "contraindicacoes": "Hipersensibilidade. Gestação — usar com critério.",
+    "precaucoes": "Diluir para uso tópico. Evitar uso interno.",
+    "posologia": "Difusão: 3–4 gotas; tópico: 1–2% em óleo carreador.",
+    "diluicaoRecomendada": "1–2% tópico",
+    "viaUso": ["difusao", "topica"],
+    "fototoxicidade": false
+  },
+  {
+    "slug": "ylang_ylang",
+    "nome": "Ylang-ylang (Cananga odorata)",
+    "nomesAlternativos": ["ylang ylang"],
+    "indicacoes": "Ansiedade, hipertensão leve adjuvante, afrodisíaco suave, cabelos secos.",
+    "contraindicacoes": "Hipotensão sintomática. Uso excessivo pode causar náusea/cefaleia.",
+    "precaucoes": "Óleo muito aromático — poucas gotas na difusão.",
+    "posologia": "Difusão: 1–2 gotas; tópico: 0,5–1% em óleo carreador.",
+    "diluicaoRecomendada": "0,5–1% tópico",
+    "viaUso": ["difusao", "topica"],
+    "fototoxicidade": false
+  },
+  {
+    "slug": "ravintsara",
+    "nome": "Ravintsara (Cinnamomum camphora ct. cineol)",
+    "nomesAlternativos": ["ravensara", "ho leaf"],
+    "indicacoes": "Imunidade adjuvante, congestão respiratória, fadiga pós-viral.",
+    "contraindicacoes": "Epilepsia, lactentes. Não confundir com Ravensara aromatica.",
+    "precaucoes": "1,8-cineol — usar com moderação.",
+    "posologia": "Difusão: 3–4 gotas; inalação: 1–2 gotas em água quente.",
+    "diluicaoRecomendada": "1% tópico em tórax",
+    "viaUso": ["inalacao", "difusao", "topica"],
+    "fototoxicidade": false
+  },
+  {
+    "slug": "bergamota",
+    "nome": "Bergamota (Citrus bergamia)",
+    "nomesAlternativos": ["bergamot"],
+    "indicacoes": "Ânimo, dispepsia leve adjuvante, pele oleosa (tópico diluído).",
+    "contraindicacoes": "Fototoxicidade se expressada — evitar sol após uso tópico.",
+    "precaucoes": "Preferir bergapteno-free (FCF) para uso cutâneo diurno.",
+    "posologia": "Difusão: 3–4 gotas. Tópico FCF: 1% máx.",
+    "diluicaoRecomendada": "1% tópico (FCF)",
+    "viaUso": ["difusao", "topica"],
+    "fototoxicidade": true
+  },
+  {
+    "slug": "cedro_atlas",
+    "nome": "Cedro-do-atlas (Cedrus atlantica)",
+    "nomesAlternativos": ["cedarwood", "cedro"],
+    "indicacoes": "Ansiedade, pele seborreica adjuvante, repelente natural, foco.",
+    "contraindicacoes": "Gestação — usar com critério.",
+    "precaucoes": "Evitar uso interno.",
+    "posologia": "Difusão: 3–5 gotas; tópico couro cabeludo: 1% em óleo.",
+    "diluicaoRecomendada": "1–2% tópico",
+    "viaUso": ["difusao", "topica"],
+    "fototoxicidade": false
+  },
+  {
+    "slug": "tomilho_linalol",
+    "nome": "Tomilho ct. linalol (Thymus vulgaris)",
+    "nomesAlternativos": ["thyme linalool", "tomilho"],
+    "indicacoes": "Imunidade adjuvante, infecções respiratórias leves, acne.",
+    "contraindicacoes": "Hipertensão, epilepsia. Quimotipo timol mais irritante — preferir linalol.",
+    "precaucoes": "Sempre diluir. Evitar em lactentes.",
+    "posologia": "Difusão: 2–3 gotas; tópico: 1% máx.",
+    "diluicaoRecomendada": "1% tópico",
+    "viaUso": ["difusao", "topica", "inalacao"],
+    "fototoxicidade": false
   }
 ]

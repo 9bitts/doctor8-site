@@ -13,6 +13,7 @@ import { decrypt } from "@/lib/encryption";
 import { audit } from "@/lib/audit";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
+import { enrichMedsForPrescriptionPdf } from "@/lib/medicina-natural-catalog/enrich-meds-for-pdf";
 import { ensurePrescriptionToken, prescriptionQrUrl } from "@/lib/pharmacy-network/prescription-token";
 import { generateQrPngBuffer } from "@/lib/qr-png";
 import { embedPharmacyQrInPdfBytes } from "@/lib/pharmacy-prescription-pdf-qr";
@@ -183,9 +184,20 @@ export async function GET(
     (pro as { clinicZip?: string | null }).clinicZip,
   ]);
 
-  const meds = (prescription.medications as {
-    name: string; dosage: string; frequency: string; duration?: string; instructions?: string;
-  }[]).map((m) => ({ ...m, frequency: FREQ[lang][m.frequency] || m.frequency }));
+  const meds = await enrichMedsForPrescriptionPdf(
+    (prescription.medications as {
+      name: string;
+      dosage: string;
+      frequency: string;
+      duration?: string;
+      instructions?: string;
+      presentation?: string;
+      pharmaceuticalForm?: string;
+      mnSlug?: string;
+      renisus?: boolean;
+    }[]).map((m) => ({ ...m, frequency: FREQ[lang][m.frequency] || m.frequency })),
+    lang,
+  );
 
   const today = new Date().toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
   const validUntil = prescription.validUntil

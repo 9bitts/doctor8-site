@@ -145,14 +145,26 @@ export default function MedicinaNaturalItemDetail({
   const canPrescribeFitoterapico =
     practice.id === "fitoterapia" &&
     (portal === "professional" || portal === "integrative-therapist");
-  const canPrescribeFloral =
-    practice.id === "terapia_florais" && portal === "integrative-therapist";
+  const canPrescribeFloral = practice.id === "terapia_florais";
+  const canPrescribeHomeopathy = practice.id === "homeopatia";
+  const canPrescribeAromatherapy = practice.id === "aromaterapia";
+  const canPrescribeApitherapy = practice.id === "apiterapia";
 
-  const prescribeHref = canPrescribeFitoterapico
-    ? `${prescriptionsBasePath(portal)}?add=phytotherapy&mnSlug=${encodeURIComponent(item.slug)}`
+  const mnAddParam = canPrescribeFitoterapico
+    ? "phytotherapy"
     : canPrescribeFloral
-      ? `${prescriptionsBasePath(portal)}?add=floral&mnSlug=${encodeURIComponent(item.slug)}`
-      : null;
+      ? "floral"
+      : canPrescribeHomeopathy
+        ? "homeopathy"
+        : canPrescribeAromatherapy
+          ? "aromatherapy"
+          : canPrescribeApitherapy
+            ? "apitherapy"
+            : null;
+
+  const prescribeHref = mnAddParam
+    ? `${prescriptionsBasePath(portal)}?add=${mnAddParam}&mnSlug=${encodeURIComponent(item.slug)}`
+    : null;
 
   const acao = acaoPrescricaoMedicinaNatural(status);
 

@@ -1,5 +1,4 @@
 import type { ConsultTemplate } from "./types";
-import { PHYTOTHERAPY_FORM_OPTIONS } from "../reference-library/phytotherapy-products";
 
 const PRESENTATIONS = [
   { value: "capsula", labelKey: "it.tpl.phyto.pres.capsula" },
@@ -30,9 +29,9 @@ export const FITOTERAPIA_TEMPLATE: ConsultTemplate = {
     {
       key: "product",
       labelKey: "it.tpl.phyto.product",
-      type: "select",
+      type: "text",
       sectionKey: "it.tpl.section.prescription",
-      options: [...PHYTOTHERAPY_FORM_OPTIONS],
+      placeholderKey: "it.tpl.phyto.productCatalogHint",
     },
     { key: "productOther", labelKey: "it.tpl.phyto.productOther", type: "text", sectionKey: "it.tpl.section.prescription" },
     {
