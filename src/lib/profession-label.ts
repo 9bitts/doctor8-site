@@ -1,5 +1,9 @@
 // Derives human-readable profession type and council prefix from specialty string.
 
+import type { Lang } from "@/lib/i18n/translations";
+import { translate } from "@/lib/i18n/translations";
+import { canonicalProfessionValue } from "@/lib/professions";
+
 const PSYCHOLOGY = new Set([
   "Psychologist", "Psychology", "Psychoanalyst", "Neuropsychologist", "Psychotherapist", "Behavioral Therapist",
 ]);
@@ -52,7 +56,7 @@ export function isDentistSpecialty(specialty: string | null | undefined): boolea
 }
 
 export function getProfessionInfo(specialty: string): ProfessionInfo {
-  const s = specialty.trim();
+  const s = (canonicalProfessionValue(specialty) ?? specialty).trim();
   if (PSYCHOLOGY.has(s)) return { typeKey: "psychologist", councilKey: "crp" };
   if (NUTRITION.has(s)) return { typeKey: "nutritionist", councilKey: "crn_nutrition" };
   if (PHYSIO.has(s)) return { typeKey: "physiotherapist", councilKey: "crefito" };
@@ -69,4 +73,43 @@ export function formatLicense(licenseNumber: string, licenseState: string | null
   if (!num) return "";
   if (licenseState) return `${prefix} ${num}/${licenseState}`;
   return `${prefix} ${num}`;
+}
+
+/** Patient-facing honorific before provider name (AGD-34). */
+export function patientProviderNamePrefix(
+  lang: Lang,
+  specialty: string,
+  providerType?: "health" | "psychoanalyst" | "integrative",
+): string {
+  if (providerType === "psychoanalyst") return "";
+  if (providerType === "integrative") return translate(lang, "volAppt.providerPrefix.integrative");
+
+  switch (getProfessionInfo(specialty).typeKey) {
+    case "psychologist":
+      return translate(lang, "volAppt.providerPrefix.psychologist");
+    case "nutritionist":
+      return "Nutr.";
+    case "physiotherapist":
+      return "Fisio.";
+    case "nurse":
+      return "Enf.";
+    case "dentist":
+      return "Dent.";
+    case "pharmacist":
+      return "";
+    default:
+      return translate(lang, "volAppt.providerPrefix.doctor");
+  }
+}
+
+export function formatPatientProviderDisplayName(
+  lang: Lang,
+  firstName: string,
+  lastName: string,
+  specialty: string,
+  providerType?: "health" | "psychoanalyst" | "integrative",
+): string {
+  const prefix = patientProviderNamePrefix(lang, specialty, providerType);
+  const name = `${firstName} ${lastName}`.trim();
+  return prefix ? `${prefix} ${name}` : name;
 }

@@ -20,7 +20,7 @@ import {
   type BookableSlot,
 } from "@/lib/appointment-slots";
 import { getProfessionLabel, specialtyMatchesSearch, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
-import { getProfessionInfo } from "@/lib/profession-label";
+import { getProfessionInfo, formatPatientProviderDisplayName } from "@/lib/profession-label";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import {
   formatShortDate,
@@ -440,11 +440,16 @@ export default function AppointmentsPage() {
         ? apt.psychoanalystId || apt.professionalId
         : apt.professionalId || apt.psychoanalystId;
     if (!providerId) return;
-    const prefix = providerType === "psychoanalyst" ? "" : "Dr. ";
     setReviewModal({
       providerId,
       providerType,
-      providerName: `${prefix}${apt.professional?.firstName || ""} ${apt.professional?.lastName || ""}`.trim(),
+      providerName: formatPatientProviderDisplayName(
+        lang,
+        apt.professional?.firstName || "",
+        apt.professional?.lastName || "",
+        apt.professional?.specialty ?? "",
+        providerType,
+      ),
     });
   }
 
@@ -1117,9 +1122,13 @@ export default function AppointmentsPage() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-slate-800 truncate">
-                    {apt.providerType === "psychoanalyst"
-                      ? `${apt.professional?.firstName} ${apt.professional?.lastName}`
-                      : `Dr. ${apt.professional?.firstName} ${apt.professional?.lastName}`}
+                    {formatPatientProviderDisplayName(
+                      lang,
+                      apt.professional?.firstName ?? "",
+                      apt.professional?.lastName ?? "",
+                      apt.professional?.specialty ?? "",
+                      apt.providerType ?? (apt.psychoanalystId ? "psychoanalyst" : "health"),
+                    )}
                   </p>
                   <p className="text-xs text-slate-500">
                     {formatShortDateWithYear(new Date(apt.scheduledAt), userTz, locale)}
@@ -1240,8 +1249,13 @@ export default function AppointmentsPage() {
             )}
             <div>
               <h2 className="text-white font-bold text-lg">
-                {selectedPro.providerType === "psychoanalyst" ? "" : "Dr. "}
-                {selectedPro.firstName} {selectedPro.lastName}
+                {formatPatientProviderDisplayName(
+                  lang,
+                  selectedPro.firstName,
+                  selectedPro.lastName,
+                  selectedPro.specialty,
+                  selectedPro.providerType,
+                )}
               </h2>
               <p className="text-slate-400 text-sm">{getProfessionLabel(lang, selectedPro.specialty)}</p>
               {isAcuraVolunteerProvider(!!selectedPro.verified, !!selectedPro.acuraVolunteer) && (
@@ -1609,7 +1623,13 @@ export default function AppointmentsPage() {
           {selectedPro.providerType !== "psychoanalyst" && (
             <ShareHistoryPrompt
               professionalId={selectedPro.id}
-              professionalName={`Dr. ${selectedPro.firstName} ${selectedPro.lastName}`}
+              professionalName={formatPatientProviderDisplayName(
+                lang,
+                selectedPro.firstName,
+                selectedPro.lastName,
+                selectedPro.specialty,
+                selectedPro.providerType,
+              )}
             />
           )}
           {confirmedId && (
@@ -1823,11 +1843,15 @@ function ProAvatar({ pro, className = "w-14 h-14 rounded-2xl" }: { pro: Pick<Pro
 }
 
 function DoctorCard({ pro, onSelect, locale, lang, t }: { pro: Professional; onSelect: () => void; locale: string; lang: Lang; t: (k: string) => string }) {
-  const isAnalyst = pro.providerType === "psychoanalyst";
   const showAcuraBadge = isAcuraVolunteerProvider(!!pro.verified, !!pro.acuraVolunteer);
-  const displayName = isAnalyst
-    ? `${pro.firstName} ${pro.lastName}`
-    : `Dr. ${pro.firstName} ${pro.lastName}`;
+  const displayName = formatPatientProviderDisplayName(
+    lang,
+    pro.firstName,
+    pro.lastName,
+    pro.specialty,
+    pro.providerType,
+  );
+  const isAnalyst = pro.providerType === "psychoanalyst";
   return (
     <div className={`bg-white rounded-2xl border shadow-sm p-5 hover:shadow-md transition cursor-pointer ${
       showAcuraBadge

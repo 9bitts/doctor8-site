@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { localeOf } from "@/lib/i18n/translations";
+import { localeOf, type Lang } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
-import { getProfessionInfo } from "@/lib/profession-label";
+import { formatPatientProviderDisplayName } from "@/lib/profession-label";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import {
   filterDaysForScheduledVolunteerBooking,
@@ -62,25 +62,17 @@ const BOOKING_ERROR_KEYS: Record<string, string> = {
   policy_required: "appt.acceptPolicyRequired",
 };
 
-function providerNamePrefix(
-  specialty: string,
-  providerType: VolunteerProfessional["providerType"],
-  t: (key: string) => string,
-): string {
-  if (providerType === "psychoanalyst") return "";
-  if (providerType === "integrative") return t("volAppt.providerPrefix.integrative");
-  const typeKey = getProfessionInfo(specialty).typeKey;
-  if (typeKey === "psychologist") return t("volAppt.providerPrefix.psychologist");
-  return t("volAppt.providerPrefix.doctor");
-}
-
 function formatVolunteerProviderName(
   pro: { firstName: string; lastName: string; specialty: string; providerType: VolunteerProfessional["providerType"] },
-  t: (key: string) => string,
+  lang: Lang,
 ): string {
-  const prefix = providerNamePrefix(pro.specialty, pro.providerType, t);
-  const name = `${pro.firstName} ${pro.lastName}`.trim();
-  return prefix ? `${prefix} ${name}` : name;
+  return formatPatientProviderDisplayName(
+    lang,
+    pro.firstName,
+    pro.lastName,
+    pro.specialty,
+    pro.providerType,
+  );
 }
 
 function ProfessionalAvatar({ pro }: { pro: VolunteerProfessional }) {
@@ -290,7 +282,7 @@ export default function VolunteerAppointmentsClient() {
                     <ProfessionalAvatar pro={pro} />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900">
-                        {formatVolunteerProviderName(pro, t)}
+                        {formatVolunteerProviderName(pro, lang)}
                       </p>
                       <p className="text-xs text-slate-500">{getProfessionLabel(lang, pro.specialty)}</p>
                       <div className="flex flex-wrap gap-1.5 mt-2">
@@ -326,7 +318,7 @@ export default function VolunteerAppointmentsClient() {
             <ProfessionalAvatar pro={selectedPro} />
             <div>
               <p className="font-bold text-slate-900">
-                {formatVolunteerProviderName(selectedPro, t)}
+                {formatVolunteerProviderName(selectedPro, lang)}
               </p>
               <p className="text-xs text-slate-500">{getProfessionLabel(lang, selectedPro.specialty)}</p>
             </div>
@@ -548,7 +540,7 @@ export default function VolunteerAppointmentsClient() {
             <div className="flex justify-between">
               <span className="text-slate-500">{t("appt.doctor")}</span>
               <span className="font-semibold">
-                {formatVolunteerProviderName(selectedPro, t)}
+                {formatVolunteerProviderName(selectedPro, lang)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -569,7 +561,7 @@ export default function VolunteerAppointmentsClient() {
             <ShareHistoryPrompt
               professionalId={selectedPro.providerType === "health" ? selectedPro.id : undefined}
               professionalUserId={selectedPro.professionalUserId}
-              professionalName={formatVolunteerProviderName(selectedPro, t)}
+              professionalName={formatVolunteerProviderName(selectedPro, lang)}
             />
           )}
           {confirmedId && (
