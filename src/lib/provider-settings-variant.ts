@@ -1,5 +1,5 @@
-/** Portal-specific copy for shared provider settings components. Only psychoanalyst today. */
-export type ProviderSettingsVariant = "psychoanalyst";
+/** Portal-specific copy for shared provider settings components. */
+export type ProviderSettingsVariant = "psychoanalyst" | "integrative_therapist";
 
 export function isPsychoanalystVariant(
   variant?: ProviderSettingsVariant,
@@ -7,10 +7,19 @@ export function isPsychoanalystVariant(
   return variant === "psychoanalyst";
 }
 
+export function isIntegrativeTherapistVariant(
+  variant?: ProviderSettingsVariant,
+): variant is "integrative_therapist" {
+  return variant === "integrative_therapist";
+}
+
 export function variantI18nKey(
   variant: ProviderSettingsVariant | undefined,
   defaultKey: string,
   psychoanalystKey: string,
+  integrativeKey?: string,
 ): string {
-  return variant === "psychoanalyst" ? psychoanalystKey : defaultKey;
+  if (variant === "psychoanalyst") return psychoanalystKey;
+  if (variant === "integrative_therapist" && integrativeKey) return integrativeKey;
+  return defaultKey;
 }

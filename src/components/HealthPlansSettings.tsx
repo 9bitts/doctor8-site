@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { dedupeHealthPlanList } from "@/lib/health-plan-display";
 import { Loader2, Shield, Check, Info } from "lucide-react";
 import {
+  isIntegrativeTherapistVariant,
   isPsychoanalystVariant,
   variantI18nKey,
   type ProviderSettingsVariant,
@@ -30,15 +31,26 @@ export default function HealthPlansSettings({
 }) {
   const { t } = useI18n();
   const isPa = isPsychoanalystVariant(variant);
-  const tk = (defaultKey: string, paKey: string) =>
-    t(variantI18nKey(variant, defaultKey, paKey));
-  const accentIcon = isPa ? "text-violet-500" : "text-brand-500";
+  const isIt = isIntegrativeTherapistVariant(variant);
+  const tk = (defaultKey: string, paKey: string, itKey?: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey, itKey));
+  const accentIcon = isPa ? "text-violet-500" : isIt ? "text-teal-500" : "text-brand-500";
   const accentSelected = isPa
     ? "bg-violet-50 border-violet-300 text-violet-700 font-medium"
-    : "bg-brand-50 border-brand-300 text-brand-700 font-medium";
-  const accentHover = isPa ? "hover:border-violet-200" : "hover:border-brand-200";
-  const accentBtn = isPa ? "bg-violet-600 hover:bg-violet-700" : "bg-brand-500 hover:bg-brand-400";
-  const accentWeekday = isPa ? "bg-violet-500 border-violet-500" : "bg-brand-500 border-brand-500";
+    : isIt
+      ? "bg-teal-50 border-teal-300 text-teal-700 font-medium"
+      : "bg-brand-50 border-brand-300 text-brand-700 font-medium";
+  const accentHover = isPa ? "hover:border-violet-200" : isIt ? "hover:border-teal-200" : "hover:border-brand-200";
+  const accentBtn = isPa
+    ? "bg-violet-600 hover:bg-violet-700"
+    : isIt
+      ? "bg-teal-600 hover:bg-teal-700"
+      : "bg-brand-500 hover:bg-brand-400";
+  const accentWeekday = isPa
+    ? "bg-violet-500 border-violet-500"
+    : isIt
+      ? "bg-teal-500 border-teal-500"
+      : "bg-brand-500 border-brand-500";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -120,11 +132,11 @@ export default function HealthPlansSettings({
       <div>
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
           <Shield size={18} className={accentIcon} />{" "}
-          {tk("pubSearch.healthPlansTitle", "pa.settings.healthPlansTitle")}
+          {tk("pubSearch.healthPlansTitle", "pa.settings.healthPlansTitle", "it.settings.healthPlansTitle")}
           <span className="text-slate-400 text-sm font-normal">{t("set.optional")}</span>
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          {tk("pubSearch.healthPlansSubtitle", "pa.settings.healthPlansSubtitle")}
+          {tk("pubSearch.healthPlansSubtitle", "pa.settings.healthPlansSubtitle", "it.settings.healthPlansSubtitle")}
         </p>
       </div>
 
@@ -132,6 +144,13 @@ export default function HealthPlansSettings({
         <p className="text-xs text-violet-800 bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5 flex gap-2">
           <Info size={14} className="shrink-0 mt-0.5 text-violet-500" />
           {t("pa.settings.healthPlansNote")}
+        </p>
+      )}
+
+      {isIt && (
+        <p className="text-xs text-teal-800 bg-teal-50 border border-teal-100 rounded-xl px-3 py-2.5 flex gap-2">
+          <Info size={14} className="shrink-0 mt-0.5 text-teal-500" />
+          {t("it.settings.healthPlansNote")}
         </p>
       )}
 
@@ -225,7 +244,7 @@ export default function HealthPlansSettings({
         className={`${accentBtn} disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2`}
       >
         {saving && <Loader2 size={14} className="animate-spin" />}
-        {tk("pubSearch.healthPlansSave", "pa.settings.healthPlansSave")}
+        {tk("pubSearch.healthPlansSave", "pa.settings.healthPlansSave", "it.settings.healthPlansSave")}
       </button>
     </div>
   );

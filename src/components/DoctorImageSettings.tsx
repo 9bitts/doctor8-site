@@ -33,6 +33,7 @@ import {
 } from "@/lib/doctor-image";
 import { resizeImageToDataUrl } from "@/lib/client/resize-image";
 import {
+  isIntegrativeTherapistVariant,
   isPsychoanalystVariant,
   variantI18nKey,
   type ProviderSettingsVariant,
@@ -64,16 +65,33 @@ export default function DoctorImageSettings({
 }) {
   const { t } = useI18n();
   const isPa = isPsychoanalystVariant(variant);
-  const tk = (defaultKey: string, paKey: string) =>
-    t(variantI18nKey(variant, defaultKey, paKey));
+  const isIt = isIntegrativeTherapistVariant(variant);
+  const tk = (defaultKey: string, paKey: string, itKey?: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey, itKey));
   const themeKey = (preset: string) =>
-    t(isPa ? `pa.doctorImage.theme.${preset}` : `doctorImage.theme.${preset}`);
-  const accentIcon = isPa ? "text-violet-500" : "text-brand-500";
+    t(
+      isPa
+        ? `pa.doctorImage.theme.${preset}`
+        : isIt
+          ? `it.doctorImage.theme.${preset}`
+          : `doctorImage.theme.${preset}`,
+    );
+  const accentIcon = isPa ? "text-violet-500" : isIt ? "text-teal-500" : "text-brand-500";
   const accentSelected = isPa
     ? "border-violet-500 bg-violet-50 text-violet-700"
-    : "border-brand-500 bg-brand-50 text-brand-700";
-  const accentBtn = isPa ? "bg-violet-600 hover:bg-violet-700" : "bg-brand-500 hover:bg-brand-400";
-  const inputRing = isPa ? "focus:ring-violet-500/30" : "focus:ring-brand-500/30";
+    : isIt
+      ? "border-teal-500 bg-teal-50 text-teal-700"
+      : "border-brand-500 bg-brand-50 text-brand-700";
+  const accentBtn = isPa
+    ? "bg-violet-600 hover:bg-violet-700"
+    : isIt
+      ? "bg-teal-600 hover:bg-teal-700"
+      : "bg-brand-500 hover:bg-brand-400";
+  const inputRing = isPa
+    ? "focus:ring-violet-500/30"
+    : isIt
+      ? "focus:ring-teal-500/30"
+      : "focus:ring-brand-500/30";
   const coverRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
@@ -249,7 +267,7 @@ export default function DoctorImageSettings({
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-500">{tk("doctorImage.subtitle", "pa.doctorImage.subtitle")}</p>
+      <p className="text-sm text-slate-500">{tk("doctorImage.subtitle", "pa.doctorImage.subtitle", "it.doctorImage.subtitle")}</p>
 
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-700">
@@ -317,7 +335,7 @@ export default function DoctorImageSettings({
             onChange={(e) =>
               setData((prev) => ({ ...prev, headline: e.target.value || null }))
             }
-            placeholder={tk("doctorImage.headlinePlaceholder", "pa.doctorImage.headlinePlaceholder")}
+            placeholder={tk("doctorImage.headlinePlaceholder", "pa.doctorImage.headlinePlaceholder", "it.doctorImage.headlinePlaceholder")}
           />
           <p className="text-[10px] text-slate-400 mt-1">
             {(data.headline?.length || 0)}/{MAX_HEADLINE_LENGTH}
@@ -493,7 +511,7 @@ export default function DoctorImageSettings({
             </button>
           )}
         </div>
-        <p className="text-xs text-slate-500">{tk("doctorImage.blocksHint", "pa.doctorImage.blocksHint")}</p>
+        <p className="text-xs text-slate-500">{tk("doctorImage.blocksHint", "pa.doctorImage.blocksHint", "it.doctorImage.blocksHint")}</p>
 
         {data.contentBlocks.length === 0 && (
           <p className="text-xs text-slate-400 italic">{t("doctorImage.blocksEmpty")}</p>
@@ -548,7 +566,7 @@ export default function DoctorImageSettings({
                 className={`${inputClass} min-h-[100px] resize-y`}
                 value={block.body}
                 onChange={(e) => updateBlock(block.id, { body: e.target.value })}
-                placeholder={tk("doctorImage.blockBodyPlaceholder", "pa.doctorImage.blockBodyPlaceholder")}
+                placeholder={tk("doctorImage.blockBodyPlaceholder", "pa.doctorImage.blockBodyPlaceholder", "it.doctorImage.blockBodyPlaceholder")}
                 rows={4}
               />
             </div>
@@ -569,14 +587,14 @@ export default function DoctorImageSettings({
           ) : saved ? (
             <CheckCircle2 size={16} />
           ) : null}
-          {saved ? t("doctorImage.saved") : tk("doctorImage.save", "pa.doctorImage.save")}
+          {saved ? t("doctorImage.saved") : tk("doctorImage.save", "pa.doctorImage.save", "it.doctorImage.save")}
         </button>
         {publicUrl && (
           <Link
             href={publicUrl}
             target="_blank"
             className={`inline-flex items-center gap-2 text-sm font-semibold hover:opacity-80 ${
-              isPa ? "text-violet-600" : "text-brand-600 hover:text-brand-500"
+              isPa ? "text-violet-600" : isIt ? "text-teal-600" : "text-brand-600 hover:text-brand-500"
             }`}
           >
             <ExternalLink size={16} />

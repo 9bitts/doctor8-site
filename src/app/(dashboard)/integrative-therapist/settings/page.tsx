@@ -33,12 +33,13 @@ import {
   Leaf,
   Camera,
   X,
-  Building2,
   Globe,
   Calendar,
   Sparkles,
 } from "lucide-react";
 import { initials as nameInitials } from "@/lib/format-name";
+
+const IT_VARIANT = "integrative_therapist" as const;
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/40";
@@ -280,6 +281,7 @@ export default function IntegrativeTherapistSettingsPage() {
         </div>
       )}
 
+      {/* 1 — Região da conta */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
           <Globe size={18} className="text-teal-500" /> {t("it.settings.accountRegion")}
@@ -317,216 +319,201 @@ export default function IntegrativeTherapistSettingsPage() {
         </div>
       </div>
 
-      <PublicListingSettings apiPath="/api/integrative-therapist/public-profile" />
+      {/* 2 — Identidade, foto e PICS */}
+      <IncompleteSectionHighlight
+        id={registrationChecklistHash("professionalData")}
+        incomplete={missingProfessionalData}
+      >
+        <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <User size={18} className="text-teal-500" />
+            {t("it.settings.photoIdentity")}
+          </h2>
+          <div className="flex items-center gap-5">
+            <div className="relative">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-24 h-24 rounded-2xl object-cover border border-slate-200" />
+              ) : (
+                <div className="w-24 h-24 rounded-2xl bg-teal-100 flex items-center justify-center text-teal-600 text-2xl font-bold">
+                  {avatarInitials !== "?" ? avatarInitials : <Camera size={28} />}
+                </div>
+              )}
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl("")}
+                  className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-1 shadow hover:bg-rose-50"
+                >
+                  <X size={14} className="text-rose-500" />
+                </button>
+              )}
+            </div>
+            <div>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="bg-white border border-slate-200 hover:border-teal-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm flex items-center gap-2"
+              >
+                <Camera size={15} /> {avatarUrl ? t("set.changePhoto") : t("set.uploadPhoto")}
+              </button>
+              <p className="text-xs text-slate-400 mt-2">{t("set.photoHint")}</p>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-slate-600">{t("reg.firstName")}</label>
+              <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">{t("reg.lastName")}</label>
+              <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600">{t("it.settings.phone")}</label>
+            <input
+              className={inputClass}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={t("it.settings.phoneHint")}
+            />
+          </div>
+        </section>
+
+        <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+          <h2 className="font-semibold text-slate-800">{t("it.settings.identity")}</h2>
+          <div>
+            <label className="text-xs font-medium text-slate-600">{t("it.settings.institution")}</label>
+            <input
+              className={inputClass}
+              value={trainingInstitution}
+              onChange={(e) => setTrainingInstitution(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600">{t("it.settings.certifications")}</label>
+            <input
+              className={inputClass}
+              value={certifications}
+              onChange={(e) => setCertifications(e.target.value)}
+              placeholder={t("it.settings.certificationsHint")}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600">{t("it.settings.yearsLabel")}</label>
+            <input
+              type="number"
+              min={0}
+              className={inputClass}
+              value={yearsOfPractice}
+              onChange={(e) => setYearsOfPractice(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600">{t("it.settings.bio")}</label>
+            <textarea
+              className={`${inputClass} min-h-[80px] resize-y`}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder={t("it.settings.bioPlaceholder")}
+            />
+          </div>
+        </section>
+
+        <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+          <h2 className="font-semibold text-slate-800">{t("it.settings.picsTitle")}</h2>
+          <p className="text-xs text-slate-500">{t("it.settings.picsHint")}</p>
+          {(Object.keys(grouped) as PicCategory[]).map((cat) =>
+            grouped[cat].length === 0 ? null : (
+              <div key={cat}>
+                <p className="text-xs font-bold text-teal-700 uppercase tracking-wide mb-2">
+                  {picCategoryLabel(cat, lang)}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {grouped[cat].map((p) => {
+                    const active = selectedPractices.includes(p.slug);
+                    const label = lang.startsWith("pt")
+                      ? p.labelPt
+                      : lang.startsWith("en")
+                        ? p.labelEn
+                        : p.labelEs;
+                    return (
+                      <button
+                        key={p.slug}
+                        type="button"
+                        onClick={() => togglePractice(p.slug)}
+                        className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                          active
+                            ? "bg-teal-100 border-teal-400 text-teal-800 font-semibold"
+                            : "bg-slate-50 border-slate-200 text-slate-600 hover:border-teal-300"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ),
+          )}
+          <p className="text-xs text-slate-500">
+            {t("it.settings.picsSelected")}: {selectedPractices.length}
+          </p>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <CheckCircle2 size={18} /> : null}
+            {saving ? t("avail.saving") : saved ? t("avail.saved") : t("set.saveProfile")}
+          </button>
+        </section>
+      </IncompleteSectionHighlight>
+
+      {/* 3 — Honorários e locais de atendimento */}
+      <IncompleteSectionHighlight
+        id={registrationChecklistHash("careSettings")}
+        incomplete={missingCareSettings}
+      >
+        <div className="space-y-6">
+          <ConsultPricingSettings
+            variant={IT_VARIANT}
+            consultServicesApiPath="/api/integrative-therapist/consult-services"
+            showSessionDuration
+            accent="teal"
+            onSaved={refreshRegistration}
+          />
+          <PracticeSettings variant={IT_VARIANT} apiPath="/api/integrative-therapist/practice" />
+        </div>
+      </IncompleteSectionHighlight>
+
+      {/* 4 — Perfil público */}
+      <PublicListingSettings variant={IT_VARIANT} apiPath="/api/integrative-therapist/public-profile" />
 
       <ProfileSettingsSection
         id="section-doctor-image"
-        title={t("set.sectionDoctorImage")}
-        description={t("set.sectionDoctorImageDesc")}
+        title={t("it.settings.publicProfileTitle")}
+        description={t("it.settings.publicProfileDesc")}
         icon={<Sparkles size={18} />}
         open={doctorImageOpen}
         onToggle={() => setDoctorImageOpen((v) => !v)}
         optional
       >
-        <DoctorImageSettings apiPath="/api/integrative-therapist/public-profile" />
+        <DoctorImageSettings variant={IT_VARIANT} apiPath="/api/integrative-therapist/public-profile" />
       </ProfileSettingsSection>
 
-      <HealthPlansSettings apiPath="/api/integrative-therapist/health-plans" />
-      <IncompleteSectionHighlight
-        id={registrationChecklistHash("careSettings")}
-        incomplete={missingCareSettings}
-      >
-        <ConsultPricingSettings
-          consultServicesApiPath="/api/integrative-therapist/consult-services"
-          showSessionDuration
-          accent="teal"
-          onSaved={refreshRegistration}
-        />
-      </IncompleteSectionHighlight>
+      {/* 5 — Certificações */}
+      <LicenseDocumentsUpload variant={IT_VARIANT} incomplete={missingDocuments} />
 
-      <PracticeSettings apiPath="/api/integrative-therapist/practice" />
+      {/* 6 — Convênios (opcional) */}
+      <HealthPlansSettings variant={IT_VARIANT} apiPath="/api/integrative-therapist/health-plans" />
 
-      <IncompleteSectionHighlight
-        id={registrationChecklistHash("professionalData")}
-        incomplete={missingProfessionalData}
-      >
-      <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <User size={18} className="text-teal-500" />
-          {t("it.settings.photoIdentity")}
-        </h2>
-        <div className="flex items-center gap-5">
-          <div className="relative">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-24 h-24 rounded-2xl object-cover border border-slate-200" />
-            ) : (
-              <div className="w-24 h-24 rounded-2xl bg-teal-100 flex items-center justify-center text-teal-600 text-2xl font-bold">
-                {avatarInitials !== "?" ? avatarInitials : <Camera size={28} />}
-              </div>
-            )}
-            {avatarUrl && (
-              <button
-                type="button"
-                onClick={() => setAvatarUrl("")}
-                className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-1 shadow hover:bg-rose-50"
-              >
-                <X size={14} className="text-rose-500" />
-              </button>
-            )}
-          </div>
-          <div>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="bg-white border border-slate-200 hover:border-teal-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm flex items-center gap-2"
-            >
-              <Camera size={15} /> {avatarUrl ? t("set.changePhoto") : t("set.uploadPhoto")}
-            </button>
-            <p className="text-xs text-slate-400 mt-2">{t("set.photoHint")}</p>
-          </div>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("reg.firstName")}</label>
-            <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("reg.lastName")}</label>
-            <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
-          </div>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-slate-600">{t("it.settings.phone")}</label>
-          <input
-            className={inputClass}
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder={t("it.settings.phoneHint")}
-          />
-        </div>
-      </section>
-
-      <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-slate-800">{t("it.settings.identity")}</h2>
-        <div>
-          <label className="text-xs font-medium text-slate-600">{t("it.settings.institution")}</label>
-          <input
-            className={inputClass}
-            value={trainingInstitution}
-            onChange={(e) => setTrainingInstitution(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-slate-600">{t("it.settings.certifications")}</label>
-          <input
-            className={inputClass}
-            value={certifications}
-            onChange={(e) => setCertifications(e.target.value)}
-            placeholder={t("it.settings.certificationsHint")}
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-slate-600">{t("it.settings.years")}</label>
-          <input
-            type="number"
-            min={0}
-            className={inputClass}
-            value={yearsOfPractice}
-            onChange={(e) => setYearsOfPractice(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-slate-600">{t("it.settings.bio")}</label>
-          <textarea
-            className={`${inputClass} min-h-[80px]`}
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-          />
-        </div>
-      </section>
-
-      <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-slate-800">{t("it.settings.picsTitle")}</h2>
-        <p className="text-xs text-slate-500">{t("it.settings.picsHint")}</p>
-        {(Object.keys(grouped) as PicCategory[]).map((cat) =>
-          grouped[cat].length === 0 ? null : (
-            <div key={cat}>
-              <p className="text-xs font-bold text-teal-700 uppercase tracking-wide mb-2">
-                {picCategoryLabel(cat, lang)}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {grouped[cat].map((p) => {
-                  const active = selectedPractices.includes(p.slug);
-                  const label = lang.startsWith("pt")
-                    ? p.labelPt
-                    : lang.startsWith("en")
-                      ? p.labelEn
-                      : p.labelEs;
-                  return (
-                    <button
-                      key={p.slug}
-                      type="button"
-                      onClick={() => togglePractice(p.slug)}
-                      className={`text-xs px-3 py-1.5 rounded-full border transition ${
-                        active
-                          ? "bg-teal-100 border-teal-400 text-teal-800 font-semibold"
-                          : "bg-slate-50 border-slate-200 text-slate-600 hover:border-teal-300"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ),
-        )}
-        <p className="text-xs text-slate-500">
-          {t("it.settings.picsSelected")}: {selectedPractices.length}
-        </p>
-      </section>
-      </IncompleteSectionHighlight>
-
-      <section className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Building2 size={18} className="text-teal-500" />
-          {t("set.clinicAddress")}{" "}
-          <span className="text-slate-400 text-sm font-normal">{t("set.optional")}</span>
-        </h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("set.clinicName")}</label>
-            <input className={inputClass} value={clinicName} onChange={(e) => setClinicName(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("set.address")}</label>
-            <input className={inputClass} value={clinicAddress} onChange={(e) => setClinicAddress(e.target.value)} />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("set.city")}</label>
-            <input className={inputClass} value={clinicCity} onChange={(e) => setClinicCity(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("set.state")}</label>
-            <input className={inputClass} value={clinicState} onChange={(e) => setClinicState(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("set.country")}</label>
-            <input className={inputClass} value={clinicCountry} onChange={(e) => setClinicCountry(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-600">{t("set.zip")}</label>
-            <input className={inputClass} value={clinicZip} onChange={(e) => setClinicZip(e.target.value)} />
-          </div>
-        </div>
-      </section>
-
-      <LicenseDocumentsUpload incomplete={missingDocuments} />
-
+      {/* 7 — Organização (opcional) */}
       <OrganizationJoinSettings
+        variant={IT_VARIANT}
         listEndpoint="/api/integrative-therapist/organization"
         joinEndpoint="/api/integrative-therapist/organization"
       />
@@ -534,13 +521,9 @@ export default function IntegrativeTherapistSettingsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sticky bottom-4 bg-white/80 backdrop-blur rounded-2xl border border-slate-100 shadow-lg p-3">
         <p className="text-xs text-slate-400 sm:pl-2 flex items-center gap-1.5">
           <Calendar size={14} />
-          {t("set.availabilityNote")}{" "}
+          {t("it.settings.saveNote")}{" "}
           <Link href="/integrative-therapist/settings/availability" className="text-teal-600 underline">
             {t("set.availabilityLink")}
-          </Link>
-          . {t("it.settings.pricingNote")}{" "}
-          <Link href="/integrative-therapist/financeiro" className="text-teal-600 underline">
-            {t("nav.financeiro")}
           </Link>
           .
         </p>

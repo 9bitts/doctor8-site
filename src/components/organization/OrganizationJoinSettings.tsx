@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Building2, Loader2, CheckCircle2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
+  isIntegrativeTherapistVariant,
   isPsychoanalystVariant,
   variantI18nKey,
   type ProviderSettingsVariant,
@@ -24,16 +25,21 @@ export default function OrganizationJoinSettings({
 }: Props) {
   const { t } = useI18n();
   const isPa = isPsychoanalystVariant(variant);
-  const tk = (defaultKey: string, paKey: string) =>
-    t(variantI18nKey(variant, defaultKey, paKey));
-  const iconClass = isPa ? "text-violet-600" : "text-indigo-600";
+  const isIt = isIntegrativeTherapistVariant(variant);
+  const tk = (defaultKey: string, paKey: string, itKey?: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey, itKey));
+  const iconClass = isPa ? "text-violet-600" : isIt ? "text-teal-600" : "text-indigo-600";
   const listClass = isPa
     ? "bg-violet-50 border-violet-100"
-    : "bg-indigo-50 border-indigo-100";
-  const listIcon = isPa ? "text-violet-600" : "text-indigo-600";
+    : isIt
+      ? "bg-teal-50 border-teal-100"
+      : "bg-indigo-50 border-indigo-100";
+  const listIcon = isPa ? "text-violet-600" : isIt ? "text-teal-600" : "text-indigo-600";
   const btnClass = isPa
     ? "bg-violet-600 hover:bg-violet-500 focus:ring-violet-500/30"
-    : "bg-indigo-600 hover:bg-indigo-500 focus:ring-indigo-500/30";
+    : isIt
+      ? "bg-teal-600 hover:bg-teal-500 focus:ring-teal-500/30"
+      : "bg-indigo-600 hover:bg-indigo-500 focus:ring-indigo-500/30";
   const [organizations, setOrganizations] = useState<OrgLink[]>([]);
   const [inviteCode, setInviteCode] = useState("");
   const [joining, setJoining] = useState(false);
@@ -88,9 +94,9 @@ export default function OrganizationJoinSettings({
       <div>
         <h2 className="font-semibold text-slate-900 flex items-center gap-2">
           <Building2 size={18} className={iconClass} />
-          {tk("org.join.title", "pa.settings.orgTitle")}
+          {tk("org.join.title", "pa.settings.orgTitle", "it.settings.orgTitle")}
         </h2>
-        <p className="text-sm text-slate-500 mt-1">{tk("org.join.desc", "pa.settings.orgDesc")}</p>
+        <p className="text-sm text-slate-500 mt-1">{tk("org.join.desc", "pa.settings.orgDesc", "it.settings.orgDesc")}</p>
       </div>
 
       {organizations.length > 0 && (
@@ -113,7 +119,7 @@ export default function OrganizationJoinSettings({
           onChange={(e) => setInviteCode(e.target.value)}
           placeholder={t("org.join.codePlaceholder")}
           className={`flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${
-            isPa ? "focus:ring-violet-500/30" : "focus:ring-indigo-500/30"
+            isPa ? "focus:ring-violet-500/30" : isIt ? "focus:ring-teal-500/30" : "focus:ring-indigo-500/30"
           }`}
         />
         <button

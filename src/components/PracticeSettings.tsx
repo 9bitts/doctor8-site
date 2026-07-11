@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { MapPin, Plus, Trash2, Loader2, Check } from "lucide-react";
 import type { PracticeLocationDto } from "@/lib/practice";
 import {
+  isIntegrativeTherapistVariant,
   isPsychoanalystVariant,
   variantI18nKey,
   type ProviderSettingsVariant,
@@ -32,12 +33,17 @@ export default function PracticeSettings({
 }) {
   const { t } = useI18n();
   const isPa = isPsychoanalystVariant(variant);
-  const tk = (defaultKey: string, paKey: string) =>
-    t(variantI18nKey(variant, defaultKey, paKey));
-  const accentIcon = isPa ? "text-violet-500" : "text-brand-500";
-  const accentText = isPa ? "text-violet-600" : "text-brand-600";
-  const accentCheck = isPa ? "accent-violet-600" : "accent-brand-500";
-  const accentBtn = isPa ? "bg-violet-600 hover:bg-violet-700" : "bg-brand-500 hover:bg-brand-400";
+  const isIt = isIntegrativeTherapistVariant(variant);
+  const tk = (defaultKey: string, paKey: string, itKey?: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey, itKey));
+  const accentIcon = isPa ? "text-violet-500" : isIt ? "text-teal-500" : "text-brand-500";
+  const accentText = isPa ? "text-violet-600" : isIt ? "text-teal-600" : "text-brand-600";
+  const accentCheck = isPa ? "accent-violet-600" : isIt ? "accent-teal-600" : "accent-brand-500";
+  const accentBtn = isPa
+    ? "bg-violet-600 hover:bg-violet-700"
+    : isIt
+      ? "bg-teal-600 hover:bg-teal-700"
+      : "bg-brand-500 hover:bg-brand-400";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -82,10 +88,10 @@ export default function PracticeSettings({
       <div>
         <h2 className="font-semibold text-slate-800 flex items-center gap-2">
           <MapPin size={18} className={accentIcon} />
-          {tk("pubPhase3.locationsTitle", "pa.settings.practiceTitle")}
+          {tk("pubPhase3.locationsTitle", "pa.settings.practiceTitle", "it.settings.practiceTitle")}
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          {tk("pubPhase3.locationsSubtitle", "pa.settings.practiceSubtitle")}
+          {tk("pubPhase3.locationsSubtitle", "pa.settings.practiceSubtitle", "it.settings.practiceSubtitle")}
         </p>
       </div>
 
@@ -114,7 +120,7 @@ export default function PracticeSettings({
             </div>
             <input
               className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
-              placeholder={tk("pubPhase3.locName", "pa.settings.practiceLocName")}
+              placeholder={tk("pubPhase3.locName", "pa.settings.practiceLocName", "it.settings.practiceLocName")}
               value={loc.name}
               onChange={(e) => {
                 const next = [...locations];

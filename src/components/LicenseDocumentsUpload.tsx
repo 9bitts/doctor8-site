@@ -12,6 +12,7 @@ import {
   Upload,
 } from "lucide-react";
 import {
+  isIntegrativeTherapistVariant,
   isPsychoanalystVariant,
   variantI18nKey,
   type ProviderSettingsVariant,
@@ -42,22 +43,33 @@ export default function LicenseDocumentsUpload({
 }) {
   const { t } = useI18n();
   const isPa = isPsychoanalystVariant(variant);
-  const tk = (defaultKey: string, paKey: string) =>
-    t(variantI18nKey(variant, defaultKey, paKey));
+  const isIt = isIntegrativeTherapistVariant(variant);
+  const tk = (defaultKey: string, paKey: string, itKey?: string) =>
+    t(variantI18nKey(variant, defaultKey, paKey, itKey));
   const labelPresets = isPa
     ? [
         t("pa.licenseDocs.chip.certificate"),
         t("pa.licenseDocs.chip.affiliation"),
         t("pa.licenseDocs.chip.institute"),
       ]
-    : [t("licenseDocs.front"), t("licenseDocs.back")];
-  const iconAccent = isPa ? "text-violet-500" : "text-brand-500";
+    : isIt
+      ? [
+          t("it.licenseDocs.chip.certificate"),
+          t("it.licenseDocs.chip.picsCourse"),
+          t("it.licenseDocs.chip.training"),
+        ]
+      : [t("licenseDocs.front"), t("licenseDocs.back")];
+  const iconAccent = isPa ? "text-violet-500" : isIt ? "text-teal-500" : "text-brand-500";
   const btnClass = isPa
     ? "bg-violet-600 hover:bg-violet-700"
-    : "bg-brand-500 hover:bg-brand-400";
+    : isIt
+      ? "bg-teal-600 hover:bg-teal-700"
+      : "bg-brand-500 hover:bg-brand-400";
   const chipActive = isPa
     ? "bg-violet-50 border-violet-200 text-violet-700"
-    : "bg-brand-50 border-brand-200 text-brand-700";
+    : isIt
+      ? "bg-teal-50 border-teal-200 text-teal-700"
+      : "bg-brand-50 border-brand-200 text-brand-700";
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -159,14 +171,14 @@ export default function LicenseDocumentsUpload({
           }`}
         >
           <Award size={18} className={incomplete ? "text-red-500 shrink-0" : `${iconAccent} shrink-0`} />
-          {tk("licenseDocs.title", "pa.licenseDocs.title")}
+          {tk("licenseDocs.title", "pa.licenseDocs.title", "it.licenseDocs.title")}
           {incomplete && (
             <span className="text-[10px] font-semibold text-red-600 uppercase tracking-wide ml-1">
               {t("reg.incompleteSection")}
             </span>
           )}
         </h2>
-        <p className="text-sm text-slate-500 mt-1">{tk("licenseDocs.subtitle", "pa.licenseDocs.subtitle")}</p>
+        <p className="text-sm text-slate-500 mt-1">{tk("licenseDocs.subtitle", "pa.licenseDocs.subtitle", "it.licenseDocs.subtitle")}</p>
         <p className="text-xs text-slate-400 mt-1">{t("licenseDocs.types")}</p>
       </div>
 
@@ -262,11 +274,11 @@ export default function LicenseDocumentsUpload({
               </div>
               <input
                 className={`w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
-                  isPa ? "focus:ring-violet-500/40" : "focus:ring-brand-500/40"
+                  isPa ? "focus:ring-violet-500/40" : isIt ? "focus:ring-teal-500/40" : "focus:ring-brand-500/40"
                 }`}
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder={tk("licenseDocs.labelPlaceholder", "pa.licenseDocs.labelPlaceholder")}
+                placeholder={tk("licenseDocs.labelPlaceholder", "pa.licenseDocs.labelPlaceholder", "it.licenseDocs.labelPlaceholder")}
                 maxLength={80}
               />
             </div>
