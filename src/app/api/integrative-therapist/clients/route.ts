@@ -23,11 +23,13 @@ export async function GET(req: NextRequest) {
 
   const q = req.nextUrl.searchParams.get("q")?.trim().toLowerCase() ?? "";
   const mainPractice = req.nextUrl.searchParams.get("mainPractice") ?? "";
+  const includeArchived = req.nextUrl.searchParams.get("includeArchived") === "1";
 
   const records = await db.integrativeClientRecord.findMany({
     where: {
       integrativeTherapistId: therapist.id,
       ...(mainPractice ? { mainPractice } : {}),
+      ...(includeArchived ? {} : { archivedAt: null }),
     },
     orderBy: { updatedAt: "desc" },
     take: 200,
@@ -39,9 +41,10 @@ export async function GET(req: NextRequest) {
     lastName: safeDecrypt(r.lastName),
     email: r.email,
     mainPractice: r.mainPractice,
-    hasAccount: !!r.linkedUserId,
-    linkedUserId: r.linkedUserId,
-    processStartDate: r.processStartDate?.toISOString() ?? null,
+      hasAccount: !!r.linkedUserId,
+      linkedUserId: r.linkedUserId,
+      archivedAt: r.archivedAt?.toISOString() ?? null,
+      processStartDate: r.processStartDate?.toISOString() ?? null,
     updatedAt: r.updatedAt.toISOString(),
   }));
 

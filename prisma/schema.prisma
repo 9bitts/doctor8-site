@@ -3245,6 +3245,7 @@ model IntegrativeClientRecord {
   processStartDate DateTime?
 
   linkedUserId    String?
+  archivedAt      DateTime?
 
   medicalDocuments MedicalDocument[]
 

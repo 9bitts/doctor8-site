@@ -30,6 +30,7 @@ export default function IntegrativeClientsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [practiceFilter, setPracticeFilter] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -49,6 +50,7 @@ export default function IntegrativeClientsPage() {
       const sp = new URLSearchParams();
       if (searchQuery) sp.set("q", searchQuery);
       if (practiceFilter) sp.set("mainPractice", practiceFilter);
+      if (showArchived) sp.set("includeArchived", "1");
       const res = await fetch(`/api/integrative-therapist/clients?${sp}`);
       const d = await res.json();
       if (!res.ok) {
@@ -66,7 +68,7 @@ export default function IntegrativeClientsPage() {
 
   useEffect(() => {
     load();
-  }, [searchQuery, practiceFilter]);
+  }, [searchQuery, practiceFilter, showArchived]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -126,7 +128,7 @@ export default function IntegrativeClientsPage() {
     });
   }, [practiceOptions, lang]);
 
-  const hasActiveFilters = searchQuery.length > 0 || practiceFilter.length > 0;
+  const hasActiveFilters = searchQuery.length > 0 || practiceFilter.length > 0 || showArchived;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -240,6 +242,15 @@ export default function IntegrativeClientsPage() {
             </option>
           ))}
         </select>
+        <label className="inline-flex items-center gap-2 text-sm text-slate-600 px-1">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+            className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+          />
+          {t("it.clients.showArchived")}
+        </label>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">

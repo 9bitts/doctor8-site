@@ -29,6 +29,8 @@ interface ClientData {
   sessionCount: number;
   defaultVisitType: "first" | "return";
   processStartDate: string | null;
+  hasAccount: boolean;
+  archivedAt: string | null;
 }
 
 interface Note {
@@ -57,6 +59,9 @@ export default function IntegrativeClientDetailPage() {
   const [saved, setSaved] = useState(false);
 
   const [mainPractice, setMainPractice] = useState("");
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [chiefComplaint, setChiefComplaint] = useState("");
   const [treatmentGoals, setTreatmentGoals] = useState("");
   const [clientNotes, setClientNotes] = useState("");
@@ -67,6 +72,8 @@ export default function IntegrativeClientDetailPage() {
   const [structuredValues, setStructuredValues] = useState<StructuredValues>({});
   const [noteSaving, setNoteSaving] = useState(false);
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [archiving, setArchiving] = useState(false);
 
   const langCode = lang.startsWith("pt") ? "pt" : lang.startsWith("es") ? "es" : "en";
   const locale = lang.startsWith("pt") ? "pt-BR" : lang.startsWith("es") ? "es-ES" : "en-US";
@@ -91,6 +98,9 @@ export default function IntegrativeClientDetailPage() {
     }
     if (d.client) {
       setClient(d.client);
+      setEditFirstName(d.client.firstName || "");
+      setEditLastName(d.client.lastName || "");
+      setEditEmail(d.client.email || "");
       setMainPractice(d.client.mainPractice || "");
       setChiefComplaint(d.client.chiefComplaint || "");
       setTreatmentGoals(d.client.treatmentGoals || "");
@@ -131,6 +141,9 @@ export default function IntegrativeClientDetailPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          firstName: editFirstName,
+          lastName: editLastName,
+          email: editEmail || null,
           mainPractice: mainPractice || null,
           chiefComplaint,
           treatmentGoals,
@@ -226,6 +239,27 @@ export default function IntegrativeClientDetailPage() {
     }
   }
 
+  async function archiveClient() {
+    setArchiving(true);
+    try {
+      const res = await fetch(`/api/integrative-therapist/clients/${clientId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(typeof data.error === "string" ? data.error : t("it.err.archiveClient"));
+        return;
+      }
+      toast.success(t("it.client.archived"));
+      window.location.href = "/integrative-therapist/clients";
+    } catch {
+      toast.error(t("it.err.archiveClient"));
+    } finally {
+      setArchiving(false);
+      setShowArchiveModal(false);
+    }
+  }
+
   function practiceLabel(slug: string | null) {
     if (!slug) return null;
     const p = PICS_PRACTICES.find((x) => x.slug === slug);
@@ -299,6 +333,44 @@ export default function IntegrativeClientDetailPage() {
         </Link>
       </div>
 
+      {tab === "summary" && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowArchiveModal(true)}
+            className="text-xs font-medium text-slate-500 hover:text-rose-600"
+          >
+            {t("it.client.archive")}
+          </button>
+        </div>
+      )}
+
+      {showArchiveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="font-semibold text-slate-900">{t("it.client.archiveTitle")}</h3>
+            <p className="text-sm text-slate-600">{t("it.client.archiveDesc")}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowArchiveModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-sm"
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                disabled={archiving}
+                onClick={() => void archiveClient()}
+                className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-semibold disabled:opacity-50"
+              >
+                {archiving ? <Loader2 size={14} className="animate-spin inline" /> : t("it.client.archiveConfirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
         {([
           { id: "summary" as Tab, icon: User, label: t("it.client.tabSummary") },
@@ -325,6 +397,39 @@ export default function IntegrativeClientDetailPage() {
               {t("avail.saved")}
             </p>
           )}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-slate-600">{t("reg.firstName")}</label>
+              <input
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"
+                value={editFirstName}
+                onChange={(e) => setEditFirstName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">{t("reg.lastName")}</label>
+              <input
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"
+                value={editLastName}
+                onChange={(e) => setEditLastName(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600">{t("reg.email")}</label>
+            <input
+              type="email"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm disabled:bg-slate-50 disabled:text-slate-500"
+              value={editEmail}
+              onChange={(e) => setEditEmail(e.target.value)}
+              disabled={client.hasAccount}
+            />
+            {client.hasAccount && (
+              <p className="text-[11px] text-slate-500 mt-1">{t("it.client.emailLinkedHint")}</p>
+            )}
+          </div>
           <div>
             <label className="text-xs font-medium text-slate-600">{t("it.settings.phone")}</label>
             <input
