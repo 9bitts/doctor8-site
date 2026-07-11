@@ -121,7 +121,7 @@ export default function MedicinaNaturalItemDetail({
     practice.id === "fitoterapia" &&
     (portal === "professional" || portal === "integrative-therapist");
   const canPrescribeFloral =
-    practice.id === "terapia-florais" && portal === "integrative-therapist";
+    practice.id === "terapia_florais" && portal === "integrative-therapist";
 
   const prescribeHref = canPrescribeFitoterapico
     ? `${prescriptionsBasePath(portal)}?add=phytotherapy&mnSlug=${encodeURIComponent(item.slug)}`
