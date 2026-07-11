@@ -13,6 +13,10 @@ export const naturalMedicineEn: Record<string, string> = {
   "rx.phytoSearchHint": "Type at least 2 characters and search the official monograph catalog.",
   "rx.searchMode.medication": "Medication",
   "rx.searchMode.phytotherapy": "Phytotherapeutic",
+  "rx.searchMode.floral": "Flower essence",
+  "rx.searchMode.homeopathy": "Homeopathy",
+  "rx.searchMode.aromatherapy": "Aromatherapy",
+  "rx.searchMode.apitherapy": "Apitherapy",
   "rx.mnSearchModalTitle": "Phytotherapeutics catalog",
 
   "nm.hub.title": "Natural Medicine",
@@ -264,6 +268,10 @@ export const naturalMedicinePt: Record<string, string> = {
   "rx.phytoSearchHint": "Digite ao menos 2 caracteres e busque no catálogo oficial de monografias.",
   "rx.searchMode.medication": "Medicamento",
   "rx.searchMode.phytotherapy": "Fitoterápico",
+  "rx.searchMode.floral": "Floral",
+  "rx.searchMode.homeopathy": "Homeopatia",
+  "rx.searchMode.aromatherapy": "Aromaterapia",
+  "rx.searchMode.apitherapy": "Apiterapia",
   "rx.mnSearchModalTitle": "Catálogo de fitoterápicos",
 
   "nm.hub.title": "Medicina Natural",
@@ -515,6 +523,10 @@ export const naturalMedicineEs: Record<string, string> = {
   "rx.floralCatalogSearch": "Buscar floral en el catálogo…",
   "rx.searchMode.medication": "Medicamento",
   "rx.searchMode.phytotherapy": "Fitoterápico",
+  "rx.searchMode.floral": "Floral",
+  "rx.searchMode.homeopathy": "Homeopatia",
+  "rx.searchMode.aromatherapy": "Aromaterapia",
+  "rx.searchMode.apitherapy": "Apiterapia",
   "rx.mnSearchModalTitle": "Catálogo de fitoterápicos",
 
   "nm.hub.title": "Medicina Natural",

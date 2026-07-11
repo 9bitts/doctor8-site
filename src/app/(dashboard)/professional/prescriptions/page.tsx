@@ -13,6 +13,7 @@ import {
   Plus, FileText, Download, Loader2, CheckCircle2, Search,
   ChevronRight, AlertTriangle, PenLine, Pill, ArrowLeft, Copy,
   Clock, User, FlaskConical, ScrollText, LayoutTemplate, BookmarkPlus, Sparkles, X, Leaf,
+  Flower2, Droplets, Wind, Hexagon,
 } from "lucide-react";
 import { PatientNoAccountPanel } from "@/components/professional/emissions/PatientNoAccountPanel";
 import { EmissionsSignModal, RX_STYLES, type SignTarget, type EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
@@ -97,6 +98,22 @@ type PlatformRxTarget = {
   displayName: string;
   linkStatus: PlatformMatch["linkStatus"];
 };
+
+type MnAddItemKind = "phytotherapy" | "floral" | "homeopathy" | "aromatherapy" | "apitherapy";
+
+const MN_RX_SEARCH_TABS: {
+  mode: MnAddItemKind;
+  icon: typeof Leaf;
+  labelKey: string;
+  activeClass: string;
+  floralOnly?: boolean;
+}[] = [
+  { mode: "phytotherapy", icon: Leaf, labelKey: "rx.searchMode.phytotherapy", activeClass: "border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20" },
+  { mode: "floral", icon: Flower2, labelKey: "rx.searchMode.floral", activeClass: "border-pink-500 bg-pink-50 text-pink-800 ring-2 ring-pink-500/20", floralOnly: true },
+  { mode: "homeopathy", icon: Droplets, labelKey: "rx.searchMode.homeopathy", activeClass: "border-sky-500 bg-sky-50 text-sky-800 ring-2 ring-sky-500/20" },
+  { mode: "aromatherapy", icon: Wind, labelKey: "rx.searchMode.aromatherapy", activeClass: "border-violet-500 bg-violet-50 text-violet-800 ring-2 ring-violet-500/20" },
+  { mode: "apitherapy", icon: Hexagon, labelKey: "rx.searchMode.apitherapy", activeClass: "border-amber-500 bg-amber-50 text-amber-800 ring-2 ring-amber-500/20" },
+];
 
 function controlInfo(type: string | null | undefined): {
   tarja: "preta" | "vermelha"; label: string; receita: string;
@@ -1298,8 +1315,14 @@ export default function PrescriptionsPage() {
     setDrugQuery(""); setDrugResults([]); setMnSearchResults([]); setDrugSearchModalOpen(false);
   }
 
-  function openFloralSearchForIndex(index: number) {
-    setFloralOnlyMode(true);
+  function openMnSearchForIndex(index: number) {
+    const med = medications[index];
+    const kind = (med.itemKind || "phytotherapy") as MnAddItemKind;
+    const mode: PrescriptionItemSearchMode = MN_RX_SEARCH_TABS.some((t) => t.mode === kind)
+      ? kind
+      : "phytotherapy";
+    setItemSearchMode(mode);
+    setFloralOnlyMode(mode === "floral");
     setMnPickerTargetIndex(index);
     setDrugQuery("");
     setDrugResults([]);
@@ -1308,31 +1331,22 @@ export default function PrescriptionsPage() {
   }
 
   function openPhytoSearchForIndex(index: number) {
-    setItemSearchMode("phytotherapy");
-    setMnPickerTargetIndex(index);
-    setDrugQuery("");
-    setDrugResults([]);
-    setMnSearchResults([]);
-    setDrugSearchDone(false);
+    openMnSearchForIndex(index);
   }
 
-  function addSpecialItem(kind: "device" | "phytotherapy" | "floral") {
-    if (isFreeTextPrescriptionItem(kind)) {
+  function addSpecialItem(kind: "device" | MnAddItemKind) {
+    if (kind === "device") {
       setFreeTextMode(true);
+      setMedications((prev) => [...prev, {
+        name: "", dosage: "", frequency: "", duration: "", instructions: "", itemKind: "device",
+      }]);
+      return;
     }
-    if (kind === "phytotherapy" && !cfg.phytoOnly) {
-      setItemSearchMode("phytotherapy");
-    }
-    if (kind === "floral") {
-      setFloralOnlyMode(true);
-    }
+    if (isFreeTextPrescriptionItem(kind)) setFreeTextMode(true);
+    setItemSearchMode(kind);
+    setFloralOnlyMode(kind === "floral");
     setMedications((prev) => [...prev, {
-      name: "",
-      dosage: "",
-      frequency: "",
-      duration: "",
-      instructions: "",
-      itemKind: kind,
+      name: "", dosage: "", frequency: "", duration: "", instructions: "", itemKind: kind,
     }]);
   }
 
@@ -1929,6 +1943,7 @@ export default function PrescriptionsPage() {
                         type="button"
                         onClick={() => {
                           setItemSearchMode("medication");
+                          setFloralOnlyMode(false);
                           setMnPickerTargetIndex(null);
                           setDrugQuery("");
                           setDrugResults([]);
@@ -1942,22 +1957,34 @@ export default function PrescriptionsPage() {
                       >
                         <Pill size={16} /> {t("rx.searchMode.medication")}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setItemSearchMode("phytotherapy");
-                          setDrugQuery("");
-                          setDrugResults([]);
-                          setMnSearchResults([]);
-                        }}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
-                          itemSearchMode === "phytotherapy"
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200"
-                        }`}
-                      >
-                        <Leaf size={16} /> {t("rx.searchMode.phytotherapy")}
-                      </button>
+                      {MN_RX_SEARCH_TABS.filter(
+                        (tab) => !tab.floralOnly || cfg.allowFloral,
+                      ).map((tab) => {
+                        const Icon = tab.icon;
+                        const active =
+                          itemSearchMode === tab.mode &&
+                          (tab.mode !== "floral" || floralOnlyMode);
+                        return (
+                          <button
+                            key={tab.mode}
+                            type="button"
+                            onClick={() => {
+                              setItemSearchMode(tab.mode);
+                              setFloralOnlyMode(tab.mode === "floral");
+                              setDrugQuery("");
+                              setDrugResults([]);
+                              setMnSearchResults([]);
+                            }}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                              active
+                                ? tab.activeClass
+                                : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200"
+                            }`}
+                          >
+                            <Icon size={16} /> {t(tab.labelKey)}
+                          </button>
+                        );
+                      })}
                     </div>
                     {itemSearchMode === "medication" && (
                       <>
@@ -1991,7 +2018,7 @@ export default function PrescriptionsPage() {
                         </div>
                       </>
                     )}
-                    {itemSearchMode === "phytotherapy" && (
+                    {itemSearchMode !== "medication" && (
                       <p className="text-xs text-slate-500">{t("rx.phytoSearchHint")}</p>
                     )}
                   </>
@@ -2102,17 +2129,19 @@ export default function PrescriptionsPage() {
                 </div>
               )}
               {cfg.phytoOnly && (
-                <div className="grid sm:grid-cols-2 gap-2">
-                  <button type="button" onClick={() => addSpecialItem("phytotherapy")}
-                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 font-medium text-sm transition">
-                    <Plus size={14} /> {t("rx.addPhytotherapy")}
-                  </button>
-                  {cfg.allowFloral && (
-                    <button type="button" onClick={() => addSpecialItem("floral")}
-                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-pink-200 bg-pink-50/50 hover:bg-pink-50 text-pink-800 font-medium text-sm transition">
-                      <Plus size={14} /> {t("rx.addFloral")}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {MN_RX_SEARCH_TABS.filter(
+                    (tab) => !tab.floralOnly || cfg.allowFloral,
+                  ).map((tab) => (
+                    <button
+                      key={tab.mode}
+                      type="button"
+                      onClick={() => addSpecialItem(tab.mode)}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 font-medium text-sm transition"
+                    >
+                      <Plus size={14} /> {t(tab.labelKey)}
                     </button>
-                  )}
+                  ))}
                 </div>
               )}
               <p className="text-xs text-slate-400 text-center -mt-2">{t("rx.manualAlways")}</p>
@@ -2155,13 +2184,14 @@ export default function PrescriptionsPage() {
                         controlInfo={controlInfo(med.prescriptionType)}
                         onUpdate={updateMedication}
                         onOpenPhytoSearch={
-                          med.itemKind === "phytotherapy" && !cfg.phytoOnly
-                            ? openPhytoSearchForIndex
+                          isFreeTextPrescriptionItem(med.itemKind) &&
+                          med.itemKind !== "device"
+                            ? openMnSearchForIndex
                             : undefined
                         }
                         onOpenFloralSearch={
                           med.itemKind === "floral" && cfg.allowFloral
-                            ? openFloralSearchForIndex
+                            ? openMnSearchForIndex
                             : undefined
                         }
                         onFloralProductSelect={selectFloralProduct}

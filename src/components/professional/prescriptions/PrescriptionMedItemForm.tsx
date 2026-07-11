@@ -88,7 +88,11 @@ export default function PrescriptionMedItemForm({
                 {kindLabel}
               </span>
             )}
-            {kind === "phytotherapy" && onOpenPhytoSearch && (
+            {(kind === "phytotherapy" ||
+              kind === "homeopathy" ||
+              kind === "aromatherapy" ||
+              kind === "apitherapy") &&
+              onOpenPhytoSearch && (
               <button
                 type="button"
                 onClick={() => onOpenPhytoSearch(index)}

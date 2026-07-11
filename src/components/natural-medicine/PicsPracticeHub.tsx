@@ -26,6 +26,7 @@ import {
   type NaturalMedicinePracticeConfig,
   naturalMedicineBasePath,
 } from "@/lib/natural-medicine/config";
+import { prescriptionsPathForPractice } from "@/lib/medicina-natural-catalog/practice-prescriptions";
 
 const PRACTICE_ICONS = {
   Leaf,
@@ -64,14 +65,17 @@ export default function PicsPracticeHub({ portal, practice }: PicsPracticeHubPro
             color: "bg-teal-100 text-teal-600",
             key: "nm.mod.reference",
           },
+          {
+            path: prescriptionsPathForPractice("professional", practice.id),
+            icon: Stethoscope,
+            color: "bg-emerald-100 text-emerald-600",
+            key:
+              practice.id === "terapia_florais"
+                ? "nm.mod.floralPrescriptions"
+                : "nm.mod.prescriptions",
+          },
           ...(practice.id === "fitoterapia"
             ? [
-                {
-                  path: "/professional/prescriptions?add=phytotherapy",
-                  icon: Stethoscope,
-                  color: "bg-emerald-100 text-emerald-600",
-                  key: "nm.mod.prescriptions",
-                },
                 {
                   path: "/professional/settings/templates",
                   icon: LayoutTemplate,
@@ -100,24 +104,20 @@ export default function PicsPracticeHub({ portal, practice }: PicsPracticeHubPro
             color: "bg-emerald-100 text-emerald-600",
             key: "nm.mod.sessions",
           },
-          ...(practice.id === "fitoterapia"
-            ? [
-                {
-                  path: "/integrative-therapist/prescriptions?add=phytotherapy",
-                  icon: Stethoscope,
-                  color: "bg-emerald-100 text-emerald-600",
-                  key: "nm.mod.prescriptions",
-                },
-              ]
-            : []),
+          {
+            path: prescriptionsPathForPractice("integrative", practice.id),
+            icon: Stethoscope,
+            color:
+              practice.id === "terapia_florais"
+                ? "bg-pink-100 text-pink-600"
+                : "bg-emerald-100 text-emerald-600",
+            key:
+              practice.id === "terapia_florais"
+                ? "nm.mod.floralPrescriptions"
+                : "nm.mod.prescriptions",
+          },
           ...(practice.id === "terapia_florais"
             ? [
-                {
-                  path: "/integrative-therapist/prescriptions?add=floral",
-                  icon: Stethoscope,
-                  color: "bg-pink-100 text-pink-600",
-                  key: "nm.mod.floralPrescriptions",
-                },
                 {
                   path: `${practiceBase}/templates`,
                   icon: LayoutTemplate,
