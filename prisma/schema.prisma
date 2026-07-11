@@ -1220,6 +1220,7 @@ model Appointment {
   @@index([providerType])
   @@index([scheduledAt])
   @@index([status])
+  // Partial unique indexes on (providerId, scheduledAt) for CONFIRMED|PENDING — see migration 20260712160000_appointment_active_slot_unique
 }
 
 // Stripe webhook idempotency — one row per event.id after side effects complete.

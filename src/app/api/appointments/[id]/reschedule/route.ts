@@ -12,13 +12,13 @@ import { notifySlotAlerts } from "@/lib/slot-alerts";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import {
   AppointmentSlotTakenError,
+  isActiveSlotUniqueViolation,
 } from "@/lib/fulfill-consultation";
 import {
   assertScheduledVolunteerSlotBooking,
   VolunteerSlotBookingError,
 } from "@/lib/volunteer-slot-booking";
-import { SCHEDULED_VOLUNTEER_BOOKING_SOURCE } from "@/lib/scheduled-volunteer";
-import type { SlotProviderType } from "@/lib/availability-slots";
+import { resolveVolunteerScheduledProvider } from "@/lib/scheduled-volunteer";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
@@ -97,6 +97,7 @@ export async function POST(
             volunteerProvider.id,
             volunteerProvider.type,
             newScheduledAt,
+            tx,
           );
         }
 
@@ -138,6 +139,12 @@ export async function POST(
       return NextResponse.json(
         { error: { code: e.code, general: [e.code] } },
         { status },
+      );
+    }
+    if (isActiveSlotUniqueViolation(e)) {
+      return NextResponse.json(
+        { error: { code: "slot_unavailable", general: ["slot_unavailable"] } },
+        { status: 409 },
       );
     }
     throw e;
@@ -199,23 +206,4 @@ export async function POST(
     appointmentId: params.id,
     newScheduledAt,
   });
-}
-
-function resolveVolunteerScheduledProvider(appointment: {
-  bookingSource: string | null;
-  professionalId: string | null;
-  psychoanalystId: string | null;
-  integrativeTherapistId: string | null;
-}): { id: string; type: SlotProviderType } | null {
-  if (appointment.bookingSource !== SCHEDULED_VOLUNTEER_BOOKING_SOURCE) return null;
-  if (appointment.professionalId) {
-    return { id: appointment.professionalId, type: "health" };
-  }
-  if (appointment.psychoanalystId) {
-    return { id: appointment.psychoanalystId, type: "psychoanalyst" };
-  }
-  if (appointment.integrativeTherapistId) {
-    return { id: appointment.integrativeTherapistId, type: "integrative" };
-  }
-  return null;
 }

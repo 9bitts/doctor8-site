@@ -56,6 +56,21 @@ export class AppointmentSlotTakenError extends Error {
   }
 }
 
+/** P2002 from partial unique indexes on (providerId, scheduledAt) for active appointments. */
+export function isActiveSlotUniqueViolation(e: unknown): boolean {
+  if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== "P2002") {
+    return false;
+  }
+  const target = e.meta?.target;
+  if (Array.isArray(target)) {
+    return target.some((t) => typeof t === "string" && t.includes("scheduledAt"));
+  }
+  if (typeof target === "string") {
+    return target.includes("scheduledAt") || target.includes("active_key");
+  }
+  return false;
+}
+
 async function resolveExpectedConsultationPriceCents(
   providerType: BookingProviderType,
   providerId: string,
@@ -141,8 +156,13 @@ export async function fulfillScheduledVolunteerConsultation(params: {
     amount: 0,
     currency: "BRL",
     metadata: meta,
-    revalidateBeforeCreate: () =>
-      assertScheduledVolunteerSlotBooking(params.providerId, providerType, params.scheduledAt),
+    revalidateBeforeCreate: (tx) =>
+      assertScheduledVolunteerSlotBooking(
+        params.providerId,
+        providerType,
+        params.scheduledAt,
+        tx,
+      ),
   });
 }
 
@@ -225,7 +245,7 @@ export async function fulfillConsultationPayment(params: {
   currency: string;
   metadata: ConsultationPaymentMeta;
   /** Re-run slot validation inside the Serializable transaction (P8b volunteer booking). */
-  revalidateBeforeCreate?: () => Promise<void>;
+  revalidateBeforeCreate?: (tx: Prisma.TransactionClient) => Promise<void>;
 }): Promise<{ appointmentId: string; created: boolean }> {
   const { stripePaymentId, amount, currency, metadata, revalidateBeforeCreate } = params;
   const isVolunteerBooking = metadata.volunteerBooking === "true";
@@ -363,7 +383,7 @@ export async function fulfillConsultationPayment(params: {
         if (slotTaken) throw new AppointmentSlotTakenError();
 
         if (revalidateBeforeCreate) {
-          await revalidateBeforeCreate();
+          await revalidateBeforeCreate(tx);
         }
 
         let workforceMemberId: string | null = null;
@@ -447,6 +467,9 @@ export async function fulfillConsultationPayment(params: {
         console.log(`[FULFILL-DEDUP] stripePaymentId=${stripePaymentId} appointmentId=${existing.id}`);
         return { appointmentId: existing.id, created: false };
       }
+    }
+    if (isActiveSlotUniqueViolation(e)) {
+      throw new AppointmentSlotTakenError();
     }
     throw e;
   }

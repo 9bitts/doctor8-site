@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 import { generateTimeSlots } from "@/lib/scheduling";
 import type { ProviderType } from "@/lib/providers";
+import type { Prisma } from "@prisma/client";
 
 export type SlotProviderType = ProviderType | "integrative";
 import {
@@ -17,6 +18,12 @@ import {
 } from "@/lib/volunteer-scheduled-approval";
 
 export { VolunteerScheduledNotApprovedError };
+
+type DbLike = Prisma.TransactionClient | typeof db;
+
+function client(tx?: Prisma.TransactionClient): DbLike {
+  return tx ?? db;
+}
 
 type AvailabilityBlock = {
   dayOfWeek: number;
@@ -39,21 +46,22 @@ export async function resolveSlotAtDateTime(
   providerId: string,
   providerType: SlotProviderType,
   scheduledAtIso: string,
+  tx?: Prisma.TransactionClient,
 ): Promise<ResolvedBookableSlot | null> {
   const scheduledAt = new Date(scheduledAtIso);
   if (Number.isNaN(scheduledAt.getTime())) return null;
 
-  const blocks = await loadAvailabilityBlocks(providerId, providerType);
+  const blocks = await loadAvailabilityBlocks(providerId, providerType, tx);
   if (blocks.length === 0) return null;
 
-  const timeZone = await loadProviderTimeZone(providerId, providerType);
+  const timeZone = await loadProviderTimeZone(providerId, providerType, tx);
   const dateStr = calendarDateInTimeZone(scheduledAt, timeZone);
   const dayOfWeek = dayOfWeekForDateStr(dateStr, timeZone);
   const blocksForDay = blocks.filter((b) => b.dayOfWeek === dayOfWeek);
   if (blocksForDay.length === 0) return null;
 
   const now = new Date();
-  const bookedTimes = await loadBookedTimes(providerId, providerType, now);
+  const bookedTimes = await loadBookedTimes(providerId, providerType, now, tx);
   const slots = generateTimeSlots(dateStr, timeZone, blocksForDay, bookedTimes, now);
   const target = scheduledAt.toISOString();
   const match = slots.find((s) => s.datetime === target);
@@ -71,8 +79,9 @@ export async function assertVolunteerSlotBooking(
   providerId: string,
   providerType: SlotProviderType,
   scheduledAtIso: string,
+  tx?: Prisma.TransactionClient,
 ): Promise<void> {
-  const provider = await loadProviderVolunteerStatus(providerId, providerType);
+  const provider = await loadProviderVolunteerStatus(providerId, providerType, tx);
   if (!provider) {
     throw new VolunteerSlotBookingError("provider_not_found");
   }
@@ -80,7 +89,7 @@ export async function assertVolunteerSlotBooking(
     throw new VolunteerSlotBookingError("provider_not_volunteer");
   }
 
-  const slot = await resolveSlotAtDateTime(providerId, providerType, scheduledAtIso);
+  const slot = await resolveSlotAtDateTime(providerId, providerType, scheduledAtIso, tx);
   if (!slot) {
     throw new VolunteerSlotBookingError("slot_not_found");
   }
@@ -96,8 +105,9 @@ export async function assertPaidSlotBooking(
   providerId: string,
   providerType: SlotProviderType,
   scheduledAtIso: string,
+  tx?: Prisma.TransactionClient,
 ): Promise<void> {
-  const slot = await resolveSlotAtDateTime(providerId, providerType, scheduledAtIso);
+  const slot = await resolveSlotAtDateTime(providerId, providerType, scheduledAtIso, tx);
   if (slot?.isVolunteer && slot.available) {
     throw new VolunteerSlotBookingError("scheduled_volunteer_slot_requires_free_booking");
   }
@@ -111,10 +121,11 @@ export async function assertScheduledVolunteerSlotBooking(
   providerId: string,
   providerType: SlotProviderType,
   scheduledAtIso: string,
+  tx?: Prisma.TransactionClient,
 ): Promise<void> {
-  await assertProviderVolunteerScheduledGate(providerId, providerType);
+  await assertProviderVolunteerScheduledGate(providerId, providerType, tx);
 
-  const slot = await resolveSlotAtDateTime(providerId, providerType, scheduledAtIso);
+  const slot = await resolveSlotAtDateTime(providerId, providerType, scheduledAtIso, tx);
   if (!slot) {
     throw new VolunteerSlotBookingError("slot_not_found");
   }
@@ -139,22 +150,24 @@ export class VolunteerSlotBookingError extends Error {
 async function loadProviderTimeZone(
   providerId: string,
   providerType: SlotProviderType,
+  tx?: Prisma.TransactionClient,
 ): Promise<string> {
+  const c = client(tx);
   if (providerType === "psychoanalyst") {
-    const row = await db.psychoanalystProfile.findUnique({
+    const row = await c.psychoanalystProfile.findUnique({
       where: { id: providerId },
       include: { user: true },
     });
     return (row?.user as { timezone?: string } | undefined)?.timezone || DEFAULT_TIME_ZONE;
   }
   if (providerType === "integrative") {
-    const row = await db.integrativeTherapistProfile.findUnique({
+    const row = await c.integrativeTherapistProfile.findUnique({
       where: { id: providerId },
       include: { user: true },
     });
     return (row?.user as { timezone?: string } | undefined)?.timezone || DEFAULT_TIME_ZONE;
   }
-  const row = await db.professionalProfile.findUnique({
+  const row = await c.professionalProfile.findUnique({
     where: { id: providerId },
     select: { timezone: true } as never,
   });
@@ -164,13 +177,15 @@ async function loadProviderTimeZone(
 async function loadProviderVolunteerStatus(
   providerId: string,
   providerType: SlotProviderType,
+  tx?: Prisma.TransactionClient,
 ): Promise<{
   verified: boolean;
   acuraVolunteer: boolean;
   volunteerScheduledApproved?: boolean;
 } | null> {
+  const c = client(tx);
   if (providerType === "psychoanalyst") {
-    return db.psychoanalystProfile.findUnique({
+    return c.psychoanalystProfile.findUnique({
       where: { id: providerId },
       select: {
         verified: true,
@@ -180,7 +195,7 @@ async function loadProviderVolunteerStatus(
     });
   }
   if (providerType === "integrative") {
-    return db.integrativeTherapistProfile.findUnique({
+    return c.integrativeTherapistProfile.findUnique({
       where: { id: providerId },
       select: {
         verified: true,
@@ -189,7 +204,7 @@ async function loadProviderVolunteerStatus(
       },
     });
   }
-  return db.professionalProfile.findUnique({
+  return c.professionalProfile.findUnique({
     where: { id: providerId },
     select: {
       verified: true,
@@ -202,6 +217,7 @@ async function loadProviderVolunteerStatus(
 export async function assertProviderVolunteerScheduledGate(
   providerId: string,
   providerType: SlotProviderType,
+  tx?: Prisma.TransactionClient,
 ): Promise<void> {
   const kind: VolunteerScheduledProviderKind =
     providerType === "psychoanalyst"
@@ -209,7 +225,7 @@ export async function assertProviderVolunteerScheduledGate(
       : providerType === "integrative"
         ? "integrative"
         : "health";
-  const profile = await loadProviderVolunteerStatus(providerId, providerType);
+  const profile = await loadProviderVolunteerStatus(providerId, providerType, tx);
   if (!profile) {
     throw new VolunteerSlotBookingError("provider_not_found");
   }
@@ -226,9 +242,11 @@ export async function assertProviderVolunteerScheduledGate(
 async function loadAvailabilityBlocks(
   providerId: string,
   providerType: SlotProviderType,
+  tx?: Prisma.TransactionClient,
 ): Promise<AvailabilityBlock[]> {
+  const c = client(tx);
   if (providerType === "psychoanalyst") {
-    const rows = await db.psychoanalystAvailabilitySlot.findMany({
+    const rows = await c.psychoanalystAvailabilitySlot.findMany({
       where: { psychoanalystId: providerId, isActive: true },
     });
     const paid = rows
@@ -257,12 +275,12 @@ async function loadAvailabilityBlocks(
   }
 
   if (providerType === "integrative") {
-    const profile = await db.integrativeTherapistProfile.findUnique({
+    const profile = await c.integrativeTherapistProfile.findUnique({
       where: { id: providerId },
       select: { availability: true },
     });
     const volunteerBlocks = parseAvailabilityJson(profile?.availability).volunteerBlocks ?? [];
-    const rows = await db.integrativeTherapistAvailabilitySlot.findMany({
+    const rows = await c.integrativeTherapistAvailabilitySlot.findMany({
       where: { integrativeTherapistId: providerId, isActive: true },
     });
     const paid = rows.map((r) => ({
@@ -286,13 +304,13 @@ async function loadAvailabilityBlocks(
     return [...paid, ...volunteer];
   }
 
-  const profile = await db.professionalProfile.findUnique({
+  const profile = await c.professionalProfile.findUnique({
     where: { id: providerId },
     select: { availability: true },
   });
   const volunteerBlocks = parseAvailabilityJson(profile?.availability).volunteerBlocks ?? [];
 
-  const rows = await db.availabilitySlot.findMany({
+  const rows = await c.availabilitySlot.findMany({
     where: { professionalId: providerId, isActive: true },
   });
   const paid = rows.map((r) => ({
@@ -320,7 +338,9 @@ async function loadBookedTimes(
   providerId: string,
   providerType: SlotProviderType,
   now: Date,
+  tx?: Prisma.TransactionClient,
 ): Promise<Set<string>> {
+  const c = client(tx);
   const twoWeeksLater = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
   const providerFilter =
     providerType === "psychoanalyst"
@@ -329,7 +349,7 @@ async function loadBookedTimes(
         ? { integrativeTherapistId: providerId }
         : { professionalId: providerId };
 
-  const booked = await db.appointment.findMany({
+  const booked = await c.appointment.findMany({
     where: {
       ...providerFilter,
       status: { in: ["CONFIRMED", "PENDING"] },
