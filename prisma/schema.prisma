@@ -2435,6 +2435,7 @@ model DocumentTemplate {
 
   name           String
   documentType   DocumentType @default(CERTIFICATE)
+  templateCategory String?
   title          String
   body           String       @db.Text
 
@@ -2442,6 +2443,7 @@ model DocumentTemplate {
   updatedAt      DateTime     @updatedAt
 
   @@index([professionalId])
+  @@index([professionalId, templateCategory])
 }
 
 model PrescriptionTemplate {
@@ -2452,6 +2454,7 @@ model PrescriptionTemplate {
   integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
 
   name           String
+  templateCategory String?
   medications    Json
   instructions   String?  @db.Text
   validDays      Int      @default(30)
@@ -2460,6 +2463,7 @@ model PrescriptionTemplate {
   updatedAt      DateTime @updatedAt
 
   @@index([professionalId])
+  @@index([professionalId, templateCategory])
   @@index([integrativeTherapistId])
 }
 

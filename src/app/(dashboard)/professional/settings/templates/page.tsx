@@ -1,53 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, FileText, Pill, Plus, Trash2, Loader2, Pencil, X, Check,
+  ArrowLeft, FlaskConical, Pill, FileText, Plus, Loader2, ClipboardList,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { TEMPLATE_TAG_HINTS } from "@/lib/template-tags";
+import {
+  TEMPLATE_CATEGORIES,
+  parseExamTemplateBody,
+} from "@/lib/clinical-template-utils";
+import { ExamTemplateForm, type ExamTemplateData } from "@/components/professional/settings/templates/ExamTemplateForm";
+import { RxTemplateForm, type RxTemplateData } from "@/components/professional/settings/templates/RxTemplateForm";
+import { CertificateTemplateForm, type CertificateTemplateData } from "@/components/professional/settings/templates/CertificateTemplateForm";
+import { TemplateSectionList } from "@/components/professional/settings/templates/TemplateSectionList";
+import type { PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 
-const DOC_TYPES = [
-  { value: "CERTIFICATE", labelKey: "rx.docTypeCertificate" },
-  { value: "REFERRAL", labelKey: "rx.docTypeReferral" },
-  { value: "CLINICAL_NOTE", labelKey: "rx.docTypeReport" },
-  { value: "OTHER", labelKey: "rx.docTypeOther" },
-] as const;
+type FormKind = "exam_clinical" | "exam_preop" | "rx_postop" | "certificate" | null;
 
-interface DocTemplate {
+interface DocTemplateRow {
   id: string;
   name: string;
   documentType: string;
+  templateCategory: string | null;
   title: string;
   body: string;
 }
 
-interface RxTemplate {
+interface RxTemplateRow {
   id: string;
   name: string;
-  medications: { name: string; dosage: string; frequency: string }[];
+  templateCategory: string | null;
+  medications: PrescriptionMedItem[];
   instructions: string;
   validDays: number;
 }
 
-const inputClass =
-  "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40";
-
 export default function TemplatesSettingsClient() {
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
-  const [docTemplates, setDocTemplates] = useState<DocTemplate[]>([]);
-  const [rxTemplates, setRxTemplates] = useState<RxTemplate[]>([]);
+  const [docTemplates, setDocTemplates] = useState<DocTemplateRow[]>([]);
+  const [rxTemplates, setRxTemplates] = useState<RxTemplateRow[]>([]);
   const [error, setError] = useState("");
-
-  const [showDocForm, setShowDocForm] = useState(false);
-  const [editingDocId, setEditingDocId] = useState<string | null>(null);
-  const [docName, setDocName] = useState("");
-  const [docType, setDocType] = useState("CERTIFICATE");
-  const [docTitle, setDocTitle] = useState("");
-  const [docBody, setDocBody] = useState("");
-  const [docSaving, setDocSaving] = useState(false);
+  const [activeForm, setActiveForm] = useState<FormKind>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function loadAll() {
     setLoading(true);
@@ -72,58 +68,41 @@ export default function TemplatesSettingsClient() {
 
   useEffect(() => { loadAll(); }, []);
 
-  function resetDocForm() {
-    setShowDocForm(false);
-    setEditingDocId(null);
-    setDocName("");
-    setDocType("CERTIFICATE");
-    setDocTitle("");
-    setDocBody("");
+  const examClinical = useMemo(
+    () => docTemplates.filter((x) => x.templateCategory === TEMPLATE_CATEGORIES.EXAM_CLINICAL),
+    [docTemplates],
+  );
+  const examPreop = useMemo(
+    () => docTemplates.filter((x) => x.templateCategory === TEMPLATE_CATEGORIES.EXAM_PREOP),
+    [docTemplates],
+  );
+  const certificates = useMemo(
+    () => docTemplates.filter((x) => x.templateCategory === TEMPLATE_CATEGORIES.CERTIFICATE),
+    [docTemplates],
+  );
+  const rxPostop = useMemo(
+    () => rxTemplates.filter((x) => x.templateCategory === TEMPLATE_CATEGORIES.RX_POSTOP),
+    [rxTemplates],
+  );
+
+  function openCreate(kind: FormKind) {
+    setEditingId(null);
+    setActiveForm(kind);
   }
 
-  function openEditDoc(tpl: DocTemplate) {
-    setEditingDocId(tpl.id);
-    setDocName(tpl.name);
-    setDocType(tpl.documentType);
-    setDocTitle(tpl.title);
-    setDocBody(tpl.body);
-    setShowDocForm(true);
+  function openEdit(kind: FormKind, id: string) {
+    setEditingId(id);
+    setActiveForm(kind);
   }
 
-  async function saveDocTemplate() {
-    if (!docName.trim() || !docTitle.trim() || !docBody.trim()) {
-      setError(t("tmpl.fillRequired"));
-      return;
-    }
-    setDocSaving(true);
-    setError("");
-    try {
-      const payload = {
-        name: docName.trim(),
-        documentType: docType,
-        title: docTitle,
-        body: docBody,
-      };
-      const res = editingDocId
-        ? await fetch(`/api/professional/templates/documents/${editingDocId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          })
-        : await fetch("/api/professional/templates/documents", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || t("tmpl.saveError"));
-      resetDocForm();
-      await loadAll();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("tmpl.saveError"));
-    } finally {
-      setDocSaving(false);
-    }
+  function closeForm() {
+    setActiveForm(null);
+    setEditingId(null);
+  }
+
+  async function handleSaved() {
+    closeForm();
+    await loadAll();
   }
 
   async function deleteDocTemplate(id: string) {
@@ -137,6 +116,19 @@ export default function TemplatesSettingsClient() {
     const res = await fetch(`/api/professional/templates/prescriptions/${id}`, { method: "DELETE" });
     if (res.ok) setRxTemplates((prev) => prev.filter((x) => x.id !== id));
   }
+
+  const editingExamClinical = editingId
+    ? examClinical.find((x) => x.id === editingId) as ExamTemplateData | undefined
+    : undefined;
+  const editingExamPreop = editingId
+    ? examPreop.find((x) => x.id === editingId) as ExamTemplateData | undefined
+    : undefined;
+  const editingCertificate = editingId
+    ? certificates.find((x) => x.id === editingId) as CertificateTemplateData | undefined
+    : undefined;
+  const editingRxPostop = editingId
+    ? rxPostop.find((x) => x.id === editingId) as RxTemplateData | undefined
+    : undefined;
 
   if (loading) {
     return (
@@ -164,120 +156,159 @@ export default function TemplatesSettingsClient() {
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-700">{error}</div>
       )}
 
-      {/* Document templates */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+      {/* Solicitação de exames clínicos */}
+      <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-            <FileText size={18} className="text-brand-500" /> {t("tmpl.docSection")}
+            <FlaskConical size={18} className="text-brand-500" /> {t("tmpl.examClinicalSection")}
           </h2>
-          {!showDocForm && (
-            <button
-              type="button"
-              onClick={() => { resetDocForm(); setShowDocForm(true); }}
-              className="text-sm font-semibold text-brand-600 hover:text-brand-500 flex items-center gap-1"
-            >
+          {activeForm !== "exam_clinical" && (
+            <button type="button" onClick={() => openCreate("exam_clinical")}
+              className="text-sm font-semibold text-brand-600 hover:text-brand-500 flex items-center gap-1">
               <Plus size={16} /> {t("tmpl.newDocTemplate")}
             </button>
           )}
         </div>
-
-        <p className="text-xs text-slate-500">
-          {t("tmpl.tagsHint")}{" "}
-          {TEMPLATE_TAG_HINTS.map((tag) => (
-            <code key={tag} className="bg-slate-100 px-1 rounded mx-0.5">{tag}</code>
-          ))}
-        </p>
-
-        {showDocForm && (
-          <div className="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-100">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">{t("tmpl.templateName")}</label>
-              <input className={inputClass} value={docName} onChange={(e) => setDocName(e.target.value)}
-                placeholder={t("tmpl.docNamePlaceholder")} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">{t("rx.documentType")}</label>
-              <select className={inputClass + " bg-white"} value={docType} onChange={(e) => setDocType(e.target.value)}>
-                {DOC_TYPES.map((dt) => (
-                  <option key={dt.value} value={dt.value}>{t(dt.labelKey)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">{t("rx.documentTitleLabel")}</label>
-              <input className={inputClass} value={docTitle} onChange={(e) => setDocTitle(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">{t("rx.documentBody")}</label>
-              <textarea className={inputClass + " resize-y min-h-[160px]"} value={docBody}
-                onChange={(e) => setDocBody(e.target.value)} rows={8} />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={resetDocForm}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 flex items-center gap-1">
-                <X size={14} /> {t("common.cancel")}
-              </button>
-              <button type="button" onClick={saveDocTemplate} disabled={docSaving}
-                className="px-4 py-2 rounded-xl bg-brand-500 text-white text-sm font-semibold flex items-center gap-1 disabled:opacity-50">
-                {docSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                {editingDocId ? t("tmpl.saveChanges") : t("tmpl.createTemplate")}
-              </button>
-            </div>
-          </div>
+        <p className="text-sm text-slate-500">{t("tmpl.examClinicalHint")}</p>
+        {activeForm === "exam_clinical" && (
+          <ExamTemplateForm
+            category={TEMPLATE_CATEGORIES.EXAM_CLINICAL}
+            defaultTitle={t("tmpl.examClinicalDefaultTitle")}
+            editing={editingExamClinical}
+            t={t}
+            onSaved={handleSaved}
+            onCancel={closeForm}
+          />
         )}
+        <TemplateSectionList
+          items={examClinical.map((tpl) => {
+            const parsed = parseExamTemplateBody(tpl.body);
+            return {
+              id: tpl.id,
+              name: tpl.name,
+              subtitle: parsed.items.slice(0, 3).join(" · ") + (parsed.items.length > 3 ? "…" : ""),
+            };
+          })}
+          category={TEMPLATE_CATEGORIES.EXAM_CLINICAL}
+          emptyLabel={t("tmpl.noExamClinicalTemplates")}
+          t={t}
+          onEdit={(id) => openEdit("exam_clinical", id)}
+          onDelete={deleteDocTemplate}
+        />
+      </section>
 
-        {docTemplates.length === 0 && !showDocForm ? (
-          <p className="text-sm text-slate-400">{t("tmpl.noDocTemplates")}</p>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {docTemplates.map((tpl) => (
-              <li key={tpl.id} className="py-3 flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-slate-800">{tpl.name}</p>
-                  <p className="text-xs text-slate-500 mt-0.5 truncate">{tpl.title}</p>
-                </div>
-                <button type="button" onClick={() => openEditDoc(tpl)}
-                  className="p-2 text-slate-400 hover:text-brand-500 rounded-lg" title={t("tmpl.edit")}>
-                  <Pencil size={15} />
-                </button>
-                <button type="button" onClick={() => deleteDocTemplate(tpl.id)}
-                  className="p-2 text-slate-400 hover:text-rose-500 rounded-lg" title={t("tmpl.delete")}>
-                  <Trash2 size={15} />
-                </button>
-              </li>
-            ))}
-          </ul>
+      {/* Solicitação de exames pré operatório */}
+      <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <ClipboardList size={18} className="text-brand-500" /> {t("tmpl.examPreopSection")}
+          </h2>
+          {activeForm !== "exam_preop" && (
+            <button type="button" onClick={() => openCreate("exam_preop")}
+              className="text-sm font-semibold text-brand-600 hover:text-brand-500 flex items-center gap-1">
+              <Plus size={16} /> {t("tmpl.newDocTemplate")}
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-slate-500">{t("tmpl.examPreopHint")}</p>
+        {activeForm === "exam_preop" && (
+          <ExamTemplateForm
+            category={TEMPLATE_CATEGORIES.EXAM_PREOP}
+            defaultTitle={t("tmpl.examPreopDefaultTitle")}
+            editing={editingExamPreop}
+            t={t}
+            onSaved={handleSaved}
+            onCancel={closeForm}
+          />
         )}
-      </div>
+        <TemplateSectionList
+          items={examPreop.map((tpl) => {
+            const parsed = parseExamTemplateBody(tpl.body);
+            return {
+              id: tpl.id,
+              name: tpl.name,
+              subtitle: parsed.items.slice(0, 3).join(" · ") + (parsed.items.length > 3 ? "…" : ""),
+            };
+          })}
+          category={TEMPLATE_CATEGORIES.EXAM_PREOP}
+          emptyLabel={t("tmpl.noExamPreopTemplates")}
+          t={t}
+          onEdit={(id) => openEdit("exam_preop", id)}
+          onDelete={deleteDocTemplate}
+        />
+      </section>
 
-      {/* Prescription templates */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <Pill size={18} className="text-brand-500" /> {t("tmpl.rxSection")}
-        </h2>
-        <p className="text-sm text-slate-500">{t("tmpl.rxSectionHint")}</p>
-
-        {rxTemplates.length === 0 ? (
-          <p className="text-sm text-slate-400">{t("tmpl.noRxTemplates")}</p>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {rxTemplates.map((tpl) => (
-              <li key={tpl.id} className="py-3 flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-slate-800">{tpl.name}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {(tpl.medications as { name: string }[]).map((m) => m.name).join(" ? ")}
-                  </p>
-                </div>
-                <button type="button" onClick={() => deleteRxTemplate(tpl.id)}
-                  className="p-2 text-slate-400 hover:text-rose-500 rounded-lg" title={t("tmpl.delete")}>
-                  <Trash2 size={15} />
-                </button>
-              </li>
-            ))}
-          </ul>
+      {/* Prescrição pós operatório */}
+      <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <Pill size={18} className="text-brand-500" /> {t("tmpl.rxPostopSection")}
+          </h2>
+          {activeForm !== "rx_postop" && (
+            <button type="button" onClick={() => openCreate("rx_postop")}
+              className="text-sm font-semibold text-brand-600 hover:text-brand-500 flex items-center gap-1">
+              <Plus size={16} /> {t("tmpl.newDocTemplate")}
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-slate-500">{t("tmpl.rxPostopHint")}</p>
+        {activeForm === "rx_postop" && (
+          <RxTemplateForm
+            editing={editingRxPostop}
+            t={t}
+            onSaved={handleSaved}
+            onCancel={closeForm}
+          />
         )}
-      </div>
+        <TemplateSectionList
+          items={rxPostop.map((tpl) => ({
+            id: tpl.id,
+            name: tpl.name,
+            subtitle: tpl.medications.map((m) => m.name).join(" · "),
+          }))}
+          category={TEMPLATE_CATEGORIES.RX_POSTOP}
+          emptyLabel={t("tmpl.noRxPostopTemplates")}
+          t={t}
+          onEdit={(id) => openEdit("rx_postop", id)}
+          onDelete={deleteRxTemplate}
+        />
+      </section>
+
+      {/* Atestado */}
+      <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <FileText size={18} className="text-brand-500" /> {t("tmpl.certificateSection")}
+          </h2>
+          {activeForm !== "certificate" && (
+            <button type="button" onClick={() => openCreate("certificate")}
+              className="text-sm font-semibold text-brand-600 hover:text-brand-500 flex items-center gap-1">
+              <Plus size={16} /> {t("tmpl.newDocTemplate")}
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-slate-500">{t("tmpl.certificateHint")}</p>
+        {activeForm === "certificate" && (
+          <CertificateTemplateForm
+            editing={editingCertificate}
+            t={t}
+            onSaved={handleSaved}
+            onCancel={closeForm}
+          />
+        )}
+        <TemplateSectionList
+          items={certificates.map((tpl) => ({
+            id: tpl.id,
+            name: tpl.name,
+            subtitle: tpl.title,
+          }))}
+          category={TEMPLATE_CATEGORIES.CERTIFICATE}
+          emptyLabel={t("tmpl.noCertificateTemplates")}
+          t={t}
+          onEdit={(id) => openEdit("certificate", id)}
+          onDelete={deleteDocTemplate}
+        />
+      </section>
     </div>
   );
 }

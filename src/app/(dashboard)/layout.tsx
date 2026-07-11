@@ -40,6 +40,7 @@ import {
   PATIENT_DASHBOARD_ENTRY,
   PATIENT_HUMANITARIAN_ENTRY,
   PATIENT_SCHEDULED_VOLUNTEER_ENTRY,
+  PROVIDER_HUMANITARIAN_VOLUNTEER_ENTRY,
   PATIENT_NAV,
   PATIENT_NAV_GROUPS,
   PLATFORM_NAV_GROUPS_BY_PORTAL,
@@ -311,6 +312,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const patientDashboardItem = withNavIcons([PATIENT_DASHBOARD_ENTRY])[0];
   const patientHumanitarianItem = withNavIcons([PATIENT_HUMANITARIAN_ENTRY])[0];
   const patientScheduledVolunteerItem = withNavIcons([PATIENT_SCHEDULED_VOLUNTEER_ENTRY])[0];
+  const providerHumanitarianVolunteerItem = withNavIcons([PROVIDER_HUMANITARIAN_VOLUNTEER_ENTRY])[0];
+  const showProviderHumanitarianVolunteer =
+    (role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST")
+    && !isPharmacyStoreUser
+    && !isPharmacyNetworkPharmacist;
   const patientGroupedNav = PATIENT_NAV_GROUPS.map((group) => ({
     ...group,
     items: withNavIcons(group.items),
@@ -470,6 +476,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         {!isPharmacyStoreUser && !isPharmacyNetworkPharmacist && <BrVeSolidarityBadge />}
 
+        {showProviderHumanitarianVolunteer && (
+          <div className="px-3 pb-2">
+            {renderNavLink(providerHumanitarianVolunteerItem, undefined, true)}
+          </div>
+        )}
+
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <div className="space-y-1">
             {!sessionLoaded ? (
@@ -522,7 +534,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                       renderNavLink(
                         item,
                         item.labelKey === "nav.messages" ? unreadMessages : undefined,
-                        item.labelKey === "nav.humanitarianVolunteer",
                       ),
                     )}
                   </div>

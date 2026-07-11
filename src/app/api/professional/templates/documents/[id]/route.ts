@@ -2,12 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireProfessional } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
+import { TEMPLATE_CATEGORIES } from "@/lib/clinical-template-utils";
+
+const templateCategorySchema = z.enum([
+  TEMPLATE_CATEGORIES.EXAM_CLINICAL,
+  TEMPLATE_CATEGORIES.EXAM_PREOP,
+  TEMPLATE_CATEGORIES.CERTIFICATE,
+]);
 
 const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   documentType: z.enum([
-    "CERTIFICATE", "REFERRAL", "CLINICAL_NOTE", "OTHER",
+    "EXAM_REQUEST", "CERTIFICATE", "REFERRAL", "CLINICAL_NOTE", "OTHER",
   ]).optional(),
+  templateCategory: templateCategorySchema.optional(),
   title: z.string().min(1).max(300).optional(),
   body: z.string().min(1).max(50000).optional(),
 });
@@ -40,6 +48,7 @@ export async function PATCH(
     id: updated.id,
     name: updated.name,
     documentType: updated.documentType,
+    templateCategory: updated.templateCategory,
     title: updated.title,
     body: updated.body,
   });

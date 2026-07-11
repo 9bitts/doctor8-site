@@ -23,6 +23,11 @@ import { DocumentCreateView } from "@/components/professional/emissions/Document
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { readChartDeepLink } from "@/lib/video-chart-nav";
+import {
+  isExamTemplateCategory,
+  parseExamTemplateBody,
+  TEMPLATE_CATEGORIES,
+} from "@/lib/clinical-template-utils";
 import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import type { Chart } from "@/components/professional/emissions/types";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
@@ -400,6 +405,18 @@ export default function PrescriptionsPage() {
   const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
   const [pendingStarterId, setPendingStarterId] = useState<string | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [pendingDocTemplateId, setPendingDocTemplateId] = useState<string | null>(null);
+  const [examTemplatePrefill, setExamTemplatePrefill] = useState<{
+    items: string[];
+    notes: string;
+    cid: string;
+    title: string;
+  } | null>(null);
+  const [docTemplatePrefill, setDocTemplatePrefill] = useState<{
+    body: string;
+    templateId: string;
+  } | null>(null);
+  const [templateAppliedHint, setTemplateAppliedHint] = useState(false);
   const [pendingFloralProductId, setPendingFloralProductId] = useState<string | null>(null);
   const [floralOnlyMode, setFloralOnlyMode] = useState(false);
   const [voicePrefillActive, setVoicePrefillActive] = useState(false);
@@ -545,6 +562,26 @@ export default function PrescriptionsPage() {
       }
     }
 
+    const docTemplateId = params.get("docTemplateId");
+    const rxTemplateId = params.get("templateId");
+    const viewFromUrl = params.get("view") as View | null;
+
+    if (docTemplateId && !patientRecordId) {
+      setPendingDocTemplateId(docTemplateId);
+      if (viewFromUrl === "exam" || viewFromUrl === "document") {
+        setView(viewFromUrl);
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    if (rxTemplateId && !patientRecordId && params.get("add") !== "floral") {
+      setPendingTemplateId(rxTemplateId);
+      if (viewFromUrl === "prescription") {
+        setView("prescription");
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
     const sign = params.get("sign");
     const flow = params.get("flow");
     const kind = params.get("kind") as EmissionKind | null;
@@ -601,9 +638,52 @@ export default function PrescriptionsPage() {
     if (tpl) {
       applyRxTemplate(tpl);
       setView("prescription");
+      setTemplateAppliedHint(true);
       setPendingTemplateId(null);
     }
   }, [pendingTemplateId, rxTemplates]);
+
+  useEffect(() => {
+    if (!pendingDocTemplateId) return;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/professional/templates/documents?previewId=${encodeURIComponent(pendingDocTemplateId)}&locale=${encodeURIComponent(locale)}`,
+        );
+        const data = await res.json();
+        const tpl = data.template as {
+          id: string;
+          templateCategory: string | null;
+          title: string;
+          body: string;
+        } | undefined;
+        if (!tpl) return;
+
+        if (isExamTemplateCategory(tpl.templateCategory)) {
+          const parsed = parseExamTemplateBody(tpl.body);
+          setExamTemplatePrefill({
+            items: parsed.items,
+            notes: parsed.notes || "",
+            cid: parsed.cid || "",
+            title: tpl.title || t("rx.examDefaultTitle"),
+          });
+          setView("exam");
+          setTemplateAppliedHint(true);
+        } else if (tpl.templateCategory === TEMPLATE_CATEGORIES.CERTIFICATE) {
+          setDocTemplatePrefill({
+            body: data.preview?.body || tpl.body,
+            templateId: tpl.id,
+          });
+          setView("document");
+          setTemplateAppliedHint(true);
+        }
+      } catch {
+        /* ignore */
+      } finally {
+        setPendingDocTemplateId(null);
+      }
+    })();
+  }, [pendingDocTemplateId, locale, t]);
 
   useEffect(() => {
     if (!pendingFloralProductId) return;
@@ -884,6 +964,9 @@ export default function PrescriptionsPage() {
     resetForm();
     setReuseClinical(null);
     setReusePatient(null);
+    setExamTemplatePrefill(null);
+    setDocTemplatePrefill(null);
+    setTemplateAppliedHint(false);
     fetchAll();
   }
 
@@ -1288,12 +1371,13 @@ export default function PrescriptionsPage() {
         <ExamCreateView
           t={t} locale={locale} charts={charts} chartsLoading={chartsLoading}
           reuseHint={!!reuseClinical}
+          templateHint={templateAppliedHint}
           initialPatient={reusePatient}
           lockPatient={lockPatient}
-          initialItems={reuseClinical?.examItems || []}
-          initialNotes={reuseClinical?.examNotes || ""}
-          initialCid={reuseClinical?.cid || ""}
-          initialTitle={reuseClinical?.title || ""}
+          initialItems={examTemplatePrefill?.items || reuseClinical?.examItems || []}
+          initialNotes={examTemplatePrefill?.notes || reuseClinical?.examNotes || ""}
+          initialCid={examTemplatePrefill?.cid || reuseClinical?.cid || ""}
+          initialTitle={examTemplatePrefill?.title || reuseClinical?.title || ""}
           onBack={closeCreate}
           onSaved={handleEmissionSaved}
         />
@@ -1309,10 +1393,12 @@ export default function PrescriptionsPage() {
         <DocumentCreateView
           t={t} charts={charts} chartsLoading={chartsLoading}
           reuseHint={!!reuseClinical}
+          templateHint={templateAppliedHint}
           initialPatient={reusePatient}
           lockPatient={lockPatient}
-          initialBody={reuseClinical?.content || ""}
+          initialBody={docTemplatePrefill?.body || reuseClinical?.content || ""}
           initialType={reuseClinical?.type || "CERTIFICATE"}
+          initialTemplateId={docTemplatePrefill?.templateId || null}
           onBack={closeCreate}
           onSaved={handleEmissionSaved}
         />
@@ -1335,6 +1421,12 @@ export default function PrescriptionsPage() {
           <h1 className="text-2xl font-bold text-slate-900">{t("rx.formTitle")}</h1>
           <p className="text-slate-500 text-sm mt-1">{t("rx.formSubtitle")}</p>
         </div>
+
+        {templateAppliedHint && (
+          <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">
+            {t("tmpl.templateAppliedHint")}
+          </div>
+        )}
 
         {voicePrefillActive && (
           <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 flex items-start gap-3">

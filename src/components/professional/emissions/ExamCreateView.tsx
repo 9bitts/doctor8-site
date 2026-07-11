@@ -25,6 +25,7 @@ interface ExamCreateViewProps {
   charts: Chart[];
   chartsLoading?: boolean;
   reuseHint?: boolean;
+  templateHint?: boolean;
   initialPatient: Chart | null;
   lockPatient?: boolean;
   initialItems: string[];
@@ -36,7 +37,7 @@ interface ExamCreateViewProps {
 }
 
 export function ExamCreateView({
-  t, charts, chartsLoading = false, reuseHint, initialPatient, lockPatient = false, initialItems, initialNotes, initialCid, initialTitle,
+  t, charts, chartsLoading = false, reuseHint, templateHint, initialPatient, lockPatient = false, initialItems, initialNotes, initialCid, initialTitle,
   onBack, onSaved,
 }: ExamCreateViewProps) {
   const { update: updateSession } = useSession();
@@ -127,9 +128,9 @@ export function ExamCreateView({
         <p className="text-slate-500 text-sm mt-1">{t("rx.examFormSubtitle")}</p>
       </div>
 
-      {reuseHint && (
+      {(templateHint || reuseHint) && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">
-          {t("rx.reuseHint")}
+          {templateHint ? t("tmpl.templateAppliedHint") : t("rx.reuseHint")}
         </div>
       )}
 

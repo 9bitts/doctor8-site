@@ -45,16 +45,19 @@ interface DocumentCreateViewProps {
   charts: Chart[];
   chartsLoading?: boolean;
   reuseHint?: boolean;
+  templateHint?: boolean;
   initialPatient: Chart | null;
   lockPatient?: boolean;
   initialBody: string;
   initialType: string;
+  initialTemplateId?: string | null;
   onBack: () => void;
   onSaved: (emission: SavedEmission) => void;
 }
 
 export function DocumentCreateView({
-  t, charts, chartsLoading = false, reuseHint, initialPatient, lockPatient = false, initialBody, initialType,
+  t, charts, chartsLoading = false, reuseHint, templateHint, initialPatient, lockPatient = false, initialBody, initialType,
+  initialTemplateId = null,
   onBack, onSaved,
 }: DocumentCreateViewProps) {
   const { lang } = useI18n();
@@ -156,9 +159,21 @@ export function DocumentCreateView({
   }
 
   useEffect(() => {
+    if (!initialTemplateId) return;
+    lastTemplateId.current = initialTemplateId;
+  }, [initialTemplateId]);
+
+  useEffect(() => {
+    if (!initialTemplateId || !templates.length) return;
+    const tpl = templates.find((x) => x.id === initialTemplateId);
+    if (tpl) void applyTemplate(tpl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTemplateId, templates.length]);
+
+  useEffect(() => {
     if (!selectedPatient?.id || !lastTemplateId.current) return;
     const tpl = templates.find((x) => x.id === lastTemplateId.current);
-    if (tpl) applyTemplate(tpl);
+    if (tpl) void applyTemplate(tpl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPatient?.id]);
 
@@ -230,9 +245,9 @@ export function DocumentCreateView({
         <p className="text-slate-500 text-sm mt-1">{t("rx.documentFormSubtitle")}</p>
       </div>
 
-      {reuseHint && (
+      {(templateHint || reuseHint) && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">
-          {t("rx.reuseHint")}
+          {templateHint ? t("tmpl.templateAppliedHint") : t("rx.reuseHint")}
         </div>
       )}
 

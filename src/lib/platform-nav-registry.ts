@@ -101,6 +101,14 @@ export const PATIENT_SCHEDULED_VOLUNTEER_ENTRY: PlatformNavEntry = {
   iconKey: "Calendar",
 };
 
+/** Pinned below BR/VE solidarity badge in provider sidebar (not in a nav group). */
+export const PROVIDER_HUMANITARIAN_VOLUNTEER_ENTRY: PlatformNavEntry = {
+  href: "/humanitarian/volunteer",
+  labelKey: "nav.humanitarianVolunteer",
+  roles: ["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"],
+  iconKey: "Heart",
+};
+
 /** Patient sidebar groups — flat PATIENT_NAV is derived for support-knowledge index. */
 export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
   {
@@ -166,6 +174,7 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/professional/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
       { href: "/professional/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
       { href: "/professional/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
+      { href: "/professional/settings/templates", labelKey: "nav.templates", roles: ["PROFESSIONAL"], iconKey: "FileText" },
     ],
   },
   {
@@ -175,14 +184,17 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/professional/chas-medicinais", labelKey: "nav.medicinalTeas", roles: ["PROFESSIONAL"], iconKey: "FlaskConical" },
       { href: "/professional/florais", labelKey: "nav.florais", roles: ["PROFESSIONAL"], iconKey: "Flower2" },
       { href: "/professional/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["PROFESSIONAL"], iconKey: "Leaf" },
+      { href: "/professional/psychology", labelKey: "nav.psychologyArea", roles: ["PROFESSIONAL"], iconKey: "Brain" },
+      { href: "/professional/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
+      { href: "/professional/settings/clinic", labelKey: "nav.clinicSettings", roles: ["PROFESSIONAL"], iconKey: "Building2" },
+    ],
+  },
+  {
+    labelKey: "nav.group.education",
+    items: [
       { href: "/professional/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/professional/courses", labelKey: "nav.courses", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
       { href: "/professional/courses/learn", labelKey: "nav.myCourses", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
-      { href: "/professional/psychology", labelKey: "nav.psychologyArea", roles: ["PROFESSIONAL"], iconKey: "Brain" },
-      { href: "/professional/buying-club", labelKey: "nav.buyingClub", roles: ["PROFESSIONAL"], iconKey: "ShoppingBag" },
-      { href: "/professional/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
-      { href: "/professional/settings/clinic", labelKey: "nav.clinicSettings", roles: ["PROFESSIONAL"], iconKey: "Building2" },
-      { href: "/professional/settings/templates", labelKey: "nav.templates", roles: ["PROFESSIONAL"], iconKey: "FileText" },
     ],
   },
   {
@@ -191,8 +203,8 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/professional/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
       { href: "/professional/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
       { href: "/professional/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
+      { href: "/professional/buying-club", labelKey: "nav.buyingClub", roles: ["PROFESSIONAL"], iconKey: "ShoppingBag" },
       { href: "/professional/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
-      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
     ],
   },
 ];
@@ -243,7 +255,6 @@ export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/psychologist/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
       { href: "/psychologist/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
       { href: "/psychologist/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
-      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
     ],
   },
 ];
@@ -284,7 +295,6 @@ export const NUTRITIONIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/nutricionista/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
       { href: "/nutricionista/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
       { href: "/nutricionista/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
-      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
     ],
   },
 ];
@@ -328,7 +338,6 @@ export const NURSE_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/enfermeiro/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
       { href: "/enfermeiro/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
       { href: "/enfermeiro/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
-      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
     ],
   },
 ];
@@ -372,7 +381,6 @@ export const PHARMACIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/farmaceutico/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
       { href: "/farmaceutico/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
       { href: "/farmaceutico/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
-      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
     ],
   },
 ];
@@ -420,7 +428,6 @@ export const DENTIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/odontologo/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
       { href: "/odontologo/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
       { href: "/odontologo/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
-      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PROFESSIONAL"], iconKey: "Heart" },
     ],
   },
 ];
@@ -459,7 +466,6 @@ export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/psychoanalyst/settings", labelKey: "nav.myProfile", roles: ["PSYCHOANALYST"], iconKey: "UserCog" },
       { href: "/psychoanalyst/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PSYCHOANALYST"], iconKey: "Sparkles" },
       { href: "/psychoanalyst/account", labelKey: "nav.account", roles: ["PSYCHOANALYST"], iconKey: "Settings" },
-      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["PSYCHOANALYST"], iconKey: "Heart" },
     ],
   },
 ];
@@ -498,7 +504,6 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/integrative-therapist/financeiro", labelKey: "nav.financeiro", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "TrendingUp" },
       { href: "/integrative-therapist/settings", labelKey: "nav.myProfile", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "UserCog" },
-      { href: "/humanitarian/volunteer", labelKey: "nav.humanitarianVolunteer", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Heart" },
     ],
   },
 ];

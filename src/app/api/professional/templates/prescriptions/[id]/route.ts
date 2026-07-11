@@ -2,9 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireProfessional } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
+import { TEMPLATE_CATEGORIES } from "@/lib/clinical-template-utils";
+
+const medicationItemSchema = z.object({
+  name: z.string().min(1),
+  dosage: z.string().min(1),
+  frequency: z.string().min(1),
+  duration: z.string().optional(),
+  instructions: z.string().optional(),
+  presentation: z.string().optional(),
+  pharmaceuticalForm: z.string().optional(),
+  itemKind: z.enum(["medication", "device", "phytotherapy"]).optional(),
+});
 
 const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
+  medications: z.array(medicationItemSchema).min(1).optional(),
+  instructions: z.string().optional(),
+  validDays: z.number().min(1).max(365).optional(),
+  templateCategory: z.enum([TEMPLATE_CATEGORIES.RX_POSTOP]).optional(),
 });
 
 export async function PATCH(
@@ -26,14 +42,20 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const data: Record<string, unknown> = { ...parsed.data };
+  if (parsed.data.medications) {
+    data.medications = parsed.data.medications as object;
+  }
+
   const updated = await db.prescriptionTemplate.update({
     where: { id: existing.id },
-    data: parsed.data,
+    data,
   });
 
   return NextResponse.json({
     id: updated.id,
     name: updated.name,
+    templateCategory: updated.templateCategory,
     medications: updated.medications,
     instructions: updated.instructions || "",
     validDays: updated.validDays,
