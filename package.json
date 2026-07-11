@@ -35,6 +35,7 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "seed:fitoterapicos": "tsx prisma/seeds/fitoterapicos.ts",
+    "seed:fitoterapicos:all": "tsx prisma/seeds/fitoterapicos-all.ts",
     "seed:florais": "tsx prisma/seeds/florais.ts",
     "seed:aromaterapia": "tsx prisma/seeds/aromaterapia.ts",
     "seed:homeopatia": "tsx prisma/seeds/homeopatia.ts",

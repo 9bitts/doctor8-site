@@ -350,5 +350,93 @@
     "posologia": "Agudo: 9CH ou 30CH, 3–5 glóbulos a cada 2–4 h.",
     "potencia": "9CH, 30CH",
     "dinamizacao": "CH"
+  },
+  {
+    "slug": "china_officinalis",
+    "nome": "China officinalis (Cinchona)",
+    "nomesAlternativos": ["china", "cinchona"],
+    "indicacoes": "Asthenia pós-infecciosa, sudorese noturna, flatulência, sensibilidade auditiva.",
+    "contraindicacoes": "Anemia não investigada — avaliar antes do uso prolongado.",
+    "precaucoes": "Evitar canforados e mentol.",
+    "posologia": "Crônico: 30CH, 1 dose semanal. Agudo: 9CH, 3x/dia.",
+    "potencia": "9CH, 30CH",
+    "dinamizacao": "CH"
+  },
+  {
+    "slug": "cocculus_indicus",
+    "nome": "Cocculus indicus (Cocculus)",
+    "nomesAlternativos": ["cocculus"],
+    "indicacoes": "Enjoo por movimento, vertigem, insônia por cuidado prolongado de terceiros.",
+    "contraindicacoes": "Vertigem aguda com déficit neurológico — excluir emergência.",
+    "precaucoes": "Evitar canforados e mentol.",
+    "posologia": "Agudo: 9CH ou 30CH, 3–5 glóbulos a cada 4 h.",
+    "potencia": "9CH, 30CH",
+    "dinamizacao": "CH"
+  },
+  {
+    "slug": "drosera_rotundifolia",
+    "nome": "Drosera rotundifolia (Drosera)",
+    "nomesAlternativos": ["drosera"],
+    "indicacoes": "Tosse seca espasmódica, piora à meia-noite, rouquidão com cólica laríngea.",
+    "contraindicacoes": "Dispneia, febre alta ou hemoptise — avaliação médica.",
+    "precaucoes": "Evitar canforados e mentol.",
+    "posologia": "Agudo: 9CH ou 30CH, 3–5 glóbulos a cada 2–4 h.",
+    "potencia": "9CH, 30CH",
+    "dinamizacao": "CH"
+  },
+  {
+    "slug": "graphites",
+    "nome": "Graphites (Grafite)",
+    "nomesAlternativos": ["graphites", "grafite"],
+    "indicacoes": "Pele seca fissurada, eczema úmido, constipação com fezes pastosas, indisposição ao frio.",
+    "contraindicacoes": "Lesões cutâneas não diagnosticadas — excluir infecção.",
+    "precaucoes": "Evitar canforados e mentol.",
+    "posologia": "Crônico: 30CH, 1 dose semanal.",
+    "potencia": "30CH, 200CH",
+    "dinamizacao": "CH"
+  },
+  {
+    "slug": "ipecacuanha",
+    "nome": "Ipecacuanha (Ipeca)",
+    "nomesAlternativos": ["ipeca", "ipecacuanha"],
+    "indicacoes": "Náusea persistente sem alívio após vômito, tosse com náusea, hemorragias leves.",
+    "contraindicacoes": "Vômitos com sinais de alarme — priorizar avaliação médica.",
+    "precaucoes": "Evitar canforados e mentol.",
+    "posologia": "Agudo: 9CH, 3–5 glóbulos a cada 1–2 h (máx. 6 doses).",
+    "potencia": "9CH, 30CH",
+    "dinamizacao": "CH"
+  },
+  {
+    "slug": "kali_bichromicum",
+    "nome": "Kali bichromicum (Kalium bichromicum)",
+    "nomesAlternativos": ["kali bich", "bichromato de potássio"],
+    "indicacoes": "Secreção mucosa espessa, elástica e amarelada; sinusite, rinite ou tosse com expectoração viscosa.",
+    "contraindicacoes": "Hemoptise ou secreção purulenta febril — investigar infecção.",
+    "precaucoes": "Evitar canforados e mentol.",
+    "posologia": "Agudo: 9CH ou 30CH, 3x/dia até melhora.",
+    "potencia": "9CH, 30CH",
+    "dinamizacao": "CH"
+  },
+  {
+    "slug": "opium",
+    "nome": "Opium (Ópio homeopático)",
+    "nomesAlternativos": ["opium"],
+    "indicacoes": "Estupor pós-trauma sem dor, constipação crônica com inércia intestinal, apneia do sono leve adjuvante.",
+    "contraindicacoes": "Depressão respiratória, constipação obstrutiva — avaliação médica.",
+    "precaucoes": "Medicamento de fundo. Evitar canforados e mentol.",
+    "posologia": "Crônico: 30CH, 1 dose semanal.",
+    "potencia": "30CH, 200CH",
+    "dinamizacao": "CH"
+  },
+  {
+    "slug": "podophyllum_peltatum",
+    "nome": "Podophyllum peltatum (Podophyllum)",
+    "nomesAlternativos": ["podophyllum"],
+    "indicacoes": "Diarreia profusa matinal, cólicas com alívio após evacuação, refluxo em lactentes adjuvante.",
+    "contraindicacoes": "Diarreia com sangue, febre ou desidratação — priorizar suporte clínico.",
+    "precaucoes": "Evitar canforados e mentol.",
+    "posologia": "Agudo: 9CH, 3–5 glóbulos a cada 2–4 h.",
+    "potencia": "9CH, 30CH",
+    "dinamizacao": "CH"
   }
 ]

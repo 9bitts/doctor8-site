@@ -74,16 +74,15 @@ export default function PicsPracticeHub({ portal, practice }: PicsPracticeHubPro
                 ? "nm.mod.floralPrescriptions"
                 : "nm.mod.prescriptions",
           },
-          ...(practice.id === "fitoterapia"
-            ? [
-                {
-                  path: "/professional/settings/templates",
-                  icon: LayoutTemplate,
-                  color: "bg-lime-100 text-lime-700",
-                  key: "nm.mod.templates",
-                },
-              ]
-            : []),
+          {
+            path: `${practiceBase}/templates`,
+            icon: LayoutTemplate,
+            color:
+              practice.id === "terapia_florais"
+                ? "bg-rose-100 text-rose-600"
+                : "bg-lime-100 text-lime-700",
+            key: "nm.mod.templates",
+          },
         ]
       : [
           {
@@ -116,16 +115,15 @@ export default function PicsPracticeHub({ portal, practice }: PicsPracticeHubPro
                 ? "nm.mod.floralPrescriptions"
                 : "nm.mod.prescriptions",
           },
-          ...(practice.id === "terapia_florais"
-            ? [
-                {
-                  path: `${practiceBase}/templates`,
-                  icon: LayoutTemplate,
-                  color: "bg-rose-100 text-rose-600",
-                  key: "nm.mod.floralTemplates",
-                },
-              ]
-            : []),
+          {
+            path: `${practiceBase}/templates`,
+            icon: LayoutTemplate,
+            color:
+              practice.id === "terapia_florais"
+                ? "bg-rose-100 text-rose-600"
+                : "bg-lime-100 text-lime-700",
+            key: "nm.mod.templates",
+          },
           {
             path: "/integrative-therapist/clients",
             icon: Users,
