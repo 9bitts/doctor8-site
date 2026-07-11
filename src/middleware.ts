@@ -525,6 +525,9 @@ export default auth((req) => {
   // Google Calendar OAuth callback (state token validates professional)
   if (pathname.startsWith("/api/professional/google-calendar/callback")) return NextResponse.next();
 
+  // Partner server-to-server (ACURA Bearer token validated in route handler)
+  if (pathname.startsWith("/api/integrations/")) return NextResponse.next();
+
   // Redirect to login if not authenticated
   if (!session?.user) {
     if (pathname.startsWith("/api/")) {

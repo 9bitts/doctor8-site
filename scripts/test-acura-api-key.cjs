@@ -9,6 +9,7 @@ const publicUrl = (process.env.DOCTOR8_APP_URL || "https://app.doctor8.org").rep
 
 console.log("Chave definida:", Boolean(key));
 console.log("Tamanho da chave:", key.length);
+console.log("(401 + 'Unauthorized' = middleware bloqueou; 'UNAUTHORIZED' = chave Bearer errada)\n");
 
 const probe = { acuraStatus: "NOVA", triageNotes: "ping" };
 
