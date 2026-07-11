@@ -30,6 +30,9 @@ export function parseExamItemLine(line: string): { code?: string; name: string }
   return { name: line.trim() };
 }
 
+const searchInputClass =
+  "w-full min-w-0 box-border rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-10 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/40";
+
 export default function ExamSearchInput({
   placeholder,
   manualLabel,
@@ -101,8 +104,12 @@ export default function ExamSearchInput({
 
   return (
     <div ref={wrapRef} className={`relative ${open ? "z-[100]" : ""}`}>
-      <div className="relative">
-        <FlaskConical size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-400" />
+      <div className="relative w-full">
+        <FlaskConical
+          size={16}
+          aria-hidden
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-brand-400"
+        />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -117,7 +124,7 @@ export default function ExamSearchInput({
             }
           }}
           placeholder={placeholder}
-          className="rx-inp rx-inp-pl-10 rx-inp-pr-9"
+          className={searchInputClass}
         />
         {loading && (
           <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-400" />

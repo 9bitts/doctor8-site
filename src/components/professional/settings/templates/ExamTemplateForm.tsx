@@ -118,7 +118,7 @@ export function ExamTemplateForm({
         <label className="block text-xs font-medium text-slate-600 mb-1">{t("rx.documentTitleLabel")}</label>
         <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
-      <div>
+      <div className={examSearchOpen ? "relative z-30 space-y-2" : "space-y-2"}>
         <label className="block text-xs font-medium text-slate-600 mb-1">{t("rx.examItems")}</label>
         <ExamSearchInput
           placeholder={t("rx.searchExam")}
