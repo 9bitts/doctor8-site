@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart, Zap, Calendar, X } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
+import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   PATIENT_HUMANITARIAN_ENTRY,
   PATIENT_SCHEDULED_VOLUNTEER_ENTRY,
@@ -18,17 +19,55 @@ type Props = {
 
 export default function VenezuelaPatientGuideBanner({ userId, lang }: Props) {
   const t = (key: string) => translate(lang, key);
-  const [dismissed, setDismissed] = useState(true);
+  const [ready, setReady] = useState(false);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
-    try {
-      setDismissed(localStorage.getItem(`${DISMISS_PREFIX}:${userId}`) === "1");
-    } catch {
-      setDismissed(false);
+    let cancelled = false;
+
+    async function resolveVisibility() {
+      try {
+        if (localStorage.getItem(`${DISMISS_PREFIX}:${userId}`) === "1") {
+          if (!cancelled) {
+            setShow(false);
+            setReady(true);
+          }
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+
+      try {
+        const [regionRes, campaignRes] = await Promise.all([
+          fetch("/api/user/region"),
+          fetch(`/api/humanitarian/campaigns/${VENEZUELA_CAMPAIGN_SLUG}`),
+        ]);
+
+        const region = regionRes.ok ? (await regionRes.json()).region : null;
+        const campaignActive = campaignRes.ok
+          ? (await campaignRes.json()).campaign?.active === true
+          : false;
+
+        if (!cancelled) {
+          setShow(region === "VE" || campaignActive);
+          setReady(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setShow(false);
+          setReady(true);
+        }
+      }
     }
+
+    void resolveVisibility();
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
-  if (dismissed) return null;
+  if (!ready || !show) return null;
 
   function dismiss() {
     try {
@@ -36,7 +75,7 @@ export default function VenezuelaPatientGuideBanner({ userId, lang }: Props) {
     } catch {
       /* ignore */
     }
-    setDismissed(true);
+    setShow(false);
   }
 
   return (

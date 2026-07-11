@@ -97,7 +97,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     role: string;
     userId: string;
     userName: string;
-    region: string;
   } | null>(null);
 
   useEffect(() => {
@@ -107,7 +106,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       userId: session.user.id ?? "",
       userName: session.user.name
         ?? (session.user.email ? session.user.email.split("@")[0] : "User"),
-      region: session.user.region ?? "",
     });
   }, [session, status]);
 
@@ -115,7 +113,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const role = sessionSnapshot?.role ?? "";
   const userId = sessionSnapshot?.userId ?? "";
   const userName = sessionSnapshot?.userName ?? "User";
-  const userRegion = sessionSnapshot?.region ?? "";
 
   useEffect(() => {
     const providerRoles = ["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"];
@@ -603,7 +600,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {isPatient && userId && userRegion === "VE" && (
+        {isPatient && userId && (
           <VenezuelaPatientGuideBanner userId={userId} lang={lang} />
         )}
 
