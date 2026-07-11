@@ -16,29 +16,45 @@ const createSchema = z.object({
   notes: z.string().optional(),
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const ctx = await requireIntegrativeTherapist();
   if ("error" in ctx && ctx.error) return ctx.error;
   const { therapist } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
 
+  const q = req.nextUrl.searchParams.get("q")?.trim().toLowerCase() ?? "";
+  const mainPractice = req.nextUrl.searchParams.get("mainPractice") ?? "";
+
   const records = await db.integrativeClientRecord.findMany({
-    where: { integrativeTherapistId: therapist.id },
+    where: {
+      integrativeTherapistId: therapist.id,
+      ...(mainPractice ? { mainPractice } : {}),
+    },
     orderBy: { updatedAt: "desc" },
     take: 200,
   });
 
+  let clients = records.map((r) => ({
+    id: r.id,
+    firstName: safeDecrypt(r.firstName),
+    lastName: safeDecrypt(r.lastName),
+    email: r.email,
+    mainPractice: r.mainPractice,
+    hasAccount: !!r.linkedUserId,
+    linkedUserId: r.linkedUserId,
+    processStartDate: r.processStartDate?.toISOString() ?? null,
+    updatedAt: r.updatedAt.toISOString(),
+  }));
+
+  if (q) {
+    clients = clients.filter((c) => {
+      const name = `${c.firstName} ${c.lastName}`.toLowerCase();
+      return name.includes(q) || (c.email?.toLowerCase().includes(q) ?? false);
+    });
+  }
+
   return NextResponse.json({
-    clients: records.map((r) => ({
-      id: r.id,
-      firstName: safeDecrypt(r.firstName),
-      lastName: safeDecrypt(r.lastName),
-      email: r.email,
-      mainPractice: r.mainPractice,
-      hasAccount: !!r.linkedUserId,
-      linkedUserId: r.linkedUserId,
-      processStartDate: r.processStartDate?.toISOString() ?? null,
-      updatedAt: r.updatedAt.toISOString(),
-    })),
+    clients,
+    practiceOptions: therapist.picsPractices,
   });
 }
 

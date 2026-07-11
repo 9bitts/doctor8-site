@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { useToast } from "@/components/ui/toast";
@@ -26,6 +26,10 @@ export default function IntegrativeClientsPage() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
+  const [practiceOptions, setPracticeOptions] = useState<string[]>([]);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [practiceFilter, setPracticeFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -34,16 +38,25 @@ export default function IntegrativeClientsPage() {
   const [mainPractice, setMainPractice] = useState("");
   const [chiefComplaint, setChiefComplaint] = useState("");
 
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/integrative-therapist/clients");
+      const sp = new URLSearchParams();
+      if (searchQuery) sp.set("q", searchQuery);
+      if (practiceFilter) sp.set("mainPractice", practiceFilter);
+      const res = await fetch(`/api/integrative-therapist/clients?${sp}`);
       const d = await res.json();
       if (!res.ok) {
         toast.error(typeof d.error === "string" ? d.error : t("it.err.loadClients"));
         return;
       }
       setClients(d.clients || []);
+      setPracticeOptions(d.practiceOptions || []);
     } catch {
       toast.error(t("it.err.loadClients"));
     } finally {
@@ -53,7 +66,7 @@ export default function IntegrativeClientsPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [searchQuery, practiceFilter]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +115,18 @@ export default function IntegrativeClientsPage() {
     if (lang.startsWith("en")) return p.labelEn;
     return p.labelEs;
   }
+
+  const filterPracticeOptions = useMemo(() => {
+    const slugs = practiceOptions.length > 0 ? practiceOptions : PICS_PRACTICES.map((p) => p.slug);
+    return slugs.map((slug) => {
+      const p = PICS_PRACTICES.find((x) => x.slug === slug);
+      if (!p) return { slug, label: slug };
+      const label = lang.startsWith("pt") ? p.labelPt : lang.startsWith("en") ? p.labelEn : p.labelEs;
+      return { slug, label };
+    });
+  }, [practiceOptions, lang]);
+
+  const hasActiveFilters = searchQuery.length > 0 || practiceFilter.length > 0;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -195,13 +220,37 @@ export default function IntegrativeClientsPage() {
         </form>
       )}
 
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="search"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder={t("it.clients.searchPlaceholder")}
+          className={`${inputClass} sm:flex-1`}
+        />
+        <select
+          className={`${inputClass} sm:max-w-xs`}
+          value={practiceFilter}
+          onChange={(e) => setPracticeFilter(e.target.value)}
+        >
+          <option value="">{t("it.clients.filterAllPractices")}</option>
+          {filterPracticeOptions.map((p) => (
+            <option key={p.slug} value={p.slug}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="animate-spin text-slate-400" />
           </div>
-        ) : clients.length === 0 ? (
+        ) : clients.length === 0 && !hasActiveFilters ? (
           <NoPatientChartsEmptyState variant="teal" onAction={() => setShowForm(true)} />
+        ) : clients.length === 0 ? (
+          <p className="text-center text-slate-400 text-sm py-16">{t("it.clients.noSearchResults")}</p>
         ) : (
           <div className="divide-y divide-slate-100">
             {clients.map((c) => (

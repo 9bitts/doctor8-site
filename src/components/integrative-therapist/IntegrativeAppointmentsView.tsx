@@ -64,6 +64,8 @@ export default function IntegrativeAppointmentsView({
   const locale = localeOf(lang);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [practiceFilter, setPracticeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [appointments, setAppointments] = useState(initialAppointments);
 
@@ -75,9 +77,19 @@ export default function IntegrativeAppointmentsView({
   };
 
   const filtered = useMemo(() => {
-    if (!practiceFilter) return appointments;
-    return appointments.filter((a) => a.mainPractice === practiceFilter);
-  }, [appointments, practiceFilter]);
+    let rows = appointments;
+    if (practiceFilter) {
+      rows = rows.filter((a) => a.mainPractice === practiceFilter);
+    }
+    if (statusFilter) {
+      rows = rows.filter((a) => a.status === statusFilter);
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter((a) => a.patientName.toLowerCase().includes(q));
+    }
+    return rows;
+  }, [appointments, practiceFilter, statusFilter, searchQuery]);
 
   const weekEnd = addDays(weekStart, 7);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -195,6 +207,24 @@ export default function IntegrativeAppointmentsView({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t("it.appt.searchPatient")}
+          className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white min-w-[10rem] sm:flex-1"
+        />
+        <select
+          className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white min-w-[10rem]"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="">{t("it.appt.filterAllStatuses")}</option>
+          <option value="PENDING">{t("status.PENDING")}</option>
+          <option value="CONFIRMED">{t("status.CONFIRMED")}</option>
+          <option value="COMPLETED">{t("status.COMPLETED")}</option>
+          <option value="CANCELLED">{t("status.CANCELLED")}</option>
+        </select>
         <select
           className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white min-w-[10rem]"
           value={practiceFilter}
@@ -274,7 +304,9 @@ export default function IntegrativeAppointmentsView({
           <div className="text-center py-16">
             <Calendar className="mx-auto text-slate-300 mb-3" size={40} />
             <p className="text-slate-400 text-sm">
-              {practiceFilter ? t("it.appt.noFilterMatch") : t("proappt.empty")}
+              {practiceFilter || statusFilter || searchQuery
+                ? t("it.appt.noFilterMatch")
+                : t("proappt.empty")}
             </p>
           </div>
         ) : viewMode === "list" ? (
