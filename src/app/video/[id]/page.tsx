@@ -1,7 +1,9 @@
 "use client";
 
+import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import VideoConsultRoom, { VideoConsultData, VideoConsultFetchResult } from "@/components/VideoConsultRoom";
+import VideoMediaPrecheckGate from "@/components/VideoMediaPrecheckGate";
 import { providerAppointmentsPath, type ProviderChartPanel } from "@/lib/video-chart-nav";
 import { setVideoNavContext } from "@/lib/safe-nav";
 
@@ -9,8 +11,8 @@ export default function AppointmentVideoPage() {
   const params = useParams();
   const appointmentId = params.id as string;
 
-  async function fetchSession(): Promise<VideoConsultFetchResult> {
-    const res  = await fetch(`/api/appointments/${appointmentId}/video`);
+  const fetchSession = useCallback(async (): Promise<VideoConsultFetchResult> => {
+    const res = await fetch(`/api/appointments/${appointmentId}/video`);
     const d = await res.json();
     if (d.handoff === "google_meet" || d.error === "MEET_HANDOFF") {
       return {
@@ -43,8 +45,12 @@ export default function AppointmentVideoPage() {
         ? providerAppointmentsPath(panel)
         : "/patient/appointments",
     });
-    return { data: { ...d, kind: "appointment", appointmentId } };
-  }
+    return { data: { ...d, kind: "appointment", appointmentId } as VideoConsultData };
+  }, [appointmentId]);
 
-  return <VideoConsultRoom fetchSession={fetchSession} />;
+  return (
+    <VideoMediaPrecheckGate>
+      <VideoConsultRoom fetchSession={fetchSession} />
+    </VideoMediaPrecheckGate>
+  );
 }

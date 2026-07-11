@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Heart, Loader2, Radio, Phone, AlertCircle, Stethoscope,
-  Users, Clock, ChevronRight, MessageCircle, Video,
+  Users, Clock, ChevronRight, MessageCircle, Video, Calendar,
 } from "lucide-react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { translate, Lang } from "@/lib/i18n/translations";
@@ -22,6 +22,20 @@ import { humanitarianApiErrorMessage } from "@/lib/humanitarian/api-error-messag
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import { MAIN_LOGIN } from "@/lib/auth-portals";
+
+function NoVolunteersScheduledCta({ lang }: { lang: Lang }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-amber-500/20 space-y-2">
+      <p className="text-xs text-amber-100/90 leading-relaxed">{t(lang, "hum.noVolunteersScheduledHint")}</p>
+      <Link
+        href="/patient/volunteer-appointments"
+        className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-300 hover:text-emerald-200 underline underline-offset-2"
+      >
+        <Calendar size={14} /> {t(lang, "hum.noVolunteersScheduledCta")}
+      </Link>
+    </div>
+  );
+}
 
 interface PoolInfo {
   id: string;
@@ -495,6 +509,7 @@ export default function HumanitarianCampaignPage() {
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 space-y-1">
             <p className="text-sm font-semibold text-amber-100">{t(lang, "hum.noVolunteersTitle")}</p>
             <p className="text-xs text-amber-200/80 leading-relaxed">{t(lang, "hum.noVolunteersText")}</p>
+            <NoVolunteersScheduledCta lang={lang} />
           </div>
         )}
 
@@ -761,9 +776,10 @@ function QueueScreen({
           <p className="text-xs text-slate-500 mt-1">{t(lang, "hum.page.yourPosition")}</p>
         </div>
         {entry.onlineVolunteers === 0 || entry.estimatedWaitMinutes == null ? (
-          <div className="bg-white/5 rounded-xl p-4 col-span-1">
+          <div className="bg-white/5 rounded-xl p-4 col-span-1 space-y-2">
             <p className="text-sm font-semibold text-amber-200/90 leading-snug">{t(lang, "hum.noVolunteersTitle")}</p>
-            <p className="text-xs text-slate-500 mt-1">{t(lang, "hum.noVolunteersText")}</p>
+            <p className="text-xs text-slate-500">{t(lang, "hum.noVolunteersText")}</p>
+            <NoVolunteersScheduledCta lang={lang} />
           </div>
         ) : (
           <div className="bg-white/5 rounded-xl p-4">
