@@ -28,6 +28,38 @@ import {
 
 type Lang = "pt" | "en" | "es";
 
+type ConsultSessionMeta = {
+  startedAt: number | null;
+  pausedTotal: number;
+  visitType: IntegrativeVisitType;
+  practiceSlug: string;
+  consultStep: ConsultStepId;
+};
+
+function sessionStorageKey(appointmentId?: string | null, clientId?: string) {
+  return `it-consult-meta:${appointmentId || clientId || "unknown"}`;
+}
+
+function readSessionMeta(key: string): ConsultSessionMeta | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as ConsultSessionMeta;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionMeta(key: string, meta: ConsultSessionMeta) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(key, JSON.stringify(meta));
+  } catch {
+    // ignore quota errors
+  }
+}
+
 interface IntegrativeConsultPanelProps {
   lang: Lang;
   clientId: string;
@@ -37,6 +69,7 @@ interface IntegrativeConsultPanelProps {
   onNoteSaved?: () => void;
   onPracticeChange?: (slug: string) => void;
   onVisitTypeChange?: (visitType: IntegrativeVisitType) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 function practiceLabel(slug: string, lang: Lang): string {
@@ -62,15 +95,20 @@ export default function IntegrativeConsultPanel({
   onNoteSaved,
   onPracticeChange,
   onVisitTypeChange,
+  onDirtyChange,
 }: IntegrativeConsultPanelProps) {
   const t = (key: string) => translate(lang, key);
   const toast = useToast();
+  const storageKey = sessionStorageKey(appointmentId, clientId);
+  const metaHydrated = useRef(false);
 
   const [context, setContext] = useState<IntegrativeConsultContext | null>(initialContext ?? null);
   const [loading, setLoading] = useState(!initialContext);
   const [visitType, setVisitType] = useState<IntegrativeVisitType>("return");
   const [practiceSlug, setPracticeSlug] = useState("");
   const [structuredValues, setStructuredValues] = useState<StructuredValues>({});
+  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
+  const [pausedTotal, setPausedTotal] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [noteText, setNoteText] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
@@ -78,8 +116,8 @@ export default function IntegrativeConsultPanel({
   const [consultStep, setConsultStep] = useState<ConsultStepId>("welcome");
   const [retentionElapsed, setRetentionElapsed] = useState(0);
   const [retentionRunning, setRetentionRunning] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const retentionRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevPracticeRef = useRef<string | null>(null);
 
   const retentionTargetSecs = 25 * 60;
 
@@ -93,8 +131,25 @@ export default function IntegrativeConsultPanel({
 
   const onPracticeChangeRef = useRef(onPracticeChange);
   const onVisitTypeChangeRef = useRef(onVisitTypeChange);
+  const onDirtyChangeRef = useRef(onDirtyChange);
   onPracticeChangeRef.current = onPracticeChange;
   onVisitTypeChangeRef.current = onVisitTypeChange;
+  onDirtyChangeRef.current = onDirtyChange;
+
+  const timerRunning = timerStartedAt !== null;
+
+  const persistMeta = useCallback(
+    (overrides: Partial<ConsultSessionMeta> = {}) => {
+      writeSessionMeta(storageKey, {
+        startedAt: overrides.startedAt !== undefined ? overrides.startedAt : timerStartedAt,
+        pausedTotal: overrides.pausedTotal !== undefined ? overrides.pausedTotal : pausedTotal,
+        visitType: overrides.visitType ?? visitType,
+        practiceSlug: overrides.practiceSlug ?? practiceSlug,
+        consultStep: overrides.consultStep ?? consultStep,
+      });
+    },
+    [storageKey, timerStartedAt, pausedTotal, visitType, practiceSlug, consultStep],
+  );
 
   const loadContext = useCallback(async () => {
     setLoading(true);
@@ -106,11 +161,14 @@ export default function IntegrativeConsultPanel({
       const d = await res.json();
       if (res.ok && d.context) {
         setContext(d.context);
-        setVisitType(d.context.defaultVisitType);
-        const defaultPractice = d.context.mainPractice || d.context.picsPractices?.[0] || "";
-        setPracticeSlug(defaultPractice);
-        onPracticeChangeRef.current?.(defaultPractice);
-        onVisitTypeChangeRef.current?.(d.context.defaultVisitType);
+        const saved = readSessionMeta(storageKey);
+        if (!saved) {
+          setVisitType(d.context.defaultVisitType);
+          const defaultPractice = d.context.mainPractice || d.context.picsPractices?.[0] || "";
+          setPracticeSlug(defaultPractice);
+          onPracticeChangeRef.current?.(defaultPractice);
+          onVisitTypeChangeRef.current?.(d.context.defaultVisitType);
+        }
       } else {
         toast.error(typeof d.error === "string" ? d.error : t("it.err.loadConsult"));
       }
@@ -119,34 +177,84 @@ export default function IntegrativeConsultPanel({
     } finally {
       setLoading(false);
     }
-  }, [appointmentId, clientId, t, toast]);
+  }, [appointmentId, clientId, t, toast, storageKey]);
 
   useEffect(() => {
     if (initialContext) {
       setContext(initialContext);
-      setVisitType(initialContext.defaultVisitType);
-      const defaultPractice = initialContext.mainPractice || initialContext.picsPractices?.[0] || "";
-      setPracticeSlug(defaultPractice);
-      onPracticeChangeRef.current?.(defaultPractice);
+      const saved = readSessionMeta(storageKey);
+      if (!saved) {
+        setVisitType(initialContext.defaultVisitType);
+        const defaultPractice = initialContext.mainPractice || initialContext.picsPractices?.[0] || "";
+        setPracticeSlug(defaultPractice);
+        onPracticeChangeRef.current?.(defaultPractice);
+      }
       setLoading(false);
       return;
     }
     void loadContext();
-  }, [initialContext, loadContext]);
+  }, [initialContext, loadContext, storageKey]);
 
   useEffect(() => {
-    if (hasStructuredTemplate(practiceSlug)) {
-      setStructuredValues(emptyStructuredValues(practiceSlug));
-      setConsultStep("welcome");
+    if (prevPracticeRef.current !== null && prevPracticeRef.current !== practiceSlug) {
+      if (hasStructuredTemplate(practiceSlug)) {
+        setStructuredValues(emptyStructuredValues(practiceSlug));
+        setConsultStep("welcome");
+        persistMeta({ consultStep: "welcome", practiceSlug });
+      }
     }
-  }, [practiceSlug]);
+    prevPracticeRef.current = practiceSlug;
+  }, [practiceSlug, persistMeta]);
 
   useEffect(() => {
-    timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+    if (metaHydrated.current) return;
+    const saved = readSessionMeta(storageKey);
+    if (saved) {
+      setVisitType(saved.visitType);
+      setPracticeSlug(saved.practiceSlug);
+      setConsultStep(saved.consultStep);
+      setPausedTotal(saved.pausedTotal);
+      setTimerStartedAt(saved.startedAt);
+      setElapsed(
+        saved.startedAt
+          ? saved.pausedTotal + Math.floor((Date.now() - saved.startedAt) / 1000)
+          : saved.pausedTotal,
+      );
+      onPracticeChangeRef.current?.(saved.practiceSlug);
+      onVisitTypeChangeRef.current?.(saved.visitType);
+    }
+    metaHydrated.current = true;
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!metaHydrated.current) return;
+    persistMeta();
+  }, [timerStartedAt, pausedTotal, visitType, practiceSlug, consultStep, persistMeta]);
+
+  useEffect(() => {
+    if (!timerRunning) return;
+    const id = setInterval(() => {
+      setElapsed(pausedTotal + Math.floor((Date.now() - (timerStartedAt ?? Date.now())) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [timerRunning, timerStartedAt, pausedTotal]);
+
+  const isDirty = usesStructured
+    ? structuredValuesHaveContent(structuredValues)
+    : noteText.trim().length > 0;
+
+  useEffect(() => {
+    onDirtyChangeRef.current?.(isDirty);
+  }, [isDirty]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
     };
-  }, []);
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   useEffect(() => {
     if (!retentionRunning) {
@@ -172,12 +280,20 @@ export default function IntegrativeConsultPanel({
 
   function goNextStep() {
     const i = stepIndex(consultStep);
-    if (i < CONSULT_STEPS.length - 1) setConsultStep(CONSULT_STEPS[i + 1]);
+    if (i < CONSULT_STEPS.length - 1) {
+      const next = CONSULT_STEPS[i + 1];
+      setConsultStep(next);
+      persistMeta({ consultStep: next });
+    }
   }
 
   function goPrevStep() {
     const i = stepIndex(consultStep);
-    if (i > 0) setConsultStep(CONSULT_STEPS[i - 1]);
+    if (i > 0) {
+      const prev = CONSULT_STEPS[i - 1];
+      setConsultStep(prev);
+      persistMeta({ consultStep: prev });
+    }
   }
 
   function toggleRetention() {
@@ -195,11 +311,27 @@ export default function IntegrativeConsultPanel({
   function handleVisitType(next: IntegrativeVisitType) {
     setVisitType(next);
     onVisitTypeChange?.(next);
+    persistMeta({ visitType: next });
   }
 
   function handlePractice(slug: string) {
     setPracticeSlug(slug);
     onPracticeChange?.(slug);
+    persistMeta({ practiceSlug: slug });
+  }
+
+  function toggleTimer() {
+    if (timerRunning) {
+      const nextPaused = pausedTotal + Math.floor((Date.now() - (timerStartedAt ?? Date.now())) / 1000);
+      setPausedTotal(nextPaused);
+      setElapsed(nextPaused);
+      setTimerStartedAt(null);
+      persistMeta({ startedAt: null, pausedTotal: nextPaused });
+    } else {
+      const now = Date.now();
+      setTimerStartedAt(now);
+      persistMeta({ startedAt: now });
+    }
   }
 
   const canSave = usesStructured
@@ -299,6 +431,17 @@ export default function IntegrativeConsultPanel({
           >
             {t("it.consult.returnVisit")} (30m)
           </button>
+        <button
+          type="button"
+          onClick={toggleTimer}
+          className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg ${
+            timerRunning
+              ? "bg-amber-500/20 text-amber-700 border border-amber-300"
+              : "bg-teal-600 text-white"
+          }`}
+        >
+          {timerRunning ? t("it.consult.timerPause") : t("it.consult.timerStart")}
+        </button>
         </div>
       </div>
 
@@ -398,7 +541,10 @@ export default function IntegrativeConsultPanel({
             <button
               key={step}
               type="button"
-              onClick={() => setConsultStep(step)}
+              onClick={() => {
+                setConsultStep(step);
+                persistMeta({ consultStep: step });
+              }}
               className={`${chipBase} shrink-0 ${consultStep === step ? chipActive : chipIdle}`}
             >
               {t(CONSULT_STEP_LABEL_KEYS[step])}

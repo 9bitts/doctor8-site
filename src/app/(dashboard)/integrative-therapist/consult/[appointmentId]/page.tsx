@@ -34,6 +34,7 @@ export default function IntegrativeConsultPage() {
   const [notes, setNotes] = useState<SessionNote[]>([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [practiceSlug, setPracticeSlug] = useState("");
+  const [hasUnsavedNote, setHasUnsavedNote] = useState(false);
   const [finishing, setFinishing] = useState(false);
 
   const loadContext = useCallback(async () => {
@@ -74,6 +75,15 @@ export default function IntegrativeConsultPage() {
   useEffect(() => {
     if (context?.clientId) loadNotes(context.clientId);
   }, [context?.clientId, loadNotes]);
+
+  useEffect(() => {
+    if (!hasUnsavedNote) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedNote]);
 
   if (loading) {
     return (
@@ -169,6 +179,7 @@ export default function IntegrativeConsultPage() {
             initialContext={context}
             onPracticeChange={setPracticeSlug}
             onNoteSaved={() => loadNotes(context.clientId)}
+            onDirtyChange={setHasUnsavedNote}
           />
 
           <ConsultNotesAssistant
