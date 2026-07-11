@@ -34,6 +34,7 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "seed:fitoterapicos": "tsx prisma/seeds/fitoterapicos.ts",
+    "generate:fitoterapicos-lotes": "node scripts/generate-fitoterapicos-lotes.mjs --validate",
     "backfill:search-text": "node scripts/backfill-patient-search-text.mjs",
     "backfill:search-text:dry": "node scripts/backfill-patient-search-text.mjs --dry-run",
     "set:integrative-therapist": "node scripts/set-integrative-therapist.mjs",

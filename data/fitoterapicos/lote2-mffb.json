@@ -1,0 +1,1041 @@
+{
+  "_meta": {
+    "lote": "2 de N",
+    "fonte_primaria": "Memento Fitoterápico da Farmacopeia Brasileira (MFFB), 1ª edição, 2016 — RDC nº 84/2016",
+    "url_fonte": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+    "extracao": "parser automático sobre raw-mffb.txt — revisar antes de produção",
+    "observacao": "statusRegulatorio=MEDICAMENTO_REGISTRADO (padrão MFFB). renisus inferido por lista das 17 espécies RENISUS — confirmar oficialmente.",
+    "gerado_em": "2026-07-11",
+    "inferencias": [
+      {
+        "nomeCientifico": "Ginkgo biloba L.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": false,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Glycine max (L.) Merr.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Harpagophytum procumbens DC. e Harpagophytum zeyheri Ihlenf. & H. Hartmann",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": false,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Hypericum perforatum L.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": false,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Lippia sidoides Cham.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Matricaria chamomilla L.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "não"
+      },
+      {
+        "nomeCientifico": "Maytenus ilicifolia Mart.ex Reissek e Maytenus aquifolia Mart.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Passiflora incarnata L.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Paullinia cupana Kunth",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Peumus boldus Molina",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Piper methysticum G. Forst",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": false,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Psidium guajava L.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "não"
+      },
+      {
+        "nomeCientifico": "Rhamnus purshiana DC.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Senna alexandrina Mill.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Serenoa repens (W. Bartram) Small",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": false,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Stryphnodendron adstringens (Mart.) Coville",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "não"
+      },
+      {
+        "nomeCientifico": "Trifolium pratense L.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": false,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Uncaria tomentosa (Willd. DC.)",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Valeriana officinalis L.",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      },
+      {
+        "nomeCientifico": "Zingiber officinale Roscoe",
+        "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+        "renisus": true,
+        "prescricaoObrigatoria": true,
+        "alertaGestacaoPediatria": "sim"
+      }
+    ]
+  },
+  "itens": [
+    {
+      "slug": "fitoterapico-ginkgo-biloba-l",
+      "nome": "Ginkgo biloba L.",
+      "nomesAlternativos": [
+        "Ginkgo."
+      ],
+      "nomeCientifico": "Ginkgo biloba L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Vertigem e zumbidos (tinitus) resultantes de distúrbios circulatórios, distúrbios circulatórios periféricos, como cúimbras.(2,3)",
+      "contraindicacoes": "Contraindicado para menores de 12 anos, grávidas\ne a lactantes e pacientes com histórico de hipersensibilidade e alergia a qualquer um dos componentes\ndo fitoterápico. Pacientes com coagulopatias ou em\nuso de anticoagulantes e antiagregantes plaquetá-\nrios devem ser cuidadosamente monitorados.",
+      "precaucoes": "O uso do G. biloba deve ser suspenso pelo menos\ntrês dias antes de procedimentos cirúrgicos.(3,4)\nDeve ser evitado em pacientes que apresentam crises convulsivas, principalmente se essas estiverem\nrelacionadas com o uso de preparações com Ginkgo\nbiloba.(5)",
+      "interacoesMedicamentosas": "A associação desse medicamento com anticoagulantes, antiplaquetários, anti-inflamatórios núo esteroidais (AINES) e/ou agentes trombolíticos pode\naumentar o risco de hemorragias. Esse medicamento pode diminuir a efetividade dos anticonvulsivantes e pode alterar os efeitos da insulina, aumentando a sua depuração. Pode provocar mudanças no\nestado mental quando associado á buspirona ou ao\nHypericum perforatum. Pode potencializar o efeito\ndos inibidores da monoaminaoxidase e pode aumentar o risco dos efeitos colaterais da nifedipina.\nPode aumentar o risco de aparecimento da síndrome serotoninérgica quando associado aos inibidores\nda recaptação de serotonina e pode causar hipertensúo arterial em uso concomitante com os diuréticos\ntiazídicos, segundo relato de caso.(7,8) A associação\ndesse medicamento com omeprazol pode acarretar\ndiminuição de nível sérico do omeprazol.(10) A associação com trazodona pode trazer risco de sedação\nexcessiva.(11) O uso concomitante de G. biloba pode\naumentar os riscos de eventos adversos causados\npela risperidona, como, por exemplo, priapismo.\n(12) A associação com papaverina pode acarretar potencialização de efeitos terapêuticos e adversos. (13)\nSe o medicamento for administrado concomitantemente com anticoagulantes (ex. fenoprocoumon\ne varfarina) ou medicamentos antiplaquetários (por\nexemplo, clopidogrel, ácido acetilsalicílico e outros fármacos anti-inflamatórios núo esteróides), o\nefeito pode ser influenciado.Os estudos disponíveis\ncom varfarina núo indicam que há uma interação\nentre varfarina e produtos de G. biloba, mas um\nacompanhamento adequado é aconselhável. Um\nestudo de interação com talinolol indicou que G.\nbiloba pode inibir a P-glicoproteína intestinal. Isso\npode dar origem a maior exposição dos fármacos\nmarcadamente afetados pela P-glicoproteína no intestino, tais como etexilato de dabigatrano. Deve-se\nacompanhar a combinação de G. biloba e dabigatran. Núo é recomendado o uso concomitante de\npreparações de G. biloba e efavirenz, pois há a diminuição plasmática por indução da atividade de\nCYP3A4.",
+      "posologia": "(DOSE E INTERVALO)\nOral. Extrato seco: 120–240 mg diariamente, divididos em 2 ou 3 doses (40 mg de extrato equivale a\n1,4-2,7g de folhas).(14)\nExtrato fluido (1:1): 0,5 mL, 3 vezes ao dia.(14)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Menores de 12 anos, grávidas.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Ginkgoaceae.",
+        "parteUsada": "Folhas",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "Podem ocorrer distúrbios gastrointestinais, cefaleia e reações alérgicas cutôneas (hiperemia, edema e prurido). (4) Também foram relatados enjoos,\npalpitações, hemorragias e hipotensúo. (6) Casos de\nhemorragia subaracnoidea, hematoma subdural,\nhemorragia intracerebral, hematoma subfrênico,\nhemorragia vítrea e sangramento pós-operatório\nforam relatados em pacientes que faziam uso de G.\nbiloba isoladamente. (7,9)",
+        "tempoUtilizacao": "Núo foram encontrados dados descritos na literatura consultada sobre o tempo máximo de utilização.\nO tempo de uso depende da indicação terapêutica\ne da evolução do quadro acompanhada pelo profissional prescritor.",
+        "superdosagem": "Em caso de administração de quantidades acima\ndas recomendadas, suspender o uso e manter o paciente em observação.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Flavonoides (derivados da quercetina, kaempferol\ne isorramnetina) e terpenolactonas (ginkgolídeos e\nbilobalídeos).(6)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nO extrato padronizado de Ginkgo biloba (100 μg/\nmL) potencializou o efeito contrátil da norepinefrina. Possivelmente, a ação contrátil induzida por\nG. biloba se refere a liberação de catecolaminas de\nreservas dos tecidos endógenos, que estaria envolvida com os efeitos terapêuticos observados em\nhumanos (por exemplo: melhora da insuficiência\nvascular periférica e cerebral). Resultados sugerem\nque G. biloba possui ação musculotrópica similar\ná papaverina, sendo que essa atividade foi descrita\npara os flavonoides quercetina, kaempferol e isorramnetina, isolados de folhas dessa espécie. Estudos\nin vitro demonstraram que extratos de G. biloba\npossuem atividade sequestradora de radicais livres\ne reduzem a lipoperoxidação oxidativa em microssomas de ratos e de fígado humano. O extrato inibiu a geração de espécies reativas de oxigênio em\nleucócitos humanos e protegeu o tecido cerebral\nde dano hipóxico. A administração oral do extrato\nde G. biloba protegeu ratos contra a isquemia cerebral. A perfusúo intravenosa do extrato preveniu\no desenvolvimento de infarto cerebral múltiplo em\ncachorros contendo fragmentos de coágulo na artéria carótida. Camundongos tratados com extrato padronizado de gingko (100 mg/kg, via oral,\n4–8 semanas) apresentaram melhora na memória\ne aprendizagem. Substôncias presentes no extrato\nde ginkgo súo conhecidos antagonistas do fator de\nativação plaquetária.(14)\nToxicológicos\nToxicidade crõnica foi avaliada durante seis meses\npor via oral em ratos e cúes, com doses diárias de\n20 e 100 mg/kg de peso corporal, assim como com\ndoses maiores de 300, 400 e 500 mg/kg de peso\ncorporal (rato) ou 300 e 400 mg/kg (cúo). A partir dos dados obtidos verificou-se que núo houve\ndanos bioquímicos, hematológicos ou histológicos.\nAs funções hepáticas e renais núo foram prejudicadas.(5) A administração de extrato de ginkgo a\nratas prenhas produziu diminuição no peso fetal\nem doses maternas de 7 e 14 mg/kg/dia, e ausência\nde toxicidade materna. Em camundongos fêmeas,\nhouve efeito tóxico sobre o ovário dose-dependente\n(reduziu significativamente a contagem de folículos\novarianos, índice de reabsorção, índice de implantação e viabilidade fetal na dose de 14,8 mg/kg/dia\ndo extrato de ginkgo (EGb 761). (5)\nEnsaios clínicos\nFarmacológicos\nDe 35 estudos realizados com G. biloba, incluindo 3.541 participantes, em 33 foram encontrados\nefeitos positivos para o uso nas indicações: doença\nde Alzheimer, demência, zumbido, doença vascular periférica (claudicação intermitente), asma e\ndepressúo.(15) Em outros dois obtiveram resultados\nnegativos, em demência (16) e noutro em zumbidos.\n(17) Dezoito estudos envolvendo um total de 1.672\nparticipantes embasaram a utilização de G. biloba\nno tratamento de demência decorrente de insufici-\nência cardiovascular ou Alzheimer. Desses dezoito\nestudos, cinco eram randomizados (R), duplo-cegos (DC), controlados por placebo (CP) e multicêntricos (MC), envolvendo 663 participantes; 11\neram R, DC e CP com um total de 898 participantes; e dois eram estudos R, DC, CP, cruzados,\nenvolvendo um total de 111 participantes, focando\no tratamento de G. biloba para claudicação intermitente com resultados positivos.(15)\nNum estudo de metanálise avaliou-se 33 trabalhos\nsobre a eficácia e a tolerabilidade de G. biloba sobre\no comprometimento cognitivo e demência. Foram\nincluídos ensaios duplo-cegos, controlados e randomizados. Em geral, núo foram observadas diferen-\nças estatisticamente significativas entre o G. biloba\nGinkgo biloba l.\n\n-- 44 of 115 --\n\n45\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\ne o placebo em relação aos efeitos adversos. Quanto\ná eficácia, concluiu-se que existem benefícios associados ao uso de G. biloba com doses inferiores a\n0,20 g/dia por 12 semanas ou doses superiores a\n0,20 g/dia por 24 semanas. Observou-se com os\nparômetros cognitivos, de atividades da vida diá-\nria e humor que há superioridade do G. biloba em\nrelação ao placebo nas duas faixas de dosagem. (18)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada."
+      },
+      "searchText": "ginkgo biloba l. ginkgo biloba l. ginkgo."
+    },
+    {
+      "slug": "fitoterapico-glycine-max-l-merr",
+      "nome": "Glycine max (L.) Merr.",
+      "nomesAlternativos": [
+        "Soja.(2",
+        "3)"
+      ],
+      "nomeCientifico": "Glycine max (L.) Merr.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Esse fitoterápico é indicado como coadjuvante no\nalívio dos sintomas do climatério: sintomas vasomotores, tais como: ondas de calor e sudorese. É\nconsiderado modulador seletivo de receptores estrogênicos.(2,6)",
+      "contraindicacoes": "Esse fitoterápico é contraindicado para menores de\n12 anos. Pacientes com histórico de hipersensibilidade e alergia a qualquer um dos componentes do\nfitoterápico núo devem fazer uso do mesmo.",
+      "precaucoes": "Pode ocorrer reação alérgica cruzada com amendoim.(2)\nDe acordo com a categoria de risco de fármacos destinados ás mulheres grávidas, esse fitoterápico está\nincluído na categoria de risco C. Núo há estudos\ndisponíveis sobre a teratogenicidade de preparações\ncom alta concentração de isoflavonas, bem como\nnúo há evidências científicas disponíveis sobre a segurança de seu uso durante a gestação e lactação,\ndevendo seu emprego ser evitado nessas condições.\nEsse fitoterápico núo deve ser utilizado por mulheres grávidas e em amamentação sem orientação mé-\ndica.(2)",
+      "interacoesMedicamentosas": "Evitar a associação desse fitoterápico com contraceptivos e outros medicamentos de ação estrogênica.(10) A efetividade do tamoxifeno pode ser diminu-\nída por medicamentos á base de soja.(11) A proteína\nda soja pode reduzir a absorção de levotiroxina no\ntrato digestivo, portanto núo se deve tomar os dois\nmedicamentos concomitantemente. É necessário\naguardar 2 horas entre uma e outra tomada.(7) As\nisoflavonas genisteína e daidzeína podem bloquear\na tireóide peroxidase e inibir a síntese de tiroxina.\nPode ocorrer hipotireoidismo durante tratamentos\nprolongados.(12)\nO uso de medicamentos que alteram a microbiota\nintestinal, como os antibióticos, pode interferir no\nmetabolismo das isoflavonas.(7)",
+      "posologia": "(DOSE E INTERVALO)\nOral. A dose diária deve estar entre 50 e 120 mg de\nisoflavonas.(6)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Leguminosae.",
+        "parteUsada": "Sementes.(2,4,5)",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "extrato"
+        ],
+        "efeitosAdversos": "O uso desse fitoterápico pode provocar distúrbios\ngastrointestinais leves como constipação, flatulência e náusea. (7) Nas doses diárias recomendadas, núo\nforam relatadas reações adversas graves.(8)",
+        "tempoUtilizacao": "Núo foram encontrados dados descritos na literatura consultada sobre o tempo máximo de utilização.\nO tempo de uso depende da indicação terapêutica\ne da evolução do quadro acompanhada pelo profissional prescritor.",
+        "superdosagem": "Núo foram encontrados dados descritos na literatura consultada sobre problemas decorrentes de\n. Em caso de ingestúo de quantidades acima das recomendadas o paciente deve ser\nobservado.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Antocianinas,(13,14,15) \tisoflavonas(2,4,16) \t(genisteína,\ndaidzina, glicitina, daidzeina). (17,18,19,20) Outros: tocoferol, (4) e saponinas.(21)\nGlycine max (l.) Merr.\n\n-- 47 of 115 --\n\n48\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nAntocianinas extraídas da casca da semente de G.\nmax foram eficazes na melhora do perfil lipídico,\nreduzindo os níveis de triglicerídeos séricos e de colesterol de ratos obesos.(5)\nToxicológicos\nNúo foram detectadas alterações histológicas e hematológicas, em ratos e camundongos quando administrado por via oral o extrato hidroetanólico\npadronizado (Chorono CareÔäó) da casca da semente\nde G. max.(3)\nEnsaios clínicos\nFarmacológicos\nGel de isoflavonas derivadas de G. max proporcionou melhora da atrofia vaginal em mulheres na\npós-menopausa,(19) além da redução do ressecamento vaginal.(20)\nEm \testudo \tmulticêntrico, \trandomizado, \tduplo\ncego, avaliou-se 177 mulheres em fase de pósmenopausa, recebendo dose diária do extrato de\nG. max padronizado em 50 mg de isoflavonas ou\nplacebo. Com os resultados concluiu-se que houve redução, estatisticamente significativa, na severidade e frequência das ondas de calor, durante as\n12 semanas, no grupo que recebeu extrato de soja,\nquando comparado ao grupo placebo. Núo houve\nalteração significativa na espessura do endométrio,\nno pH e na mucosa vaginal, nos dois grupos de pacientes, quando comparados com o início do estudo.(22) Outro estudo randomizado, duplo cego,\nprospectivo, foi realizado com 79 pacientes na\npós-menopausa para avaliar a melhora de fogachos\ncaracterísticos do climatério menopausa com administração de extrato de soja contendo isoflavonas.\nAs pacientes foram distribuidas, conforme programa de randomização, em dois grupos. O primeiro\nrecebeu 150 mg de extrato de G. max contendo 60\nmg de isoflavonas, por via oral a cada 12 horas, continuamente por 6 meses. O segundo grupo recebeu\nduas cápsulas, por via oral de 12 em 12 horas, continuamente, uma das quais continha 0,625 mg de\nestrogênios conjugados e outro, placebo. A partir\ndo estudo verificou-se que as isoflavonas, de maneira similar aos estrogênios, aliviaram os sintomas\nclimatéricos após o segundo mês de tratamento. Os\nefeitos sobre os sintomas vasomotores foram semelhantes aos dos estrogênios durante os seis meses de\ntratamento, sem ocorrer alteração no pH e na mucosa vaginal e sem acarretar proliferação endometrial nas pacientes que receberam isoflavonas.(23,24)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada.\nGlycine max (l.) Merr.\n\n-- 48 of 115 --\n\n49\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição"
+      },
+      "searchText": "glycine max (l.) merr. glycine max (l.) merr. soja.(2 3)"
+    },
+    {
+      "slug": "fitoterapico-harpagophytum-procumbens-dc-e-harpagophytum-zeyheri-ihlenf-h-hartmann",
+      "nome": "Harpagophytum procumbens DC. e Harpagophytum zeyheri Ihlenf. & H. Hartmann",
+      "nomesAlternativos": [
+        "Garra-do-diabo."
+      ],
+      "nomeCientifico": "Harpagophytum procumbens DC. e Harpagophytum zeyheri Ihlenf. & H. Hartmann",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Alívio de dores articulares moderadas e lombalgia\naguda.(2)",
+      "contraindicacoes": "A pacientes com cálculos biliares. (3) É contraindicado para menores de 18 anos, lactantes, grávidas\ne pacientes com histórico de hipersensibilidade e\nalergia a qualquer um dos componentes do fitoterápico.(4)",
+      "precaucoes": "Dores articulares acompanhadas de edema das articulações, com eritema ou febre devem ser avaliadas\npelo médico. Como precaução geral, pacientes com\núlcera gástrica e duodenal, intestino irritável e litíase biliar núo devem fazer uso desse fitoterápico.\nH. procumbens deve ser administrado com cautela a\npacientes com afecções cardiovasculares.(4)",
+      "interacoesMedicamentosas": "Núo foram observados efeitos induzidos pelo extrato de H. procumbens sobre o sistema enzimático\ncitocromo P-450, sugerindo ausência de interação\ncom fármacos metabolizados por essa via.(6)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Administrar 1-3 g de raízes ou quantidade\nequivalente de extrato aquoso ou hidroalcoólico.(3)\nExtrato mole (2,5-4,0:1; etanol 70% v/v): 10 mL;\nExtrato seco (1,5-2,5:1; água): 300 mg a 2,4 g, divididos em 2 a 3 doses diárias;\nExtrato seco (5-10:1; água): 600 a 800 mg, divididos em 2 a 3 doses diárias;\nExtrato seco (2,6-4: 1; etanol 30% v/v): 460 mg a\n1,6 g, divididos em 2 a 4 doses diárias;\nExtrato seco (1,5-2,1:1; etanol 40% v/v): 600 mg a\n2,7 g, divididos em 2 a 3 doses diárias;\nExtrato seco (3-5:1; etanol 60% v/v): 960 mg, dividido em 2 a 4 doses diárias;\nExtrato seco (3-6:1; etanol 80% v/v): 300 mg, dividido em 3 doses diárias;\nExtrato seco (6-12:1; de etanol 90% v/v): 90 mg,\ndividido em 2 doses diárias.(4)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Menores de 18 anos, lactantes, grávidas.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Pedaliaceae.",
+        "parteUsada": "Raízes secundárias",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "Diarreia,(5) náusea, võmito, dor abdominal, cefaleia, tontura e reações alérgicas cutônea. (4)\nSe ocorrerem as reações adversas mencionadas acima, um médico deverá ser consultado.",
+        "tempoUtilizacao": "Uso restrito a duas semanas.(4)",
+        "superdosagem": "Núo foram encontrados dados descritos na literatura consultada sobre efeitos decorrentes de superdosagem. Em caso de administração acima das doses\nrecomendadas, suspender o uso e manter o paciente\nem observação.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Iridoides glicosilados, cumarinas, flavonoides, fenilpropanoides, triterpenos e diterpenos.(8-13)\nHarpagophytum procumbens dc. e Harpagophytum zeyheri ihlenf. & H. Hartmann\n\n-- 51 of 115 --\n\n52\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nExtrato aquoso de H. procumbens causou ação\nanticonvulsivante.(15) \tExtrato \tmetanólico \tinibiu\na COX-2,(16) e o extrato hidroetanólico a 60%, a\nexpressúo de genes pró-inflamatórios e de citocinas\npró-inflamatórias.(14,17) Em estudo in vitro realizado\ncom extrato hidroetanólico a 60% de H. procumbens houve atividades anti-inflamatória e analgésica\nperiférica durante as fases aguda e crõnica em ratos\ncom artrite.(8) Em estudos em ratos com aplicação\ndo extrato hidroetanólico a 70% de H. procumbens\nproduziu efeitos analgésicos promissores em animais com dores neuropática e pós-operatória.(18)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada.\nEnsaios clínicos\nFarmacológicos\nEm estudo duplo cego randomizado verificou-se\nque a administração de seis cápsulas (435 mg de\npó seco de H. procumbens/cápsula) diariamente por\nquatro meses proporcionou eficácia e segurança\ncomparável á diacereína, em pacientes com artrite\nno joelho e no quadril. (5) Estudos clínicos possibilitaram verificar que os medicamentos contendo\nextrato de H. procumbens devem conter no mínimo\n50 mg (dose diária) do iridoide glicosilado, harpagosídeo, para tratamento de osteoartrite e lombalgia. (19,20,21)\n.\nToxicológicos\nApesar de que a incidência de efeitos adversos,\ndurante o tratamento com fitoterápicos á base de\nHarpagophytum procumbens é muito baixa, e efeitos\nmais graves núo terem sido descritos, súo necessá-\nrios dados que possam garantir sua segurança com\no uso prolongado. (22)"
+      },
+      "searchText": "harpagophytum procumbens dc. e harpagophytum zeyheri ihlenf. & h. hartmann harpagophytum procumbens dc. e harpagophytum zeyheri ihlenf. & h. hartmann garra-do-diabo."
+    },
+    {
+      "slug": "fitoterapico-hypericum-perforatum-l",
+      "nome": "Hypericum perforatum L.",
+      "nomesAlternativos": [
+        "Erva-de-súo-joúo",
+        "hipérico."
+      ],
+      "nomeCientifico": "Hypericum perforatum L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Indicado para o tratamento dos estados depressivos\nleves a moderados.(4-17)",
+      "contraindicacoes": "Pacientes com histórico de hipersensibilidade e\nalergia a qualquer um dos componentes do fitoterá-\npico núo devem fazer uso. Núo usar em episódios de\ndepressúo grave. Esse fitoterápico é contraindicado\npara crianças abaixo de seis anos.(3)\nNúo existem dados disponíveis sobre o uso de H.\nperforatum na gravidez e na lactação, porém há relatos que o extrato pode inibir a secreção de prolactina, portanto, núo se recomenda seu uso em mulheres grávidas e lactantes.(3)",
+      "precaucoes": "Deve evitar-se a exposição ao sol ou aos raios ultravioletas quando do uso desse fitoterápico, principalmente sem proteção, devido ao efeito fotossensibilizante de H. perforatum.(18) Núo há restri-\nções para o uso de H. perforatum por pessoas que\noperam veículos e máquinas.(19) A administração do\nfitoterápico deve ser cuidadosa em pacientes utilizando medicamentos de uso contínuo. Em casos\nde hipersensibilidade ao fitoterápico, recomenda\ndescontinuar-se o uso e consultar um médico.(19)\nDe acordo com a categoria de risco de fármacos\ndestinados a mulheres grávidas, esse fitoterápico\nestá incluído na categoria de risco C, ou seja, núo\nforam realizados estudos em animais nem em mulheres grávidas; ou entúo, os estudos em animais revelaram risco, mas núo existem estudos disponíveis\nrealizados em mulheres grávidas. Portanto, esse fitoterápico núo deve ser utilizado por mulheres grá-\nvidas sem orientação médica.(20)",
+      "interacoesMedicamentosas": "É bem tolerado em uso clínico, mas há evidências\nde interações significativas com alguns fármacos:\ncomo ciclosporina, anticoagulantes cumarínicos,\nanticoncepcionais orais, teofilina, digoxina, indinavir e possivelmente outros inibidores da protease e\ntranscriptase reversa, prejudicando os efeitos desses.\nIsso ocorre devido á indução pelo H. perforatum da\nvia metabólica envolvendo o citocromo P-450.(19)\nA associação de H. perforatum com inibidores da\nMAO súo contraindicados, assim como os inibidores seletivos da recaptação da serotonina, como a\nfluoxetina.(22) A combinação de H. perforatum com\noutros fármacos antidepressivos convencionais, tais\ncomo os antidepressivos tricíclicos ou fluoxetina,\nnúo é recomendada, exceto sob supervisúo médica. (23)\nHá inúmeros relatos que possibilitam concluir que\nextratos de H. perforatum estimulam as enzimas\nhepáticas que realizam o metabolismo de drogas e\npodem reduzir os níveis séricos e eficácia terapêutica de outros medicamentos.(24-28) A coadministra-\nção de teofilina e extrato de H. perforatum reduziu\no nível sérico de teofilina em paciente, requerendo\naumento da dose.(24) A administração concomitante\nde H. perforatum e digoxina reduziu as concentra-\nções séricas de digoxina após 10 dias de tratamento.\n(25) A diminuição das concentrações séricas de ciclosporina, varfarina e fenoprocumarina foi observada em pacientes que foram tratados concomitantemente com extratos de H. perforatum. (26) O uso\nconcomitante de H. perforatum em cinco pacientes\ncom inibidores da recaptação da serotonina resultou em sintomas de excesso de serotonina.(27) Foi\ndivulgado um relatório sobre a interação significativa de drogas com o H. perforatum e indinavir, inibidor da protease, usado para tratar infecções por\nHIV. (28) O H. perforatum reduziu substancialmente\nas concentrações plasmáticas de indinavir, devido\ná indução da via metabólica do citocromo P-450.\nComo consequência, a utilização concomitante de\nH. perforatum e inibidores da protease ou inibidores de transcriptase reversa núo-nucleosideos núo\nHypericum perforatum l.\n\n-- 54 of 115 --\n\n55\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\né recomendada, e pode resultar em concentrações\nsub-terapêuticas de drogas anti-retrovirais, levando\ná perda da atividade virucida e o desenvolvimento\nde resistência.(28)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Uso adulto: 0,8 a 1,2 mL da tintura 3 vezes ao\ndia. Extrato seco (300 mg, 3 vezes ao dia). (5,7,8,13,17,18)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Restrições de uso em crianças/adolescentes — ver contraindicações.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Hypericaceae.",
+        "parteUsada": "Planta inteira com parte aérea florida.(2,3)",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "tintura",
+          "extrato"
+        ],
+        "efeitosAdversos": "O uso de fitoterápicos á base de extratos de H. perforatum pode causar reações fotossensibilizantes.(21)\nEm casos raros, podem aparecer irritações gastrointestinais, reações alérgicas, fadiga e agitação. (7-17) Os\nextratos de H. perforatum súo geralmente bem tolerados com incidência de reações adversas em torno\nde 0,2% dos casos avaliados em estudos clínicos. As\nreações adversas gastrointestinais podem ser minimizadas ao administrar o fitoterápico após as refei-\nções. (7,10,17)",
+        "tempoUtilizacao": "Tal como acontece com outras drogas antidepressivas, a observação dos efeitos terapêuticos de H.\nperforatum podem requerer 2-4 semanas de tratamento.(18)",
+        "superdosagem": "Tratamentos com raios ultravioleta ou exposição prolongada á luz solar devem ser evitados durante o tratamento com H. perforatum, devido á ocorrência de\nfotossensibilização em indivíduos sensíveis a luz. (18)\nEm animais, foi observado aumento da fotossensibilidade. Se ocorrer superdosagem em seres humanos, deve-se proteger a pele dos raios solares ou\nultravioleta por duas semanas. Porém, caso ocorra\ningestúo de doses excessivas, deve-se provocar o esvaziamento gástrico logo após o acidente. Em doses\nmaciças, foram relatadas alterações do ritmo cardí-\naco, da visúo, depressúo, estados de confusúo mental, alucinação e psicose. Em caso de superdosagem,\nsuspender o uso e procurar orientação médica de\nimediato.(19)",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Antraquinonas e flavonoides.(29-32)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nApesar das inibições da MAO e COMT terem sido\ndemonstradas em ensaios in vitro com frações de\nextratos, hipericina e flavonas, com os estudos concluiu-se que o efeito antidepressivo do H. perforatum núo pode ser explicado por inibição da MAO.\nOutros possíveis mecanismos incluem a ação do\nextrato em modular a produção de citocinas, a expressúo de receptores serotoninérgicos e o eixo hipotálamo-pituitário-adrenal. (33-38)\nToxicológicos\nEstudos relacionados á toxicidade aguda e doses\nrepetidas núo apresentaram efeitos tóxicos. Foram\nobservados resultados positivos para o extrato etanólico no teste de AMES relacionados á quercetina,\nconsiderados fracos e irrelevantes para humanos.\nNúo foram observados sinais de mutagenicidade\nem testes in vitro e in vivo.(20)\nEnsaios clínicos\nFarmacológicos\nEstudo de metanálise com 23 estudos randomizados, duplo cegos, constituído de 1.757 pacientes\ncom depressúo de leve a moderada, foi realizado\npara determinar a efetividade de Hypericum perforatum. Concluiu-se que o H. perforatum foi significativamente superior ao placebo com poucos efeitos\nadversos em relação aos antidepressivos padrões. (39)\nToxicológicos\nForam relatados efeitos que podem estar relacionados ao uso desse fitoterápico, tais como: reações\nalérgicas dermatológicas, neurológicas, cardiovasculares, gastrointestinais e geniturinárias em pequena a média escala, geralmente reversíveis com a\nsuspensúo do tratamento.(39)\nHypericum perforatum l.\n\n-- 55 of 115 --\n\n56\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição"
+      },
+      "searchText": "hypericum perforatum l. hypericum perforatum l. erva-de-suo-jouo hiperico."
+    },
+    {
+      "slug": "fitoterapico-lippia-sidoides-cham",
+      "nome": "Lippia sidoides Cham.",
+      "nomesAlternativos": [
+        "Alecrim-pimenta",
+        "alecrim-bravo.(2",
+        "3",
+        "4)"
+      ],
+      "nomeCientifico": "Lippia sidoides Cham.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Anti-inflamatório, antisséptico da cavidade oral,\nafecções da pele e couro cabeludo. Antisséptico tó-\npico, antimicótico e escabicida.(2)",
+      "contraindicacoes": "A infusúo núo deve ser usada em inalações devido\ná ação irritante dos componentes voláteis. Núo usar\na tintura em gestantes, em lactantes, crianças menores de dois anos, alcoolistas e diabéticos. O sabonete líquido é contraindicado para pessoas com\nproblemas de hipersensibilidade ao fitoterápico.(2)",
+      "precaucoes": "Núo engolir o produto após o bochecho e gargarejo.\n(2) Manter fora do alcance de crianças.",
+      "interacoesMedicamentosas": "Núo foram encontrados dados descritos na literatura consultada.",
+      "posologia": "(DOSE E INTERVALO)\nUso externo\nInfuso (2-3 colheres de chá em 150 mL de água):\nfazer bochechos e/ou gargarejos duas a três vezes ao\ndia.\nTintura: após higienização, aplicar 10 mL da tintura diluída em 75 mL de água, com auxílio de algodúo, três vezes ao dia. Fazer bochechos ou gargarejos com 10 mL da tintura diluída em 75 mL de\nágua, três vezes ao dia.\nGel: aplicar nas áreas afetadas de uma a três vezes\nao dia.\nSabonete líquido: durante o banho, aplicar na área\nafetada, deixando o sabonete em contato por 10\nminutos. Lavar com água corrente.(2)",
+      "viaAdministracao": [
+        "oral",
+        "tópica"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Restrições de uso em crianças/adolescentes — ver contraindicações.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Verbenaceae.",
+        "parteUsada": "Folhas e flores",
+        "formaFarmaceutica": [
+          "tintura",
+          "gel",
+          "creme"
+        ],
+        "efeitosAdversos": "A infusúo pode provocar suave sensação de ardor na\nboca e alterações no paladar. A aplicação tópica da\ntintura pode provocar ardência. (2)",
+        "tempoUtilizacao": "O uso foi considerado seguro para enxaguatórios,\ngéis e colutórios com até 10% de óleo essencial em\nperíodos de 7 a 30 dias, de três meses e um ano.\n(5,6,10,19,22)",
+        "superdosagem": "Núo foram encontrados dados descritos na literatura consultada sobre problemas decorrentes de\n. Em caso de administração de quantidades acima das recomendadas, suspender o uso e\nmanter o paciente sob observação.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Óleo \tessencial \t(timol, \tcarvacrol), \ttriterpenoides,(3,22-24) naftoquinonas,(3) taninos e flavonoides.(3)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nO óleo essencial de L. sidoides apresentou atividade antifúngica diante de cinco cepas de Candida\nalbicans(25-29) e atividade antibacteriana diante de\nStaphylococcus aureus e Pseudomonas aeruginosa.\n(23,30,31)\nLippia sidoides cham.\n\n-- 58 of 115 --\n\n59\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nToxicológicos\nO óleo essencial de L. sidoides núo induziu alterações histológicas, hematológicas ou bioquímicas quando administrado por via oral em ratos. (25)\nQuando administrado em fêmeas de camundongos, por via oral, núo foram detectadas alterações\ncomportamentais nem mortalidade.(32)\nA avaliação da atividade citotóxica in vitro foi relatada para o óleo essencial o qual foi considerado de\nbaixa toxicidade frente a células de mamíferos nas\nconcentrações de 15,6 a 250 μg/mL no ensaio de\nMTT (brometo de 3-[4,5-dimetil-tiazol-2-il]-2,5difeniltetrazólio) e núo inibiu o crescimento dessa\nlinhagem celular em concentrações abaixo de 0,5\nmg/mL.(26,33) Entretanto, num estudo com as mesmas concentrações considerou-se o óleo essencial\nrelativamente citotóxico. (34)\nO óleo essencial foi avaliado diante de células HeLa\n(células de carcinoma cervical humano) e apresentou toxicidade,(35) obtendo-se valores de IC50 em 24\ne 48h, respectivamente, de 0,34 e 0,55 mg/mL.(33)\nNa mesma linhagem celular, o óleo essencial foi\nconsiderado moderadamente tóxico, uma vez que\npromoveu 57,8% de viabilidade celular.(36) Em um\nestudo com óleo essencial de diferentes amostras de\nL. sidoides, os valores de IC 50 para células HeLa variaram de 15,3 a ÔëÑ 200 μg/mL.(37)\nNos estudos de toxicidade aguda do óleo essencial\ndas folhas em dose única via oral, em camundongos, foram observados valores de DL 50 que variaram de 0,1 a 7,1 g/kg.(33,38,39) Quando realizada a reexposição dos animais, a DL50 passou a 1,8 g/kg.(33)\nAinda foram observados sintomas após a administração do óleo essencial como letargia e anestesia.(39)\nNas doses de 0,15; 0,3; 0,6; 1,25; 2,5; 5 e 10 g/kg\nforam observadas taquicardia e perda de peso e na\ndose de 6 g/kg os animais apresentaram espasmos,\npiloereção, coma, arritmia, seguido de morte após\no 50┬░ dia.(33) A administração do óleo essencial nas\ndoses de 0,1 a 3 g/kg induziu miotonia, taquipneia\ne dispneia, núo demonstrando outros sinais de toxicidade até 3 g/kg. (38) Outro estudo núo observou alterações comportamentais até a dose de 0,5 g/kg.(40)\nA exposição de camundongos ao óleo essencial\ndas folhas por via oral, em um período de 30 dias,\nutilizando-se a dose de 117,95 mg/kg/dia núo produziu toxicidade. O peso corporal e os parômetros\nbioquímicos analisados, creatinina, ureia, TGO e\nTGP, núo foram significativamente afetados pelo\ntratamento. Adicionalmente, a avaliação histopatológica do fígado, rins, pulmões, coração e baço núo\nrevelou alterações.(38,41,42)\nA irritação dérmica pelo óleo essencial das folhas\nfoi estudada no modelo de edema de orelha em camundongos, induzido por xileno. Foram aplicados\n25 μL do óleo essencial in natura, que apresentou\nefeito edematogênico e foi considerado pró-inflamatório.(43) Entretanto a alcoolatura de L. sidoides\nfoi considerada como núo irritante na avaliação da\ntoxicidade dérmica.(43)\nEnsaios clínicos\nFarmacológicos\nO uso tópico de um enxaguatório bucal contendo\nóleo essencial das folhas de L. sidoides nas concentrações de 0,6%, 0,8%, 1% e 1,2% foi avaliado\nem humanos (Fase I). A concentração de 0,8%\nmostrou maior redução do crescimento de unidades formadoras de colõnias (UFC) de Streptococcus\nmutans. Também foi avaliado o uso de gel contendo o óleo essencial das folhas nas concentrações de\n0,6%; 0,8%; 1%; 1,2% e 1,4%, e a concentração\nde 1,4% mostrou maior redução do crescimento de\nStreptococcus mutans.(7)\nO efeito sobre o índice de placa e índice gengival\nbem como o acúmulo de placa bacteriana sobre os\ndentes foi avaliado para um colutório contendo o\nóleo essencial de L. sidoides durante 28 dias, administrado sob a forma de bochecho. O estudo foi\nrandomizado, cego e os pacientes foram distribuí-\ndos em quatro grupos (Fase II). Os índices de placa\ngengival foram determinados em todos os pacientes\nantes e após o tratamento, tendo sido observada redução do índice de placa e do índice gengival para\nos colutórios dos grupos tratados e controle positivo (clorexidina), quando comparados ao placebo.(11)\nUm enxaguatório bucal com 1% de óleo essencial\nfoi avaliado em pacientes de 17 a 63 anos de idade,\ncom tratamento na forma de bochecho com 15 mL\ndo enxaguatório, por 30 s, duas vezes ao dia durante sete dias. O grupo tratado com o enxaguatório á\nbase de óleo essencial apresentou redução do índice\nde placa gengival e do sangramento gengival similar\nao controle positivo de clorexidina.(5) Outro estudo randomizado, controlado e duplo cego também\navaliou um enxaguatório bucal contendo 1% de\nóleo essencial no mesmo protocolo de dose e frequência de administração descrito acima, e duração\ndo tratamento de 30 dias, com pacientes de 18 a\n69 anos. O uso do enxaguatório diminuiu a contagem de Streptococcus mutans, de forma semelhante\nao controle positivo, sendo reduzidos também os\níndices de placa gengival e de sangramento gengival\nno 7┬░ e 30┬░ dia após o início do tratamento.(22)\nUm enxaguatório e um gel contendo óleo essencial\ndas folhas tiveram a eficácia comparada com enxaguatório e gel de clorexidina, utilizando-se bochechos com 5 mL durante 1 minuto, enquanto que\npara a administração do gel foram utilizadas moldeiras individuais por quatro minutos. O estudo\nfoi randomizado em 100 pacientes pediátricos, que\nforam observados por um ano. Foi observado que\na melhor concentração do enxaguatório foi a 0,8%\ne a melhor concentração para o gel foi a de 1,4%,\ncom redução da carga bacteriana de Streptococcus\nmutans.(10)\nLippia sidoides cham.\n\n-- 59 of 115 --\n\n60\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nOutro ensaio randomizado duplo-cego com gel\ncontendo o óleo essencial, também a 10%, foi realizado em pacientes, com escovação dos dentes com\no gel em comparação com um creme dental comercial, ambos por 21 dias. O gel em teste reduziu o\nacúmulo de placa de forma similar ao creme dental\ncomercial.(20)\nUm estudo randomizado com o extrato de L. sidoides, aplicado na forma de colutório, foi comparado\ncom uma preparação contendo extrato aquoso de\nMatricaria recutita Linn. Houve remissúo completa ou parcial da mucosite em 94% dos pacientes\ntratados com o colutório a base de L. sidoides e os\nresultados obtidos na avaliação de dor e xerostomia\nforam similares em ambos os grupos. (12)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada."
+      },
+      "searchText": "lippia sidoides cham. lippia sidoides cham. alecrim-pimenta alecrim-bravo.(2 3 4)"
+    },
+    {
+      "slug": "fitoterapico-matricaria-chamomilla-l",
+      "nome": "Matricaria chamomilla L.",
+      "nomesAlternativos": [
+        "Camomila",
+        "matricária",
+        "maçanilha."
+      ],
+      "nomeCientifico": "Matricaria chamomilla L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Antiespasmódico, ansiolítico e sedativo leve. Antiinflamatório em afecções da cavidade oral.(4)",
+      "contraindicacoes": "A gestantes devido á atividade emenagoga e relaxante da musculatura lisa.(5) Pacientes com hipersensibilidade ou alergia a plantas da família Asteraceae.",
+      "precaucoes": "Núo há informações sobre precauções gerais e relacionadas a possíveis efeitos teratogênicos, na amamentação ou uso pediátrico. Relatos sobre seguran-\nça e eficácia durante a gestação núo estúo disponí-\nveis. (6)",
+      "interacoesMedicamentosas": "Uso interno\nForam descritas interações com varfarina, estatinas\ne contraceptivos orais.(6,14)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Administrar 150 mL do infuso (5-10 min\napós o preparo), 3-4 vezes entre as refeições (acima\nde 12 anos).(4)\nAdministrar 1-4 mL do extrato fluido para adultos\n(3 vezes ao dia) ou 0,6-2 mL em dose única (crian-\nças maiores que 3 anos). Núo utilizar em crianças\nmenores de 3 anos.(15,16)\nBochechos e/ou gargarejos: administrar o infuso (510 minutos após o preparo), 3 vezes ao dia.(4)\nUso externo\nTópica. Compressas: utilizar a infusúo preparada\ncom 30-100 g de droga vegetal em 1000 mL de\nágua.(16)\nInfuso: 6-9 g em 150 mL ou 30-100 g em 1000\nmL.(4,16)",
+      "viaAdministracao": [
+        "oral",
+        "tópica"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": null,
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Asteraceae.",
+        "parteUsada": "Inflorescências.(3,4)",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato",
+          "solução oral"
+        ],
+        "efeitosAdversos": "A presença de lactonas sesquiterpênicas nas flores\nde camomila poderá desencadear reações alérgicas\nem indivíduos sensíveis, e tem sido descrita dermatite de contato para algumas preparações contento\ncamomila.(7-9) Poucos casos de alergia foram atribu-\nídos especificamente a camomila.(10) Um caso de reação anafilática por ingestúo de flores de camomila\nfoi registrado.(11-13)",
+        "tempoUtilizacao": "Núo foram encontrados dados descritos na literatura consultada sobre o tempo máximo de utilização.\nO tempo de uso depende da indicação terapêutica\ne da evolução do quadro acompanhada pelo profissional prescritor.",
+        "superdosagem": "Núo foram encontrados dados descritos na literatura consultada sobre problemas decorrentes de\n. Em caso de ingestúo de quantidades acima das recomendadas o paciente deve ser\nobservado.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Flavonoides (apigenina, luteolina). Cumarina (umbeliferona).(17) Óleo essencial (farneseno, alfa-bisabolol,(4) óxidos de alfa-bisabolol, alfa-camazuleno,\nespiroéteres). (18)\nMatricaria chamomilla l.\n\n-- 63 of 115 --\n\n64\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nExtratos de camomila apresentaram ação antiinflamatória,(18) neuroprotetora, (19) antialérgica, (20)\nantibacteriana e (21,22) antitumoral.(23) Estudo realizado com extrato aquoso de camomila demonstrou\natividade anti-inflamatória seletiva sobre a COX2.(24) Uma formulação contendo extrato fluido de\ncamomila foi considerada efetiva no tratamento de\nmucosite oral em hamsters. (25) O decoto de camomila apresentou potente atividade antidiarreica e\nantioxidante em ratos.(26)\nToxicológicos\nNúo foram observados sinais de toxicidade ou mortalidade em camundongos tratados com extrato\nmetanólico de camomila (3,20 g/kg). (20) Núo foram observados efeitos mutagênicos e citotóxicos\n(camundongos) quando a tintura foi administrada\nem dosagem proporcional á utilizada em humanos.\nEfeitos genotóxicos em Allium cepa só foram observados em doses maiores do que as normalmente\nutilizadas na terapêutica. (27) O infuso de camomila\nproduziu fraca citotoxidade diante das células mononucleares periféricas do sangue. (23)\nEnsaios clínicos\nFarmacológicos\nFoi observada atividade ansiolítica em um grupo\ntratado com o extrato de camomila padronizado\n(1,2% de apigenina), sugerindo uma possível eficá-\ncia no tratamento de desordens de ansiedade leve á\nmoderada.(28) A realização de bochechos com extrato hidroetanólico de camomila diluído em água permitiu a redução do quadro de inflamação gengival.\n(29) Foi observada diminuição de lesões superficiais\nde pele por meio da intervenção com um extrato\nde camomila e quando aplicado na forma de creme\nsobre a pele mostrou atividade anti-inflamatória superior á hidrocortisona 0,25%. Preparações á base\nde camomila apresentaram efeito benéfico em casos\nde mucosite decorrente de radiação.(16)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada."
+      },
+      "searchText": "matricaria chamomilla l. matricaria chamomilla l. camomila matricaria macanilha."
+    },
+    {
+      "slug": "fitoterapico-maytenus-ilicifolia-mart-ex-reissek-e-maytenus-aquifolia-mart",
+      "nome": "Maytenus ilicifolia Mart.ex Reissek e Maytenus aquifolia Mart.",
+      "nomesAlternativos": [
+        "Espinheira-santa.(2",
+        "3",
+        "4)"
+      ],
+      "nomeCientifico": "Maytenus ilicifolia Mart.ex Reissek e Maytenus aquifolia Mart.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Antidispéptico, antiácido e protetor da mucosa gástrica.(2,4)",
+      "contraindicacoes": "Núo deve ser usado durante a gravidez, lactação(2,4)\ne em crianças menores de seis anos. (4) Há indícios\nque o uso de espinheira-santa causa redução do leite materno. (5) O uso interno da espinheira-santa é\ncontraindicado durante a lactação.",
+      "precaucoes": "Núo deve ser usado durante a gravidez e lactação.\n(2,4) Suspender o uso quando da realização de exames de medicina nuclear.(6,7)",
+      "interacoesMedicamentosas": "Nenhum estudo foi desenvolvido avaliando a interação de extratos de M. ilicifolia com medicamentos. A legislação brasileira núo recomenda a administração concomitante de M. ilicifolia com bebidas\nalcoólicas e outros medicamentos.(11)\nCompostos polifenólicos podem ser precursores de\nquinonas ou de intermediários quinonametídeos\nque súo inativadores das CYP.(12) Da mesma forma,\na pristimerina, um triterpenoide quinonametídeo\ntambém pode agir como inibidor da CYP alterando\no efeito de diversos medicamentos.(13)\nTestes ex vivo mostraram que quercetina, kaempferol e outros compostos fenólicos podem modular a\natividade da PgP (Fosfoglicolato fosfatase), alterando o metabolismo de outros medicamentos. Assim,\nplantas medicinais que os contenham devem ser\nevitadas por usuários de polifarmácia.(6)\nPode ocorrer interação com esteróides anabolizantes, metotrexato, amiodarona e cetoconazol, por\npossível dano hepático, e com imunossupressores\npor apresentar efeitos antagonistas.(7)",
+      "posologia": "(DOSE E INTERVALO)\nOral.Uso adulto e infantil acima de 12 anos. Extrato\nseco: tomar 860 mg de duas a três vezes ao dia.(4)\nInfuso: 3 g para 150 mL. Tomar 150 mL do infuso,\nlogo após o preparo, três a quatro vezes ao dia.(2)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Restrições de uso em crianças/adolescentes — ver contraindicações.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Celastraceae.",
+        "parteUsada": "Folhas.(2,4)",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "Alguns casos raros de hipersensibilidade súo descritos.(4) Núo foram relatados, até o momento, efeitos\nadversos graves ou que coloquem em risco a saúde\ndos pacientes utilizando extratos de M. ilicifolia nas\ndoses recomendadas. Raramente, podem ocorrer\ncasos de hipersensibilidade. Nesse caso, deve ser\nsuspenso o uso e acompanhado o paciente. (8)\nNos estudos clínicos realizados foram descritos\num caso de aumento do apetite com o uso do medicamento e um relato de mal estar indefinido,\nboca seca, gosto estranho na boca, náusea, tremor\nnas múos e poliúria, mas isso ocorreu em sujeitos\nde pesquisa que receberam dosagens até 10 vezes\nmaior que a usual humana.(8,9) No estudo foi descrito redução do leite materno. (10)",
+        "tempoUtilizacao": "Núo foram encontrados dados descritos na literatura consultada sobre o tempo máximo de utilização.\nO tempo de uso depende da indicação terapêutica\ne da evolução do quadro acompanhada pelo profissional prescritor. Estudo clínico avaliado propÃe a\nutilização por 28 dias.(9)",
+        "superdosagem": "Núo há relatos de intoxicações por superdosagem\nde M. officinalis. Plantas ricas em fenóis totais,\ncomo a M. ilicifolia, quando usadas em doses excessivas, podem causar irritação da mucosa gástrica\ne intestinal, gerando võmitos, cólicas intestinais e\ndiarreia.(14)\nMaytenus ilicifolia Mart.ex reissek e Maytenus aquifolia Mart.\n\n-- 66 of 115 --\n\n67\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Terpenos, flavonoides, e taninos.(4-8,15-18)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nDevido á larga utilização popular de M. ilicifolia\nno tratamento de úlceras gástricas, a maior parte\ndos estudos farmacológicos núo clínicos desenvolvidos encontra-se nessa área. Em doze estudos foram avaliados diferentes extratos em concentrações\nvariáveis nos diversos modelos de indução de úlcera\ngástrica (indometacina, estresse por imobilização\na frio, etanol, aspirina e reserpina), em mucosa de\nrato, camundongo e sapo, tanto em estudos agudos\ncomo crõnicos. Em todos os estudos foram avaliadas as folhas, sendo sete exclusivos de M. ilicifolia,\num com amostras separadas de M. ilicifolia e M.\naquifolia e um estudou uma amostra de iguais proporções das duas espécies.(21-23) Com os estudos obteve-se efeito antiulcerogênico relevante, compará-\nvel á cimetidina. Também foi relatado significante\naumento no volume de secreção e pH gástrico com\nos extratos testados em relação ao controle, provavelmente pelos polifenóis presentes, flavonoides e\ntaninos predominantemente nos extratos aquosos\ne esteroides e triterpenos nos extratos acetõnicos e\nacetato de etila.(9,14)\nEmbora \tainda \tdesconhecido, \to \tmecanismo \tde\nação da M. ilicifolia na hiperacidez pode estar relacionado a sua interferência na liberação e efetividade das substôncias secretagogas ácido-base.(19)\nFoi observada potente redução da hipersecreção\ngástrica acompanhada por redução na liberação de\nNO 2, sugerindo importante papel do mecanismo\nóxido nítrico dependente.(20) Sugere-se que a inativação da bomba H +K+ ATPase e a modulação\ndas interações NO2 -dependente súo os principais\nmecanismos de ação gastroprotetora.(20,21) Com o\nestudo demonstrou-se que a diminuição da secre-\nção basal ocorre de maneira dose-dependente na\nmucosa gástrica de sapos, por ação inibitória dos\nreceptores histamínicos H 2, o que foi também demonstrado á cimetidina, conhecido antagonista\ndos receptores da histamina H2 .(19) Essa ação pode\nestar relacionada com os taninos condensados do\nextrato.(19,22) Triterpenos ativos em Maytenus sp. súo\ncapazes, também, de estimular a produção de fatores de proteção, como muco, ou de manter o nível\nótimo de prostaglandinas gástricas na mucosa.(23)\nFlavonoides de M. ilicifolia, incluindo quercetina e\ncatequinas apresentaram efeito antiulcerogênico e/\nou inibidor da secreção ácido-gástrica tanto in vivo\ncomo in vitro.(20) Ainda, frações contendo tri e tetraglicosídeos flavõnicos mauritianina e o derivado\ntetraglicosilado do kaempferol podem estar relacionadas ao efeito gastroprotetor da espécie.(24)\nExtratos liofilizados teriam melhor efeito que os\nnebulizados, devido ao calor aplicado nessa técnica\nque pode degradar alguns ativos presentes, como os\ntaninos condensados.(25)\nCom o estudo demonstrou-se efeito protetor marcadamente pronunciado para o liofilizado administrado intraperitonealmente, o que demonstra que o\nefeito produzido pela administração do extrato de\nM. ilicifolia pode ser sistêmico, favorecendo ainda\nmais seu perfil de utilização. Esse efeito se manteve\ncom extratos obtidos de folhas coletadas há mais de\num ano, mostrando estabilidade dos constituintes\nativos.(26) Essa manutenção da ação também foi confirmada em outros estudos, que avaliaram extratos\nobtidos de folhas colhidas há 16 meses e que avaliaram extratos de folhas coletadas há 15 meses.(22,27)\nToxicológicos\nO extrato núo se mostrou tóxico em ratas prenhas\ne núo interferiu no progresso do desenvolvimento\nembrionário-fetal.(28)\nEstudos de toxicologia núo-clínica aguda foram realizados com abafados liofilizados utilizando tanto\nM. ilicifolia como M. aquifolium. Os estudos apontam aparente atoxicidade do extrato, mesmo em\ndoses bem mais altas do que as utilizadas pelo homem. Nesses estudos empregou-se doses crescentes\na partir da usualmente utilizada pelo homem.(14)\nEstudos sobre a toxicidade de doses repetidas, sendo\nque em um utilizou-se exclusivamente M. ilicifolia\ne o outro M. ilicifolia e M. aquifolium em iguais\nproporções. No primeiro utilizou-se doses até 360\nvezes maior que a humana, por até três meses, núo\nencontrando efeitos tóxicos potenciais. No estudo\ncom a associação, em dosagens também de até 360\nvezes a utilizada pelo homem, núo foram encontrados efeitos tóxicos, sugerindo segurança de uso dos\nextratos testados em animais por maior período de\ntempo.(14)\nEnsaios clínicos\nFarmacológicos\nNum estudo clínico de fase II avaliou-se o efeito\nterapêutico do extrato de M. ilicifolia obtido das folhas, em pacientes com dispepsia alta núo ulcerosa,\ntendo um grupo placebo comparativo e duplo-cego.\nO grupo tratado mostrou resultados efetivos quando comparado ao grupo que recebeu placebo. (29)\nMaytenus ilicifolia Mart.ex reissek e Maytenus aquifolia Mart.\n\n-- 67 of 115 --\n\n68\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nToxicológicos\nEm dois estudos foram avaliados os efeitos de M.\nilicifolia em seres humanos sadios, um com sete (30)\ne o outro com 24 sujeitos de pesquisa.(31) Nos dois\nestudos núo foram encontradas alterações significativas que pudessem contraindicar o uso da espécie\nvegetal.\nNo primeiro estudo foi testada a infusúo utilizandose o dobro da dose popular: 6 g/150 mL de água.\nFoi realizada a administração diária por 14 dias. O\nextrato núo causou toxicidade, os voluntários núo\ntiveram dificuldades em ingerí-lo e núo relataram\nefeitos colaterais. Núo houve alteração no ECG, nas\ndosagens bioquímicas, hematológicas e no exame\nde urina em relação ás dosagens basais.(30) No segundo estudo foi testado o extrato aquoso, seco por\naspersúo, em 24 sujeitos, sadios (12 homens e 12\nmulheres) por 6 semanas, doses crescentes intervaladas de uma semana: 0,10 g, 0,20 g, 0,50 g, 1,0 g,\n1,5 g e 2,0 g . Doses de até 2,0 g foram bem toleradas, sem apresentar efeitos tóxicos e nem eventos\nadversos significativos. Dentre os encontrados, os\nmais comuns foram: boca seca, náuseas, tremor nas\nmúos e poliúria. Núo houve alterações na avaliação\nneuropsicológica, exames laboratoriais (hematoló-\ngicos, bioquímicos, hormonais e de sais) e função\nrenal e hepática"
+      },
+      "searchText": "maytenus ilicifolia mart.ex reissek e maytenus aquifolia mart. maytenus ilicifolia mart.ex reissek e maytenus aquifolia mart. espinheira-santa.(2 3 4)"
+    },
+    {
+      "slug": "fitoterapico-passiflora-incarnata-l",
+      "nome": "Passiflora incarnata L.",
+      "nomesAlternativos": [
+        "Maracujá",
+        "flor da paixúo",
+        "maracujá doce.(2",
+        "3)"
+      ],
+      "nomeCientifico": "Passiflora incarnata L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Ansiolítico e sedativo leve.(4)",
+      "contraindicacoes": "Seu uso é contraindicado durante a gravidez. Núo\nutilizar em casos de tratamento com sedativos e depressores do sistema nervoso.(4)",
+      "precaucoes": "Seu uso núo é recomendado em gestantes; lactantes;\nalcoolistas e diabéticos. Crianças de três a 12 anos\ndevem passar por orientação médica. Seu uso pode\ncausar sonolência. (4) Núo utilizar em caso de tratamento com medicamentos depressores do sistema\nnervoso central. (5-10) Seu uso pode causar sonolência, núo utilizar cronicamente. (4) Pode ocorrer sonolência durante o tratamento. Nesse caso o paciente\nnúo deverá dirigir veículos ou operar máquinas, já\nque a habilidade e atenção podem ficar reduzidas.(11)",
+      "interacoesMedicamentosas": "Esse fitoterápico potencializa os efeitos sedativos do\npentobarbital e hexobarbital, aumentando o tempo\nde sono de pacientes. Há indícios de que as cumarinas presentes na espécie vegetal apresentam ação\nanticoagulante potencial e possivelmente interagem\ncom varfarina.(14) \tO uso desse fitoterápico associado a drogas inibidoras da monoamino oxidase\n(isocarboxazida, fenelzina e tranilcipromina) pode\npotencializar o efeito. (15)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Para adolescentes e adultos: infusúo da droga\nvegetal - 1-2 g em 150 mL de água fervente, tomar\n1-4 vezes por dia (10 a 15 minutos após o preparo).\nDroga vegetal encapsulada – 0,5-2 g, 1-4 vezes por\ndia.(16) Extrato fluido (1:1 em álcool etílico 25%)\n- 0,5 a 1,0 mL, 3 vezes ao dia. (4) Tintura (1:8 em\nálcool 45%) - 0,5 a 2,0 mL, 3 vezes ao dia.(17) A posologia recomendada para adultos é de 3-5 vezes ao\ndia, e para adolescentes de 3 vezes ao dia. (16) A dose\ndo extrato seco deverá corresponder á posologia das\nformas acima descritas.",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Restrições de uso em crianças/adolescentes — ver contraindicações.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Passifloraceae Juss. ex Roussel.",
+        "parteUsada": "Folhas",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "tintura",
+          "extrato"
+        ],
+        "efeitosAdversos": "Existem casos clínicos relatados de hipersensibilidade,(12) asma ocupacional mediada por IgE e rinite.\n(13) Doses elevadas poderúo causar estados de sonolência excessiva.",
+        "tempoUtilizacao": "Caso os sintomas persistam acima de duas semanas\ndurante o uso do medicamento, um médico deverá\nser procurado.",
+        "superdosagem": "Em caso de superdosagem, suspender o uso e procurar orientação médica de imediato. Alguns dos\nsintomas súo: sedação, diminuição da atenção e dos\nreflexos.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Os constituintes químicos súo: fitosteróis, heterosí-\ndeos cianogênicos, alcaloides indólicos (menos de\n0,03%), flavonoides (di-C-heterosídeos de flavonas\naté 2,5%, vitexina e apigenina) e cumarinas.(17)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nA atividade ansiolítica do extrato hidroetanólico\nde P. incarnata L. (400 mg/kg, intraperitoneal) e\na atividade sedativa do extrato aquoso (400 e 800\nmg/kg, intraperitoneal) foram comprovadas em camundongos.(18)\nPassiflora incarnata l.\n\n-- 71 of 115 --\n\n72\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nEstudo in vitro com extrato seco hidroetanólico de\nP. incarnata (50% v/v) sobre o sistema GABA, inibiu a recaptação de [3H]-GABA em sinaptosomas\ncorticais de ratos, núo atuando sobre a liberação\nde GABA e na atividade da GABA transaminase.\nO extrato inibiu de maneira concentração-dependente a ligação dos antagonistas [3H]- SR95531 a\nreceptores GABAA e de [3H]-CGP 54626 a receptores GABA B. No ensaio usando a [35S]-GTP╬│S,\ndemonstrou-se que o extrato núo é um antagonista\nde receptor GABA B\n. Assim, conclui-se que os efeitos farmacológicos de Passiflora incarnata súo mediados via modulação do sistema GABA, incluindo\nafinidades aos receptores GABAA e GABA B\n, e sobre\na recaptação de GABA.(19)\nToxicológicos\nA dose letal média oral do extrato hidroetanólico\na 30% das partes aéreas em camundongos foi de\n37,0 mL/kg de peso corporal. (20) Nenhum sinal de\ntoxicidade aguda foi observada em camundongos\nque receberam extratos das partes aéreas nas doses\nde 500 mg/kg ou 900 mg/kg.(21,22) Foram observados sinais de toxicidade em camundongos (por via\nintraperitoneal) com doses superiores a 900 mg/\nkg.(17,23,24)\nEstudo núo-clinico in vivo em ratas wistar a administração de extrato hidroetanólico padronizado de\nP. incarnata (30 ou 300 mg/kg, oral) durante a gestação e a lactação núo produziu toxicidade reprodutiva maternal, mostrando-se seguro nas condições\nexperimentais.(25)\nEnsaios clínicos\nFarmacológicos\nEm um estudo clínico, duplo-cego, randomizado\ne placebo-controlado com 60 pacientes com idade\nentre 25-55 anos, que foram submetidos á anestesia raquidiana, que receberam extrato aquoso de\nPassiflora incarnata (700 mg/5 mL) ou placebo, o\ntratamento com P. incarnata suprimiu a ansiedade\nantes da anestesia raquidiana de maneira estatisticamente significativa, quando comparado ao placebo,\n, e com isso demonstrou ser um medicamento ansiolítico efetivo e seguro.(26)\nA eficácia clínica de P. incarnata (extrato hidroetanólico) foi determinada em estudo randomizado,\ncom 63 pacientes, com moderada, alta e severa ansiedade de acordo com escore de VAS, na redução\nda ansiedade durante procedimento dentário (tratamento periodontal). Foi observada diferença significativa nos níveis de ansiedade antes e depois da\nadministração da P. incarnata (p< 0,0001) e entre\npassiflora e o grupo placebo. Com o resultado verificou-se que a administração de passiflora, como\npré-medicação, é significativamente efetiva na redução da ansiedade.(27)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada.\nPassiflora incarnata l.\n\n-- 72 of 115 --\n\n73\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição"
+      },
+      "searchText": "passiflora incarnata l. passiflora incarnata l. maracuja flor da paixuo maracuja doce.(2 3)"
+    },
+    {
+      "slug": "fitoterapico-paullinia-cupana-kunth",
+      "nome": "Paullinia cupana Kunth",
+      "nomesAlternativos": [
+        "Guaraná."
+      ],
+      "nomeCientifico": "Paullinia cupana Kunth",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Astenia e como psicoestimulante.(2)",
+      "contraindicacoes": "Contraindicado para pacientes com distúrbios cardiovasculares, hipertensúo arterial, arritmia cardíaca, gastrite, úlcera péptica, úlcera duodenal, cólon\nirritável, afecções renais, hipertireoidismo, cirrose\nhepática e predisposição á espasmos musculares. É\ncontraindicado para crianças e pacientes com histó-\nrico de hipersensibilidade e alergia a qualquer um\ndos componentes do fitoterápico.(3)",
+      "precaucoes": "Seu uso é desaconselhado a pacientes que apresentem desordens psíquicas como pônico, agitação,\nansiedade e insõnia. Em pacientes com epilepsia ou\ndisritmia cerebral. Núo deve ser utilizado em pacientes com distúrbios da coagulação ou sob tratamento com anticoagulantes. Núo associar a bebidas\nque contenham metilxantinas (café, chá, achocolatados, refrigerantes a base de extrato de cola e de\nguaraná e mate), para núo potencializar os efeitos\ndesse fitoterápico.(4)",
+      "interacoesMedicamentosas": "Esse fitoterápico potencializa a ação de analgésicos\ne, quando administrado com anticoagulantes, inibe a agregação de plaquetas aumentando o risco de\nsangramento.(6) Esse fitoterápico pode levar á hipocalcemia e, consequentemente, á toxicidade da digoxina. O etinilestradiol pode potencializar o efeito\nda cafeína, enquanto que a cimetidina potencializa\nseu efeito e também sua toxicidade.",
+      "posologia": "(DOSE E INTERVALO)\nOral. Ingerir 2 cápsulas pela manhú e 1 a 2 cápsulas\napós o almoço. Sua administração á noite pode causar insõnia. A administração desse fitoterápico deve\nser realizada de forma descontinuada.",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Restrições de uso em crianças/adolescentes — ver contraindicações.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Sapindaceae.",
+        "parteUsada": "Sementes",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "As metilxantinas, constituintes principais de extratos de P. cupana, pela estimulação direta do músculo cardíaco, podem causar aumento da frequência\ncardíaca e arritmias. Além disso, podem produzir\nirritação gástrica e aumento da diurese. (5) Os efeitos\nadversos desse fitoterápico, devidos á cafeína, súo\ngeralmente leves e transitórios, embora frequentes.\nSob o ponto de vista psiquiátrico, a cafeína pode\nexacerbar estados ansiosos e contribuir para distúrbios do sono. Devido á presença das metilxantinas,\nseu uso contínuo pode causar dependência. O uso\nexcessivo desse fitoterápico também pode levar a\nhipocalcemia (diminuição de cálcio) e hipocalemia\n(diminuição de potássio), devido á sua ação diuré-\ntica. (5)",
+        "tempoUtilizacao": "O tratamento núo deve ultrapassar um mês, sendo\nnecessário um período de duas semanas de interrupção do tratamento antes de seu reinício.",
+        "superdosagem": "Doses excessivas desse fitoterápico podem causar\nvõmitos, cólicas abdominais, convulsões e arritmias, havendo necessidade de cuidados intensivos.\nDeve-se proceder á lavagem gástrica ou emese.\nPode-se administrar carvúo ativado ou sorbitol para\nretardar a absorção do fitoterápico. Em caso de administração acima do recomendado, suspender o\nuso e manter o paciente sob observação.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Metilxantinas e taninos condensados.\nPaullinia cupana Kunth\n\n-- 75 of 115 --\n\n76\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nO extrato aquoso de P. cupana causou diferentes\nefeitos terapêuticos como diminuição da fadiga fí-\nsica e mental e melhora de funções cognitivas.(7,8,9)\nEm estudos, tais como testes de associação, confirmou-se que a cafeína reduz o tempo de reação,\nmelhora a capacidade mental, e produz aumento\nna velocidade de realização de cálculos, embora a\nprecisúo núo sofra grandes melhorias. No entanto,\nesses benefícios só se fazem sentir até um limite de\n200 mg de cafeína que, ultrapassado, pode inibir\nessas capacidades.(5)\nToxicológicos\nCom os estudos toxicológicos com P. cupana em\nanimais de laboratório verificou-se baixa toxicidade. Com estudos em voluntários sadios demonstrou-se também ausência de efeitos tóxicos.(10)\nEnsaios clínicos\nFarmacológicos\nVárias ações farmacológicas oriundas das metilxantinas (cafeína, teobromina e teofilina) sobre o\nSistema Nervoso Central (SNC) e cardiovascular\nforam observadas.(11,12) O mecanismo de ação inclui\na inibição da enzima fosfodiesterase (com aumento\ndas concentrações de AMPc intracelular) e o antagonismo de adenosina, o que resulta na estimulação\ndo SNC. (13, 14)\nProduz estimulação cardíaca (efeito inotrópico e\ncronotrópico positivo), além de promover vasodilatação periférica e vasoconstrição craniana.(15)\nEstimula a musculatura esquelética e o centro da\nrespiração. Além disso, aumenta a secreção ácidogástrica e age como diurético em curto prazo. Na\nfarmacocinética da cafeína foi observada a sua rápida absorção por via oral e um pico plasmático cerca\nde uma hora após sua administração.(16) A ligação ás\nproteínas plasmáticas difere entre as três metilxantinas, apresentando a teofilina 50-60%, a cafeína 2530% e a teobromina 15-25%, justificando-se esse\nvalor mais baixo para a teobromina devido a ausência do grupo metila no nitrogênio, importante para\na ligação com as proteínas plasmáticas. (17)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada."
+      },
+      "searchText": "paullinia cupana kunth paullinia cupana kunth guarana."
+    },
+    {
+      "slug": "fitoterapico-peumus-boldus-molina",
+      "nome": "Peumus boldus Molina",
+      "nomesAlternativos": [
+        "Boldo-do-chile",
+        "boldo-verdadeiro.(2",
+        "3)"
+      ],
+      "nomeCientifico": "Peumus boldus Molina",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Indicado como colagogo, colerético e nas dispepsias\nfuncionais.(3)",
+      "contraindicacoes": "Contraindicado para menores de 6 anos se pacientes com histórico de hipersensibilidade e alergia\na qualquer um dos componentes do fitoterápico.\n(5) Contraindicado nos casos de obstrução das vias\nbiliares, cálculos biliares, infecções ou côncer de\nducto biliar e côncer de pôncreas, devido aos efeitos colagogo e colerético. (6) Pacientes com quadro\nde afecções severas no fígado, como hepatite viral,\ncirrose e hepatite tóxica núo deverúo fazer uso desse fitoterápico.(6) Esse produto núo deve ser usado\ndurante a gravidez, devido a presença do alcaloide\nesparteína, que tem atividade ocitóxica.(7) Mulheres\nem período de lactôncia núo deverúo fazer uso desse\nfitoterápico, devido á presença de alcaloides e risco\nde neurotoxicidade. (5)",
+      "precaucoes": "Núo ingerir doses maiores do que as recomendadas. O uso desse fitoterápico núo deve ultrapassar\nquatro semanas consecutivas. Esse fitoterápico núo\ndeve ser utilizado por lactantes e mulheres grávidas\nsem orientação médica.(4)",
+      "interacoesMedicamentosas": "Núo foram encontrados dados descritos na literatura consultada sobre as interações medicamentosas\ncom fitoterápicos á base de P. boldus.",
+      "posologia": "(DOSE E INTERVALO)\nOral. Uso adulto e infantil acima de 12 anos. Infuso\nobtido com 1 a 2g da droga em 150 mL de água.\nTomar 150 mL do infuso, 10 a 15 minutos após o\npreparo, duas vezes ao dia. (2) Extrato seco,50-100\nmg/dose, duas a três vezes ao dia.(9)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Menores de 6 anos se pacientes com histórico de hipersensibilidade e alergia.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Monimiaceae.",
+        "parteUsada": "Folhas.(2,3,4)",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "Nas doses recomendadas núo súo conhecidos efeitos\nadversos ao fitoterápico. Doses acima das recomendadas causam irritação nas vias urinárias, võmitos e\ndiarreia.(4)",
+        "tempoUtilizacao": "O uso desse fitoterápico núo deve ultrapassar quatro semanas consecutivas.",
+        "superdosagem": "Doses superiores ás recomendadas poderúo provocar distúrbios urinários, võmitos e diarreia. Em\ncaso de superdosagem, suspender o uso e procurar\norientação médica de imediato.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Alcaloides, flavonoides, cumarina, sesquiterpenoides e taninos.(3)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nAs atividades colerética e antiespasmódica foram\ndemonstradas por estudos in vitro e em órgúos\nisolados. Em estudos núo-clínicos em ratos verificou-se a ação colerética do fitoterápico contendo\nPeumus boldus, medida pelo aumento da secreção\nde bile pela vesícula biliar. Os preparados contendo\nP. boldus aumentam a secreção biliar e fluidificam a\nPeumus boldus Molina\n\n-- 78 of 115 --\n\n79\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nbile, sem alterar a sua composição. (8) Os constituintes alcaloídicos estúo associados á atividade colerética do fitoterápico.(9) O alcaloide boldina age como\nrelaxante da musculatura lisa intestinal, de acordo com estudos realizados em órgúos isolados.(10)\nToxicológicos\nEm estudos verificaram o efeito teratogênico para\no extrato de P. boldus.(11,12) Na avaliação toxicológica do extrato hidroetanólico de Peumus boldus em\nratos verificou-se que ratas prenhas, tratadas oralmente com 0,80 g/kg, núo produziram alterações\nanatõmicas no feto. Algumas alterações foram observadas no fígado, e poucos casos de aborto, o que\nindica moderação e cuidado na administração desse\nfitoterápico.(13)\nEnsaios clínicos\nFarmacológicos\nNúo foram encontrados dados descritos na literatura consultada.\nToxicológicos\nNúo \tforam \tencontrados \tdados \tna \tliteratura\nconsultada."
+      },
+      "searchText": "peumus boldus molina peumus boldus molina boldo-do-chile boldo-verdadeiro.(2 3)"
+    },
+    {
+      "slug": "fitoterapico-piper-methysticum-g-forst",
+      "nome": "Piper methysticum G. Forst",
+      "nomesAlternativos": [
+        "Kava-kava."
+      ],
+      "nomeCientifico": "Piper methysticum G. Forst",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Indicado para o tratamento sintomático de estágios\nleves a moderados de ansiedade e insõnia, em curto\nprazo (1-8 semanas de tratamento).(3-12)",
+      "contraindicacoes": "Durante a gravidez e lactação, e em pacientes com\ndepressúo endógena ou afecções hepáticas. Vários\ncasos de toxicidade hepática foram relatados na\nEuropa após uso de produtos á base de plantas contendo extratos de P. methysticum.(4,13)\nÉ contraindicado para pacientes com afecções hepáticas (hepatite, cirrose, icterícia e outros) e/ou\nque utilizam medicamentos que possam causar hepatotoxicidade, tais como acetaminofeno, inibidores da HMG-CoA redutase, isoniazida, metotrexato, entre outros.\nEsse fitoterápico é contra indicado para menores de\n12 anos, e para lactantes.",
+      "precaucoes": "P. methysticum núo deve ser administrado por mais\nde 3 meses sem orientação médica. Mesmo quando\nadministrado no intervalo de dosagem recomendada, reflexos motores e a capacidade de dirigir ou\noperar máquinas pesadas podem ser prejudicados.(4)",
+      "interacoesMedicamentosas": "A eficácia de medicamentos e drogas de ação central, tais como álcool, barbitúricos e outros psicofármacos pode ser potencializada. (4) Foi relatada a\ninteração medicamentosa entre P. methysticum, alprazolam, cimetidina e terazosina.(24)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Dose diária: droga vegetal ou extratos, equivalente a 60–210 mg de kavapironas ou 100 mg\ndo extrato padronizado (70% de kavapironas), três\nvezes ao dia; na concentração de 30%, a dose é de\n200 mg três vezes ao dia.(4,7,10-12,25)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Piperaceae.",
+        "parteUsada": "Rizoma. (2)",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "Estudo de farmacovigilôncia envolvendo 4.049 pacientes que receberam extrato padronizado de P.\nmethysticum contendo 70% de kavapironas (extrato 150 mg, equivalente a 105 mg kavapironas) por\nvia oral/dia durante sete semanas, reações adversas\nforam relatadas em 61 pacientes (1,5%). As principais reações foram queixas gastrointestinais ou rea-\nções alérgicas cutôneas. (9,14) Em estudo com 3.029\npacientes que receberam extrato padronizado de P.\nmethysticum com 30% de kavapironas (800 mg de\nextrato, equivalente a 240 mg kavapironas) por via\noral/dia durante 4 semanas, reações adversas foram\nrelatadas em 2,3% dos pacientes. Foram relatados\ncasos de reações alérgicas, de queixas gastrointestinais, de cefaleia ou tonturas, e de outros problemas indefinidos.(14, 25) A administração crõnica do\nrizoma ou suas preparações podem causar colora-\nção amarelada transitória da pele e unhas, reversível\napós a descontinuação da droga.(4) Excesso e abuso\ncrõnico de infusões do rizoma têm sido historicamente associados á dermopatia escamosa e eruptiva de etiologia desconhecida.(15) Reações alérgicas\nda pele e ictiose também foram relatadas.(16-18) Em\nduas pacientes, a reação foi observada em áreas ricas\nem glôndulas sebáceas, sendo que fizeram uso por 3\nsemanas em terapia antidepressiva sistêmica com o\nrizoma. A reação resultou na formação de pápulas e\nplacas na face ventral e dorsal do tórax.(19)\nEstudo em uma comunidade aborígene australiana demonstrou que o abuso crõnico do rizoma de\nkava levou á desnutrição e perda de peso, aumento\ndos níveis de ╬│-glutamil transferase, diminuição dos\nníveis de proteína do plasma, e redução do volume\nde plaquetas e número de linfócitos.(20) Em voluntários saudáveis, distúrbios da acomodação visual,\ne distúrbios no equilíbrio oculomotor, foram notificados após a ingestúo de grandes doses de kava.\n(21) O consumo crõnico (6 meses) de grandes quantidades da infusúo do rizoma (5-6 xícaras/dia) tem\nsido relatado como causador de anorexia, diarreia e\ndistúrbios visuais.(17) Um relato de caso de atetose\nenvolvendo membros, tronco, pescoço e da musculatura facial, com atetose acentuada da língua, foi\nassociado ao consumo crõnico de grandes quantidades do rizoma de kava. (22,23)",
+        "tempoUtilizacao": "O tempo de uso depende da indicação terapêutica e\nda evolução do quadro acompanhada pelo médico.",
+        "superdosagem": "Os sintomas de intoxicação após uso de altas doses\nde P. methysticum súo: ataxia, desequilíbrio, distúrbios da fala, fadiga e sonolência, dificuldade de acomodação visual, dilatação das pupilas, distúrbios do\nbalanço oculomotor, problemas articulares, perda\nde apetite e de peso e ressecamento da pele acompanhado de coloração amarelada. Adicionalmente,\nforam descritas reações paradoxais com potencialização da ansiedade e ocorrência de lesões hepáticas\nirreversíveis após superdosagem. A utilização de altas doses de P. methysticum foi relacionada ao aumento dos níveis de ╬│-glutamil transferase (GGT).\nEm caso de superdosagem, suspender a medicação\nimediatamente.(26)\nRecomenda-se tratamento de suporte sintomático\npelas medidas habituais de apoio e controle das fun-\nções vitais. Na superdosagem aguda, o tratamento\ndeve ser instituído com passagem de sonda nasogástrica seguida de esvaziamento e lavagem gástrica. Os sintomas de superdosagem melhoram com a\ninterrupção da administração de P. methysticum. Se\nocorrer eritema ou edema em extensas áreas, pode\nser necessário o uso de corticoides.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Lactonas: kavalactonas, também conhecidas como\nkavapironas.(27)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nEm estudos in vitro núo ocorreram o bloqueio da\nrecaptação de serotonina por kavalactonas de forma\nsignificativa, entretanto, verificou-se o bloqueio\npara a noradrenalina por três lactonas, descrevendo-se assim outro possível mecanismo de ação.(28)\nEm modelos animais, kava é conhecida por inibir \tconvulsões \tinduzidas \texperimentalmente.(29)\nEstudos possibilitaram considerar que esse efeito\nanticonvulsivo pode ser mediado por receptores de\ncanal de Na+ locais, que súo alvos comuns de drogas\nantiepilépticas.(30-32)\nToxicológicos\nA DL50 do extrato acetõnico padronizado em 70%\nde kavalactonas, em camundongos e ratos, foi maior\nque 1,5 g/kg após a administração oral e maior que\n0.360 \tg/kg \tapós \tadministração \tintraperitoneal.\nEsse extrato em camundongos, nas doses de 0,7702,800 g/kg de peso, por via oral, e nas doses de\n0,280 a 0,600 g/kg de peso por via intraperitoneal,\nbem como em ratos, nas doses de 0,770-2,100 g/\nkg de peso por via oral e 0.280-0,460 g/kg de peso\npor via intraperitoneal, desencadeou efeitos dosedependentes na redução da motilidade espontônea,\nataxia, sedação, em decúbito lateral com redução\ndos reflexos por estímulo, inconsciência e morte\npor parada respiratória. Resultados similares foram\nobservados após a administração intraperitoneal ou\nintragástrica de diidrometisticina e diidrokavaína.\nO extrato acetõnico foi testado quanto a sua toxicidade crõnica, em ratos e cúes, por um período de 26\nsemanas; a dose máxima em ratos foi de 320 mg/kg\ne em cúes foi de 60 mg/kg. Nessas doses, foram observadas alterações histopatológicas em tecidos do\nfígado e dos rins. Os cúes toleraram dose de 24 mg/\nkg/dia e os ratos de 20 mg/kg/dia, sem apresentar\nreações adversas. (33)\nEnsaios clínicos\nFarmacológicos\nO extrato de P. methysticum é desprovido de propriedades hipnóticas como mostram ensaios clí-\nnicos acompanhados de EEG quantitativo.(32) Em\nestudos clínicos sobre a influência na qualidade do\nsono, observou-se que a quantidade de fusos de\nsono e a porcentagem de sono profundo aumentaram, o sono REM núo apresentou alterações, o\nestágio 1 do sono e a latência do sono tenderam a\ndiminuir e o tempo de sono subjetivo aumentou. A\ninfluência de fitoterápicos á base de P. methysticum\nsobre a qualidade do sono núo é acompanhada de\nrestrição na capacidade de reação.(32)\nA metanálise de três ensaios clínicos em que utilizaram doses de 100 mg, administrados três vezes ao\ndia, do extrato padronizado de P. methysticum WS\n1490, correspondendo a 210 mg/dia de kavalactonas, durante quatro, oito e 24 semanas, que envolveram 198 pacientes, sendo que 51% dos pacientes\nPiper methysticum G. Forst\n\n-- 82 of 115 --\n\n83\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nforam diagnosticados pelo padrúo da American\nPsychiatric Association's Diagnostic and Statistical\nManual of Mental Disorders (DSM III-R). Nos três\nensaios houve resultados favoráveis ao extrato de P.\nmethysticum (apresentando redução de 10 pontos\nna escala de ansiedade de Hamilton) em relação ao\nplacebo, e a metanálise desses resultados mostrou\nredução significante no escore total da escala de\nHamilton em favor de P. methysticum.(34)\nEstudo de metanálise para demonstrar a eficácia terapêutica e a segurança de extratos padronizados de\nkava no tratamento da ansiedade foi realizado, envolvendo 158 pacientes com ansiedade núo-psicótica, escore 19 na escala de ansiedade de Hamilton, e\nque receberam 300 mg/dia do extrato de P. methysticum (correspondendo a 210 mg/dia de kavalactonas). A metanálise sugeriu redução significativa\nno escore total da escala de ansiedade de Hamilton\nnos pacientes tratados com o extrato padronizado\nde P. methysticum em relação áqueles tratados com\no placebo.(35)\nEm estudo duplo-cego, placebo controlado, com\n29 pacientes tratados durante quatro semanas com\n100 mg de extrato de kava (padronizado em 70%\nde kavalactonas) três vezes ao dia, em comparação\ncom o grupo placebo, verificou-se que o grupo\nkava diminuiu de maneira significativa os sintomas\nde ansiedade medidos na escala de ansiedade de\nHamilton.(5)\nEm estudo duplo cego, placebo controlado com\ndois grupos de 20 mulheres, que usaram a mesma\ndosagem do estudo anteriormente descrito, concluiu-se que o grupo kava foi eficaz em diminuir a\nansiedade associada á menopausa.(6)\nEm uma série de estudos, extratos de kava têm sido\ncomparados favoravelmente á prescrição de medicamentos, tais como ansiolíticos e antidepressivos\ntricíclicos (muitas vezes utilizados para tratar transtornos de ansiedade), e sem os efeitos adversos comumente relatados para estas drogas.(7,8) O uso de\nKava núo diminui a atenção e parece melhorar a\nconcentração. Em dois estudos separados, oxazepam\n(medicamento ansiolítico) diminuiu o tempo de reação, enquanto kava reforçou a performance. (9,10)\nToxicológicos\nCom doses 100 vezes maiores do que aquelas testadas clinicamente e recomendadas na terapêutica\npara P. methysticum, observou-se a ocorrência dos\nseguintes sinais e sintomas: ataxia, erupção cutô-\nnea, queda de cabelo, icterícia de pele, esclerótica e\nunhas, vermelhidúo nos olhos, dificuldade de acomodação visual, problemas de audição, dificuldade\nde deglutição, até problemas respiratórios, perda de\napetite e de peso.(4,26)"
+      },
+      "searchText": "piper methysticum g. forst piper methysticum g. forst kava-kava."
+    },
+    {
+      "slug": "fitoterapico-psidium-guajava-l",
+      "nome": "Psidium guajava L.",
+      "nomesAlternativos": [
+        "Goiabeira."
+      ],
+      "nomeCientifico": "Psidium guajava L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Tratamento da diarreia aguda núo infecciosa e enterite por rotavirus.(4,21,22,23,24)",
+      "contraindicacoes": "Hipersensibilidade ou alergia á droga vegetal.(4)",
+      "precaucoes": "Núo exceder a dose recomendada ou a duração do\ntratamento.(5)",
+      "interacoesMedicamentosas": "Núo foram encontrados dados descritos na literatura consultada.",
+      "posologia": "(DOSE E INTERVALO)\nUso interno\nOral. Para diarreia: 500 mg da droga vegetal em pó\n(folha) três ou quatro vezes ao dia. (4) Extrato seco\n250 a 350 mg de 3 a 4 vezes por dia.(20)\nTomar uma dose de 150 mL do infuso de duas a\ntrês vezes ao dia.(4)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": null,
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Myrtaceae.",
+        "parteUsada": "Ramos novos, com folhas jovens",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "Alergia aos componentes do fitoterápico.(4)",
+        "tempoUtilizacao": "Núo exceder a dosagem recomendada ou a duração\ndo tratamento.(14)",
+        "superdosagem": "Suspender o uso e manter o paciente sob observação.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Flavonoides, terpenoides (sesquiterpenos e triterpenos) e taninos.(4,6,7)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nA infusúo das folhas inibiu a diarreia induzida por\ncitrato de sódio e laurilsulfoacetato de sódio quando administrado por lavagem gástrica de ratos na\ndose de 10,0 mL/kg de peso corporal.(8) A administração intragástrica do extrato das folhas a ratos\nna dose de 200 mg/kg de peso corporal preveniu a\ndiarreia induzida por óleo de rícino. (9,10) O extrato\ndas folhas inibiu o reflexo peristáltico induzido eletricamente do íleo de cobaias isolado na concentra-\nção de 100 μg/mL.(11)\nO extrato das folhas reduziu as contrações espontô-\nneas do íleo isolado de rato e de cobaia nas concentrações de 20 mL/L e 80 ng/mL, respectivamente.\n(8,10,13) Um extrato de folhas causou atividade relaxante do músculo liso em íleo de cobaia in vitro, na\nconcentração de 250-1000 pg/mL, e na concentra-\nção de 0,2 mg/mL reduziu as contrações induzidas\npela acetilcolina no íleo de cobaia em 95-100%.\n(13,14,15)\nToxicológicos\nEm testes de toxicidade crõnica, o extrato aquoso de folhas foi administrado por sonda gástrica a\n128 ratos de ambos os sexos em doses de 0,2, 2,0\ne 20,0 g/dia (1, 10 e 100 vezes a dose terapêutica\nnormal para o tratamento de diarreia) durante 6\nmeses. Com os resultados verificou-se que o ganho\nde peso corporal em ratos machos foi mais baixos.\nAumentos significativos no soro foram observados na contagem de glóbulos brancos, na fosfatase\nPsidium guajava l.\n\n-- 85 of 115 --\n\n86\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nalcalina, na transaminase glutamato piruvato e nos\nníveis de ureia. Os níveis de sódio e colesterol foram\nsignificativamente reduzidos (p <0,05) indicando\nsinais de hepatotoxicidade. Nas fêmeas, os níveis\nde sódio, potássio e albumina aumentaram significativamente (p < 0,05), enquanto que o número\nde plaquetas e globulina foram significativamente\nmenores (p < 0,05). A avaliação histopatológica\nmostrou grau leve de mudança da massa gorda e\nhidronefrose nos machos e nefrocalcinose e pielonefrite aguda nas fêmeas.(5)\nNum estudo verificou-se que núo houve mortes em\nensaio de toxicidade aguda em dois modelos experimentais e os resultados histológicos núo estavam\nrelacionados á toxicidade. (5) No estudo in vitro com\nAspergilus nidulans D-30 verificou-se a ausência de\ngenotoxicidade e efeito mutagênico em ensaio de\nmicronúcleos.(16)\nEnsaios clínicos\nFarmacológicos\nO uso da infusúo de folhas de P. guajava foi eficaz no\ntratamento de enterite rotaviral infantil, mostrando\nredução no tempo do trônsito intestinal, cessando\na diarreia, associado á diminuição no conteúdo de\nsódio e glicose nas fezes.(17) O uso da tintura das\nfolhas de P. guajava a 20% causou efeito antidiarreico importante em pacientes com diarreia aguda\nsimples. (18) Pacientes do sexo feminino com idade\nmédia de 19 anos tratadas com o extrato das folhas\nde P. guajava com a dose de 6 mg/dia mostraram\nredução significativa da dismenorreia quando comparada ao tratamento convencional (Ibuprofeno).\n(19)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada."
+      },
+      "searchText": "psidium guajava l. psidium guajava l. goiabeira."
+    },
+    {
+      "slug": "fitoterapico-rhamnus-purshiana-dc",
+      "nome": "Rhamnus purshiana DC.",
+      "nomesAlternativos": [
+        "Cáscara-sagrada.(1",
+        "3)"
+      ],
+      "nomeCientifico": "Rhamnus purshiana DC.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Indicado para tratamento de curto prazo da constipação intestinal ocasional.(5,6,7,8)",
+      "contraindicacoes": "Núo deve ser administrado a pacientes com obstru-\nção intestinal e estenose, atonia, doenças inflamatórias do cólon (colite ulcerosa, síndrome do intestino irritável, doença de Crohn), apendicite, desidratação grave e depleção de eletrólitos ou constipação intestinal crõnica. (7,9) Tal como acontece com\noutros laxantes estimulantes, a cáscara sagrada é\ncontraindicada em pacientes com dores, cólicas,\nhemorroidas, nefrite ou quaisquer sintomas de distúrbios abdominais núo diagnosticados, como dor,\nnáuseas ou võmitos. (10)\nContraindicado para menores de 10 anos, grávidas,(11,12) lactantes, (12) nos casos de insuficiência hepática, renal e cardíaca e pacientes com histórico\nde hipersensibilidade e alergia a qualquer um dos\ncomponentes do fitoterápico.(7)",
+      "precaucoes": "A cáscara-sagrada e outros laxantes contendo glicosídeos antraquinõnicos núo devem ser utilizados de\nforma contínua por mais de 1-2 semanas, devido ao\nrisco de desequilíbrio eletrolítico.(10)",
+      "interacoesMedicamentosas": "O trônsito intestinal acelerado pode resultar na\nabsorção reduzida de fármacos administrados oralmente.(15) O desequilíbrio eletrolítico causado pelo\nuso de cáscara-sagrada, tais como hipocalemia (redução do potássio sérico), pode potenciar os efeitos\ndos glicosídeos cardiotõnicos (por exemplo, digoxina, digitálicos ou estrofantina). A hipocalemia\nresultante do abuso de laxantes a longo prazo também pode potencializar os efeitos de fármacos antiarrítmicos (por exemplo, quinidina), provocando\nmudanças do ritmo cardíaco por afetar os canais\nde potássio. A hipocalemia causada por fármacos\ncomo diuréticos tiazídicos, aadrenocorticosteroides\nou raiz de alcaçuz pode ser acentuada, e o desequilíbrio eletrolítico poderá ser agravado.(8)",
+      "posologia": "Oral. Droga vegetal: de 0,3 a 1,0 g em dose única\ndiária. Extrato seco: de 57 a 108 mg em dose única diária. Todas as preparações padronizadas para\nconter 20-30 mg de derivados hidroxiantracênicos\ncalculados como cascarosídeo A. Administrar preferencialmente ao deitar, ou em duas doses divididas,\numa de manhú e uma á noite, ao deitar.(7,8,22)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Menores de 10 anos, grávidas,(11,12) lactantes, (12) nos casos de insuficiência hepática, renal e cardíaca e pacientes com histórico.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Rhamnaceae.(1,2)",
+        "parteUsada": "Cascas secas. A casca fresca contém antronas livres e",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "tintura",
+          "extrato"
+        ],
+        "efeitosAdversos": "Doses únicas de cáscara-sagrada podem resultar em\ncúimbras, e desconforto do trato gastrointestinal, o\nque pode necessitar de redução da dosagem. (8) A sobredosagem pode conduzir á espasmos abdominais,\ncólicas e dor, bem como a formação de fezes aquosas. Abuso de laxantes a longo prazo pode levar a\ndesequilíbrio eletrolítico (hipocalemia e hipocalcemia), acidose metabólica, má absorção de nutrientes, perda de peso, albuminúria e hematúria.(13,14)",
+        "tempoUtilizacao": "Núo deve ultrapassar mais de 2 semanas, devido ao\nrisco de desequilíbrio eletrolítico.(10)",
+        "superdosagem": "Os principais sintomas de sobredosagem de laxantes antraquinõnicos súo cólicas intestinais e\ndiarreia severa com consequente perda de fluidos\ne eletrólitos. O tratamento da superdosagem deve\nser baseado na reposição de eletrólitos. Os níveis de\nRhamnus purshiana dc.\n\n-- 88 of 115 --\n\n89\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\neletrólitos devem ser monitorados, particularmente\no de potássio, principalmente em idosos e jovens. (10)\nA ingestúo crõnica e em altas doses de produtos\ncontendo antranóides poderá desencadear um quadro de hepatite tóxica.(17)",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Os constituintes súo glicosídeos hidroxiantracênicos (6-9%). Desses 80 a 90% de cascarosídeos A-D.\nGlicosídeos antracênicos e antraquinonas.(5,18,8,10)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nFoi demonstrado que os efeitos laxantes da cáscarasagrada súo devidos principalmente aos glicosídeos\nantraquinõnicos, cascarosídeos A-D. (5,13) Após administração oral da cáscara-sagrada, os glicosídeos\nhidroxiantracênicos núo súo absorvidos na parte superior do intestino, mas súo hidrolisados no cólon\npor bactérias intestinais para formar os metabólitos\nfarmacologicamente ativos. Esses metabolitos súo\nparcialmente absorvidos no cólon e atuam como\nestimulante e irritante no trato gastrointestinal.\n(12,14,15,17) O mecanismo de ação é duplo. Primeiro,\nhá estimulação da motilidade do cólon, resultando\nnum aumento da propulsúo e aceleração do trônsito das fezes através do cólon (que reduz a absorção\nde fluido a partir da massa fecal). Segundo, existe\naumento da permeabilidade paracelular através da\nmucosa do cólon, provavelmente devido á inibição\ndo transportador sódio/potássio adenosina trifosfatase ou inibição dos canais de cloreto.(14,19) Com o\naumento da permeabilidade há aumento do teor de\nágua no cólon.(12,19)\nO efeito laxante da cáscara-sagrada geralmente núo\né observado até 6-8 horas após a administração oral.\nOs glicosídeos antracênicos súo predominantemente excretados nas fezes, mas também súo excretados\nna urina, produzindo coloração alaranjada; antronas e antranois súo excretados no leite materno.(14)\nToxicológicos\nEm estudos com o glicosídeo antracênico, aloína,\nhouve baixa toxicidade aguda em ratos e camundongos. Sobre a teratogenicidade, aloína em doses\nde até 200 mg/kg núo mostrou evidências de efeitos\nteratogênicos, embriotóxicos, fetotóxicos em ratas.\nEm experimentos em que a aloína foi administrada\nem camundongos na dose de 140 mg/kg/dia por\n140 dias, núo houve formação de tumor colorretal,\ndescartando uma ação mutagênica.(20)\nCom dados experimentais, principalmente em testes in vitro verificou-se risco genotóxico de vários\nantranoides no ensaio de Salmonella/microssoma.\nOs constituintes químicos antraquinõnicos, aloeemodina, emodina e crisofanol foram levemente\nmutagênicos. A emodina foi altamente mutagênica\nno teste de mutação V79-HGPRT. Em teste mutagênico in vitro de Salmonella/microssoma, e no\nteste de reparação de DNA de hepatócitos primá-\nrios de rato, emodina e frangulina desencadearam\naumento da mutação ou indução da reparação do\nDNA de forma dose-dependente.(21)\nEnsaios clínicos\nFarmacológicos\nA cáscara-sagrada está incluída no grupo farmacoterapêutico dos laxantes estimulantes ou irritatantes\n(de contato). Os derivados 1,8-dihidroxiantracênicos desencadeiam efeito laxante por dois mecanismos de ação diferentes:\nI- estimulação da motilidade do intestino grosso que resulta na aceleração do trônsito no\ncólon;\nII - influência sobre os processos de secre-\nção concomitante por dois mecanismos: a inibição\nda absorção de água e eletrólitos (Na +, Cl -\n) para as\ncélulas epiteliais do cólon (efeito antiabsortivo) e\nestimulação da secreção de água e eletrólitos para o\nlúmen do cólon (efeito secretagogo), resultando no\naumento da concentração de fluido e eletrólitos no\nlúmen do cólon.\nA defecação ocorrerá depois de 6-12 horas da administração da cáscara-sagrada, devido ao tempo\nnecessário para o transporte para o cólon e metabolização das substôncias ativas.(18)\nToxicológicos\nO uso de laxantes como fator de risco para côncer\ncolorretal (CRC) foi investigado em ensaios clínicos. Alguns estudos revelaram risco para CRC associado com o uso de laxantes contendo antraquinonas.(18)\nRhamnus purshiana dc.\n\n-- 89 of 115 --\n\n90\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição"
+      },
+      "searchText": "rhamnus purshiana dc. rhamnus purshiana dc. cascara-sagrada.(1 3)"
+    },
+    {
+      "slug": "fitoterapico-senna-alexandrina-mill",
+      "nome": "Senna alexandrina Mill.",
+      "nomesAlternativos": [
+        "Sene",
+        "sena."
+      ],
+      "nomeCientifico": "Senna alexandrina Mill.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Tratamento de constipação intestinal ocasional.(2-7)",
+      "contraindicacoes": "Contraindicado para menores de 12 anos, grávidas\ne lactantes e pacientes com histórico de hipersensibilidade e alergia a qualquer um dos componentes\ndo fitoterápico.(2,3,5,6,8)\nNúo deve ser utilizado em casos de constipação intestinal crõnica,(2) distúrbios intestinais, tais como\nobstrução e estenose intestinal, atonia, doenças\ninflamatórias intestinais (doença de Crohn, colite\nulcerativa, colopatias inflamatórias) e dores abdominais,(2,4,6) desidratação severa,(2,5) hemorroidas,\napendicite, hipocalemia, doença inflamatória pélvica, período menstrual, cistite, insuficiência hepática, renal ou cardíaca.(3,8)\nContraindicado para pacientes com náuseas, võmito ou quando algum sintoma agudo ou crõnico núo\ndiagnosticado estiver presente.(2)",
+      "precaucoes": "Em caso de hipersensibilidade ao produto, recomenda-se descontinuar o uso e consultar o médico.(2)\nSangramento retal ou insuficiência de peristalse,\ndecorrentes do uso prolongado, podem indicar\ncondições graves.(9,2)\nMetabólitos ativos, por exemplo, reinantronas, passam para o leite materno em pequenas quantidades.\nEm experiências com animais concluiu-se que a passagem de reinantronas através da placenta é baixa. (5)\nEsse fitoterápico núo deve ser utilizado por mulheres grávidas sem orientação médica.(2,10)",
+      "interacoesMedicamentosas": "O aumento do peristaltismo intestinal, em virtude da utilização de S. alexandrina, pode reduzir a\nabsorção de fármacos administrados oralmente,\nSenna alexandrina Mill.\n\n-- 91 of 115 --\n\n92\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\ncomo por exemplo, os estrógenos assim como os\nanticoncepcionais orais.(2)\nA hipocalemia, decorrente da utilização prolongada\nde S. alexandrina, pode potencializar os efeitos dos\nglicosídeos cardiotõnicos (digitálicos, Strophantus\nspp.) e as arritmias cardíacas ou os efeitos antiarrítmicos, quando do uso concomitante de fármacos\nantiarrítmicos como a quinidina.(2,6)\nO uso simultôneo de S. alexandrina com outros\nmedicamentos ou drogas vegetais que induzem á\nhipocalemia, como diuréticos tiazidas, adrenocorticosteroides ou raiz de alcaçuz, pode exacerbar o\ndesequilíbrio eletrolítico, resultando em disfunções\ncardíacas e neuromusculares.(6) Pode haver intera-\nção da S. alexandrina com a nifedipina e indometacina e outros anti-inflamatórios núo hormonais.\nA alteração de coloração na urina causada pelas antraquinonas pode influenciar em testes de diagnósticos resultando em falso positivo para urobilinogê-\nnio e para dosagem de estrógeno pelo método de\nKober.(2,3,6)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Uso adulto e infantil acima de 12 anos. Droga\nvegetal: 1 a 2g de folhas ou frutos, diariamente antes de dormir. 150 mg de extrato seco, de uma a\ntrês vezes ao dia, equivalente a 10-30 mg de senosí-\ndeos (calculados como senosídeo B), administrada\ná noite.(2)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Menores de 12 anos, grávidas.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Leguminosae.",
+        "parteUsada": "Folhas e frutos",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "O uso da S. alexandrina pode ocasionar desconforto\nno trato gastrointestinal, com presença de espasmos\ne cólicas abdominais.(2,3,4,6,8) Nesse caso diminuir a\ndose. (6)\nAs antraquinonas podem alterar a cor da urina para\namarela escura ou marrom avermelhada, o que desaparece com a suspensúo do uso do fitoterápico.(2,3)\nA pseudomelanosis coli (acúmulo de macrófagos\npigmentados no interior da submucosa intestinal)\npode ocorrer após o uso prolongado,(5,11) é inofensiva e desaparece com a descontinuação do fitoterá-\npico.(2,3,5,6)\nO uso crõnico ou superdosagem pode resultar em\ndiarreia, com distúrbios hidroeletrolíticos, acidose\nou alcalose metabólica, albuminúria, hematúria e\nprincipalmente hipocalemia. A deficiência de potássio pode conduzir á disfunção cardíaca e neuromuscular,(2,5,6) lentidúo, inibição do peristaltismo\nintestinal e má absorção,(5) além de dependência,\ncom possível necessidade de aumento da dose, (2,5)\npodendo resultar no agravamento da constipação\nintestinal. (3,5)\nO uso prolongado também está associado á redução\nna concentração de globulinas séricas,(3,4) perda de\npeso e desenvolvimento de caquexia.(2,4,5)\nEm pacientes idosos, o uso contínuo de laxantes\npode ocasionar exacerbação da fraqueza e hipotensúo arterial ortostática.(2)\nO uso a longo prazo pode resultar em tetania, hiperaldosteronismo, excreção de aspartilglicosamina\ne nefrite. Além disso, dados conflitantes sugerem\nque possam ocorrer alterações anatõmicas do cólon\ne danos ao sistema nervoso do tecido entérico.(3,7,8)\nO uso prolongado e excessivo da S. alexandrina foi\nassociado a casos de \"dedo em baqueta de tambor\",\nreversível após a descontinuação do uso da droga.(4)\nEm casos raros, pode levar a nefropatia, e edema.\n(2) Há relato de hepatite após o abuso crõnico desse\nfitoterápico.(2)",
+        "tempoUtilizacao": "Contraindicado por mais de duas semanas sem supervisúo médica.(2)",
+        "superdosagem": "Os principais sintomas da superdosagem súo dores\nabdominais,(5,6) espasmos, náusea, cólicas e diarreias\nseveras, com consequente perda excessiva de fluidos\ne eletrólitos. (5)\nDeve-se manter tratamento de suporte, através da\ningestúo de grandes quantidades de líquidos. Os\neletrólitos, especialmente o potássio, devem ser\nmonitorados, particularmente em idosos e crianças.\n(2,5,6)",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Glicosídeos antracênicos.(2)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nO efeito do extrato de Senna alexandrina está relacionado aos derivados antraquinõnicos, senosideos\nA e B. Em estudo realizado com senosídeos A e B\nem animais, substôncias que súo encontradas no extrato de Senna alexandrina, concluiu-se que após a\nsua administração (12,5 – 200 mg/kg) em ratos, a\ndefecação normal foi acelerada em 3–4h e a excre-\nção de fezes macias foi evidente a partir de 4–5h,\nalcançando seu pico máximo após 5–7 horas. Além\ndisso, o tempo de trônsito no intestino grosso foi\ndose e tempo dependente no tratamento com os\nsenosídeos A e B. Grande mudança foi observada\nno tempo de trônsito intestinal. Após duas horas da\nadministração das substôncias, o tempo de trônsito\npassou de 6h no grupo controle para 90 minutos\nno grupo tratado. A redução máxima foi observada no grupo tratado após 4h, em que o tempo de\ntrônsito foi reduzido para 30 minutos com dose de\n50 mg/kg.(10)\nToxicológicos\nO principal sintoma de overdose é diarreia grave,\ncom consequente perda de fluidos e eletrólitos. Os\neletrólitos, em particular o potássio, devem ser monitorados, especialmente em crianças e idosos.(2)\nEnsaios clínicos\nFarmacológicos\nEstudo clínico foi desenvolvido com vinte e um pacientes. As idades variaram entre 19 e 85 anos, com\nmédia de 38 anos. O tempo de acompanhamento\nda constipação foi de 3 a 80 meses, com média de\n33 meses. Utilizou-se para esse estudo, um extrato\npadronizado de S. alexandrina. A maioria dos pacientes (81%) respondeu com rapidez ao tratamento com apenas uma drágea do fitoterápico e, em\nmédia, foi necessário menos de uma drágea por dia\ndurante o período de observação que foi de 28 dias\npara assegurar o ritmo de defecação normal.(12)\nTrinta e quatro pacientes de clínica ginecológica, na\nmaioria gestantes, na faixa etária de 18 a 62 anos,\nforam submetidas ao tratamento oral com geléia\nproduzida com as folhas de S. alexandrina durante três semanas, com a posologia de uma colher de\nchá á noite, antes de dormir. As pacientes foram\nSenna alexandrina Mill.\n\n-- 92 of 115 --\n\n93\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\navaliadas comparando-se a evolução de variáveis\ncomo tempo para defecar, número de evacuações\npor semana, presença de gases, qualidade das fezes e sensação de esvaziamento total do reto após\na evacuação, registradas antes (uma semana de observação) e depois do tratamento. Todas as variáveis\nevoluíram de modo significativamente favorável.\nNa avaliação global da eficácia, os resultados foram\nconsiderados satisfatórios em 88,2% dos casos na\nopiniúo do médico e em 82,3% por cento dos casos\nna opiniúo dos pacientes.(13)\nToxicológicos\nO principal sintoma da sobredosagem é a diarreia\nsevera, com consequente perda de fluidos e eletrólitos, particularmente o potássio, devem ser monitorados, especialmente em crianças e idosos"
+      },
+      "searchText": "senna alexandrina mill. senna alexandrina mill. sene sena."
+    },
+    {
+      "slug": "fitoterapico-serenoa-repens-w-bartram-small",
+      "nome": "Serenoa repens (W. Bartram) Small",
+      "nomesAlternativos": [
+        "Saw-palmetto."
+      ],
+      "nomeCientifico": "Serenoa repens (W. Bartram) Small",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Tratamento sintomático da hiperplasia prostática\nbenigna (HPB).(2)",
+      "contraindicacoes": "Contraindicado para crianças, grávidas, lactantes\ne pacientes com histórico de hipersensibilidade e\nalergia a qualquer uma das substôncias ativas da espécie vegetal. Esse fitoterápico núo é indicado para\ncasos avançados de HPB com severa retenção urinária e afecções hepáticas.(3)",
+      "precaucoes": "Núo deverá ser utilizado sem primeiro afastar a\npossibilidade de côncer de próstata. Os pacientes\ndevem passar por criteriosa avaliação médica antes\nde utilizar esse medicamento, a fim de excluir a possibilidade de nefrite, infecções do trato urinário e\noutras desordens nefro urológicas.(3) Os seguintes\nfatores devem ser levados em consideração antes do\ninício do tratamento com \tSerenoa repens: idade >\n70 anos, pico de fluxo urinário < 12 mL/s, volume\nda próstata de 30 cm3 , volume residual > 50 mL e\nPSA sanguíneo de 1,4 ng/mL. (3)",
+      "interacoesMedicamentosas": "Hormõnios utilizados na Terapia de Reposição\nHormonal (TRH) podem exigir ajuste de dose, devido aos efeitos antiandrogênicos e antiestrogênicos\ndesse fitoterápico. Em estudo in vitro verificou-se\na potencialização da inibição dos antagonistas do\n1-alfa-adrenoreceptor, porém a relevôncia clinica\ndesse núo foi confirmada.(4) Núo utilizar esse medicamento com anticoagulantes como warfarina,\nclopidogrel e ácido acetilsalicílico.(3)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Dose diária: 1–2 g da droga ou 320 mg (dose\núnica ou 160 mg, duas vezes ao dia) do extrato lipidoesterólico padronizado para conter 70–95% ácidos graxos livres e ésteres etílicos correspondentes e\nformas farmacêuticas equivalentes.(2)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Restrições de uso em crianças/adolescentes — ver contraindicações.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Arecaceae.",
+        "parteUsada": "Frutos",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "gel",
+          "extrato"
+        ],
+        "efeitosAdversos": "Esse fitoterápico pode causar náuseas, dor abdominal, distúrbios gástricos, constipação intestinal\ne diarreia. Em casos raros, hipertensúo arterial,\ndiminuição da libido, impotência sexual, cefaleia\ne retenção urinária, síndrome de íris flácida intraoperatória.(3)",
+        "tempoUtilizacao": "Núo foram encontrados dados descritos na literatura consultada sobre o tempo máximo de utilização.\nO tempo de uso depende da indicação terapêutica e\nda evolução do quadro acompanhada pelo médico.",
+        "superdosagem": "Núo foram encontrados dados descritos na literatura consultada sobre problemas decorrentes de\n. Em caso de ingestúo de quantidades acima das recomendadas o paciente deve ser\nobservado.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Triglicerídeos, ácidos graxos, esteroides, polissacarí-\ndeos e flavonoides.(2,3)\nSerenoa repens (W. Bartram) Small\n\n-- 94 of 115 --\n\n95\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nEm estudos in vitro do extrato padronizado verificou-se ação inibidora da enzima 5-alfa-redutase,\nque realiza a conversúo da testosterona em dihidrotestosterona (DHT).(5-8) A propriedade antiestrogê-\nnica também foi relatada, via mecanismo de competição por sítios receptores.(9)\nOs resultados sugeriram que os extratos de S. repens, em conjunto com outros efeitos relatados\nsobre o desenvolvimento da hiperplasia prostática benigna e prostatite, inibiram o crescimento\ndas células do epitélio da próstata EGF (fator de\ncrescimento epitelial)-dependente e suas respostas\npró-inflamatórias.\nToxicológicos\nA DL50 oral do extrato fluido de S. repens foi de\n54 mL/kg em ratos machos. Nenhuma mortalidade\nocorreu após a administração oral de 50 mL/kg em\ncamundongos machos.(3,10)\nEnsaios clínicos\nFarmacológicos\nEstudo de metanálise incluiu sete estudos clínicos\n(placebo controlado). Todos os experimentos duraram sete meses e indicaram diminuição da freq├╝ência de noctúria (0,5 vezes por noite), além do\naumento da velocidade do fluxo da urina de 1,5\nmL/segundo, em relação ao grupo placebo. (11) Em\nestudo randomizado, duplo cego e placebo controlado, com duração de seis meses comparou-se\num medicamento a base do extrato padronizado\nde S. repens e outro, a base de finasterida. Foram\navaliados 951 pacientes com hiperplasia benigna\nda próstata (HPB), havendo melhora dos sintomas\nnos dois grupos (37% para o medicamento fitoterápico, contra 39% para o medicamento a base de\nfinasterida) com semelhante melhora no fluxo de\njato urinário. (12)\nToxicológicos\nEm estudos clínicos verificou-se que extratos de\nfrutos de S. repens súo bem tolerados em humanos.\nAlguns efeitos adversos gastrointestinais foram relatados na maioria dos ensaios clínicos, porém resultados normais foram observados nos exames de\nsangue"
+      },
+      "searchText": "serenoa repens (w. bartram) small serenoa repens (w. bartram) small saw-palmetto."
+    },
+    {
+      "slug": "fitoterapico-stryphnodendron-adstringens-mart-coville",
+      "nome": "Stryphnodendron adstringens (Mart.) Coville",
+      "nomesAlternativos": [
+        "Barbatimúo."
+      ],
+      "nomeCientifico": "Stryphnodendron adstringens (Mart.) Coville",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Cicatrizante.(3)",
+      "contraindicacoes": "Contraindicado em situações em que há necessidade da exsudação por meio de drenos ou de forma\nespontônea.(3)",
+      "precaucoes": "As formas farmacêuticas de uso externo núo deverúo ser aplicadas em úlceras ou ferimentos que necessitem de alta vascularização.(3)",
+      "interacoesMedicamentosas": "Devido á presença de taninos como componente\ndesse fitoterápico, evitar o uso concomitante com\nsais de prata, bases proteicas e princípios ativos vasodilatadores.(3)",
+      "posologia": "(DOSE E INTERVALO)\nUso externo\nAplicar até três vezes ao dia na área afetada, após a\nhigienização.(3)",
+      "viaAdministracao": [
+        "tópica"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": null,
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Leguminosae.",
+        "parteUsada": "Cascas",
+        "formaFarmaceutica": [
+          "pomada",
+          "creme",
+          "extrato"
+        ],
+        "efeitosAdversos": "Poderá ocorrer reação alérgica em pessoas com histórico de alergias a outras espécies vegetais.(3)",
+        "tempoUtilizacao": "O tempo de uso depende da indicação terapêutica e\nda evolução do quadro acompanhada pelo médico.",
+        "superdosagem": "Em caso de administração de quantidades acima\ndas recomendadas, suspender o uso e manter o paciente em observação.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Taninos, proantocianidinas, ácidos fenólicos e flavonoides.(2,4,5,6,7)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nEfeitos cicatrizantes foram descritos para extratos\ndas cascas de S. adstringens e para pomadas contendo extratos de entrecascas dos caules.(8,9,10,11)\nPomada contendo 10% do extrato aquoso fluido\nobtido a partir das cascas de S. adstringens favoreceu\no processo de cicatrização de feridas cutôneas em\nratos Wistar machos tratados por um período de 30\ndias. A epitelização das lesões foi observada após 14\ndias de tratamento com a pomada de S. adstringens\npor meio de avaliação macroscópica e análise histológica. (9,10) Outro estudo também confirma essa\npropriedade,(11) demonstrando que pomada contendo 1% de fração do extrato aquoso de S. adstringens, apresenta efeitos favoráveis na reepitelização\nde lesões cutôneas em ratos Wistar machos tratados\npor 4, 7 e 10 dias. A aplicação tópica da pomada de\nS. adstringens demonstrou estimular a proliferação\ncelular sem afetar, a migração de queratinócitos ou\na contração das feridas.\nStryphnodendron adstringens (Mart.) coville\n\n-- 97 of 115 --\n\n98\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nToxicológicos\nExtrato acetõnico das entrecascas dos caules de S.\nadstringens apresentou DL 50 de 2699 mg/kg por via\noral, em dose única, á camundongos Swiss machos\nmonitorados por um período de sete dias.(12) A fra-\nção enriquecida em proantocianidinas, das cascas\ndos caules de S. adstringens, foi administrada por\nvia oral a camundongos Swiss machos (N=30) e\nfêmeas (N=30) em diferentes doses apresentando\nDL 50 de 3015 mg/kg.(13)\nEm estudo da toxicidade subcrõnica de extrato acetõnico das entrecascas dos caules de S. adstringens\nem ratos Wistar machos tratados durante 30 dias\npor via oral nas concentrações de 0,80 g/kg (N=17)\ne 1,60 g/kg (N=17), demonstrou-se que o extrato\nnas concentrações de 0,80 g/kg e 1,60 g/kg, é tóxico\naos animais após 30 dias de tratamento, ocorrendo\nefeitos indesejáveis proporcionais ao aumento da\ndose. Houve decréscimo do ganho de peso corporal\na partir do 15┬║ dia, provavelmente por interferência\ndo extrato na absorção de alimentos ou por causar\nanorexia. Houve alteração em relação á concentra-\nção plasmática de glicose e aspartato amino transferase.(12)\nAs atividades mutagênica e antimutagênica da fra-\nção enriquecida em proantocianidinas das entrecascas de S. adstringens foram avaliadas pelo teste dos\nmicronúcleos. A fração testada nas doses de 0,750;\n1,50 e 2,250 g/kg por via oral, possibilitou concluir\nque a fração núo causou genotoxicidade nas doses\ntestadas. Além disso, a fração causou efeito antimutagênico na dose de 0,750 g/kg, demonstrando\nproteção contra a ação do agente citotóxico ciclofosfamida.(13)\nEnsaios clínicos\nFarmacológicos\nEm estudo clínico demonstrou-se a ação da pomada contendo extrato das cascas de S. adstringens a\n3% sobre a cicatrização de úlceras de decúbito em\npacientes portadores de lesões em diferentes regi-\nões do corpo. Após um período de 6 meses, a forma farmacêutica avaliada favoreceu a cicatrização\nde 100% das lesões, sendo que 70% cicatrizaram\nno tempo máximo de dois meses. Adicionalmente,\ntodas as lesões tratadas com a pomada contendo o\nfitocomplexo fenólico tiveram redução de 30% na\nárea inicial após a primeira semana de tratamento.\n(14)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada."
+      },
+      "searchText": "stryphnodendron adstringens (mart.) coville stryphnodendron adstringens (mart.) coville barbatimuo."
+    },
+    {
+      "slug": "fitoterapico-trifolium-pratense-l",
+      "nome": "Trifolium pratense L.",
+      "nomesAlternativos": [
+        "Trevo-vermelho.(2",
+        "3)"
+      ],
+      "nomeCientifico": "Trifolium pratense L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Alívio dos sintomas da menopausa (principalmente\nfogachos), mastalgia e síndrome pré-menstrual. (5-11)",
+      "contraindicacoes": "Produtos a base da inflorescência de Trifolium pratense súo contraindicados em casos de hipersensibilidade ou alergia a droga vegetal ou a espécie in\nnatura. Está também contraindicado durante a gravidez, na amamentação e para crianças menores de\n12 anos, e em casos de doenças hormonais associadas, ao efeito potencial dos hormõnios.(4)",
+      "precaucoes": "Deverúo ser observadas as condições que podem\nser agravadas pelo aumento do nível de estrogênio,\ncomo a endometriose ou miomas uterinos.(11)",
+      "interacoesMedicamentosas": "Alguns estudos possibilitam imaginar que as isoflavonas específicas podem aumentar a capacidade\ndo tamoxifeno de inibir o crescimento de células\nde côncer de mama estrogênico-receptor positivo.\n(15-17) Em modelos de roedores, a genisteína tem inibido a eficácia do tamoxifeno sobre o crescimento\nde células de côncer de mama hormõnio-receptor\npositivo em ratas ovariectomizadas, enquanto que\nem outros estudos verificaram que isoflavonas específicas podem produzir efeito aditivo e sinérgico\nna prevenção do desenvolvimento de tumores induzidos quimicamente e o crescimento de tumores\nexistentes. Portanto, o uso da droga bruta ou suas\npreparações núo é recomendado em pacientes que\nestúo sendo tratadas com tamoxifeno e outros medicamentos anti-estrogênicos. (18-20)\nAs isoflavonas presentes nos extratos de T. pratense\nsúo inibidoras das enzimas hepáticas CYP 1A1, CYP\n1B1 e CYP 2CP o que pode levar ao aumento dos\nníveis séricos de alguns fármacos. (21) Podem interagir potencialmente com anticoagulantes (heparina\ne varfarina) e antiagregantes plaquetários (aspirina,\nclopidogrel e ticlopidina), por isso recomenda-se\ncautela na utilização de T. pratense em pacientes\nsusceptíveis a sangramentos ou com distúrbios de\ncoagulação.(21,22)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Extrato bruto: 240-480 mg correspondendo\na 40-80 mg/dia de isoflavonas.(4)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez. Contraindicado ou não recomendado na lactação. Restrições de uso em crianças/adolescentes — ver contraindicações.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Leguminosae.",
+        "parteUsada": "Inflorescências secas",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "A ingestúo de grandes quantidades de T. pratense\nem alimentos por animais tem sido associada a um\nnúmero de efeitos adversos em ovelhas na Austrália.\nA \"doença do trevo\" caracterizada por sintomas de\ninfertilidade, lactação anormal, distocia e prolapso\nuterino, foram hipoteticamente atribuídos aos efeitos estrogênicos de isoflavonas.(12) Em nenhum dos\nensaios clínicos controlados observou-se efeitos adversos com doses de até 0,160 g de isoflavonas por\ndia. (13,14)",
+        "tempoUtilizacao": "Extrato padronizado de T. pratense pode ser utilizado com segurança em administração diária por 12\nmeses. (23)",
+        "superdosagem": "Núo foram encontrados dados descritos na literatura consultada sobre problemas decorrentes de\n. Em caso de ingestúo de quantidades acima das recomendadas o paciente deve ser\nobservado",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Isoflavonas (biochanina A, daidzeína, formononetina e genisteína).(24-27)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nEstudo in vitro com extrato metanólico (15% de\nisoflavonas) das inflorescências de T. pratense L.\npossibilitou verificar ligação competitiva significativa para os receptores alfa-estrogênico e betaestrogênico. Em Ishikawa (células de côncer endometrial), o extrato também exibiu atividade estrogênica, por indução da atividade da fosfatase alcalina e regulação positiva do mRNA do receptor de\nprogesterona. Em células de côncer de mama S30,\npresenelina-2, outro gene induzível de estrogênio,\nfoi regulado positivamente na presença do extrato.\nUtilizando bioensaio guiado com receptor de estró-\ngeno isolado, e tendo a ligação competitiva como\nmeio de monitoramento, usando como screening\ncromatografia líquida por ultrafiltração e espectrometria de massa, revelou que genisteína foi o componente mais ativo do T. pratense, e a mais efetiva\ndas quatro isoflavonas testadas nos ensaios in vitro\nacima descritos. (28)\nO extrato bruto (15% de isoflavonas totais) da droga vegetal, causou ação sobre os receptores alfa e\nbeta-estrogênicos com concentração inibitória mé-\ndia, de 1,8 e 2 g/mL, respectivamente. O extrato\nativou a resposta estrogênica em células de Ishikawa\ne induziu a expressúo de luciferase em células MCF7.(29)\nEstudo in vivo avaliou os efeitos estrogênicos da\ndroga bruta em ratas ovariectomizadas.(29) O extrato das inflorescências de T. pratense, padronizado\nem 15% de isoflavonas em ratas virgens ovariectomizadas, produziu efeito estrogênico, incluindo\naumento do peso uterino, diferenciação das células\nvaginais e núo estimulou a proliferação de células\ndas glôndulas mamárias. Nenhuma propriedade\nanti-estrogênica ou estrogênica aditiva foi observada nos tecidos dos órgúos estudados. Esses dados\npossibilitam concluir que o extrato é fracamente\nestrogênico em ratas ovariectomizadas.(30)\nOs efeitos das isoflavonas de T. pratense foram estudados sobre a secreção de hormõnios da tireóide,\nbem como sobre a imunorreatividade ao receptor\nalfa-estrogênico nas glôndulas da tiróide de ovelhas\novariectomizadas. As ovelhas expostas á silagem\ncom trevo-vermelho apresentaram concentrações\nplasmáticas significativamente mais elevadas de T3\ntotal e T3 livre do que as ovelhas alimentadas com\nfeno. A área da secção transversal dos folículos da\ntiróide tendeu a ser maior em ovelhas alimentadas\ncom silagem com trevo-vermelho do que nos animais de controle. A imunoreatividade ao receptor\nalfa-estrogênico foi mais forte nas glôndulas da tiróide das ovelhas expostas ao fitoestrógeno do que\nnas ovelhas alimentadas com feno. A ingestúo diária\nde 81-95 mg/kg de peso corporal do fitoestrógeno\npor 14 dias estimulou a secreção de hormõnios da\ntireóide e tendeu a aumentar o tamanho do folículo\ne receptor alfa-estrogênico e a imunoreatividade da\nglôndula tireoide.(31)\nToxicológicos\nNúo foram encontrados dados descritos na literatura consultada.\nEnsaios clínicos\nFarmacológicos\nVários estudos foram realizados utilizando extrato\npadronizado ou isoflavonas isoladas das inflorescências de T. pratense para o tratamento de fogachos e outras manifestações clínicas presentes na\npré-menopausa, menopausa ou pós-menopausa.\n(32-35) Estudo duplo-cego, randomizado, placebo\ncontrolado avaliou a eficácia de um produto a base\ndo extrato de T. pratense em 30 mulheres em pósmenopausa. As mulheres foram tratadas com 40\nmg do extrato ou placebo durante quatro meses.\n(36,37) Observou-se a diminuição de 75% do fogacho\nno grupo tratado em comparação com o grupo placebo. Outro estudo aberto com 23 mulheres amenorreicas por 12 meses, (38) relatou-se que as pacientes tratadas com 40 mg do extrato de T. pratense,\napresentaram redução de 56% na frequência do fogacho durante um período de 2 meses. A gravidade\ndos fogachos diminuiu em 43% e a gravidade da\nsudorese noturna diminuiu em 52%. Núo foram\nobservadas alterações na espessura endometrial e\nefeitos adversos. Os hemogramas completos estavam todos nos limites de normalidade.(32)\nToxicológicos\nNos ensaios clínicos controlados núo foram observados efeitos tóxico-colaterais com o emprego de\ndoses até 160 mg de isoflavonas por dia. Ressalta-se\nque Trifolium pratense núo contém cumarinas, portanto, os relatos em relação á coagulação sanguínea\nnúo estúo relacionados a essa espécie vegetal.(39,40)\nTrifolium pratense l.\n\n-- 101 of 115 --\n\n102\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição"
+      },
+      "searchText": "trifolium pratense l. trifolium pratense l. trevo-vermelho.(2 3)"
+    },
+    {
+      "slug": "fitoterapico-uncaria-tomentosa-willd-dc",
+      "nome": "Uncaria tomentosa (Willd. DC.)",
+      "nomesAlternativos": [
+        "Unha-de-gato",
+        "espera-aí",
+        "junpindá.(2",
+        "3)"
+      ],
+      "nomeCientifico": "Uncaria tomentosa (Willd. DC.)",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Anti-inflamatório.(6)",
+      "contraindicacoes": "Contraindicado para grávidas e lactantes.(7)",
+      "precaucoes": "Pacientes que serúo submetidos a transplantes, devido ao seu efeito imunoestimulante, núo devem\nfazer o uso desse fitoterápico.(8,9)",
+      "interacoesMedicamentosas": "Administrar em associação com medicamentos e\ndrogas vegetais, como varfarina, estrógenos, teofilina e gengibre, metabolizados pela via do citocromo\nP-450, apenas com acompanhamento médico.(11)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Extrato fluido: de 2,5 a 5 mL, 1 a 2 vezes ao\ndia.(13)\nComprimido contendo 350 mg de extrato seco,\nduas vezes ao dia.(14)\nCápsula (droga vegetal): 300–500 mg, 1 cápsula, 2\na 3 vezes ao dia.(11)\nExtrato seco (aquoso): 20–35 mg/kg, 1 vez por dia.\n(12,15)\nDecocto: 500 mg para 150 mL de água.",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Rubiaceae.",
+        "parteUsada": "Cascas.(4,5)",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "extrato"
+        ],
+        "efeitosAdversos": "Potencializa a ação de anticoagulantes, aumentando o risco de hemorragias.(9,10)",
+        "tempoUtilizacao": "Utilizar por, no máximo, oito semanas.(14)",
+        "superdosagem": "Em caso de administração acima das doses recomendadas, suspender o uso e manter o paciente em\nobservação.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Flavonoides, alcaloides indólicos, triterpenos e saponinas.(16,17)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nEnsaios com extratos de U. tomentosa possibilitaram\ndemostrar a atividade anti-inflamatória.(6,18) O extrato de U. tomentosa produziu efeito protetor em eritrócitos humanos submetidos a estresse oxidativo. (19)\nToxicológicos\nExtratos de U. tomentosa núo causaram efeitos adversos em eritrócitos humanos.(19) Em estudo realizado com o extrato aquoso da casca do caule de\nU. tomentosa em ratos concluiu-se que núo houve\ntoxicidade aguda, mesmo com o uso de doses elevadas (> 8 g/kg).(12)\nEnsaios clínicos\nFarmacológicos\nEnsaios clínicos com dois grupos utilizando o extrato aquoso de U. tomentosa na forma de \tcápsulas, contendo 20 mg de extrato, com teor de 14,7\nmg/g de alcaloides oxindólicos pentacíclicos, livre\nUncaria tomentosa (Willd. dc.)\n\n-- 104 of 115 --\n\n105\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nde alcaloides oxindólicos tetracíclicos para a artrite\nreumatoide, na fase 1 os pacientes tratados com U.\ntomentosa apresentaram menos dores articulares em\nrelação ao tratado com placebo (redução de 53,2%\nversus 24,1%). Além disso, evidenciou-se redução\nda fragilidade articular, índice Ritchie e duração de\nrigidez matinal no grupo tratado com U. tomentosa. Na fase 2, nos pacientes que receberam o extrato de U. tomentosa se observou redução da dor e\nedema articular, do índice Ritchie em relação aos\ntratados com o placebo. No grupo em que o extrato\nde U. tomentosa foi utilizado continuadamente, se\nevidenciou redução da fragilidade articular, índice\nRitchie e duração de rigidez matinal, comparando-se a semana inicial de intervenção. No estudo\ndemonstrou-se que o extrato aquoso de U. tomentosa livre de alcaloides oxindólicos tetracíclicos, em\ncombinação com a sulfassalazina ou hidroxicloroquina, provocou efeitos clínicos favoráveis na artrite reumatoide. (20)\nToxicológicos\nO extrato aquoso das cascas de U. tomentosa, foi\nadministrado em voluntários na dose de 0,350 g/\nkg pelo período de seis semanas consecutivas, sendo que núo houve alterações hematológicas, peso\ncorporal, diarreia, constipação, náuseas, cefaleia,\nedema e dor, sendo observados apenas aumento de\nglóbulos brancos.(12)\nNo estudo utilizou-se o extrato aquoso de U. tomentosa na dose de 0,350 g/kg (2 vezes/dia), administrado em humanos durante dois meses. Foi\nobservada melhora da imunidade dos pacientes\n(elevação de linfócitos e neutrófilos). Durante o experimento núo houve sinais clínicos e laboratoriais\nde toxicidade"
+      },
+      "searchText": "uncaria tomentosa (willd. dc.) uncaria tomentosa (willd. dc.) unha-de-gato espera-ai junpinda.(2 3)"
+    },
+    {
+      "slug": "fitoterapico-valeriana-officinalis-l",
+      "nome": "Valeriana officinalis L.",
+      "nomesAlternativos": [
+        "Valeriana."
+      ],
+      "nomeCientifico": "Valeriana officinalis L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Usado como sedativo moderado, hipnótico e no\ntratamento de distúrbios do sono associados á ansiedade.(2)",
+      "contraindicacoes": "Contraindicado para menores de 12 anos, grávidas,\nlactantes e pacientes com histórico de hipersensibilidade e alergia a qualquer um dos componentes do\nfitoterápico.(4,18)",
+      "precaucoes": "Esse fitoterápico pode causar sonolência, núo sendo, portanto, recomendável a sua administração\nantes de dirigir, operar máquinas ou realizar qualquer atividade de risco que necessite atenção.(4,5)",
+      "interacoesMedicamentosas": "Esse fitoterápico pode potencializar o efeito de outros depressores do SNC. Em estudos em animais\nverificou-se que V. officinalis possui efeito aditivo\nquando utilizada em combinação com barbitúricos,\nanestésicos ou benzodiazepínicos e outros fármacos\ndepressores do SNC.(3,13) O extrato aquoso aumentou o tempo de sono com o tiopental (via oral em\ncamundongo) e o extrato etanólico prolongou a\nanestesia promovida por tiopental (em camundongo) devido a sua afinidade aos receptores barbitúricos, e o extrato de V. officinalis e valepotriatos com\nreceptores GABA e benzodiazepínicos (in vitro) e\ná diminuição dos efeitos causados pela retirada do\ndiazepam por uma dose suficientemente grande de\nvalepotriatos (em ratos), extratos de V. officinalis\ncontendo valepotriatos, podendo auxiliar na síndrome de abstinência pela retirada do uso do diazepam. (14) Evitar o uso de V. officinalis com a ingestúo\nde bebidas alcoólicas pela possível exacerbação dos\nefeitos sedativos.(15)\nInterações clínicas relevantes com drogas metabolizadas por CYP 2D6, CYP 3A4/5, CYP 1A2 ou\nCYP 2E1 núo foram observadas.(18)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Pode ser utilizado para maiores de 12 anos,\nadultos e idosos.\nSe for prescrito o extrato hidroetanólico acima descrito: o equivalente a duas a três gramas.\nDroga vegetal: de 0,3 a 1 g da droga vegetal para\nusar o pó em cápsula.\nComo droga vegetal para preparação do decocto:\n1 a 3 g.\nExtrato aquoso: 1 a 3 g.\nTinturas (1:5, etanol 70%) 1 a 3 mL.\nAlcoolatura: de 2 a 5 mL.(19)\nExtrato seco: de 45 a 125 mg de dose diária.(19)\nPosologia - como sedativo leve: 1 a 3 vezes ao dia.\nPara distúrbios do sono: dose única antes de dormir\nmais uma dose no início da noite caso seja necessá-\nrio. Dose máxima diária: 4 vezes ao dia.(2,18)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado ou não recomendado na lactação. Menores de 12 anos, grávidas,.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Caprifoliaceae.",
+        "parteUsada": "Raízes",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "tintura",
+          "extrato"
+        ],
+        "efeitosAdversos": "Os efeitos adversos relatados pelos voluntários participantes dos ensaios clínicos e tratados com os diferentes extratos secos padronizados de V. officinalis\nforam raros, leves e similares áqueles apresentados\npelos grupos tratados com o placebo. (6,7) Tais efeitos\nadversos incluem tontura, desconforto gastrointestinal, alergias de contato, cefaleia e midríase. (8-12)\nCom o uso em longo prazo, os seguintes sintomas\npodem ocorrer: cefaleia, cansaço, insõnia, midríase\ne desordens cardíacas. (3) O uso de altas doses de V.\nofficinalis por muitos anos aumentou a possibilidade de ocorrência de síndrome de abstinência com a\nretirada abrupta do fitoterápico.(5)",
+        "tempoUtilizacao": "Para alcançar um efeito ótimo de tratamento, o uso\ncontinuado é recomendado durante 2-4 semanas,\nValeriana officinalis l.\n\n-- 107 of 115 --\n\n108\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nnúo sendo indicado o tratamento agudo. Se os sintomas persistirem ou se agravar após 2 semanas de\nuso contínuo, o médico deve ser consultado.(18)",
+        "superdosagem": "Em casos de superdosagem (doses de raiz superiores a 20 g) podem ocorrer sintomas adversos leves\ncomo fadiga, côimbras abdominais, tensionamento\ndo tórax, tontura, tremores e midríase que desapareceram no período de 24 horas após descontinuação do uso.(4) Altas doses de V. officinalis podem\ncausar bradicardias, arritmias e redução do peristaltismo intestinal.(18)",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Monoterpenos, sesquiterpenos, epóxi-iridóides e\nvalepotriatos.(2)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nEm experimentos em animais, foram observadas:\nAção depressora central, sedativa, ansiolítica, espasmolítica e relaxante muscular. Os ácidos valerênicos\nin vitro diminuíram a degradação do ácido gama\naminobutírico (GABA). Em experimentos em animais houve aumento do GABA na fenda sináptica\nvia inibição da recaptação e aumento da secreção do\nneurotransmissor, podendo ser esse um dos efeitos\nque causam a atividade sedativa. Outro mecanismo\nque pode contribuir para essa atividade é a presença\nde altos níveis de glutamina no extrato, que tem a\ncapacidade de cruzar a barreira hematoencefálica,\nsendo captada pelo terminal nervoso e convertida\nem GABA.(16,17)\nToxicológicos\nExtratos etanólicos de raizes de Valeriana officinalis\ncausaram baixa toxicidade em roedores durante os\ntestes agudos e de toxicidade de dose repetida ao\nlongo do período de 4-8 semanas.(18)\nEnsaios clínicos\nFarmacológicos\nEm estudo randomizado, controlado por placebo,\nos pacientes receberam 600 mg de extrato da raiz de\nV. officinalis padronizado em 0,4 a 0,6% de ácido\nvalerênico (n = 61) ou placebo (n = 60) uma hora\nantes de dormir por 28 noites consecutivas. Dos\npacientes que utilizaram a V. officinalis 66% apresentaram efeito terapêutico bom ou muito bom ao\nfinal do tratamento, comparado a 29% igualmente\npositivos do placebo.(3)\nToxicológicos\nVários estudos com extratos de valeriana foram realizados para avaliar a possível influência sobre a\nvigília. De acordo com esses estudos, altas doses do\nextrato da raiz de valeriana podem causar sedação\nleve depois das primeiras horas da administração,\nmas, diferentemente dos benzodiazepínicos, núo\nreduz a vigília no dia seguinte.(18)\nNúo foram encontrados dados descritos na literatura de resultados hematológicos ou bioquímicos.\nValeriana officinalis l.\n\n-- 108 of 115 --\n\n109\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição"
+      },
+      "searchText": "valeriana officinalis l. valeriana officinalis l. valeriana."
+    },
+    {
+      "slug": "fitoterapico-zingiber-officinale-roscoe",
+      "nome": "Zingiber officinale Roscoe",
+      "nomesAlternativos": [
+        "Gengibre."
+      ],
+      "nomeCientifico": "Zingiber officinale Roscoe",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Antiemético, antidispéptico, e nos casos de cinetose.(3)",
+      "contraindicacoes": "Contraindicado para pessoas com cálculos biliares,\nirritação gástrica e hipertensúo arterial. Núo é indicado para crianças.(2)",
+      "precaucoes": "Os pacientes que tomam medicamentos anticoagulantes ou que apresentam distúrbios da coagulação\nsanguínea devem consultar seu médico antes de se\nauto-medicar com gengibre. Pacientes com cálculos\nbiliares devem consultar seu médico antes de usar\npreparações de gengibre.(4)",
+      "interacoesMedicamentosas": "O gengibre pode afetar o tempo de sangramento e\nparômetros imunológicos, devido a sua capacidade\nde inibir a tromboxano-sintetase e por atuar como\nagonista da prostaciclina.(6,7) No entanto, um estudo randomizado, duplo-cego sobre os efeitos de\ngengibre seco (2 g/dia, oralmente durante 14 dias)\nna função plaquetária núo mostrou diferenças nos\ntempos de sangramento em pacientes que receberam gengibre ou placebo.(8,9)",
+      "posologia": "(DOSE E INTERVALO)\nOral. Infuso: acima de 12 anos: de 0,5 a 1 g em 150\nmL de água, 5 minutos após o preparo, tomar de\nduas a quatro vezes ao dia.(2)\nTintura: tomar 2,5 mL da tintura diluída em 75\nmL de água, uma a três vezes ao dia ou 1,5 a 3,0 mL\ndiariamente.(2,51)\nEm casos de cinetose em adultos e crianças com\nmais de 6 anos: 0,5 g, 2 a 4 vezes ao dia.(13,51)\nDispepsia: 2 a 4 g da droga vegetal ou extrato seco.(3,14)",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Restrições de uso em crianças/adolescentes — ver contraindicações.",
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Zingiberaceae.",
+        "parteUsada": "Rizomas",
+        "formaFarmaceutica": [
+          "cápsulas",
+          "comprimidos",
+          "tintura",
+          "extrato"
+        ],
+        "efeitosAdversos": "Dermatite de contato tem sido relatada em pacientes sensíveis.(5)",
+        "tempoUtilizacao": "Pacientes que usaram gengibre por um período de\n3 meses a 2,5 \tanos núo apresentaram efeitos \tadversos.(15)",
+        "superdosagem": "Altas doses (12-14 g) de gengibre podem aumentar os efeitos hipotrombinêmicos da terapia\nanticoagulante.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Óleo \tessencial \t(zingibereno, \t╬▓-bisabolol,\n╬▓-sesquifelandreno), shogaol, e gingerol; zingeronas e diterpenoides de núcleo labdano.(11,16-19)\nINFORMAÇÕES \tSOBRE \tSEGURANçA \tE\nEFICüCIA\nEnsaios núo-clínicos\nFarmacológicos\nA administração intraduodenal de um extrato acetõnico (rico em óleo essencial) do rizoma de gengibre em ratos aumentou a secreção biliar durante\nZingiber officinale roscoe\n\n-- 110 of 115 --\n\n111\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\n3 horas após a administração. (20) A administração\noral do extrato acetõnico de gengibre (75 mg/kg),\ndo [6]–shogaol; (2,5 mg/kg), do [6]-[8], ou do\n[10]-gingerol estimulou a motilidade gastrointestinal em ratos,(21) e a atividade foi comparável a de\nmetoclopramida (10 mg/kg) e a domperidona.(21)\nO [6]-[8]-, ou [10]–gingerois súo designados como\nantiserotoninérgicos, e relatos indicam que os efeitos do gengibre sobre a motilidade gastrointestinal\npodem ser devidos a esta atividade. (21,22) A via de\nadministração parece desempenhar um papel importante nos estudos sobre a motilidade gastrintestinal. Por exemplo, tanto o [10]-gingerol quanto o\n[6]-shogaol inibiram a motilidade intestinal quando administrados por via intravenosa, mas a motilidade gastrointestinal foi acentuada após administração oral.(17,23,24)\nA ação emética do sulfato de cobre, agente de ação\nperiférica, foi inibida em cúes tratados com uma\ndose intra-gástrica de extrato de gengibre, (25) mas a\nemese em pombos tratados com eméticos de ação\ncentral, tais como a apomorfina e Digitalis núo foi\ninibida pelo extrato de gengibre. (26) Esses resultados\nsugerem que a atividade antiemética do gengibre é\nperiférica e núo envolve o sistema nervoso central.\n(27) A ação antiemética do gengibre tem sido atribu-\nída á ação combinada de zingeronas e shogaóis.(27)\nEm estudos in vitro verificou-se que um infuso de\ngengibre inibiu as atividades da ciclo-oxigenase e\nlipoxigenase, assim os seus efeitos anti-inflamató-\nrios podem ser devidos á diminuição da formação\nde prostaglandinas e leucotrienos.(28) Verificou-se\nque o infuso de gengibre é um inibidor potente da tromboxano sintetase, e aumentou os níveis\nde prostaciclina, sem aumento concomitante de\nprostaglandinas E2 ou F2a\n.(29) Em estudos in vivo\nverificou-se que a administração oral de extratos de\ngengibre atuam na redução do edema da pata de\nrato e sua potência foi comparável a do ácido acetilsalicílico.(30,31) O [6]-shogaol inibiu o edema de pata\ninduzido por carragenina em ratos por inibição da\natividade da ciclo-oxigenase. (32) Os dialdeídos diterpenos do tipo labdano isolados a partir de extratos\nde gengibre têm sido descritos como inibidores da\n5-lipoxigenase humana in vitro.(33)\nToxicológicos\nO infuso de gengibre causou atividade mutagênica\nem células B291I e Salmonella typhimurium cepa\nTA 100, mas núo na cepa TA 98.(34) Entretanto, alguns componentes do gengibre fresco foram identificados como agentes mutagênicos. A ação mutagênica de [6]-gingerol e shogaóis foi determinada\nem ensaio com Salmonella/ microssoma,(35) e o aumento da mutagênese foi observado em uma cepa\nde Escherichia coli HS30 tratada com [6]-gingerol.\n(36) No entanto, a mutagenicidade de [6]-gingerol e shogaóis foi suprimida na presença de várias\nconcentrações de um constituinte antimutagênico, zingerona, do gengibre. (35) Por outro lado, o\nsumo de gengibre demonstrou ser antimutagênico e suprimiu as mutações espontôneas induzidos\npor [6]-gingerol, exceto nos casos de adição dos\nprodutos químicos mutagênicos 2-(2-furil)-3-(5nitro-2-furil) \tacrilamida \te \tN-metil-N'-nitro-Nnitrosoguanidina ao [6]-gingerol.(37) Outros estudos também relataram a ação antimutagênica do\nsuco de gengibre. (37,38)\nEnsaios clínicos\nFarmacológicos\nEstudo clínico com a administração oral do pó do\nrizoma de gengibre (940 mg) foi mais eficaz do que\ndimenidrinato (100 mg) na prevenção dos sintomas gastrointestinais da cinetose. (39) Os resultados\ndesse estudo sugeriram que o gengibre núo age no\ncentro do võmito em nível central, mas age diretamente sobre o trato gastrointestinal por meio de\nsuas propriedades aromáticas, carminativas e absorventes, através do aumento da motilidade gástrica e\nabsorção de toxinas e ácidos.(39)\nEm estudos clínicos randomizados, duplo-cego, o\nefeito do pó do rizoma de gengibre foi testado no\ntratamento profilático de náusea que, quando administrado por via oral foi estatisticamente melhor\ndo que o placebo na redução da incidência de võ-\nmitos e sudorese 4 horas após a ingestúo. (40,41) Na\ncomparação dos efeitos de sete formulações de gengibre e antieméticos prescritos para a prevenção de\nenjõo em 1.489 indivíduos, o gengibre foi túo eficaz\nquanto os outros fármacos antieméticos testados. (40)\nVários estudos clínicos avaliaram os efeitos da raiz\nde gengibre em casos de cinetose. Quatro dessas investigações possibilitaram verificar que o rizoma do\ngengibre administrado por via oral foi eficaz para a\nterapia profilática de náuseas e võmitos. Os estudos\nclínicos que avaliaram as reações gastrointestinais\nenvolvidas na doença de movimento registraram\nmelhores respostas do que aqueles que enfatizaram\nas respostas que envolvem o sistema nervoso central.(42-44)\nA hipótese de que o aumento do esvaziamento gástrico pode estar envolvido nos efeitos anti-eméticos\nde gengibre foi comprovada. Estudos clínicos concluíram que as doses orais de gengibre núo atuam\nsobre o esvaziamento gástrico, tal como foi registrado por cintilografia sequencial gástrica e técnica de\nabsorção de paracetamol.(45-46)\nEm um estudo duplo-cego, cruzado e randomizado, a administração oral de pó de rizoma de gengibre (250 mg, 4 vezes ao dia) foi efetiva no tratamento de casos de võmito pernicioso na gravidez.\n(47) Tanto o grau de náusea quanto o número de\nataques de vómitos foram significativamente reduzidos.(47) Além disso, em um estudo prospectivo,\nZingiber officinale roscoe\n\n-- 111 of 115 --\n\n112\nMemento Fitoterápico da Farmacopeia Brasileira - 1ª edição\nrandomizado, duplo-cego, com 60 pacientes que\nreceberam gengibre, somente nos casos de náuseas\ne võmitos de pós-operatórios, foi detectada diferen-\nça significativa em comparação com o placebo,(48)\nsendo que o efeito do gengibre foi considerado túo\neficaz ou melhor do que a metoclopramida.(48,49)\nA administração oral de pó de rizoma de gengibre\nem pacientes com distúrbios reumáticos e músculoesqueléticos produziu diferentes graus de alívio da\ndor e do edema.(50)\nToxicológicos\nNenhum efeito teratogênico foi observado em bebês cujas múes usaram Z. officinale para o alivio da\nhiperêmese gravídica.(27)\nEm estudo clínico duplo-cego, randomizado, foi\nevidenciada a ação efetiva do gengibre (250 mg por\nvia oral, 4 vezes ao dia) no tratamento de võmito\npernicioso na gravidez. (47) Efeitos teratogênicos núo\nforam observados em crianças nascidas durante esse\nestudo, e todos os recém-nascidos apresentaram\nAPGAR de 9 ou 10 após 5 minutos"
+      },
+      "searchText": "zingiber officinale roscoe zingiber officinale roscoe gengibre."
+    }
+  ]
+}
