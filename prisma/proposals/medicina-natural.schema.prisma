@@ -1,0 +1,75 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// PROPOSTA APLICADA em prisma/schema.prisma — migration 20260711190000_medicina_natural_item
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum CategoriaPraticaMedicinaNatural {
+  FITOTERAPICO
+  FLORAL
+  AROMATERAPIA
+  HOMEOPATIA
+  APITERAPIA
+}
+
+enum StatusRegulatorioMedicinaNatural {
+  MEDICAMENTO_REGISTRADO
+  PRODUTO_TRADICIONAL_NOTIFICADO
+  USO_TRADICIONAL_SEM_REGISTRO
+  PRATICA_INTEGRATIVA_NAO_REGULADA
+}
+
+/// Monografia unificada para as 5 práticas de Medicina Natural.
+/// Padrão de busca: DrugCatalog (searchText normalizado, sem PHI).
+/// Chás medicinais entram como FITOTERAPICO com formaFarmaceutica em detalhesEspecificos.
+model MedicinaNaturalItem {
+  id        String   @id @default(cuid())
+  slug      String   @unique // rota /medicina-natural/{pratica}/{slug}
+
+  nome              String
+  nomesAlternativos String[] @default([])
+  /// Chave de merge MFFB+FFFB; única quando preenchida (fitoterápicos).
+  nomeCientifico    String?  @unique
+
+  categoriaPratica CategoriaPraticaMedicinaNatural
+
+  indicacoes               String  @db.Text
+  contraindicacoes         String  @db.Text
+  precaucoes               String  @db.Text
+  interacoesMedicamentosas String? @db.Text
+  posologia                String  @db.Text
+  viaAdministracao         String[] @default([])
+
+  statusRegulatorio StatusRegulatorioMedicinaNatural
+
+  /// [{ fonte, edicao, url?, dataConsulta?, campos? }]
+  fontes Json @default("[]")
+
+  alertaGestacaoPediatria String? @db.Text
+
+  /// 17 espécies MFFB também na RENISUS (fitoterápicos).
+  renisus Boolean @default(false)
+
+  /// Campos específicos por prática — ver src/lib/medicina-natural/item-types.ts
+  detalhesEspecificos Json @default("{}")
+
+  /// nome + nomesAlternativos + nomeCientifico, normalizado (sem acentos, minúsculas)
+  searchText String
+
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoriaPratica])
+  @@index([categoriaPratica, active])
+  @@index([searchText])
+  @@index([nomeCientifico])
+  @@index([statusRegulatorio])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// podePrescrever — NÃO persistido; calculado em aplicação:
+//
+//   MEDICAMENTO_REGISTRADO | PRODUTO_TRADICIONAL_NOTIFICADO → "Prescrever"
+//   USO_TRADICIONAL_SEM_REGISTRO | PRATICA_INTEGRATIVA_NAO_REGULADA → "Adicionar como orientação"
+//
+// Ver: src/lib/medicina-natural/prescribability.ts
+// ─────────────────────────────────────────────────────────────────────────────

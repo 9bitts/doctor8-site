@@ -5463,3 +5463,65 @@ model LaboratoryExamImport {
 
   @@index([laboratoryId])
 }
+
+// ─────────────────────────────────────────
+// MEDICINA NATURAL — monografias unificadas (5 práticas PICS)
+// Catálogo de referência clínica — sem PHI.
+// Chás medicinais → FITOTERAPICO (formaFarmaceutica em detalhesEspecificos).
+// ─────────────────────────────────────────
+
+enum CategoriaPraticaMedicinaNatural {
+  FITOTERAPICO
+  FLORAL
+  AROMATERAPIA
+  HOMEOPATIA
+  APITERAPIA
+}
+
+enum StatusRegulatorioMedicinaNatural {
+  MEDICAMENTO_REGISTRADO
+  PRODUTO_TRADICIONAL_NOTIFICADO
+  USO_TRADICIONAL_SEM_REGISTRO
+  PRATICA_INTEGRATIVA_NAO_REGULADA
+}
+
+model MedicinaNaturalItem {
+  id   String @id @default(cuid())
+  slug String @unique
+
+  nome              String
+  nomesAlternativos String[] @default([])
+  nomeCientifico    String?  @unique
+
+  categoriaPratica CategoriaPraticaMedicinaNatural
+
+  indicacoes               String   @db.Text
+  contraindicacoes         String   @db.Text
+  precaucoes               String   @db.Text
+  interacoesMedicamentosas String?  @db.Text
+  posologia                String   @db.Text
+  viaAdministracao         String[] @default([])
+
+  statusRegulatorio StatusRegulatorioMedicinaNatural
+
+  /// [{ fonte, edicao, url?, dataConsulta?, campos? }]
+  fontes Json @default("[]")
+
+  alertaGestacaoPediatria String? @db.Text
+
+  renisus Boolean @default(false)
+
+  detalhesEspecificos Json @default("{}")
+
+  searchText String
+
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoriaPratica])
+  @@index([categoriaPratica, active])
+  @@index([searchText])
+  @@index([nomeCientifico])
+  @@index([statusRegulatorio])
+}

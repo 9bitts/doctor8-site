@@ -1,0 +1,292 @@
+{
+  "_meta": {
+    "lote": "1 de N",
+    "fonte_primaria": "Memento Fitoterápico da Farmacopeia Brasileira (MFFB), 1ª edição, 2016 — RDC nº 84/2016",
+    "url_fonte": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+    "extracao": "texto integral do PDF oficial, não resumo/busca",
+    "observacao": "statusRegulatorio marcado como MEDICAMENTO_REGISTRADO para todos os itens deste lote — o MFFB orienta prescrição de fitoterápicos já registrados/com registro simplificado na Anvisa. Confirmar item a item se algum corresponde a PTF em vez de MF antes de ir para produção.",
+    "schema_alvo": "MedicinaNaturalItem — campo fontes como Json (Opção A aprovada)"
+  },
+  "itens": [
+    {
+      "slug": "fitoterapico-actaea-racemosa",
+      "nome": "Actaea racemosa L.",
+      "nomesAlternativos": ["Cimicifuga", "Cimicifuga racemosa (L.) Nutt. — sinonímia"],
+      "nomeCientifico": "Actaea racemosa L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Alívio dos sintomas do climatério, como rubor, fogachos, transpiração excessiva, palpitações, alterações do humor, ansiedade e depressão.",
+      "contraindicacoes": "Histórico de hipersensibilidade a qualquer componente do fitoterápico. Pacientes com insuficiência hepática. Contraindicado durante a gravidez.",
+      "precaucoes": "Alertar sobre sintomas sugestivos de insuficiência hepática (astenia, inapetência, icterícia, epigastralgia severa com náusea/vômito, urina escura) — suspender uso se ocorrerem. Precaução em alérgicos à aspirina/salicilatos. Em associação com terapia de reposição hormonal, manter avaliação médica a cada 6 meses.",
+      "interacoesMedicamentosas": "Pode antagonizar o efeito imunossupressor de ciclosporina e azatioprina (risco de rejeição em transplantados). Possível interação com atorvastatina. Cautela se associado a hipotensores (betabloqueadores, bloqueadores de canais de cálcio). Possível interação com analgésicos/anestésicos.",
+      "posologia": "Oral. Dose diária: 6 mg extrato seco (etanólico). Alternativa: 40-200 mg de rizomas secos/dia divididos em doses, ou 0,4-2 mL da tintura (1:10, etanol 60%) diariamente. Raiz em pó ou chá: 1-2 g, três vezes ao dia.",
+      "viaAdministracao": ["oral"],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Ranunculaceae",
+        "parteUsada": "Raiz ou rizoma",
+        "formaFarmaceutica": ["cápsulas", "comprimidos (extrato seco etanólico ou isopropílico)"],
+        "efeitosAdversos": "Desconforto gastrointestinal, erupção cutânea, cefaleia, tontura.",
+        "tempoUtilizacao": "Não deve ser utilizada por mais de 6 meses.",
+        "superdosagem": "Vertigem, cefaleia, náusea, vômito, hipotensão arterial, distúrbios visuais e circulatórios.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Triterpenos (cimifugosídeo, 26-deoxiacteína, acteína, cimigenol), alcaloides, taninos, ácidos fenólicos."
+      },
+      "searchText": "actaea racemosa cimicifuga climaterio fogachos menopausa"
+    },
+    {
+      "slug": "fitoterapico-aesculus-hippocastanum",
+      "nome": "Aesculus hippocastanum L.",
+      "nomesAlternativos": ["Castanha-da-índia"],
+      "nomeCientifico": "Aesculus hippocastanum L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Tratamento da insuficiência venosa e fragilidade capilar.",
+      "contraindicacoes": "Histórico de hipersensibilidade/alergia a qualquer componente ou à escina. Insuficiência renal ou hepática. Maior toxicidade potencial em crianças (maior absorção de escina).",
+      "precaucoes": "Toxicidade renal e hepática relatada em pacientes propensos. Idosos só devem usar com orientação médica. Categoria de risco C na gravidez — não usar sem orientação médica. Não usar em crianças e adolescentes sem orientação médica.",
+      "interacoesMedicamentosas": "Não administrar com anticoagulantes orais (potencializa efeito anticoagulante). ~90% da escina se liga a proteínas plasmáticas, podendo interferir na distribuição de outras drogas. Caso relatado de insuficiência renal com uso concomitante de gentamicina.",
+      "posologia": "Oral: 250-312 mg/dia (dividida em 2 doses) do extrato padronizado com 16-20% de glicosídeos triterpênicos (equiv. 100 mg de escina). Tópico: gel com 2% de escina.",
+      "viaAdministracao": ["oral", "tópica"],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Categoria de risco C na gravidez — não usar sem orientação médica. Não usar em crianças/adolescentes sem orientação médica.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Sapindaceae",
+        "parteUsada": "Semente",
+        "formaFarmaceutica": ["cápsulas", "comprimidos (extrato etanólico seco padronizado)", "gel"],
+        "efeitosAdversos": "Prurido, náuseas, desconforto gástrico (isolados). Raramente irritação da mucosa gástrica e refluxo.",
+        "tempoUtilizacao": "Não há dados sobre tempo máximo; depende da evolução clínica.",
+        "superdosagem": "Vômitos, diarreia, fraqueza, espasmos musculares, dilatação pupilar, falta de coordenação, distúrbios visuais/consciência. Pode causar hemólise com dano renal em casos graves. Suspender imediatamente e tratamento sintomático de suporte.",
+        "prescricaoObrigatoria": false,
+        "principaisClassesQuimicas": "Cumarinas, flavonoides, saponinas."
+      },
+      "searchText": "aesculus hippocastanum castanha da india insuficiencia venosa"
+    },
+    {
+      "slug": "fitoterapico-allium-sativum",
+      "nome": "Allium sativum L.",
+      "nomesAlternativos": ["Alho"],
+      "nomeCientifico": "Allium sativum L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Coadjuvante no tratamento de bronquite crônica, asma, como expectorante e preventivo de alterações vasculares. Coadjuvante em hiperlipidemia, hipertensão arterial leve a moderada, sintomas de gripes/resfriados, e auxiliar na prevenção da aterosclerose.",
+      "contraindicacoes": "Gravidez. Gastrite, úlcera gastroduodenal, hipertireoidismo, distúrbios da coagulação ou uso de anticoagulantes. Histórico de hipersensibilidade/alergia a qualquer componente. Não usar em pré ou pós-operatório — suspender pelo menos 10 dias antes de cirurgia.",
+      "precaucoes": "Não usar em hemorragia ou com anticoagulantes/anti-hipertensivos. Suspender 2 semanas antes de cirurgia. Não usar em gastrite, úlcera gastroduodenal, hipotensão arterial, hipoglicemia. Pode potencializar efeitos antitrombóticos de anti-inflamatórios.",
+      "interacoesMedicamentosas": "Interação com varfarina. Não usar com anticoagulantes orais, heparina, trombolíticos, antiagregantes plaquetários e AINEs (risco de hemorragia). Pode reduzir concentração sérica de inibidores de protease (risco de resistência ao antiretroviral). Pode reduzir efetividade da clorzoxazona.",
+      "posologia": "Oral. Tintura (1:5, álcool 45%): >12 anos, 50-100 gotas (2,5-5 mL) diluídas em 75 mL de água, 2-3x/dia. Óleo: 2-5 mg/dia. Pó seco: 0,4-1,2 g/dia. Alcoolatura/extrato fluido: 1-2 mL diluídos em 75 mL de água 2x/dia.",
+      "viaAdministracao": ["oral"],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Amaryllidaceae",
+        "parteUsada": "Bulbos frescos ou secos",
+        "formaFarmaceutica": ["tintura", "alcoolatura", "extrato fluido", "cápsulas com óleo"],
+        "efeitosAdversos": "Ardência na cavidade oral e trato gastrointestinal, mialgia, fadiga, vertigem, sudorese, reações alérgicas e asma. Pode diminuir hematócrito/viscosidade sanguínea (risco de sangramento pós-operatório). Desconforto abdominal, náuseas, vômitos, diarreia. Odor corporal característico.",
+        "tempoUtilizacao": "Não há dados sobre tempo máximo; depende da evolução clínica.",
+        "superdosagem": "Não há dados na literatura consultada; suspender uso e observar o paciente.",
+        "prescricaoObrigatoria": false,
+        "principaisClassesQuimicas": "Terpenos, ácidos graxos, organosulfurados, saponinas, fenilpropanoides."
+      },
+      "searchText": "allium sativum alho bronquite hipertensao colesterol"
+    },
+    {
+      "slug": "fitoterapico-aloe-vera",
+      "nome": "Aloe vera (L.) Burm.f.",
+      "nomesAlternativos": ["Babosa", "Aloe"],
+      "nomeCientifico": "Aloe vera (L.) Burm.f.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Queimaduras de primeiro e segundo graus. Cicatrizante.",
+      "contraindicacoes": "Hipersensibilidade aos componentes do fitoterápico ou alergia conhecida a plantas da família Xanthorrhoeaceae.",
+      "precaucoes": "Não utilizar o produto se apresentar alteração de coloração.",
+      "interacoesMedicamentosas": "Não foram encontrados dados descritos na literatura consultada.",
+      "posologia": "Tópica. Aplicar na área afetada 1 a 3 vezes ao dia.",
+      "viaAdministracao": ["tópica"],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": null,
+      "renisus": true,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Xanthorrhoeaceae",
+        "parteUsada": "Gel incolor mucilaginoso de folhas frescas",
+        "formaFarmaceutica": ["gel hidrofílico", "pomada"],
+        "efeitosAdversos": "Casos relatados de dermatite de contato, possivelmente associados a constituintes antracênicos da parte externa da folha (não deve ser usada nas preparações).",
+        "tempoUtilizacao": "Não há dados sobre tempo máximo; depende da evolução clínica.",
+        "superdosagem": "Não há dados na literatura consultada; suspender uso e observar o paciente.",
+        "prescricaoObrigatoria": false,
+        "principaisClassesQuimicas": "Polissacarídeos (pectinas, hemicelulose, glucomano, acemano), triterpenos (lupeol), esteroides (campesterol, β-sitosterol)."
+      },
+      "searchText": "aloe vera babosa queimadura cicatrizante"
+    },
+    {
+      "slug": "fitoterapico-calendula-officinalis",
+      "nome": "Calendula officinalis L.",
+      "nomesAlternativos": ["Calêndula"],
+      "nomeCientifico": "Calendula officinalis L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Uso externo como anti-inflamatório, cicatrizante e antisséptico. Tratamento de lesões de pele e mucosas, promovendo cicatrização e modulando focos inflamatórios.",
+      "contraindicacoes": "Histórico de hipersensibilidade/alergia aos componentes ou a outras plantas da família Asteraceae. Não administrar na gravidez, lactação ou em crianças sem supervisão médica.",
+      "precaucoes": "Não foram encontrados dados descritos na literatura consultada.",
+      "interacoesMedicamentosas": "Não foram encontrados dados descritos na literatura consultada.",
+      "posologia": "Tópica. Infusão: aplicar 3x/dia com algodão ou bochechos/gargarejos. Tintura: bochechos/gargarejos com 25 mL diluídos em 100 mL de água. Gel (10% da tintura): aplicar 3x/dia. Creme/pomada (10% extrato glicólico): 3x/dia em eczemas ou 1x/dia em feridas.",
+      "viaAdministracao": ["tópica"],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Não administrar na gravidez, lactação ou em crianças sem supervisão médica.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Asteraceae",
+        "parteUsada": "Flores",
+        "formaFarmaceutica": ["infusão", "tintura", "extrato fluido", "gel", "creme", "pomada"],
+        "efeitosAdversos": "Reações alérgicas e sensibilização da pele. Efeitos espermicida, antifertilizante e uterotônico relatados.",
+        "tempoUtilizacao": "Depende da indicação terapêutica e evolução do quadro.",
+        "superdosagem": "Não há dados sobre uso externo; suspender uso e observar o paciente se usado por outra via ou em excesso.",
+        "prescricaoObrigatoria": false,
+        "principaisClassesQuimicas": "Óleo essencial, carotenoides, triterpenos, esteroides, saponinas, ácidos fenólicos, flavonoides, antocianinas."
+      },
+      "searchText": "calendula officinalis calendula cicatrizante anti-inflamatorio pele"
+    },
+    {
+      "slug": "fitoterapico-cynara-scolymus",
+      "nome": "Cynara scolymus L.",
+      "nomesAlternativos": ["Alcachofra"],
+      "nomeCientifico": "Cynara scolymus L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Antidispéptico, antiflatulento, diurético. Auxiliar na prevenção da aterosclerose. Coadjuvante no tratamento de dislipidemia mista leve a moderada e nos sintomas da síndrome do intestino irritável.",
+      "contraindicacoes": "Histórico de hipersensibilidade/alergia a qualquer componente ou a outras plantas da família Asteraceae. Obstrução do ducto biliar. Gravidez e lactação.",
+      "precaucoes": "Uso concomitante com diuréticos em hipertensão/cardiopatia requer supervisão médica estrita (risco de descompensação da pressão ou potencialização de cardiotônicos por perda de potássio). Hipersensibilidade relatada (lactonas sesquiterpênicas). Sem estudos para recomendar uso em menores de 12 anos. Não usar na gravidez sem orientação médica.",
+      "interacoesMedicamentosas": "Redução da eficácia de medicamentos que interferem na coagulação (AAS, anticoagulantes cumarínicos como varfarina). Pode diminuir concentrações sanguíneas de fármacos metabolizados por CYP3A4, CYP2B6 e CYP2D6 (é indutora dessas enzimas).",
+      "posologia": "Oral. Dose diária: 1-2 g de extrato seco aquoso. Alternativa: 2 cápsulas, 2-4x/dia.",
+      "viaAdministracao": ["oral"],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gravidez e lactação. Sem estudos para uso em menores de 12 anos.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Asteraceae",
+        "parteUsada": "Folhas",
+        "formaFarmaceutica": ["droga vegetal encapsulada", "comprimido", "infusão", "extrato seco padronizado"],
+        "efeitosAdversos": "Efeito laxante em pessoas sensíveis aos componentes.",
+        "tempoUtilizacao": "Se sintomas persistirem por mais de 2 semanas, consultar médico.",
+        "superdosagem": "Não há dados na literatura consultada; suspender uso e observar o paciente.",
+        "prescricaoObrigatoria": false,
+        "principaisClassesQuimicas": "Ácidos fenólicos, fenilpropanoides, saponinas, flavonoides, sesquiterpenos, esteroides."
+      },
+      "searchText": "cynara scolymus alcachofra dispepsia colesterol diuretico"
+    },
+    {
+      "slug": "fitoterapico-echinacea-purpurea",
+      "nome": "Echinacea purpurea (L.) Moench",
+      "nomesAlternativos": ["Equinácea"],
+      "nomeCientifico": "Echinacea purpurea (L.) Moench",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Preventivo e coadjuvante no tratamento dos sintomas de resfriados.",
+      "contraindicacoes": "Esclerose múltipla, colagenose, SIDA, tuberculose, uso de imunossupressores e outras desordens auto-imunes (risco de ativação de agressões auto-imunes/respostas hiper-reativas). Contraindicado para crianças, grávidas e histórico de hipersensibilidade/alergia.",
+      "precaucoes": "Não usar na gravidez/lactação sem orientação médica. Não usar em doenças auto-imunes específicas (encefalite difusa, eritema nodoso, trombocitopenia imunomediada, síndrome de Evans, síndrome de Sjögren com disfunção tubular renal), infecção por HIV e tuberculose. Leucopenia pode ocorrer com uso prolongado (>8 semanas).",
+      "interacoesMedicamentosas": "Administrar com cautela em associação com fármacos cujo metabolismo depende das enzimas CYP.",
+      "posologia": "Oral: extrato seco 250 mg, 1-3x/dia (equiv. 10-30 mg ácido chicórico/dia). Extrato seco (5,5-7,5:1) 30 mg (equiv. 200 mg droga vegetal): 6-9 comprimidos/dia. Raiz seca pulverizada: 2 cápsulas, 3x/dia.",
+      "viaAdministracao": ["oral"],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado para crianças e grávidas.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Asteraceae",
+        "parteUsada": "Raiz",
+        "formaFarmaceutica": ["cápsulas", "comprimidos (extrato seco etanólico)", "raiz seca pulverizada"],
+        "efeitosAdversos": "Febre, distúrbios gastrointestinais (náusea, vômito, paladar desagradável). Raras reações alérgicas (prurido, agravamento de asma). Hipersensibilidade: dermatite atópica, urticária, Síndrome de Stevens Johnson, angioedema, edema de Quincke, broncoespasmo.",
+        "tempoUtilizacao": "Não utilizar por mais de 8 semanas sucessivas.",
+        "superdosagem": "Não há dados na literatura consultada; suspender uso e observar o paciente.",
+        "prescricaoObrigatoria": true,
+        "principaisClassesQuimicas": "Fenilpropanoides, polissacarídeos, sesquiterpenos."
+      },
+      "searchText": "echinacea purpurea equinacea resfriado imunidade"
+    },
+    {
+      "slug": "fitoterapico-equisetum-arvense",
+      "nome": "Equisetum arvense L.",
+      "nomesAlternativos": ["Cavalinha"],
+      "nomeCientifico": "Equisetum arvense L.",
+      "categoriaPratica": "FITOTERAPICO",
+      "indicacoes": "Diurético.",
+      "contraindicacoes": "Menores de 12 anos, grávidas, lactantes, histórico de hipersensibilidade/alergia. Pacientes com indicação de ingestão reduzida de líquidos (ex.: doenças cardíacas e renais severas).",
+      "precaucoes": "Uso crônico diminui níveis de vitamina B1 (tiamina); efeito diurético pode causar hipocalemia. Em insuficiência renal crônica com medicamentos que alteram potássio, risco de hipercalemia. Consultar médico se surgirem febre, disúria, espasmo ou hematúria durante o uso. Manter ingestão adequada de líquidos (exceto no chá medicinal/infuso).",
+      "interacoesMedicamentosas": "Pode inibir a enzima CYP1A2, interferindo com fármacos metabolizados por essa via.",
+      "posologia": "Oral, adulto. Infusão: 2-3 g em 250 mL água fervente. Droga vegetal rasurada: 570 mg. Tintura (1:4-5, hidroetanólica 31,5%): 20 gotas. Tintura (1:5, hidroetanólica 96%): 30-40 gotas. Extrato seco (4-7:1, aquoso): 185 mg. Extrato seco (7,5-10,5:1, hidroetanólico 70%): 200-225 mg. Dose diária: 3 doses (máx. 4).",
+      "viaAdministracao": ["oral"],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "MFFB",
+          "edicao": "1ª ed. 2016",
+          "url": "https://www.gov.br/anvisa/en/pharmacopeia/arquivos/memento-fitoterapico.pdf",
+          "dataConsulta": "2026-07-11"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado para menores de 12 anos, grávidas e lactantes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "familiaBotanica": "Equisetaceae",
+        "parteUsada": "Folhas e partes aéreas",
+        "formaFarmaceutica": ["tintura", "cápsula", "comprimido (extrato seco)", "chá medicinal (infusão)"],
+        "efeitosAdversos": "Bloqueio atrioventricular transitório, distúrbios gastrointestinais, reações alérgicas.",
+        "tempoUtilizacao": "Utilizar por 2 a 4 semanas. Se sintomas persistirem após 1 semana, consultar médico.",
+        "superdosagem": "Não há dados na literatura consultada; observar o paciente.",
+        "prescricaoObrigatoria": false,
+        "principaisClassesQuimicas": "Monoterpenoides, dinorditerpenoides, dinorsesquiterpenoides, cumarinas, alcaloides, mucilagens, minerais, flavonoides, saponinas."
+      },
+      "searchText": "equisetum arvense cavalinha diuretico"
+    }
+  ]
+}
