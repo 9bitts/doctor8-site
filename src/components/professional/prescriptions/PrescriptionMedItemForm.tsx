@@ -38,6 +38,7 @@ interface PrescriptionMedItemFormProps {
   controlInfo: ControlInfo;
   onUpdate: (index: number, field: keyof PrescriptionMedItem, value: string) => void;
   onPhytoProductSelect?: (index: number, productId: string) => void;
+  onOpenPhytoSearch?: (index: number) => void;
   onFloralProductSelect?: (index: number, productId: string) => void;
   onRemove: (index: number) => void;
   t: (key: string) => string;
@@ -60,6 +61,7 @@ export default function PrescriptionMedItemForm({
   kindLabel,
   controlInfo: ci,
   onUpdate,
+  onOpenPhytoSearch,
   onFloralProductSelect,
   onRemove,
   t,
@@ -82,6 +84,15 @@ export default function PrescriptionMedItemForm({
               <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-50 text-accent-700 border border-accent-200">
                 {kindLabel}
               </span>
+            )}
+            {kind === "phytotherapy" && onOpenPhytoSearch && (
+              <button
+                type="button"
+                onClick={() => onOpenPhytoSearch(index)}
+                className="inline-flex text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+              >
+                {t("rx.phytoBrowseCatalog")}
+              </button>
             )}
             <label
               className={`text-xs font-medium block ${
