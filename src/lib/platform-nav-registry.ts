@@ -4,6 +4,8 @@
  * When adding a menu item here, the support assistant learns the route automatically.
  */
 
+import { VITAL8_ERP_URL } from "./vital8-erp";
+
 export type NavIconKey =
   | "LayoutDashboard"
   | "FileText"
@@ -49,6 +51,7 @@ export type PlatformNavEntry = {
   labelKey: string;
   roles: string[];
   iconKey: NavIconKey;
+  external?: boolean;
 };
 
 export type PlatformNavGroup = {
@@ -522,6 +525,7 @@ export const PLATFORM_NAV_GROUPS_BY_PORTAL: Partial<Record<PlatformPortalId, Pla
 
 export const ORGANIZATION_NAV: PlatformNavEntry[] = [
   { href: "/organization", labelKey: "nav.dashboard", roles: ["ORGANIZATION"], iconKey: "LayoutDashboard" },
+  { href: VITAL8_ERP_URL, labelKey: "nav.vital8erp", roles: ["ORGANIZATION"], iconKey: "BarChart3", external: true },
   { href: "/organization/appointments", labelKey: "nav.appointments", roles: ["ORGANIZATION"], iconKey: "Calendar" },
   { href: "/organization/patients", labelKey: "nav.patients", roles: ["ORGANIZATION"], iconKey: "Users" },
   { href: "/organization/financeiro", labelKey: "nav.financeiro", roles: ["ORGANIZATION"], iconKey: "TrendingUp" },
@@ -540,6 +544,7 @@ export const ORGANIZATION_NAV: PlatformNavEntry[] = [
 /** Employer B2B portal — NR-1 compliance + EAP */
 export const EMPLOYER_NAV: PlatformNavEntry[] = [
   { href: "/empresas/painel", labelKey: "nav.dashboard", roles: ["EMPLOYER"], iconKey: "LayoutDashboard" },
+  { href: VITAL8_ERP_URL, labelKey: "nav.vital8erp", roles: ["EMPLOYER"], iconKey: "BarChart3", external: true },
   { href: "/empresas/nr1", labelKey: "emp.nav.nr1", roles: ["EMPLOYER"], iconKey: "Shield" },
   { href: "/empresas/aep", labelKey: "emp.nav.aep", roles: ["EMPLOYER"], iconKey: "ClipboardList" },
   { href: "/empresas/plano-acao", labelKey: "emp.nav.actionPlan", roles: ["EMPLOYER"], iconKey: "FileSpreadsheet" },
@@ -565,6 +570,7 @@ export const OCCUPATIONAL_PHYSICIAN_NAV: PlatformNavEntry[] = [
 /** B2B pharmacy store (drogaria) — price network portal */
 export const PHARMACY_STORE_NAV: PlatformNavEntry[] = [
   { href: "/farmacias/painel", labelKey: "nav.dashboard", roles: ["PHARMACY_STORE"], iconKey: "LayoutDashboard" },
+  { href: VITAL8_ERP_URL, labelKey: "nav.vital8erp", roles: ["PHARMACY_STORE"], iconKey: "BarChart3", external: true },
   { href: "/farmacias/estoque", labelKey: "pharm.nav.inventory", roles: ["PHARMACY_STORE"], iconKey: "Package" },
   { href: "/farmacias/pedidos", labelKey: "pharm.nav.orders", roles: ["PHARMACY_STORE"], iconKey: "ShoppingBag" },
   { href: "/farmacias/validar", labelKey: "pharm.nav.validate", roles: ["PHARMACY_STORE"], iconKey: "QrCode" },
@@ -575,6 +581,7 @@ export const PHARMACY_STORE_NAV: PlatformNavEntry[] = [
 /** B2B laboratory — exam price network portal */
 export const LABORATORY_NAV: PlatformNavEntry[] = [
   { href: "/laboratorios/painel", labelKey: "nav.dashboard", roles: ["LABORATORY"], iconKey: "LayoutDashboard" },
+  { href: VITAL8_ERP_URL, labelKey: "nav.vital8erp", roles: ["LABORATORY"], iconKey: "BarChart3", external: true },
   { href: "/laboratorios/exames", labelKey: "lab.nav.exams", roles: ["LABORATORY"], iconKey: "FlaskConical" },
   { href: "/laboratorios/configuracoes", labelKey: "nav.account", roles: ["LABORATORY"], iconKey: "Settings" },
 ];

@@ -55,6 +55,9 @@ import LegalAcceptanceGate from "@/components/compliance/LegalAcceptanceGate";
 import VoiceAssistantPromoBanner from "@/components/voice-assistant/VoiceAssistantPromoBanner";
 import VoiceAssistantShell from "@/components/voice-assistant/VoiceAssistantShell";
 import VenezuelaPatientGuideBanner from "@/components/patient/VenezuelaPatientGuideBanner";
+import Vital8ErpPromoBanner from "@/components/vital8/Vital8ErpPromoBanner";
+import { isVital8B2BRole } from "@/lib/vital8-erp";
+import { isExternalHref } from "@/lib/notification-links";
 import { resolveVoicePortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
 import { isValidIanaTimeZone } from "@/lib/timezone";
 import { hasAnyNaturalMedicinePractice } from "@/lib/natural-medicine/config";
@@ -372,23 +375,42 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   }
 
   function renderNavLink(item: NavItem, badge?: number, accentRed = false) {
-    const isActive = isNavItemActive(item.href);
+    const isExternal = item.external === true || isExternalHref(item.href);
+    const isActive = !isExternal && isNavItemActive(item.href);
     const redActive = "bg-red-500/10 text-red-400 border border-red-500/20";
     const redIdle = "text-red-500 hover:text-red-400 hover:bg-red-500/10";
     const dentistActive = "bg-fuchsia-600 text-white border border-fuchsia-400/70 shadow-md shadow-fuchsia-950/40 [&_svg]:text-white";
     const dentistIdle = "text-slate-300 hover:text-white hover:bg-fuchsia-500/15";
+    const linkClass = `
+          flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+          ${isActive
+            ? (accentRed ? redActive : isDentist ? dentistActive : navActive)
+            : (accentRed ? redIdle : isDentist ? dentistIdle : "text-slate-400 hover:text-white hover:bg-slate-800")}
+        `;
+
+    if (isExternal) {
+      return (
+        <a
+          key={item.href}
+          href={item.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setSidebarOpen(false)}
+          className={linkClass}
+        >
+          {item.icon}
+          <span className="flex-1 min-w-0 truncate">{t(item.labelKey)}</span>
+        </a>
+      );
+    }
+
     return (
       <Link
         key={item.href}
         href={item.href}
         scroll={false}
         onClick={() => setSidebarOpen(false)}
-        className={`
-          flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-          ${isActive
-            ? (accentRed ? redActive : isDentist ? dentistActive : navActive)
-            : (accentRed ? redIdle : isDentist ? dentistIdle : "text-slate-400 hover:text-white hover:bg-slate-800")}
-        `}
+        className={linkClass}
       >
         {item.icon}
         <span className="flex-1 min-w-0 truncate">{t(item.labelKey)}</span>
@@ -606,6 +628,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         {showVoiceAssistant && voicePortalId && userId && (
           <VoiceAssistantPromoBanner userId={userId} />
+        )}
+
+        {userId && isVital8B2BRole(role) && (
+          <Vital8ErpPromoBanner userId={userId} role={role} />
         )}
 
         <main className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
