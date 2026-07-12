@@ -4,6 +4,7 @@
  * When adding a menu item here, the support assistant learns the route automatically.
  */
 
+import { REDE_EIGHT_URL } from "./rede-eight";
 import { VITAL8_ERP_URL } from "./vital8-erp";
 
 export type NavIconKey =
@@ -58,6 +59,15 @@ export type PlatformNavGroup = {
   labelKey: string;
   items: PlatformNavEntry[];
 };
+
+function providerExternalNavItem(
+  href: string,
+  labelKey: string,
+  role: string,
+  iconKey: NavIconKey,
+): PlatformNavEntry {
+  return { href, labelKey, roles: [role], iconKey, external: true };
+}
 
 export type PlatformPortalId =
   | "PATIENT"
@@ -206,6 +216,8 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/professional/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
       { href: "/professional/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
       { href: "/professional/buying-club", labelKey: "nav.buyingClub", roles: ["PROFESSIONAL"], iconKey: "ShoppingBag" },
+      providerExternalNavItem(REDE_EIGHT_URL, "nav.redeEight", "PROFESSIONAL", "Radio"),
+      providerExternalNavItem(VITAL8_ERP_URL, "nav.vital8erp", "PROFESSIONAL", "BarChart3"),
       { href: "/professional/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
     ],
   },
@@ -256,6 +268,8 @@ export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/psychologist/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
       { href: "/psychologist/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
       { href: "/psychologist/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
+      providerExternalNavItem(REDE_EIGHT_URL, "nav.redeEight", "PROFESSIONAL", "Radio"),
+      providerExternalNavItem(VITAL8_ERP_URL, "nav.vital8erp", "PROFESSIONAL", "BarChart3"),
       { href: "/psychologist/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
     ],
   },
@@ -296,6 +310,8 @@ export const NUTRITIONIST_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/nutricionista/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
       { href: "/nutricionista/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
+      providerExternalNavItem(REDE_EIGHT_URL, "nav.redeEight", "PROFESSIONAL", "Radio"),
+      providerExternalNavItem(VITAL8_ERP_URL, "nav.vital8erp", "PROFESSIONAL", "BarChart3"),
       { href: "/nutricionista/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
     ],
   },
@@ -339,6 +355,8 @@ export const NURSE_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/enfermeiro/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
       { href: "/enfermeiro/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
+      providerExternalNavItem(REDE_EIGHT_URL, "nav.redeEight", "PROFESSIONAL", "Radio"),
+      providerExternalNavItem(VITAL8_ERP_URL, "nav.vital8erp", "PROFESSIONAL", "BarChart3"),
       { href: "/enfermeiro/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
     ],
   },
@@ -382,6 +400,8 @@ export const PHARMACIST_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/farmaceutico/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
       { href: "/farmaceutico/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
+      providerExternalNavItem(REDE_EIGHT_URL, "nav.redeEight", "PROFESSIONAL", "Radio"),
+      providerExternalNavItem(VITAL8_ERP_URL, "nav.vital8erp", "PROFESSIONAL", "BarChart3"),
       { href: "/farmaceutico/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
     ],
   },
@@ -429,6 +449,8 @@ export const DENTIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/odontologo/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
       { href: "/odontologo/settings", labelKey: "nav.myProfile", roles: ["PROFESSIONAL"], iconKey: "UserCog" },
       { href: "/odontologo/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
+      providerExternalNavItem(REDE_EIGHT_URL, "nav.redeEight", "PROFESSIONAL", "Radio"),
+      providerExternalNavItem(VITAL8_ERP_URL, "nav.vital8erp", "PROFESSIONAL", "BarChart3"),
       { href: "/odontologo/account", labelKey: "nav.account", roles: ["PROFESSIONAL"], iconKey: "Settings" },
     ],
   },
@@ -467,6 +489,8 @@ export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/psychoanalyst/financeiro", labelKey: "nav.financeiro", roles: ["PSYCHOANALYST"], iconKey: "TrendingUp" },
       { href: "/psychoanalyst/settings", labelKey: "nav.myProfile", roles: ["PSYCHOANALYST"], iconKey: "UserCog" },
       { href: "/psychoanalyst/doctor-connection", labelKey: "nav.doctorConnection", roles: ["PSYCHOANALYST"], iconKey: "Sparkles" },
+      providerExternalNavItem(REDE_EIGHT_URL, "nav.redeEight", "PSYCHOANALYST", "Radio"),
+      providerExternalNavItem(VITAL8_ERP_URL, "nav.vital8erp", "PSYCHOANALYST", "BarChart3"),
       { href: "/psychoanalyst/account", labelKey: "nav.account", roles: ["PSYCHOANALYST"], iconKey: "Settings" },
     ],
   },
@@ -505,6 +529,8 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/integrative-therapist/financeiro", labelKey: "nav.financeiro", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "TrendingUp" },
       { href: "/integrative-therapist/settings", labelKey: "nav.myProfile", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "UserCog" },
+      providerExternalNavItem(REDE_EIGHT_URL, "nav.redeEight", "INTEGRATIVE_THERAPIST", "Radio"),
+      providerExternalNavItem(VITAL8_ERP_URL, "nav.vital8erp", "INTEGRATIVE_THERAPIST", "BarChart3"),
     ],
   },
 ];

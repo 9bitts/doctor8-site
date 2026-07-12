@@ -1,11 +1,10 @@
 import Link from "next/link";
-
-const EIGHT_BETA_URL = "https://doctor8.com.br/";
+import { REDE_EIGHT_URL } from "@/lib/rede-eight";
 
 export default function EightBetaLink() {
   return (
     <Link
-      href={EIGHT_BETA_URL}
+      href={REDE_EIGHT_URL}
       target="_blank"
       rel="noopener noreferrer"
       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition"
