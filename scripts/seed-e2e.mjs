@@ -76,6 +76,13 @@ const DEFAULT_NUTRITIONIST = {
   lastName: "Nutritionist",
 };
 
+const DEFAULT_DENTIST = {
+  email: process.env.E2E_DENTIST_EMAIL || "e2e-dentist@doctor8.test",
+  password: process.env.E2E_DENTIST_PASSWORD || "TestPassword1!",
+  firstName: "E2E",
+  lastName: "Dentist",
+};
+
 const DEFAULT_ADMIN = {
   email: process.env.E2E_ADMIN_EMAIL || "e2e-admin@doctor8.test",
   password: process.env.E2E_ADMIN_PASSWORD || "TestPassword1!",
@@ -399,6 +406,79 @@ async function seedNutritionist({ email, password, firstName, lastName }) {
   console.log(`[seed-e2e] Nutritionist ${normalized} ready (verified)`);
 }
 
+async function seedDentist({ email, password, firstName, lastName }) {
+  const passwordHash = await bcrypt.hash(password, 12);
+  const normalized = email.toLowerCase();
+
+  const user = await prisma.user.upsert({
+    where: { email: normalized },
+    create: {
+      email: normalized,
+      passwordHash,
+      role: UserRole.PROFESSIONAL,
+      region: "BR",
+      language: "pt",
+      emailVerified: new Date(),
+    },
+    update: {
+      passwordHash,
+      role: UserRole.PROFESSIONAL,
+      region: "BR",
+      emailVerified: new Date(),
+      deletedAt: null,
+      lockedUntil: null,
+      failedLoginAttempts: 0,
+    },
+  });
+
+  await prisma.professionalProfile.upsert({
+    where: { userId: user.id },
+    create: {
+      userId: user.id,
+      firstName,
+      lastName,
+      licenseNumber: "54321",
+      licenseState: "SP",
+      licenseCountry: "BR",
+      specialty: "Dentist (General)",
+      consultPrice: 0,
+      verified: true,
+      verifiedAt: new Date(),
+      verifiedBy: "seed-e2e",
+    },
+    update: {
+      firstName,
+      lastName,
+      specialty: "Dentist (General)",
+      licenseNumber: "54321",
+      licenseState: "SP",
+      verified: true,
+      verifiedAt: new Date(),
+      verifiedBy: "seed-e2e",
+    },
+  });
+
+  for (const type of [ConsentType.TERMS_OF_SERVICE, ConsentType.PRIVACY_POLICY]) {
+    const existing = await prisma.consent.findFirst({
+      where: { userId: user.id, type },
+    });
+    if (!existing) {
+      await prisma.consent.create({
+        data: {
+          userId: user.id,
+          type,
+          version: "1.0",
+          granted: true,
+          ipAddress: "127.0.0.1",
+          userAgent: "seed-e2e",
+        },
+      });
+    }
+  }
+
+  console.log(`[seed-e2e] Dentist ${normalized} ready (verified)`);
+}
+
 async function seedAdmin({ email, password, firstName, lastName }) {
   const passwordHash = await bcrypt.hash(password, 12);
   const normalized = email.toLowerCase();
@@ -649,6 +729,50 @@ async function seedNutritionistClinicalFixtures() {
   console.log(`[seed-e2e] Nutritionist clinical fixtures ready (chart ${chart.id})`);
 }
 
+async function seedDentistClinicalFixtures() {
+  const patientUser = await prisma.user.findUnique({
+    where: { email: DEFAULT_PATIENT.email.toLowerCase() },
+    select: { id: true },
+  });
+  const dentistUser = await prisma.user.findUnique({
+    where: { email: DEFAULT_DENTIST.email.toLowerCase() },
+    select: { id: true },
+  });
+  const dentistProfile = await prisma.professionalProfile.findUnique({
+    where: { userId: dentistUser?.id },
+    select: { id: true },
+  });
+  if (!patientUser || !dentistProfile) {
+    throw new Error("E2E dentist clinical fixtures — seed patient/dentist first");
+  }
+
+  const record = await prisma.patientRecord.findFirst({
+    where: { linkedUserId: patientUser.id, professionalId: dentistProfile.id },
+    select: { id: true },
+  });
+
+  const chart = record
+    ? await prisma.patientRecord.update({
+        where: { id: record.id },
+        data: {
+          firstName: encrypt("E2E"),
+          lastName: encrypt("DentistPatient"),
+          email: DEFAULT_PATIENT.email.toLowerCase(),
+        },
+      })
+    : await prisma.patientRecord.create({
+        data: {
+          professionalId: dentistProfile.id,
+          firstName: encrypt("E2E"),
+          lastName: encrypt("DentistPatient"),
+          email: DEFAULT_PATIENT.email.toLowerCase(),
+          linkedUserId: patientUser.id,
+        },
+      });
+
+  console.log(`[seed-e2e] Dentist clinical fixtures ready (chart ${chart.id})`);
+}
+
 const TELEMEDICINE_TCLE_VERSION = "1.2";
 const E2E_MEETING_ROOM = "e2e-hum-room";
 const E2E_MEETING_URL = "https://doctor8.daily.co/e2e-hum-room";
@@ -843,10 +967,12 @@ async function main() {
   await seedProfessional(DEFAULT_PROFESSIONAL);
   await seedPsychologist(DEFAULT_PSYCHOLOGIST);
   await seedNutritionist(DEFAULT_NUTRITIONIST);
+  await seedDentist(DEFAULT_DENTIST);
   await seedAdmin(DEFAULT_ADMIN);
   await seedClinicalFixtures();
   await seedPsychologistClinicalFixtures();
   await seedNutritionistClinicalFixtures();
+  await seedDentistClinicalFixtures();
   await seedHumanitarianVideoFixtures();
   await seedHumanitarianQueueFixtures();
 }

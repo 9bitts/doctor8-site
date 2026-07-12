@@ -108,6 +108,17 @@ export function e2eNutritionistCredentials(): { email: string; password: string 
   return { email, password };
 }
 
+export function e2eDentistCredentials(): { email: string; password: string } | null {
+  const email =
+    process.env.E2E_DENTIST_EMAIL?.trim() ||
+    (process.env.CI ? "e2e-dentist@doctor8.test" : undefined);
+  const password =
+    process.env.E2E_DENTIST_PASSWORD?.trim() ||
+    (process.env.CI ? "TestPassword1!" : undefined);
+  if (!email || !password) return null;
+  return { email, password };
+}
+
 export function e2eAdminCredentials(): { email: string; password: string } | null {
   const email =
     process.env.E2E_ADMIN_EMAIL?.trim() ||
@@ -211,6 +222,15 @@ export async function loginPsychologist(
 }
 
 export async function loginNutritionist(
+  page: Page,
+  email: string,
+  password: string,
+  callbackUrl?: string,
+): Promise<void> {
+  await loginAtPortal(page, LOGIN, email, password, callbackUrl);
+}
+
+export async function loginDentist(
   page: Page,
   email: string,
   password: string,
