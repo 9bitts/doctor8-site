@@ -60,7 +60,11 @@ jobs:
         run: npm run test:security-libs && npm run verify:api-roles
 
       - name: Sync database schema
-        run: npx prisma migrate deploy
+        # Fresh CI DB has no baseline migration — db push matches schema.prisma (prod uses migrate deploy).
+        run: npx prisma db push --accept-data-loss
+
+      - name: Pharmacy dispense guard checks
+        run: npm run test:pharmacy-dispense-guards
 
       - name: Seed E2E fixtures
         run: node scripts/seed-e2e.mjs

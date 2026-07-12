@@ -27,6 +27,7 @@ Lista viva de melhorias **pendentes**. Lotes pequenos, baixo risco ao fluxo huma
 | Item | Notas |
 |------|--------|
 | Cron backup | Agendar POST `/api/cron/reminders` e `/api/cron/post-consult-notes` com header `x-cron-secret` (Railway Cron ou cron-job.org) |
+| E2E CI | OK — workflow usa `prisma db push` em DB fresco (sem baseline migration) |
 | Backfill busca | `npm run backfill:search-text` no Railway após deploy das migrations de search |
 | Admins com login | Rodar `node scripts/fix-admin-users.mjs --promote` no Railway se ainda não feito |
 | Contas profissionais Acura | Promover/verificar e-mails via admin ou scripts one-off (ex. psicólogo `contato@acurabrasil.org`) |
