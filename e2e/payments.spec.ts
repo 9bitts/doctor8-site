@@ -48,7 +48,7 @@ test.describe("payments API", () => {
     test.skip(!e2ePatientCredentials(), "Set E2E_PATIENT_EMAIL and E2E_PATIENT_PASSWORD");
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const res = await apiGet(page, "/api/admin/payments");
     expect(res.status).toBe(403);
@@ -65,7 +65,7 @@ test.describe("admin integrations", () => {
     test.skip(!e2ePatientCredentials(), "Set E2E_PATIENT_EMAIL and E2E_PATIENT_PASSWORD");
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const res = await apiGet(page, "/api/admin/integrations");
     expect(res.status).toBe(403);
@@ -79,7 +79,7 @@ test.describe("admin integrations", () => {
     test("admin can open integrations page", async ({ page }) => {
       const creds = e2eAdminCredentials()!;
       await loginWithCredentials(page, creds.email, creds.password, "/admin/integrations");
-      await waitForAuthenticatedSession(page);
+      await waitForAuthenticatedSession(page, creds.email);
       await page.waitForURL(/\/admin\/integrations/, { timeout: 30_000 });
       await expect(page.locator("body")).toBeVisible();
     });
@@ -87,7 +87,7 @@ test.describe("admin integrations", () => {
     test("admin integrations API returns rows", async ({ page }) => {
       const creds = e2eAdminCredentials()!;
       await loginWithCredentials(page, creds.email, creds.password);
-      await waitForAuthenticatedSession(page);
+      await waitForAuthenticatedSession(page, creds.email);
 
       const res = await apiGet(page, "/api/admin/integrations");
       expect(res.ok).toBeTruthy();

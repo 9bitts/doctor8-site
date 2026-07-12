@@ -19,7 +19,7 @@ test.describe("psychologist portal", () => {
   test("psicologo login lands on /psychologist dashboard", async ({ page }) => {
     const creds = e2ePsychologistCredentials()!;
     await loginPsychologist(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     await page.waitForURL(/\/(psychologist|professional|onboarding)/, { timeout: 30_000 });
     expect(page.url()).toMatch(/\/(psychologist|professional|onboarding)/);
   });
@@ -27,7 +27,7 @@ test.describe("psychologist portal", () => {
   test("volunteer API exposes only psicologo pool for psychologist", async ({ page }) => {
     const creds = e2ePsychologistCredentials()!;
     await loginPsychologist(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const res = await apiGet(
       page,
@@ -42,7 +42,7 @@ test.describe("psychologist portal", () => {
   test("patients list uses psychologist portal paths", async ({ page }) => {
     const creds = e2ePsychologistCredentials()!;
     await loginPsychologist(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     await page.goto("/psychologist/patients");
     await expect(page).toHaveURL(/\/psychologist\/patients/);
@@ -56,7 +56,7 @@ test.describe("psychologist portal", () => {
   test("session includes psychology specialty for role home", async ({ page }) => {
     const creds = e2ePsychologistCredentials()!;
     await loginPsychologist(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const session = (await apiGet(page, "/api/auth/session").then((r) => r.json())) as {
       user?: { role?: string; professionalSpecialty?: string };

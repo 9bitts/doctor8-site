@@ -1,5 +1,16 @@
 import type { Page } from "@playwright/test";
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+
+function resolveApiUrl(path: string): string {
+  return path.startsWith("http") ? path : `${baseURL}${path}`;
+}
+
+async function cookieHeaderForPage(page: Page): Promise<string> {
+  const cookies = await page.context().cookies();
+  return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+}
+
 // Login is unified into a single /login screen. All former per-role portal
 // constants now point to /login so existing specs keep compiling.
 export const LOGIN = "/login";
@@ -202,54 +213,52 @@ export async function waitForAuthenticatedSession(
   );
 }
 
-/** Browser-context fetch — shares session cookies reliably in Playwright CI. */
+/** Browser-context API calls — attach context cookies explicitly for middleware auth in CI. */
 export async function apiGet(
   page: Page,
   path: string,
 ): Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }> {
-  const result = await page.evaluate(async (url) => {
-    const res = await fetch(url, { credentials: "include" });
-    let data: unknown = null;
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
-    return { ok: res.ok, status: res.status, data };
-  }, path);
+  const url = resolveApiUrl(path);
+  const cookie = await cookieHeaderForPage(page);
+  const response = await page.request.get(url, {
+    headers: cookie ? { Cookie: cookie } : {},
+  });
+  let data: unknown = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
   return {
-    ok: result.ok,
-    status: result.status,
-    json: async () => result.data,
+    ok: response.ok(),
+    status: response.status(),
+    json: async () => data,
   };
 }
 
 export async function apiPost(
   page: Page,
   path: string,
-  data?: unknown,
+  body?: unknown,
 ): Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }> {
-  const result = await page.evaluate(
-    async ({ url, body }) => {
-      const res = await fetch(url, {
-        method: "POST",
-        credentials: "include",
-        headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      });
-      let parsed: unknown = null;
-      try {
-        parsed = await res.json();
-      } catch {
-        parsed = null;
-      }
-      return { ok: res.ok, status: res.status, data: parsed };
+  const url = resolveApiUrl(path);
+  const cookie = await cookieHeaderForPage(page);
+  const response = await page.request.post(url, {
+    headers: {
+      ...(cookie ? { Cookie: cookie } : {}),
+      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     },
-    { url: path, body: data },
-  );
+    data: body,
+  });
+  let data: unknown = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
   return {
-    ok: result.ok,
-    status: result.status,
-    json: async () => result.data,
+    ok: response.ok(),
+    status: response.status(),
+    json: async () => data,
   };
 }
