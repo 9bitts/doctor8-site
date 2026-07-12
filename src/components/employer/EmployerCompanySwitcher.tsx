@@ -47,7 +47,7 @@ export default function EmployerCompanySwitcher() {
   }
 
   return (
-    <div className="relative flex items-center mb-4 px-1">
+    <div className="relative flex items-center mb-4 px-1" data-employer-company-switcher>
       <Building2 size={16} className="text-indigo-500 shrink-0 mr-1.5" />
       <select
         value={selected}

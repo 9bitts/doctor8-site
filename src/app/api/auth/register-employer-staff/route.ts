@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { UserRole, ConsentType } from "@prisma/client";
+import { UserRole } from "@prisma/client";
+import { createRegisterConsents } from "@/lib/consent/register-consents";
 import { parseRegistrationPhone } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
 import { registerAckResponse } from "@/lib/register-anti-enum";
@@ -29,19 +30,27 @@ const registerStaffSchema = z.object({
   phoneNational: z.string().min(6).max(20),
   acceptedTerms: z.literal(true),
   acceptedPrivacy: z.literal(true),
-  acceptedGdpr: z.literal(true),
+  acceptedLgpd: z.literal(true),
 });
 
+/** @deprecated Use POST /api/auth/validate-employer-invite — minimized response, no PII */
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
   if (!token) {
     return NextResponse.json({ error: "Token required" }, { status: 400 });
   }
 
+  const ip = clientIp(req);
+  const rate = await checkRateLimits([
+    { namespace: "register-employer-staff-get:ip", key: ip, ...RATE_LIMITS.authIp },
+    { namespace: "register-employer-staff-get:token", key: token, ...RATE_LIMITS.authIp },
+  ]);
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
   const invite = await db.employerInvite.findUnique({
     where: { token },
     include: {
-      employerCompany: { select: { nomeFantasia: true, razaoSocial: true } },
+      employerCompany: { select: { nomeFantasia: true } },
     },
   });
 
@@ -50,7 +59,6 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    email: invite.email,
     role: invite.role,
     companyName: invite.employerCompany.nomeFantasia,
     expiresAt: invite.expiresAt.toISOString(),
@@ -128,12 +136,10 @@ export async function POST(req: NextRequest) {
         data: { acceptedAt: new Date() },
       });
 
-      await tx.consent.createMany({
-        data: [
-          { userId: newUser.id, type: ConsentType.TERMS_OF_SERVICE, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.PRIVACY_POLICY, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.GDPR_CONSENT, version: "1.0", granted: true, ipAddress: ip, userAgent },
-        ],
+      await createRegisterConsents(tx, newUser.id, ip, userAgent, {
+        acceptedTerms: data.data.acceptedTerms,
+        acceptedPrivacy: data.data.acceptedPrivacy,
+        acceptedLgpd: data.data.acceptedLgpd,
       });
 
       return newUser;

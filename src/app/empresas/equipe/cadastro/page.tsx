@@ -26,7 +26,7 @@ export default function RegisterEmployerStaffPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [acceptedGdpr, setAcceptedGdpr] = useState(false);
+  const [acceptedLgpd, setAcceptedLgpd] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -34,7 +34,11 @@ export default function RegisterEmployerStaffPage() {
       setLoading(false);
       return;
     }
-    fetch(`/api/auth/register-employer-staff?token=${encodeURIComponent(token)}`)
+    fetch("/api/auth/validate-employer-invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "staff", token }),
+    })
       .then((r) => r.json())
       .then((data) => { if (data.email) setInvite(data); })
       .finally(() => setLoading(false));
@@ -42,7 +46,7 @@ export default function RegisterEmployerStaffPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!acceptedTerms || !acceptedPrivacy || !acceptedGdpr) return;
+    if (!acceptedTerms || !acceptedPrivacy || !acceptedLgpd) return;
     setSaving(true);
     setError("");
     try {
@@ -58,7 +62,7 @@ export default function RegisterEmployerStaffPage() {
           password,
           acceptedTerms: true,
           acceptedPrivacy: true,
-          acceptedGdpr: true,
+          acceptedLgpd: true,
         }),
       });
       const data = await res.json();
@@ -142,7 +146,7 @@ export default function RegisterEmployerStaffPage() {
               </button>
             </div>
             <label className="flex items-start gap-2 text-xs text-slate-600">
-              <input type="checkbox" checked={acceptedTerms && acceptedPrivacy && acceptedGdpr} onChange={(e) => { setAcceptedTerms(e.target.checked); setAcceptedPrivacy(e.target.checked); setAcceptedGdpr(e.target.checked); }} className="mt-0.5" />
+              <input type="checkbox" checked={acceptedTerms && acceptedPrivacy && acceptedLgpd} onChange={(e) => { setAcceptedTerms(e.target.checked); setAcceptedPrivacy(e.target.checked); setAcceptedLgpd(e.target.checked); }} className="mt-0.5" />
               Aceito os termos de uso, política de privacidade e consentimento LGPD.
             </label>
             {error && <p className="text-sm text-red-600">{error}</p>}
