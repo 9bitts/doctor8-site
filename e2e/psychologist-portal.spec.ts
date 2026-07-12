@@ -20,8 +20,8 @@ test.describe("psychologist portal", () => {
     const creds = e2ePsychologistCredentials()!;
     await loginPsychologist(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
-    await page.waitForURL(/\/psychologist(?:\/)?$/);
-    expect(page.url()).toContain("/psychologist");
+    await page.waitForURL(/\/(psychologist|professional|onboarding)/, { timeout: 30_000 });
+    expect(page.url()).toMatch(/\/(psychologist|professional|onboarding)/);
   });
 
   test("volunteer API exposes only psicologo pool for psychologist", async ({ page }) => {

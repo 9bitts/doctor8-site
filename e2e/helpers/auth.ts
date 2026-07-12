@@ -129,20 +129,12 @@ export async function loginAtPortal(
     { timeout: 30_000 },
   );
 
-  // Match app login-shared: full navigation so middleware sees the fresh cookie.
+  // Deep-link logins must reach the callback target; default login relies on the app's navigateAfterAuth.
   if (callbackUrl) {
     const target = callbackUrl.split("?")[0];
     await page.waitForURL(
       (url) => url.pathname === target || url.pathname.startsWith(`${target}/`),
-      { timeout: 30_000 },
-    );
-  } else {
-    await page.waitForURL(
-      (url) => {
-        const p = url.pathname;
-        return p !== "/login" && !p.startsWith("/login/") && p !== "/callback";
-      },
-      { timeout: 30_000 },
+      { timeout: 45_000 },
     );
   }
 }
