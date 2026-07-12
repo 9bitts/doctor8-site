@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { decrypt } from "@/lib/encryption";
 import { isPharmacistSpecialty } from "@/lib/profession-label";
+
+function safeDecrypt(v: string | null | undefined): string {
+  if (!v) return "";
+  try {
+    return decrypt(v);
+  } catch {
+    return v ?? "";
+  }
+}
 
 export async function GET() {
   const session = await auth();
@@ -64,7 +74,7 @@ export async function GET() {
       tokenStatus: t.status,
       prescriptionId: t.prescriptionId,
       patientName: t.prescription.document?.patient
-        ? `${t.prescription.document.patient.firstName} ${t.prescription.document.patient.lastName}`.trim()
+        ? `${safeDecrypt(t.prescription.document.patient.firstName)} ${safeDecrypt(t.prescription.document.patient.lastName)}`.trim()
         : "—",
       order: t.pharmacyOrder,
       validateUrl: `/farmacias/validar/${t.token}`,

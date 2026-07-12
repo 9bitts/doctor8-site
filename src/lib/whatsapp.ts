@@ -313,6 +313,88 @@ export async function sendClinicalDocumentWhatsApp(opts: {
   return { ok: true, messageId };
 }
 
+/** Pharmacy store alert when a marketplace order is paid (utility template). */
+export async function sendPharmacyOrderPaidStoreWhatsApp(opts: {
+  toPhone: string;
+  storeName: string;
+  patientName: string;
+  totalFormatted: string;
+  fulfillmentLabel: string;
+  ordersUrl: string;
+  language?: Lang;
+}): Promise<{ ok: boolean; messageId?: string; skipped?: boolean; error?: string }> {
+  const templateName = process.env.WHATSAPP_PHARMACY_ORDER_TEMPLATE?.trim();
+  if (!templateName || !isWhatsAppConfigured()) {
+    return { ok: false, skipped: true };
+  }
+
+  const lang = opts.language ?? "pt";
+  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const templateLang = whatsappTemplateLocale(lang);
+
+  const to = normalizeWhatsAppPhone(opts.toPhone);
+  if (!to) return { ok: false, error: "Invalid phone number" };
+
+  const res = await fetch(
+    `https://graph.facebook.com/${WHATSAPP_GRAPH_VERSION}/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: templateLang },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                { type: "text", text: opts.storeName.slice(0, 256) },
+                { type: "text", text: opts.patientName.slice(0, 256) },
+                { type: "text", text: opts.totalFormatted.slice(0, 256) },
+                { type: "text", text: opts.fulfillmentLabel.slice(0, 256) },
+                { type: "text", text: opts.ordersUrl.slice(0, 256) },
+              ],
+            },
+          ],
+        },
+      }),
+    },
+  );
+
+  const data = (await res.json().catch(() => ({}))) as {
+    messages?: { id: string }[];
+    error?: { message?: string };
+  };
+
+  if (!res.ok) {
+    console.error("[WHATSAPP] Pharmacy order send failed:", data.error?.message || `HTTP ${res.status}`);
+    await logWhatsAppDelivery({
+      template: templateName,
+      phone: to,
+      status: "failed",
+      detail: data?.error?.message || `HTTP ${res.status}`,
+    });
+    return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+  }
+
+  const messageId = data.messages?.[0]?.id;
+  await logWhatsAppDelivery({
+    messageId,
+    template: templateName,
+    phone: to,
+    status: "sent",
+  });
+  return { ok: true, messageId };
+}
+
 export function buildClinicalDocumentWaMeUrl(
   phone: string,
   message: string,

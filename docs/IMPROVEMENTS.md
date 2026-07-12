@@ -8,10 +8,17 @@ Lista viva de melhorias **pendentes**. Lotes pequenos, baixo risco ao fluxo huma
 
 | # | Item | Prioridade | O que falta |
 |---|------|------------|-------------|
-| M2 | WhatsApp Business API (templates Meta) | **Alta** | Produção configurada no código (phone ID `1160816890453235`, Graph v25.0). Falta: `WHATSAPP_ACCESS_TOKEN` permanente no Railway + `WHATSAPP_WEBHOOK_VERIFY_TOKEN` + `WHATSAPP_APP_SECRET` + templates aprovados na Meta |
+| **F1** | Farmácia: dispensação só após PAID + receita SIGNED + validUntil | **Alta** | OK — Lote 1 |
+| **F2** | QStash `/api/emissions/deliver` (middleware + assinatura) | **Alta** | OK — Lote 2 |
+| **F3** | Webhook Stripe farmácia: erro permanente + refund | **Alta** | OK — Lote 3 |
+| **F4** | Cancelamento pedido farmácia → reembolso Stripe | **Alta** | OK — Lote 4 + migration `20260712200000` |
+| **F5** | WhatsApp loja: template Meta (não text livre) | **Média** | OK — Lote 5; falta template aprovado na Meta + `WHATSAPP_PHARMACY_ORDER_TEMPLATE` |
+| **F6** | Estoque: decremento no pagamento | **Média** | OK — Lote 6 |
+| **F7** | Farmácia P2: raio entrega, pedido duplicado, webhook PHI | **Baixa** | OK — Lote 7 |
+| M2 | WhatsApp Business API (templates Meta) | **Alta** | Produção: `WHATSAPP_ACCESS_TOKEN` + webhook + `WHATSAPP_APP_SECRET` + templates aprovados |
 | M4 | Gravação cloud Daily | Baixa | Off por padrão — `DAILY_CLOUD_RECORDING=1` + banner já no código |
-| M10 | Google Meet em produção (humanitário + agendamentos) | Média | Código OK — service account + `GOOGLE_MEET_ENABLED=1` no Railway (ver `.env.example`) |
-| M11 | Farmácia marketplace ativo | Baixa | Código OK — `PHARMACY_MARKETPLACE_ENABLED=true` (+ UTM/affiliate se quiser) |
+| M10 | Google Meet em produção (humanitário + agendamentos) | Média | Código OK — service account + `GOOGLE_MEET_ENABLED=1` no Railway |
+| M11 | Farmácia marketplace ativo | **Quase** | Código F1–F7 OK — falta migration deploy + template WhatsApp loja + `PHARMACY_MARKETPLACE_ENABLED=true` |
 
 ---
 
@@ -24,6 +31,21 @@ Lista viva de melhorias **pendentes**. Lotes pequenos, baixo risco ao fluxo huma
 | Admins com login | Rodar `node scripts/fix-admin-users.mjs --promote` no Railway se ainda não feito |
 | Contas profissionais Acura | Promover/verificar e-mails via admin ou scripts one-off (ex. psicólogo `contato@acurabrasil.org`) |
 | Migrations pendentes | `20260629000000_patient_search_invites`, `20260629110000_organization_linked_providers` |
+
+---
+
+## Concluído recentemente (farmácia + integrações — Lotes 1–7)
+
+| Item | Status |
+|------|--------|
+| F1 Dispensação segura (PAID + SIGNED + validUntil + audit) | OK |
+| F2 QStash emissions deliver (middleware + verifyQStashSignature) | OK |
+| F3 Webhook farmácia erro permanente + refund | OK |
+| F4 Cancelamento pedido → Stripe refund + `PaymentRefund.pharmacyOrderId` | OK |
+| F5 WhatsApp loja via template (sem text livre) | OK código — template Meta pendente |
+| F6 Estoque decrementado no pagamento | OK |
+| F7 Raio entrega, pedido duplicado, webhook PHI, decrypt fila | OK |
+| Script `test:pharmacy-dispense-guards` | OK |
 
 ---
 

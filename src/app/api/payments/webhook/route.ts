@@ -53,7 +53,10 @@ function isPermanentFulfillmentError(e: unknown): boolean {
     msg === "Missing consultation payment metadata" ||
     msg === "Patient not found" ||
     msg === "Provider not found" ||
-    msg === "Payment amount mismatch"
+    msg === "Payment amount mismatch" ||
+    msg === "Pharmacy order not found" ||
+    msg === "Pharmacy order patient mismatch" ||
+    msg.startsWith("Insufficient stock for ")
   );
 }
 
@@ -121,6 +124,47 @@ async function handleConsultationFulfillmentError(
     console.error(`[WEBHOOK-TRANSIENT-FAIL] event=${event.id}:`, e);
   }
   throw e;
+}
+
+async function handlePharmacyFulfillmentError(
+  e: unknown,
+  paymentIntentId: string | null,
+  event: Stripe.Event,
+): Promise<void> {
+  if (!isPermanentFulfillmentError(e)) {
+    if (isTransientError(e)) throw e;
+    return;
+  }
+
+  const reason = truncateError(e);
+  console.error(
+    `[WEBHOOK-PERMANENT-FAIL] pharmacy event=${event.id} pi=${paymentIntentId || "?"}:`,
+    reason,
+  );
+
+  if (paymentIntentId) {
+    await refundPaymentIntentIdempotent(paymentIntentId, "pharmacy_webhook_permanent_fail", {
+      triggeredBy: "AUTO_WEBHOOK_FAIL",
+    });
+  }
+
+  await markEventFailed(event.id, event.type, reason);
+  throw new WebhookReturn200();
+}
+
+async function fulfillPharmacyCheckoutSessionSafe(
+  sessionId: string,
+  event: Stripe.Event,
+): Promise<void> {
+  const cs = await stripe.checkout.sessions.retrieve(sessionId);
+  const paymentIntentId =
+    typeof cs.payment_intent === "string" ? cs.payment_intent : cs.payment_intent?.id ?? null;
+
+  try {
+    await fulfillPharmacyCheckoutSession(sessionId);
+  } catch (e) {
+    await handlePharmacyFulfillmentError(e, paymentIntentId, event);
+  }
 }
 
 async function notifySubscriptionPaymentIssue(
@@ -300,7 +344,11 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
     } else if (meta.type === "pharmacy_order") {
       const pharmacyMeta = parsePharmacyOrderMeta(meta as Record<string, string>);
       if (pharmacyMeta) {
-        await fulfillPharmacyOrderPayment(pharmacyMeta, intent.amount);
+        try {
+          await fulfillPharmacyOrderPayment(pharmacyMeta, intent.amount);
+        } catch (e) {
+          await handlePharmacyFulfillmentError(e, intent.id, event);
+        }
       }
     }
     return;
@@ -329,7 +377,7 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
       await fulfillCourseCheckoutSession(cs.id);
     }
     if (cs.mode === "payment" && cs.metadata?.type === "pharmacy_order") {
-      await fulfillPharmacyCheckoutSession(cs.id);
+      await fulfillPharmacyCheckoutSessionSafe(cs.id, event);
     }
     return;
   }
@@ -431,7 +479,7 @@ async function dispatchStripeEvent(event: Stripe.Event): Promise<void> {
       await fulfillCourseCheckoutSession(cs.id);
     }
     if (cs.mode === "payment" && cs.metadata?.type === "pharmacy_order" && cs.payment_status === "paid") {
-      await fulfillPharmacyCheckoutSession(cs.id);
+      await fulfillPharmacyCheckoutSessionSafe(cs.id, event);
     }
 
     if (cs.mode === "subscription") {

@@ -25,7 +25,7 @@ type MetaWebhookBody = {
 
 function inboundDetail(msg: MetaInboundMessage): string {
   if (msg.type === "text" && msg.text?.body) {
-    return msg.text.body.slice(0, 200);
+    return `text:${msg.text.body.length}chars`;
   }
   return msg.type || "message";
 }

@@ -1,29 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Receiver } from "@upstash/qstash";
 import { deliverEmissionToPatient, type EmissionDeliverKind } from "@/lib/emission-deliver";
 import { logQStashJob } from "@/lib/integration-logs";
-
-const receiver = process.env.QSTASH_CURRENT_SIGNING_KEY
-  ? new Receiver({
-      currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
-      nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY || "",
-    })
-  : null;
+import { verifyQStashSignature } from "@/lib/qstash";
 
 /** QStash consumer — retry prescription/exam/document delivery to patient. */
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
 
-  if (receiver) {
-    const signature = req.headers.get("upstash-signature");
-    if (!signature) {
-      return NextResponse.json({ error: "Missing signature" }, { status: 401 });
-    }
-    try {
-      await receiver.verify({ signature, body: rawBody });
-    } catch {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-    }
+  if (!(await verifyQStashSignature(req, rawBody))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let body: {

@@ -24,6 +24,7 @@ export interface RefundResult {
 export type RefundContext = {
   triggeredBy?: string;
   appointmentId?: string;
+  pharmacyOrderId?: string;
   userId?: string;
 };
 
@@ -51,6 +52,7 @@ async function writeRefundAudit(params: {
         status: params.status,
         triggeredBy: params.context?.triggeredBy ?? "OTHER",
         appointmentId: params.context?.appointmentId ?? null,
+        pharmacyOrderId: params.context?.pharmacyOrderId ?? null,
         userId: params.context?.userId ?? null,
       },
     });
