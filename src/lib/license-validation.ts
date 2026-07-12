@@ -21,6 +21,12 @@ export function validateProfessionalLicense(
     return null;
   }
 
+  if (councilKey === "cro") {
+    if (!CRN_NUMBER.test(trimmed)) return "croInvalidNumber";
+    if (!UF_CODE.test(state)) return "croInvalidState";
+    return null;
+  }
+
   return null;
 }
 
