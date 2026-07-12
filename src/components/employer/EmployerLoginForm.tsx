@@ -87,6 +87,12 @@ export default function EmployerLoginForm() {
       persistAuthCallback(callbackUrl);
       const session = await waitForAuthenticatedSession({ expectedEmail: trimmedEmail });
       if (session?.user?.role) {
+        if (session.user.role !== "EMPLOYER" && session.user.role !== "ADMIN") {
+          await signOut({ redirect: false });
+          setError("invalid");
+          setLoading(false);
+          return;
+        }
         const savedCallback = consumeAuthCallback();
         const destination = safePostLoginUrl(
           session.user.role,
