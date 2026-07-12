@@ -69,6 +69,13 @@ const DEFAULT_PSYCHOLOGIST = {
   lastName: "Psychologist",
 };
 
+const DEFAULT_NUTRITIONIST = {
+  email: process.env.E2E_NUTRITIONIST_EMAIL || "e2e-nutritionist@doctor8.test",
+  password: process.env.E2E_NUTRITIONIST_PASSWORD || "TestPassword1!",
+  firstName: "E2E",
+  lastName: "Nutritionist",
+};
+
 const DEFAULT_ADMIN = {
   email: process.env.E2E_ADMIN_EMAIL || "e2e-admin@doctor8.test",
   password: process.env.E2E_ADMIN_PASSWORD || "TestPassword1!",
@@ -319,6 +326,79 @@ async function seedPsychologist({ email, password, firstName, lastName }) {
   console.log(`[seed-e2e] Psychologist ${normalized} ready (verified)`);
 }
 
+async function seedNutritionist({ email, password, firstName, lastName }) {
+  const passwordHash = await bcrypt.hash(password, 12);
+  const normalized = email.toLowerCase();
+
+  const user = await prisma.user.upsert({
+    where: { email: normalized },
+    create: {
+      email: normalized,
+      passwordHash,
+      role: UserRole.PROFESSIONAL,
+      region: "BR",
+      language: "pt",
+      emailVerified: new Date(),
+    },
+    update: {
+      passwordHash,
+      role: UserRole.PROFESSIONAL,
+      region: "BR",
+      emailVerified: new Date(),
+      deletedAt: null,
+      lockedUntil: null,
+      failedLoginAttempts: 0,
+    },
+  });
+
+  await prisma.professionalProfile.upsert({
+    where: { userId: user.id },
+    create: {
+      userId: user.id,
+      firstName,
+      lastName,
+      licenseNumber: "12345",
+      licenseState: "SP",
+      licenseCountry: "BR",
+      specialty: "Nutritionist",
+      consultPrice: 0,
+      verified: true,
+      verifiedAt: new Date(),
+      verifiedBy: "seed-e2e",
+    },
+    update: {
+      firstName,
+      lastName,
+      specialty: "Nutritionist",
+      licenseNumber: "12345",
+      licenseState: "SP",
+      verified: true,
+      verifiedAt: new Date(),
+      verifiedBy: "seed-e2e",
+    },
+  });
+
+  for (const type of [ConsentType.TERMS_OF_SERVICE, ConsentType.PRIVACY_POLICY]) {
+    const existing = await prisma.consent.findFirst({
+      where: { userId: user.id, type },
+    });
+    if (!existing) {
+      await prisma.consent.create({
+        data: {
+          userId: user.id,
+          type,
+          version: "1.0",
+          granted: true,
+          ipAddress: "127.0.0.1",
+          userAgent: "seed-e2e",
+        },
+      });
+    }
+  }
+
+  console.log(`[seed-e2e] Nutritionist ${normalized} ready (verified)`);
+}
+
 async function seedAdmin({ email, password, firstName, lastName }) {
   const passwordHash = await bcrypt.hash(password, 12);
   const normalized = email.toLowerCase();
@@ -525,6 +605,50 @@ async function seedPsychologistClinicalFixtures() {
   console.log(`[seed-e2e] Psychologist clinical fixtures ready (chart ${chart.id})`);
 }
 
+async function seedNutritionistClinicalFixtures() {
+  const patientUser = await prisma.user.findUnique({
+    where: { email: DEFAULT_PATIENT.email.toLowerCase() },
+    select: { id: true },
+  });
+  const nutriUser = await prisma.user.findUnique({
+    where: { email: DEFAULT_NUTRITIONIST.email.toLowerCase() },
+    select: { id: true },
+  });
+  const nutriProfile = await prisma.professionalProfile.findUnique({
+    where: { userId: nutriUser?.id },
+    select: { id: true },
+  });
+  if (!patientUser || !nutriProfile) {
+    throw new Error("E2E nutritionist clinical fixtures — seed patient/nutritionist first");
+  }
+
+  const record = await prisma.patientRecord.findFirst({
+    where: { linkedUserId: patientUser.id, professionalId: nutriProfile.id },
+    select: { id: true },
+  });
+
+  const chart = record
+    ? await prisma.patientRecord.update({
+        where: { id: record.id },
+        data: {
+          firstName: encrypt("E2E"),
+          lastName: encrypt("NutriPatient"),
+          email: DEFAULT_PATIENT.email.toLowerCase(),
+        },
+      })
+    : await prisma.patientRecord.create({
+        data: {
+          professionalId: nutriProfile.id,
+          firstName: encrypt("E2E"),
+          lastName: encrypt("NutriPatient"),
+          email: DEFAULT_PATIENT.email.toLowerCase(),
+          linkedUserId: patientUser.id,
+        },
+      });
+
+  console.log(`[seed-e2e] Nutritionist clinical fixtures ready (chart ${chart.id})`);
+}
+
 const TELEMEDICINE_TCLE_VERSION = "1.2";
 const E2E_MEETING_ROOM = "e2e-hum-room";
 const E2E_MEETING_URL = "https://doctor8.daily.co/e2e-hum-room";
@@ -718,9 +842,11 @@ async function main() {
   await seedPatient(DEFAULT_PATIENT);
   await seedProfessional(DEFAULT_PROFESSIONAL);
   await seedPsychologist(DEFAULT_PSYCHOLOGIST);
+  await seedNutritionist(DEFAULT_NUTRITIONIST);
   await seedAdmin(DEFAULT_ADMIN);
   await seedClinicalFixtures();
   await seedPsychologistClinicalFixtures();
+  await seedNutritionistClinicalFixtures();
   await seedHumanitarianVideoFixtures();
   await seedHumanitarianQueueFixtures();
 }

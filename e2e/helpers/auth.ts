@@ -35,6 +35,10 @@ export const LEGACY_LOGIN_PATHS = [
   "/login/psicologo",
   "/login/psicanalista",
   "/login/terapeuta-integrativo",
+  "/login/nutricionista",
+  "/login/enfermeiro",
+  "/login/farmaceutico",
+  "/login/odontologo",
   "/login/organizacao",
   "/login/anjo",
 ] as const;
@@ -88,6 +92,17 @@ export function e2ePsychologistCredentials(): { email: string; password: string 
     (process.env.CI ? "e2e-psychologist@doctor8.test" : undefined);
   const password =
     process.env.E2E_PSYCHOLOGIST_PASSWORD?.trim() ||
+    (process.env.CI ? "TestPassword1!" : undefined);
+  if (!email || !password) return null;
+  return { email, password };
+}
+
+export function e2eNutritionistCredentials(): { email: string; password: string } | null {
+  const email =
+    process.env.E2E_NUTRITIONIST_EMAIL?.trim() ||
+    (process.env.CI ? "e2e-nutritionist@doctor8.test" : undefined);
+  const password =
+    process.env.E2E_NUTRITIONIST_PASSWORD?.trim() ||
     (process.env.CI ? "TestPassword1!" : undefined);
   if (!email || !password) return null;
   return { email, password };
@@ -193,6 +208,45 @@ export async function loginPsychologist(
   callbackUrl?: string,
 ): Promise<void> {
   await loginAtPortal(page, PSYCHOLOGIST_LOGIN, email, password, callbackUrl);
+}
+
+export async function loginNutritionist(
+  page: Page,
+  email: string,
+  password: string,
+  callbackUrl?: string,
+): Promise<void> {
+  await loginAtPortal(page, LOGIN, email, password, callbackUrl);
+}
+
+export async function loginProfessional(
+  page: Page,
+  email: string,
+  password: string,
+  callbackUrl?: string,
+): Promise<void> {
+  await loginAtPortal(page, LOGIN, email, password, callbackUrl);
+}
+
+export async function verifyEmailAsAdmin(
+  page: Page,
+  userId: string,
+): Promise<void> {
+  const admin = e2eAdminCredentials();
+  if (!admin) throw new Error("E2E admin credentials required for email verification");
+
+  await page.context().clearCookies();
+  await loginAtPortal(page, LOGIN, admin.email, admin.password);
+  await waitForAuthenticatedSession(page, admin.email);
+
+  const cookie = await cookieHeaderForPage(page);
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+  const res = await page.request.post(`${baseURL}/api/admin/users/${userId}/verify-email`, {
+    headers: cookie ? { Cookie: cookie } : {},
+  });
+  if (!res.ok()) {
+    throw new Error(`Admin verify-email failed: ${res.status()}`);
+  }
 }
 
 export async function waitForAuthenticatedSession(
