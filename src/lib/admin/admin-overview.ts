@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { listAdminProviders } from "@/lib/admin-providers-list";
+import { getAdminSsoOverviewCounts } from "@/lib/admin/admin-sso-users";
 
 export type AdminOverviewStats = {
   pendingProviders: number;
@@ -11,6 +12,8 @@ export type AdminOverviewStats = {
   humanitarianWaiting: number | null;
   emailCampaignsAttention: number;
   emailCampaignsPendingRecipients: number;
+  eightSsoBlocked: number;
+  vital8SsoBlocked: number;
 };
 
 export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
@@ -25,6 +28,7 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
     humanitarianWaiting,
     emailCampaignsAttention,
     emailCampaignsPendingRecipients,
+    ssoCounts,
   ] = await Promise.all([
     listAdminProviders("pendentes"),
     db.user.count({
@@ -64,6 +68,7 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
         campaign: { status: { not: "DONE" } },
       },
     }).catch(() => 0),
+    getAdminSsoOverviewCounts(),
   ]);
 
   const incompletePayload = await listAdminProviders("incompletos");
@@ -78,5 +83,7 @@ export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
     humanitarianWaiting,
     emailCampaignsAttention,
     emailCampaignsPendingRecipients,
+    eightSsoBlocked: ssoCounts.eightSsoBlocked,
+    vital8SsoBlocked: ssoCounts.vital8SsoBlocked,
   };
 }

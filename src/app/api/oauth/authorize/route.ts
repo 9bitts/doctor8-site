@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { createAuditLog } from "@/lib/audit";
+import { AuditAction } from "@prisma/client";
 import {
   getSsoAccessDeniedMessage,
   getSsoRolesForClient,
@@ -86,6 +88,12 @@ export async function GET(req: NextRequest) {
   const role = dbUser?.role ?? session.user.role;
 
   if (!role || !getSsoRolesForClient(clientId).has(role)) {
+    await createAuditLog({
+      userId: session.user.id,
+      action: AuditAction.LOGIN_FAILED,
+      resource: `SSO:${clientId}`,
+      details: { reason: "access_denied", role },
+    });
     return oauthError(
       redirectUri,
       clientId,

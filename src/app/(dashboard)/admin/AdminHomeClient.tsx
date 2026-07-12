@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   Layers, Stethoscope, Users, CreditCard, Radio, Heart, ShoppingBag, Plug, ScrollText, PieChart,
   Building2, Pill, FlaskConical, BookOpen, UserCog, Loader2, AlertTriangle, Lock, Clock, Megaphone,
+  Sparkles, Globe,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { AdminOverviewStats } from "@/lib/admin/admin-overview";
@@ -43,6 +44,8 @@ const LINK_GROUPS: LinkGroup[] = [
       { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", icon: ShoppingBag },
       { href: "/admin/campaigns", labelKey: "nav.adminCampaigns", icon: Megaphone },
       { href: "/admin/integrations", labelKey: "nav.adminIntegrations", icon: Plug },
+      { href: "/admin/eight", labelKey: "nav.adminEight", icon: Sparkles },
+      { href: "/admin/vital8erp", labelKey: "nav.adminVital8erp", icon: Globe },
     ],
   },
   {
@@ -104,6 +107,8 @@ export default function AdminHomeClient() {
     || (stats.humanitarianWaiting ?? 0) > 0
     || (stats.emailCampaignsAttention ?? 0) > 0
     || (stats.emailCampaignsPendingRecipients ?? 0) > 0
+    || (stats.eightSsoBlocked ?? 0) > 0
+    || (stats.vital8SsoBlocked ?? 0) > 0
   );
 
   return (
@@ -181,6 +186,20 @@ export default function AdminHomeClient() {
                 accent="bg-amber-50 border-amber-200 text-amber-900 hover:border-amber-300"
               />
             ) : null}
+            <PendingCard
+              href="/admin/eight"
+              label={t("admin.home.eightSsoBlocked")}
+              count={stats!.eightSsoBlocked ?? 0}
+              icon={Sparkles}
+              accent="bg-violet-50 border-violet-200 text-violet-900 hover:border-violet-300"
+            />
+            <PendingCard
+              href="/admin/vital8erp"
+              label={t("admin.home.vital8SsoBlocked")}
+              count={stats!.vital8SsoBlocked ?? 0}
+              icon={Globe}
+              accent="bg-sky-50 border-sky-200 text-sky-900 hover:border-sky-300"
+            />
           </div>
         </div>
       ) : null}

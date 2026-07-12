@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { AuditAction } from "@prisma/client";
+import { createAuditLog } from "@/lib/audit";
 import { getSsoClient, verifySsoClientSecret } from "@/lib/sso/sso-clients";
 import { consumeSsoAuthorizationCode } from "@/lib/sso/sso-codes";
 import { ACCESS_TOKEN_TTL_SEC, issueAccessToken, issueIdToken } from "@/lib/sso/sso-jwt";
@@ -73,6 +75,13 @@ export async function POST(req: NextRequest) {
   if (!claims) {
     return NextResponse.json({ error: "invalid_grant" }, { status: 400 });
   }
+
+  await createAuditLog({
+    userId: meta.userId,
+    action: AuditAction.LOGIN,
+    resource: `SSO:${clientId}`,
+    details: { clientId, scope: meta.scope },
+  });
 
   const idToken = issueIdToken({
     sub: claims.sub,

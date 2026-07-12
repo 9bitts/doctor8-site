@@ -637,6 +637,8 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", roles: ["ADMIN"], iconKey: "ShoppingBag" },
   { href: "/admin/campaigns", labelKey: "nav.adminCampaigns", roles: ["ADMIN"], iconKey: "Megaphone" },
   { href: "/admin/integrations", labelKey: "nav.adminIntegrations", roles: ["ADMIN"], iconKey: "Plug" },
+  { href: "/admin/eight", labelKey: "nav.adminEight", roles: ["ADMIN"], iconKey: "Sparkles" },
+  { href: "/admin/vital8erp", labelKey: "nav.adminVital8erp", roles: ["ADMIN"], iconKey: "Building2" },
   { href: "/admin/audit", labelKey: "nav.adminAudit", roles: ["ADMIN"], iconKey: "ScrollText" },
   { href: "/admin/rateio", labelKey: "nav.adminRateio", roles: ["ADMIN"], iconKey: "PieChart" },
 ];
@@ -672,6 +674,8 @@ export const ADMIN_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", roles: ["ADMIN"], iconKey: "ShoppingBag" },
       { href: "/admin/campaigns", labelKey: "nav.adminCampaigns", roles: ["ADMIN"], iconKey: "Megaphone" },
       { href: "/admin/integrations", labelKey: "nav.adminIntegrations", roles: ["ADMIN"], iconKey: "Plug" },
+      { href: "/admin/eight", labelKey: "nav.adminEight", roles: ["ADMIN"], iconKey: "Sparkles" },
+      { href: "/admin/vital8erp", labelKey: "nav.adminVital8erp", roles: ["ADMIN"], iconKey: "Building2" },
     ],
   },
   {

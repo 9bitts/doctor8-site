@@ -41,7 +41,7 @@ export const EIGHT_SSO_ROLES = new Set([
   "ADMIN",
 ]);
 
-const VITAL8_SSO_ROLES = new Set([
+export const VITAL8_SSO_ROLES = new Set([
   "ORGANIZATION",
   "EMPLOYER",
   "PHARMACY_STORE",
