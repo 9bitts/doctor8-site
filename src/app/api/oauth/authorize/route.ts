@@ -10,6 +10,13 @@ import {
 } from "@/lib/sso/sso-config";
 import { getSsoClient, isSsoRedirectUriAllowed } from "@/lib/sso/sso-clients";
 import { createSsoAuthorizationCode } from "@/lib/sso/sso-codes";
+import {
+  isB2BSsoRole,
+  listB2BOrganizations,
+  userHasB2BOrganizationAccess,
+} from "@/lib/sso/sso-orgs";
+
+const ACCOUNT_TYPE_VALUES = new Set(["CLINIC", "EMPLOYER", "PHARMACY", "LABORATORY"]);
 
 async function oauthError(
   redirectUri: string | null,
@@ -28,6 +35,34 @@ async function oauthError(
   return NextResponse.redirect(url);
 }
 
+function buildLoginRedirect(appUrl: string, callbackUrl: string, accountType: string | null) {
+  if (accountType === "CLINIC") {
+    const login = new URL("/login", appUrl);
+    login.searchParams.set("portal", "organization");
+    login.searchParams.set("callbackUrl", callbackUrl);
+    return login;
+  }
+  if (accountType === "EMPLOYER") {
+    const login = new URL("/empresas/login", appUrl);
+    login.searchParams.set("callbackUrl", callbackUrl);
+    return login;
+  }
+  if (accountType === "PHARMACY") {
+    const login = new URL("/farmacias/login", appUrl);
+    login.searchParams.set("callbackUrl", callbackUrl);
+    return login;
+  }
+  if (accountType === "LABORATORY") {
+    const login = new URL("/laboratorios/login", appUrl);
+    login.searchParams.set("callbackUrl", callbackUrl);
+    return login;
+  }
+
+  const login = new URL("/login", appUrl);
+  login.searchParams.set("callbackUrl", callbackUrl);
+  return login;
+}
+
 /** OIDC authorization endpoint — SSO for eight and other trusted apps. */
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -39,6 +74,10 @@ export async function GET(req: NextRequest) {
   const nonce = sp.get("nonce");
   const codeChallenge = sp.get("code_challenge");
   const codeChallengeMethod = sp.get("code_challenge_method");
+  const rawAccountType = sp.get("account_type");
+  const accountType =
+    rawAccountType && ACCOUNT_TYPE_VALUES.has(rawAccountType) ? rawAccountType : null;
+  const selectedOrganizationId = sp.get("organization_id");
 
   if (!clientId || !getSsoClient(clientId)) {
     return NextResponse.json({ error: "invalid_client" }, { status: 400 });
@@ -66,19 +105,16 @@ export async function GET(req: NextRequest) {
 
   const prompt = sp.get("prompt");
   const forceLogin = prompt?.split(/\s+/).includes("login") ?? false;
+  const callbackUrl = resumeAuthorizeUrl();
 
   if (forceLogin) {
-    const login = new URL("/login", appUrl);
-    login.searchParams.set("callbackUrl", resumeAuthorizeUrl());
-    return NextResponse.redirect(login);
+    return NextResponse.redirect(buildLoginRedirect(appUrl, callbackUrl, accountType));
   }
 
   const session = await auth();
 
   if (!session?.user?.id) {
-    const login = new URL("/login", appUrl);
-    login.searchParams.set("callbackUrl", resumeAuthorizeUrl());
-    return NextResponse.redirect(login);
+    return NextResponse.redirect(buildLoginRedirect(appUrl, callbackUrl, accountType));
   }
 
   const dbUser = await db.user.findUnique({
@@ -103,6 +139,47 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  let organizationId: string | null = selectedOrganizationId;
+
+  if (isB2BSsoRole(role)) {
+    const organizations = await listB2BOrganizations(session.user.id, role);
+
+    if (organizations.length === 0) {
+      return oauthError(
+        redirectUri,
+        clientId,
+        "access_denied",
+        "Nenhuma organização ativa vinculada à conta.",
+        state
+      );
+    }
+
+    if (organizations.length > 1) {
+      if (!organizationId) {
+        const selectOrg = new URL("/sso/select-org", appUrl);
+        selectOrg.searchParams.set("resume", callbackUrl);
+        return NextResponse.redirect(selectOrg);
+      }
+
+      const allowed = await userHasB2BOrganizationAccess(
+        session.user.id,
+        role,
+        organizationId,
+      );
+      if (!allowed) {
+        return oauthError(
+          redirectUri,
+          clientId,
+          "access_denied",
+          "Organização selecionada inválida.",
+          state
+        );
+      }
+    } else {
+      organizationId = organizations[0]!.id;
+    }
+  }
+
   const code = await createSsoAuthorizationCode({
     clientId,
     userId: session.user.id,
@@ -111,6 +188,7 @@ export async function GET(req: NextRequest) {
     nonce,
     codeChallenge,
     codeChallengeMethod,
+    organizationId,
   });
 
   const callback = new URL(redirectUri);

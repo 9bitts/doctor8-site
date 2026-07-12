@@ -12,6 +12,7 @@ type StoredCodeMeta = {
   nonce?: string | null;
   codeChallenge?: string | null;
   codeChallengeMethod?: string | null;
+  organizationId?: string | null;
 };
 
 function encodeMeta(meta: StoredCodeMeta): string {

@@ -79,6 +79,7 @@ function fullName(profile: ProfileNames | null | undefined, fallback: string): s
 async function resolveB2BClaims(
   userId: string,
   role: string,
+  organizationId?: string | null,
 ): Promise<{ claims: B2BOrgClaims; verified: boolean; nameFallback?: string }> {
   if (!B2B_ROLES.has(role)) {
     return { claims: NULL_ORG_CLAIMS, verified: false };
@@ -86,11 +87,16 @@ async function resolveB2BClaims(
 
   switch (role) {
     case "ORGANIZATION": {
-      const member = await db.organizationMember.findFirst({
-        where: { userId, status: "ACTIVE" },
-        orderBy: { joinedAt: "asc" },
-        include: { organization: true },
-      });
+      const member = organizationId
+        ? await db.organizationMember.findFirst({
+            where: { userId, organizationId, status: "ACTIVE" },
+            include: { organization: true },
+          })
+        : await db.organizationMember.findFirst({
+            where: { userId, status: "ACTIVE" },
+            orderBy: { joinedAt: "asc" },
+            include: { organization: true },
+          });
       if (!member) return { claims: NULL_ORG_CLAIMS, verified: false };
       return {
         claims: {
@@ -100,16 +106,23 @@ async function resolveB2BClaims(
           org_razao_social: member.organization.razaoSocial,
           org_member_role: member.role,
         },
+        // Clínica não possui workflow de aprovação de entidade (diferente de farmácia/lab).
+        // verified aqui indica entidade operacional, não email_verified.
         verified: true,
         nameFallback: entityResponsibleName(member.organization),
       };
     }
     case "EMPLOYER": {
-      const member = await db.employerMember.findFirst({
-        where: { userId, status: "ACTIVE" },
-        orderBy: { joinedAt: "asc" },
-        include: { employerCompany: true },
-      });
+      const member = organizationId
+        ? await db.employerMember.findFirst({
+            where: { userId, employerCompanyId: organizationId, status: "ACTIVE" },
+            include: { employerCompany: true },
+          })
+        : await db.employerMember.findFirst({
+            where: { userId, status: "ACTIVE" },
+            orderBy: { joinedAt: "asc" },
+            include: { employerCompany: true },
+          });
       if (!member) return { claims: NULL_ORG_CLAIMS, verified: false };
       return {
         claims: {
@@ -124,11 +137,16 @@ async function resolveB2BClaims(
       };
     }
     case "PHARMACY_STORE": {
-      const member = await db.pharmacyStoreMember.findFirst({
-        where: { userId, status: "ACTIVE" },
-        orderBy: { joinedAt: "asc" },
-        include: { pharmacyStore: true },
-      });
+      const member = organizationId
+        ? await db.pharmacyStoreMember.findFirst({
+            where: { userId, pharmacyStoreId: organizationId, status: "ACTIVE" },
+            include: { pharmacyStore: true },
+          })
+        : await db.pharmacyStoreMember.findFirst({
+            where: { userId, status: "ACTIVE" },
+            orderBy: { joinedAt: "asc" },
+            include: { pharmacyStore: true },
+          });
       if (!member) return { claims: NULL_ORG_CLAIMS, verified: false };
       return {
         claims: {
@@ -143,11 +161,16 @@ async function resolveB2BClaims(
       };
     }
     case "LABORATORY": {
-      const member = await db.laboratoryMember.findFirst({
-        where: { userId, status: "ACTIVE" },
-        orderBy: { joinedAt: "asc" },
-        include: { laboratory: true },
-      });
+      const member = organizationId
+        ? await db.laboratoryMember.findFirst({
+            where: { userId, laboratoryId: organizationId, status: "ACTIVE" },
+            include: { laboratory: true },
+          })
+        : await db.laboratoryMember.findFirst({
+            where: { userId, status: "ACTIVE" },
+            orderBy: { joinedAt: "asc" },
+            include: { laboratory: true },
+          });
       if (!member) return { claims: NULL_ORG_CLAIMS, verified: false };
       return {
         claims: {
@@ -166,7 +189,7 @@ async function resolveB2BClaims(
   }
 }
 
-export async function getSsoUserClaims(userId: string) {
+export async function getSsoUserClaims(userId: string, organizationId?: string | null) {
   const user = await db.user.findUnique({
     where: { id: userId },
     select: {
@@ -197,7 +220,7 @@ export async function getSsoUserClaims(userId: string) {
     user.patientProfile;
 
   const emailFallback = user.email.split("@")[0] ?? "Profissional";
-  const b2b = await resolveB2BClaims(userId, user.role);
+  const b2b = await resolveB2BClaims(userId, user.role, organizationId);
 
   const hasPersonalProfile =
     !!user.professionalProfile ||

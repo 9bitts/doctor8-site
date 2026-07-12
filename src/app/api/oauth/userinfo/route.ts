@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "invalid_token" }, { status: 401 });
   }
 
-  const claims = await getSsoUserClaims(parsed.sub);
+  const claims = await getSsoUserClaims(parsed.sub, parsed.organizationId);
   if (!claims) {
     return NextResponse.json({ error: "invalid_token" }, { status: 401 });
   }

@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const claims = await getSsoUserClaims(meta.userId);
+  const claims = await getSsoUserClaims(meta.userId, meta.organizationId);
   if (!claims) {
     return NextResponse.json({ error: "invalid_grant" }, { status: 400 });
   }
@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
     sub: claims.sub,
     aud: clientId,
     scope: meta.scope,
+    organizationId: meta.organizationId,
   });
 
   return NextResponse.json({

@@ -138,19 +138,23 @@ export function issueAccessToken(params: {
   sub: string;
   aud: string;
   scope: string;
+  organizationId?: string | null;
 }): string {
-  return signJwt(
-    {
-      sub: params.sub,
-      aud: params.aud,
-      scope: params.scope,
-      token_use: "access",
-    },
-    ACCESS_TOKEN_TTL_SEC
-  );
+  const claims: Record<string, unknown> = {
+    sub: params.sub,
+    aud: params.aud,
+    scope: params.scope,
+    token_use: "access",
+  };
+  if (params.organizationId) {
+    claims.organization_id = params.organizationId;
+  }
+  return signJwt(claims, ACCESS_TOKEN_TTL_SEC);
 }
 
-export function verifyAccessToken(token: string): { sub: string; aud: string; scope: string } | null {
+export function verifyAccessToken(
+  token: string,
+): { sub: string; aud: string; scope: string; organizationId?: string } | null {
   try {
     // A chave pública é derivada da mesma privateKey em memória (loadKeyPair).
     // Em produção, SSO_OAUTH_PRIVATE_KEY deve ser idêntica em todas as instâncias —
@@ -170,12 +174,18 @@ export function verifyAccessToken(token: string): { sub: string; aud: string; sc
       scope?: string;
       exp?: number;
       token_use?: string;
+      organization_id?: string;
     };
     if (payload.token_use !== "access") return null;
     if (!payload.sub || !payload.aud || !payload.scope) return null;
     if (typeof payload.exp !== "number") return null;
     if (payload.exp < Math.floor(Date.now() / 1000)) return null;
-    return { sub: payload.sub, aud: payload.aud, scope: payload.scope };
+    return {
+      sub: payload.sub,
+      aud: payload.aud,
+      scope: payload.scope,
+      organizationId: payload.organization_id,
+    };
   } catch {
     return null;
   }
