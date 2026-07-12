@@ -9,6 +9,7 @@ import { persistAuthCallback, consumeAuthCallback, resolveClientAuthCallback } f
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { safePostLoginUrl } from "@/lib/role-home";
 import { buildForgotPasswordHref } from "@/lib/auth-portals";
+import { canAccessPharmacyStorePortal } from "@/lib/pharmacy-pharmacist-portal-auth";
 import {
   PHARMACY_STORE_HOME,
   PHARMACY_STORE_LOGIN,
@@ -22,8 +23,6 @@ import {
   LoginLanguageSelector,
   LoginCard,
   LoginAlerts,
-  GoogleSignInButton,
-  LoginDivider,
   LoginCredentialsForm,
   navigateAfterAuth,
   waitForAuthenticatedSession,
@@ -42,7 +41,6 @@ export default function PharmacyStoreLoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<LoginErrorCode>("");
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
@@ -91,6 +89,12 @@ export default function PharmacyStoreLoginForm() {
       persistAuthCallback(callbackUrl);
       const session = await waitForAuthenticatedSession({ expectedEmail: trimmedEmail });
       if (session?.user?.role) {
+        if (!canAccessPharmacyStorePortal(session.user.role)) {
+          setError("invalid");
+          setLoading(false);
+          await signOut({ redirect: false });
+          return;
+        }
         const savedCallback = consumeAuthCallback();
         const destination = safePostLoginUrl(
           session.user.role,
@@ -104,20 +108,6 @@ export default function PharmacyStoreLoginForm() {
     } catch (err) {
       setError(err instanceof TypeError ? "sessionTimeout" : "generic");
       setLoading(false);
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    setGoogleLoading(true);
-    setError("");
-    persistAuthCallback(callbackUrl);
-    try {
-      clearSensitiveClientState();
-      await signOut({ redirect: false });
-      await signIn("google", { callbackUrl: callbackUrl || PHARMACY_STORE_HOME });
-    } catch {
-      setError("oauthFailed");
-      setGoogleLoading(false);
     }
   }
 
@@ -146,22 +136,12 @@ export default function PharmacyStoreLoginForm() {
           callbackUrl={callbackUrl || undefined}
         />
 
-        <GoogleSignInButton
-          loading={googleLoading}
-          disabled={googleLoading || loading}
-          onClick={handleGoogleSignIn}
-          t={t}
-          labelKey="login.continueGoogle"
-        />
-
-        <LoginDivider t={t} />
-
         <LoginCredentialsForm
           email={email}
           password={password}
           showPassword={showPassword}
           loading={loading}
-          googleLoading={googleLoading}
+          googleLoading={false}
           accent="emerald"
           forgotHref={forgotHref}
           t={t}
@@ -177,6 +157,12 @@ export default function PharmacyStoreLoginForm() {
             {t("login.noAccount")}{" "}
             <Link href={PHARMACY_STORE_REGISTER} className="text-emerald-400 hover:text-emerald-300 font-medium">
               Cadastrar farmácia
+            </Link>
+          </p>
+          <p className="text-slate-400 text-sm">
+            Conta errada?{" "}
+            <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-medium">
+              Entrar com outra conta
             </Link>
           </p>
           <Link href="/farmacias" className="text-slate-500 text-xs hover:text-slate-300 transition">

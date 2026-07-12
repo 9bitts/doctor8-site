@@ -18,8 +18,6 @@ import {
   LoginLanguageSelector,
   LoginCard,
   LoginAlerts,
-  GoogleSignInButton,
-  LoginDivider,
   LoginCredentialsForm,
   navigateAfterAuth,
   waitForAuthenticatedSession,
@@ -38,7 +36,6 @@ export default function EmployerLoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<LoginErrorCode>("");
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
@@ -109,20 +106,6 @@ export default function EmployerLoginForm() {
     }
   }
 
-  async function handleGoogleSignIn() {
-    setGoogleLoading(true);
-    setError("");
-    persistAuthCallback(callbackUrl);
-    try {
-      clearSensitiveClientState();
-      await signOut({ redirect: false });
-      await signIn("google", { callbackUrl: callbackUrl || EMPLOYER_HOME });
-    } catch {
-      setError("oauthFailed");
-      setGoogleLoading(false);
-    }
-  }
-
   return (
     <LoginPageShell accent="indigo">
       <LoginLanguageSelector lang={lang} onChange={changeLang} accent="indigo" />
@@ -148,22 +131,12 @@ export default function EmployerLoginForm() {
           callbackUrl={callbackUrl || undefined}
         />
 
-        <GoogleSignInButton
-          loading={googleLoading}
-          disabled={googleLoading || loading}
-          onClick={handleGoogleSignIn}
-          t={t}
-          labelKey="login.continueGoogle"
-        />
-
-        <LoginDivider t={t} />
-
         <LoginCredentialsForm
           email={email}
           password={password}
           showPassword={showPassword}
           loading={loading}
-          googleLoading={googleLoading}
+          googleLoading={false}
           accent="indigo"
           forgotHref={forgotHref}
           t={t}

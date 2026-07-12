@@ -9,7 +9,7 @@ import { persistAuthCallback, consumeAuthCallback, resolveClientAuthCallback } f
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { safePostLoginUrl } from "@/lib/role-home";
 import { buildForgotPasswordHref, PHARMACIST_REGISTER } from "@/lib/auth-portals";
-import { isPharmacistSpecialty } from "@/lib/profession-label";
+import { canAccessPharmacyPharmacistPortal } from "@/lib/pharmacy-pharmacist-portal-auth";
 import {
   PHARMACY_STORE_PHARMACIST_HOME,
   PHARMACY_STORE_PHARMACIST_LOGIN,
@@ -31,14 +31,6 @@ import {
 } from "@/components/auth/login-shared";
 
 const POST_LOGIN_CALLBACK = "/callback";
-
-function canAccessPharmacyPharmacistPortal(
-  role: string,
-  specialty?: string | null,
-): boolean {
-  if (role === "ADMIN") return true;
-  return role === "PROFESSIONAL" && isPharmacistSpecialty(specialty);
-}
 
 export default function PharmacyStorePharmacistLoginForm() {
   const searchParams = useSearchParams();

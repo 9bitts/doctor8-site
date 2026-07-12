@@ -22,8 +22,6 @@ import {
   LoginLanguageSelector,
   LoginCard,
   LoginAlerts,
-  GoogleSignInButton,
-  LoginDivider,
   LoginCredentialsForm,
   navigateAfterAuth,
   waitForAuthenticatedSession,
@@ -42,7 +40,6 @@ export default function LaboratoryLoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<LoginErrorCode>("");
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
@@ -91,6 +88,12 @@ export default function LaboratoryLoginForm() {
       persistAuthCallback(callbackUrl);
       const session = await waitForAuthenticatedSession({ expectedEmail: trimmedEmail });
       if (session?.user?.role) {
+        if (session.user.role !== "LABORATORY" && session.user.role !== "ADMIN") {
+          setError("invalid");
+          setLoading(false);
+          await signOut({ redirect: false });
+          return;
+        }
         const savedCallback = consumeAuthCallback();
         const destination = safePostLoginUrl(
           session.user.role,
@@ -104,20 +107,6 @@ export default function LaboratoryLoginForm() {
     } catch (err) {
       setError(err instanceof TypeError ? "sessionTimeout" : "generic");
       setLoading(false);
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    setGoogleLoading(true);
-    setError("");
-    persistAuthCallback(callbackUrl);
-    try {
-      clearSensitiveClientState();
-      await signOut({ redirect: false });
-      await signIn("google", { callbackUrl: callbackUrl || LABORATORY_HOME });
-    } catch {
-      setError("oauthFailed");
-      setGoogleLoading(false);
     }
   }
 
@@ -146,22 +135,12 @@ export default function LaboratoryLoginForm() {
           callbackUrl={callbackUrl || undefined}
         />
 
-        <GoogleSignInButton
-          loading={googleLoading}
-          disabled={googleLoading || loading}
-          onClick={handleGoogleSignIn}
-          t={t}
-          labelKey="login.continueGoogle"
-        />
-
-        <LoginDivider t={t} />
-
         <LoginCredentialsForm
           email={email}
           password={password}
           showPassword={showPassword}
           loading={loading}
-          googleLoading={googleLoading}
+          googleLoading={false}
           accent="violet"
           forgotHref={forgotHref}
           t={t}
