@@ -5,10 +5,11 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { UserRole, ConsentType } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import { sendEmailVerification } from "@/lib/email";
 import { PHARMACY_STORE_LOGIN } from "@/lib/pharmacy-store-portal";
 import { geocodeAddress } from "@/lib/pharmacy-network/geocode";
+import { createRegisterConsents } from "@/lib/consent/register-consents";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
@@ -47,7 +48,7 @@ const registerPharmacyStoreSchema = z.object({
   language: z.string().optional(),
   acceptedTerms: z.literal(true),
   acceptedPrivacy: z.literal(true),
-  acceptedGdpr: z.literal(true),
+  acceptedLgpd: z.literal(true),
 });
 
 async function uniquePharmacyStoreSlug(base: string): Promise<string> {
@@ -126,6 +127,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(existingResult, { status: 200 });
     }
     if (existingCnpj) {
+      // CNPJ is public data — explicit 409 helps legitimate registrants (unlike e-mail anti-enumeration).
       return NextResponse.json({ error: { cnpj: ["CNPJ já cadastrado"] } }, { status: 409 });
     }
 
@@ -177,36 +179,38 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      await tx.consent.createMany({
-        data: [
-          { userId: newUser.id, type: ConsentType.TERMS_OF_SERVICE, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.PRIVACY_POLICY, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.GDPR_CONSENT, version: "1.0", granted: true, ipAddress: ip, userAgent },
-        ],
+      await createRegisterConsents(tx, newUser.id, ip, userAgent, {
+        acceptedTerms: parsed.acceptedTerms,
+        acceptedPrivacy: parsed.acceptedPrivacy,
+        acceptedLgpd: parsed.acceptedLgpd,
       });
 
-      return newUser;
+      return { newUser, store };
     });
 
-    const createdStore = await db.pharmacyStore.findFirst({
-      where: { members: { some: { userId: user.id, role: "OWNER" } } },
-    });
-    if (createdStore) {
-      const geo = await geocodeAddress({
-        street: createdStore.addressStreet,
-        number: createdStore.addressNumber,
-        neighborhood: createdStore.addressNeighborhood,
-        city: createdStore.addressCity,
-        state: createdStore.addressState,
-        zip: createdStore.addressZip,
-      });
-      if (geo) {
-        await db.pharmacyStore.update({
-          where: { id: createdStore.id },
-          data: { latitude: geo.latitude, longitude: geo.longitude },
-        });
+    void (async () => {
+      try {
+        const geo = await Promise.race([
+          geocodeAddress({
+            street: user.store.addressStreet,
+            number: user.store.addressNumber,
+            neighborhood: user.store.addressNeighborhood,
+            city: user.store.addressCity,
+            state: user.store.addressState,
+            zip: user.store.addressZip,
+          }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+        ]);
+        if (geo) {
+          await db.pharmacyStore.update({
+            where: { id: user.store.id },
+            data: { latitude: geo.latitude, longitude: geo.longitude },
+          });
+        }
+      } catch (geoError) {
+        console.error("[PHARMACY STORE GEO ERROR]", geoError);
       }
-    }
+    })();
 
     const token = randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -229,7 +233,7 @@ export async function POST(req: NextRequest) {
       emailSent = false;
     }
 
-    return NextResponse.json({ success: true, userId: user.id, emailSent }, { status: 201 });
+    return NextResponse.json({ success: true, userId: user.newUser.id, emailSent }, { status: 201 });
   } catch (error) {
     console.error("[PHARMACY STORE REGISTER ERROR]", error);
     return NextResponse.json(
