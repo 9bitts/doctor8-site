@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Search, User } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Search, User } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
@@ -15,6 +15,8 @@ import NutritionAnamneseTabs from "./NutritionAnamneseTabs";
 export type NutritionChart = { id: string; firstName: string; lastName: string };
 
 export type NutritionModuleId = "anthropometry" | "mealPlans" | "intake" | "foodDiary" | "anamnesis";
+
+const LIST_PREVIEW_LIMIT = 10;
 
 export default function NutritionChartWorkspace({
   titleKey,
@@ -30,34 +32,44 @@ export default function NutritionChartWorkspace({
   const [selected, setSelected] = useState<NutritionChart | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/professional/records");
-        const data = await res.json();
-        const list: NutritionChart[] = data.records || [];
-        setCharts(list);
+  const loadCharts = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const res = await fetch("/api/professional/records");
+      if (!res.ok) throw new Error("fetch failed");
+      const data = await res.json();
+      const list: NutritionChart[] = data.records || [];
+      setCharts(list);
 
-        const { patientRecordId } = readChartDeepLink();
-        if (patientRecordId) {
-          const chart =
-            list.find((c) => c.id === patientRecordId) ||
-            (await fetchChartById(patientRecordId));
-          if (chart) setSelected(chart);
-        }
-      } catch {
-        /* ignore */
+      const { patientRecordId } = readChartDeepLink();
+      if (patientRecordId) {
+        const chart =
+          list.find((c) => c.id === patientRecordId) ||
+          (await fetchChartById(patientRecordId));
+        if (chart) setSelected(chart);
       }
+    } catch {
+      setError(true);
+    } finally {
       setLoading(false);
-    })();
+    }
   }, []);
 
-  const filtered = query.trim()
+  useEffect(() => {
+    void loadCharts();
+  }, [loadCharts]);
+
+  const trimmedQuery = query.trim();
+  const filtered = trimmedQuery
     ? charts.filter((c) =>
-        `${c.firstName} ${c.lastName}`.toLowerCase().includes(query.toLowerCase()),
+        `${c.firstName} ${c.lastName}`.toLowerCase().includes(trimmedQuery.toLowerCase()),
       )
-    : charts.slice(0, 10);
+    : charts.slice(0, LIST_PREVIEW_LIMIT);
+
+  const showListCounter = !trimmedQuery && charts.length > LIST_PREVIEW_LIMIT;
 
   function renderModule(chart: NutritionChart) {
     switch (module) {
@@ -121,24 +133,45 @@ export default function NutritionChartWorkspace({
               <div className="flex justify-center py-6">
                 <Loader2 className="animate-spin text-amber-500" size={22} />
               </div>
+            ) : error ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-center space-y-3">
+                <p className="text-sm text-red-700">{t("nutri.charts.loadError")}</p>
+                <button
+                  type="button"
+                  onClick={() => void loadCharts()}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-red-700 hover:text-red-900"
+                >
+                  <RefreshCw size={14} />
+                  {t("nutri.charts.retry")}
+                </button>
+              </div>
             ) : charts.length === 0 ? (
               <NoPatientChartsEmptyState variant="amber" compact />
             ) : filtered.length === 0 ? (
               <p className="text-sm text-slate-500 py-4 text-center">{t("pat.searchEmpty")}</p>
             ) : (
-              <ul className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
-                {filtered.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelected(c)}
-                      className="w-full text-left px-2 py-2.5 text-sm hover:bg-amber-50 rounded-lg transition"
-                    >
-                      {c.firstName} {c.lastName}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <>
+                {showListCounter && (
+                  <p className="text-xs text-slate-500">
+                    {t("nutri.charts.showing")
+                      .replace("{shown}", String(LIST_PREVIEW_LIMIT))
+                      .replace("{total}", String(charts.length))}
+                  </p>
+                )}
+                <ul className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
+                  {filtered.map((c) => (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelected(c)}
+                        className="w-full text-left px-2 py-2.5 text-sm hover:bg-amber-50 rounded-lg transition"
+                      >
+                        {c.firstName} {c.lastName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </>
         )}
