@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 export async function requireDentistProfessional() {
   const ctx = await requireProfessional();
   if ("error" in ctx) return ctx;
-  if (!isDentistSpecialty(ctx.professional.specialty) && ctx.session.user.role !== "ADMIN") {
+  if (!isDentistSpecialty(ctx.professional.specialty)) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
   return ctx;
