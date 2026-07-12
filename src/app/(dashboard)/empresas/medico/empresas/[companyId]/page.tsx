@@ -44,6 +44,17 @@ type CompletedExam = {
   employee: { firstName: string; lastName: string; email: string };
 };
 
+type HistoryExam = {
+  id: string;
+  examType: string;
+  status: string;
+  dueDate: string | null;
+  completedAt: string | null;
+  asoResult: string | null;
+  asoRestrictions: string | null;
+  employee: { firstName: string; lastName: string; email: string };
+};
+
 type AsoResult = "APTO" | "APTO_COM_RESTRICAO" | "INAPTO";
 
 type ExamAction =
@@ -70,6 +81,9 @@ export default function MedicoEmpresaDetailPage() {
   const [asoRestrictions, setAsoRestrictions] = useState("");
   const [examNotes, setExamNotes] = useState("");
   const [rectifyAsoResult, setRectifyAsoResult] = useState<AsoResult>("APTO");
+  const [historyStatus, setHistoryStatus] = useState("");
+  const [historyExams, setHistoryExams] = useState<HistoryExam[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [data, setData] = useState<{
     company: { nomeFantasia: string; cnpj: string; nr1ComplianceScore: number | null };
     pcmso: {
@@ -100,6 +114,21 @@ export default function MedicoEmpresaDetailPage() {
   useEffect(() => {
     load();
   }, [companyId]);
+
+  async function loadHistory(status = historyStatus) {
+    if (!companyId) return;
+    setHistoryLoading(true);
+    const params = new URLSearchParams({ employerCompanyId: companyId, take: "50" });
+    if (status) params.set("status", status);
+    const res = await fetch(`/api/occupational-physician/exams?${params}`);
+    const json = await res.json();
+    if (res.ok) setHistoryExams(json.exams ?? []);
+    setHistoryLoading(false);
+  }
+
+  useEffect(() => {
+    loadHistory();
+  }, [companyId, historyStatus]);
 
   async function savePcmso(signOff = false) {
     setSaving(true);
@@ -168,6 +197,7 @@ export default function MedicoEmpresaDetailPage() {
         toast.success("ASO registrado.");
         closeExamModal();
         await load();
+        await loadHistory();
       } else {
         const json = await res.json().catch(() => ({}));
         toast.error(typeof json.error === "string" ? json.error : "Erro ao registrar ASO.");
@@ -203,6 +233,7 @@ export default function MedicoEmpresaDetailPage() {
       toast.success("ASO retificado.");
       closeExamModal();
       await load();
+      await loadHistory();
     } else {
       const json = await res.json().catch(() => ({}));
       toast.error(typeof json.error === "string" ? json.error : "Erro ao retificar ASO.");
@@ -368,6 +399,58 @@ export default function MedicoEmpresaDetailPage() {
                     </button>
                   </div>
                 </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="font-semibold text-slate-900">Histórico de exames / ASOs</h2>
+          <select
+            value={historyStatus}
+            onChange={(e) => setHistoryStatus(e.target.value)}
+            className="text-sm rounded-lg border border-slate-200 px-3 py-1.5"
+          >
+            <option value="">Todos os status</option>
+            <option value="SCHEDULED">Agendado</option>
+            <option value="IN_PROGRESS">Em andamento</option>
+            <option value="COMPLETED">Concluído</option>
+            <option value="CANCELLED">Cancelado</option>
+          </select>
+        </div>
+        {historyLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="animate-spin text-teal-500" size={24} />
+          </div>
+        ) : !historyExams.length ? (
+          <p className="text-sm text-slate-500">Nenhum exame encontrado.</p>
+        ) : (
+          <ul className="space-y-2 max-h-96 overflow-y-auto">
+            {historyExams.map((exam) => (
+              <li key={exam.id} className="border border-slate-100 rounded-lg px-3 py-2 text-sm flex justify-between gap-2">
+                <div>
+                  <span className="font-medium text-slate-900">
+                    {exam.employee.firstName} {exam.employee.lastName}
+                  </span>
+                  <span className="text-xs text-slate-500 ml-2">
+                    {EXAM_TYPE_LABELS[exam.examType] ?? exam.examType} · {exam.status}
+                  </span>
+                  {exam.asoResult && (
+                    <span className="text-xs text-emerald-700 ml-2">
+                      {ASO_RESULT_LABELS[exam.asoResult as keyof typeof ASO_RESULT_LABELS]}
+                    </span>
+                  )}
+                </div>
+                {exam.status === "COMPLETED" && exam.asoResult && (
+                  <a
+                    href={`/api/employer/exams/${exam.id}/aso-pdf`}
+                    className="text-xs text-sky-600 hover:underline shrink-0"
+                  >
+                    PDF
+                  </a>
+                )}
               </li>
             ))}
           </ul>

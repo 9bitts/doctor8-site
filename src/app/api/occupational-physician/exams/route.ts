@@ -29,20 +29,27 @@ export async function GET(req: NextRequest) {
   const take = Math.min(Number(searchParams.get("take") ?? 50), 50);
   const skip = Math.max(Number(searchParams.get("skip") ?? 0), 0);
 
-  const linkedCompanyIds =
-    session?.user?.role === "ADMIN"
-      ? employerCompanyId
-        ? [employerCompanyId]
-        : undefined
-      : ctx.links.map((l) => l.employerCompanyId);
+  if (session?.user?.role !== "ADMIN") {
+    if (employerCompanyId) {
+      const allowed = await userHasCompanyAccess(ctx.userId, employerCompanyId);
+      if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
 
-  if (!linkedCompanyIds?.length && session?.user?.role !== "ADMIN") {
+  const linkedCompanyIds = ctx.links.map((l) => l.employerCompanyId);
+
+  if (session?.user?.role === "ADMIN") {
+    if (!employerCompanyId) {
+      return NextResponse.json({ exams: [], total: 0 });
+    }
+  } else if (!linkedCompanyIds.length) {
     return NextResponse.json({ exams: [], total: 0 });
   }
 
-  const companyFilter =
-    employerCompanyId && linkedCompanyIds?.includes(employerCompanyId)
-      ? [employerCompanyId]
+  const companyFilter = employerCompanyId
+    ? [employerCompanyId]
+    : session?.user?.role === "ADMIN"
+      ? undefined
       : linkedCompanyIds;
 
   const where = {

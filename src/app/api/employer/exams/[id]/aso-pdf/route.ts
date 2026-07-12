@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getEmployerMembership } from "@/lib/employer-auth";
+import { getEmployerMembership, resolveSelectedEmployerCompanyId } from "@/lib/employer-auth";
 import { userHasCompanyAccess } from "@/lib/occupational-physician-auth";
 import { resolveAsoPdfAccess } from "@/lib/aso-pdf-access";
 import { buildAsoPdf, type AsoDocumentPayload } from "@/lib/employer-aso-pdf";
@@ -37,7 +37,8 @@ export async function GET(
   let employerCompanyId: string | null = null;
 
   if (role === "EMPLOYER" || role === "ADMIN") {
-    const membership = await getEmployerMembership(session.user.id);
+    const companyId = await resolveSelectedEmployerCompanyId();
+    const membership = await getEmployerMembership(session.user.id, companyId);
     hasEmployerMembership = Boolean(membership);
     employerCompanyId = membership?.employerCompanyId ?? null;
   }

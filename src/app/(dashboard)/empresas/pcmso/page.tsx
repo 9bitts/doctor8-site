@@ -26,6 +26,7 @@ export default function PcmsoPage() {
   const [notes, setNotes] = useState("");
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [completionPercent, setCompletionPercent] = useState(0);
+  const [replaceConfirm, setReplaceConfirm] = useState<{ activeEmail: string } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -69,13 +70,14 @@ export default function PcmsoPage() {
     load();
   }
 
-  async function handleInvite() {
+  async function handleInvite(replaceActive = false) {
     if (!coordinatorEmail.trim()) {
       setInviteMessage("Informe o e-mail do médico coordenador.");
       return;
     }
     setInviting(true);
     setInviteMessage("");
+    if (!replaceActive) setReplaceConfirm(null);
     const res = await fetch("/api/employer/pcmso/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -83,13 +85,22 @@ export default function PcmsoPage() {
         email: coordinatorEmail.trim(),
         fullName: coordinatorName.trim() || undefined,
         crm: coordinatorCrm.trim() || undefined,
+        replaceActive: replaceActive || undefined,
       }),
     });
     const data = await res.json();
     if (res.ok) {
+      setReplaceConfirm(null);
       setInviteMessage(data.message || "Convite enviado.");
+    } else if (res.status === 409 && data.error === "ACTIVE_COORDINATOR_EXISTS") {
+      setReplaceConfirm({ activeEmail: data.activeEmail });
+      setInviteMessage(data.message || "Confirme a substituição do coordenador ativo.");
     } else {
-      setInviteMessage(data.error === "ALREADY_ACTIVE" ? "Este médico já possui acesso ativo." : (data.error || "Erro ao enviar convite."));
+      setInviteMessage(
+        data.error === "ALREADY_ACTIVE"
+          ? "Este médico já possui acesso ativo."
+          : (data.message || data.error || "Erro ao enviar convite."),
+      );
     }
     setInviting(false);
     load();
@@ -169,12 +180,22 @@ export default function PcmsoPage() {
             )}
             <button
               type="button"
-              onClick={handleInvite}
+              onClick={() => handleInvite(false)}
               disabled={inviting || !coordinatorEmail.trim()}
               className="px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium disabled:opacity-50"
             >
               {inviting ? "Enviando…" : "Enviar convite de acesso"}
             </button>
+            {replaceConfirm && (
+              <button
+                type="button"
+                onClick={() => handleInvite(true)}
+                disabled={inviting}
+                className="ml-2 px-4 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-sm font-medium disabled:opacity-50"
+              >
+                Confirmar substituição de {replaceConfirm.activeEmail}
+              </button>
+            )}
             {inviteMessage && <p className="text-xs text-teal-900">{inviteMessage}</p>}
           </div>
         </div>

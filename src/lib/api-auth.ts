@@ -11,6 +11,7 @@ import {
 } from "@/lib/organization-auth";
 import {
   getEmployerMembership,
+  resolveSelectedEmployerCompanyId,
   type EmployerContext,
 } from "@/lib/employer-auth";
 
@@ -117,7 +118,8 @@ export async function requireEmployerApi(
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 
-  const membership = await getEmployerMembership(session.user.id);
+  const companyId = await resolveSelectedEmployerCompanyId();
+  const membership = await getEmployerMembership(session.user.id, companyId);
   if (!membership) {
     return { error: NextResponse.json({ error: "Employer company not found" }, { status: 404 }) };
   }

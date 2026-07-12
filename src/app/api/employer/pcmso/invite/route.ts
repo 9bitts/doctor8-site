@@ -9,6 +9,7 @@ const inviteSchema = z.object({
   email: z.string().email(),
   fullName: z.string().max(200).optional(),
   crm: z.string().max(30).optional(),
+  replaceActive: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -28,6 +29,28 @@ export async function POST(req: NextRequest) {
     where: { id: ctx.employerCompanyId },
     select: { nomeFantasia: true },
   });
+
+  const activeOtherCoordinator = await db.employerOccupationalPhysician.findFirst({
+    where: {
+      employerCompanyId: ctx.employerCompanyId,
+      status: "ACTIVE",
+      userId: { not: null },
+      email: { not: email },
+    },
+    select: { id: true, email: true, fullName: true },
+  });
+
+  if (activeOtherCoordinator && !parsed.data.replaceActive) {
+    return NextResponse.json(
+      {
+        error: "ACTIVE_COORDINATOR_EXISTS",
+        message: `Já há médico coordenador ativo (${activeOtherCoordinator.email}). Confirme a substituição.`,
+        activeEmail: activeOtherCoordinator.email,
+        activeName: activeOtherCoordinator.fullName,
+      },
+      { status: 409 },
+    );
+  }
 
   await db.employerPcmsoConfig.upsert({
     where: { employerCompanyId: ctx.employerCompanyId },
@@ -55,6 +78,13 @@ export async function POST(req: NextRequest) {
 
   if (existing?.status === "ACTIVE" && existing.userId) {
     return NextResponse.json({ error: "ALREADY_ACTIVE" }, { status: 400 });
+  }
+
+  if (activeOtherCoordinator && parsed.data.replaceActive) {
+    await db.employerOccupationalPhysician.update({
+      where: { id: activeOtherCoordinator.id },
+      data: { status: "DISABLED" },
+    });
   }
 
   await db.employerOccupationalPhysician.upsert({

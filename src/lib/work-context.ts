@@ -7,6 +7,7 @@ export const ORG_PROVIDER_COOKIE = "doctor8_org_provider";
 /** @deprecated use ORG_PROVIDER_COOKIE ? legacy doctor-only filter */
 export const ORG_PROFESSIONAL_COOKIE = "doctor8_org_professional";
 export const PRO_SCOPE_COOKIE = "doctor8_pro_scope";
+export const EMPLOYER_COMPANY_COOKIE = "doctor8_employer_company";
 
 export type ProScope = "solo" | "clinic";
 
@@ -68,6 +69,30 @@ export function writeProScopeCookie(scope: ProScope): void {
   if (typeof document === "undefined") return;
   document.cookie = `${PRO_SCOPE_COOKIE}=${scope};path=/;max-age=31536000;SameSite=Lax`;
   window.dispatchEvent(new CustomEvent("doctor8-pro-scope-change", { detail: scope }));
+}
+
+export function readEmployerCompanyCookie(): string {
+  return readCookie(EMPLOYER_COMPANY_COOKIE);
+}
+
+export function writeEmployerCompanyCookie(companyId: string): void {
+  if (typeof document === "undefined") return;
+  const value = companyId ? encodeURIComponent(companyId) : "";
+  document.cookie = `${EMPLOYER_COMPANY_COOKIE}=${value};path=/;max-age=31536000;SameSite=Lax`;
+  window.dispatchEvent(new CustomEvent("doctor8-employer-company-change", { detail: companyId }));
+}
+
+/** Server-side: resolve selected employer company from cookie. */
+export function employerCompanyIdFromCookies(
+  getCookie: (name: string) => string | undefined,
+): string | undefined {
+  const raw = getCookie(EMPLOYER_COMPANY_COOKIE)?.trim();
+  if (!raw) return undefined;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
 }
 
 /** Server-side: resolve org provider scope from cookies or legacy doctor id. */

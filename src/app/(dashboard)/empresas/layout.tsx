@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { resolveRoleHome } from "@/lib/role-home";
+import EmployerCompanySwitcher from "@/components/employer/EmployerCompanySwitcher";
 
 export default async function EmpresasDashboardLayout({
   children,
@@ -17,5 +18,10 @@ export default async function EmpresasDashboardLayout({
   ) {
     redirect(resolveRoleHome(role));
   }
-  return <>{children}</>;
+  return (
+    <>
+      {role === "EMPLOYER" && <EmployerCompanySwitcher />}
+      {children}
+    </>
+  );
 }
