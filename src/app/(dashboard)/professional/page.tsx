@@ -29,6 +29,7 @@ import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import { providerDayBounds } from "@/lib/provider-day-bounds";
 import { buildProviderFinanceiroReport } from "@/lib/provider-financeiro";
 import ProfessionalTourWrapper from "./ProfessionalTourWrapper";
+import IncompleteLicenseBanner from "@/components/professional/IncompleteLicenseBanner";
 import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
 import { formatMoneyCents } from "@/lib/safe-format-currency";
 import { initialsOf } from "@/lib/format-name";
@@ -259,6 +260,14 @@ export default async function ProfessionalDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+
+      {!professional.licenseNumber?.trim() && (
+        <IncompleteLicenseBanner
+          lang={lang}
+          specialty={professional.specialty}
+          settingsHref="/professional/settings"
+        />
+      )}
 
       <HumanitarianVolunteerBanner
         lang={lang}

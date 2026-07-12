@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
+import { hasListableLicense } from "@/lib/license-validation";
 
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
@@ -65,6 +66,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
     : await db.professionalProfile.findMany({
         where: {
           ...(verifiedOnly ? { verified: true } : {}),
+          licenseNumber: { not: "" },
           ...(consultType === "TELECONSULT" ? { acceptsTeleconsult: true } : {}),
           ...(consultType === "IN_PERSON" ? { acceptsInPerson: true } : {}),
           ...(specialty && specialty !== "Psychology" && specialty !== "Nutrition"
@@ -136,6 +138,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
       });
 
   const healthMapped: UnifiedProvider[] = healthPros
+    .filter((p) => hasListableLicense(p.licenseNumber))
     .filter((p) => !specialty || specialty === PSYCHOANALYSIS_SPECIALTY || matchesSpecialtyFilter(specialty, p.specialty, "health"))
     .map((p) => {
       const info = getProfessionInfo(p.specialty);
@@ -236,6 +239,7 @@ export async function getUnifiedProvider(
       },
     });
     if (!p) return null;
+    if (!hasListableLicense(p.licenseNumber)) return null;
     const info = getProfessionInfo(p.specialty);
     return {
       id: p.id,

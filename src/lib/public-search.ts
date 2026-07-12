@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
+import { hasListableLicense } from "@/lib/license-validation";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import {
@@ -220,6 +221,7 @@ export async function searchPublicListings(
         professionalId: { not: null },
         professional: {
           verified: true,
+          licenseNumber: { not: "" },
           ...(teleconsult ? { acceptsTeleconsult: true } : {}),
           ...(presencial ? { acceptsInPerson: true } : {}),
           ...(healthPlanFilter
@@ -247,6 +249,7 @@ export async function searchPublicListings(
     for (const card of cards) {
       const p = card.professional;
       if (!p) continue;
+      if (!hasListableLicense(p.licenseNumber)) continue;
       if (!includeOnline && card.citySlug === "online" && !p.acceptsTeleconsult) continue;
       if (!includeOnline && card.citySlug !== cidade && card.citySlug !== "online") continue;
 
