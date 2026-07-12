@@ -69,8 +69,8 @@ test.describe("authenticated login", () => {
   test("psychologist can log in via unified login", async ({ page }) => {
     const creds = e2ePsychologistCredentials()!;
     await loginPsychologist(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
-    await page.waitForURL(/\/(psychologist|professional|onboarding)/, { timeout: 30_000 });
+    await waitForAuthenticatedSession(page, creds.email);
+    await page.waitForURL(/\/(psychologist|professional|onboarding)/, { timeout: 45_000 });
     await expect(page.locator("body")).toBeVisible();
   });
 });

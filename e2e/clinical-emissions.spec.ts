@@ -14,7 +14,7 @@ test.describe("clinical emissions API", () => {
   test("patient sees seeded prescriptions", async ({ page }) => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const res = await apiGet(page, "/api/patient/prescriptions");
     expect(res.ok).toBeTruthy();
@@ -26,7 +26,7 @@ test.describe("clinical emissions API", () => {
   test("patient sees seeded exam requests", async ({ page }) => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const res = await apiGet(page, "/api/patient/exam-requests");
     expect(res.ok).toBeTruthy();
@@ -38,7 +38,7 @@ test.describe("clinical emissions API", () => {
   test("patient clinical pages load when authenticated", async ({ page }) => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password, "/patient/prescriptions");
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     await page.waitForURL(/\/patient\/prescriptions/, { timeout: 30_000 });
     await expect(page.locator("body")).toBeVisible();
 

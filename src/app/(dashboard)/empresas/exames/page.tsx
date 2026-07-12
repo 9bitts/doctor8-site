@@ -46,6 +46,13 @@ export default function ExamesPage() {
   const [clinicPartnerId, setClinicPartnerId] = useState("");
   const [exporting, setExporting] = useState(false);
   const [selectedExamId, setSelectedExamId] = useState<string | undefined>();
+  const [transcribeExamId, setTranscribeExamId] = useState<string | null>(null);
+  const [transcribeResult, setTranscribeResult] = useState("APTO");
+  const [transcribeRestrictions, setTranscribeRestrictions] = useState("");
+  const [physicianName, setPhysicianName] = useState("");
+  const [physicianCrm, setPhysicianCrm] = useState("");
+  const [transcribeSaving, setTranscribeSaving] = useState(false);
+  const [transcribeError, setTranscribeError] = useState("");
 
   async function load() {
     setLoading(true);
@@ -87,19 +94,41 @@ export default function ExamesPage() {
     load();
   }
 
-  async function completeExam(id: string, asoResult: string) {
-    await fetch(`/api/employer/exams/${id}`, {
+  async function submitTranscription() {
+    if (!transcribeExamId) return;
+    setTranscribeSaving(true);
+    setTranscribeError("");
+    const res = await fetch(`/api/employer/exams/${transcribeExamId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         status: "COMPLETED",
-        asoResult,
+        asoResult: transcribeResult,
+        asoRestrictions: transcribeResult === "APTO_COM_RESTRICAO" ? transcribeRestrictions : undefined,
+        physicianName: physicianName.trim(),
+        physicianCrm: physicianCrm.trim(),
+        asoSource: "TRANSCRITO",
         completedAt: new Date().toISOString(),
-        physicianName: "Médico do trabalho",
       }),
     });
-    setSelectedExamId(id);
+    const data = await res.json().catch(() => ({}));
+    setTranscribeSaving(false);
+    if (!res.ok) {
+      setTranscribeError(data.error || "Erro ao registrar ASO");
+      return;
+    }
+    setTranscribeExamId(null);
+    setSelectedExamId(transcribeExamId);
     load();
+  }
+
+  function openTranscription(id: string, asoResult: string) {
+    setTranscribeExamId(id);
+    setTranscribeResult(asoResult);
+    setTranscribeRestrictions("");
+    setPhysicianName("");
+    setPhysicianCrm("");
+    setTranscribeError("");
   }
 
   async function uploadReport(examId: string, file: File) {
@@ -251,7 +280,7 @@ export default function ExamesPage() {
                   </>
                 )}
                 {exam.status !== "COMPLETED" && ASO_RESULTS.map((r) => (
-                  <button key={r.value} type="button" onClick={() => completeExam(exam.id, r.value)} className="text-xs px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50">
+                  <button key={r.value} type="button" onClick={() => openTranscription(exam.id, r.value)} className="text-xs px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50">
                     {r.label}
                   </button>
                 ))}
@@ -264,6 +293,77 @@ export default function ExamesPage() {
           <p className="text-sm text-slate-500">Nenhum exame agendado.</p>
         )}
       </ul>
+
+      {transcribeExamId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Transcrever ASO físico</h2>
+            <p className="text-xs text-slate-500">
+              Registro auditado da aptidão conforme ASO assinado pelo médico do trabalho.
+            </p>
+            <div>
+              <label className="text-xs text-slate-500">Resultado</label>
+              <select
+                value={transcribeResult}
+                onChange={(e) => setTranscribeResult(e.target.value)}
+                className="w-full mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              >
+                {ASO_RESULTS.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+            {transcribeResult === "APTO_COM_RESTRICAO" && (
+              <div>
+                <label className="text-xs text-slate-500">Restrições *</label>
+                <textarea
+                  required
+                  value={transcribeRestrictions}
+                  onChange={(e) => setTranscribeRestrictions(e.target.value)}
+                  className="w-full mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  rows={3}
+                />
+              </div>
+            )}
+            <div>
+              <label className="text-xs text-slate-500">Nome do médico *</label>
+              <input
+                required
+                value={physicianName}
+                onChange={(e) => setPhysicianName(e.target.value)}
+                className="w-full mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500">CRM do médico *</label>
+              <input
+                required
+                value={physicianCrm}
+                onChange={(e) => setPhysicianCrm(e.target.value)}
+                className="w-full mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+            {transcribeError && <p className="text-sm text-red-600">{transcribeError}</p>}
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setTranscribeExamId(null)}
+                className="px-4 py-2 rounded-lg border border-slate-200 text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={transcribeSaving || !physicianName.trim() || !physicianCrm.trim()}
+                onClick={submitTranscription}
+                className="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium disabled:opacity-50"
+              >
+                {transcribeSaving ? "Salvando…" : "Registrar ASO"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,8 +5,9 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { UserRole, ConsentType } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import { sendEmailVerification } from "@/lib/email";
+import { createRegisterConsents } from "@/lib/consent/register-consents";
 import { EMPLOYER_LOGIN } from "@/lib/auth-portals";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
@@ -43,7 +44,7 @@ const registerEmployerSchema = z.object({
   language: z.string().optional(),
   acceptedTerms: z.literal(true),
   acceptedPrivacy: z.literal(true),
-  acceptedGdpr: z.literal(true),
+  acceptedLgpd: z.literal(true),
 });
 
 async function uniqueEmployerSlug(base: string): Promise<string> {
@@ -122,6 +123,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(existingResult, { status: 200 });
     }
     if (existingCnpj) {
+      // CNPJ is public data (Receita Federal); 409 is intentional — see docs/employer-auth-decisions.md
       return NextResponse.json({ error: { cnpj: ["CNPJ já cadastrado"] } }, { status: 409 });
     }
 
@@ -176,12 +178,10 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      await tx.consent.createMany({
-        data: [
-          { userId: newUser.id, type: ConsentType.TERMS_OF_SERVICE, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.PRIVACY_POLICY, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.GDPR_CONSENT, version: "1.0", granted: true, ipAddress: ip, userAgent },
-        ],
+      await createRegisterConsents(tx, newUser.id, ip, userAgent, {
+        acceptedTerms: parsed.acceptedTerms,
+        acceptedPrivacy: parsed.acceptedPrivacy,
+        acceptedLgpd: parsed.acceptedLgpd,
       });
 
       return newUser;

@@ -52,7 +52,7 @@ export default function EmpresasCadastroPage() {
   const [addressState, setAddressState] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [acceptedGdpr, setAcceptedGdpr] = useState(false);
+  const [acceptedLgpd, setAcceptedLgpd] = useState(false);
 
   async function lookupCnpj() {
     const digits = stripCnpj(cnpj);
@@ -107,7 +107,7 @@ export default function EmpresasCadastroPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!acceptedTerms || !acceptedPrivacy || !acceptedGdpr) return;
+    if (!acceptedTerms || !acceptedPrivacy || !acceptedLgpd) return;
 
     const phoneCheck = validateRegistrationPhone(phone.ddi, phone.nationalNumber);
     if (!phoneCheck.ok) {
@@ -143,7 +143,7 @@ export default function EmpresasCadastroPage() {
           language: lang,
           acceptedTerms: true,
           acceptedPrivacy: true,
-          acceptedGdpr: true,
+          acceptedLgpd: true,
         }),
       });
       const data = await res.json();
@@ -358,14 +358,14 @@ export default function EmpresasCadastroPage() {
                   {t("reg.acceptPrivacy")}
                 </label>
                 <label className="flex items-start gap-2 text-sm text-slate-300 cursor-pointer">
-                  <input type="checkbox" checked={acceptedGdpr} onChange={(e) => setAcceptedGdpr(e.target.checked)} className="mt-1" />
+                  <input type="checkbox" checked={acceptedLgpd} onChange={(e) => setAcceptedLgpd(e.target.checked)} className="mt-1" />
                   {t("org.acceptLgpd")}
                 </label>
               </div>
 
               <button
                 type="submit"
-                disabled={loading || !acceptedTerms || !acceptedPrivacy || !acceptedGdpr || !validateRegistrationPhone(phone.ddi, phone.nationalNumber).ok}
+                disabled={loading || !acceptedTerms || !acceptedPrivacy || !acceptedLgpd || !validateRegistrationPhone(phone.ddi, phone.nationalNumber).ok}
                 className="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : null}

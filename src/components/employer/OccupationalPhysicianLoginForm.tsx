@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Stethoscope } from "lucide-react";
@@ -18,8 +18,6 @@ import {
   LoginLanguageSelector,
   LoginCard,
   LoginAlerts,
-  GoogleSignInButton,
-  LoginDivider,
   LoginCredentialsForm,
   navigateAfterAuth,
   waitForAuthenticatedSession,
@@ -34,7 +32,6 @@ function canAccessOccupationalPhysicianPortal(role: string): boolean {
 
 export default function OccupationalPhysicianLoginForm() {
   const searchParams = useSearchParams();
-  const { data: session, status: sessionStatus } = useSession();
   const queryCallback = searchParams.get("callbackUrl") || "";
   const { callback: callbackUrl } = resolveClientAuthCallback(queryCallback || OCCUPATIONAL_PHYSICIAN_HOME);
   const { lang, changeLang, t } = useLoginLang(callbackUrl);
@@ -43,15 +40,12 @@ export default function OccupationalPhysicianLoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<LoginErrorCode>("");
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
-  const [oauthHandled, setOauthHandled] = useState(false);
 
   const verified = searchParams.get("verified") === "true";
   const passwordReset = searchParams.get("reset") === "success";
   const registered = searchParams.get("registered") === "1";
-  const fromOAuth = searchParams.get("oauth") === "1";
 
   const forgotHref = buildForgotPasswordHref({
     email: email.trim() || undefined,
@@ -61,33 +55,6 @@ export default function OccupationalPhysicianLoginForm() {
   useEffect(() => {
     setError(parseLoginError(searchParams.get("error")));
   }, [searchParams]);
-
-  useEffect(() => {
-    if (!fromOAuth || oauthHandled || sessionStatus !== "authenticated" || !session?.user?.role) {
-      return;
-    }
-    setOauthHandled(true);
-
-    async function finishOAuth() {
-      if (!canAccessOccupationalPhysicianPortal(session!.user!.role)) {
-        await signOut({ redirect: false });
-        setError("invalid");
-        setGoogleLoading(false);
-        return;
-      }
-      const savedCallback = consumeAuthCallback();
-      const destination = safePostLoginUrl(
-        session!.user!.role,
-        savedCallback || callbackUrl || OCCUPATIONAL_PHYSICIAN_HOME,
-      );
-      navigateAfterAuth(destination, session!.user!.role);
-    }
-
-    finishOAuth().catch(() => {
-      setError("oauthFailed");
-      setGoogleLoading(false);
-    });
-  }, [fromOAuth, oauthHandled, sessionStatus, session, callbackUrl]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -143,23 +110,6 @@ export default function OccupationalPhysicianLoginForm() {
     }
   }
 
-  async function handleGoogleSignIn() {
-    setGoogleLoading(true);
-    setError("");
-    persistAuthCallback(callbackUrl);
-    try {
-      clearSensitiveClientState();
-      await signOut({ redirect: false });
-      const returnUrl = `${OCCUPATIONAL_PHYSICIAN_LOGIN}?oauth=1${
-        callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : ""
-      }`;
-      await signIn("google", { callbackUrl: returnUrl });
-    } catch {
-      setError("oauthFailed");
-      setGoogleLoading(false);
-    }
-  }
-
   return (
     <LoginPageShell accent="teal">
       <LoginLanguageSelector lang={lang} onChange={changeLang} accent="teal" />
@@ -187,22 +137,12 @@ export default function OccupationalPhysicianLoginForm() {
           callbackUrl={callbackUrl || undefined}
         />
 
-        <GoogleSignInButton
-          loading={googleLoading}
-          disabled={googleLoading || loading}
-          onClick={handleGoogleSignIn}
-          t={t}
-          labelKey="login.continueGoogle"
-        />
-
-        <LoginDivider t={t} />
-
         <LoginCredentialsForm
           email={email}
           password={password}
           showPassword={showPassword}
           loading={loading}
-          googleLoading={googleLoading}
+          googleLoading={false}
           accent="teal"
           forgotHref={forgotHref}
           t={t}

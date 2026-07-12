@@ -129,7 +129,11 @@ export async function transmitToPartner(transmissionId: string): Promise<{
   return { status: "SENT_TO_PARTNER", partnerRef: result.partnerRef };
 }
 
-export async function buildAndQueueS2220FromExam(examId: string, employerCompanyId: string) {
+export async function buildAndQueueS2220FromExam(
+  examId: string,
+  employerCompanyId: string,
+  options?: { isRetification?: boolean },
+) {
   const exam = await db.employerOccupationalExam.findFirst({
     where: { id: examId, employerCompanyId, status: "COMPLETED" },
     include: {
@@ -138,6 +142,41 @@ export async function buildAndQueueS2220FromExam(examId: string, employerCompany
     },
   });
   if (!exam) return null;
+
+  const isRetification = options?.isRetification ?? false;
+  const eventRefId = isRetification
+    ? `${examId}:retify:${exam.asoRetifiedAt?.getTime() ?? Date.now()}`
+    : examId;
+
+  if (!isRetification) {
+    if (exam.esocialS2220QueuedAt) {
+      const existing = await db.employerEsocialTransmission.findFirst({
+        where: {
+          employerCompanyId,
+          eventType: "S-2220",
+          eventRefId: examId,
+        },
+      });
+      if (existing) return existing;
+    }
+
+    const existing = await db.employerEsocialTransmission.findFirst({
+      where: {
+        employerCompanyId,
+        eventType: "S-2220",
+        eventRefId: examId,
+      },
+    });
+    if (existing) {
+      if (!exam.esocialS2220QueuedAt) {
+        await db.employerOccupationalExam.update({
+          where: { id: examId },
+          data: { esocialS2220QueuedAt: existing.createdAt },
+        });
+      }
+      return existing;
+    }
+  }
 
   const payload = buildS2220Payload({
     company: { cnpj: exam.employerCompany.cnpj },
@@ -165,13 +204,46 @@ export async function buildAndQueueS2220FromExam(examId: string, employerCompany
   }
 
   const xml = s2220PayloadToXml(payload);
-  return queueEsocialTransmission({
-    employerCompanyId,
-    eventType: "S-2220",
-    eventRefId: examId,
-    payloadJson: payload,
-    payloadXml: xml,
-  });
+  try {
+    const transmission = await queueEsocialTransmission({
+      employerCompanyId,
+      eventType: "S-2220",
+      eventRefId,
+      payloadJson: payload,
+      payloadXml: xml,
+    });
+
+    if (!isRetification) {
+      await db.employerOccupationalExam.update({
+        where: { id: examId },
+        data: { esocialS2220QueuedAt: new Date() },
+      });
+    }
+
+    return transmission;
+  } catch (err: unknown) {
+    const code =
+      err && typeof err === "object" && "code" in err
+        ? String((err as { code: string }).code)
+        : "";
+    if (code === "P2002" && !isRetification) {
+      const existing = await db.employerEsocialTransmission.findFirst({
+        where: {
+          employerCompanyId,
+          eventType: "S-2220",
+          eventRefId: examId,
+        },
+      });
+      if (existing) {
+        await db.employerOccupationalExam.update({
+          where: { id: examId },
+          data: { esocialS2220QueuedAt: existing.createdAt },
+        });
+        return existing;
+      }
+    }
+    throw err;
+  }
 }
 
 export async function buildAndQueueS2240ForMember(

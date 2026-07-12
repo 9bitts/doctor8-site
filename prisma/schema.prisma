@@ -4508,6 +4508,11 @@ enum EmployerAsoResult {
   INAPTO
 }
 
+enum EmployerAsoSource {
+  PHYSICIAN
+  TRANSCRITO
+}
+
 model EmployerCompany {
   id                   String              @id @default(cuid())
   cnpj                 String              @unique
@@ -4992,6 +4997,9 @@ model EmployerOccupationalExam {
   asoRestrictions     String?                 @db.Text
   physicianName       String?
   physicianCrm        String?
+  asoSource           EmployerAsoSource?
+  asoRetifiedAt       DateTime?
+  esocialS2220QueuedAt DateTime?
   notes               String?                 @db.Text
 
   createdAt           DateTime                @default(now())
@@ -5059,6 +5067,7 @@ model EmployerEsocialTransmission {
 
   @@index([employerCompanyId])
   @@index([status])
+  @@unique([employerCompanyId, eventType, eventRefId])
 }
 
 model OccupationalClinicPartner {

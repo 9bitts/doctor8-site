@@ -4,7 +4,11 @@ import { requireOccupationalPhysicianApi } from "@/lib/api-auth";
 import { userHasCompanyAccess } from "@/lib/occupational-physician-auth";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import type { EmployerAsoResult, EmployerExamStatus } from "@prisma/client";
+import {
+  isAsoCompletionTransition,
+  validatePhysicianExamPatch,
+} from "@/lib/employer-aso-patch";
+import type { EmployerAsoResult, EmployerAsoSource, EmployerExamStatus } from "@prisma/client";
 
 const patchSchema = z.object({
   employerCompanyId: z.string(),
@@ -118,42 +122,27 @@ export async function PATCH(req: NextRequest) {
   });
   if (!exam) return NextResponse.json({ error: "Exam not found" }, { status: 404 });
 
-  const isCompletedWithResult =
-    exam.status === "COMPLETED" && exam.asoResult != null;
-
-  if (isCompletedWithResult && !parsed.data.rectify) {
-    return NextResponse.json(
-      { error: "Exame já concluído. Use retificação." },
-      { status: 409 },
-    );
-  }
-
-  if (parsed.data.rectify && !parsed.data.notes?.trim()) {
-    return NextResponse.json(
-      { error: "Justificativa obrigatória para retificação." },
-      { status: 400 },
-    );
-  }
-
-  const effectiveAsoResult = parsed.data.asoResult ?? exam.asoResult;
-  if (effectiveAsoResult === "APTO_COM_RESTRICAO") {
-    const restrictions = parsed.data.asoRestrictions?.trim() ?? exam.asoRestrictions?.trim();
-    if (!restrictions) {
-      return NextResponse.json(
-        { error: "Restrições obrigatórias para apto com restrição." },
-        { status: 400 },
-      );
-    }
+  const validationError = validatePhysicianExamPatch(exam, parsed.data);
+  if (validationError) {
+    return NextResponse.json({ error: validationError.error }, { status: validationError.status });
   }
 
   const updated = await db.employerOccupationalExam.update({
     where: { id: exam.id },
     data: {
-      status: parsed.data.status as EmployerExamStatus | undefined,
+      status:
+        parsed.data.status === "COMPLETED" || parsed.data.asoResult || parsed.data.rectify
+          ? ("COMPLETED" as EmployerExamStatus)
+          : (parsed.data.status as EmployerExamStatus | undefined),
       asoResult: parsed.data.asoResult as EmployerAsoResult | undefined,
       asoRestrictions: parsed.data.asoRestrictions,
       physicianName: parsed.data.physicianName ?? physician?.fullName ?? undefined,
       physicianCrm: parsed.data.physicianCrm ?? physician?.crm ?? undefined,
+      asoSource:
+        parsed.data.asoResult || parsed.data.rectify
+          ? ("PHYSICIAN" as EmployerAsoSource)
+          : undefined,
+      asoRetifiedAt: parsed.data.rectify ? new Date() : undefined,
       notes:
         parsed.data.notes !== undefined
           ? parsed.data.notes
@@ -196,6 +185,23 @@ export async function PATCH(req: NextRequest) {
         },
       });
     }
+  }
+
+  const wasCompletion = isAsoCompletionTransition(exam, updated);
+  if (wasCompletion) {
+    import("@/lib/employer-esocial-partner")
+      .then(({ buildAndQueueS2220FromExam }) =>
+        buildAndQueueS2220FromExam(updated.id, parsed.data.employerCompanyId),
+      )
+      .catch(() => {});
+  } else if (parsed.data.rectify && updated.status === "COMPLETED" && updated.asoResult) {
+    import("@/lib/employer-esocial-partner")
+      .then(({ buildAndQueueS2220FromExam }) =>
+        buildAndQueueS2220FromExam(updated.id, parsed.data.employerCompanyId, {
+          isRetification: true,
+        }),
+      )
+      .catch(() => {});
   }
 
   return NextResponse.json({ exam: updated });

@@ -64,7 +64,7 @@ test.describe("authenticated patient", () => {
   test("patient can log in and reach dashboard", async ({ page }) => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     await page.waitForURL(/\/(patient|humanitarian)/, { timeout: 30_000 });
     await expect(page.locator("body")).toBeVisible();
   });
@@ -73,7 +73,7 @@ test.describe("authenticated patient", () => {
     const creds = e2ePatientCredentials()!;
     const triagePath = `/humanitarian/${VENEZUELA_SLUG}/triage`;
     await loginWithCredentials(page, creds.email, creds.password, triagePath);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     await page.waitForURL(new RegExp(`/humanitarian/${VENEZUELA_SLUG}/triage`), {
       timeout: 30_000,
     });
@@ -84,7 +84,7 @@ test.describe("authenticated patient", () => {
     const creds = e2ePatientCredentials()!;
     const carePath = `/humanitarian/${VENEZUELA_SLUG}`;
     await loginWithCredentials(page, creds.email, creds.password, carePath);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     await page.waitForURL(new RegExp(`/humanitarian/${VENEZUELA_SLUG}`), {
       timeout: 30_000,
     });
@@ -95,7 +95,7 @@ test.describe("authenticated patient", () => {
     const creds = e2ePatientCredentials()!;
     const tclePath = `/humanitarian/${VENEZUELA_SLUG}/tcle`;
     await loginWithCredentials(page, creds.email, creds.password, tclePath);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     await page.waitForURL(new RegExp(`/humanitarian/${VENEZUELA_SLUG}/tcle`), {
       timeout: 30_000,
     });
@@ -106,7 +106,7 @@ test.describe("authenticated patient", () => {
     const creds = e2ePatientCredentials()!;
     const anamnesePath = `/humanitarian/${VENEZUELA_SLUG}/anamnese`;
     await loginWithCredentials(page, creds.email, creds.password, anamnesePath);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     await page.waitForURL(new RegExp(`/humanitarian/${VENEZUELA_SLUG}/anamnese`), {
       timeout: 30_000,
     });
@@ -116,7 +116,7 @@ test.describe("authenticated patient", () => {
   test("humanitarian intake API responds for logged-in patient", async ({ page }) => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     const res = await apiGet(
       page,
       `/api/humanitarian/intake?campaignSlug=${VENEZUELA_SLUG}`,
@@ -129,7 +129,7 @@ test.describe("authenticated patient", () => {
   test("patient can export FHIR bundle when logged in", async ({ page }) => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     const res = await apiGet(page, "/api/patient/history/fhir");
     expect(res.ok).toBeTruthy();
     const body = (await res.json()) as {
@@ -145,7 +145,7 @@ test.describe("authenticated patient", () => {
   test("legacy /settings redirects patient to account page", async ({ page }) => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     await page.goto("/settings");
     await expect(page).toHaveURL(/\/patient\/account/, { timeout: 15_000 });
   });
