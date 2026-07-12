@@ -283,7 +283,8 @@ export async function searchPharmacyQuotes(opts: {
   const quoteTargets: PrescriptionQuoteTargets = { drugCatalogIds, mnSlugs };
   const quotes: PharmacyQuote[] = [];
   for (const store of stores) {
-    const quote = buildQuoteForStore(store, quoteTargets, patientPoint);
+    const maxRadiusKm = store.deliveryRadiusKm ?? STORE_MAX_RADIUS_KM;
+    const quote = buildQuoteForStore(store, quoteTargets, patientPoint, maxRadiusKm);
     if (quote) quotes.push(quote);
   }
 
@@ -492,7 +493,7 @@ export async function searchPharmacyStores(opts: {
         latitude: store.latitude,
         longitude: store.longitude,
       });
-      if (distKm > STORE_MAX_RADIUS_KM) continue;
+      if (distKm > (store.deliveryRadiusKm ?? STORE_MAX_RADIUS_KM)) continue;
     }
 
     const inventoryByDrug = new Map(

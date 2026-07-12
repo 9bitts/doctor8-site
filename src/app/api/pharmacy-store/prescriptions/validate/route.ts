@@ -5,6 +5,12 @@ import { lookupPrescriptionByToken } from "@/lib/pharmacy-network/prescription-t
 import { decrypt } from "@/lib/encryption";
 import { isPharmacistSpecialty } from "@/lib/profession-label";
 import { authorizePharmacyPrescriptionValidate } from "@/lib/pharmacy-prescription-validate-auth";
+import {
+  assertOrderPaidForDispense,
+  assertPrescriptionDispensable,
+} from "@/lib/pharmacy-network/dispense-guards";
+import { createAuditLog } from "@/lib/audit";
+import { AuditAction } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -44,6 +50,13 @@ export async function GET(req: NextRequest) {
   if (!storeAuthz.ok) {
     return NextResponse.json({ error: storeAuthz.error }, { status: storeAuthz.status });
   }
+
+  createAuditLog({
+    userId: session.user.id,
+    action: AuditAction.VIEW_RECORD,
+    resource: "PharmacyPrescriptionToken",
+    resourceId: row.id,
+  }).catch(console.error);
 
   const rx = row.prescription;
   const patientName = rx.document?.patient
@@ -124,6 +137,22 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  const rxError = assertPrescriptionDispensable(rxFull);
+  if (rxError) {
+    return NextResponse.json({ error: rxError }, { status: 400 });
+  }
+
+  const linkedOrder = row.pharmacyOrderId
+    ? await db.pharmacyOrder.findUnique({
+        where: { id: row.pharmacyOrderId },
+        select: { status: true },
+      })
+    : null;
+  const orderError = assertOrderPaidForDispense(linkedOrder, Boolean(row.pharmacyOrderId));
+  if (orderError) {
+    return NextResponse.json({ error: orderError }, { status: 400 });
+  }
+
   let pharmacistProfileId: string | null = null;
   if (session.user.role === "PROFESSIONAL") {
     const pro = await db.professionalProfile.findUnique({
@@ -191,6 +220,19 @@ export async function POST(req: NextRequest) {
       });
     }
   });
+
+  createAuditLog({
+    userId: session.user.id,
+    action: AuditAction.UPDATE_RECORD,
+    resource: "PharmacyPrescriptionToken",
+    resourceId: row.id,
+    details: {
+      event: "pharmacy_dispensed",
+      prescriptionId: row.prescriptionId,
+      pharmacyOrderId: row.pharmacyOrderId,
+      pharmacyStoreId: storeId,
+    },
+  }).catch(console.error);
 
   return NextResponse.json({ success: true, dispensedAt: now.toISOString() });
 }

@@ -29,6 +29,7 @@
     "test:psychology-plan-limits": "tsx scripts/verify-psychology-plan-limits.ts",
     "test:psychology-record-kind": "tsx scripts/verify-psychology-record-kind.ts",
     "test:volunteer-booking": "tsx scripts/verify-volunteer-booking-integrity.ts",
+    "test:pharmacy-dispense-guards": "tsx scripts/verify-pharmacy-dispense-guards.ts",
     "check:appointment-duplicates": "node scripts/check-appointment-slot-duplicates.mjs",
     "test:timezone-sync": "tsx scripts/verify-professional-timezone-sync.ts",
     "seed:e2e": "node scripts/seed-e2e.mjs",

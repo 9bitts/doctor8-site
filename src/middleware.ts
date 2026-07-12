@@ -139,6 +139,7 @@ function isPublicApi(pathname: string): boolean {
     || pathname.startsWith("/api/webhooks/")
     || pathname.startsWith("/api/cron/")
     || pathname.startsWith("/api/reminders/")
+    || pathname.startsWith("/api/emissions/deliver")
     || pathname.startsWith("/api/campaigns/")
     || pathname.startsWith("/api/shared/")
     || pathname.startsWith("/api/integrations/")

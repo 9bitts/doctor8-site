@@ -2,38 +2,22 @@ import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { sendTransactionalEmail, emailShell, getAppUrl } from "@/lib/email-core";
 import { prescriptionQrUrl } from "@/lib/pharmacy-network/prescription-token";
-import { isWhatsAppConfigured, WHATSAPP_GRAPH_VERSION } from "@/lib/whatsapp";
+import { decrypt } from "@/lib/encryption";
+import {
+  sendPharmacyOrderPaidStoreWhatsApp,
+} from "@/lib/whatsapp";
+
+function safeDecrypt(v: string | null | undefined): string {
+  if (!v) return "";
+  try {
+    return decrypt(v);
+  } catch {
+    return v ?? "";
+  }
+}
 
 function formatBrl(cents: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
-}
-
-async function sendStoreWhatsApp(phone: string | null | undefined, message: string): Promise<void> {
-  if (!phone?.trim() || !isWhatsAppConfigured()) return;
-  const token = process.env.WHATSAPP_ACCESS_TOKEN?.trim();
-  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
-  if (!token || !phoneId) return;
-
-  const digits = phone.replace(/\D/g, "");
-  const to = digits.startsWith("55") ? digits : `55${digits}`;
-
-  try {
-    await fetch(`https://graph.facebook.com/${WHATSAPP_GRAPH_VERSION}/${phoneId}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body: message.slice(0, 4090) },
-      }),
-    });
-  } catch (err) {
-    console.error("[PHARMACY ORDER WHATSAPP]", err);
-  }
 }
 
 export async function notifyPharmacyOrderPaid(orderId: string): Promise<void> {
@@ -73,7 +57,7 @@ export async function notifyPharmacyOrderPaid(orderId: string): Promise<void> {
     order.fulfillmentType === "DELIVERY" ? "Entrega em domicílio" : "Retirada na loja";
 
   const patientName = order.prescription?.document?.patient
-    ? `${order.prescription.document.patient.firstName} ${order.prescription.document.patient.lastName}`.trim()
+    ? `${safeDecrypt(order.prescription.document.patient.firstName)} ${safeDecrypt(order.prescription.document.patient.lastName)}`.trim()
     : "Paciente";
 
   const validateUrl = order.prescriptionToken?.token
@@ -127,10 +111,14 @@ export async function notifyPharmacyOrderPaid(orderId: string): Promise<void> {
         data: { url: "/farmacias/pedidos", orderId: order.id },
       }).catch((e) => console.error("[PHARMACY ORDER NOTIFY STORE]", e)),
     ),
-    sendStoreWhatsApp(
-      order.pharmacyStore.contactPhone,
-      `Doctor8 Farmácias: novo pedido pago de ${patientName} (${total}). ${fulfillment}. Acesse: ${ordersUrl}`,
-    ),
+    sendPharmacyOrderPaidStoreWhatsApp({
+      toPhone: order.pharmacyStore.contactPhone ?? "",
+      storeName: order.pharmacyStore.nomeFantasia,
+      patientName,
+      totalFormatted: total,
+      fulfillmentLabel: fulfillment,
+      ordersUrl,
+    }).catch((e) => console.error("[PHARMACY ORDER WHATSAPP]", e)),
   ]);
 
   // ── Paciente: e-mail + in-app ──
@@ -217,6 +205,7 @@ const STATUS_PATIENT_COPY: Record<
 export async function notifyPharmacyOrderStatusChanged(
   orderId: string,
   newStatus: string,
+  opts?: { refundInitiated?: boolean },
 ): Promise<void> {
   const copy = STATUS_PATIENT_COPY[newStatus];
   if (!copy) return;
@@ -240,11 +229,16 @@ export async function notifyPharmacyOrderStatusChanged(
   const patientOrdersUrl = `${appUrl}/patient/pharmacy/orders`;
   const total = formatBrl(order.totalCents);
   const itemList = order.items.map((i) => i.drugName).join(", ");
+  const refundNote =
+    newStatus === "CANCELLED" && opts?.refundInitiated
+      ? "<p style=\"margin:12px 0 0;font-size:14px;color:#334155;\">O reembolso foi iniciado automaticamente e deve aparecer no seu meio de pagamento em alguns dias úteis.</p>"
+      : "";
 
   const html = emailShell(
     copy.emailSubject,
     `
       <p style="font-size:15px;color:#1e293b;margin:0 0 16px;">${copy.emailLead}</p>
+      ${refundNote}
       <div style="background:#f8fafc;border-radius:12px;padding:16px 20px;margin:0 0 20px;">
         <p style="margin:0 0 8px;font-size:14px;color:#334155;"><strong>Farmácia:</strong> ${order.pharmacyStore.nomeFantasia}</p>
         <p style="margin:0 0 8px;font-size:14px;color:#334155;"><strong>Total:</strong> ${total}</p>
@@ -259,6 +253,11 @@ export async function notifyPharmacyOrderStatusChanged(
     "pt",
   );
 
+  const notifyBody =
+    newStatus === "CANCELLED" && opts?.refundInitiated
+      ? `${order.pharmacyStore.nomeFantasia} — ${copy.body} Reembolso iniciado.`
+      : `${order.pharmacyStore.nomeFantasia} — ${copy.body}`;
+
   await Promise.all([
     sendTransactionalEmail({
       to: patientUser.email,
@@ -269,7 +268,7 @@ export async function notifyPharmacyOrderStatusChanged(
     createNotification({
       userId: order.patientUserId,
       title: copy.title,
-      body: `${order.pharmacyStore.nomeFantasia} — ${copy.body}`,
+      body: notifyBody,
       type: "system",
       data: { url: "/patient/pharmacy/orders", orderId: order.id },
     }).catch((e) => console.error("[PHARMACY ORDER STATUS NOTIFY]", e)),

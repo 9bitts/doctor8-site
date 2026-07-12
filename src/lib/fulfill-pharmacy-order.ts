@@ -27,6 +27,7 @@ export async function fulfillPharmacyOrderPayment(
 ): Promise<PharmacyOrder> {
   const order = await db.pharmacyOrder.findUnique({
     where: { id: meta.pharmacyOrderId },
+    include: { items: true },
   });
   if (!order) throw new Error("Pharmacy order not found");
   if (order.patientUserId !== meta.patientUserId) {
@@ -41,12 +42,34 @@ export async function fulfillPharmacyOrderPayment(
 
   const wasPending = order.status === "PENDING_PAYMENT";
 
-  const updated = await db.pharmacyOrder.update({
-    where: { id: order.id },
-    data: {
-      status: "PAID",
-      paidAt: new Date(),
-    },
+  const updated = await db.$transaction(async (tx) => {
+    if (wasPending) {
+      for (const item of order.items) {
+        if (!item.pharmacyInventoryItemId) continue;
+        const inv = await tx.pharmacyStoreInventoryItem.findUnique({
+          where: { id: item.pharmacyInventoryItemId },
+          select: { stockQty: true, drugCatalogId: true },
+        });
+        const qty = item.quantity ?? 1;
+        if (inv?.stockQty != null && inv.stockQty < qty) {
+          throw new Error(`Insufficient stock for ${item.drugName}`);
+        }
+        if (inv?.stockQty != null) {
+          await tx.pharmacyStoreInventoryItem.update({
+            where: { id: item.pharmacyInventoryItemId },
+            data: { stockQty: { decrement: qty } },
+          });
+        }
+      }
+    }
+
+    return tx.pharmacyOrder.update({
+      where: { id: order.id },
+      data: {
+        status: "PAID",
+        paidAt: new Date(),
+      },
+    });
   });
 
   if (wasPending) {

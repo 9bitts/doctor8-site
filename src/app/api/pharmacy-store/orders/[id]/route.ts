@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePharmacyStore } from "@/lib/pharmacy-store-auth";
 import { db } from "@/lib/db";
+import { refundPaymentIntentIdempotent } from "@/lib/stripe-refund";
+
+const PAID_STATUSES = ["PAID", "CONFIRMED", "PREPARING", "READY"] as const;
 
 export async function GET(req: NextRequest) {
   const ctx = await requirePharmacyStore();
@@ -51,6 +54,26 @@ export async function PATCH(
     return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
   }
 
+  if (order.status === "COMPLETED") {
+    return NextResponse.json({ error: "Pedido já concluído" }, { status: 400 });
+  }
+
+  if (parsed.data.status === "CANCELLED" && order.status === "CANCELLED") {
+    return NextResponse.json({ error: "Pedido já cancelado" }, { status: 400 });
+  }
+
+  const wasPaid =
+    (PAID_STATUSES as readonly string[]).includes(order.status) ||
+    order.status === "PAID";
+
+  if (parsed.data.status === "CANCELLED" && wasPaid && order.stripePaymentIntentId) {
+    await refundPaymentIntentIdempotent(order.stripePaymentIntentId, "pharmacy_store_cancel", {
+      triggeredBy: "OTHER",
+      userId: order.patientUserId,
+      pharmacyOrderId: order.id,
+    });
+  }
+
   const now = new Date();
   const timestamps: Record<string, Date> = {};
   if (parsed.data.status === "CONFIRMED") timestamps.confirmedAt = now;
@@ -65,9 +88,9 @@ export async function PATCH(
   });
 
   const { notifyPharmacyOrderStatusChanged } = await import("@/lib/pharmacy-order-notify");
-  notifyPharmacyOrderStatusChanged(updated.id, parsed.data.status).catch((e) =>
-    console.error("[PHARMACY ORDER STATUS NOTIFY]", e),
-  );
+  notifyPharmacyOrderStatusChanged(updated.id, parsed.data.status, {
+    refundInitiated: parsed.data.status === "CANCELLED" && wasPaid,
+  }).catch((e) => console.error("[PHARMACY ORDER STATUS NOTIFY]", e));
 
   return NextResponse.json({ order: updated });
 }

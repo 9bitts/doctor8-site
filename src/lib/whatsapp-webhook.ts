@@ -9,7 +9,7 @@ export function verifyWhatsAppWebhookSignature(
 ): boolean {
   const secret = process.env.WHATSAPP_APP_SECRET?.trim();
   if (!secret) {
-    return process.env.NODE_ENV !== "production";
+    return false;
   }
   if (!signatureHeader?.startsWith("sha256=")) return false;
 

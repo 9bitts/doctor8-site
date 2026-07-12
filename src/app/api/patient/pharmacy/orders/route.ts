@@ -4,6 +4,10 @@ import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { buildQuoteForStore, resolvePrescriptionQuoteTargets, calcDeliveryFeeCents } from "@/lib/pharmacy-network/quote";
 import { ensurePrescriptionToken } from "@/lib/pharmacy-network/prescription-token";
+import {
+  assertPrescriptionDispensable,
+  PHARMACY_ORDER_ACTIVE_STATUSES,
+} from "@/lib/pharmacy-network/dispense-guards";
 import { normalizePrescriptionMedicationLines } from "@/lib/pharmacy/prescription-medication-lines";
 
 const createSchema = z.object({
@@ -83,6 +87,25 @@ export async function POST(req: NextRequest) {
     if (!rx) {
       return NextResponse.json({ error: "Prescrição inválida" }, { status: 400 });
     }
+    const rxError = assertPrescriptionDispensable(rx);
+    if (rxError) {
+      return NextResponse.json({ error: rxError }, { status: 400 });
+    }
+
+    const activeOrder = await db.pharmacyOrder.findFirst({
+      where: {
+        prescriptionId,
+        status: { in: [...PHARMACY_ORDER_ACTIVE_STATUSES] },
+      },
+      select: { id: true },
+    });
+    if (activeOrder) {
+      return NextResponse.json(
+        { error: "Já existe pedido em andamento para esta receita" },
+        { status: 409 },
+      );
+    }
+
     const meds = normalizePrescriptionMedicationLines(rx.medications);
     quoteTargets = await resolvePrescriptionQuoteTargets(meds);
   } else if (parsed.data.medications?.length) {
@@ -94,7 +117,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Nenhum medicamento para pedido" }, { status: 400 });
   }
 
-  const quote = buildQuoteForStore(store, quoteTargets, null);
+  const quote = buildQuoteForStore(
+    store,
+    quoteTargets,
+    null,
+    store.deliveryRadiusKm ?? 50,
+  );
   if (!quote || quote.items.length === 0) {
     return NextResponse.json({ error: "Farmácia sem estoque para estes itens" }, { status: 400 });
   }

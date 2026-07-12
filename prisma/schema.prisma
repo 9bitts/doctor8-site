@@ -1247,11 +1247,14 @@ model PaymentRefund {
   triggeredBy     String   // AUTO_SLOT_TAKEN | AUTO_WEBHOOK_FAIL | PATIENT_CANCEL | JIT_ORPHAN | JIT_QUEUE | OTHER
   appointmentId   String?
   appointment     Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  pharmacyOrderId String?
+  pharmacyOrder   PharmacyOrder? @relation(fields: [pharmacyOrderId], references: [id], onDelete: SetNull)
   userId          String?
   user            User? @relation("PaymentRefundUser", fields: [userId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
   @@index([paymentIntentId])
+  @@index([pharmacyOrderId])
   @@index([createdAt])
 }
 
@@ -5301,6 +5304,7 @@ model PharmacyOrder {
 
   items                 PharmacyOrderItem[]
   prescriptionToken     PharmacyPrescriptionToken?
+  paymentRefunds        PaymentRefund[]
 
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt

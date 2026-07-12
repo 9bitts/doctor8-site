@@ -7,11 +7,15 @@
 
 const version = process.env.WHATSAPP_GRAPH_API_VERSION?.trim() || "v25.0";
 const token = process.env.WHATSAPP_ACCESS_TOKEN?.trim();
-const phoneNumberId =
-  process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() || "1160816890453235";
+const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
 
 if (!token) {
   console.error("Missing WHATSAPP_ACCESS_TOKEN");
+  process.exit(1);
+}
+
+if (!phoneNumberId) {
+  console.error("Missing WHATSAPP_PHONE_NUMBER_ID");
   process.exit(1);
 }
 
