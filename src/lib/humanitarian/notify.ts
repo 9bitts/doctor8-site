@@ -147,6 +147,15 @@ export async function getActiveCampaignForRegion(region: string | null | undefin
   return null;
 }
 
+/** Same visibility rule as patient dashboard Venezuela banners. */
+export async function isVenezuelaOperationActiveForUser(
+  region: string | null | undefined,
+): Promise<boolean> {
+  if (region === "VE") return true;
+  const campaign = await getActiveCampaignForRegion(region);
+  return campaign?.active === true;
+}
+
 export async function getPatientActiveHumanitarianEntry(patientUserId: string) {
   return db.humanitarianQueueEntry.findFirst({
     where: {

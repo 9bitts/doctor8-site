@@ -30,6 +30,7 @@ export {
 export {
   buildCampaignReport,
   getActiveCampaignForRegion,
+  isVenezuelaOperationActiveForUser,
   getPatientActiveHumanitarianEntry,
   notifyHumanitarianJoined,
   notifyHumanitarianYourTurn,

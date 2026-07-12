@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart, Zap, Calendar, X } from "lucide-react";
 import { translate, Lang } from "@/lib/i18n/translations";
-import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   PATIENT_HUMANITARIAN_ENTRY,
   PATIENT_SCHEDULED_VOLUNTEER_ENTRY,
 } from "@/lib/platform-nav-registry";
 
-const DISMISS_PREFIX = "doctor8:vePatientGuide:dismissed";
+const DISMISS_PREFIX = "doctor8:vePatientGuide:v2:dismissed";
 
 const VE_YELLOW = "#ffcc00";
 const VE_BLUE = "#00308f";
@@ -43,18 +42,11 @@ export default function VenezuelaPatientGuideBanner({ userId, lang }: Props) {
       }
 
       try {
-        const [regionRes, campaignRes] = await Promise.all([
-          fetch("/api/user/region"),
-          fetch(`/api/humanitarian/campaigns/${VENEZUELA_CAMPAIGN_SLUG}`),
-        ]);
-
-        const region = regionRes.ok ? (await regionRes.json()).region : null;
-        const campaignActive = campaignRes.ok
-          ? (await campaignRes.json()).campaign?.active === true
-          : false;
+        const res = await fetch("/api/patient/venezuela-operation");
+        const data = res.ok ? await res.json() : { active: false };
 
         if (!cancelled) {
-          setShow(region === "VE" || campaignActive);
+          setShow(data.active === true);
           setReady(true);
         }
       } catch {
