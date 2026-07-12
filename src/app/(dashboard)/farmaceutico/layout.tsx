@@ -21,7 +21,10 @@ export default async function PharmacistPortalLayout({
       where: { userId: session.user.id },
       select: { specialty: true },
     });
-    if (profile && !isPharmacistSpecialty(profile.specialty)) {
+    if (!profile) {
+      redirect("/onboarding?portal=pharmacist");
+    }
+    if (!isPharmacistSpecialty(profile.specialty)) {
       redirect("/professional");
     }
   }

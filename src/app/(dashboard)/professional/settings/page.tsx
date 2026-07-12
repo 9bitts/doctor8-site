@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { PROFESSION_GROUPS, getProfessionLabel } from "@/lib/professions";
 import PracticeSettings from "@/components/PracticeSettings";
@@ -27,6 +28,7 @@ import {
   type RegistrationRegionCode,
 } from "@/lib/registration-regions";
 import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
+import { validateProfessionalLicense } from "@/lib/license-validation";
 import {
   Loader2, CheckCircle2, User, Award, Camera, X, Plus,
   LayoutTemplate, Globe, Building2, Calendar, DollarSign,
@@ -57,6 +59,7 @@ const DEFAULT_SECTIONS: SectionStatus = {
 
 export default function ProfessionalSettings() {
   const { lang, t } = useI18n();
+  const { update: updateSession } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const isPsychologistPortal = pathname.startsWith("/psychologist");
@@ -205,6 +208,11 @@ export default function ProfessionalSettings() {
 
   const persistProfile = useCallback(async () => {
     if (!firstName || !lastName || !licenseNumber || !profession) return;
+    const licenseError = validateProfessionalLicense(profession, licenseNumber, licenseState);
+    if (licenseError) {
+      setError(t(`set.err.${licenseError}`));
+      return;
+    }
     setAutoSaving(true);
     setError("");
     try {
@@ -232,6 +240,7 @@ export default function ProfessionalSettings() {
         const d = await res.json();
         throw new Error(d.error || t("set.errGeneric"));
       }
+      await updateSession({ refreshSpecialty: true });
       setAutoSaved(true);
       setTimeout(() => setAutoSaved(false), 3000);
       await refreshSectionStatus();
@@ -245,7 +254,7 @@ export default function ProfessionalSettings() {
     avatarUrl, firstName, lastName, profession, subspecialties,
     licenseNumber, licenseState, bio,
     clinicName, clinicAddress, clinicCity, clinicState, clinicCountry, clinicZip,
-    t, refreshSectionStatus, router,
+    t, refreshSectionStatus, router, updateSession,
   ]);
 
   useEffect(() => {

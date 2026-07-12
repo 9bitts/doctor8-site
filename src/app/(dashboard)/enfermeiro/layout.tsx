@@ -21,7 +21,10 @@ export default async function NursePortalLayout({
       where: { userId: session.user.id },
       select: { specialty: true },
     });
-    if (profile && !isNurseSpecialty(profile.specialty)) {
+    if (!profile) {
+      redirect("/onboarding?portal=nurse");
+    }
+    if (!isNurseSpecialty(profile.specialty)) {
       redirect("/professional");
     }
   }

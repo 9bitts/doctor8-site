@@ -21,7 +21,10 @@ export default async function NutritionistPortalLayout({
       where: { userId: session.user.id },
       select: { specialty: true },
     });
-    if (profile && !isNutritionistSpecialty(profile.specialty)) {
+    if (!profile) {
+      redirect("/onboarding?portal=nutritionist");
+    }
+    if (!isNutritionistSpecialty(profile.specialty)) {
       redirect("/professional");
     }
   }

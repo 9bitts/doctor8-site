@@ -21,7 +21,10 @@ export default async function DentistPortalLayout({
       where: { userId: session.user.id },
       select: { specialty: true },
     });
-    if (profile && !isDentistSpecialty(profile.specialty)) {
+    if (!profile) {
+      redirect("/onboarding?portal=dentist");
+    }
+    if (!isDentistSpecialty(profile.specialty)) {
       redirect("/professional");
     }
   }
