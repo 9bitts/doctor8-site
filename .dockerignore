@@ -1,0 +1,11 @@
+.git
+node_modules
+.next/cache
+android
+e2e
+test-results
+docs
+data/cmed
+data/cum-co
+*.log
+coverage

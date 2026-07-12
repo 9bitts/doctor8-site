@@ -163,6 +163,18 @@ Isso garante que o banco de dados seja criado antes do servidor iniciar.
 Railway faz o deploy automaticamente quando você salva as variáveis ou faz um `git push`.
 Aguarde 2-3 minutos. Você verá os logs em tempo real.
 
+**Rebuild seletivo:** o arquivo `railway.json` na raiz define `watchPatterns` para que mudanças
+apenas em `docs/` ou `android/` **não** disparem rebuild. Se preferir configurar pelo painel,
+use Settings → Deploy → Watch Paths com os mesmos padrões.
+
+**Build context:** `.dockerignore` reduz o contexto enviado ao builder (exclui `android/`, `e2e/`,
+`docs/`, logs). Isso acelera deploys mesmo com Nixpacks.
+
+**Standalone (não ativado):** `output: "standalone"` reduziria a imagem, mas exigiria trocar
+`scripts/railway-start.mjs` para `node .next/standalone/server.js` e copiar `public/` + `.next/static/`.
+Com `@sentry/nextjs` no `next.config.js`, isso precisa de teste end-to-end antes de ativar.
+Mantemos `next start` até validação dedicada.
+
 ### Passo 5 — Verificar
 1. Acesse a URL gerada pelo Railway (ex: `https://doctor8-production.up.railway.app`)
 2. Você deve ver a tela de login do Doctor8
