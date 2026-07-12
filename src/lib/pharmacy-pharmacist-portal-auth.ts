@@ -3,12 +3,7 @@ import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { canAccessPharmacyPharmacistPortal } from "@/lib/pharmacy-portal-guards";
 
-export {
-  canAccessPharmacyPharmacistPortal,
-  canAccessPharmacyStorePortal,
-  canAccessPharmacyValidatePortal,
-} from "@/lib/pharmacy-portal-guards";
-
+/** Server-only: use @/lib/pharmacy-portal-guards in client components. */
 export async function requirePharmacyPharmacistPortal(): Promise<
   | { ok: true; userId: string; specialty: string | null }
   | { error: NextResponse }

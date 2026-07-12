@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { canAccessPharmacyValidatePortal } from "@/lib/pharmacy-pharmacist-portal-auth";
+import { canAccessPharmacyValidatePortal } from "@/lib/pharmacy-portal-guards";
 import { db } from "@/lib/db";
 import { PharmacyValidateTokenForm } from "@/components/pharmacy-store/PharmacyValidateTokenForm";
 

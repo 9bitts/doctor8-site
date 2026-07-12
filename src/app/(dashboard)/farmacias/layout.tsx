@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { resolveRoleHome } from "@/lib/role-home";
 import { getPharmacyStoreMembership, isPharmacyStoreActive } from "@/lib/pharmacy-store-auth";
-import { canAccessPharmacyPharmacistPortal } from "@/lib/pharmacy-pharmacist-portal-auth";
+import { canAccessPharmacyPharmacistPortal } from "@/lib/pharmacy-portal-guards";
 import { db } from "@/lib/db";
 import PharmacyStoreStatusBanner from "@/components/pharmacy-store/PharmacyStoreStatusBanner";
 

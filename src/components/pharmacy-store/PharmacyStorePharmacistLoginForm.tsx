@@ -9,7 +9,7 @@ import { persistAuthCallback, consumeAuthCallback, resolveClientAuthCallback } f
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { safePostLoginUrl } from "@/lib/role-home";
 import { buildForgotPasswordHref, PHARMACIST_REGISTER } from "@/lib/auth-portals";
-import { canAccessPharmacyPharmacistPortal } from "@/lib/pharmacy-pharmacist-portal-auth";
+import { canAccessPharmacyPharmacistPortal } from "@/lib/pharmacy-portal-guards";
 import {
   PHARMACY_STORE_PHARMACIST_HOME,
   PHARMACY_STORE_PHARMACIST_LOGIN,

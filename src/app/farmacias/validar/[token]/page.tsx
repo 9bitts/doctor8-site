@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { canAccessPharmacyValidatePortal } from "@/lib/pharmacy-pharmacist-portal-auth";
+import { canAccessPharmacyValidatePortal } from "@/lib/pharmacy-portal-guards";
 import PharmacyValidateClient from "@/components/pharmacy-store/PharmacyValidateClient";
 
 type Props = { params: Promise<{ token: string }> };

@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { resolveRoleHome } from "@/lib/role-home";
-import { canAccessPharmacyPharmacistPortal } from "@/lib/pharmacy-pharmacist-portal-auth";
+import { canAccessPharmacyPharmacistPortal } from "@/lib/pharmacy-portal-guards";
 import { Pill, ArrowRight, Stethoscope } from "lucide-react";
 import PharmacistNetworkQueueClient from "@/components/pharmacy-store/PharmacistNetworkQueueClient";
 
