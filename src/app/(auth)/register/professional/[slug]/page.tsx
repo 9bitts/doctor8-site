@@ -1,22 +1,12 @@
 import { notFound } from "next/navigation";
 import ProfessionalProfessionClient from "@/components/professional/ProfessionalProfessionClient";
-import { isValidProfessionSlug } from "@/lib/professional-landing-content";
+import { isValidProfessionSlug, PROFESSION_SLUGS } from "@/lib/professional-landing-content";
 import { getProLandingContent } from "@/lib/professional-landing-content";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
-  return [
-    { slug: "medico" },
-    { slug: "psicologo" },
-    { slug: "psicanalista" },
-    { slug: "terapeuta_integrativo" },
-    { slug: "fisioterapeuta" },
-    { slug: "nutricionista" },
-    { slug: "enfermeiro" },
-    { slug: "farmaceutico" },
-    { slug: "cuidados_paliativos" },
-  ];
+  return PROFESSION_SLUGS.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: Props) {
