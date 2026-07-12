@@ -1,4 +1,4 @@
-export type LoginAccent = "emerald" | "violet" | "teal" | "indigo" | "rose";
+export type LoginAccent = "emerald" | "violet" | "teal" | "indigo" | "rose" | "amber" | "sky";
 export type PortalHeaderIcon = "brain" | "leaf" | "building" | "heart";
 
 // Login is unified into a single screen. All former per-role portal URLs now

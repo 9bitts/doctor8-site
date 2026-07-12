@@ -9,7 +9,7 @@ import { persistAuthCallback } from "@/lib/auth-callback";
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import {
   Eye, EyeOff, Loader2, AlertCircle, CheckCircle2,
-  User, Stethoscope, ArrowLeft, Brain, Leaf,
+  User, Stethoscope, ArrowLeft, Brain, Leaf, Utensils, HeartPulse, Pill, Smile,
 } from "lucide-react";
 
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
@@ -137,6 +137,7 @@ export function RegisterAccountForm({
   role,
   professionalKind,
   professionSlug,
+  accent = "emerald",
   lang,
   callbackUrl,
   initialRegion = "US",
@@ -146,6 +147,7 @@ export function RegisterAccountForm({
   role: RegisterRole;
   professionalKind?: "psychologist";
   professionSlug?: "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "dentista" | "cuidados_paliativos";
+  accent?: LoginAccent;
   lang: Lang;
   callbackUrl: string;
   initialRegion?: Region;
@@ -154,6 +156,7 @@ export function RegisterAccountForm({
 }) {
   const router = useRouter();
   const t = (key: string) => translate(lang, key);
+  const styles = getLoginAccentStyles(accent);
 
   const [region, setRegion] = useState<Region>(initialRegion);
 
@@ -420,42 +423,44 @@ export function RegisterAccountForm({
         </button>
       )}
 
-      <div className={`flex items-center gap-3 mb-6 p-3 rounded-xl border ${
-        isIntegrativeTherapist
-          ? "bg-teal-500/10 border-teal-500/20"
-          : isPsychoanalyst
-            ? "bg-violet-500/10 border-violet-500/20"
-            : isPsychologistSignup
-              ? "bg-violet-500/10 border-violet-500/20"
-            : "bg-emerald-500/10 border-emerald-500/20"
-      }`}>
-        {isPsychologistSignup ? (
-          <Brain className="w-5 h-5 text-violet-400 shrink-0" />
+      <div className={`flex items-center gap-3 mb-6 p-3 rounded-xl border ${styles.softBg}`}>
+        {isNutritionistSignup ? (
+          <Utensils className={`w-5 h-5 shrink-0 ${styles.iconColor}`} />
+        ) : isNurseSignup ? (
+          <HeartPulse className={`w-5 h-5 shrink-0 ${styles.iconColor}`} />
+        ) : isPharmacistSignup ? (
+          <Pill className={`w-5 h-5 shrink-0 ${styles.iconColor}`} />
+        ) : isDentistSignup ? (
+          <Smile className={`w-5 h-5 shrink-0 ${styles.iconColor}`} />
+        ) : isPsychologistSignup ? (
+          <Brain className={`w-5 h-5 shrink-0 ${styles.iconColor}`} />
         ) : isProfessional ? (
-          <Stethoscope className="w-5 h-5 text-emerald-400 shrink-0" />
+          <Stethoscope className={`w-5 h-5 shrink-0 ${styles.iconColor}`} />
         ) : isPsychoanalyst ? (
-          <Brain className="w-5 h-5 text-violet-400 shrink-0" />
+          <Brain className={`w-5 h-5 shrink-0 ${styles.iconColor}`} />
         ) : isIntegrativeTherapist ? (
-          <Leaf className="w-5 h-5 text-teal-400 shrink-0" />
+          <Leaf className={`w-5 h-5 shrink-0 ${styles.iconColor}`} />
         ) : (
-          <User className="w-5 h-5 text-emerald-400 shrink-0" />
+          <User className={`w-5 h-5 shrink-0 ${styles.iconColor}`} />
         )}
-        <p className={`text-sm font-medium ${
-          isIntegrativeTherapist
-            ? "text-teal-300"
-            : isPsychoanalyst || isPsychologistSignup
-              ? "text-violet-300"
-              : "text-emerald-300"
-        }`}>
-          {isPsychologistSignup
-            ? t("reg.psychologistAccount")
-            : isProfessional
-            ? t("reg.proAccount")
-            : isPsychoanalyst
-              ? t("reg.psychoanalystAccount")
-              : isIntegrativeTherapist
-                ? t("reg.integrativeAccount")
-                : t("reg.patientAccount")}
+        <p className={`text-sm font-medium ${styles.softTextMuted}`}>
+          {isNutritionistSignup
+            ? t("reg.nutritionistAccount")
+            : isNurseSignup
+              ? t("reg.nurseAccount")
+              : isPharmacistSignup
+                ? t("reg.pharmacistAccount")
+                : isDentistSignup
+                  ? t("reg.dentistAccount")
+                  : isPsychologistSignup
+                    ? t("reg.psychologistAccount")
+                    : isProfessional
+                      ? t("reg.proAccount")
+                      : isPsychoanalyst
+                        ? t("reg.psychoanalystAccount")
+                        : isIntegrativeTherapist
+                          ? t("reg.integrativeAccount")
+                          : t("reg.patientAccount")}
         </p>
       </div>
 
@@ -522,7 +527,7 @@ export function RegisterAccountForm({
             value={region}
             onChange={handleRegionChange}
             lang={lang}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+            className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 ${styles.ring} transition`}
             optionClassName="bg-slate-800"
           />
         </div>
@@ -535,7 +540,7 @@ export function RegisterAccountForm({
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+              className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 ${styles.ring} transition`}
             />
           </div>
           <div>
@@ -545,7 +550,7 @@ export function RegisterAccountForm({
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+              className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 ${styles.ring} transition`}
             />
           </div>
         </div>
@@ -558,7 +563,7 @@ export function RegisterAccountForm({
             onChange={(e) => setEmail(e.target.value)}
             readOnly={inviteEmailLocked}
             required
-            className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition ${inviteEmailLocked ? "opacity-70 cursor-not-allowed" : ""}`}
+            className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 ${styles.ring} transition ${inviteEmailLocked ? "opacity-70 cursor-not-allowed" : ""}`}
           />
           {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email[0]}</p>}
         </div>
@@ -580,7 +585,7 @@ export function RegisterAccountForm({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+              className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 ${styles.ring} transition`}
             />
             <button
               type="button"
@@ -597,9 +602,9 @@ export function RegisterAccountForm({
               {PASSWORD_RULES.map((rule) => (
                 <div key={rule.key} className="flex items-center gap-2">
                   <CheckCircle2
-                    className={`w-3.5 h-3.5 ${rule.test(password) ? "text-emerald-400" : "text-slate-600"}`}
+                    className={`w-3.5 h-3.5 ${rule.test(password) ? styles.brand : "text-slate-600"}`}
                   />
-                  <span className={`text-xs ${rule.test(password) ? "text-emerald-400" : "text-slate-500"}`}>
+                  <span className={`text-xs ${rule.test(password) ? styles.brand : "text-slate-500"}`}>
                     {t(rule.key)}
                   </span>
                 </div>
@@ -625,31 +630,36 @@ export function RegisterAccountForm({
           <RegisterCheckbox
             checked={acceptedTerms}
             onChange={setAcceptedTerms}
-            label={<>{t("reg.acceptTerms")} <Link href="/terms" className="text-emerald-400 hover:underline" target="_blank">{t("reg.termsOfService")}</Link></>}
+            accent={accent}
+            label={<>{t("reg.acceptTerms")} <Link href="/terms" className={`${styles.link} hover:underline`} target="_blank">{t("reg.termsOfService")}</Link></>}
           />
           <RegisterCheckbox
             checked={acceptedPrivacy}
             onChange={setAcceptedPrivacy}
-            label={<>{t("reg.acceptPrivacy")} <Link href="/privacy" className="text-emerald-400 hover:underline" target="_blank">{t("reg.privacyPolicy")}</Link></>}
+            accent={accent}
+            label={<>{t("reg.acceptPrivacy")} <Link href="/privacy" className={`${styles.link} hover:underline`} target="_blank">{t("reg.privacyPolicy")}</Link></>}
           />
           {requiresHipaa(region) && (
             <RegisterCheckbox
               checked={acceptedHipaa}
               onChange={setAcceptedHipaa}
-              label={<>{t("reg.acceptHipaaPre")} <Link href="/hipaa" className="text-emerald-400 hover:underline" target="_blank">{t("reg.hipaaAuth")}</Link> {t("reg.acceptHipaaPost")}</>}
+              accent={accent}
+              label={<>{t("reg.acceptHipaaPre")} <Link href="/hipaa" className={`${styles.link} hover:underline`} target="_blank">{t("reg.hipaaAuth")}</Link> {t("reg.acceptHipaaPost")}</>}
             />
           )}
           {requiresGdpr(region) && (
             <RegisterCheckbox
               checked={acceptedGdpr}
               onChange={setAcceptedGdpr}
-              label={<>{t("reg.acceptGdprPre")} <Link href="/privacy" className="text-emerald-400 hover:underline" target="_blank">{t("reg.privacyPolicy")}</Link> {t("reg.acceptGdprPost")}</>}
+              accent={accent}
+              label={<>{t("reg.acceptGdprPre")} <Link href="/privacy" className={`${styles.link} hover:underline`} target="_blank">{t("reg.privacyPolicy")}</Link> {t("reg.acceptGdprPost")}</>}
             />
           )}
           {requiresLgpd(region) && (
             <RegisterCheckbox
               checked={acceptedLgpd}
               onChange={setAcceptedLgpd}
+              accent={accent}
               label={<>{t("reg.acceptLgpd")}</>}
             />
           )}
@@ -669,7 +679,7 @@ export function RegisterAccountForm({
         <button
           type="submit"
           disabled={loading || googleLoading || !canSubmit}
-          className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
+          className={`w-full ${styles.btn} disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2`}
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
           {loading ? t("reg.creating") : t("reg.createAccount")}
@@ -683,16 +693,19 @@ function RegisterCheckbox({
   checked,
   onChange,
   label,
+  accent = "emerald",
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: React.ReactNode;
+  accent?: LoginAccent;
 }) {
+  const styles = getLoginAccentStyles(accent);
   return (
     <label className="flex items-start gap-3 cursor-pointer group">
       <div
         className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition ${
-          checked ? "bg-emerald-500 border-emerald-500" : "border-white/20 bg-white/5"
+          checked ? styles.checkboxChecked : "border-white/20 bg-white/5"
         }`}
         onClick={() => onChange(!checked)}
       >
