@@ -48,6 +48,7 @@ jobs:
       VAPID_PUBLIC_KEY: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3CBJi2-T09Fykw80j4Q"
       VAPID_PRIVATE_KEY: "UUxI4O8-FbRqjA5n51g3dM8sTbOqV1fK3yZ9xW2vN4c"
       NEXT_PUBLIC_VAPID_PUBLIC_KEY: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3CBJi2-T09Fykw80j4Q"
+      RESEND_API_KEY: re_ci_e2e_dummy_key_for_register_and_email
 
     steps:
       - uses: actions/checkout@v4

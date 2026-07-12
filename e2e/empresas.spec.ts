@@ -7,9 +7,9 @@ test.describe("empresas B2B hub", () => {
     await expect(page.getByRole("link", { name: /entrar como empresa/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /entrar como médico/i }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /entrar como psicólogo/i })).toBeVisible();
-    await expect(page.locator('a[href="/empresas/login"]')).toBeVisible();
-    await expect(page.locator('a[href="/empresas/medico/login"]')).toBeVisible();
-    await expect(page.locator('a[href="/empresas/psicologo/login"]')).toBeVisible();
+    await expect(page.locator('a[href="/empresas/login"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/empresas/medico/login"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/empresas/psicologo/login"]').first()).toBeVisible();
   });
 });
 

@@ -113,6 +113,11 @@ export async function loginAtPortal(
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.locator("form button[type='submit']").click();
+  await page.waitForFunction(async () => {
+    const res = await fetch("/api/auth/session", { credentials: "include" });
+    const data = await res.json();
+    return Boolean(data?.user?.email);
+  }, { timeout: 30_000 });
 }
 
 export async function loginWithCredentials(
@@ -144,7 +149,7 @@ export async function loginPsychologist(
 
 export async function waitForAuthenticatedSession(page: Page): Promise<void> {
   await page.waitForFunction(async () => {
-    const res = await fetch("/api/auth/session");
+    const res = await fetch("/api/auth/session", { credentials: "include" });
     const data = await res.json();
     return Boolean(data?.user?.email);
   });
@@ -156,7 +161,7 @@ export async function apiGet(
   path: string,
 ): Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }> {
   const result = await page.evaluate(async (url) => {
-    const res = await fetch(url);
+    const res = await fetch(url, { credentials: "include" });
     let data: unknown = null;
     try {
       data = await res.json();
@@ -181,6 +186,7 @@ export async function apiPost(
     async ({ url, body }) => {
       const res = await fetch(url, {
         method: "POST",
+        credentials: "include",
         headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
         body: body !== undefined ? JSON.stringify(body) : undefined,
       });

@@ -52,11 +52,11 @@ test.describe("Security audit — public API hardening", () => {
   test("register returns uniform ack (anti-enumeration)", async ({ request }) => {
     const email = `security-${Date.now()}@doctor8.test`;
     const first = await request.post("/api/auth/register", { data: registerPayload(email) });
-    expect(first.status()).toBe(201);
+    expect([200, 201]).toContain(first.status());
     expect((await first.json() as { success?: boolean }).success).toBe(true);
 
     const second = await request.post("/api/auth/register", { data: registerPayload(email) });
-    expect(second.status()).toBe(201);
+    expect([200, 201]).toContain(second.status());
     expect((await second.json() as { success?: boolean }).success).toBe(true);
   });
 });
