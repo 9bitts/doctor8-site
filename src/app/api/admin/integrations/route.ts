@@ -75,11 +75,19 @@ export async function GET() {
       const expiredHint = expired
         ? " WHATSAPP_ACCESS_TOKEN expired — regenerate in Meta Developers and update Railway."
         : "";
+      const metaIds = [
+        wa.phoneNumberId ? `phone ID ${wa.phoneNumberId}` : null,
+        wa.wabaId ? `WABA ${wa.wabaId}` : null,
+        wa.graphVersion,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      const metaSuffix = metaIds ? ` (${metaIds})` : "";
       return {
         ...row,
         health,
         detail: whatsappProbe.ok
-          ? `${wa.note} Live: ${whatsappProbe.detail}`
+          ? `${wa.note}${metaSuffix} Live: ${whatsappProbe.detail}`
           : `${wa.note}${expiredHint} Graph probe: ${whatsappProbe.detail}`,
       };
     }

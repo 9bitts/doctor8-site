@@ -1,6 +1,7 @@
 // Meta WhatsApp Cloud API — appointment reminder templates (utility category).
 
 import type { Lang } from "@/lib/i18n/translations";
+import { getChatwootForwardStatus } from "@/lib/chatwoot-whatsapp-forward";
 import { logWhatsAppDelivery } from "@/lib/integration-logs";
 import {
   clinicalDocumentLabel,
@@ -8,7 +9,8 @@ import {
   whatsappTemplateLocale,
 } from "@/lib/whatsapp-i18n";
 
-const GRAPH_VERSION = process.env.WHATSAPP_GRAPH_API_VERSION || "v22.0";
+export const WHATSAPP_GRAPH_VERSION =
+  process.env.WHATSAPP_GRAPH_API_VERSION?.trim() || "v25.0";
 
 export function isWhatsAppConfigured(): boolean {
   return Boolean(
@@ -26,6 +28,11 @@ export type WhatsAppReadiness = {
   appSecretConfigured: boolean;
   productionReady: boolean;
   fallbackMode: "wa_me_links";
+  graphVersion: string;
+  phoneNumberId: string | null;
+  wabaId: string | null;
+  appId: string | null;
+  chatwootForward: boolean;
   note: string;
 };
 
@@ -39,6 +46,8 @@ export function getWhatsAppReadiness(): WhatsAppReadiness {
   const webhookConfigured = Boolean(process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim());
   const appSecretConfigured = Boolean(process.env.WHATSAPP_APP_SECRET?.trim());
   const productionReady = configured && webhookConfigured && appSecretConfigured;
+
+  const chatwoot = getChatwootForwardStatus();
 
   let note: string;
   if (!configured) {
@@ -54,6 +63,12 @@ export function getWhatsAppReadiness(): WhatsAppReadiness {
     note = "Credentials set. Complete webhook + app secret for production delivery status.";
   }
 
+  if (chatwoot.enabled) {
+    note += " Inbound messages relay to Chatwoot.";
+  } else if (webhookConfigured) {
+    note += " Set CHATWOOT_WHATSAPP_FORWARD_* for multi-agent inbox.";
+  }
+
   return {
     configured,
     reminderTemplate,
@@ -63,6 +78,11 @@ export function getWhatsAppReadiness(): WhatsAppReadiness {
     appSecretConfigured,
     productionReady,
     fallbackMode: "wa_me_links",
+    graphVersion: WHATSAPP_GRAPH_VERSION,
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() || null,
+    wabaId: process.env.WHATSAPP_WABA_ID?.trim() || null,
+    appId: process.env.WHATSAPP_APP_ID?.trim() || null,
+    chatwootForward: chatwoot.enabled,
     note,
   };
 }
@@ -76,7 +96,7 @@ export async function probeWhatsAppGraph(): Promise<{ ok: boolean; detail: strin
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
   try {
     const res = await fetch(
-      `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}?fields=display_phone_number,verified_name`,
+      `https://graph.facebook.com/${WHATSAPP_GRAPH_VERSION}/${phoneNumberId}?fields=display_phone_number,verified_name`,
       { headers: { Authorization: `Bearer ${token}` }, next: { revalidate: 300 } },
     );
     const data = (await res.json()) as { display_phone_number?: string; verified_name?: string; error?: { message?: string } };
@@ -159,7 +179,7 @@ export async function sendAppointmentReminderWhatsApp(opts: {
   }
 
   const res = await fetch(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
+    `https://graph.facebook.com/${WHATSAPP_GRAPH_VERSION}/${phoneNumberId}/messages`,
     {
       method: "POST",
       headers: {
@@ -236,7 +256,7 @@ export async function sendClinicalDocumentWhatsApp(opts: {
   const link = opts.accessUrl.slice(0, 256);
 
   const res = await fetch(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
+    `https://graph.facebook.com/${WHATSAPP_GRAPH_VERSION}/${phoneNumberId}/messages`,
     {
       method: "POST",
       headers: {
@@ -329,7 +349,7 @@ export async function sendHumanitarianYourTurnWhatsApp(opts: {
   if (!to) return { ok: false, skipped: true, waMeUrl };
 
   const res = await fetch(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
+    `https://graph.facebook.com/${WHATSAPP_GRAPH_VERSION}/${phoneNumberId}/messages`,
     {
       method: "POST",
       headers: {

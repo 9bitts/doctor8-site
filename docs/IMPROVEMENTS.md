@@ -8,7 +8,7 @@ Lista viva de melhorias **pendentes**. Lotes pequenos, baixo risco ao fluxo huma
 
 | # | Item | Prioridade | O que falta |
 |---|------|------------|-------------|
-| M2 | WhatsApp Business API (templates Meta) | **Alta** | Renovar `WHATSAPP_ACCESS_TOKEN` na Meta (token expirado no probe) + confirmar template `WHATSAPP_REMINDER_TEMPLATE` aprovado |
+| M2 | WhatsApp Business API (templates Meta) | **Alta** | Produção configurada no código (phone ID `1160816890453235`, Graph v25.0). Falta: `WHATSAPP_ACCESS_TOKEN` permanente no Railway + `WHATSAPP_WEBHOOK_VERIFY_TOKEN` + `WHATSAPP_APP_SECRET` + templates aprovados na Meta |
 | M4 | Gravação cloud Daily | Baixa | Off por padrão — `DAILY_CLOUD_RECORDING=1` + banner já no código |
 | M10 | Google Meet em produção (humanitário + agendamentos) | Média | Código OK — service account + `GOOGLE_MEET_ENABLED=1` no Railway (ver `.env.example`) |
 | M11 | Farmácia marketplace ativo | Baixa | Código OK — `PHARMACY_MARKETPLACE_ENABLED=true` (+ UTM/affiliate se quiser) |

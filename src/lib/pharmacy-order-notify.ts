@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { sendTransactionalEmail, emailShell, getAppUrl } from "@/lib/email-core";
 import { prescriptionQrUrl } from "@/lib/pharmacy-network/prescription-token";
-import { isWhatsAppConfigured } from "@/lib/whatsapp";
+import { isWhatsAppConfigured, WHATSAPP_GRAPH_VERSION } from "@/lib/whatsapp";
 
 function formatBrl(cents: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
@@ -18,8 +18,7 @@ async function sendStoreWhatsApp(phone: string | null | undefined, message: stri
   const to = digits.startsWith("55") ? digits : `55${digits}`;
 
   try {
-    const version = process.env.WHATSAPP_GRAPH_API_VERSION || "v22.0";
-    await fetch(`https://graph.facebook.com/${version}/${phoneId}/messages`, {
+    await fetch(`https://graph.facebook.com/${WHATSAPP_GRAPH_VERSION}/${phoneId}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

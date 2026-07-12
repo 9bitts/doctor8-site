@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logWhatsAppDelivery } from "@/lib/integration-logs";
+import { forwardWhatsAppWebhookToChatwoot } from "@/lib/chatwoot-whatsapp-forward";
 import { verifyWhatsAppWebhookSignature } from "@/lib/whatsapp-webhook";
+import { processWhatsAppWebhookEvents } from "@/lib/whatsapp-webhook-events";
 
 export const dynamic = "force-dynamic";
 
-/** Meta WhatsApp Cloud API webhook ? verification + delivery status updates. */
+/** Meta WhatsApp Cloud API webhook — verification, delivery logs, Chatwoot relay. */
 export async function GET(req: NextRequest) {
   const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN?.trim() || "";
   const sp = req.nextUrl.searchParams;
@@ -36,30 +37,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const entry = (body as { entry?: unknown[] })?.entry;
-  if (!Array.isArray(entry)) {
-    return NextResponse.json({ received: true });
+  await processWhatsAppWebhookEvents(body);
+
+  const forward = await forwardWhatsAppWebhookToChatwoot(rawBody, signature);
+  if (!forward.ok && forward.error !== "disabled") {
+    console.error("[WHATSAPP WEBHOOK] Chatwoot forward failed:", forward.error);
   }
 
-  for (const e of entry) {
-    const changes = (e as { changes?: unknown[] })?.changes;
-    if (!Array.isArray(changes)) continue;
-    for (const change of changes) {
-      const value = (change as { value?: { statuses?: unknown[]; messages?: unknown[] } })?.value;
-      const statuses = value?.statuses;
-      if (Array.isArray(statuses)) {
-        for (const st of statuses) {
-          const row = st as { id?: string; status?: string; recipient_id?: string; errors?: { title?: string }[] };
-          await logWhatsAppDelivery({
-            messageId: row.id,
-            phone: row.recipient_id,
-            status: row.status || "unknown",
-            detail: row.errors?.[0]?.title,
-          });
-        }
-      }
-    }
-  }
-
-  return NextResponse.json({ received: true });
+  return NextResponse.json({
+    received: true,
+    chatwootForward: forward.ok ? "ok" : forward.error === "disabled" ? "disabled" : "failed",
+  });
 }

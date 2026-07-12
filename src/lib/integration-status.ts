@@ -1,5 +1,6 @@
 // Read-only integration health for admin dashboards (no secrets exposed).
 
+import { getChatwootForwardStatus } from "@/lib/chatwoot-whatsapp-forward";
 import { getWhatsAppReadiness } from "@/lib/whatsapp";
 import { isWebPushEnabled, getVapidPublicKey } from "@/lib/web-push";
 import { isSmsConfigured, usesTwilioVerify, isAwsSnsConfigured, isAwsSnsProductionReady, isSmsUserFacingEnabled } from "@/lib/sms";
@@ -23,6 +24,7 @@ function has(v: string | undefined): boolean {
 
 export function getIntegrationStatuses(): IntegrationRow[] {
   const wa = getWhatsAppReadiness();
+  const chatwoot = getChatwootForwardStatus();
   const stripeOk = has(process.env.STRIPE_SECRET_KEY);
   const stripeWebhook = has(process.env.STRIPE_WEBHOOK_SECRET);
   const smsOk = isSmsConfigured();
@@ -49,7 +51,7 @@ export function getIntegrationStatuses(): IntegrationRow[] {
       id: "whatsapp",
       health: wa.productionReady ? "ok" : wa.configured ? "partial" : "fallback",
       configured: wa.configured,
-      detail: wa.note,
+      detail: chatwoot.enabled ? `${wa.note} Chatwoot relay active.` : wa.note,
     },
     {
       id: "twilio",
