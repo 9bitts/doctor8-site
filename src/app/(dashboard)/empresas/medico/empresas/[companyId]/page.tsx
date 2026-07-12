@@ -3,7 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, Stethoscope, FileDown } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  FileDown,
+  Loader2,
+  Stethoscope,
+  X,
+} from "lucide-react";
+import { useToast } from "@/components/ui/toast";
+import { ASO_RESULT_LABELS } from "@/lib/employer-occupational-exams";
 
 type Risk = {
   id: string;
@@ -25,6 +35,21 @@ type PendingExam = {
   employee: { firstName: string; lastName: string; email: string };
 };
 
+type CompletedExam = {
+  id: string;
+  examType: string;
+  completedAt: string | null;
+  asoResult: string | null;
+  asoRestrictions: string | null;
+  employee: { firstName: string; lastName: string; email: string };
+};
+
+type AsoResult = "APTO" | "APTO_COM_RESTRICAO" | "INAPTO";
+
+type ExamAction =
+  | { mode: "complete"; examId: string; asoResult: AsoResult }
+  | { mode: "rectify"; exam: CompletedExam };
+
 const EXAM_TYPE_LABELS: Record<string, string> = {
   ADMISSIONAL: "Admissional",
   PERIODICO: "Periódico",
@@ -36,10 +61,15 @@ const EXAM_TYPE_LABELS: Record<string, string> = {
 export default function MedicoEmpresaDetailPage() {
   const params = useParams();
   const companyId = params.companyId as string;
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [notes, setNotes] = useState("");
+  const [examAction, setExamAction] = useState<ExamAction | null>(null);
+  const [asoRestrictions, setAsoRestrictions] = useState("");
+  const [examNotes, setExamNotes] = useState("");
+  const [rectifyAsoResult, setRectifyAsoResult] = useState<AsoResult>("APTO");
   const [data, setData] = useState<{
     company: { nomeFantasia: string; cnpj: string; nr1ComplianceScore: number | null };
     pcmso: {
@@ -51,6 +81,7 @@ export default function MedicoEmpresaDetailPage() {
     highRisks: Risk[];
     openActionItems: number;
     pendingExams: PendingExam[];
+    completedExams: CompletedExam[];
   } | null>(null);
 
   async function load() {
@@ -66,7 +97,9 @@ export default function MedicoEmpresaDetailPage() {
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, [companyId]);
+  useEffect(() => {
+    load();
+  }, [companyId]);
 
   async function savePcmso(signOff = false) {
     setSaving(true);
@@ -81,25 +114,99 @@ export default function MedicoEmpresaDetailPage() {
       }),
     });
     setSaving(false);
-    if (res.ok) await load();
-    else alert("Erro ao salvar PCMSO.");
+    if (res.ok) {
+      toast.success(signOff ? "Revisão assinada." : "Checklist salvo.");
+      await load();
+    } else {
+      toast.error("Erro ao salvar PCMSO.");
+    }
   }
 
-  async function completeExam(examId: string, asoResult: string) {
+  function openCompleteExam(examId: string, asoResult: AsoResult) {
+    setExamAction({ mode: "complete", examId, asoResult });
+    setAsoRestrictions("");
+    setExamNotes("");
+  }
+
+  function openRectify(exam: CompletedExam) {
+    setExamAction({ mode: "rectify", exam });
+    setExamNotes("");
+    setAsoRestrictions(exam.asoRestrictions ?? "");
+    setRectifyAsoResult((exam.asoResult as AsoResult) ?? "APTO");
+  }
+
+  function closeExamModal() {
+    setExamAction(null);
+    setAsoRestrictions("");
+    setExamNotes("");
+  }
+
+  async function submitExamAction() {
+    if (!examAction) return;
+
+    if (examAction.mode === "complete") {
+      const { examId, asoResult } = examAction;
+      if (asoResult === "APTO_COM_RESTRICAO" && !asoRestrictions.trim()) {
+        toast.error("Informe as restrições para apto com restrição.");
+        return;
+      }
+      setSaving(true);
+      const res = await fetch("/api/occupational-physician/exams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employerCompanyId: companyId,
+          examId,
+          status: "COMPLETED",
+          asoResult,
+          asoRestrictions: asoResult === "APTO_COM_RESTRICAO" ? asoRestrictions.trim() : undefined,
+          notes: examNotes.trim() || undefined,
+        }),
+      });
+      setSaving(false);
+      if (res.ok) {
+        toast.success("ASO registrado.");
+        closeExamModal();
+        await load();
+      } else {
+        const json = await res.json().catch(() => ({}));
+        toast.error(typeof json.error === "string" ? json.error : "Erro ao registrar ASO.");
+      }
+      return;
+    }
+
+    const { exam } = examAction;
+    if (!examNotes.trim()) {
+      toast.error("Justificativa obrigatória para retificação.");
+      return;
+    }
+    if (rectifyAsoResult === "APTO_COM_RESTRICAO" && !asoRestrictions.trim()) {
+      toast.error("Informe as restrições para apto com restrição.");
+      return;
+    }
     setSaving(true);
     const res = await fetch("/api/occupational-physician/exams", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         employerCompanyId: companyId,
-        examId,
-        status: "COMPLETED",
-        asoResult,
+        examId: exam.id,
+        rectify: true,
+        notes: examNotes.trim(),
+        asoResult: rectifyAsoResult,
+        asoRestrictions:
+          rectifyAsoResult === "APTO_COM_RESTRICAO" ? asoRestrictions.trim() : undefined,
       }),
     });
     setSaving(false);
-    if (res.ok) await load();
-    else alert("Erro ao registrar ASO.");
+    if (res.ok) {
+      toast.success("ASO retificado.");
+      closeExamModal();
+      await load();
+    } else {
+      const json = await res.json().catch(() => ({}));
+      toast.error(typeof json.error === "string" ? json.error : "Erro ao retificar ASO.");
+    }
   }
 
   function toggleItem(id: string) {
@@ -179,7 +286,7 @@ export default function MedicoEmpresaDetailPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
         <h2 className="font-semibold text-slate-900 flex items-center gap-2">
           <Stethoscope className="text-sky-600" size={18} />
-          Exames pendentes / ASO
+          Exames pendentes
         </h2>
         {!data.pendingExams?.length ? (
           <p className="text-sm text-slate-500">Nenhum exame agendado ou em andamento.</p>
@@ -203,18 +310,62 @@ export default function MedicoEmpresaDetailPage() {
                         key={r}
                         type="button"
                         disabled={saving}
-                        onClick={() => completeExam(exam.id, r)}
+                        onClick={() => openCompleteExam(exam.id, r)}
                         className="text-xs px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
                       >
                         {r === "APTO" ? "Apto" : r === "APTO_COM_RESTRICAO" ? "Apto c/ restrição" : "Inapto"}
                       </button>
                     ))}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
+        <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+          <CheckCircle2 className="text-emerald-600" size={18} />
+          Exames concluídos / ASOs
+        </h2>
+        {!data.completedExams?.length ? (
+          <p className="text-sm text-slate-500">Nenhum ASO emitido ainda.</p>
+        ) : (
+          <ul className="space-y-3">
+            {data.completedExams.map((exam) => (
+              <li key={exam.id} className="border border-slate-100 rounded-xl p-4 text-sm">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-slate-900">
+                      {exam.employee.firstName} {exam.employee.lastName}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {EXAM_TYPE_LABELS[exam.examType] ?? exam.examType}
+                      {exam.completedAt && ` · ${new Date(exam.completedAt).toLocaleDateString("pt-BR")}`}
+                    </p>
+                    {exam.asoResult && (
+                      <p className="text-xs font-medium text-emerald-700 mt-1">
+                        {ASO_RESULT_LABELS[exam.asoResult as keyof typeof ASO_RESULT_LABELS] ?? exam.asoResult}
+                        {exam.asoRestrictions && ` — ${exam.asoRestrictions}`}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 items-center">
                     <a
                       href={`/api/employer/exams/${exam.id}/aso-pdf`}
-                      className="text-xs text-sky-600 hover:underline inline-flex items-center gap-1 self-center"
+                      className="text-xs text-sky-600 hover:underline inline-flex items-center gap-1"
                     >
                       <FileDown size={12} /> ASO
                     </a>
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => openRectify(exam)}
+                      className="text-xs px-2 py-1 rounded-lg border border-amber-200 text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+                    >
+                      Retificar
+                    </button>
                   </div>
                 </div>
               </li>
@@ -264,6 +415,86 @@ export default function MedicoEmpresaDetailPage() {
           </button>
         </div>
       </section>
+
+      {examAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-slate-900">
+                {examAction.mode === "complete" ? "Registrar ASO" : "Retificar ASO"}
+              </h3>
+              <button type="button" onClick={closeExamModal} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+
+            {examAction.mode === "rectify" && (
+              <div className="space-y-2">
+                <label className="text-xs text-slate-500">Novo resultado</label>
+                <select
+                  value={rectifyAsoResult}
+                  onChange={(e) => setRectifyAsoResult(e.target.value as AsoResult)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                >
+                  <option value="APTO">Apto</option>
+                  <option value="APTO_COM_RESTRICAO">Apto com restrição</option>
+                  <option value="INAPTO">Inapto</option>
+                </select>
+              </div>
+            )}
+
+            {(examAction.mode === "complete"
+              ? examAction.asoResult === "APTO_COM_RESTRICAO"
+              : rectifyAsoResult === "APTO_COM_RESTRICAO") && (
+              <div className="space-y-1">
+                <label className="text-xs text-slate-500">Restrições *</label>
+                <textarea
+                  value={asoRestrictions}
+                  onChange={(e) => setAsoRestrictions(e.target.value)}
+                  rows={3}
+                  placeholder="Descreva as restrições ocupacionais"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <label className="text-xs text-slate-500">
+                {examAction.mode === "rectify" ? "Justificativa da retificação *" : "Observações (opcional)"}
+              </label>
+              <textarea
+                value={examNotes}
+                onChange={(e) => setExamNotes(e.target.value)}
+                rows={3}
+                placeholder={
+                  examAction.mode === "rectify"
+                    ? "Motivo legal/clínico da retificação"
+                    : "Notas adicionais sobre o exame"
+                }
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={closeExamModal}
+                className="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={submitExamAction}
+                className="px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium disabled:opacity-50"
+              >
+                {saving ? "Salvando…" : examAction.mode === "rectify" ? "Confirmar retificação" : "Confirmar ASO"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,7 +15,70 @@ const patchSchema = z.object({
   physicianName: z.string().max(200).optional(),
   physicianCrm: z.string().max(30).optional(),
   notes: z.string().max(2000).optional(),
+  rectify: z.boolean().optional(),
 });
+
+export async function GET(req: NextRequest) {
+  const ctx = await requireOccupationalPhysicianApi();
+  if ("error" in ctx) return ctx.error;
+
+  const session = await auth();
+  const { searchParams } = req.nextUrl;
+  const employerCompanyId = searchParams.get("employerCompanyId") ?? undefined;
+  const status = searchParams.get("status") ?? undefined;
+  const take = Math.min(Number(searchParams.get("take") ?? 50), 50);
+  const skip = Math.max(Number(searchParams.get("skip") ?? 0), 0);
+
+  const linkedCompanyIds =
+    session?.user?.role === "ADMIN"
+      ? employerCompanyId
+        ? [employerCompanyId]
+        : undefined
+      : ctx.links.map((l) => l.employerCompanyId);
+
+  if (!linkedCompanyIds?.length && session?.user?.role !== "ADMIN") {
+    return NextResponse.json({ exams: [], total: 0 });
+  }
+
+  const companyFilter =
+    employerCompanyId && linkedCompanyIds?.includes(employerCompanyId)
+      ? [employerCompanyId]
+      : linkedCompanyIds;
+
+  const where = {
+    ...(companyFilter ? { employerCompanyId: { in: companyFilter } } : {}),
+    ...(status ? { status: status as EmployerExamStatus } : {}),
+  };
+
+  const [exams, total] = await Promise.all([
+    db.employerOccupationalExam.findMany({
+      where,
+      include: {
+        workforceMember: { select: { firstName: true, lastName: true, email: true } },
+        employerCompany: { select: { id: true, nomeFantasia: true } },
+      },
+      orderBy: [{ completedAt: "desc" }, { dueDate: "asc" }],
+      take,
+      skip,
+    }),
+    db.employerOccupationalExam.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    exams: exams.map((e) => ({
+      id: e.id,
+      examType: e.examType,
+      status: e.status,
+      dueDate: e.dueDate?.toISOString() ?? null,
+      completedAt: e.completedAt?.toISOString() ?? null,
+      asoResult: e.asoResult,
+      asoRestrictions: e.asoRestrictions,
+      employee: e.workforceMember,
+      company: e.employerCompany,
+    })),
+    total,
+  });
+}
 
 export async function PATCH(req: NextRequest) {
   const ctx = await requireOccupationalPhysicianApi();
@@ -48,6 +111,34 @@ export async function PATCH(req: NextRequest) {
   });
   if (!exam) return NextResponse.json({ error: "Exam not found" }, { status: 404 });
 
+  const isCompletedWithResult =
+    exam.status === "COMPLETED" && exam.asoResult != null;
+
+  if (isCompletedWithResult && !parsed.data.rectify) {
+    return NextResponse.json(
+      { error: "Exame já concluído. Use retificação." },
+      { status: 409 },
+    );
+  }
+
+  if (parsed.data.rectify && !parsed.data.notes?.trim()) {
+    return NextResponse.json(
+      { error: "Justificativa obrigatória para retificação." },
+      { status: 400 },
+    );
+  }
+
+  const effectiveAsoResult = parsed.data.asoResult ?? exam.asoResult;
+  if (effectiveAsoResult === "APTO_COM_RESTRICAO") {
+    const restrictions = parsed.data.asoRestrictions?.trim() ?? exam.asoRestrictions?.trim();
+    if (!restrictions) {
+      return NextResponse.json(
+        { error: "Restrições obrigatórias para apto com restrição." },
+        { status: 400 },
+      );
+    }
+  }
+
   const updated = await db.employerOccupationalExam.update({
     where: { id: exam.id },
     data: {
@@ -56,26 +147,48 @@ export async function PATCH(req: NextRequest) {
       asoRestrictions: parsed.data.asoRestrictions,
       physicianName: parsed.data.physicianName ?? physician?.fullName ?? undefined,
       physicianCrm: parsed.data.physicianCrm ?? physician?.crm ?? undefined,
-      notes: parsed.data.notes,
+      notes:
+        parsed.data.notes !== undefined
+          ? parsed.data.notes
+          : undefined,
       completedAt:
-        parsed.data.status === "COMPLETED" || parsed.data.asoResult
+        parsed.data.status === "COMPLETED" || parsed.data.asoResult || parsed.data.rectify
           ? new Date()
           : undefined,
     },
   });
 
-  if (parsed.data.asoResult && updated.completedAt) {
-    await db.employerDocumentSignature.create({
-      data: {
+  const shouldSign =
+    (parsed.data.asoResult && updated.completedAt) || parsed.data.rectify;
+
+  if (shouldSign) {
+    const existingSignature = await db.employerDocumentSignature.findFirst({
+      where: {
         employerCompanyId: parsed.data.employerCompanyId,
         docType: "ASO",
         docRefId: updated.id,
-        signedByName: updated.physicianName ?? physician?.fullName ?? "Médico do trabalho",
-        signedByRegistro: updated.physicianCrm ?? physician?.crm,
-        signedByRole: "MEDICO_TRABALHO",
-        notes: `ASO ${parsed.data.asoResult}`,
       },
     });
+
+    const isFirstSignature = !existingSignature;
+    const isRectification = Boolean(parsed.data.rectify);
+
+    if (isFirstSignature || isRectification) {
+      const resultLabel = updated.asoResult ?? parsed.data.asoResult;
+      await db.employerDocumentSignature.create({
+        data: {
+          employerCompanyId: parsed.data.employerCompanyId,
+          docType: "ASO",
+          docRefId: updated.id,
+          signedByName: updated.physicianName ?? physician?.fullName ?? "Médico do trabalho",
+          signedByRegistro: updated.physicianCrm ?? physician?.crm,
+          signedByRole: "MEDICO_TRABALHO",
+          notes: isRectification
+            ? `RETIFICAÇÃO: ${parsed.data.notes!.trim()}`
+            : `ASO ${resultLabel}`,
+        },
+      });
+    }
   }
 
   return NextResponse.json({ exam: updated });
