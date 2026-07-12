@@ -108,6 +108,11 @@ export function issueIdToken(params: {
   role: string;
   verified: boolean;
   nonce?: string | null;
+  org_type?: string | null;
+  org_cnpj?: string | null;
+  org_name?: string | null;
+  org_razao_social?: string | null;
+  org_member_role?: string | null;
 }): string {
   const claims: Record<string, unknown> = {
     iss: (process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org").replace(/\/$/, ""),
@@ -121,6 +126,11 @@ export function issueIdToken(params: {
   };
   if (params.picture) claims.picture = params.picture;
   if (params.nonce) claims.nonce = params.nonce;
+  if (params.org_type != null) claims.org_type = params.org_type;
+  if (params.org_cnpj != null) claims.org_cnpj = params.org_cnpj;
+  if (params.org_name != null) claims.org_name = params.org_name;
+  if (params.org_razao_social != null) claims.org_razao_social = params.org_razao_social;
+  if (params.org_member_role != null) claims.org_member_role = params.org_member_role;
   return signJwt(claims, ID_TOKEN_TTL_SEC);
 }
 

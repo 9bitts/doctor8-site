@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getSsoRolesForClient, ssoAppUrl } from "@/lib/sso/sso-config";
+import {
+  getSsoAccessDeniedMessage,
+  getSsoRolesForClient,
+  ssoAppUrl,
+} from "@/lib/sso/sso-config";
 import { getSsoClient, isSsoRedirectUriAllowed } from "@/lib/sso/sso-clients";
 import { createSsoAuthorizationCode } from "@/lib/sso/sso-codes";
 
@@ -86,7 +90,7 @@ export async function GET(req: NextRequest) {
       redirectUri,
       clientId,
       "access_denied",
-      "Apenas profissionais de saúde podem acessar a eight.",
+      getSsoAccessDeniedMessage(clientId),
       state
     );
   }

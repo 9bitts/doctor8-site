@@ -84,6 +84,11 @@ export async function POST(req: NextRequest) {
     role: claims.role,
     verified: claims.verified,
     nonce: meta.nonce,
+    org_type: claims.org_type,
+    org_cnpj: claims.org_cnpj,
+    org_name: claims.org_name,
+    org_razao_social: claims.org_razao_social,
+    org_member_role: claims.org_member_role,
   });
 
   const accessToken = issueAccessToken({
