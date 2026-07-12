@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { UserRole } from "@prisma/client";
+import {
+  buildRoleConflictMessage,
+  canAcceptEmployerInvite,
+  ROLE_CONFLICT_CODE,
+} from "@/lib/portal-invite-compat";
 
 const schema = z.object({ token: z.string().min(16) });
 
@@ -31,6 +35,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Faça login com o e-mail do convite." }, { status: 403 });
   }
 
+  if (!canAcceptEmployerInvite(session.user.role)) {
+    return NextResponse.json(
+      {
+        error: buildRoleConflictMessage(session.user.role, "empresa"),
+        code: ROLE_CONFLICT_CODE,
+        currentRole: session.user.role,
+      },
+      { status: 409 },
+    );
+  }
+
   const existingMember = await db.employerMember.findUnique({
     where: {
       employerCompanyId_userId: {
@@ -44,13 +59,6 @@ export async function POST(req: NextRequest) {
   }
 
   await db.$transaction(async (tx) => {
-    if (session.user.role !== "EMPLOYER" && session.user.role !== "ADMIN") {
-      await tx.user.update({
-        where: { id: session.user.id },
-        data: { role: UserRole.EMPLOYER },
-      });
-    }
-
     await tx.employerMember.create({
       data: {
         employerCompanyId: invite.employerCompanyId,

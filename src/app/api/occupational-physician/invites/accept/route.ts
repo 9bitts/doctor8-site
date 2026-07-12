@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import { UserRole } from "@prisma/client";
+import {
+  buildRoleConflictMessage,
+  canAcceptOccupationalPhysicianInvite,
+  ROLE_CONFLICT_CODE,
+} from "@/lib/portal-invite-compat";
 
 const schema = z.object({ token: z.string().min(16) });
 
@@ -35,6 +39,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Faça login com o e-mail do convite." }, { status: 403 });
   }
 
+  if (!canAcceptOccupationalPhysicianInvite(session.user.role)) {
+    return NextResponse.json(
+      {
+        error: buildRoleConflictMessage(session.user.role, "médico do trabalho"),
+        code: ROLE_CONFLICT_CODE,
+        currentRole: session.user.role,
+      },
+      { status: 409 },
+    );
+  }
+
   if (link.userId === session.user.id && link.status === "ACTIVE") {
     return NextResponse.json({ success: true, redirectTo: "/empresas/medico/painel" });
   }
@@ -51,16 +66,6 @@ export async function POST(req: NextRequest) {
   }
 
   await db.$transaction(async (tx) => {
-    if (
-      session.user.role !== "OCCUPATIONAL_PHYSICIAN" &&
-      session.user.role !== "ADMIN"
-    ) {
-      await tx.user.update({
-        where: { id: session.user.id },
-        data: { role: UserRole.OCCUPATIONAL_PHYSICIAN },
-      });
-    }
-
     await tx.employerOccupationalPhysician.update({
       where: { id: link.id },
       data: {
