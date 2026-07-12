@@ -20,19 +20,41 @@ import {
   RegisterLanguageSelector,
   RegisterLogo,
 } from "@/components/auth/register-shared";
-import { isProfessionSignupSlug, PROFESSION_SIGNUP } from "@/lib/profession-signup";
+import {
+  resolveProfessionalSignupParams,
+  resolveRegisterProfessionSlug,
+  type ProSignupRole,
+  type ProfessionSignupSlug,
+} from "@/lib/professional-signup-params";
+import type { LoginAccent } from "@/lib/auth-portals";
 
-type ProRole = "PROFESSIONAL" | "PSYCHOLOGIST" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST" | "NUTRITIONIST" | "NURSE" | "PHARMACIST" | "DENTIST";
+function signupAccentForRole(role: ProSignupRole): LoginAccent {
+  switch (role) {
+    case "PSYCHOLOGIST":
+    case "PSYCHOANALYST":
+      return "violet";
+    case "INTEGRATIVE_THERAPIST":
+      return "teal";
+    case "NUTRITIONIST":
+      return "amber";
+    case "NURSE":
+      return "rose";
+    case "PHARMACIST":
+      return "teal";
+    case "DENTIST":
+      return "sky";
+    default:
+      return "emerald";
+  }
+}
 
 export default function RegisterProfessionalSignupPage() {
   const [callbackUrl, setCallbackUrl] = useState("");
   const [initialRegion, setInitialRegion] = useState<Region>("US");
   const [lang, setLang] = useState<Lang>("en");
   const [step, setStep] = useState<1 | 2>(1);
-  const [role, setRole] = useState<ProRole>("PROFESSIONAL");
-  const [professionSlug, setProfessionSlug] = useState<
-    "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "dentista" | "cuidados_paliativos" | undefined
-  >(undefined);
+  const [role, setRole] = useState<ProSignupRole>("PROFESSIONAL");
+  const [professionSlug, setProfessionSlug] = useState<ProfessionSignupSlug | undefined>(undefined);
   const [inviteToken, setInviteToken] = useState("");
 
   useEffect(() => {
@@ -41,11 +63,29 @@ export default function RegisterProfessionalSignupPage() {
     const invite = params.get("invite");
     if (invite) setInviteToken(invite);
 
+    const langParam = params.get("lang");
+    if (langParam) {
+      const l = normalizeLang(langParam);
+      setLang(l);
+      try { window.localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
+    } else {
+      setLang(detectInitialLang());
+    }
+
+    const resolved = resolveProfessionalSignupParams({
+      portal: params.get("portal"),
+      role: params.get("role"),
+      profession: params.get("profession"),
+    });
+    setRole(resolved.role);
+    setProfessionSlug(resolved.professionSlug);
+    setStep(resolved.step);
+
     const r = params.get("region");
     if (r) {
       setInitialRegion(parseRegistrationRegion(r, "US"));
     } else {
-      const detectedLang = detectInitialLang();
+      const detectedLang = langParam ? normalizeLang(langParam) : detectInitialLang();
       fetch(`/api/auth/detect-region?lang=${encodeURIComponent(detectedLang)}`)
         .then((res) => res.json())
         .then((data) => {
@@ -59,64 +99,7 @@ export default function RegisterProfessionalSignupPage() {
           setInitialRegion(defaultRegistrationRegionForLang(detectedLang));
         });
     }
-
-    const portalParam = params.get("portal");
-    if (portalParam === "psychologist") {
-      setRole("PSYCHOLOGIST");
-      setStep(2);
-    } else if (portalParam === "nutritionist") {
-      setRole("NUTRITIONIST");
-      setProfessionSlug("nutricionista");
-      setStep(2);
-    } else if (portalParam === "nurse") {
-      setRole("NURSE");
-      setProfessionSlug("enfermeiro");
-      setStep(2);
-    } else if (portalParam === "pharmacist") {
-      setRole("PHARMACIST");
-      setProfessionSlug("farmaceutico");
-      setStep(2);
-    } else if (portalParam === "dentist") {
-      setRole("DENTIST");
-      setProfessionSlug("dentista");
-      setStep(2);
-    }
-
-    const roleParam = params.get("role");
-    if (roleParam === "PSYCHOANALYST") {
-      setRole("PSYCHOANALYST");
-      setStep(2);
-    } else if (roleParam === "INTEGRATIVE_THERAPIST") {
-      setRole("INTEGRATIVE_THERAPIST");
-      setStep(2);
-    } else if (roleParam === "PROFESSIONAL") {
-      setRole("PROFESSIONAL");
-      setStep(2);
-    }
-
-    const professionParam = params.get("profession");
-    if (professionParam && isProfessionSignupSlug(professionParam)) {
-      const cfg = PROFESSION_SIGNUP[professionParam];
-      if (cfg.role === "PROFESSIONAL") {
-        setRole("PROFESSIONAL");
-        if (professionParam !== "psicologo") {
-          setProfessionSlug(
-            professionParam as "medico" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "dentista" | "cuidados_paliativos",
-          );
-        }
-        setStep(2);
-      }
-    }
-
-    const langParam = params.get("lang");
-    if (langParam) {
-      const l = normalizeLang(langParam);
-      setLang(l);
-      try { window.localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
-    }
   }, []);
-
-  useEffect(() => { setLang(detectInitialLang()); }, []);
 
   const t = (key: string) => translate(lang, key);
 
@@ -125,7 +108,7 @@ export default function RegisterProfessionalSignupPage() {
     try { window.localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ }
   }
 
-  function chooseRole(r: ProRole) {
+  function chooseRole(r: ProSignupRole) {
     setRole(r);
     if (r === "NUTRITIONIST") {
       setProfessionSlug("nutricionista");
@@ -135,7 +118,9 @@ export default function RegisterProfessionalSignupPage() {
       setProfessionSlug("farmaceutico");
     } else if (r === "DENTIST") {
       setProfessionSlug("dentista");
-    } else if (r !== "PROFESSIONAL") {
+    } else if (r === "PROFESSIONAL") {
+      setProfessionSlug(undefined);
+    } else {
       setProfessionSlug(undefined);
     }
     setStep(2);
@@ -157,6 +142,8 @@ export default function RegisterProfessionalSignupPage() {
     ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
     : "/register";
 
+  const formAccent = signupAccentForRole(role);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
@@ -166,7 +153,7 @@ export default function RegisterProfessionalSignupPage() {
             <BrandLogo variant="on-dark" size="sm" />
           </Link>
         </div>
-        <RegisterLanguageSelector lang={lang} onChange={changeLang} />
+        <RegisterLanguageSelector lang={lang} onChange={changeLang} accent={formAccent} />
         <RegisterLogo />
 
         {step === 1 && (
@@ -329,13 +316,8 @@ export default function RegisterProfessionalSignupPage() {
             <RegisterAccountForm
               role={role === "PSYCHOLOGIST" || role === "NUTRITIONIST" || role === "NURSE" || role === "PHARMACIST" || role === "DENTIST" ? "PROFESSIONAL" : role as RegisterRole}
               professionalKind={role === "PSYCHOLOGIST" ? "psychologist" : undefined}
-              professionSlug={
-                role === "NUTRITIONIST" ? "nutricionista"
-                  : role === "NURSE" ? "enfermeiro"
-                  : role === "PHARMACIST" ? "farmaceutico"
-                  : role === "DENTIST" ? "dentista"
-                  : professionSlug
-              }
+              professionSlug={resolveRegisterProfessionSlug(role, professionSlug)}
+              accent={formAccent}
               lang={lang}
               callbackUrl={callbackUrl}
               initialRegion={initialRegion}
