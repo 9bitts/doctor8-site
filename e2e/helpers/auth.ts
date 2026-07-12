@@ -106,6 +106,9 @@ export async function loginAtPortal(
   password: string,
   callbackUrl?: string,
 ): Promise<void> {
+  // Avoid succeeding on a stale session from a prior test before signOut+signIn finish.
+  await page.context().clearCookies();
+
   const loginPath = callbackUrl
     ? `${portalPath}?callbackUrl=${encodeURIComponent(callbackUrl)}`
     : portalPath;
@@ -113,11 +116,35 @@ export async function loginAtPortal(
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.locator("form button[type='submit']").click();
-  await page.waitForFunction(async () => {
-    const res = await fetch("/api/auth/session", { credentials: "include" });
-    const data = await res.json();
-    return Boolean(data?.user?.email);
-  }, { timeout: 30_000 });
+
+  const expectedEmail = email.trim().toLowerCase();
+  await page.waitForFunction(
+    async (expected) => {
+      const res = await fetch("/api/auth/session", { credentials: "include" });
+      const data = await res.json();
+      const sessionEmail = (data?.user?.email ?? "").trim().toLowerCase();
+      return Boolean(data?.user?.role && sessionEmail === expected);
+    },
+    expectedEmail,
+    { timeout: 30_000 },
+  );
+
+  // Match app login-shared: full navigation so middleware sees the fresh cookie.
+  if (callbackUrl) {
+    const target = callbackUrl.split("?")[0];
+    await page.waitForURL(
+      (url) => url.pathname === target || url.pathname.startsWith(`${target}/`),
+      { timeout: 30_000 },
+    );
+  } else {
+    await page.waitForURL(
+      (url) => {
+        const p = url.pathname;
+        return p !== "/login" && !p.startsWith("/login/") && p !== "/callback";
+      },
+      { timeout: 30_000 },
+    );
+  }
 }
 
 export async function loginWithCredentials(
@@ -151,8 +178,8 @@ export async function waitForAuthenticatedSession(page: Page): Promise<void> {
   await page.waitForFunction(async () => {
     const res = await fetch("/api/auth/session", { credentials: "include" });
     const data = await res.json();
-    return Boolean(data?.user?.email);
-  });
+    return Boolean(data?.user?.email && data?.user?.role);
+  }, { timeout: 30_000 });
 }
 
 /** Browser-context fetch — shares session cookies reliably in Playwright CI. */

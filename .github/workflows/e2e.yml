@@ -42,6 +42,8 @@ jobs:
       E2E_QUEUE_PATIENT_PASSWORD: TestPassword1!
       E2E_PSYCHOLOGIST_EMAIL: e2e-psychologist@doctor8.test
       E2E_PSYCHOLOGIST_PASSWORD: TestPassword1!
+      E2E_ADMIN_EMAIL: e2e-admin@doctor8.test
+      E2E_ADMIN_PASSWORD: TestPassword1!
       ALLOW_E2E_SEED: "1"
       E2E_MOCK_DAILY: "1"
       # Optional — vapid endpoint returns enabled:false without these; set for push subscribe tests
