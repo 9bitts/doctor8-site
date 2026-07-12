@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { EIGHT_SSO_ROLES, ssoAppUrl } from "@/lib/sso/sso-config";
+import { getSsoRolesForClient, ssoAppUrl } from "@/lib/sso/sso-config";
 import { getSsoClient, isSsoRedirectUriAllowed } from "@/lib/sso/sso-clients";
 import { createSsoAuthorizationCode } from "@/lib/sso/sso-codes";
 
@@ -50,13 +50,28 @@ export async function GET(req: NextRequest) {
     return oauthError(redirectUri, clientId, "invalid_scope", "openid scope is required.", state);
   }
 
-  const session = await auth();
   const appUrl = ssoAppUrl();
 
-  if (!session?.user?.id) {
-    const resumeUrl = `/api/oauth/authorize?${sp.toString()}`;
+  function resumeAuthorizeUrl(): string {
+    const resumeParams = new URLSearchParams(sp);
+    resumeParams.delete("prompt");
+    return `/api/oauth/authorize?${resumeParams.toString()}`;
+  }
+
+  const prompt = sp.get("prompt");
+  const forceLogin = prompt?.split(/\s+/).includes("login") ?? false;
+
+  if (forceLogin) {
     const login = new URL("/login", appUrl);
-    login.searchParams.set("callbackUrl", resumeUrl);
+    login.searchParams.set("callbackUrl", resumeAuthorizeUrl());
+    return NextResponse.redirect(login);
+  }
+
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    const login = new URL("/login", appUrl);
+    login.searchParams.set("callbackUrl", resumeAuthorizeUrl());
     return NextResponse.redirect(login);
   }
 
@@ -66,7 +81,7 @@ export async function GET(req: NextRequest) {
   });
   const role = dbUser?.role ?? session.user.role;
 
-  if (!role || !EIGHT_SSO_ROLES.has(role)) {
+  if (!role || !getSsoRolesForClient(clientId).has(role)) {
     return oauthError(
       redirectUri,
       clientId,

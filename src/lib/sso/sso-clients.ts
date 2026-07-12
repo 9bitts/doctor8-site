@@ -11,20 +11,40 @@ function parseRedirectUris(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+function loadClient(
+  clientId: string,
+  clientSecret: string,
+  redirectUris: string[],
+): SsoClient {
+  return { clientId, clientSecret, redirectUris };
+}
+
 function loadClients(): SsoClient[] {
-  const id = process.env.SSO_EIGHT_CLIENT_ID?.trim() || "eight";
-  const secret = process.env.SSO_EIGHT_CLIENT_SECRET?.trim();
-  const redirectUris = parseRedirectUris(process.env.SSO_EIGHT_REDIRECT_URIS);
+  const clients: SsoClient[] = [];
 
-  if (!secret) return [];
+  const eightSecret = process.env.SSO_EIGHT_CLIENT_SECRET?.trim();
+  if (eightSecret) {
+    clients.push(
+      loadClient(
+        process.env.SSO_EIGHT_CLIENT_ID?.trim() || "eight",
+        eightSecret,
+        parseRedirectUris(process.env.SSO_EIGHT_REDIRECT_URIS),
+      ),
+    );
+  }
 
-  return [
-    {
-      clientId: id,
-      clientSecret: secret,
-      redirectUris,
-    },
-  ];
+  const vital8Secret = process.env.SSO_VITAL8_CLIENT_SECRET?.trim();
+  if (vital8Secret) {
+    clients.push(
+      loadClient(
+        process.env.SSO_VITAL8_CLIENT_ID?.trim() || "vital8",
+        vital8Secret,
+        parseRedirectUris(process.env.SSO_VITAL8_REDIRECT_URIS),
+      ),
+    );
+  }
+
+  return clients;
 }
 
 export function getSsoClient(clientId: string): SsoClient | null {

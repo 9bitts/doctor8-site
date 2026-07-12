@@ -20,10 +20,20 @@ export function getOpenIdConfiguration() {
   };
 }
 
-/** Roles allowed to SSO into eight (healthcare professionals). */
-export const EIGHT_SSO_ROLES = new Set([
+/** Roles allowed to SSO into trusted apps (eight, vital8, …). */
+export const PROFESSIONAL_SSO_ROLES = new Set([
   "PROFESSIONAL",
   "PSYCHOANALYST",
   "INTEGRATIVE_THERAPIST",
   "ADMIN",
 ]);
+
+const SSO_CLIENT_ROLES: Record<string, Set<string>> = {
+  eight: PROFESSIONAL_SSO_ROLES,
+  vital8: PROFESSIONAL_SSO_ROLES,
+};
+
+/** Role gate per registered OIDC client (falls back to PROFESSIONAL_SSO_ROLES). */
+export function getSsoRolesForClient(clientId: string): Set<string> {
+  return SSO_CLIENT_ROLES[clientId] ?? PROFESSIONAL_SSO_ROLES;
+}

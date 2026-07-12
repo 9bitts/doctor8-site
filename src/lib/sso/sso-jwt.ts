@@ -38,6 +38,7 @@ function loadKeyPair(): KeyPair {
           alg: "RS256",
         },
       };
+      console.info(`[sso] SSO_OAUTH_PRIVATE_KEY carregada com sucesso (kid=${KID})`);
       return cachedKeys;
     } catch (err) {
       console.error("[sso] SSO_OAUTH_PRIVATE_KEY inválida:", err);
@@ -65,7 +66,10 @@ function loadKeyPair(): KeyPair {
     },
   };
 
-  console.warn("[sso] SSO_OAUTH_PRIVATE_KEY não configurada — chave efêmera (dev only).");
+  console.warn(
+    "[sso] SSO_OAUTH_PRIVATE_KEY não configurada — chave efêmera (dev only). " +
+      "Em produção multi-instância, tokens emitidos por uma instância não validam em outra."
+  );
 
   return cachedKeys;
 }
@@ -138,6 +142,9 @@ export function issueAccessToken(params: {
 
 export function verifyAccessToken(token: string): { sub: string; aud: string; scope: string } | null {
   try {
+    // A chave pública é derivada da mesma privateKey em memória (loadKeyPair).
+    // Em produção, SSO_OAUTH_PRIVATE_KEY deve ser idêntica em todas as instâncias —
+    // senão um token emitido no /token de uma réplica falha no /userinfo de outra.
     const { privateKey } = loadKeyPair();
     const publicKey = crypto.createPublicKey(privateKey);
     const parts = token.split(".");
@@ -156,7 +163,8 @@ export function verifyAccessToken(token: string): { sub: string; aud: string; sc
     };
     if (payload.token_use !== "access") return null;
     if (!payload.sub || !payload.aud || !payload.scope) return null;
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+    if (typeof payload.exp !== "number") return null;
+    if (payload.exp < Math.floor(Date.now() / 1000)) return null;
     return { sub: payload.sub, aud: payload.aud, scope: payload.scope };
   } catch {
     return null;
