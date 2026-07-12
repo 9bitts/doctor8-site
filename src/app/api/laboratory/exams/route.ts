@@ -73,7 +73,7 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireLaboratory();
+  const ctx = await requireLaboratory(undefined, { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const body = await req.json();

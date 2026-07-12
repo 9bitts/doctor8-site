@@ -2,8 +2,18 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import type { LaboratoryMemberRole } from "@prisma/client";
+import {
+  isLaboratoryActive,
+  LABORATORY_WRITE_BLOCKED_MESSAGE,
+} from "@/lib/laboratory-portal";
 
 const ADMIN_ROLES: LaboratoryMemberRole[] = ["OWNER", "ADMIN"];
+
+export { isLaboratoryActive, LABORATORY_WRITE_BLOCKED_MESSAGE };
+
+export type RequireLaboratoryOptions = {
+  requireActive?: boolean;
+};
 
 export type LaboratoryContext = {
   userId: string;
@@ -52,6 +62,7 @@ export async function getLaboratoryMembership(userId: string) {
 
 export async function requireLaboratory(
   allowedRoles?: LaboratoryMemberRole[],
+  opts?: RequireLaboratoryOptions,
 ): Promise<LaboratoryContext | { error: NextResponse }> {
   const session = await auth();
   if (!session?.user) {
@@ -68,6 +79,16 @@ export async function requireLaboratory(
 
   if (allowedRoles && !allowedRoles.includes(membership.role) && session.user.role !== "ADMIN") {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
+  if (
+    opts?.requireActive &&
+    !isLaboratoryActive(membership.laboratory.status) &&
+    session.user.role !== "ADMIN"
+  ) {
+    return {
+      error: NextResponse.json({ error: LABORATORY_WRITE_BLOCKED_MESSAGE }, { status: 403 }),
+    };
   }
 
   return {

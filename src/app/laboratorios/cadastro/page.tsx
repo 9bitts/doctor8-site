@@ -55,7 +55,7 @@ export default function LaboratoriosCadastroPage() {
   const [addressState, setAddressState] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [acceptedGdpr, setAcceptedGdpr] = useState(false);
+  const [acceptedLgpd, setAcceptedLgpd] = useState(false);
 
   async function lookupCnpj() {
     const digits = stripCnpj(cnpj);
@@ -105,7 +105,7 @@ export default function LaboratoriosCadastroPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!acceptedTerms || !acceptedPrivacy || !acceptedGdpr) return;
+    if (!acceptedTerms || !acceptedPrivacy || !acceptedLgpd) return;
 
     const phoneCheck = validateRegistrationPhone(phone.ddi, phone.nationalNumber);
     if (!phoneCheck.ok) {
@@ -139,7 +139,7 @@ export default function LaboratoriosCadastroPage() {
           language: lang,
           acceptedTerms: true,
           acceptedPrivacy: true,
-          acceptedGdpr: true,
+          acceptedLgpd: true,
         }),
       });
       const data = await res.json();
@@ -342,12 +342,12 @@ export default function LaboratoriosCadastroPage() {
             <label className="flex items-start gap-2 text-xs text-slate-400">
               <input
                 type="checkbox"
-                checked={acceptedTerms && acceptedPrivacy && acceptedGdpr}
+                checked={acceptedTerms && acceptedPrivacy && acceptedLgpd}
                 onChange={(e) => {
                   const v = e.target.checked;
                   setAcceptedTerms(v);
                   setAcceptedPrivacy(v);
-                  setAcceptedGdpr(v);
+                  setAcceptedLgpd(v);
                 }}
                 className="mt-0.5"
               />

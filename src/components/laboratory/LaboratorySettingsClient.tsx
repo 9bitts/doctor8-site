@@ -17,7 +17,7 @@ type LabData = {
   contactPhone?: string | null;
 };
 
-export default function LaboratorySettingsClient() {
+export default function LaboratorySettingsClient({ readOnly = false }: { readOnly?: boolean }) {
   const [lab, setLab] = useState<LabData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -111,6 +111,7 @@ export default function LaboratorySettingsClient() {
 
   return (
     <form onSubmit={handleSave} className="space-y-8">
+      <fieldset disabled={readOnly} className="space-y-8 border-0 p-0 m-0">
       <section className="rounded-2xl border border-slate-200 p-6 space-y-4">
         <h2 className="font-bold text-slate-900">Dados do laboratório</h2>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -210,7 +211,9 @@ export default function LaboratorySettingsClient() {
           {message}
         </p>
       )}
+      </fieldset>
 
+      {!readOnly && (
       <button
         type="submit"
         disabled={saving}
@@ -219,6 +222,7 @@ export default function LaboratorySettingsClient() {
         {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
         Salvar configurações
       </button>
+      )}
     </form>
   );
 }

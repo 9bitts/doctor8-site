@@ -71,7 +71,7 @@ export function detectInitialLang(): Lang {
   return "en";
 }
 
-const PASSWORD_RULES = [
+export const PASSWORD_RULES = [
   { key: "reg.rule8", test: (p: string) => p.length >= 8 },
   { key: "reg.ruleUpper", test: (p: string) => /[A-Z]/.test(p) },
   { key: "reg.ruleNumber", test: (p: string) => /[0-9]/.test(p) },

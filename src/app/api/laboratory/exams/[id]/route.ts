@@ -12,7 +12,7 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
-  const ctx = await requireLaboratory();
+  const ctx = await requireLaboratory(undefined, { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const { id } = await params;
@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
-  const ctx = await requireLaboratory();
+  const ctx = await requireLaboratory(undefined, { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const { id } = await params;

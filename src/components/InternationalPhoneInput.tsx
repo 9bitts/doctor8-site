@@ -61,7 +61,7 @@ export default function InternationalPhoneInput({
   const inputClass = dark
     ? "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
     : "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
-  const labelClass = dark ? "block text-sm font-medium text-slate-300 mb-1.5" : "text-xs font-medium text-slate-600";
+  const labelClass = dark ? "block text-sm font-medium text-white mb-1.5" : "text-xs font-medium text-slate-600";
   const selectClass = dark
     ? "w-full bg-white/5 border border-white/10 rounded-xl px-2.5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
     : "w-full border border-slate-200 rounded-xl px-2.5 py-2.5 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40";
@@ -101,7 +101,7 @@ export default function InternationalPhoneInput({
           aria-invalid={Boolean(inlineError)}
         />
       </div>
-      <p className={`text-xs mt-1 ${dark ? "text-slate-500" : "text-slate-400"}`}>
+      <p className={`text-xs mt-1 ${dark ? "text-white/70" : "text-slate-400"}`}>
         {t("reg.phoneHint")}
       </p>
       {inlineError && <p className="text-red-400 text-xs mt-1">{inlineError}</p>}

@@ -62,7 +62,7 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  const ctx = await requireLaboratory(["OWNER", "ADMIN"]);
+  const ctx = await requireLaboratory(["OWNER", "ADMIN"], { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const body = await req.json();

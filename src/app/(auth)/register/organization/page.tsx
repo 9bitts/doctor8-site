@@ -310,17 +310,27 @@ export default function RegisterOrganizationPage() {
               </div>
 
               <div className="space-y-2 pt-2">
-                <label className="flex items-start gap-2 text-sm text-slate-300 cursor-pointer">
+                <label className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-1" />
-                  {t("reg.acceptTerms")}
+                  <span className="text-sm text-white leading-relaxed">
+                    {t("reg.acceptTerms")}{" "}
+                    <Link href="/terms" className="text-indigo-400 hover:underline" target="_blank">
+                      {t("reg.termsOfService")}
+                    </Link>
+                  </span>
                 </label>
-                <label className="flex items-start gap-2 text-sm text-slate-300 cursor-pointer">
+                <label className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" checked={acceptedPrivacy} onChange={(e) => setAcceptedPrivacy(e.target.checked)} className="mt-1" />
-                  {t("reg.acceptPrivacy")}
+                  <span className="text-sm text-white leading-relaxed">
+                    {t("reg.acceptPrivacy")}{" "}
+                    <Link href="/privacy" className="text-indigo-400 hover:underline" target="_blank">
+                      {t("reg.privacyPolicy")}
+                    </Link>
+                  </span>
                 </label>
-                <label className="flex items-start gap-2 text-sm text-slate-300 cursor-pointer">
+                <label className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" checked={acceptedGdpr} onChange={(e) => setAcceptedGdpr(e.target.checked)} className="mt-1" />
-                  {t("org.acceptLgpd")}
+                  <span className="text-sm text-white leading-relaxed">{t("org.acceptLgpd")}</span>
                 </label>
               </div>
 

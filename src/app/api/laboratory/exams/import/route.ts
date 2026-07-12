@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireLaboratory();
+  const ctx = await requireLaboratory(undefined, { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const lab = await db.laboratory.findUnique({ where: { id: ctx.laboratoryId } });

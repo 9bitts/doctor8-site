@@ -29,3 +29,10 @@ export const LABORATORY_TYPE_LABELS: Record<string, string> = {
   IMAGING: "Exames de imagem",
   BOTH: "Análises clínicas e imagem",
 };
+
+export const LABORATORY_WRITE_BLOCKED_MESSAGE =
+  "Laboratório em análise ou suspenso — operação indisponível";
+
+export function isLaboratoryActive(status: string): boolean {
+  return status === "ACTIVE";
+}

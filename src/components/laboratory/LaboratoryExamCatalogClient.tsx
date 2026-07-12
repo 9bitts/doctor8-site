@@ -43,7 +43,7 @@ function parsePriceInput(value: string): number | null {
   return Math.round(num * 100);
 }
 
-export default function LaboratoryExamCatalogClient() {
+export default function LaboratoryExamCatalogClient({ readOnly = false }: { readOnly?: boolean }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<ExamItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +134,7 @@ export default function LaboratoryExamCatalogClient() {
 
   return (
     <div className="space-y-8">
+      {!readOnly && (
       <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-6 space-y-4">
         <div className="flex items-start gap-3">
           <Upload className="text-violet-600 shrink-0 mt-0.5" size={22} />
@@ -197,7 +198,9 @@ export default function LaboratoryExamCatalogClient() {
           </div>
         )}
       </section>
+      )}
 
+      {!readOnly && (
       <section className="rounded-2xl border border-slate-200 p-6 space-y-4">
         <h2 className="font-bold text-slate-900 flex items-center gap-2">
           <Plus size={18} /> Adicionar exame manualmente
@@ -242,6 +245,7 @@ export default function LaboratoryExamCatalogClient() {
           </button>
         </div>
       </section>
+      )}
 
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -279,7 +283,7 @@ export default function LaboratoryExamCatalogClient() {
                   <th className="px-4 py-3 font-semibold">Exame</th>
                   <th className="px-4 py-3 font-semibold">Tipo</th>
                   <th className="px-4 py-3 font-semibold">Preço</th>
-                  <th className="px-4 py-3 font-semibold w-16" />
+                  {!readOnly && <th className="px-4 py-3 font-semibold w-16" />}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -297,6 +301,7 @@ export default function LaboratoryExamCatalogClient() {
                     <td className="px-4 py-3 font-semibold text-violet-700">
                       {formatBrl(item.priceCents)}
                     </td>
+                    {!readOnly && (
                     <td className="px-4 py-3">
                       <button
                         type="button"
@@ -307,6 +312,7 @@ export default function LaboratoryExamCatalogClient() {
                         <Trash2 size={16} />
                       </button>
                     </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

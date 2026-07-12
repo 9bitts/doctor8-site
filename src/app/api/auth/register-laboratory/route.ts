@@ -5,10 +5,11 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { UserRole, ConsentType, LaboratoryType } from "@prisma/client";
+import { UserRole, LaboratoryType } from "@prisma/client";
 import { sendEmailVerification } from "@/lib/email";
 import { LABORATORY_LOGIN } from "@/lib/laboratory-portal";
 import { geocodeAddress } from "@/lib/pharmacy-network/geocode";
+import { createRegisterConsents } from "@/lib/consent/register-consents";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
@@ -49,7 +50,7 @@ const registerLaboratorySchema = z.object({
   language: z.string().optional(),
   acceptedTerms: z.literal(true),
   acceptedPrivacy: z.literal(true),
-  acceptedGdpr: z.literal(true),
+  acceptedLgpd: z.literal(true),
 });
 
 async function uniqueLaboratorySlug(base: string): Promise<string> {
@@ -204,36 +205,38 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      await tx.consent.createMany({
-        data: [
-          { userId: newUser.id, type: ConsentType.TERMS_OF_SERVICE, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.PRIVACY_POLICY, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.GDPR_CONSENT, version: "1.0", granted: true, ipAddress: ip, userAgent },
-        ],
+      await createRegisterConsents(tx, newUser.id, ip, userAgent, {
+        acceptedTerms: parsed.acceptedTerms,
+        acceptedPrivacy: parsed.acceptedPrivacy,
+        acceptedLgpd: parsed.acceptedLgpd,
       });
 
-      return newUser;
+      return { newUser, lab };
     });
 
-    const createdLab = await db.laboratory.findFirst({
-      where: { members: { some: { userId: user.id, role: "OWNER" } } },
-    });
-    if (createdLab) {
-      const geo = await geocodeAddress({
-        street: createdLab.addressStreet,
-        number: createdLab.addressNumber,
-        neighborhood: createdLab.addressNeighborhood,
-        city: createdLab.addressCity,
-        state: createdLab.addressState,
-        zip: createdLab.addressZip,
-      });
-      if (geo) {
-        await db.laboratory.update({
-          where: { id: createdLab.id },
-          data: { latitude: geo.latitude, longitude: geo.longitude },
-        });
+    void (async () => {
+      try {
+        const geo = await Promise.race([
+          geocodeAddress({
+            street: user.lab.addressStreet,
+            number: user.lab.addressNumber,
+            neighborhood: user.lab.addressNeighborhood,
+            city: user.lab.addressCity,
+            state: user.lab.addressState,
+            zip: user.lab.addressZip,
+          }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+        ]);
+        if (geo) {
+          await db.laboratory.update({
+            where: { id: user.lab.id },
+            data: { latitude: geo.latitude, longitude: geo.longitude },
+          });
+        }
+      } catch (geoError) {
+        console.error("[LABORATORY GEO ERROR]", geoError);
       }
-    }
+    })();
 
     const token = randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -256,7 +259,7 @@ export async function POST(req: NextRequest) {
       emailSent = false;
     }
 
-    return NextResponse.json({ success: true, userId: user.id, emailSent }, { status: 201 });
+    return NextResponse.json({ success: true, userId: user.newUser.id, emailSent }, { status: 201 });
   } catch (error) {
     console.error("[LABORATORY REGISTER ERROR]", error);
     return NextResponse.json(

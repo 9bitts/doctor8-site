@@ -9,10 +9,14 @@ import { EMPLOYER_LOGIN, buildRegisterSuccessHref } from "@/lib/auth-portals";
 import { existingAccountMessage, registerSuccessFollowUp } from "@/lib/auth-flow-errors";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import RegisterVerificationNotice from "@/components/auth/RegisterVerificationNotice";
-import { RegisterLogo } from "@/components/auth/register-shared";
+import { RegisterLogo, PASSWORD_RULES } from "@/components/auth/register-shared";
 import InternationalPhoneInput, { type InternationalPhoneValue } from "@/components/InternationalPhoneInput";
-import { validateRegistrationPhone } from "@/lib/international-phone";
-import { Eye, EyeOff, Loader2, AlertCircle, Building2, ArrowLeft, Search, LogIn, Shield } from "lucide-react";
+import {
+  validateRegistrationPhone,
+  getRegistrationPhoneIssue,
+  registrationPhoneErrorMessage,
+} from "@/lib/international-phone";
+import { Eye, EyeOff, Loader2, AlertCircle, Building2, ArrowLeft, Search, LogIn, Shield, CheckCircle2 } from "lucide-react";
 
 const LANG_KEY = "doctor8.lang";
 
@@ -107,11 +111,21 @@ export default function EmpresasCadastroPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!acceptedTerms || !acceptedPrivacy || !acceptedLgpd) return;
+    if (!acceptedTerms || !acceptedPrivacy || !acceptedLgpd) {
+      setErrors({ general: ["Aceite todos os termos para continuar."] });
+      return;
+    }
+
+    if (!PASSWORD_RULES.every((r) => r.test(password))) {
+      setErrors({ password: [t("reg.missing.password")] });
+      return;
+    }
 
     const phoneCheck = validateRegistrationPhone(phone.ddi, phone.nationalNumber);
     if (!phoneCheck.ok) {
-      setErrors({ phoneNational: ["Telefone inválido"] });
+      setErrors({
+        phoneNational: [registrationPhoneErrorMessage(lang, phoneCheck.issue)],
+      });
       return;
     }
 
@@ -179,15 +193,34 @@ export default function EmpresasCadastroPage() {
 
   const loginHref = buildAuthHref(EMPLOYER_LOGIN, { callbackUrl: "/empresas/painel" });
 
+  const isPasswordValid = PASSWORD_RULES.every((r) => r.test(password));
+  const isPhoneValid = validateRegistrationPhone(phone.ddi, phone.nationalNumber).ok;
+  const canSubmit =
+    isPasswordValid &&
+    isPhoneValid &&
+    acceptedTerms &&
+    acceptedPrivacy &&
+    acceptedLgpd;
+
+  const missingFields: string[] = [];
+  if (!isPhoneValid && phone.nationalNumber.replace(/\D/g, "")) {
+    const issue = getRegistrationPhoneIssue(phone.ddi, phone.nationalNumber);
+    missingFields.push(issue ? registrationPhoneErrorMessage(lang, issue) : t("reg.missing.phone"));
+  } else if (!isPhoneValid) {
+    missingFields.push(t("reg.missing.phone"));
+  }
+  if (!isPasswordValid) missingFields.push(t("reg.missing.password"));
+  if (!acceptedTerms || !acceptedPrivacy || !acceptedLgpd) missingFields.push(t("reg.missing.terms"));
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <RegisterLogo />
-        <div className="flex items-center justify-center gap-2 text-sky-300 mb-2">
+        <div className="flex items-center justify-center gap-2 text-white mb-2">
           <Shield size={18} />
           <span className="text-sm font-medium">Doctor8 Empresas · NR-1</span>
         </div>
-        <p className="text-slate-400 -mt-2 mb-8 text-sm text-center">{t("emp.register.subtitle")}</p>
+        <p className="text-white -mt-2 mb-8 text-sm text-center">{t("emp.register.subtitle")}</p>
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
           {errors.general && (
@@ -232,15 +265,15 @@ export default function EmpresasCadastroPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="rounded-lg bg-sky-500/10 border border-sky-500/20 p-3 text-sm text-sky-100 flex gap-2">
-                <Building2 size={16} className="shrink-0 mt-0.5" />
+              <div className="rounded-lg bg-sky-500/10 border border-sky-500/20 p-3 text-sm flex gap-2">
+                <Building2 size={16} className="shrink-0 mt-0.5 text-sky-400" />
                 <div>
                   {manualMode ? (
-                    <p className="text-sky-200/80 text-xs">Preenchimento manual · {cnpj}</p>
+                    <p className="text-white text-xs">Preenchimento manual · {cnpj}</p>
                   ) : (
                     <>
-                      <p className="font-medium">{nomeFantasia}</p>
-                      <p className="text-sky-200/70 text-xs">{cnpj}</p>
+                      <p className="font-medium text-white">{nomeFantasia}</p>
+                      <p className="text-white/70 text-xs">{cnpj}</p>
                     </>
                   )}
                 </div>
@@ -253,27 +286,27 @@ export default function EmpresasCadastroPage() {
                     value={razaoSocial}
                     onChange={(e) => setRazaoSocial(e.target.value)}
                     placeholder="Razão social"
-                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/50"
                   />
                   <input
                     required
                     value={nomeFantasia}
                     onChange={(e) => setNomeFantasia(e.target.value)}
                     placeholder="Nome fantasia"
-                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/50"
                   />
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       value={addressCity}
                       onChange={(e) => setAddressCity(e.target.value)}
                       placeholder="Cidade"
-                      className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                      className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/50"
                     />
                     <input
                       value={addressState}
                       onChange={(e) => setAddressState(e.target.value.toUpperCase().slice(0, 2))}
                       placeholder="UF"
-                      className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                      className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/50"
                     />
                   </div>
                 </div>
@@ -285,45 +318,79 @@ export default function EmpresasCadastroPage() {
                   value={responsibleFirstName}
                   onChange={(e) => setResponsibleFirstName(e.target.value)}
                   placeholder="Nome responsável SST/RH"
-                  className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                  className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/50"
                 />
                 <input
                   required
                   value={responsibleLastName}
                   onChange={(e) => setResponsibleLastName(e.target.value)}
                   placeholder="Sobrenome"
-                  className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                  className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/50"
                 />
               </div>
 
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="E-mail corporativo"
-                className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
-              />
-
-              <div className="relative">
+              <div>
                 <input
                   required
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Senha (8+ chars, maiúscula, número, símbolo)"
-                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm pr-10"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="E-mail corporativo"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/50"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+                {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email[0]}</p>}
               </div>
 
-              <InternationalPhoneInput value={phone} onChange={setPhone} lang={lang} dark region="BR" />
+              <div>
+                <div className="relative">
+                  <input
+                    required
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Senha (8+ chars, maiúscula, número, símbolo)"
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm pr-10 placeholder:text-white/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password[0]}</p>}
+                {password && (
+                  <div className="mt-2 space-y-1">
+                    {PASSWORD_RULES.map((rule) => (
+                      <div key={rule.key} className="flex items-center gap-2">
+                        <CheckCircle2
+                          className={`w-3.5 h-3.5 ${rule.test(password) ? "text-sky-400" : "text-white/40"}`}
+                        />
+                        <span className={`text-xs ${rule.test(password) ? "text-sky-300" : "text-white/80"}`}>
+                          {t(rule.key)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <InternationalPhoneInput
+                value={phone}
+                onChange={setPhone}
+                lang={lang}
+                dark
+                region="BR"
+                error={errors.phoneNational?.[0]}
+              />
+
+              {errors.cnpj && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-sm flex gap-2">
+                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                  {errors.cnpj[0]}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -332,14 +399,16 @@ export default function EmpresasCadastroPage() {
                   value={employeeCount}
                   onChange={(e) => setEmployeeCount(e.target.value)}
                   placeholder="Nº colaboradores CLT"
-                  className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                  className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/50"
                 />
                 <select
                   value={grauRisco}
                   onChange={(e) => setGrauRisco(e.target.value)}
-                  className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                  className={`rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm ${
+                    grauRisco ? "text-white" : "text-white/50"
+                  }`}
                 >
-                  <option value="">Grau de risco</option>
+                  <option value="" className="text-slate-900">Grau de risco</option>
                   {[1, 2, 3, 4].map((g) => (
                     <option key={g} value={g} className="text-slate-900">Grau {g}</option>
                   ))}
@@ -348,25 +417,46 @@ export default function EmpresasCadastroPage() {
 
               <RegisterVerificationNotice lang={lang} />
 
-              <div className="space-y-2">
-                <label className="flex items-start gap-2 text-sm text-slate-300 cursor-pointer">
+              <div className="space-y-2 text-white">
+                <label className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-1" />
-                  {t("reg.acceptTerms")}
+                  <span className="text-sm text-white leading-relaxed">
+                    {t("reg.acceptTerms")}{" "}
+                    <Link href="/terms" className="text-sky-400 hover:underline" target="_blank">
+                      {t("reg.termsOfService")}
+                    </Link>
+                  </span>
                 </label>
-                <label className="flex items-start gap-2 text-sm text-slate-300 cursor-pointer">
+                <label className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" checked={acceptedPrivacy} onChange={(e) => setAcceptedPrivacy(e.target.checked)} className="mt-1" />
-                  {t("reg.acceptPrivacy")}
+                  <span className="text-sm text-white leading-relaxed">
+                    {t("reg.acceptPrivacy")}{" "}
+                    <Link href="/privacy" className="text-sky-400 hover:underline" target="_blank">
+                      {t("reg.privacyPolicy")}
+                    </Link>
+                  </span>
                 </label>
-                <label className="flex items-start gap-2 text-sm text-slate-300 cursor-pointer">
+                <label className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" checked={acceptedLgpd} onChange={(e) => setAcceptedLgpd(e.target.checked)} className="mt-1" />
-                  {t("org.acceptLgpd")}
+                  <span className="text-sm text-white leading-relaxed">{t("org.acceptLgpd")}</span>
                 </label>
               </div>
 
+              {!canSubmit && missingFields.length > 0 && !loading && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                  <p className="text-white text-sm font-medium mb-2">{t("reg.missingPrefix")}</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {missingFields.map((item) => (
+                      <li key={item} className="text-white/90 text-xs">{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={loading || !acceptedTerms || !acceptedPrivacy || !acceptedLgpd || !validateRegistrationPhone(phone.ddi, phone.nationalNumber).ok}
-                className="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                disabled={loading || !canSubmit}
+                className="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : null}
                 Criar conta empresarial

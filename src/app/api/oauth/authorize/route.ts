@@ -15,6 +15,10 @@ import {
   listB2BOrganizations,
   userHasB2BOrganizationAccess,
 } from "@/lib/sso/sso-orgs";
+import {
+  B2B_ENTITY_INACTIVE_SSO_MESSAGE,
+  isB2BEntityOperational,
+} from "@/lib/sso/sso-b2b-active";
 
 const ACCOUNT_TYPE_VALUES = new Set(["CLINIC", "EMPLOYER", "PHARMACY", "LABORATORY"]);
 
@@ -177,6 +181,22 @@ export async function GET(req: NextRequest) {
       }
     } else {
       organizationId = organizations[0]!.id;
+    }
+
+    if (organizationId && !(await isB2BEntityOperational(role, organizationId))) {
+      await createAuditLog({
+        userId: session.user.id,
+        action: AuditAction.LOGIN_FAILED,
+        resource: `SSO:${clientId}`,
+        details: { reason: "entity_inactive", role, organizationId },
+      });
+      return oauthError(
+        redirectUri,
+        clientId,
+        "access_denied",
+        B2B_ENTITY_INACTIVE_SSO_MESSAGE,
+        state,
+      );
     }
   }
 
