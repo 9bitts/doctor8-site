@@ -21,7 +21,7 @@ test.describe("authenticated volunteer", () => {
   test("verified professional can open volunteer dashboard", async ({ page }) => {
     const creds = e2eProfessionalCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password, "/humanitarian/volunteer");
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     await page.waitForURL(/\/humanitarian\/volunteer/, { timeout: 30_000 });
     await expect(page.locator("body")).toBeVisible();
   });
@@ -29,7 +29,7 @@ test.describe("authenticated volunteer", () => {
   test("volunteer API responds when logged in", async ({ page }) => {
     const creds = e2eProfessionalCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
     const res = await apiGet(
       page,
       "/api/humanitarian/volunteer?campaignSlug=venezuela-terremoto-2026&lang=es",

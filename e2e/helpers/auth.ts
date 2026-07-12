@@ -171,25 +171,23 @@ export async function loginAtPortal(
     const target = callbackUrl.split("?")[0];
     await page.waitForURL(
       (url) => url.pathname === target || url.pathname.startsWith(`${target}/`),
-      { timeout: 45_000 },
+      { timeout: 35_000 },
     );
     return;
   }
 
-  // Default login uses window.location.assign — wait until we leave /login so
-  // middleware and subsequent page.goto/apiGet see the fresh session cookie.
   await page.waitForURL(
     (url) => {
       const p = url.pathname;
       return p !== "/login" && !p.startsWith("/login/");
     },
-    { timeout: 45_000 },
+    { timeout: 35_000 },
   );
 
   if (new URL(page.url()).pathname === "/callback") {
     await page.waitForURL(
       (url) => url.pathname !== "/callback" && url.pathname !== "/login",
-      { timeout: 45_000 },
+      { timeout: 35_000 },
     );
   }
 }

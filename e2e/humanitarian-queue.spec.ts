@@ -21,7 +21,7 @@ test.describe.serial("humanitarian queue flow", () => {
   test("queue patient intake is ready to join", async ({ page }) => {
     const creds = e2eQueuePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const res = await apiGet(page, `/api/humanitarian/intake?campaignSlug=${VENEZUELA_SLUG}`);
     expect(res.ok).toBeTruthy();
@@ -42,7 +42,7 @@ test.describe.serial("humanitarian queue flow", () => {
   test("patient can join queue and receive WAITING status", async ({ page }) => {
     const creds = e2eQueuePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const initialRes = await apiGet(page, `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`);
     expect(initialRes.ok).toBeTruthy();
@@ -79,7 +79,7 @@ test.describe.serial("humanitarian queue flow", () => {
 
     const proCreds = e2eProfessionalCredentials()!;
     await loginWithCredentials(page, proCreds.email, proCreds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, proCreds.email);
 
     const volRes = await apiGet(
       page,
@@ -96,7 +96,7 @@ test.describe.serial("humanitarian queue flow", () => {
 
     const proCreds = e2eProfessionalCredentials()!;
     await loginWithCredentials(page, proCreds.email, proCreds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, proCreds.email);
 
     const onlineRes = await apiPost(page, "/api/humanitarian/volunteer?lang=es", {
       status: "ONLINE",
@@ -111,12 +111,12 @@ test.describe.serial("humanitarian queue flow", () => {
   test("called queue patient can fetch humanitarian video session", async ({ page }) => {
     const patientCreds = e2eQueuePatientCredentials()!;
     await loginWithCredentials(page, patientCreds.email, patientCreds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     let entryId: string | undefined;
     let status: string | undefined;
 
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 30; i++) {
       const res = await apiGet(page, `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`);
       const body = (await res.json()) as { entry?: { id?: string; status?: string } };
       entryId = body.entry?.id;

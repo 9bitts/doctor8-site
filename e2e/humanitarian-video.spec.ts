@@ -16,7 +16,7 @@ test.describe("humanitarian video flow", () => {
   test("called patient can fetch video session from API", async ({ page }) => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const queueRes = await apiGet(page, `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`);
     expect(queueRes.ok).toBeTruthy();
@@ -36,7 +36,7 @@ test.describe("humanitarian video flow", () => {
   test("called patient can open humanitarian video page", async ({ page }) => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
-    await waitForAuthenticatedSession(page);
+    await waitForAuthenticatedSession(page, creds.email);
 
     const queueRes = await apiGet(page, `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`);
     const queue = (await queueRes.json()) as { entry?: { id?: string } };
