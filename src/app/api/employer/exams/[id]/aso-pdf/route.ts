@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireEmployerApi } from "@/lib/api-auth";
+import { auth } from "@/lib/auth";
+import { getEmployerMembership } from "@/lib/employer-auth";
+import { userHasCompanyAccess } from "@/lib/occupational-physician-auth";
+import { resolveAsoPdfAccess } from "@/lib/aso-pdf-access";
 import { buildAsoPdf, type AsoDocumentPayload } from "@/lib/employer-aso-pdf";
 import { ASO_RESULT_LABELS, EXAM_TYPE_LABELS } from "@/lib/employer-occupational-exams";
 import { db } from "@/lib/db";
@@ -8,13 +11,16 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const ctx = await requireEmployerApi();
-  if ("error" in ctx) return ctx.error;
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { id } = await params;
+  const role = session.user.role;
 
-  const exam = await db.employerOccupationalExam.findFirst({
-    where: { id, employerCompanyId: ctx.employerCompanyId },
+  const exam = await db.employerOccupationalExam.findUnique({
+    where: { id },
     include: {
       workforceMember: true,
       employerCompany: {
@@ -27,9 +33,38 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  let hasEmployerMembership = false;
+  let employerCompanyId: string | null = null;
+
+  if (role === "EMPLOYER" || role === "ADMIN") {
+    const membership = await getEmployerMembership(session.user.id);
+    hasEmployerMembership = Boolean(membership);
+    employerCompanyId = membership?.employerCompanyId ?? null;
+  }
+
+  let hasPhysicianLink = false;
+  if (role === "OCCUPATIONAL_PHYSICIAN") {
+    hasPhysicianLink = await userHasCompanyAccess(session.user.id, exam.employerCompanyId);
+  }
+
+  const access = resolveAsoPdfAccess({
+    role,
+    hasEmployerMembership,
+    employerCompanyId,
+    hasPhysicianLink,
+    examCompanyId: exam.employerCompanyId,
+  });
+
+  if (!access.allowed) {
+    return NextResponse.json(
+      { error: access.status === 403 ? "Forbidden" : "Not found" },
+      { status: access.status },
+    );
+  }
+
   const signature = await db.employerDocumentSignature.findFirst({
     where: {
-      employerCompanyId: ctx.employerCompanyId,
+      employerCompanyId: exam.employerCompanyId,
       docType: "ASO",
       docRefId: exam.id,
     },

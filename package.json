@@ -23,6 +23,7 @@
     "check:encoding": "node scripts/scan-encoding.mjs",
     "test:e2e": "playwright test",
     "test:security-libs": "node scripts/verify-security-libs.mjs",
+    "test:aso-pdf-access": "tsx scripts/verify-aso-pdf-access.ts",
     "test:psychology-anamnesis-security": "tsx scripts/verify-psychology-anamnesis-idor.ts",
     "test:psychology-risk": "tsx scripts/verify-psychology-risk.ts",
     "test:psychology-plan-limits": "tsx scripts/verify-psychology-plan-limits.ts",
