@@ -5,6 +5,8 @@ import { audit } from "@/lib/audit";
 import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations";
 import { getUserLang } from "@/lib/i18n/server-lang";
 import { NUTRITIONIST_LOGIN } from "@/lib/nutritionist-portal";
+import { resolveRoleHome } from "@/lib/role-home";
+import IncompleteLicenseBanner from "@/components/professional/IncompleteLicenseBanner";
 import { getProfessionLabel } from "@/lib/professions";
 import {
   Calendar, Users, ChevronRight, Video, UserCog, FileText,
@@ -32,7 +34,27 @@ const QUICK_LINKS = [
 export default async function NutritionistDashboard() {
   const session = await auth();
   if (!session?.user) redirect(NUTRITIONIST_LOGIN);
-  if (session.user.role !== "PROFESSIONAL") redirect("/patient");
+  if (session.user.role !== "PROFESSIONAL" && session.user.role !== "ADMIN") {
+    redirect(resolveRoleHome(session.user.role));
+  }
+
+  if (session.user.role === "ADMIN") {
+    const lang: Lang = await getUserLang(session.user.id);
+    const t = (key: string) => translate(lang, key);
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+            <Utensils size={28} className="text-amber-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">{t("nutri.dashboard.subtitle")}</h1>
+            <p className="text-slate-500 text-sm mt-1">{t("role.nutritionist")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const userId = session.user.id;
   const lang: Lang = await getUserLang(userId);
@@ -65,6 +87,14 @@ export default async function NutritionistDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+      {!professional.licenseNumber?.trim() && (
+        <IncompleteLicenseBanner
+          lang={lang}
+          specialty={professional.specialty}
+          settingsHref="/nutricionista/settings"
+        />
+      )}
+
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
           <Utensils size={28} className="text-amber-600" />
