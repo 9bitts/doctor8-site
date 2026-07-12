@@ -15,6 +15,10 @@ import {
   stampHumanitarianOriginOnResponse,
 } from "@/lib/humanitarian/origin-cookie";
 import { isApiRoleAllowed } from "@/lib/api-route-roles";
+import {
+  canAccessPharmacyPharmacistPortal,
+  canAccessPharmacyValidatePortal,
+} from "@/lib/pharmacy-portal-guards";
 
 const PRIVATE_CACHE_CONTROL = "private, no-store";
 
@@ -96,7 +100,6 @@ const PUBLIC_ROUTES = [
   "/farmacias/login",
   "/farmacias/cadastro",
   "/farmacias/farmaceutico/login",
-  "/farmacias/validar/",
   "/farmacias/buscar",
   "/laboratorios/login",
   "/laboratorios/cadastro",
@@ -193,7 +196,7 @@ const PHARMACY_STORE_ROUTES = [
 ];
 const PHARMACY_VALIDATE_HUB = "/farmacias/validar";
 const PHARMACY_STORE_PHARMACIST_ROUTES = [
-  "/farmacias/farmaceutico/painel",
+  "/farmacias/farmaceutico",
 ];
 const LABORATORY_ROUTES = [
   "/laboratorios/painel",
@@ -675,18 +678,16 @@ export default auth((req) => {
   }
 
   if (
-    pathname === PHARMACY_VALIDATE_HUB &&
-    role !== "PHARMACY_STORE" &&
-    role !== "PROFESSIONAL" &&
-    role !== "ADMIN"
+    pathname.startsWith(PHARMACY_VALIDATE_HUB) &&
+    !canAccessPharmacyValidatePortal(role, professionalSpecialty)
   ) {
     return denyWrongRole();
   }
 
   if (
     PHARMACY_STORE_PHARMACIST_ROUTES.some((r) => pathname.startsWith(r)) &&
-    role !== "PROFESSIONAL" &&
-    role !== "ADMIN"
+    pathname !== "/farmacias/farmaceutico/login" &&
+    !canAccessPharmacyPharmacistPortal(role, professionalSpecialty)
   ) {
     return denyWrongRole();
   }

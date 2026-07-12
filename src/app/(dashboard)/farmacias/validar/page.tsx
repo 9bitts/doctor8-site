@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { resolveRoleHome } from "@/lib/role-home";
+import { canAccessPharmacyValidatePortal } from "@/lib/pharmacy-pharmacist-portal-auth";
+import { db } from "@/lib/db";
 import { PharmacyValidateTokenForm } from "@/components/pharmacy-store/PharmacyValidateTokenForm";
 
 export default async function FarmaciasValidarHubPage() {
@@ -9,12 +10,16 @@ export default async function FarmaciasValidarHubPage() {
   if (!session?.user) redirect("/farmacias/login?callbackUrl=/farmacias/validar");
 
   const role = session.user.role;
-  if (
-    role !== "PHARMACY_STORE" &&
-    role !== "PROFESSIONAL" &&
-    role !== "ADMIN"
-  ) {
-    redirect(resolveRoleHome(role));
+  let specialty = session.user.professionalSpecialty ?? null;
+  if (role === "PROFESSIONAL" && !specialty) {
+    const profile = await db.professionalProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { specialty: true },
+    });
+    specialty = profile?.specialty ?? null;
+  }
+  if (!canAccessPharmacyValidatePortal(role, specialty)) {
+    redirect("/farmacias/login?error=invalid");
   }
 
   return (
