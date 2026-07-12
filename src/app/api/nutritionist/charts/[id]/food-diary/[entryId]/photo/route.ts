@@ -25,6 +25,11 @@ export async function GET(
     return NextResponse.json({ error: "No photo" }, { status: 404 });
   }
 
+  const expectedPrefix = `${nutritionDiaryFolder(entry.patientUserId)}/`;
+  if (!entry.photoKey.startsWith(expectedPrefix)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const url = await getSignedReadUrl(entry.photoKey, 900);
   return NextResponse.json({ url });
 }

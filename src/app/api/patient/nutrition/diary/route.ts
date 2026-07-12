@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { requirePatientLinkedChart } from "@/lib/nutrition/nutrition-api";
+import { isValidNutritionDiaryPhotoKey } from "@/lib/upload-key-validation";
 
 const createSchema = z.object({
   chartId: z.string(),
@@ -63,6 +64,13 @@ export async function POST(req: NextRequest) {
 
   const linked = await requirePatientLinkedChart(parsed.data.chartId, ctx.userId);
   if ("error" in linked) return linked.error;
+
+  if (
+    parsed.data.photoKey &&
+    !isValidNutritionDiaryPhotoKey(parsed.data.photoKey, ctx.userId)
+  ) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const entry = await db.nutritionFoodDiaryEntry.create({
     data: {
