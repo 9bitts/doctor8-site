@@ -143,6 +143,7 @@ function isPublicApi(pathname: string): boolean {
     || pathname.startsWith("/api/campaigns/")
     || pathname.startsWith("/api/shared/")
     || pathname.startsWith("/api/integrations/")
+    || pathname === "/api/push/vapid-public-key"
   );
 }
 
@@ -528,6 +529,9 @@ export default auth((req) => {
 
   // Partner server-to-server (ACURA Bearer token validated in route handler)
   if (pathname.startsWith("/api/integrations/")) return NextResponse.next();
+
+  // Web Push VAPID public key (no session — used by client subscribe flow)
+  if (pathname === "/api/push/vapid-public-key") return NextResponse.next();
 
   // Redirect to login if not authenticated
   if (!session?.user) {

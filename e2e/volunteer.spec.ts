@@ -3,9 +3,8 @@ import {
   e2eProfessionalCredentials,
   loginWithCredentials,
   waitForAuthenticatedSession,
+  apiGet,
 } from "./helpers/auth";
-
-const VENEZUELA_SLUG = "venezuela-terremoto-2026";
 
 test.describe("volunteer access", () => {
   test("volunteer dashboard redirects to login when unauthenticated", async ({ page }) => {
@@ -31,11 +30,12 @@ test.describe("authenticated volunteer", () => {
     const creds = e2eProfessionalCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
-    const res = await page.request.get(
+    const res = await apiGet(
+      page,
       "/api/humanitarian/volunteer?campaignSlug=venezuela-terremoto-2026&lang=es",
     );
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    expect(res.ok).toBeTruthy();
+    const body = (await res.json()) as { campaign?: unknown };
     expect(body.campaign).toBeTruthy();
   });
 });

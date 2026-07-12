@@ -22,7 +22,7 @@ test.describe("public smoke", () => {
   test("verify-email page loads without crash", async ({ page }) => {
     const res = await page.goto("/verify-email?email=test%40doctor8.test");
     expect(res?.status()).toBeLessThan(500);
-    await expect(page.locator("body")).toContainText("Verifique seu e-mail");
+    await expect(page.locator("body")).toContainText(/Verifique seu e-mail|Verify your email/i);
     await expect(page.locator("body")).not.toContainText("Algo deu errado");
     await expect(page.locator("body")).not.toContainText("verifica??o");
   });

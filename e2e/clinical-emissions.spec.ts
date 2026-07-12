@@ -3,6 +3,7 @@ import {
   e2ePatientCredentials,
   loginWithCredentials,
   waitForAuthenticatedSession,
+  apiGet,
 } from "./helpers/auth";
 
 test.describe("clinical emissions API", () => {
@@ -15,11 +16,11 @@ test.describe("clinical emissions API", () => {
     await loginWithCredentials(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
 
-    const res = await page.request.get("/api/patient/prescriptions");
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    const res = await apiGet(page, "/api/patient/prescriptions");
+    expect(res.ok).toBeTruthy();
+    const body = (await res.json()) as { prescriptions?: { medications?: unknown[] }[] };
     expect(body.prescriptions?.length).toBeGreaterThan(0);
-    expect(body.prescriptions[0].medications?.length).toBeGreaterThan(0);
+    expect(body.prescriptions?.[0]?.medications?.length).toBeGreaterThan(0);
   });
 
   test("patient sees seeded exam requests", async ({ page }) => {
@@ -27,11 +28,11 @@ test.describe("clinical emissions API", () => {
     await loginWithCredentials(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
 
-    const res = await page.request.get("/api/patient/exam-requests");
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    const res = await apiGet(page, "/api/patient/exam-requests");
+    expect(res.ok).toBeTruthy();
+    const body = (await res.json()) as { examRequests?: { examItems?: unknown[] }[] };
     expect(body.examRequests?.length).toBeGreaterThan(0);
-    expect(body.examRequests[0].examItems?.length).toBeGreaterThan(0);
+    expect(body.examRequests?.[0]?.examItems?.length).toBeGreaterThan(0);
   });
 
   test("patient clinical pages load when authenticated", async ({ page }) => {

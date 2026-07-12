@@ -3,6 +3,7 @@ import {
   e2ePatientCredentials,
   loginWithCredentials,
   waitForAuthenticatedSession,
+  apiGet,
 } from "./helpers/auth";
 
 const VENEZUELA_SLUG = "venezuela-terremoto-2026";
@@ -17,18 +18,16 @@ test.describe("humanitarian video flow", () => {
     await loginWithCredentials(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
 
-    const queueRes = await page.request.get(
-      `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`,
-    );
-    expect(queueRes.ok()).toBeTruthy();
-    const queue = await queueRes.json();
-    const entryId = queue.entry?.id as string | undefined;
+    const queueRes = await apiGet(page, `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`);
+    expect(queueRes.ok).toBeTruthy();
+    const queue = (await queueRes.json()) as { entry?: { id?: string; status?: string } };
+    const entryId = queue.entry?.id;
     expect(entryId).toBeTruthy();
     expect(queue.entry?.status).toBe("CALLED");
 
-    const videoRes = await page.request.get(`/api/humanitarian/queue/${entryId}/video`);
-    expect(videoRes.ok()).toBeTruthy();
-    const video = await videoRes.json();
+    const videoRes = await apiGet(page, `/api/humanitarian/queue/${entryId}/video`);
+    expect(videoRes.ok).toBeTruthy();
+    const video = (await videoRes.json()) as { url?: string; token?: string; kind?: string };
     expect(video.url).toContain("daily.co");
     expect(video.token).toBeTruthy();
     expect(video.kind).toBe("humanitarian");
@@ -39,11 +38,9 @@ test.describe("humanitarian video flow", () => {
     await loginWithCredentials(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
 
-    const queueRes = await page.request.get(
-      `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`,
-    );
-    const queue = await queueRes.json();
-    const entryId = queue.entry?.id as string;
+    const queueRes = await apiGet(page, `/api/humanitarian/queue?campaignSlug=${VENEZUELA_SLUG}`);
+    const queue = (await queueRes.json()) as { entry?: { id?: string } };
+    const entryId = queue.entry?.id;
     expect(entryId).toBeTruthy();
 
     await page.goto(`/video/humanitarian/${entryId}`);

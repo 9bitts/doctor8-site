@@ -3,6 +3,7 @@ import {
   e2ePatientCredentials,
   loginWithCredentials,
   waitForAuthenticatedSession,
+  apiGet,
 } from "./helpers/auth";
 
 const VENEZUELA_SLUG = "venezuela-terremoto-2026";
@@ -116,11 +117,12 @@ test.describe("authenticated patient", () => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
-    const res = await page.request.get(
+    const res = await apiGet(
+      page,
       `/api/humanitarian/intake?campaignSlug=${VENEZUELA_SLUG}`,
     );
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    expect(res.ok).toBeTruthy();
+    const body = (await res.json()) as { intake?: { campaignId?: string } };
     expect(body.intake?.campaignId).toBeTruthy();
   });
 
@@ -128,9 +130,12 @@ test.describe("authenticated patient", () => {
     const creds = e2ePatientCredentials()!;
     await loginWithCredentials(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
-    const res = await page.request.get("/api/patient/history/fhir");
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    const res = await apiGet(page, "/api/patient/history/fhir");
+    expect(res.ok).toBeTruthy();
+    const body = (await res.json()) as {
+      resourceType?: string;
+      entry?: { resource?: { resourceType?: string } }[];
+    };
     expect(body.resourceType).toBe("Bundle");
     const types = (body.entry || []).map((e: { resource?: { resourceType?: string } }) => e.resource?.resourceType);
     expect(types).toContain("Patient");

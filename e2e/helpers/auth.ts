@@ -149,3 +149,54 @@ export async function waitForAuthenticatedSession(page: Page): Promise<void> {
     return Boolean(data?.user?.email);
   });
 }
+
+/** Browser-context fetch — shares session cookies reliably in Playwright CI. */
+export async function apiGet(
+  page: Page,
+  path: string,
+): Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }> {
+  const result = await page.evaluate(async (url) => {
+    const res = await fetch(url);
+    let data: unknown = null;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+    return { ok: res.ok, status: res.status, data };
+  }, path);
+  return {
+    ok: result.ok,
+    status: result.status,
+    json: async () => result.data,
+  };
+}
+
+export async function apiPost(
+  page: Page,
+  path: string,
+  data?: unknown,
+): Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }> {
+  const result = await page.evaluate(
+    async ({ url, body }) => {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+      let parsed: unknown = null;
+      try {
+        parsed = await res.json();
+      } catch {
+        parsed = null;
+      }
+      return { ok: res.ok, status: res.status, data: parsed };
+    },
+    { url: path, body: data },
+  );
+  return {
+    ok: result.ok,
+    status: result.status,
+    json: async () => result.data,
+  };
+}

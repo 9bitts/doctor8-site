@@ -4,6 +4,7 @@ import {
   e2ePatientCredentials,
   loginWithCredentials,
   waitForAuthenticatedSession,
+  apiGet,
 } from "./helpers/auth";
 
 test.describe("payments API", () => {
@@ -49,15 +50,15 @@ test.describe("payments API", () => {
     await loginWithCredentials(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
 
-    const res = await page.request.get("/api/admin/payments");
-    expect(res.status()).toBe(403);
+    const res = await apiGet(page, "/api/admin/payments");
+    expect(res.status).toBe(403);
   });
 });
 
 test.describe("admin integrations", () => {
-  test("integrations API returns 403 without admin session", async ({ request }) => {
+  test("integrations API returns 401 without admin session", async ({ request }) => {
     const res = await request.get("/api/admin/integrations");
-    expect(res.status()).toBe(403);
+    expect(res.status()).toBe(401);
   });
 
   test("integrations API returns 403 for patient", async ({ page }) => {
@@ -66,8 +67,8 @@ test.describe("admin integrations", () => {
     await loginWithCredentials(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
 
-    const res = await page.request.get("/api/admin/integrations");
-    expect(res.status()).toBe(403);
+    const res = await apiGet(page, "/api/admin/integrations");
+    expect(res.status).toBe(403);
   });
 
   test.describe("authenticated admin", () => {
@@ -88,9 +89,9 @@ test.describe("admin integrations", () => {
       await loginWithCredentials(page, creds.email, creds.password);
       await waitForAuthenticatedSession(page);
 
-      const res = await page.request.get("/api/admin/integrations");
-      expect(res.ok()).toBeTruthy();
-      const body = await res.json();
+      const res = await apiGet(page, "/api/admin/integrations");
+      expect(res.ok).toBeTruthy();
+      const body = (await res.json()) as { integrations?: unknown[]; checkedAt?: string };
       expect(body.integrations?.length).toBeGreaterThan(5);
       expect(body.checkedAt).toBeTruthy();
     });

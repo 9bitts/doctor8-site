@@ -70,8 +70,14 @@ export function resolveProfessionalRegisterForPortal(portal: string | null | und
 }
 export const ANGEL_REGISTER = "/register/angel";
 
-/** Unauthenticated redirect target — always the unified login. */
-export function resolveLoginPathForPathname(_pathname: string): string {
+/** Unauthenticated redirect target — portal-specific logins where B2B portals keep dedicated screens. */
+export function resolveLoginPathForPathname(pathname: string): string {
+  if (pathname.startsWith("/empresas/medico")) return "/empresas/medico/login";
+  if (pathname.startsWith("/empresas/psicologo")) return "/empresas/psicologo/login";
+  if (pathname.startsWith("/empresas")) return EMPLOYER_LOGIN;
+  if (pathname.startsWith("/farmacias/farmaceutico")) return "/farmacias/farmaceutico/login";
+  if (pathname.startsWith("/farmacias")) return PHARMACY_STORE_LOGIN;
+  if (pathname.startsWith("/laboratorios")) return LABORATORY_LOGIN;
   return LOGIN;
 }
 

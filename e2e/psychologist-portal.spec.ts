@@ -3,6 +3,7 @@ import {
   e2ePsychologistCredentials,
   loginPsychologist,
   waitForAuthenticatedSession,
+  apiGet,
 } from "./helpers/auth";
 
 const VENEZUELA_SLUG = "venezuela-terremoto-2026";
@@ -28,12 +29,13 @@ test.describe("psychologist portal", () => {
     await loginPsychologist(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
 
-    const res = await page.request.get(
+    const res = await apiGet(
+      page,
       `/api/humanitarian/volunteer?campaignSlug=${VENEZUELA_SLUG}&lang=pt`,
     );
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
-    const slugs = (body.pools || []).map((p: { slug: string }) => p.slug);
+    expect(res.ok).toBeTruthy();
+    const body = (await res.json()) as { pools?: { slug: string }[] };
+    const slugs = (body.pools || []).map((p) => p.slug);
     expect(slugs).toEqual(["psicologo"]);
   });
 
@@ -56,7 +58,9 @@ test.describe("psychologist portal", () => {
     await loginPsychologist(page, creds.email, creds.password);
     await waitForAuthenticatedSession(page);
 
-    const session = await page.request.get("/api/auth/session").then((r) => r.json());
+    const session = (await apiGet(page, "/api/auth/session").then((r) => r.json())) as {
+      user?: { role?: string; professionalSpecialty?: string };
+    };
     expect(session?.user?.role).toBe("PROFESSIONAL");
     expect(session?.user?.professionalSpecialty).toBe("Psychologist");
   });

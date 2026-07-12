@@ -5,7 +5,7 @@ test.describe("empresas B2B hub", () => {
   test("/empresas renderiza hub com os 3 logins", async ({ page }) => {
     await page.goto("/empresas");
     await expect(page.getByRole("link", { name: /entrar como empresa/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /entrar como médico/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /entrar como médico/i }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /entrar como psicólogo/i })).toBeVisible();
     await expect(page.locator('a[href="/empresas/login"]')).toBeVisible();
     await expect(page.locator('a[href="/empresas/medico/login"]')).toBeVisible();
