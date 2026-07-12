@@ -5,10 +5,11 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { UserRole, ConsentType } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import { sendEmailVerification } from "@/lib/email";
 import { ORGANIZATION_LOGIN } from "@/lib/auth-portals";
 import { isValidCnpj, stripCnpj, slugifyOrganizationName } from "@/lib/cnpj";
+import { createRegisterConsents } from "@/lib/consent/register-consents";
 import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/international-phone";
 import { encryptUserPhone } from "@/lib/user-phone";
 import { handleExistingB2BRegistration } from "@/lib/b2b-admin";
@@ -133,6 +134,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(existingResult, { status: 200 });
     }
     if (existingCnpj) {
+      // 409 intencional: CNPJ é dado público; enumeração aceitável para evitar cadastros duplicados.
       return NextResponse.json(
         { error: { cnpj: ["CNPJ já cadastrado"] } },
         { status: 409 },
@@ -185,12 +187,11 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      await tx.consent.createMany({
-        data: [
-          { userId: newUser.id, type: ConsentType.TERMS_OF_SERVICE, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.PRIVACY_POLICY, version: "1.0", granted: true, ipAddress: ip, userAgent },
-          { userId: newUser.id, type: ConsentType.GDPR_CONSENT, version: "1.0", granted: true, ipAddress: ip, userAgent },
-        ],
+      await createRegisterConsents(tx, newUser.id, ip, userAgent, {
+        acceptedTerms: parsed.acceptedTerms,
+        acceptedPrivacy: parsed.acceptedPrivacy,
+        acceptedLgpd: true,
+        acceptedGdpr: parsed.acceptedGdpr,
       });
 
       return newUser;
