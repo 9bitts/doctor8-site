@@ -4,12 +4,19 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getSignedReadUrl } from "@/lib/s3";
 import { requireDentalChartAccess, requireDentistProfessional } from "@/lib/dentistry/dentistry-api";
+import {
+  isAcceptableTakenAt,
+  isValidFdiToothNumber,
+  isValidRecordsStorageKey,
+} from "@/lib/upload-key-validation";
+
+const fdiToothSchema = z.number().int().refine(isValidFdiToothNumber, { message: "Invalid FDI tooth number" });
 
 const createSchema = z.object({
-  storageKey: z.string().min(1),
+  storageKey: z.string().min(1).max(500),
   category: z.enum(["INTRAORAL", "EXTRAORAL", "RADIOGRAPH", "BEFORE", "AFTER", "OTHER"]).optional(),
-  toothNumbers: z.array(z.number()).optional(),
-  caption: z.string().optional(),
+  toothNumbers: z.array(fdiToothSchema).max(64).optional(),
+  caption: z.string().max(2000).optional(),
   takenAt: z.string().datetime().optional(),
 });
 
@@ -32,10 +39,12 @@ export async function GET(
   const withUrls = await Promise.all(
     photos.map(async (photo) => {
       let imageUrl: string | null = null;
-      try {
-        imageUrl = await getSignedReadUrl(photo.storageKey, 900);
-      } catch {
-        imageUrl = null;
+      if (isValidRecordsStorageKey(photo.storageKey, params.id)) {
+        try {
+          imageUrl = await getSignedReadUrl(photo.storageKey, 900);
+        } catch {
+          imageUrl = null;
+        }
       }
       return { ...photo, imageUrl };
     }),
@@ -59,6 +68,14 @@ export async function POST(
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  if (!isValidRecordsStorageKey(parsed.data.storageKey, params.id)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (parsed.data.takenAt && !isAcceptableTakenAt(parsed.data.takenAt)) {
+    return NextResponse.json({ error: "takenAt cannot be in the future" }, { status: 400 });
   }
 
   const photo = await db.dentalClinicalPhoto.create({
