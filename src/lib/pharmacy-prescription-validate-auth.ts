@@ -5,9 +5,18 @@ export type PharmacyPrescriptionValidateAuth =
   | { ok: true; role: string; storeId?: string }
   | { ok: false; status: 403 | 400; error: string };
 
+/** Prefer the store bound to the prescription token over a client-supplied store id. */
+export function resolveDispenseStoreId(
+  rowPharmacyStoreId: string | null | undefined,
+  pharmacyStoreId: string | null | undefined,
+): string | null {
+  return rowPharmacyStoreId ?? pharmacyStoreId ?? null;
+}
+
 /**
  * Same authorization as POST /api/pharmacy-store/prescriptions/validate.
- * PHARMACY_STORE must be an active member of the store; PROFESSIONAL must be pharmacist specialty.
+ * PHARMACY_STORE and PROFESSIONAL must be active members of the target store.
+ * PROFESSIONAL must also have pharmacist specialty.
  */
 export async function authorizePharmacyPrescriptionValidate(
   userId: string,
@@ -18,8 +27,8 @@ export async function authorizePharmacyPrescriptionValidate(
     return { ok: false, status: 403, error: "Forbidden" };
   }
 
-  const storeId = opts.pharmacyStoreId || opts.rowPharmacyStoreId;
-  if (!storeId && role === "PHARMACY_STORE") {
+  const storeId = resolveDispenseStoreId(opts.rowPharmacyStoreId, opts.pharmacyStoreId);
+  if (!storeId && role !== "ADMIN") {
     return { ok: false, status: 400, error: "pharmacyStoreId obrigatório" };
   }
 
@@ -39,6 +48,15 @@ export async function authorizePharmacyPrescriptionValidate(
     });
     if (!pro || !isPharmacistSpecialty(pro.specialty)) {
       return { ok: false, status: 403, error: "Forbidden" };
+    }
+    if (!storeId) {
+      return { ok: false, status: 400, error: "pharmacyStoreId obrigatório" };
+    }
+    const member = await db.pharmacyStoreMember.findFirst({
+      where: { userId, pharmacyStoreId: storeId, status: "ACTIVE" },
+    });
+    if (!member) {
+      return { ok: false, status: 403, error: "Farmacêutico não vinculado a esta farmácia" };
     }
   }
 

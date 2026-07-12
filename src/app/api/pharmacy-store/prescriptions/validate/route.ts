@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: storeAuthz.error }, { status: storeAuthz.status });
   }
 
-  const storeId = pharmacyStoreId || row.pharmacyStoreId;
+  const storeId = storeAuthz.ok ? storeAuthz.storeId : null;
   if (!storeId) {
     return NextResponse.json({ error: "pharmacyStoreId obrigatório" }, { status: 400 });
   }
@@ -228,6 +228,7 @@ export async function POST(req: NextRequest) {
     resourceId: row.id,
     details: {
       event: "pharmacy_dispensed",
+      tokenId: row.id,
       prescriptionId: row.prescriptionId,
       pharmacyOrderId: row.pharmacyOrderId,
       pharmacyStoreId: storeId,
