@@ -5,7 +5,6 @@ node_modules/
 .env.production
 .env.*.local
 tsconfig.tsbuildinfo
-ANALISE_DOCTOR8.md
 playwright-report/
 test-results/
 *.log
