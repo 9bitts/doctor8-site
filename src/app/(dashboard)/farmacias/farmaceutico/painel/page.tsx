@@ -2,8 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { resolveRoleHome } from "@/lib/role-home";
-import { isPharmacistSpecialty } from "@/lib/profession-label";
-import { db } from "@/lib/db";
+import { canAccessPharmacyPharmacistPortal } from "@/lib/pharmacy-pharmacist-portal-auth";
 import { Pill, ArrowRight, Stethoscope } from "lucide-react";
 import PharmacistNetworkQueueClient from "@/components/pharmacy-store/PharmacistNetworkQueueClient";
 
@@ -17,12 +16,8 @@ export default async function FarmaciasFarmaceuticoPainelPage() {
   }
 
   if (role === "PROFESSIONAL") {
-    const profile = await db.professionalProfile.findUnique({
-      where: { userId: session.user.id },
-      select: { specialty: true, firstName: true, lastName: true },
-    });
-    if (!profile || !isPharmacistSpecialty(profile.specialty)) {
-      redirect(resolveRoleHome(role, profile?.specialty));
+    if (!canAccessPharmacyPharmacistPortal(role, session.user.professionalSpecialty)) {
+      redirect(resolveRoleHome(role, session.user.professionalSpecialty));
     }
   }
 

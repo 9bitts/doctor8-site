@@ -1,6 +1,18 @@
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getPharmacyStoreMembership, isPharmacyStoreActive } from "@/lib/pharmacy-store-auth";
 import PharmacyInventoryClient from "@/components/pharmacy-store/PharmacyInventoryClient";
 
-export default function FarmaciasEstoquePage() {
+export default async function FarmaciasEstoquePage() {
+  const session = await auth();
+  if (!session?.user) redirect("/farmacias/login");
+
+  let readOnly = false;
+  if (session.user.role === "PHARMACY_STORE") {
+    const membership = await getPharmacyStoreMembership(session.user.id);
+    readOnly = membership ? !isPharmacyStoreActive(membership.pharmacyStore.status) : true;
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
@@ -9,7 +21,7 @@ export default function FarmaciasEstoquePage() {
           Importe seu banco de dados ou cadastre medicamentos com preço de balcão.
         </p>
       </div>
-      <PharmacyInventoryClient />
+      <PharmacyInventoryClient readOnly={readOnly} />
     </div>
   );
 }

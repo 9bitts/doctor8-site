@@ -15,7 +15,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const ctx = await requirePharmacyStore();
+  const ctx = await requirePharmacyStore(undefined, { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const { id } = await params;
@@ -56,7 +56,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const ctx = await requirePharmacyStore();
+  const ctx = await requirePharmacyStore(undefined, { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const { id } = await params;

@@ -18,7 +18,7 @@ type StoreData = {
   contactPhone?: string | null;
 };
 
-export default function PharmacyStoreSettingsClient() {
+export default function PharmacyStoreSettingsClient({ readOnly = false }: { readOnly?: boolean }) {
   const [store, setStore] = useState<StoreData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -128,7 +128,8 @@ export default function PharmacyStoreSettingsClient() {
   }
 
   return (
-    <form onSubmit={handleSave} className="max-w-2xl space-y-6">
+    <fieldset disabled={readOnly} className="max-w-2xl space-y-6 border-0 p-0 m-0">
+    <form onSubmit={handleSave} className="space-y-6">
       <div>
         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
           <MapPin size={20} className="text-emerald-600" /> Endereço da farmácia
@@ -263,6 +264,7 @@ export default function PharmacyStoreSettingsClient() {
         </p>
       )}
 
+      {!readOnly && (
       <button
         type="submit"
         disabled={saving}
@@ -271,6 +273,8 @@ export default function PharmacyStoreSettingsClient() {
         {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
         Salvar configurações
       </button>
+      )}
     </form>
+    </fieldset>
   );
 }

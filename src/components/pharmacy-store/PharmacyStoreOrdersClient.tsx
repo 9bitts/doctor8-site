@@ -35,7 +35,7 @@ function formatBrl(cents: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 }
 
-export default function PharmacyStoreOrdersClient() {
+export default function PharmacyStoreOrdersClient({ readOnly = false }: { readOnly?: boolean }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -94,7 +94,7 @@ export default function PharmacyStoreOrdersClient() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {order.status === "PAID" && (
+              {!readOnly && order.status === "PAID" && (
                 <button
                   type="button"
                   onClick={() => updateStatus(order.id, "CONFIRMED")}
@@ -103,7 +103,7 @@ export default function PharmacyStoreOrdersClient() {
                   Confirmar
                 </button>
               )}
-              {order.status === "CONFIRMED" && (
+              {!readOnly && order.status === "CONFIRMED" && (
                 <button
                   type="button"
                   onClick={() => updateStatus(order.id, "PREPARING")}
@@ -112,7 +112,7 @@ export default function PharmacyStoreOrdersClient() {
                   Preparar
                 </button>
               )}
-              {order.status === "PREPARING" && (
+              {!readOnly && order.status === "PREPARING" && (
                 <button
                   type="button"
                   onClick={() => updateStatus(order.id, "READY")}
@@ -121,7 +121,7 @@ export default function PharmacyStoreOrdersClient() {
                   Marcar pronto
                 </button>
               )}
-              {order.status === "READY" && (
+              {!readOnly && order.status === "READY" && (
                 <button
                   type="button"
                   onClick={() => updateStatus(order.id, "COMPLETED")}

@@ -35,7 +35,7 @@ const addSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ctx = await requirePharmacyStore(["OWNER", "ADMIN"]);
+  const ctx = await requirePharmacyStore(["OWNER", "ADMIN"], { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const parsed = addSchema.safeParse(await req.json());

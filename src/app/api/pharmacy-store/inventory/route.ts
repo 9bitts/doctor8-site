@@ -99,7 +99,7 @@ const mnCreateSchema = z.object({
 const createSchema = z.union([drugCreateSchema, mnCreateSchema]);
 
 export async function POST(req: NextRequest) {
-  const ctx = await requirePharmacyStore();
+  const ctx = await requirePharmacyStore(undefined, { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const body = await req.json();

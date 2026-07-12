@@ -34,3 +34,10 @@ export function isPharmacyStorePharmacistPath(pathname: string): boolean {
   return pathname === "/farmacias/farmaceutico/painel"
     || pathname.startsWith("/farmacias/farmaceutico/painel/");
 }
+
+export const PHARMACY_STORE_WRITE_BLOCKED_MESSAGE =
+  "Farmácia em análise ou suspensa — operação indisponível";
+
+export function isPharmacyStoreActive(status: string): boolean {
+  return status === "ACTIVE";
+}

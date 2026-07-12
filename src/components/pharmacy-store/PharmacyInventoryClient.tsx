@@ -53,7 +53,7 @@ function parsePriceInput(value: string): number | null {
   return Math.round(num * 100);
 }
 
-export default function PharmacyInventoryClient() {
+export default function PharmacyInventoryClient({ readOnly = false }: { readOnly?: boolean }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,6 +221,8 @@ export default function PharmacyInventoryClient() {
 
   return (
     <div className="space-y-8">
+      {!readOnly && (
+      <>
       {/* CSV Import */}
       <section className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-6 space-y-4">
         <div className="flex items-start gap-3">
@@ -440,6 +442,8 @@ export default function PharmacyInventoryClient() {
           </div>
         )}
       </section>
+      </>
+      )}
 
       {/* Inventory list */}
       <section className="space-y-4">
@@ -502,15 +506,20 @@ export default function PharmacyInventoryClient() {
                       {item.drug ? item.drug.ggremCode || "Anvisa" : "MN"}
                     </td>
                     <td className="px-4 py-3">
+                      {readOnly ? (
+                        <span className="text-sm">{formatBrl(item.priceCents)}</span>
+                      ) : (
                       <input
                         key={`${item.id}-${item.priceCents}`}
                         defaultValue={(item.priceCents / 100).toFixed(2).replace(".", ",")}
                         onBlur={(e) => updatePrice(item.id, e.target.value)}
                         className="border border-slate-200 rounded-lg px-2 py-1 w-24 text-sm"
                       />
+                      )}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{item.stockQty ?? "—"}</td>
                     <td className="px-4 py-3">
+                      {!readOnly && (
                       <button
                         type="button"
                         onClick={() => removeItem(item.id)}
@@ -519,6 +528,7 @@ export default function PharmacyInventoryClient() {
                       >
                         <Trash2 size={16} />
                       </button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -9,7 +9,7 @@ import { assertCsvRowCount } from "@/lib/csv-import-limits";
 import { parseCsvImportRequest } from "@/lib/csv-import-request";
 
 export async function POST(req: NextRequest) {
-  const ctx = await requirePharmacyStore();
+  const ctx = await requirePharmacyStore(undefined, { requireActive: true });
   if ("error" in ctx) return ctx.error;
 
   const payload = await parseCsvImportRequest(req);

@@ -2,8 +2,18 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import type { PharmacyStoreMemberRole } from "@prisma/client";
+import {
+  isPharmacyStoreActive,
+  PHARMACY_STORE_WRITE_BLOCKED_MESSAGE,
+} from "@/lib/pharmacy-store-portal";
 
 const ADMIN_ROLES: PharmacyStoreMemberRole[] = ["OWNER", "ADMIN"];
+
+export { isPharmacyStoreActive, PHARMACY_STORE_WRITE_BLOCKED_MESSAGE };
+
+export type RequirePharmacyStoreOptions = {
+  requireActive?: boolean;
+};
 
 export type PharmacyStoreContext = {
   userId: string;
@@ -53,6 +63,7 @@ export async function getPharmacyStoreMembership(userId: string) {
 
 export async function requirePharmacyStore(
   allowedRoles?: PharmacyStoreMemberRole[],
+  opts?: RequirePharmacyStoreOptions,
 ): Promise<PharmacyStoreContext | { error: NextResponse }> {
   const session = await auth();
   if (!session?.user) {
@@ -69,6 +80,16 @@ export async function requirePharmacyStore(
 
   if (allowedRoles && !allowedRoles.includes(membership.role) && session.user.role !== "ADMIN") {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
+  if (
+    opts?.requireActive &&
+    !isPharmacyStoreActive(membership.pharmacyStore.status) &&
+    session.user.role !== "ADMIN"
+  ) {
+    return {
+      error: NextResponse.json({ error: PHARMACY_STORE_WRITE_BLOCKED_MESSAGE }, { status: 403 }),
+    };
   }
 
   return {
