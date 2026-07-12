@@ -331,21 +331,28 @@ export async function ensureIntegrativeClientForPatient(opts: {
   patientProfile: { firstName: string; lastName: string };
   patientEmail: string;
 }) {
-  const { integrativeTherapistId, patientUserId, patientProfile, patientEmail } = opts;
-  const { encrypt } = await import("@/lib/encryption");
+  const { ensureIntegrativeClientRecord } = await import("@/lib/ensure-integrative-client-record");
+  const recordId = await ensureIntegrativeClientRecord(
+    opts.integrativeTherapistId,
+    opts.patientUserId,
+  );
+  if (recordId) {
+    return db.integrativeClientRecord.findUniqueOrThrow({ where: { id: recordId } });
+  }
 
-  const existing = await db.integrativeClientRecord.findFirst({
-    where: { integrativeTherapistId, linkedUserId: patientUserId },
-  });
-  if (existing) return existing;
+  const { encrypt } = await import("@/lib/encryption");
+  const { decrypt } = await import("@/lib/encryption");
+  function safeDecrypt(v: string): string {
+    try { return decrypt(v); } catch { return v; }
+  }
 
   return db.integrativeClientRecord.create({
     data: {
-      integrativeTherapistId,
-      firstName: encrypt(patientProfile.firstName),
-      lastName: encrypt(patientProfile.lastName),
-      email: patientEmail.toLowerCase(),
-      linkedUserId: patientUserId,
+      integrativeTherapistId: opts.integrativeTherapistId,
+      firstName: encrypt(safeDecrypt(opts.patientProfile.firstName)),
+      lastName: encrypt(safeDecrypt(opts.patientProfile.lastName)),
+      email: opts.patientEmail.toLowerCase(),
+      linkedUserId: opts.patientUserId,
       processStartDate: new Date(),
     },
   });
@@ -357,21 +364,25 @@ export async function ensureAnalysandForPatient(opts: {
   patientProfile: { firstName: string; lastName: string };
   patientEmail: string;
 }) {
-  const { psychoanalystId, patientUserId, patientProfile, patientEmail } = opts;
-  const { encrypt } = await import("@/lib/encryption");
+  const { ensureAnalysandRecord } = await import("@/lib/ensure-analysand-record");
+  const recordId = await ensureAnalysandRecord(opts.psychoanalystId, opts.patientUserId);
+  if (recordId) {
+    return db.analysandRecord.findUniqueOrThrow({ where: { id: recordId } });
+  }
 
-  const existing = await db.analysandRecord.findFirst({
-    where: { psychoanalystId, linkedUserId: patientUserId },
-  });
-  if (existing) return existing;
+  const { encrypt } = await import("@/lib/encryption");
+  const { decrypt } = await import("@/lib/encryption");
+  function safeDecrypt(v: string): string {
+    try { return decrypt(v); } catch { return v; }
+  }
 
   return db.analysandRecord.create({
     data: {
-      psychoanalystId,
-      firstName: encrypt(patientProfile.firstName),
-      lastName: encrypt(patientProfile.lastName),
-      email: patientEmail.toLowerCase(),
-      linkedUserId: patientUserId,
+      psychoanalystId: opts.psychoanalystId,
+      firstName: encrypt(safeDecrypt(opts.patientProfile.firstName)),
+      lastName: encrypt(safeDecrypt(opts.patientProfile.lastName)),
+      email: opts.patientEmail.toLowerCase(),
+      linkedUserId: opts.patientUserId,
       processStartDate: new Date(),
     },
   });

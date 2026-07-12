@@ -5,11 +5,7 @@ import { scheduleAppointmentReminders, scheduleReviewRequest, schedulePostConsul
 import { buildAppointmentIntakePayload } from "@/lib/appointment-intake";
 import { onAppointmentBooked } from "@/lib/post-booking";
 import type { ProviderType } from "@/lib/providers";
-import {
-  ensureAnalysandForPatient,
-  ensureIntegrativeClientForPatient,
-  PSYCHOANALYSIS_SPECIALTY,
-} from "@/lib/providers";
+import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { Prisma } from "@prisma/client";
 import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
@@ -501,41 +497,17 @@ export async function fulfillConsultationPayment(params: {
   }) as { email: string; language: string | null; timezone?: string } | null;
   const patientTimezone = user?.timezone;
 
-  if (providerType === "psychoanalyst") {
-    await ensureAnalysandForPatient({
-      psychoanalystId: providerId,
-      patientUserId: userId,
-      patientProfile: { firstName: patient.firstName, lastName: patient.lastName },
-      patientEmail: user?.email || "",
-    });
-  } else if (providerType === "integrative") {
-    await ensureIntegrativeClientForPatient({
-      integrativeTherapistId: providerId,
-      patientUserId: userId,
-      patientProfile: { firstName: patient.firstName, lastName: patient.lastName },
-      patientEmail: user?.email || "",
-    });
+  try {
     await onAppointmentBooked({
       appointmentId: appointment.id,
-      providerType: "integrative",
+      providerType,
       providerId,
       patientUserId: userId,
       chiefComplaint: intakePayload,
       scheduledAt: new Date(scheduledAt),
-    }).catch((e) => console.error("[POST-BOOKING]", e));
-  } else {
-    try {
-      await onAppointmentBooked({
-        appointmentId: appointment.id,
-        providerType: "health",
-        providerId,
-        patientUserId: userId,
-        chiefComplaint: intakePayload,
-        scheduledAt: new Date(scheduledAt),
-      });
-    } catch (e) {
-      console.error("[POST-BOOKING]", appointment.id, e);
-    }
+    });
+  } catch (e) {
+    console.error("[POST-BOOKING]", appointment.id, e);
   }
 
   if (user) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 /**
- * POST-BOOKING — PatientRecord always created on health booking; freemium bypass.
+ * POST-BOOKING — provider charts always created on confirmed booking (all portals).
  *
  *   npx tsx scripts/verify-post-booking-patient-record.ts
  *   npx tsx scripts/verify-post-booking-patient-record.ts --db

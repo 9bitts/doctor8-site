@@ -25,7 +25,7 @@ export async function countPsychologistPatients(professionalId: string): Promise
   return db.patientRecord.count({ where: { professionalId } });
 }
 
-// Prontuário criado por agendamento confirmado (ensurePatientRecord via
+// Prontuário/analisando/cliente criado por agendamento confirmado (ensure* via
 // onAppointmentBooked) ignora o limite free; o limite vale só para adição
 // manual em /api/professional/records e import.
 export async function assertCanAddPsychologyPatient(
