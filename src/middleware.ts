@@ -68,6 +68,8 @@ const PUBLIC_ROUTES = [
   "/register/professional",
   "/sos-venezuela",
   "/atendimentohumanitario",
+  "/humanitarian/angel/login",
+  "/humanitarian/angel/certificado",
   "/register/organization",
   "/register/organization/staff",
   "/register/success",
@@ -336,9 +338,9 @@ export default auth((req) => {
       url.pathname = "/empresas/login";
       return NextResponse.redirect(url);
     }
-    url.pathname = "/login";
+    url.pathname = pathname === "/login/anjo" ? "/humanitarian/angel/login" : "/login";
     const portal = LEGACY_LOGIN_PORTAL[pathname];
-    if (portal) url.searchParams.set("portal", portal);
+    if (portal && pathname !== "/login/anjo") url.searchParams.set("portal", portal);
     return NextResponse.redirect(url);
   }
 
@@ -463,6 +465,27 @@ export default auth((req) => {
   }
 
   if (pathname === "/login" && session?.user) {
+    if (sessionProfileIncomplete(session.user)) {
+      return NextResponse.redirect(new URL("/signup/role", req.url));
+    }
+    const user = session.user as {
+      role: string;
+      professionalSpecialty?: string | null;
+      humanitarianPatient?: boolean;
+    };
+    const home = roleHomeForSession(user);
+    const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl?.trim()) {
+      const destination = safePostLoginForSession(user, callbackUrl);
+      if (destination !== home) {
+        const target = destination.startsWith("/") ? destination : `/${destination}`;
+        return NextResponse.redirect(new URL(target, req.url));
+      }
+    }
+    return NextResponse.redirect(new URL(home, req.url));
+  }
+
+  if (pathname === "/humanitarian/angel/login" && session?.user) {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
     }

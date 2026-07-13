@@ -12,10 +12,13 @@ import { getPatientIntakeStatusBySlug } from "@/lib/humanitarian/intake";
 import { resolveHumanitarianPatientFlag } from "@/lib/humanitarian/patient-identity";
 import { humanitarianCareHref } from "@/lib/humanitarian/patient-flow";
 import HumanitarianPatientDashboard from "@/components/humanitarian/HumanitarianPatientDashboard";
+import { HUMANITARIAN_PATIENT_LOGIN } from "@/lib/auth-portals";
 
 export default async function HumanitarianPatientPainelPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login?callbackUrl=/humanitarian/painel");
+  if (!session?.user) {
+    redirect(`${HUMANITARIAN_PATIENT_LOGIN}?callbackUrl=${encodeURIComponent("/humanitarian/painel")}`);
+  }
   if (session.user.role !== "PATIENT") redirect("/login");
 
   const userId = session.user.id;

@@ -672,7 +672,7 @@ function QueueScreen({
           type="button"
           onClick={onLeave}
           disabled={leaving || !!switching}
-          className="w-full mt-3 text-sm text-slate-500 hover:text-slate-300 py-2 disabled:opacity-50"
+          className="w-full mt-4 rounded-xl border border-rose-500/50 bg-rose-500/10 py-3 text-sm font-bold text-rose-400 transition hover:border-rose-400 hover:bg-rose-500/20 hover:text-rose-300 disabled:opacity-50"
         >
           {leaving ? t(lang, "hum.page.leaving") : t(lang, "hum.page.leaveQueue")}
         </button>

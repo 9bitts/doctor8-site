@@ -1,6 +1,8 @@
 export type LoginAccent = "emerald" | "violet" | "teal" | "indigo" | "rose" | "amber" | "sky";
 export type PortalHeaderIcon = "brain" | "leaf" | "building" | "heart";
 
+import { isHumanitarianPatientPath } from "./humanitarian/origin-cookie";
+
 // Login is unified into a single screen. All former per-role portal URLs now
 // resolve to /login; legacy /login/<portal> paths are redirected by middleware.
 export const LOGIN = "/login";
@@ -14,7 +16,8 @@ export const PSYCHOANALYST_LOGIN = LOGIN;
 export const INTEGRATIVE_THERAPIST_LOGIN = LOGIN;
 export const NUTRITIONIST_LOGIN = LOGIN;
 export const ORGANIZATION_LOGIN = LOGIN;
-export const ANGEL_LOGIN = LOGIN;
+export const HUMANITARIAN_PATIENT_LOGIN = "/atendimentohumanitario";
+export const ANGEL_LOGIN = "/humanitarian/angel/login";
 
 export const PROFESSIONAL_REGISTER = "/register/professional/signup";
 export const PSYCHOLOGIST_REGISTER =
@@ -72,6 +75,11 @@ export const ANGEL_REGISTER = "/register/angel";
 
 /** Unauthenticated redirect target — portal-specific logins where B2B portals keep dedicated screens. */
 export function resolveLoginPathForPathname(pathname: string): string {
+  if (isHumanitarianPatientPath(pathname)) return HUMANITARIAN_PATIENT_LOGIN;
+  if (pathname === "/humanitarian/angel/login" || pathname.startsWith("/humanitarian/angel/login/")) {
+    return ANGEL_LOGIN;
+  }
+  if (pathname.startsWith("/admin/angel")) return ANGEL_LOGIN;
   if (pathname.startsWith("/empresas/medico")) return "/empresas/medico/login";
   if (pathname.startsWith("/empresas/psicologo")) return "/empresas/psicologo/login";
   if (pathname.startsWith("/empresas")) return EMPLOYER_LOGIN;
@@ -92,6 +100,8 @@ export function resolveLoginPathForSession(
 
 const ALLOWED_LOGIN_FROM_PATHS = new Set<string>([
   LOGIN,
+  HUMANITARIAN_PATIENT_LOGIN,
+  ANGEL_LOGIN,
   EMPLOYER_LOGIN,
   PHARMACY_STORE_LOGIN,
   LABORATORY_LOGIN,

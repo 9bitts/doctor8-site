@@ -7,6 +7,8 @@ import {
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianIntakesPanel from "@/components/humanitarian/HumanitarianIntakesPanel";
 import HumanitarianAngelsAdminPanel from "@/components/humanitarian/HumanitarianAngelsAdminPanel";
+import AngelTrainingRequirementsPanel from "@/components/humanitarian/AngelTrainingRequirementsPanel";
+import HumanitarianMissionsAdminPanel from "@/components/humanitarian/HumanitarianMissionsAdminPanel";
 import AcuraVolunteersAdminPanel from "@/components/admin/AcuraVolunteersAdminPanel";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
@@ -268,6 +270,8 @@ export default function AdminHumanitarianPage() {
 
       <HumanitarianIntakesPanel slug={VENEZUELA_CAMPAIGN_SLUG} />
       <AcuraVolunteersAdminPanel />
+      <AngelTrainingRequirementsPanel />
+      <HumanitarianMissionsAdminPanel />
       <HumanitarianAngelsAdminPanel />
     </div>
   );

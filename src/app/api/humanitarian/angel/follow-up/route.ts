@@ -33,6 +33,7 @@ const followUpSchema = z.object({
     z.literal(30),
   ]).optional(),
   remindAt: z.string().optional(),
+  minutesSpent: z.number().int().min(1).max(480).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -160,6 +161,22 @@ export async function POST(req: NextRequest) {
       patientName: detail?.patientName || "Paciente",
       priority: intake.computedPriority,
     });
+  }
+
+  if (parsed.data.minutesSpent) {
+    const profile = await db.angelProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    if (profile) {
+      const { creditFollowUpHours } = await import("@/lib/humanitarian/angel-impact");
+      await creditFollowUpHours({
+        profileId: profile.id,
+        userId: session.user.id,
+        minutes: parsed.data.minutesSpent,
+        followUpId: followUp.id,
+      });
+    }
   }
 
   return NextResponse.json({

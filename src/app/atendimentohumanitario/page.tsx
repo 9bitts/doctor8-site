@@ -381,7 +381,7 @@ export default function HumanitarianPatientPortalPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={ACURA_BRASIL_LOGO_WHITE}
-            alt="A Cura Brasil"
+            alt="AcuraBrasil"
             width={140}
             height={36}
             decoding="async"

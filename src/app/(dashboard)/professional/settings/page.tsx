@@ -128,6 +128,11 @@ export default function ProfessionalSettings() {
     } catch { /* ignore */ }
   }, [refreshRegistration]);
 
+  const handleAvailabilitySaved = useCallback(async () => {
+    setSectionStatus((prev) => ({ ...prev, availability: true }));
+    await refreshSectionStatus();
+  }, [refreshSectionStatus]);
+
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
     const map: Record<string, string> = {
@@ -353,19 +358,21 @@ export default function ProfessionalSettings() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">{t("set.title")}</h1>
         <p className="text-slate-500 mt-1">{t("set.subtitle")}</p>
-        {(autoSaving || autoSaved) && (
-          <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
-            {autoSaving ? (
-              <>
-                <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
-              </>
-            ) : (
-              <>
-                <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
-              </>
-            )}
-          </p>
-        )}
+        <div className="min-h-[20px] mt-2">
+          {(autoSaving || autoSaved) && (
+            <p className="text-xs text-slate-500 flex items-center gap-1.5">
+              {autoSaving ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
+                </>
+              )}
+            </p>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -532,7 +539,7 @@ export default function ProfessionalSettings() {
         description={t("it.settings.pricingDesc")}
         icon={<DollarSign size={18} />}
         complete={sectionStatus.consultation}
-        incomplete={missingCareSettings}
+        incomplete={!sectionStatus.consultation}
         open={openSections.consultation}
         onToggle={() => toggleSection("consultation")}
       >
@@ -546,11 +553,11 @@ export default function ProfessionalSettings() {
         description={t("avail.subtitle")}
         icon={<Calendar size={18} />}
         complete={sectionStatus.availability}
-        incomplete={missingCareSettings}
+        incomplete={!sectionStatus.availability}
         open={openSections.availability}
         onToggle={() => toggleSection("availability")}
       >
-        <AvailabilitySettings embedded autoSave hideSaveButton onSaved={refreshSectionStatus} />
+        <AvailabilitySettings embedded autoSave hideSaveButton onSaved={handleAvailabilitySaved} />
       </ProfileSettingsSection>
 
       {/* Digital signature */}

@@ -8,10 +8,40 @@ import {
   screeningRequirementForTrack,
   screeningSatisfiesRequirement,
 } from "@/lib/humanitarian/angel-tracks";
+import {
+  sendAngelApprovedEmail,
+  sendAngelRejectedEmail,
+  sendAngelTrackApprovedEmail,
+} from "@/lib/email";
 import type { AngelScreeningStatus, AngelTrack, AngelTrackStatus } from "@prisma/client";
 
 function randomId(): string {
   return randomBytes(16).toString("hex");
+}
+
+async function notifyAngelUser(
+  userId: string,
+  send: (user: { email: string; language: string | null; firstName: string; lastName: string }) => Promise<void>,
+) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      language: true,
+      angelProfile: { select: { firstName: true, lastName: true } },
+    },
+  });
+  if (!user?.email || !user.angelProfile) return;
+  try {
+    await send({
+      email: user.email,
+      language: user.language,
+      firstName: user.angelProfile.firstName,
+      lastName: user.angelProfile.lastName,
+    });
+  } catch (err) {
+    console.error("[admin/humanitarian/angels] email notification failed", { userId, err });
+  }
 }
 
 const patchSchema = z.object({
@@ -188,6 +218,18 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    if (nextStatus === "APPROVED") {
+      await notifyAngelUser(parsed.data.userId, async (user) => {
+        const name = `${user.firstName} ${user.lastName}`.trim() || "Voluntário";
+        await sendAngelTrackApprovedEmail({
+          email: user.email,
+          name,
+          track,
+          language: user.language ?? undefined,
+        });
+      });
+    }
+
     return NextResponse.json({ success: true });
   }
 
@@ -241,6 +283,15 @@ export async function PATCH(req: NextRequest) {
       await tx.humanitarianAngel.updateMany({
         where: { userId: parsed.data.userId },
         data: { active: false },
+      });
+    });
+    await notifyAngelUser(parsed.data.userId, async (user) => {
+      const name = `${user.firstName} ${user.lastName}`.trim() || "Voluntário";
+      await sendAngelRejectedEmail({
+        email: user.email,
+        name,
+        rejectionReason: parsed.data.rejectionReason,
+        language: user.language ?? undefined,
       });
     });
     return NextResponse.json({ success: true, status: "REJECTED" });
@@ -304,6 +355,15 @@ export async function PATCH(req: NextRequest) {
         active: true,
       },
       update: { active: true },
+    });
+  });
+
+  await notifyAngelUser(parsed.data.userId, async (user) => {
+    const name = `${user.firstName} ${user.lastName}`.trim() || "Voluntário";
+    await sendAngelApprovedEmail({
+      email: user.email,
+      name,
+      language: user.language ?? undefined,
     });
   });
 

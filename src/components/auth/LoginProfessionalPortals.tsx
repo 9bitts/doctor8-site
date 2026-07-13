@@ -73,7 +73,7 @@ const PORTAL_LINKS: PortalLink[] = [
     className: "text-slate-400 hover:text-indigo-300",
   },
   {
-    href: "/login?portal=angel",
+    href: "/humanitarian/angel/login",
     labelKey: "login.proAngelPortal",
     icon: Heart,
     className: "text-slate-400 hover:text-rose-300",

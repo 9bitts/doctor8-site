@@ -74,6 +74,14 @@ export function parseAvailabilityJson(raw: unknown): AvailabilityJson {
   };
 }
 
+/** True when the provider has at least one valid weekly volunteer block in availability JSON. */
+export function hasConfiguredVolunteerBlocks(raw: unknown): boolean {
+  const parsed = parseAvailabilityJson(raw);
+  return (parsed.volunteerBlocks ?? []).some(
+    (b) => timeToMins(b.endTime) > timeToMins(b.startTime),
+  );
+}
+
 export function mergeAvailabilityJson(
   existing: unknown,
   dateBlocks: DateAvailabilityBlock[],

@@ -32,6 +32,11 @@ import {
   EMAIL_HUMANITARIAN_VOLUNTEER_ONLINE,
   EMAIL_REVIEW_REQUEST,
   EMAIL_MAGIC_LINK,
+  EMAIL_ANGEL_APPROVED,
+  EMAIL_ANGEL_REJECTED,
+  EMAIL_ANGEL_TRACK_APPROVED,
+  EMAIL_ANGEL_MISSION_REMINDER,
+  angelTrackLabel,
 } from "./email-i18n";
 import {
   DEFAULT_TIME_ZONE,
@@ -1014,4 +1019,151 @@ export async function sendEmployerWhistleblowerAlert({
       tag: "employer-whistleblower-alert",
     });
   }
+}
+
+export async function sendAngelApprovedEmail({
+  email,
+  name,
+  language,
+}: {
+  email: string;
+  name: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_ANGEL_APPROVED[lang];
+  const panelUrl = `${getAppUrl()}/admin/angel`;
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(name)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${panelUrl}" style="background:#e11d48;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.5;">${c.footnote}</p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject,
+    html: emailShell(c.heading, body, lang),
+    text: [c.hi(name), c.body, `${c.cta}: ${panelUrl}`, c.footnote].join("\n\n"),
+    tag: "angel-approved",
+  });
+}
+
+export async function sendAngelRejectedEmail({
+  email,
+  name,
+  rejectionReason,
+  language,
+}: {
+  email: string;
+  name: string;
+  rejectionReason?: string | null;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_ANGEL_REJECTED[lang];
+  const reasonBlock = rejectionReason?.trim()
+    ? `<p style="color:#4a6070;font-size:14px;line-height:1.6;margin-top:16px;"><strong>${c.reasonLabel}</strong><br/>${rejectionReason.trim()}</p>`
+    : "";
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(name)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body}</p>
+    ${reasonBlock}
+    <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin-top:24px;">${c.footnote}</p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject,
+    html: emailShell(c.heading, body, lang),
+    text: [
+      c.hi(name),
+      c.body,
+      rejectionReason?.trim() ? `${c.reasonLabel} ${rejectionReason.trim()}` : "",
+      c.footnote,
+    ].filter(Boolean).join("\n\n"),
+    tag: "angel-rejected",
+  });
+}
+
+export async function sendAngelTrackApprovedEmail({
+  email,
+  name,
+  track,
+  language,
+}: {
+  email: string;
+  name: string;
+  track: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_ANGEL_TRACK_APPROVED[lang];
+  const trackLabel = angelTrackLabel(track, lang);
+  const panelUrl = `${getAppUrl()}/admin/angel`;
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi(name)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(trackLabel)}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${panelUrl}" style="background:#e11d48;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.5;">${c.footnote}</p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject(trackLabel),
+    html: emailShell(c.heading, body, lang),
+    text: [
+      c.hi(name),
+      c.body(trackLabel).replace(/<[^>]+>/g, ""),
+      `${c.cta}: ${panelUrl}`,
+      c.footnote,
+    ].join("\n\n"),
+    tag: "angel-track-approved",
+  });
+}
+
+export async function sendAngelMissionReminderEmail({
+  email,
+  missionTitle,
+  startsAt,
+  panelUrl,
+  language,
+}: {
+  email: string;
+  missionTitle: string;
+  startsAt: Date;
+  panelUrl: string;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const c = EMAIL_ANGEL_MISSION_REMINDER[lang];
+  const emailLocale = EMAIL_LOCALE[lang];
+  const { dateStr, timeStr } = formatEmailAppointmentDateTime(startsAt, DEFAULT_TIME_ZONE, emailLocale);
+  const when = `${dateStr} ${timeStr}`;
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${c.hi}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${c.body(missionTitle, when)}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${panelUrl}" style="background:#e11d48;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${c.cta}
+      </a>
+    </div>
+    <p style="color:#9ca3af;font-size:12px;line-height:1.5;">${c.footnote}</p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: c.subject(missionTitle),
+    html: emailShell(c.heading, body, lang),
+    text: [c.hi, c.body(missionTitle, when).replace(/<[^>]+>/g, ""), `${c.cta}: ${panelUrl}`, c.footnote].join("\n\n"),
+    tag: "angel-mission-reminder",
+  });
 }

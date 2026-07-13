@@ -433,6 +433,19 @@ export default function AvailabilitySettings({
     .filter((s) => s.enabled)
     .reduce((acc, s) => acc + getDaySlots(s).length, 0);
 
+  const overlapWarningKey = useMemo(() => {
+    const slots = schedules
+      .filter((s) => s.enabled)
+      .flatMap((s) =>
+        s.blocks.map((b) => ({
+          dayOfWeek: s.dayOfWeek,
+          startTime: b.startTime,
+          endTime: b.endTime,
+        })),
+      );
+    return validatePaidVolunteerOverlap(slots, volunteerBlocks);
+  }, [schedules, volunteerBlocks]);
+
   if (loading) {
     return (
       <div className={`flex justify-center ${embedded ? "py-8" : "py-16"}`}>
@@ -459,8 +472,7 @@ export default function AvailabilitySettings({
       )}
 
       {embedded && (
-        <div className="flex items-center justify-between gap-3 text-sm">
-          <p className="text-slate-500">{t("avail.subtitle")}</p>
+        <div className="flex items-center justify-end gap-3 text-sm">
           <div className="text-right shrink-0">
             <span className="font-bold text-brand-500">{totalWeeklySlots}</span>
             <span className="text-xs text-slate-400 ml-1">{t("avail.slotsPerWeek")}</span>
@@ -468,18 +480,34 @@ export default function AvailabilitySettings({
         </div>
       )}
 
-      {autoSave && (saving || saved) && (
-        <p className="text-xs text-slate-500 flex items-center gap-1.5">
-          {saving ? (
-            <>
-              <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
-            </>
-          ) : (
-            <>
-              <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
-            </>
-          )}
+      {saveError && embedded && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          {saveError}
         </p>
+      )}
+
+      {overlapWarningKey && !saveError && (
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          {t(overlapWarningKey)}
+        </p>
+      )}
+
+      {autoSave && (
+        <div className="min-h-[20px]">
+          {(saving || saved) && (
+            <p className="text-xs text-slate-500 flex items-center gap-1.5">
+              {saving ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
+                </>
+              )}
+            </p>
+          )}
+        </div>
       )}
 
       {!hideAdvancedSections && (
@@ -948,7 +976,7 @@ export default function AvailabilitySettings({
         })}
       </div>
 
-      {saveError && (
+      {saveError && !embedded && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
           {saveError}
         </p>

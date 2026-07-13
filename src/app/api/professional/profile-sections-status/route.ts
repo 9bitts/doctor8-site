@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { getProviderServices, hasActiveConsultServices } from "@/lib/practice";
+import { hasConfiguredVolunteerBlocks } from "@/lib/availability-exceptions";
 
 export async function GET() {
   const ctx = await requireProfessionalApi();
@@ -22,6 +23,7 @@ export async function GET() {
       consultPrice: true,
       digitalSignCpf: true,
       verified: true,
+      availability: true,
       virtualCard: { select: { isPublic: true } },
     },
   });
@@ -57,7 +59,7 @@ export async function GET() {
   const identity = !!(profile.firstName && profile.lastName && (profile.avatarUrl || profile.bio));
   const credentials = !!(profile.firstName && profile.lastName && profile.licenseNumber && profile.specialty);
   const consultation = hasActiveConsultServices(services);
-  const availability = availCount > 0;
+  const availability = availCount > 0 || hasConfiguredVolunteerBlocks(profile.availability);
   const digitalSign = !!profile.digitalSignCpf;
   const doctorConnection = !!subscription;
   const canGoPublic = credentials && consultation && availability;

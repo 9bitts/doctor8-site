@@ -14,6 +14,8 @@ import {
   loadAngelPatientJourneySummaries,
   type AngelPatientFlow,
 } from "@/lib/humanitarian/angel-patient-journey";
+import { isProfilePaused } from "@/lib/humanitarian/angel-missions";
+import { resolveAngelClaimLimit } from "@/lib/humanitarian/angel-profile";
 import type { NextRequest } from "next/server";
 import {
   checkRateLimits,
@@ -352,8 +354,17 @@ export async function claimAngelPatient(
   patientUserId: string,
 ): Promise<
   | { ok: true; assignmentId: string }
-  | { ok: false; code: "NOT_ELIGIBLE" | "LIMIT_REACHED" | "ALREADY_ASSIGNED" }
+  | { ok: false; code: "NOT_ELIGIBLE" | "LIMIT_REACHED" | "ALREADY_ASSIGNED" | "PAUSED" }
 > {
+  const angelProfile = await db.angelProfile.findUnique({
+    where: { userId: angelUserId },
+    select: { availabilityStatus: true, pausedUntil: true, weeklyCapacity: true },
+  });
+  if (angelProfile && isProfilePaused(angelProfile.availabilityStatus, angelProfile.pausedUntil)) {
+    return { ok: false, code: "PAUSED" };
+  }
+
+  const claimLimit = resolveAngelClaimLimit(angelProfile?.weeklyCapacity, MAX_PATIENTS_PER_ANGEL);
   const intake = await db.humanitarianIntake.findUnique({
     where: { campaignId_patientUserId: { campaignId, patientUserId } },
     select: { angelContactConsentAt: true },
@@ -387,7 +398,7 @@ export async function claimAngelPatient(
       const myCount = await tx.humanitarianAngelAssignment.count({
         where: { campaignId, angelUserId, active: true },
       });
-      if (myCount >= MAX_PATIENTS_PER_ANGEL) {
+      if (myCount >= claimLimit) {
         throw new Error("LIMIT_REACHED");
       }
 

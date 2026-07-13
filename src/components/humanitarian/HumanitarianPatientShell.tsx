@@ -101,7 +101,7 @@ export default function HumanitarianPatientShell({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={ACURA_BRASIL_LOGO_WHITE}
-              alt="A Cura Brasil"
+              alt="AcuraBrasil"
               width={140}
               height={36}
               decoding="async"
@@ -145,7 +145,7 @@ export default function HumanitarianPatientShell({
 
         <p className="hum-portal-footnote hum-painel-footnote">
           <Heart size={12} className="inline-block mr-1 text-rose-300" aria-hidden />
-          Doctor8 + A Cura Brasil — Atendimento humanitário Venezuela
+          Doctor8 + AcuraBrasil — Atendimento humanitário Venezuela
         </p>
       </div>
     </div>

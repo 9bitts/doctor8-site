@@ -22,6 +22,8 @@ import {
 import { buildWhatsAppUrl } from "@/lib/humanitarian/angel-utils";
 import type { AngelRiskSummary } from "@/lib/humanitarian/angel-risk-summary";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
+import AngelOnboardingTimeline from "@/components/humanitarian/AngelOnboardingTimeline";
+import type { AngelOnboardingStep } from "@/lib/humanitarian/angel-onboarding";
 import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import { isHumanitarianPhoneGateEnabled } from "@/lib/humanitarian/feature-flags";
 import type { HumanitarianFlowStep } from "@/lib/humanitarian/patient-flow";
@@ -288,6 +290,10 @@ export default function AngelFollowUpClient() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("LOADING");
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [onboardingStep, setOnboardingStep] = useState<AngelOnboardingStep>("REGISTERED");
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [pendingCourseIds, setPendingCourseIds] = useState<string[]>([]);
   const [myPatients, setMyPatients] = useState<MyPatientRow[]>([]);
   const [available, setAvailable] = useState<AvailableRow[]>([]);
   const [pendencies, setPendencies] = useState<PendencyRow[]>([]);
@@ -310,6 +316,7 @@ export default function AngelFollowUpClient() {
   >("REACHED_OK");
   const [notes, setNotes] = useState("");
   const [remindInDays, setRemindInDays] = useState<"" | "3" | "7" | "15" | "30">("");
+  const [minutesSpent, setMinutesSpent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState("");
 
@@ -351,6 +358,9 @@ export default function AngelFollowUpClient() {
       const data = await res.json();
       setStatus(data.status || "UNKNOWN");
       setRejectionReason(data?.profile?.rejectionReason ?? null);
+      setOnboardingStep(data.onboardingStep || "REGISTERED");
+      setEmailVerified(data.emailVerified === true);
+      setPendingCourseIds(data.pendingCourseIds || []);
       setMyPatients(data.myPatients || []);
       setAvailable(data.available || []);
       setPendencies(data.pendencies || []);
@@ -379,6 +389,7 @@ export default function AngelFollowUpClient() {
       .then((r) => r.json())
       .then((s) => {
         if (s?.user?.id) setUserId(s.user.id);
+        if (s?.user?.email) setUserEmail(s.user.email);
       })
       .catch(() => undefined);
   }, []);
@@ -425,6 +436,8 @@ export default function AngelFollowUpClient() {
         } else if (data.errorCode === "TRAINING_REQUIRED") {
           const n = Array.isArray(data.requiredCourseIds) ? data.requiredCourseIds.length : 0;
           setError(tParams(t, "angel.portal.trainingRequired", { n }));
+        } else if (data.errorCode === "PAUSED") {
+          setError(t("angel.portal.pausedClaim"));
         } else {
           setError(t("angel.portal.claimError"));
         }
@@ -480,6 +493,9 @@ export default function AngelFollowUpClient() {
           ...(remindInDays
             ? { remindInDays: Number(remindInDays) as 3 | 7 | 15 | 30 }
             : {}),
+          ...(minutesSpent.trim()
+            ? { minutesSpent: Number(minutesSpent) }
+            : {}),
         }),
       });
       if (!res.ok) throw new Error("save failed");
@@ -508,6 +524,13 @@ export default function AngelFollowUpClient() {
   if (status === "PENDING" || status === "EMAIL_UNVERIFIED") {
     return (
       <div className="max-w-2xl mx-auto space-y-6 pb-10">
+        <AngelOnboardingTimeline
+          currentStep={onboardingStep}
+          email={userEmail}
+          emailVerified={emailVerified}
+          pendingCourseIds={pendingCourseIds}
+          t={t}
+        />
         {status === "EMAIL_UNVERIFIED" && (
           <div className="max-w-lg mx-auto text-center py-8 bg-white border border-slate-200 rounded-2xl p-6">
             <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-4">
@@ -538,7 +561,15 @@ export default function AngelFollowUpClient() {
 
   if (status === "REJECTED") {
     return (
-      <div className="max-w-lg mx-auto text-center py-16 px-4 bg-white border border-slate-200 rounded-2xl">
+      <div className="max-w-2xl mx-auto space-y-6 pb-10">
+        <AngelOnboardingTimeline
+          currentStep={onboardingStep}
+          email={userEmail}
+          emailVerified={emailVerified}
+          pendingCourseIds={pendingCourseIds}
+          t={t}
+        />
+        <div className="max-w-lg mx-auto text-center py-16 px-4 bg-white border border-slate-200 rounded-2xl">
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
         <h1 className="text-xl font-bold text-slate-900 mb-2">{t("angel.portal.rejectedTitle")}</h1>
         <p className="text-slate-500 text-sm">{t("angel.portal.rejectedDesc")}</p>
@@ -550,16 +581,26 @@ export default function AngelFollowUpClient() {
             <p className="text-sm text-slate-600 whitespace-pre-wrap">{rejectionReason}</p>
           </div>
         )}
+        </div>
       </div>
     );
   }
 
   if (status === "NOT_ENROLLED") {
     return (
-      <div className="max-w-lg mx-auto text-center py-16 px-4 bg-white border border-slate-200 rounded-2xl">
+      <div className="max-w-2xl mx-auto space-y-6 pb-10">
+        <AngelOnboardingTimeline
+          currentStep={onboardingStep}
+          email={userEmail}
+          emailVerified={emailVerified}
+          pendingCourseIds={pendingCourseIds}
+          t={t}
+        />
+        <div className="max-w-lg mx-auto text-center py-16 px-4 bg-white border border-slate-200 rounded-2xl">
         <Clock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
         <h1 className="text-xl font-bold text-slate-900 mb-2">{t("angel.portal.notEnrolledTitle")}</h1>
         <p className="text-slate-500 text-sm leading-relaxed">{t("angel.portal.notEnrolledDesc")}</p>
+        </div>
       </div>
     );
   }
@@ -584,7 +625,14 @@ export default function AngelFollowUpClient() {
         </p>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        <Link
+          href="/admin/angel/missoes"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 hover:text-rose-800"
+        >
+          <Calendar className="w-4 h-4" />
+          {t("angel.nav.missions")}
+        </Link>
         <Link
           href="/admin/angel/guide"
           className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 hover:text-rose-800"
@@ -825,6 +873,16 @@ export default function AngelFollowUpClient() {
               rows={4}
               placeholder={t("angel.portal.notesPlaceholder")}
               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-sm resize-none mb-3"
+            />
+            <label className="block text-xs text-slate-500 mb-1">{t("angel.portal.minutesSpentLabel")}</label>
+            <input
+              type="number"
+              min={1}
+              max={480}
+              value={minutesSpent}
+              onChange={(e) => setMinutesSpent(e.target.value)}
+              placeholder={t("angel.portal.minutesSpentPlaceholder")}
+              className="w-full mb-3 bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-sm"
             />
             <label className="block text-xs text-slate-500 mb-1">{t("angel.portal.remindLabel")}</label>
             <select

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import type { UserRole } from "@prisma/client";
 import { getProviderServices, hasActiveConsultServices } from "@/lib/practice";
+import { hasConfiguredVolunteerBlocks } from "@/lib/availability-exceptions";
 
 export type RegistrationChecklistKey =
   | "professionalData"
@@ -137,6 +138,7 @@ export async function getProviderRegistrationStatus(
         specialty: true,
         consultPrice: true,
         verified: true,
+        availability: true,
       },
     });
     if (!profile) return null;
@@ -156,7 +158,9 @@ export async function getProviderRegistrationStatus(
         profile.specialty?.trim(),
     );
     const hasServices = hasActiveConsultServices(services);
-    const careSettings = hasServices && availCount > 0;
+    const hasAvailability =
+      availCount > 0 || hasConfiguredVolunteerBlocks(profile.availability);
+    const careSettings = hasServices && hasAvailability;
     const checklist: RegistrationChecklist = {
       professionalData,
       verificationDocuments: hasDocuments,

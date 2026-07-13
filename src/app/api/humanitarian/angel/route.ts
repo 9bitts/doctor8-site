@@ -10,7 +10,12 @@ import {
   MAX_PATIENTS_PER_ANGEL,
   resolveAngelAccess,
 } from "@/lib/humanitarian/angel";
-import type { Lang } from "@/lib/i18n/translations";
+import { hasCompletedTrackTraining } from "@/lib/humanitarian/angel-training";
+import {
+  resolveAngelOnboardingStep,
+  type AngelOnboardingStep,
+} from "@/lib/humanitarian/angel-onboarding";
+import { resolveAngelClaimLimit } from "@/lib/humanitarian/angel-profile";
 
 function volunteerLang(req: NextRequest): Lang {
   const raw = new URL(req.url).searchParams.get("lang");
@@ -38,6 +43,11 @@ export async function GET(req: NextRequest) {
       lastName: true,
       approvalStatus: true,
       rejectionReason: true,
+      screeningStatus: true,
+      weeklyCapacity: true,
+      trackEnrollments: {
+        select: { track: true, status: true },
+      },
     },
   });
 
@@ -47,21 +57,53 @@ export async function GET(req: NextRequest) {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { emailVerified: true },
+    select: {
+      emailVerified: true,
+      _count: { select: { providerLicenseDocuments: true } },
+    },
   });
 
+  const training = await hasCompletedTrackTraining({
+    userId: session.user.id,
+    track: "ESCUTA",
+  });
+  const trainingComplete = training.ok;
+  const pendingCourseIds = training.ok ? [] : training.requiredCourseIds;
+
+  const maxPatients = resolveAngelClaimLimit(profile.weeklyCapacity, MAX_PATIENTS_PER_ANGEL);
+
   const access = await resolveAngelAccess(session.user.id, campaignSlug);
+  const dashboardActive = access.ok;
+
+  const onboardingStep: AngelOnboardingStep = resolveAngelOnboardingStep({
+    approvalStatus: profile.approvalStatus,
+    emailVerified: !!user?.emailVerified,
+    screeningStatus: profile.screeningStatus,
+    trackEnrollments: profile.trackEnrollments,
+    trainingComplete,
+    dashboardActive,
+  });
+
+  const onboardingPayload = {
+    onboardingStep,
+    screeningStatus: profile.screeningStatus,
+    trackEnrollments: profile.trackEnrollments,
+    licenseDocCount: user?._count.providerLicenseDocuments ?? 0,
+    trainingComplete,
+    pendingCourseIds,
+  };
   if (!access.ok) {
     return NextResponse.json({
       status: access.reason,
       profile,
       emailVerified: !!user?.emailVerified,
+      ...onboardingPayload,
       myPatients: [],
       available: [],
       pendencies: [],
       pendencyCount: 0,
       assignmentCount: 0,
-      maxPatients: MAX_PATIENTS_PER_ANGEL,
+      maxPatients,
     });
   }
 
@@ -79,11 +121,12 @@ export async function GET(req: NextRequest) {
     status: "ACTIVE",
     profile,
     emailVerified: true,
+    ...onboardingPayload,
     myPatients: dashboard.myPatients,
     available: dashboard.available,
     pendencies,
     pendencyCount: pendencies.length,
     assignmentCount: dashboard.assignmentCount,
-    maxPatients: MAX_PATIENTS_PER_ANGEL,
+    maxPatients,
   });
 }

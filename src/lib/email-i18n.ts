@@ -812,3 +812,154 @@ const EMPLOYER_ROLE_LABELS: Record<string, Record<EmailLang, string>> = {
 export function employerRoleLabel(role: string, lang: EmailLang): string {
   return EMPLOYER_ROLE_LABELS[role]?.[lang] || role;
 }
+
+const ANGEL_TRACK_LABELS: Record<string, Record<EmailLang, string>> = {
+  ESCUTA: { en: "Listening", pt: "Escuta", es: "Escucha" },
+  CAMPO: { en: "Field", pt: "Campo", es: "Campo" },
+  ENTREGAS: { en: "Deliveries", pt: "Entregas", es: "Entregas" },
+  PROFISSIONAL: { en: "Professional", pt: "Profissional", es: "Profesional" },
+  INTERPRETE: { en: "Interpreter", pt: "Intérprete", es: "Intérprete" },
+  RETAGUARDA: { en: "Back office", pt: "Retaguarda", es: "Retaguarda" },
+  EDUCADOR: { en: "Educator", pt: "Educador", es: "Educador" },
+  EMBAIXADOR: { en: "Ambassador", pt: "Embaixador", es: "Embajador" },
+};
+
+export function angelTrackLabel(track: string, lang: EmailLang): string {
+  return ANGEL_TRACK_LABELS[track]?.[lang] || track;
+}
+
+export const EMAIL_ANGEL_APPROVED: Record<EmailLang, {
+  subject: string;
+  heading: string;
+  hi: (name: string) => string;
+  body: string;
+  cta: string;
+  footnote: string;
+}> = {
+  en: {
+    subject: "Your Angel volunteer application was approved",
+    heading: "Welcome to the team",
+    hi: (name) => `Hello, ${name}!`,
+    body: "Your Angel volunteer registration was approved. You can now access your dashboard and complete any remaining training for your tracks.",
+    cta: "Open Angel dashboard",
+    footnote: "Thank you for volunteering with Doctor8 humanitarian care.",
+  },
+  pt: {
+    subject: "Sua candidatura como Anjo foi aprovada",
+    heading: "Bem-vindo(a) à equipe",
+    hi: (name) => `Olá, ${name}!`,
+    body: "Seu cadastro como Anjo voluntário foi aprovado. Acesse seu painel e conclua os treinamentos pendentes das suas trilhas.",
+    cta: "Abrir painel do Anjo",
+    footnote: "Obrigado por voluntariar-se no atendimento humanitário Doctor8.",
+  },
+  es: {
+    subject: "Tu solicitud como Ángel fue aprobada",
+    heading: "Bienvenido(a) al equipo",
+    hi: (name) => `Hola, ${name}!`,
+    body: "Tu registro como Ángel voluntario fue aprobado. Entra a tu panel y completa los entrenamientos pendientes de tus rutas.",
+    cta: "Abrir panel del Ángel",
+    footnote: "Gracias por voluntariar en la atención humanitaria Doctor8.",
+  },
+};
+
+export const EMAIL_ANGEL_REJECTED: Record<EmailLang, {
+  subject: string;
+  heading: string;
+  hi: (name: string) => string;
+  body: string;
+  reasonLabel: string;
+  footnote: string;
+}> = {
+  en: {
+    subject: "Update on your Angel volunteer application",
+    heading: "Application not approved",
+    hi: (name) => `Hello, ${name},`,
+    body: "After review, we could not approve your Angel volunteer application at this time.",
+    reasonLabel: "Reason provided by the team:",
+    footnote: "If you have questions, reply to this email or contact our support team.",
+  },
+  pt: {
+    subject: "Atualização sobre sua candidatura como Anjo",
+    heading: "Candidatura não aprovada",
+    hi: (name) => `Olá, ${name},`,
+    body: "Após análise, não foi possível aprovar sua candidatura como Anjo voluntário neste momento.",
+    reasonLabel: "Motivo informado pela equipe:",
+    footnote: "Se tiver dúvidas, responda a este e-mail ou fale com nosso suporte.",
+  },
+  es: {
+    subject: "Actualización sobre tu solicitud como Ángel",
+    heading: "Solicitud no aprobada",
+    hi: (name) => `Hola, ${name},`,
+    body: "Tras la revisión, no pudimos aprobar tu solicitud como Ángel voluntario en este momento.",
+    reasonLabel: "Motivo indicado por el equipo:",
+    footnote: "Si tienes dudas, responde a este correo o contacta a nuestro soporte.",
+  },
+};
+
+export const EMAIL_ANGEL_TRACK_APPROVED: Record<EmailLang, {
+  subject: (track: string) => string;
+  heading: string;
+  hi: (name: string) => string;
+  body: (track: string) => string;
+  cta: string;
+  footnote: string;
+}> = {
+  en: {
+    subject: (track) => `Track approved: ${track}`,
+    heading: "New track approved",
+    hi: (name) => `Hello, ${name}!`,
+    body: (track) => `You are now approved for the <strong>${track}</strong> volunteer track. Check your dashboard for next steps and any required training.`,
+    cta: "Open Angel dashboard",
+    footnote: "Thank you for expanding how you help with Doctor8.",
+  },
+  pt: {
+    subject: (track) => `Trilha aprovada: ${track}`,
+    heading: "Nova trilha aprovada",
+    hi: (name) => `Olá, ${name}!`,
+    body: (track) => `Você foi aprovado(a) na trilha <strong>${track}</strong>. Acesse seu painel para ver os próximos passos e treinamentos necessários.`,
+    cta: "Abrir painel do Anjo",
+    footnote: "Obrigado por ampliar sua forma de ajudar na Doctor8.",
+  },
+  es: {
+    subject: (track) => `Ruta aprobada: ${track}`,
+    heading: "Nueva ruta aprobada",
+    hi: (name) => `Hola, ${name}!`,
+    body: (track) => `Fuiste aprobado(a) en la ruta <strong>${track}</strong>. Entra a tu panel para ver los próximos pasos y entrenamientos requeridos.`,
+    cta: "Abrir panel del Ángel",
+    footnote: "Gracias por ampliar tu forma de ayudar en Doctor8.",
+  },
+};
+
+export const EMAIL_ANGEL_MISSION_REMINDER: Record<EmailLang, {
+  subject: (title: string) => string;
+  heading: string;
+  hi: string;
+  body: (title: string, when: string) => string;
+  cta: string;
+  footnote: string;
+}> = {
+  en: {
+    subject: (title) => `Shift reminder: ${title}`,
+    heading: "Mission reminder",
+    hi: "Hello,",
+    body: (title, when) => `Your shift <strong>${title}</strong> starts around <strong>${when}</strong>.`,
+    cta: "View my missions",
+    footnote: "Thank you for volunteering with Doctor8.",
+  },
+  pt: {
+    subject: (title) => `Lembrete de turno: ${title}`,
+    heading: "Lembrete de missão",
+    hi: "Olá,",
+    body: (title, when) => `Seu turno <strong>${title}</strong> começa por volta de <strong>${when}</strong>.`,
+    cta: "Ver minhas missões",
+    footnote: "Obrigado por voluntariar-se na Doctor8.",
+  },
+  es: {
+    subject: (title) => `Recordatorio de turno: ${title}`,
+    heading: "Recordatorio de misión",
+    hi: "Hola,",
+    body: (title, when) => `Tu turno <strong>${title}</strong> comienza alrededor de <strong>${when}</strong>.`,
+    cta: "Ver mis misiones",
+    footnote: "Gracias por voluntariar en Doctor8.",
+  },
+};

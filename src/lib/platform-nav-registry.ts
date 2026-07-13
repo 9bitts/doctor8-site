@@ -723,6 +723,9 @@ export const ADMIN_NAV_GROUPS: PlatformNavGroup[] = [
 /** Angel volunteers — patient monitoring + follow-up (subset of admin). */
 export const ANGEL_NAV: PlatformNavEntry[] = [
   { href: "/admin/angel", labelKey: "angel.nav.followUp", roles: ["ANGEL"], iconKey: "Heart" },
+  { href: "/admin/angel/missoes", labelKey: "angel.nav.missions", roles: ["ANGEL"], iconKey: "Calendar" },
+  { href: "/admin/angel/impacto", labelKey: "angel.nav.impact", roles: ["ANGEL"], iconKey: "BarChart3" },
+  { href: "/admin/angel/perfil", labelKey: "angel.nav.profile", roles: ["ANGEL"], iconKey: "Settings" },
 ];
 
 /** All dashboard portals ? keys match role resolution in layout. */

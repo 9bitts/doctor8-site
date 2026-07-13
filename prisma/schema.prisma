@@ -514,6 +514,30 @@ enum AngelFollowUpOutcome {
   ESCALATED
   OTHER
 }
+
+enum AngelMissionType {
+  TURNO
+  TAREFA
+}
+
+enum AngelMissionStatus {
+  DRAFT
+  OPEN
+  FULL
+  CLOSED
+  CANCELLED
+  COMPLETED
+}
+
+enum AngelSignupStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  CANCELLED
+  ATTENDED
+  NO_SHOW
+  COMPLETED
+}
 // ─────────────────────────────────────────
 // CORE USER
 // ─────────────────────────────────────────
@@ -3632,6 +3656,7 @@ model HumanitarianCampaign {
   angelFollowUps           HumanitarianAngelFollowUp[]
   angelAssignments         HumanitarianAngelAssignment[]
   volunteerOnlineAlerts    HumanitarianVolunteerOnlineAlert[]
+  angelMissions            AngelMission[]
 
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
@@ -3819,6 +3844,7 @@ model AngelProfile {
   availabilityNote String?
   availabilityStatus AngelAvailabilityStatus @default(AVAILABLE)
   pausedUntil     DateTime?
+  weeklyCapacity  Int?
 
   // Screening workflow (proportional to track risk)
   screeningStatus AngelScreeningStatus @default(NOT_SUBMITTED)
@@ -3833,6 +3859,10 @@ model AngelProfile {
 
   trackEnrollments AngelTrackEnrollment[]
   trainingExemptions AngelTrackTrainingExemption[]
+  missionSignups   AngelMissionSignup[]
+  hourLogs         AngelHourLog[]
+  milestones       AngelMilestone[]
+  volunteerCertificate AngelVolunteerCertificate?
 
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
@@ -3879,6 +3909,89 @@ model AngelTrackTrainingExemption {
 
   @@unique([profileId, track])
   @@index([track])
+}
+
+model AngelMission {
+  id                String               @id @default(cuid())
+  campaignId        String
+  campaign          HumanitarianCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  track             AngelTrack
+  type              AngelMissionType
+  title             String
+  description       String
+  isRemote          Boolean              @default(false)
+  location          String?
+  startsAt          DateTime?
+  endsAt            DateTime?
+  capacity          Int                  @default(1)
+  requiresVehicle   Boolean              @default(false)
+  requiredLanguages String[]             @default([])
+  estimatedMinutes  Int?
+  status            AngelMissionStatus   @default(DRAFT)
+  createdById       String
+  signups           AngelMissionSignup[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([campaignId, track, status])
+}
+
+model AngelMissionSignup {
+  id              String             @id @default(cuid())
+  missionId       String
+  mission         AngelMission       @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  profileId       String
+  profile         AngelProfile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  status          AngelSignupStatus  @default(PENDING)
+  note            String?
+  minutesCredited Int?
+  decidedById     String?
+  reminderSentAt  DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@unique([missionId, profileId])
+  @@index([profileId, status])
+}
+
+model AngelHourLog {
+  id         String       @id @default(cuid())
+  profileId  String
+  profile    AngelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  track      AngelTrack
+  minutes    Int
+  source     String
+  sourceId   String?
+  occurredAt DateTime     @default(now())
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  @@index([profileId, occurredAt])
+}
+
+model AngelMilestone {
+  id         String       @id @default(cuid())
+  profileId  String
+  profile    AngelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  key        String
+  achievedAt DateTime     @default(now())
+
+  @@unique([profileId, key])
+  @@index([profileId])
+}
+
+model AngelVolunteerCertificate {
+  id            String       @id @default(cuid())
+  profileId     String       @unique
+  profile       AngelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  verifyCode    String       @unique
+  volunteerName String
+  campaignName  String
+  tracks        String[]
+  totalMinutes  Int
+  periodStart   DateTime?
+  periodEnd     DateTime?
+  issuedAt      DateTime     @default(now())
 }
 
 model HumanitarianAngel {

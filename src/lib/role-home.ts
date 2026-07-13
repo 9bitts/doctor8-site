@@ -99,6 +99,7 @@ const ROLE_ROUTE_CHECKS: { prefix: string; roles: string[] }[] = [
   { prefix: "/laboratorios/painel", roles: ["LABORATORY", "ADMIN"] },
   { prefix: "/laboratorios/exames", roles: ["LABORATORY", "ADMIN"] },
   { prefix: "/laboratorios/configuracoes", roles: ["LABORATORY", "ADMIN"] },
+  { prefix: "/humanitarian/painel", roles: ["PATIENT", "ADMIN"] },
   { prefix: "/humanitarian/angel", roles: ["ANGEL", "ADMIN"] },
   {
     prefix: "/humanitarian/volunteer",
