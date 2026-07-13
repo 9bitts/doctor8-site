@@ -155,6 +155,9 @@ export default function OccupationalPhysicianLoginForm() {
 
         <div className="border-t border-white/10 mt-6 pt-6 text-center space-y-3">
           <p className="text-slate-400 text-sm">
+            Acesso mediante convite da empresa. Solicite o convite ao RH ou SST da sua organização.
+          </p>
+          <p className="text-slate-400 text-sm">
             Acesso da empresa (CNPJ)?{" "}
             <Link href="/empresas/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
               Login empresarial
