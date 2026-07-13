@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Calendar, ChevronRight, FileText, FlaskConical, MessageSquare, Radio, Stethoscope } from "lucide-react";
+import { ChevronRight, FileText, FlaskConical, MessageSquare, Radio, Stethoscope } from "lucide-react";
 import { Lang, translate } from "@/lib/i18n/translations";
 import HumanitarianPatientShell from "@/components/humanitarian/HumanitarianPatientShell";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
 import ScheduledVolunteerBanner from "@/components/patient/ScheduledVolunteerBanner";
+import HumanitarianScheduledAppointmentsPanel from "@/components/humanitarian/HumanitarianScheduledAppointmentsPanel";
 import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
 import HumanitarianAngelOptOutCard from "@/components/humanitarian/HumanitarianAngelOptOutCard";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
@@ -79,16 +80,7 @@ export default function HumanitarianPatientDashboard({
 
         <ScheduledVolunteerBanner lang={lang} />
 
-        <Link href="/patient/volunteer-appointments" className="hum-painel-action">
-          <div className="hum-painel-action-icon bg-sky-100 text-sky-700">
-            <Calendar size={22} />
-          </div>
-          <div className="hum-painel-action-text flex-1">
-            <h2>{t("volAppt.banner.title")}</h2>
-            <p>{t("volAppt.banner.desc")}</p>
-          </div>
-          <ChevronRight size={18} className="text-sky-700 shrink-0" />
-        </Link>
+        <HumanitarianScheduledAppointmentsPanel lang={lang} />
       </div>
 
       <div className="hum-painel-section">

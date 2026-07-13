@@ -189,6 +189,122 @@
   margin-top: 1rem;
 }
 
+.hum-painel-action-open {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.hum-painel-scheduled-panel {
+  margin-top: 0.5rem;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: 1px solid #d1fae5;
+  background: #f8fffb;
+}
+
+.hum-painel-scheduled-next {
+  color: #047857 !important;
+  font-weight: 600;
+}
+
+.hum-painel-scheduled-loading,
+.hum-painel-scheduled-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.25rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.hum-painel-scheduled-loading {
+  flex-direction: row;
+  justify-content: center;
+}
+
+.hum-painel-scheduled-book,
+.hum-painel-scheduled-book-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.75rem;
+  background: #0d4a61;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hum-painel-scheduled-book-inline {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.hum-painel-scheduled-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border-radius: 0.85rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.hum-painel-scheduled-provider {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.hum-painel-scheduled-specialty,
+.hum-painel-scheduled-time {
+  margin: 0.15rem 0 0;
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.hum-painel-scheduled-date {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #047857;
+}
+
+.hum-painel-scheduled-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  transition: background 0.15s ease;
+}
+
+.hum-painel-scheduled-btn-video {
+  background: #10b981;
+  color: #fff;
+  text-decoration: none;
+}
+
+.hum-painel-scheduled-btn-reschedule {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.hum-painel-scheduled-btn-cancel {
+  background: #fff1f2;
+  color: #e11d48;
+  border-color: #fecdd3;
+}
+
 @media (min-width: 640px) {
   .hum-painel-card {
     padding: 2rem 1.75rem 1.75rem;
