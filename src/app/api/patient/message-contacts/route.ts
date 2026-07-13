@@ -133,6 +133,7 @@ export async function GET() {
   }
   for (const entry of humanitarianEntries) {
     const volunteer = entry.volunteer;
+    if (!volunteer) continue;
     if (volunteer.professional) {
       addContact(contacts, volunteer.professional);
     } else if (volunteer.psychoanalyst) {

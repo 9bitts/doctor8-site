@@ -296,6 +296,13 @@
   box-shadow: 0 0 0 4px rgba(214, 69, 69, 0.12) !important;
 }
 
+.hum-portal-field-hint {
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin-top: 0.35rem;
+}
+
 .hum-portal-field-error {
   color: #d64545;
   font-size: 0.75rem;

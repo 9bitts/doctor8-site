@@ -691,8 +691,8 @@ export default function HumanitarianPatientPortalPage() {
                       setForm((f) => ({ ...f, password: e.target.value }));
                       clearFieldError("password");
                     }}
-                    placeholder="Mín. 8 caracteres, 1 maiúscula, 1 número e 1 símbolo"
-                    className={`${inputClassFor(fieldErrors, "password")} pr-[9.5rem]`}
+                    placeholder="Sua senha"
+                    className={`${inputClassFor(fieldErrors, "password")} pr-[8.5rem]`}
                     required
                     autoComplete="new-password"
                   />
@@ -714,6 +714,9 @@ export default function HumanitarianPatientPortalPage() {
                     </button>
                   </div>
                 </div>
+                <p className="hum-portal-field-hint">
+                  Mín. 8 caracteres, 1 maiúscula, 1 número e 1 símbolo
+                </p>
                 <FieldError message={fieldErrors.password} />
               </div>
 
