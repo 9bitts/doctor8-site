@@ -7,6 +7,10 @@ import { parseRegistrationPhone, registrationPhoneErrorMessage } from "@/lib/int
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { createRegisterConsents } from "@/lib/consent/register-consents";
 import { recordTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
+import {
+  encryptAdditionalNotes,
+  encryptIdentificationData,
+} from "@/lib/humanitarian/intake-encryption";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import {
   checkRateLimits,
@@ -223,6 +227,26 @@ export async function POST(req: NextRequest) {
 
       const serviceTypes = mapServiceTypes(parsed.data.serviceRequested);
       const computedPriority = mapPriority(parsed.data.urgency);
+      const identificationData = encryptIdentificationData({
+        fullName: parsed.data.fullName,
+        ageOrDob: parsed.data.patientAgeOrDob || "",
+        phoneDdi: parsed.data.phoneDdi,
+        phoneDdd: parsed.data.phoneDdd,
+        phoneNumber: parsed.data.phoneNumber,
+        email,
+        state: parsed.data.state,
+        municipality: parsed.data.city,
+      });
+      const additionalNotes = encryptAdditionalNotes(
+        [
+          `Relação com o paciente: ${parsed.data.relationship}`,
+          `Urgência percebida: ${parsed.data.urgency}`,
+          `Descrição: ${parsed.data.description}`,
+          parsed.data.additionalInfo ? `Info adicional: ${parsed.data.additionalInfo}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      );
 
       await tx.humanitarianIntake.upsert({
         where: {
@@ -238,49 +262,17 @@ export async function POST(req: NextRequest) {
           computedPriority,
           triageFlags: ["portal:atendimentohumanitario"],
           status: "TRIAGE_ONLY",
-          identificationData: {
-            fullName: parsed.data.fullName,
-            ageOrDob: parsed.data.patientAgeOrDob || "",
-            phoneDdi: parsed.data.phoneDdi,
-            phoneDdd: parsed.data.phoneDdd,
-            phoneNumber: parsed.data.phoneNumber,
-            email,
-            state: parsed.data.state,
-            municipality: parsed.data.city,
-          },
+          identificationData,
           serviceTypes,
-          additionalNotes: [
-            `Relação com o paciente: ${parsed.data.relationship}`,
-            `Urgência percebida: ${parsed.data.urgency}`,
-            `Descrição: ${parsed.data.description}`,
-            parsed.data.additionalInfo ? `Info adicional: ${parsed.data.additionalInfo}` : null,
-          ]
-            .filter(Boolean)
-            .join("\n"),
+          additionalNotes,
         },
         update: {
           triageCompletedAt: now,
           computedPriority,
           triageFlags: { set: ["portal:atendimentohumanitario"] },
           serviceTypes: { set: serviceTypes },
-          identificationData: {
-            fullName: parsed.data.fullName,
-            ageOrDob: parsed.data.patientAgeOrDob || "",
-            phoneDdi: parsed.data.phoneDdi,
-            phoneDdd: parsed.data.phoneDdd,
-            phoneNumber: parsed.data.phoneNumber,
-            email,
-            state: parsed.data.state,
-            municipality: parsed.data.city,
-          },
-          additionalNotes: [
-            `Relação com o paciente: ${parsed.data.relationship}`,
-            `Urgência percebida: ${parsed.data.urgency}`,
-            `Descrição: ${parsed.data.description}`,
-            parsed.data.additionalInfo ? `Info adicional: ${parsed.data.additionalInfo}` : null,
-          ]
-            .filter(Boolean)
-            .join("\n"),
+          identificationData,
+          additionalNotes,
         },
       });
 

@@ -7,6 +7,7 @@ import type {
   SpecialtyData,
 } from "@/lib/humanitarian/anamnese";
 import { decryptHumanitarianIntakeFields } from "@/lib/humanitarian/intake-encryption";
+import { phoneFromIdentification } from "@/lib/humanitarian/phone";
 
 export type IntakeSummarySection = {
   title: string;
@@ -39,6 +40,7 @@ const TRIAGE_FLAG_LABELS: Record<Lang, Record<string, string>> = {
     respiracao_muito_dificil: "Respira\u00e7\u00e3o muito dif\u00edcil",
     consciencia_sonolento: "Sonolento",
     trauma_cabeca: "Trauma cabe\u00e7a",
+    "portal:atendimentohumanitario": "Cadastro portal D8",
   },
   en: {
     gestante_lactante: "Pregnant/lactating",
@@ -53,6 +55,7 @@ const TRIAGE_FLAG_LABELS: Record<Lang, Record<string, string>> = {
     respiracao_muito_dificil: "Severe breathing difficulty",
     consciencia_sonolento: "Drowsy",
     trauma_cabeca: "Head trauma",
+    "portal:atendimentohumanitario": "D8 portal signup",
   },
   es: {
     gestante_lactante: "Gestante/lactante",
@@ -67,6 +70,7 @@ const TRIAGE_FLAG_LABELS: Record<Lang, Record<string, string>> = {
     respiracao_muito_dificil: "Respiraci\u00f3n muy dif\u00edcil",
     consciencia_sonolento: "Somnoliento",
     trauma_cabeca: "Trauma cabeza",
+    "portal:atendimentohumanitario": "Registro portal D8",
   },
 };
 
@@ -123,6 +127,7 @@ type Labels = {
   name: string;
   ageDob: string;
   phone: string;
+  email: string;
   location: string;
   shelter: string;
   housing: string;
@@ -189,6 +194,7 @@ const L: Record<Lang, Labels> = {
     name: "Nome",
     ageDob: "Idade/nasc.",
     phone: "Telefone",
+    email: "E-mail",
     location: "Localiza\u00e7\u00e3o",
     shelter: "Abrigo/casa",
     housing: "Moradia",
@@ -253,6 +259,7 @@ const L: Record<Lang, Labels> = {
     name: "Name",
     ageDob: "Age/DOB",
     phone: "Phone",
+    email: "Email",
     location: "Location",
     shelter: "Shelter/home",
     housing: "Housing damage",
@@ -317,6 +324,7 @@ const L: Record<Lang, Labels> = {
     name: "Nombre",
     ageDob: "Edad/nac.",
     phone: "Tel\u00e9fono",
+    email: "Correo",
     location: "Ubicaci\u00f3n",
     shelter: "Refugio/casa",
     housing: "Vivienda",
@@ -405,6 +413,16 @@ function filterItems(items: { label: string; value: string }[], lang: Lang) {
   return items.filter((i) => i.value !== empty);
 }
 
+function identificationPhoneDisplay(id: IdentificationData, lang: Lang): string {
+  if (id.phone?.trim()) return str(id.phone, lang);
+  if (id.phoneDdi && id.phoneDdd && id.phoneNumber) {
+    const ddi = id.phoneDdi.replace(/\D/g, "");
+    return `+${ddi} ${id.phoneDdd} ${id.phoneNumber}`.trim();
+  }
+  const digits = phoneFromIdentification(id);
+  return digits ? `+${digits}` : L[lang].empty;
+}
+
 export function hasVulnerabilityFlags(flags: string[]): boolean {
   return flags.some((f) => (VULNERABILITY_FLAGS as readonly string[]).includes(f));
 }
@@ -479,6 +497,19 @@ export function buildIntakeSummary(
           : []),
       ],
     });
+  } else if (intake.triageFlags.length > 0 || intake.computedPriority) {
+    sections.push({
+      title: t.triage,
+      items: filterItems([
+        { label: t.priority, value: intake.computedPriority || t.empty },
+        ...(intake.triageFlags.length
+          ? [{
+              label: t.flags,
+              value: intake.triageFlags.map((f) => flagLabel(f, lang)).join(` ${DOT} `),
+            }]
+          : []),
+      ], lang),
+    });
   }
 
   if (id && Object.keys(id).some((k) => (id as Record<string, unknown>)[k])) {
@@ -487,7 +518,8 @@ export function buildIntakeSummary(
       items: filterItems([
         { label: t.name, value: str(id.fullName, lang) },
         { label: t.ageDob, value: str(id.ageOrDob, lang) },
-        { label: t.phone, value: str(id.phone, lang) },
+        { label: t.phone, value: identificationPhoneDisplay(id, lang) },
+        { label: t.email, value: str(id.email, lang) },
         { label: t.location, value: [id.state, id.municipality].filter(Boolean).join(", ") || t.empty },
         { label: t.shelter, value: str(id.shelterStatus, lang) },
         { label: t.housing, value: str(id.housingDamage, lang) },
