@@ -15,11 +15,17 @@ import {
 import { mapProfessionalPathForDentistSpecialty, DENTIST_HOME } from "./dentist-portal";
 import { isNutritionistSpecialty, isNurseSpecialty, isPharmacistSpecialty, isDentistSpecialty } from "./profession-label";
 import { isHumanitarianPatientPath } from "./humanitarian/origin-cookie";
+import { resolvePatientRoleHome } from "./humanitarian/patient-identity";
+
+export type RoleHomeOptions = {
+  humanitarianPatient?: boolean;
+};
 
 /** Default dashboard path after login for each account role. */
 export function resolveRoleHome(
   role: string | undefined | null,
   specialty?: string | null,
+  options?: RoleHomeOptions,
 ): string {
   switch (role) {
     case "ADMIN":
@@ -48,6 +54,7 @@ export function resolveRoleHome(
     case "ANGEL":
       return "/admin/angel";
     case "PATIENT":
+      return resolvePatientRoleHome({ humanitarianPatient: options?.humanitarianPatient });
     default:
       return "/patient";
   }
@@ -130,17 +137,23 @@ function isAuthBootstrapPath(pathname: string): boolean {
 export type SafePostLoginOptions = {
   /** When true, callback came from humanitarian return cookie — only patients should follow it. */
   fromHumCookie?: boolean;
+  humanitarianPatient?: boolean;
 };
 
 /** Post-login destination: honor deep links only when the role may access them. */
 export function safePostLoginUrl(
   role: string | undefined | null,
   callbackUrl: string | null | undefined,
-  resolvePatientUrl?: (url: string) => string,
+  resolvePatientUrl?: (
+    url: string,
+    options?: { humanitarianPatient?: boolean },
+  ) => string,
   specialty?: string | null,
   options?: SafePostLoginOptions,
 ): string {
-  const home = resolveRoleHome(role, specialty);
+  const home = resolveRoleHome(role, specialty, {
+    humanitarianPatient: options?.humanitarianPatient,
+  });
   const raw = callbackUrl?.trim();
   if (options?.fromHumCookie && role !== "PATIENT") return home;
   if (!raw) return home;
@@ -166,7 +179,9 @@ export function safePostLoginUrl(
   }
 
   if (role === "PATIENT" && resolvePatientUrl) {
-    const patientPath = resolvePatientUrl(path);
+    const patientPath = resolvePatientUrl(path, {
+      humanitarianPatient: options?.humanitarianPatient,
+    });
     const patientPathname = patientPath.split("?")[0];
     if (isPathAllowedForRole(patientPathname, role)) return patientPath;
     return home;

@@ -56,8 +56,11 @@ function CallbackInner() {
         savedCallback,
         resolvePatientPostLoginUrl,
         session.user.professionalSpecialty,
+        { humanitarianPatient: session.user.humanitarianPatient === true },
       );
-      const fallback = resolveRoleHome(session.user.role, session.user.professionalSpecialty);
+      const fallback = resolveRoleHome(session.user.role, session.user.professionalSpecialty, {
+        humanitarianPatient: session.user.humanitarianPatient === true,
+      });
       const target =
         destination === "/callback" || destination.startsWith("/callback?")
           ? fallback

@@ -38,7 +38,7 @@ export async function GET() {
 
   const contacts = new Map<string, Contact>();
 
-  const [appts, jitEntries, favorites, sent, received] = await Promise.all([
+  const [appts, jitEntries, favorites, sent, received, humanitarianEntries] = await Promise.all([
     db.appointment.findMany({
       where: {
         patientId: patientProfileId,
@@ -99,6 +99,27 @@ export async function GET() {
         },
       },
     }),
+    db.humanitarianQueueEntry.findMany({
+      where: {
+        patientUserId: userId,
+        status: { in: ["CALLED", "IN_PROGRESS", "DONE"] },
+      },
+      select: {
+        volunteer: {
+          select: {
+            professional: {
+              select: { id: true, userId: true, firstName: true, lastName: true, specialty: true },
+            },
+            psychoanalyst: {
+              select: { id: true, userId: true, firstName: true, lastName: true },
+            },
+            integrativeTherapist: {
+              select: { id: true, userId: true, firstName: true, lastName: true },
+            },
+          },
+        },
+      },
+    }),
   ]);
 
   for (const a of appts) addContact(contacts, a.professional);
@@ -109,6 +130,16 @@ export async function GET() {
   }
   for (const m of received) {
     if (m.sender.role === "PROFESSIONAL") addContact(contacts, m.sender.professionalProfile);
+  }
+  for (const entry of humanitarianEntries) {
+    const volunteer = entry.volunteer;
+    if (volunteer.professional) {
+      addContact(contacts, volunteer.professional);
+    } else if (volunteer.psychoanalyst) {
+      addContact(contacts, { ...volunteer.psychoanalyst, specialty: "Psicanalista" });
+    } else if (volunteer.integrativeTherapist) {
+      addContact(contacts, { ...volunteer.integrativeTherapist, specialty: "Terapeuta integrativo" });
+    }
   }
 
   const list = Array.from(contacts.values()).sort((a, b) =>

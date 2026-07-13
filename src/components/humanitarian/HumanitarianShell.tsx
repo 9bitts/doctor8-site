@@ -8,6 +8,7 @@ import { translate, Lang } from "@/lib/i18n/translations";
 import { HUMANITARIAN_LANDING_URL, VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import HumanitarianLangSwitcher from "@/components/humanitarian/HumanitarianLangSwitcher";
 import { humanitarianBackFallback } from "@/lib/safe-nav";
+import { HUMANITARIAN_PATIENT_HOME } from "@/lib/humanitarian/patient-identity";
 import { resolveRoleHome } from "@/lib/role-home";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
@@ -25,8 +26,12 @@ function homeHrefForRole(
   specialty: string | null | undefined,
   isVolunteer: boolean,
   isAngel: boolean,
+  humanitarianPatient?: boolean,
 ): string {
   if (isAngel) return "/admin/angel";
+  if (!isVolunteer && role === "PATIENT") {
+    return humanitarianPatient ? HUMANITARIAN_PATIENT_HOME : "/patient";
+  }
   if (!isVolunteer) return "/patient";
   if (!role) return "/patient";
   if (role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST") {
@@ -55,6 +60,7 @@ export default function HumanitarianShell({
   const t = (key: string) => translate(lang, key);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [professionalSpecialty, setProfessionalSpecialty] = useState<string | null>(null);
+  const [humanitarianPatient, setHumanitarianPatient] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -62,6 +68,7 @@ export default function HumanitarianShell({
       .then((s) => {
         setUserRole((s?.user?.role as UserRole) ?? null);
         setProfessionalSpecialty(s?.user?.professionalSpecialty ?? null);
+        setHumanitarianPatient(s?.user?.humanitarianPatient === true);
       })
       .catch(() => {});
   }, []);
@@ -69,7 +76,13 @@ export default function HumanitarianShell({
   const isVolunteer = pathname.includes("/volunteer");
   const isAngel = pathname.includes("/angel");
   const campaignHref = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
-  const accountHref = homeHrefForRole(userRole, professionalSpecialty, isVolunteer, isAngel);
+  const accountHref = homeHrefForRole(
+    userRole,
+    professionalSpecialty,
+    isVolunteer,
+    isAngel,
+    humanitarianPatient,
+  );
 
   function resolveBackHref(): string {
     if (isVolunteer || isAngel) return accountHref;

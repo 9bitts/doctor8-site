@@ -9,6 +9,7 @@ declare module "next-auth" {
       professionalSpecialty?: string | null;
       showVolunteerGuide?: boolean;
       profileComplete?: boolean;
+      humanitarianPatient?: boolean;
     } & DefaultSession["user"];
   }
   interface User {
@@ -28,5 +29,6 @@ declare module "next-auth/jwt" {
     tvCheckedAt?: number;
     showVolunteerGuide?: boolean;
     profileComplete?: boolean;
+    humanitarianPatient?: boolean;
   }
 }

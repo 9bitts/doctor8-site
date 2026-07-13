@@ -95,6 +95,13 @@ export type PublicRouteEntry = {
   description: string;
 };
 
+export const HUMANITARIAN_PATIENT_HOME_ENTRY: PlatformNavEntry = {
+  href: "/humanitarian/painel",
+  labelKey: "nav.dashboard",
+  roles: ["PATIENT"],
+  iconKey: "LayoutDashboard",
+};
+
 export const PATIENT_DASHBOARD_ENTRY: PlatformNavEntry = {
   href: "/patient",
   labelKey: "nav.dashboard",
@@ -115,6 +122,17 @@ export const PATIENT_SCHEDULED_VOLUNTEER_ENTRY: PlatformNavEntry = {
   roles: ["PATIENT"],
   iconKey: "Calendar",
 };
+
+export const HUMANITARIAN_PATIENT_NAV: PlatformNavEntry[] = [
+  HUMANITARIAN_PATIENT_HOME_ENTRY,
+  PATIENT_HUMANITARIAN_ENTRY,
+  PATIENT_SCHEDULED_VOLUNTEER_ENTRY,
+  { href: "/patient/prescriptions", labelKey: "nav.myPrescriptions", roles: ["PATIENT"], iconKey: "Stethoscope" },
+  { href: "/patient/exam-requests", labelKey: "nav.myExamRequests", roles: ["PATIENT"], iconKey: "FlaskConical" },
+  { href: "/patient/documents", labelKey: "nav.documents", roles: ["PATIENT"], iconKey: "ClipboardList" },
+  { href: "/patient/messages", labelKey: "nav.messages", roles: ["PATIENT"], iconKey: "MessageSquare" },
+  { href: "/patient/account", labelKey: "nav.account", roles: ["PATIENT"], iconKey: "Settings" },
+];
 
 /** Pinned below BR/VE solidarity badge in provider sidebar (not in a nav group). */
 export const PROVIDER_HUMANITARIAN_VOLUNTEER_ENTRY: PlatformNavEntry = {

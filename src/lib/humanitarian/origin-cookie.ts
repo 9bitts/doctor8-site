@@ -7,7 +7,10 @@ export const HUM_ORIGIN_COOKIE = "doctor8.hum.origin";
 export const HUM_RETURN_COOKIE = "doctor8.hum.return";
 export const HUM_ORIGIN_MAX_AGE_SECONDS = 2 * 60 * 60;
 
+import { HUMANITARIAN_PATIENT_HOME } from "@/lib/humanitarian/patient-identity";
+
 const DEFAULT_CAMPAIGN_PATH = `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`;
+const PORTAL_RETURN_PATH = HUMANITARIAN_PATIENT_HOME;
 
 function parseCookieMap(header: string | undefined): Map<string, string> {
   const map = new Map<string, string>();
@@ -25,6 +28,9 @@ function parseCookieMap(header: string | undefined): Map<string, string> {
 /** True when pathname is SOS landing or in-app humanitarian patient campaign (not volunteer/angel). */
 export function isHumanitarianPatientPath(pathname: string): boolean {
   if (pathname === "/sos-venezuela" || pathname === "/atendimentohumanitario") return true;
+  if (pathname === HUMANITARIAN_PATIENT_HOME || pathname.startsWith(`${HUMANITARIAN_PATIENT_HOME}/`)) {
+    return true;
+  }
   const match = pathname.match(/^\/humanitarian\/([^/]+)/);
   if (!match) return false;
   const segment = match[1];
@@ -33,7 +39,10 @@ export function isHumanitarianPatientPath(pathname: string): boolean {
 
 /** Preferred return URL when entering the flow from this pathname. */
 export function humanitarianReturnPathFromPathname(pathname: string): string | null {
-  if (pathname === "/sos-venezuela" || pathname === "/atendimentohumanitario") {
+  if (pathname === "/atendimentohumanitario") {
+    return PORTAL_RETURN_PATH;
+  }
+  if (pathname === "/sos-venezuela") {
     return DEFAULT_CAMPAIGN_PATH;
   }
   if (!isHumanitarianPatientPath(pathname)) return null;

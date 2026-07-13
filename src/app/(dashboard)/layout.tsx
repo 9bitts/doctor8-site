@@ -37,6 +37,7 @@ import {
   PHARMACY_STORE_NAV,
   LABORATORY_NAV,
   PHARMACY_NETWORK_PHARMACIST_NAV,
+  HUMANITARIAN_PATIENT_NAV,
   PATIENT_DASHBOARD_ENTRY,
   PATIENT_HUMANITARIAN_ENTRY,
   PATIENT_SCHEDULED_VOLUNTEER_ENTRY,
@@ -100,6 +101,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     role: string;
     userId: string;
     userName: string;
+    humanitarianPatient?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -109,6 +111,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       userId: session.user.id ?? "",
       userName: session.user.name
         ?? (session.user.email ? session.user.email.split("@")[0] : "User"),
+      humanitarianPatient: session.user.humanitarianPatient === true,
     });
   }, [session, status]);
 
@@ -313,9 +316,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const isLaboratoryUser = isLaboratory;
   const isAngel = role === "ANGEL";
   const isPatient = role === "PATIENT";
+  const isHumanitarianPatient = isPatient && sessionSnapshot?.humanitarianPatient === true;
   const patientDashboardItem = withNavIcons([PATIENT_DASHBOARD_ENTRY])[0];
   const patientHumanitarianItem = withNavIcons([PATIENT_HUMANITARIAN_ENTRY])[0];
   const patientScheduledVolunteerItem = withNavIcons([PATIENT_SCHEDULED_VOLUNTEER_ENTRY])[0];
+  const humanitarianPatientNav = withNavIcons(HUMANITARIAN_PATIENT_NAV);
   const providerHumanitarianVolunteerItem = withNavIcons([PROVIDER_HUMANITARIAN_VOLUNTEER_ENTRY])[0];
   const showProviderHumanitarianVolunteer =
     (role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST")
@@ -517,6 +522,14 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                 <div className="h-9 bg-slate-800 rounded-xl" />
               </div>
             ) : isPatient ? (
+              isHumanitarianPatient ? (
+                humanitarianPatientNav.map((item) =>
+                  renderNavLink(
+                    item,
+                    item.href === "/patient/messages" ? unreadMessages : undefined,
+                  ),
+                )
+              ) : (
               <>
                 {renderNavLink(patientHumanitarianItem, undefined, true)}
                 {renderNavLink(patientScheduledVolunteerItem, undefined, true)}
@@ -537,6 +550,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                   </div>
                 ))}
               </>
+              )
             ) : role === "ADMIN" ? (
               adminGroupedNav.map((group) => (
                 <div key={group.labelKey}>
@@ -624,7 +638,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {isPatient && userId && (
+        {isPatient && !isHumanitarianPatient && userId && (
           <VenezuelaPatientGuideBanner userId={userId} lang={lang} />
         )}
 

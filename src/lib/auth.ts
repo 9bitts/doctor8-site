@@ -32,6 +32,7 @@ import {
   readServerHumAuthCookies,
   resolveHumanitarianAuthCallback,
 } from "@/lib/humanitarian/origin-cookie";
+import { resolveHumanitarianPatientFlag } from "@/lib/humanitarian/patient-identity";
 import { encryptOAuthToken } from "@/lib/oauth-token-crypto";
 
 const loginSchema = z.object({
@@ -424,6 +425,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
+      const shouldRefreshHumanitarianPatient =
+        token.id &&
+        token.role === "PATIENT" &&
+        (user ||
+          account ||
+          (trigger === "update" &&
+            (session as { refreshHumanitarianPatient?: boolean })?.refreshHumanitarianPatient) ||
+          token.humanitarianPatient === undefined);
+
+      if (shouldRefreshHumanitarianPatient) {
+        try {
+          token.humanitarianPatient = await resolveHumanitarianPatientFlag(token.id as string);
+        } catch (err) {
+          console.error("[auth.jwt] humanitarianPatient refresh failed — keeping cached value", {
+            userId: token.id,
+            err,
+          });
+        }
+      } else if (token.role !== "PATIENT") {
+        token.humanitarianPatient = false;
+      }
+
       // Load specialty on sign-in or when legacy tokens lack it — not on every session poll.
       const shouldLoadSpecialty =
         token.role === "PROFESSIONAL" &&
@@ -523,6 +546,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.showVolunteerGuide = token.showVolunteerGuide === true;
         (session.user as { profileComplete?: boolean }).profileComplete =
           token.profileComplete !== false;
+        session.user.humanitarianPatient = token.humanitarianPatient === true;
       }
       return session;
     },

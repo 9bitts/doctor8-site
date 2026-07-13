@@ -92,6 +92,35 @@ async function sharedRecordBetweenUsers(
   return !!share;
 }
 
+async function humanitarianQueueBetweenUsers(
+  senderId: string,
+  receiverId: string,
+): Promise<boolean> {
+  const users = await db.user.findMany({
+    where: { id: { in: [senderId, receiverId] } },
+    select: { id: true, role: true },
+  });
+  const sender = users.find((u) => u.id === senderId);
+  const receiver = users.find((u) => u.id === receiverId);
+  if (!sender || !receiver) return false;
+
+  const patientUserId =
+    sender.role === "PATIENT" ? senderId : receiver.role === "PATIENT" ? receiverId : null;
+  const careUserId =
+    patientUserId === senderId ? receiverId : patientUserId === receiverId ? senderId : null;
+  if (!patientUserId || !careUserId) return false;
+
+  const entry = await db.humanitarianQueueEntry.findFirst({
+    where: {
+      patientUserId,
+      status: { in: ["CALLED", "IN_PROGRESS", "DONE"] },
+      volunteer: { userId: careUserId },
+    },
+    select: { id: true },
+  });
+  return Boolean(entry);
+}
+
 /**
  * Returns true when sender may message receiver (existing thread, clinical link, or appointment).
  */
@@ -121,6 +150,7 @@ export async function canUsersExchangeMessages(
   if (patientUserId && careUserId) {
     if (await hasAcceptedLink(patientUserId, careUserId)) return true;
     if (await appointmentBetweenUsers(senderId, receiverId)) return true;
+    if (await humanitarianQueueBetweenUsers(senderId, receiverId)) return true;
     if (await sharedRecordBetweenUsers(senderId, receiverId)) return true;
   }
 

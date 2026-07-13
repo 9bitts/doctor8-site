@@ -7,6 +7,7 @@ import { isAngelDashboardPath } from "@/lib/admin";
 import { NextResponse } from "next/server";
 import { isPathAllowedForRole, resolveRoleHome, safePostLoginUrl } from "@/lib/role-home";
 import { resolveLoginPathForPathname } from "@/lib/auth-portals";
+import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { sessionProfileIncomplete } from "@/lib/user-profile-complete";
 import {
   humanitarianReturnPathFromCallback,
@@ -15,6 +16,10 @@ import {
   stampHumanitarianOriginOnResponse,
 } from "@/lib/humanitarian/origin-cookie";
 import { isApiRoleAllowed } from "@/lib/api-route-roles";
+import {
+  HUMANITARIAN_PATIENT_HOME,
+  shouldRedirectHumanitarianPatientFromPatientRoute,
+} from "@/lib/humanitarian/patient-identity";
 import {
   canAccessPharmacyPharmacistPortal,
   canAccessPharmacyValidatePortal,
@@ -251,6 +256,37 @@ function withPrivateCacheHeaders(
   return response;
 }
 
+function roleHomeForSession(user: {
+  role: string;
+  professionalSpecialty?: string | null;
+  humanitarianPatient?: boolean;
+}): string {
+  return resolveRoleHome(user.role, user.professionalSpecialty, {
+    humanitarianPatient: user.humanitarianPatient === true,
+  });
+}
+
+function safePostLoginForSession(
+  user: {
+    role: string;
+    professionalSpecialty?: string | null;
+    humanitarianPatient?: boolean;
+  },
+  callbackUrl: string | null | undefined,
+  fromHumCookie?: boolean,
+): string {
+  return safePostLoginUrl(
+    user.role,
+    callbackUrl,
+    (url, options) => resolvePatientPostLoginUrl(url, options),
+    user.professionalSpecialty,
+    {
+      fromHumCookie,
+      humanitarianPatient: user.humanitarianPatient === true,
+    },
+  );
+}
+
 function maybeStampHumanitarianOrigin(
   response: NextResponse,
   pathname: string,
@@ -429,19 +465,15 @@ export default auth((req) => {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
     }
-    const { role, professionalSpecialty } = session.user as {
+    const user = session.user as {
       role: string;
       professionalSpecialty?: string | null;
+      humanitarianPatient?: boolean;
     };
-    const home = resolveRoleHome(role, professionalSpecialty);
+    const home = roleHomeForSession(user);
     const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
     if (callbackUrl?.trim()) {
-      const destination = safePostLoginUrl(
-        role,
-        callbackUrl,
-        undefined,
-        professionalSpecialty,
-      );
+      const destination = safePostLoginForSession(user, callbackUrl);
       if (destination !== home) {
         const target = destination.startsWith("/") ? destination : `/${destination}`;
         return NextResponse.redirect(new URL(target, req.url));
@@ -458,13 +490,12 @@ export default auth((req) => {
     if (sessionProfileIncomplete(session.user)) {
       return NextResponse.redirect(new URL("/signup/role", req.url));
     }
-    const { role, professionalSpecialty } = session.user as {
+    const user = session.user as {
       role: string;
       professionalSpecialty?: string | null;
+      humanitarianPatient?: boolean;
     };
-    return NextResponse.redirect(
-      new URL(resolveRoleHome(role, professionalSpecialty), req.url),
-    );
+    return NextResponse.redirect(new URL(roleHomeForSession(user), req.url));
   }
 
   if (
@@ -564,11 +595,28 @@ export default auth((req) => {
     return maybeStampHumanitarianOrigin(loginRedirect, pathname);
   }
 
-  const { role, professionalSpecialty } = session.user as {
+  const { role, professionalSpecialty, humanitarianPatient } = session.user as {
     role: string;
     professionalSpecialty?: string | null;
+    humanitarianPatient?: boolean;
   };
   const isApi = pathname.startsWith("/api/");
+
+  if (
+    role === "PATIENT"
+    && humanitarianPatient
+    && (pathname === "/urgent" || pathname.startsWith("/urgent/"))
+  ) {
+    return NextResponse.redirect(new URL(HUMANITARIAN_PATIENT_HOME, req.url));
+  }
+
+  if (
+    role === "PATIENT"
+    && humanitarianPatient
+    && shouldRedirectHumanitarianPatientFromPatientRoute(pathname, true)
+  ) {
+    return NextResponse.redirect(new URL(HUMANITARIAN_PATIENT_HOME, req.url));
+  }
 
   if (isApi && !isApiRoleAllowed(pathname, role)) {
     return withPrivateCacheHeaders(
@@ -590,7 +638,11 @@ export default auth((req) => {
       const loginPath = resolveLoginPathForPathname(pathname);
       return NextResponse.redirect(new URL(loginPath, req.url));
     }
-    const home = resolveRoleHome(role, professionalSpecialty);
+    const home = roleHomeForSession({
+      role,
+      professionalSpecialty,
+      humanitarianPatient,
+    });
     if (pathname === home || pathname.startsWith(`${home}/`)) {
       return withPrivateCacheHeaders(NextResponse.next(), pathname, authenticated);
     }

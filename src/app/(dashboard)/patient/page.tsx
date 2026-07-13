@@ -36,6 +36,7 @@ import {
   getPatientActiveHumanitarianEntry,
 } from "@/lib/humanitarian/notify";
 import { getPatientIntakeStatusBySlug } from "@/lib/humanitarian/intake";
+import { resolveHumanitarianPatientFlag, HUMANITARIAN_PATIENT_HOME } from "@/lib/humanitarian/patient-identity";
 import { resolveRoleHome } from "@/lib/role-home";
 import { parseAppointmentIntake } from "@/lib/appointment-intake";
 import {
@@ -61,6 +62,9 @@ export default async function PatientDashboard() {
   if (session.user.role !== "PATIENT") redirect(resolveRoleHome(session.user.role));
 
   const userId = session.user.id;
+  if (await resolveHumanitarianPatientFlag(userId)) {
+    redirect(HUMANITARIAN_PATIENT_HOME);
+  }
 
   const lang: Lang = await getUserLang(userId);
   const t = (key: string) => translate(lang, key);

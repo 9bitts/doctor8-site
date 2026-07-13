@@ -120,7 +120,10 @@ function UnifiedLoginForm() {
             savedCallback || callbackUrl || null,
             resolvePatientPostLoginUrl,
             session.user.professionalSpecialty,
-            { fromHumCookie },
+            {
+              fromHumCookie,
+              humanitarianPatient: session.user.humanitarianPatient === true,
+            },
           ),
           session.user.role,
         );

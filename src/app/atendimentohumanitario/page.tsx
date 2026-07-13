@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSession, signIn, signOut } from "next-auth/react";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import { HUMANITARIAN_PATIENT_HOME } from "@/lib/humanitarian/patient-identity";
 import { buildForgotPasswordHref } from "@/lib/auth-portals";
 import { consumeAuthCallback, persistAuthCallback } from "@/lib/auth-callback";
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
@@ -197,10 +198,7 @@ export default function HumanitarianPatientPortalPage() {
   const [copied, setCopied] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const callbackUrl = useMemo(
-    () => `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`,
-    [],
-  );
+  const callbackUrl = useMemo(() => HUMANITARIAN_PATIENT_HOME, []);
 
   const forgotHref = useMemo(
     () =>
@@ -296,7 +294,7 @@ export default function HumanitarianPatientPortalPage() {
             savedCallback || callbackUrl,
             resolvePatientPostLoginUrl,
             session.user.professionalSpecialty,
-            { fromHumCookie: true },
+            { fromHumCookie: true, humanitarianPatient: session.user.humanitarianPatient === true },
           ),
           session.user.role,
         );
