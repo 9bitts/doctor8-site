@@ -1,49 +1,43 @@
-/** Decorative Venezuela tricolor + stars for humanitarian patient portal. */
+/** Decorative Venezuela tricolor backdrop for humanitarian patient portal. */
 export default function VenezuelaFlagBackdrop() {
-  const starPoints =
-    "M12,2 L14.5,8.5 L21.5,8.5 L16,12.5 L18,19 L12,15 L6,19 L8,12.5 L2.5,8.5 L9.5,8.5 Z";
-
-  const stars = [
-    { cx: 52, cy: 58, r: 0.85 },
-    { cx: 88, cy: 44, r: 0.9 },
-    { cx: 128, cy: 34, r: 0.95 },
-    { cx: 168, cy: 28, r: 1 },
-    { cx: 208, cy: 28, r: 1 },
-    { cx: 248, cy: 34, r: 0.95 },
-    { cx: 288, cy: 44, r: 0.9 },
-    { cx: 324, cy: 58, r: 0.85 },
-  ];
-
   return (
     <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0 scale-[1.08] sm:scale-110 origin-center">
-        <div className="absolute inset-0 flex flex-col">
-          <div className="flex-1 bg-[#FFCC00]" />
-          <div className="flex-1 bg-[#002868] relative flex items-center justify-center overflow-hidden">
-            <svg
-              viewBox="0 0 376 88"
-              className="w-[92%] max-w-2xl opacity-95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.25)]"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              {stars.map((star, i) => (
-                <g
-                  key={i}
-                  transform={`translate(${star.cx - 12}, ${star.cy - 12}) scale(${star.r})`}
-                  fill="#FFFFFF"
-                >
-                  <path d={starPoints} />
-                </g>
-              ))}
-            </svg>
-          </div>
-          <div className="flex-1 bg-[#CF142B]" />
-        </div>
-      </div>
-
-      <div className="absolute inset-0 bg-slate-950/72" />
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/55 via-slate-950/25 to-slate-950/75" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(2,6,23,0.45)_100%)]" />
-      <div className="absolute inset-0 backdrop-blur-[2px]" />
+      <div
+        className="absolute inset-0 scale-[1.03] blur-[2px] saturate-[1.05]"
+        style={{
+          background: `linear-gradient(
+            to bottom,
+            #FBD108 0%,
+            #FBD108 33.3%,
+            #00247D 33.3%,
+            #00247D 66.6%,
+            #CF142B 66.6%,
+            #CF142B 100%
+          )`,
+        }}
+      />
+      <div
+        className="absolute left-1/2 top-[33.3%] h-[640px] w-[640px] -translate-x-1/2 -translate-y-[58%] opacity-[0.35]"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,.85) 3px, transparent 3.5px)",
+          backgroundSize: "58px 58px",
+          WebkitMaskImage: "radial-gradient(closest-side, rgba(0,0,0,.9) 0%, transparent 72%)",
+          maskImage: "radial-gradient(closest-side, rgba(0,0,0,.9) 0%, transparent 72%)",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `
+            radial-gradient(ellipse 900px 700px at 50% 8%, rgba(10,27,38,.15), rgba(10,27,38,.72) 60%, rgba(6,17,24,.92) 100%),
+            linear-gradient(180deg, rgba(6,17,24,.55) 0%, rgba(6,17,24,.78) 100%)
+          `,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ boxShadow: "inset 0 0 220px 60px rgba(0,0,0,.55)" }}
+      />
     </div>
   );
 }
