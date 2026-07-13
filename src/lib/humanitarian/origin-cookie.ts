@@ -24,7 +24,7 @@ function parseCookieMap(header: string | undefined): Map<string, string> {
 
 /** True when pathname is SOS landing or in-app humanitarian patient campaign (not volunteer/angel). */
 export function isHumanitarianPatientPath(pathname: string): boolean {
-  if (pathname === "/sos-venezuela") return true;
+  if (pathname === "/sos-venezuela" || pathname === "/atendimentohumanitario") return true;
   const match = pathname.match(/^\/humanitarian\/([^/]+)/);
   if (!match) return false;
   const segment = match[1];
@@ -33,7 +33,9 @@ export function isHumanitarianPatientPath(pathname: string): boolean {
 
 /** Preferred return URL when entering the flow from this pathname. */
 export function humanitarianReturnPathFromPathname(pathname: string): string | null {
-  if (pathname === "/sos-venezuela") return DEFAULT_CAMPAIGN_PATH;
+  if (pathname === "/sos-venezuela" || pathname === "/atendimentohumanitario") {
+    return DEFAULT_CAMPAIGN_PATH;
+  }
   if (!isHumanitarianPatientPath(pathname)) return null;
   return pathname.split("?")[0] || DEFAULT_CAMPAIGN_PATH;
 }

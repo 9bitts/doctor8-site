@@ -62,6 +62,7 @@ const PUBLIC_ROUTES = [
   "/register/angel",
   "/register/professional",
   "/sos-venezuela",
+  "/atendimentohumanitario",
   "/register/organization",
   "/register/organization/staff",
   "/register/success",
