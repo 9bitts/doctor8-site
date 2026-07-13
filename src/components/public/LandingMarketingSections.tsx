@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { getLandingContent } from "@/lib/landing-content";
+import { doctor8ContactWhatsAppHref } from "@/lib/doctor8-contact-whatsapp";
 import LandingPatientFeatures from "@/components/public/LandingPatientFeatures";
 
 const TRUST_ICONS = [Lock, Shield, Globe, CreditCard, Smartphone];
@@ -496,7 +497,7 @@ export default function LandingMarketingSections() {
                 <a href="https://instagram.com/doctor8oficial" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 transition hover:bg-white/20" aria-label="Instagram">
                   <Instagram size={16} />
                 </a>
-                <a href="https://wa.me/5531971720053" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 transition hover:bg-white/20" aria-label="WhatsApp">
+                <a href={doctor8ContactWhatsAppHref()} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 transition hover:bg-white/20" aria-label="WhatsApp">
                   <MessageCircle size={16} />
                 </a>
                 <a href="mailto:contato@doctor8.app" className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 transition hover:bg-white/20" aria-label="Email">

@@ -16,6 +16,7 @@ import { DEFAULT_VENEZUELA_POOLS } from "@/lib/humanitarian/constants";
 import { detectInitialLang, LANG_KEY } from "@/components/auth/register-shared";
 import ProPlanCta from "@/components/professional/ProPlanCta";
 import { notifyCookieConsentChanged } from "@/lib/cookie-consent";
+import { doctor8ContactWhatsAppHref } from "@/lib/doctor8-contact-whatsapp";
 
 const PRO_LOGIN_HREF = "/login";
 
@@ -149,7 +150,7 @@ export function ProFooter({ c }: { c: ProLandingContent }) {
               <a href="https://instagram.com/doctor8oficial" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.07] text-white/70 transition hover:bg-white/15">
                 <Instagram size={15} />
               </a>
-              <a href="https://wa.me/5531971720053" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.07] text-white/70 transition hover:bg-white/15">
+              <a href={doctor8ContactWhatsAppHref()} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.07] text-white/70 transition hover:bg-white/15">
                 <MessageCircle size={15} />
               </a>
               <a href="mailto:contato@doctor8.org" className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.07] text-white/70 transition hover:bg-white/15">
