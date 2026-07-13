@@ -5,6 +5,14 @@ const { withSentryConfig } = require("@sentry/nextjs");
 const isProd = process.env.NODE_ENV === "production";
 
 const nextConfig = {
+  // ESLint runs separately (`npm run lint`); skipping here avoids OOM on Railway builds.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  // Fewer parallel workers → lower peak memory during `next build` on small builders.
+  experimental: {
+    cpus: 1,
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.amazonaws.com" },

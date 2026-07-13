@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "prebuild": "node scripts/clean-next-build.mjs",
-    "build": "prisma generate && next build",
+    "build": "node scripts/production-build.mjs",
     "postinstall": "prisma generate",
     "start": "node scripts/railway-start.mjs",
     "migrate:recover": "node scripts/migrate-recover.mjs",
