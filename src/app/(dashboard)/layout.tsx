@@ -334,7 +334,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     : isOrganization
     ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
     : isEmployer
-    ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+    ? "bg-orange-600 text-white border border-orange-400/70 shadow-md shadow-orange-950/40"
     : isOccupationalPhysician
     ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
     : isPharmacyStoreUser
@@ -358,9 +358,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       : isIntegrativeTherapist
         ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
         : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-  const avatarBg = isAngel ? "bg-rose-500/20" : isOrganization ? "bg-indigo-500/20" : isEmployer ? "bg-sky-500/20" : isOccupationalPhysician ? "bg-teal-500/20" : isPharmacyStoreUser ? "bg-emerald-500/20" : isLaboratoryUser ? "bg-violet-500/20" : isPsychologist ? "bg-violet-500/20" : isNutritionist ? "bg-amber-500/20" : isNurse ? "bg-rose-500/20" : isPharmacist ? "bg-teal-500/20" : isDentist ? "bg-fuchsia-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
-  const avatarIcon = isAngel ? "text-rose-400" : isOrganization ? "text-indigo-400" : isEmployer ? "text-sky-400" : isOccupationalPhysician ? "text-teal-400" : isPharmacyStoreUser ? "text-emerald-400" : isLaboratoryUser ? "text-violet-400" : isPsychologist ? "text-violet-400" : isNutritionist ? "text-amber-400" : isNurse ? "text-rose-400" : isPharmacist ? "text-teal-400" : isDentist ? "text-fuchsia-300" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
-  const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isEmployer ? "bg-sky-600" : isOccupationalPhysician ? "bg-teal-600" : isPharmacyStoreUser ? "bg-emerald-600" : isLaboratoryUser ? "bg-violet-600" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-fuchsia-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
+  const avatarBg = isAngel ? "bg-rose-500/20" : isOrganization ? "bg-indigo-500/20" : isEmployer ? "bg-orange-500/20" : isOccupationalPhysician ? "bg-teal-500/20" : isPharmacyStoreUser ? "bg-emerald-500/20" : isLaboratoryUser ? "bg-violet-500/20" : isPsychologist ? "bg-violet-500/20" : isNutritionist ? "bg-amber-500/20" : isNurse ? "bg-rose-500/20" : isPharmacist ? "bg-teal-500/20" : isDentist ? "bg-fuchsia-500/20" : isProfessional ? "bg-brand-500/20" : isPsychoanalyst ? "bg-violet-500/20" : isIntegrativeTherapist ? "bg-teal-500/20" : "bg-emerald-500/20";
+  const avatarIcon = isAngel ? "text-rose-400" : isOrganization ? "text-indigo-400" : isEmployer ? "text-orange-400" : isOccupationalPhysician ? "text-teal-400" : isPharmacyStoreUser ? "text-emerald-400" : isLaboratoryUser ? "text-violet-400" : isPsychologist ? "text-violet-400" : isNutritionist ? "text-amber-400" : isNurse ? "text-rose-400" : isPharmacist ? "text-teal-400" : isDentist ? "text-fuchsia-300" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
+  const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isEmployer ? "bg-orange-600" : isOccupationalPhysician ? "bg-teal-600" : isPharmacyStoreUser ? "bg-emerald-600" : isLaboratoryUser ? "bg-violet-600" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-fuchsia-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal || isNutritionistPortal || isNursePortal || isPharmacistPortal || isDentistPortal);
 
   function isNavItemActive(href: string): boolean {
@@ -381,11 +381,13 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     const redIdle = "text-red-500 hover:text-red-400 hover:bg-red-500/10";
     const dentistActive = "bg-fuchsia-600 text-white border border-fuchsia-400/70 shadow-md shadow-fuchsia-950/40 [&_svg]:text-white";
     const dentistIdle = "text-slate-300 hover:text-white hover:bg-fuchsia-500/15";
+    const employerActive = "bg-orange-600 text-white border border-orange-400/70 shadow-md shadow-orange-950/40 [&_svg]:text-white";
+    const employerIdle = "text-slate-300 hover:text-white hover:bg-orange-500/15";
     const linkClass = `
           flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
           ${isActive
-            ? (accentRed ? redActive : isDentist ? dentistActive : navActive)
-            : (accentRed ? redIdle : isDentist ? dentistIdle : "text-slate-400 hover:text-white hover:bg-slate-800")}
+            ? (accentRed ? redActive : isDentist ? dentistActive : isEmployer ? employerActive : navActive)
+            : (accentRed ? redIdle : isDentist ? dentistIdle : isEmployer ? employerIdle : "text-slate-400 hover:text-white hover:bg-slate-800")}
         `;
 
     if (isExternal) {
