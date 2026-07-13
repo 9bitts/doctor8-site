@@ -177,7 +177,10 @@ export default function AvailabilitySettings({
         if (Array.isArray(d.volunteerBlocks)) setVolunteerBlocks(d.volunteerBlocks);
         if (Array.isArray(d.slots)) {
           skipAutoSaveRef.current = true;
-          if (d.slots.length === 0) {
+          const hasOtherConfig =
+            (Array.isArray(d.volunteerBlocks) && d.volunteerBlocks.length > 0) ||
+            (Array.isArray(d.dateBlocks) && d.dateBlocks.length > 0);
+          if (d.slots.length === 0 && !hasOtherConfig) {
             setSchedules(defaultSchedules(defaultSlotDuration));
           } else {
             setSchedules(
