@@ -31,9 +31,9 @@
 }
 
 .hum-portal-acura-logo {
-  height: 1.75rem;
+  height: 2.125rem;
   width: auto;
-  max-width: min(11rem, 42vw);
+  max-width: min(13rem, 48vw);
   object-fit: contain;
 }
 

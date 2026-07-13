@@ -731,7 +731,7 @@ export default function HumanitarianPatientPortalPage() {
                   />
                   <span>
                     Eu aceito o{" "}
-                    <Link href="/terms" target="_blank" className="font-semibold text-[#125e7c] no-underline hover:underline">
+                    <Link href="/tcle-telemedicina" target="_blank" className="font-semibold text-[#125e7c] no-underline hover:underline">
                       TCLE — Consentimento para teleconsulta (Doctor8)
                     </Link>
                     .

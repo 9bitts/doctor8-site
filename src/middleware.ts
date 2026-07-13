@@ -83,6 +83,7 @@ const PUBLIC_ROUTES = [
   "/unauthorized",
   "/privacy",
   "/terms",
+  "/tcle-telemedicina",
   "/docs",
   "/hipaa",
   "/dr/",        // short links → canonical public profiles
