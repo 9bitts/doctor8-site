@@ -12,11 +12,26 @@ import {
 export const WHATSAPP_GRAPH_VERSION =
   process.env.WHATSAPP_GRAPH_API_VERSION?.trim() || "v25.0";
 
+function looksLikeEnvPlaceholder(value: string): boolean {
+  return /^WHATSAPP_|^your[-_]|^change[-_]|^replace[-_]/i.test(value);
+}
+
+/** Meta Phone Number ID — digits only (not the E.164 phone). Rejects unset placeholders. */
+export function resolveWhatsAppPhoneNumberId(): string | null {
+  const raw = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
+  if (!raw || looksLikeEnvPlaceholder(raw)) return null;
+  if (!/^\d{10,20}$/.test(raw)) return null;
+  return raw;
+}
+
+export function resolveWhatsAppAccessToken(): string | null {
+  const raw = process.env.WHATSAPP_ACCESS_TOKEN?.trim();
+  if (!raw || looksLikeEnvPlaceholder(raw)) return null;
+  return raw;
+}
+
 export function isWhatsAppConfigured(): boolean {
-  return Boolean(
-    process.env.WHATSAPP_ACCESS_TOKEN?.trim() &&
-      process.env.WHATSAPP_PHONE_NUMBER_ID?.trim()
-  );
+  return Boolean(resolveWhatsAppAccessToken() && resolveWhatsAppPhoneNumberId());
 }
 
 export type WhatsAppReadiness = {
@@ -50,7 +65,14 @@ export function getWhatsAppReadiness(): WhatsAppReadiness {
   const chatwoot = getChatwootForwardStatus();
 
   let note: string;
-  if (!configured) {
+  const phoneNumberId = resolveWhatsAppPhoneNumberId();
+  const rawPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
+  const phoneIdMisconfigured = Boolean(rawPhoneId && !phoneNumberId);
+
+  if (phoneIdMisconfigured) {
+    note =
+      "WHATSAPP_PHONE_NUMBER_ID is invalid — set the numeric Meta Phone Number ID (not the variable name or E.164 phone).";
+  } else if (!configured) {
     note =
       "Meta API not configured — app uses wa.me link fallbacks until WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID are set.";
   } else if (productionReady) {
@@ -79,7 +101,7 @@ export function getWhatsAppReadiness(): WhatsAppReadiness {
     productionReady,
     fallbackMode: "wa_me_links",
     graphVersion: WHATSAPP_GRAPH_VERSION,
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() || null,
+    phoneNumberId,
     wabaId: process.env.WHATSAPP_WABA_ID?.trim() || null,
     appId: process.env.WHATSAPP_APP_ID?.trim() || null,
     chatwootForward: chatwoot.enabled,
@@ -92,8 +114,8 @@ export async function probeWhatsAppGraph(): Promise<{ ok: boolean; detail: strin
   if (!isWhatsAppConfigured()) {
     return { ok: false, detail: "Not configured" };
   }
-  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const token = resolveWhatsAppAccessToken()!;
+  const phoneNumberId = resolveWhatsAppPhoneNumberId()!;
   try {
     const res = await fetch(
       `https://graph.facebook.com/${WHATSAPP_GRAPH_VERSION}/${phoneNumberId}?fields=display_phone_number,verified_name`,
@@ -138,8 +160,8 @@ export async function sendAppointmentReminderWhatsApp(opts: {
   }
 
   const lang = opts.language ?? "pt";
-  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const token = resolveWhatsAppAccessToken()!;
+  const phoneNumberId = resolveWhatsAppPhoneNumberId()!;
   const templateName =
     process.env.WHATSAPP_REMINDER_TEMPLATE?.trim() || "doctor8_appointment_reminder";
   const templateLang = whatsappTemplateLocale(lang);
@@ -242,8 +264,8 @@ export async function sendClinicalDocumentWhatsApp(opts: {
   }
 
   const lang = opts.language ?? "pt";
-  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const token = resolveWhatsAppAccessToken()!;
+  const phoneNumberId = resolveWhatsAppPhoneNumberId()!;
   const templateName =
     process.env.WHATSAPP_DOCUMENT_TEMPLATE?.trim() || "doctor8_clinical_document";
   const templateLang = whatsappTemplateLocale(lang);
@@ -329,8 +351,8 @@ export async function sendPharmacyOrderPaidStoreWhatsApp(opts: {
   }
 
   const lang = opts.language ?? "pt";
-  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const token = resolveWhatsAppAccessToken()!;
+  const phoneNumberId = resolveWhatsAppPhoneNumberId()!;
   const templateLang = whatsappTemplateLocale(lang);
 
   const to = normalizeWhatsAppPhone(opts.toPhone);
@@ -425,8 +447,8 @@ export async function sendHumanitarianYourTurnWhatsApp(opts: {
 
   const templateName =
     process.env.WHATSAPP_HUMANITARIAN_TURN_TEMPLATE?.trim() || "doctor8_humanitarian_your_turn";
-  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const token = resolveWhatsAppAccessToken()!;
+  const phoneNumberId = resolveWhatsAppPhoneNumberId()!;
   const to = normalizeWhatsAppPhone(opts.toPhone);
   if (!to) return { ok: false, skipped: true, waMeUrl };
 
@@ -486,11 +508,19 @@ export async function sendWhatsAppText(opts: {
   body: string;
 }): Promise<{ ok: boolean; waMessageId?: string; error?: string }> {
   if (!isWhatsAppConfigured()) {
+    const rawPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
+    if (rawPhoneId && !resolveWhatsAppPhoneNumberId()) {
+      return {
+        ok: false,
+        error:
+          "WHATSAPP_PHONE_NUMBER_ID inválido no servidor — use o ID numérico da Meta (ex.: 1160816890453235), não o nome da variável.",
+      };
+    }
     return { ok: false, error: "WhatsApp not configured" };
   }
 
-  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const token = resolveWhatsAppAccessToken()!;
+  const phoneNumberId = resolveWhatsAppPhoneNumberId()!;
   const to = normalizeWhatsAppPhone(opts.toPhone);
   if (!to) return { ok: false, error: "Invalid phone number" };
 
