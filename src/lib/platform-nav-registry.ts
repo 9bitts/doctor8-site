@@ -46,7 +46,8 @@ export type NavIconKey =
   | "Video"
   | "GraduationCap"
   | "QrCode"
-  | "MessageCircle";
+  | "MessageCircle"
+  | "Microscope";
 
 export type PlatformNavEntry = {
   href: string;
@@ -189,6 +190,7 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/professional/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
       { href: "/professional/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
       { href: "/professional/settings/templates", labelKey: "nav.templates", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/professional/research", labelKey: "nav.research", roles: ["PROFESSIONAL"], iconKey: "Microscope" },
     ],
   },
   {
@@ -253,6 +255,7 @@ export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/psychologist/anamnesis", labelKey: "psy.mod.anamnesis.title", roles: ["PROFESSIONAL"], iconKey: "FileSpreadsheet" },
       { href: "/psychologist/scales", labelKey: "psy.mod.scales.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
       { href: "/psychologist/documents", labelKey: "psy.mod.documents.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/psychologist/research", labelKey: "nav.research", roles: ["PROFESSIONAL"], iconKey: "Microscope" },
       { href: "/psychologist/receita-saude", labelKey: "psy.mod.receita.title", roles: ["PROFESSIONAL"], iconKey: "Receipt" },
       { href: "/psychologist/chart-chat", labelKey: "psy.mod.chartChat.title", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
       { href: "/psychologist/settings/calendar", labelKey: "psy.gcal.title", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
@@ -302,6 +305,7 @@ export const NUTRITIONIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/nutricionista/anamnese", labelKey: "nutri.mod.anamnese.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
       { href: "/nutricionista/antropometria", labelKey: "nutri.mod.anthropometry.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
       { href: "/nutricionista/planos", labelKey: "nutri.mod.mealPlans.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/nutricionista/research", labelKey: "nav.research", roles: ["PROFESSIONAL"], iconKey: "Microscope" },
       { href: "/nutricionista/diario", labelKey: "nutri.mod.foodDiary.title", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/nutricionista/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
     ],
@@ -344,6 +348,7 @@ export const NURSE_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/enfermeiro/sae", labelKey: "nurse.mod.sae.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
       { href: "/enfermeiro/escalas", labelKey: "nurse.mod.scales.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
       { href: "/enfermeiro/prescricao", labelKey: "nurse.mod.carePlan.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/enfermeiro/research", labelKey: "nav.research", roles: ["PROFESSIONAL"], iconKey: "Microscope" },
       { href: "/enfermeiro/medicamentos", labelKey: "nurse.mod.medRx.title", roles: ["PROFESSIONAL"], iconKey: "Pill" },
       { href: "/enfermeiro/checagem", labelKey: "nurse.mod.medCheck.title", roles: ["PROFESSIONAL"], iconKey: "Shield" },
       { href: "/enfermeiro/sbar", labelKey: "nurse.mod.sbar.title", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
@@ -391,6 +396,7 @@ export const PHARMACIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/farmaceutico/monitoramento", labelKey: "pharma.mod.monitoring.title", roles: ["PROFESSIONAL"], iconKey: "Heart" },
       { href: "/farmaceutico/prescricao", labelKey: "pharma.mod.pharmaRx.title", roles: ["PROFESSIONAL"], iconKey: "Pill" },
       { href: "/farmaceutico/educacao", labelKey: "pharma.mod.education.title", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
+      { href: "/farmaceutico/research", labelKey: "nav.research", roles: ["PROFESSIONAL"], iconKey: "Microscope" },
       { href: "/farmaceutico/dispensacao", labelKey: "pharma.mod.dispensing.title", roles: ["PROFESSIONAL"], iconKey: "Shield" },
       { href: "/farmaceutico/interacoes", labelKey: "pharma.mod.interactions.title", roles: ["PROFESSIONAL"], iconKey: "FlaskConical" },
       { href: "/farmaceutico/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
@@ -435,6 +441,7 @@ export const DENTIST_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/odontologo/anamnese", labelKey: "dental.mod.anamnesis.title", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
       { href: "/odontologo/odontograma", labelKey: "dental.mod.odontogram.title", roles: ["PROFESSIONAL"], iconKey: "FileText" },
+      { href: "/odontologo/research", labelKey: "nav.research", roles: ["PROFESSIONAL"], iconKey: "Microscope" },
       { href: "/odontologo/periodontograma", labelKey: "dental.mod.periodontogram.title", roles: ["PROFESSIONAL"], iconKey: "BarChart3" },
       { href: "/odontologo/plano-tratamento", labelKey: "dental.mod.treatmentPlan.title", roles: ["PROFESSIONAL"], iconKey: "FileSpreadsheet" },
       { href: "/odontologo/protese", labelKey: "dental.mod.prosthetic.title", roles: ["PROFESSIONAL"], iconKey: "Package" },
@@ -481,6 +488,7 @@ export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
     items: [
       { href: "/psychoanalyst/freud", labelKey: "pa.freud.nav", roles: ["PSYCHOANALYST"], iconKey: "Brain" },
       { href: "/psychoanalyst/resources", labelKey: "nav.library", roles: ["PSYCHOANALYST"], iconKey: "BookOpen" },
+      { href: "/psychoanalyst/research", labelKey: "nav.research", roles: ["PSYCHOANALYST"], iconKey: "Microscope" },
       { href: "/psychoanalyst/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PSYCHOANALYST"], iconKey: "Video" },
     ],
   },
@@ -522,6 +530,7 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/integrative-therapist/prescriptions", labelKey: "nav.prescriptions", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Stethoscope" },
       { href: "/integrative-therapist/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Leaf" },
       { href: "/integrative-therapist/chas-medicinais", labelKey: "nav.medicinalTeas", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "FlaskConical" },
+      { href: "/integrative-therapist/research", labelKey: "nav.research", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Microscope" },
       { href: "/integrative-therapist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Video" },
     ],
   },
