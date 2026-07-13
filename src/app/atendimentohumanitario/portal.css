@@ -14,6 +14,29 @@
   max-width: 42rem;
 }
 
+.hum-portal-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.hum-portal-logo-divider {
+  width: 1px;
+  height: 1.5rem;
+  background: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.hum-portal-acura-logo {
+  height: 1.75rem;
+  width: auto;
+  max-width: min(11rem, 42vw);
+  object-fit: contain;
+}
+
 .hum-portal-card {
   background: #ffffff;
   color: #1b2733;
@@ -263,4 +286,35 @@
   border-radius: 50%;
   background: #cf142b;
   box-shadow: 0 0 0 3px rgba(207, 20, 43, 0.15);
+}
+
+.hum-portal-input-error,
+.hum-portal-card input.hum-portal-input-error,
+.hum-portal-card textarea.hum-portal-input-error {
+  border-color: #d64545 !important;
+  background: #fff7f7 !important;
+  box-shadow: 0 0 0 4px rgba(214, 69, 69, 0.12) !important;
+}
+
+.hum-portal-field-error {
+  color: #d64545;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin-top: 0.35rem;
+}
+
+.hum-portal-error-banner {
+  margin-bottom: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #b91c1c;
+}
+
+.hum-portal-consent-error {
+  outline: 2px solid #d64545;
+  outline-offset: 2px;
+  border-radius: 0.375rem;
 }

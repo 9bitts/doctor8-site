@@ -25,10 +25,10 @@ export const runtime = "nodejs";
 
 const passwordSchema = z
   .string()
-  .min(8, "At least 8 characters")
-  .regex(/[A-Z]/, "At least one uppercase letter")
-  .regex(/[0-9]/, "At least one number")
-  .regex(/[^A-Za-z0-9]/, "At least one special character");
+  .min(8, "Use pelo menos 8 caracteres.")
+  .regex(/[A-Z]/, "Inclua pelo menos 1 letra maiúscula.")
+  .regex(/[0-9]/, "Inclua pelo menos 1 número.")
+  .regex(/[^A-Za-z0-9]/, "Inclua pelo menos 1 símbolo (!@#$% etc.).");
 
 const schema = z.object({
   email: z.string().email(),
@@ -54,7 +54,7 @@ const schema = z.object({
     "Alta prioridade — dor intensa, crise emocional aguda",
     "Atendimento regular",
   ]),
-  description: z.string().min(10).max(2000),
+  description: z.string().min(10, "Descreva com pelo menos 10 caracteres.").max(2000),
   additionalInfo: z.string().max(2000).optional(),
   acceptedTelemedicineTcle: z.literal(true),
   acceptedTerms: z.literal(true),
@@ -122,7 +122,9 @@ export async function POST(req: NextRequest) {
         {
           errorCode: "VALIDATION_ERROR",
           error: {
-            phoneNumber: [registrationPhoneErrorMessage(normalizedLang, phoneParsed.error)],
+            fieldErrors: {
+              phoneNumber: [registrationPhoneErrorMessage(normalizedLang, phoneParsed.error)],
+            },
           },
         },
         { status: 400 },

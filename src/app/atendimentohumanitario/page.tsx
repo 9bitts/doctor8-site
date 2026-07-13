@@ -19,7 +19,15 @@ import {
 import HumanitarianOriginMarker from "@/components/humanitarian/HumanitarianOriginMarker";
 import VenezuelaFlagBackdrop from "@/components/humanitarian/VenezuelaFlagBackdrop";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { Lock } from "lucide-react";
+import { ACURA_BRASIL_LOGO_WHITE } from "@/lib/acura-volunteer";
 import "./portal.css";
+import {
+  firstPortalRegisterErrorMessage,
+  parseRegisterHumanitarianErrors,
+  portalRegisterFieldAnchor,
+  validatePortalRegisterForm,
+} from "@/lib/humanitarian/portal-register-validation";
 
 type PortalMode = "register" | "login";
 
@@ -114,7 +122,15 @@ const URGENCY_OPTIONS: {
   },
 ];
 
-const inputClass = "hum-portal-input";
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="hum-portal-field-error">{message}</p>;
+}
+
+function inputClassFor(fieldErrors: Record<string, string>, ...fields: string[]) {
+  const hasError = fields.some((f) => Boolean(fieldErrors[f]));
+  return hasError ? "hum-portal-input hum-portal-input-error" : "hum-portal-input";
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <div className="hum-portal-section-label">{children}</div>;
@@ -179,6 +195,7 @@ export default function HumanitarianPatientPortalPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const callbackUrl = useMemo(
     () => `/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`,
@@ -207,6 +224,26 @@ export default function HumanitarianPatientPortalPage() {
       }
     });
   }, [callbackUrl, router]);
+
+  function clearFieldError(...fields: string[]) {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      for (const field of fields) delete next[field];
+      return next;
+    });
+  }
+
+  function applyFieldErrors(errors: Record<string, string>) {
+    setFieldErrors(errors);
+    setError(firstPortalRegisterErrorMessage(errors));
+    const firstKey = Object.keys(errors).find((k) => k !== "_form");
+    if (firstKey && typeof window !== "undefined") {
+      const anchor = portalRegisterFieldAnchor(firstKey);
+      window.requestAnimationFrame(() => {
+        document.getElementById(`field-${anchor}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  }
 
   async function copyPassword() {
     try {
@@ -276,6 +313,14 @@ export default function HumanitarianPatientPortalPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
+
+    const clientErrors = validatePortalRegisterForm(form);
+    if (Object.keys(clientErrors).length > 0) {
+      applyFieldErrors(clientErrors);
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -291,13 +336,14 @@ export default function HumanitarianPatientPortalPage() {
         body: JSON.stringify(payload),
       });
 
-      const json = (await res.json().catch(() => null)) as { error?: string | { fieldErrors?: unknown } } | null;
+      const json = (await res.json().catch(() => null)) as { error?: unknown } | null;
       if (!res.ok) {
-        const msg =
-          json?.error && typeof json.error === "object" && "fieldErrors" in json.error
-            ? "Verifique os campos e tente novamente."
-            : (typeof json?.error === "string" ? json.error : "Não foi possível concluir seu cadastro.");
-        setError(msg);
+        const apiErrors = parseRegisterHumanitarianErrors(json);
+        if (Object.keys(apiErrors).length > 0) {
+          applyFieldErrors(apiErrors);
+        } else {
+          setError("Não foi possível concluir seu cadastro.");
+        }
         setLoading(false);
         return;
       }
@@ -331,8 +377,18 @@ export default function HumanitarianPatientPortalPage() {
       <HumanitarianOriginMarker returnPath={callbackUrl} />
 
       <div className="hum-portal-wrap">
-        <div className="flex items-center justify-center gap-2.5 mb-5">
+        <div className="hum-portal-logo-row">
           <BrandLogo variant="on-dark" size="sm" />
+          <span className="hum-portal-logo-divider" aria-hidden="true" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={ACURA_BRASIL_LOGO_WHITE}
+            alt="A Cura Brasil"
+            width={140}
+            height={36}
+            decoding="async"
+            className="hum-portal-acura-logo"
+          />
         </div>
 
         <div className="hum-portal-card">
@@ -375,10 +431,7 @@ export default function HumanitarianPatientPortalPage() {
           )}
 
           {error && (
-            <div
-              className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-              role="alert"
-            >
+            <div className="hum-portal-error-banner" role="alert">
               {error}
             </div>
           )}
@@ -392,7 +445,7 @@ export default function HumanitarianPatientPortalPage() {
                   value={form.email}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   placeholder="seu@email.com"
-                  className={inputClass}
+                  className="hum-portal-input"
                   required
                   autoComplete="email"
                 />
@@ -405,7 +458,7 @@ export default function HumanitarianPatientPortalPage() {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Sua senha"
-                    className={`${inputClass} pr-[4.5rem]`}
+                    className="hum-portal-input pr-[4.5rem]"
                     required
                     autoComplete="current-password"
                   />
@@ -430,60 +483,78 @@ export default function HumanitarianPatientPortalPage() {
             <form onSubmit={onSubmit} noValidate>
               <SectionLabel>Seus dados</SectionLabel>
 
-              <div className="mb-4">
+              <div className="mb-4" id="field-fullName">
                 <FieldLabel>Nome completo</FieldLabel>
                 <input
                   value={form.fullName}
-                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, fullName: e.target.value }));
+                    clearFieldError("fullName");
+                  }}
                   placeholder="Seu nome completo"
-                  className={inputClass}
+                  className={inputClassFor(fieldErrors, "fullName")}
                   required
                 />
+                <FieldError message={fieldErrors.fullName} />
               </div>
 
-              <div className="mb-4">
+              <div className="mb-4" id="field-email">
                 <FieldLabel>
                   E-mail <span className="font-normal text-[#64748b] text-xs">(para recuperar senha)</span>
                 </FieldLabel>
                 <input
                   type="email"
                   value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, email: e.target.value }));
+                    clearFieldError("email");
+                  }}
                   placeholder="seu@email.com"
-                  className={inputClass}
+                  className={inputClassFor(fieldErrors, "email")}
                   required
                   autoComplete="email"
                 />
+                <FieldError message={fieldErrors.email} />
               </div>
 
-              <div className="mb-4">
+              <div className="mb-4" id="field-phone">
                 <FieldLabel>WhatsApp</FieldLabel>
                 <div className="grid grid-cols-2 sm:grid-cols-[0.7fr_0.7fr_1.6fr] gap-2.5">
                   <input
                     value={form.phoneDdi}
-                    onChange={(e) => setForm((f) => ({ ...f, phoneDdi: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, phoneDdi: e.target.value.replace(/\D/g, "").slice(0, 4) }));
+                      clearFieldError("phoneDdi", "phoneNumber");
+                    }}
                     placeholder="DDI"
-                    className={inputClass}
+                    className={inputClassFor(fieldErrors, "phoneDdi", "phoneNumber")}
                     inputMode="numeric"
                     required
                   />
                   <input
                     value={form.phoneDdd}
-                    onChange={(e) => setForm((f) => ({ ...f, phoneDdd: e.target.value.replace(/\D/g, "").slice(0, 3) }))}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, phoneDdd: e.target.value.replace(/\D/g, "").slice(0, 3) }));
+                      clearFieldError("phoneDdd", "phoneNumber");
+                    }}
                     placeholder="DDD"
-                    className={inputClass}
+                    className={inputClassFor(fieldErrors, "phoneDdd", "phoneNumber")}
                     inputMode="numeric"
                     required
                   />
                   <input
                     value={form.phoneNumber}
-                    onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 15) }))}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 15) }));
+                      clearFieldError("phoneNumber");
+                    }}
                     placeholder="Número"
-                    className={`${inputClass} col-span-2 sm:col-span-1`}
+                    className={`${inputClassFor(fieldErrors, "phoneNumber")} col-span-2 sm:col-span-1`}
                     inputMode="numeric"
                     required
                   />
                 </div>
+                <FieldError message={fieldErrors.phoneNumber} />
               </div>
 
               <SectionLabel>Relação com o paciente</SectionLabel>
@@ -505,30 +576,38 @@ export default function HumanitarianPatientPortalPage() {
                   value={form.patientAgeOrDob}
                   onChange={(e) => setForm((f) => ({ ...f, patientAgeOrDob: e.target.value.slice(0, 50) }))}
                   placeholder="Ex.: 32"
-                  className={inputClass}
+                  className="hum-portal-input"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2.5 mb-4">
-                <div>
+                <div id="field-state">
                   <FieldLabel>Estado</FieldLabel>
                   <input
                     value={form.state}
-                    onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
-                    placeholder="UF"
-                    className={inputClass}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, state: e.target.value }));
+                      clearFieldError("state");
+                    }}
+                    placeholder="Ex.: Zulia"
+                    className={inputClassFor(fieldErrors, "state")}
                     required
                   />
+                  <FieldError message={fieldErrors.state} />
                 </div>
-                <div>
+                <div id="field-city">
                   <FieldLabel>Cidade</FieldLabel>
                   <input
                     value={form.city}
-                    onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, city: e.target.value }));
+                      clearFieldError("city");
+                    }}
                     placeholder="Sua cidade"
-                    className={inputClass}
+                    className={inputClassFor(fieldErrors, "city")}
                     required
                   />
+                  <FieldError message={fieldErrors.city} />
                 </div>
               </div>
 
@@ -577,15 +656,19 @@ export default function HumanitarianPatientPortalPage() {
 
               <SectionLabel>Detalhes do caso</SectionLabel>
 
-              <div className="mb-4">
+              <div className="mb-4" id="field-description">
                 <FieldLabel>Descreva sintomas, lesões ou necessidade de atendimento</FieldLabel>
                 <textarea
                   value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, description: e.target.value }));
+                    clearFieldError("description");
+                  }}
                   placeholder="Descreva com o máximo de detalhes possível..."
-                  className={`${inputClass} min-h-[76px] resize-y leading-normal`}
+                  className={`${inputClassFor(fieldErrors, "description")} min-h-[76px] resize-y leading-normal`}
                   required
                 />
+                <FieldError message={fieldErrors.description} />
               </div>
 
               <div className="mb-4">
@@ -594,21 +677,24 @@ export default function HumanitarianPatientPortalPage() {
                   value={form.additionalInfo}
                   onChange={(e) => setForm((f) => ({ ...f, additionalInfo: e.target.value }))}
                   placeholder="Medicamentos, doenças prévias, etc."
-                  className={`${inputClass} min-h-[60px] resize-y leading-normal`}
+                  className="hum-portal-input min-h-[60px] resize-y leading-normal"
                 />
               </div>
 
               <SectionLabel>Acesso ao painel</SectionLabel>
 
-              <div className="mb-4">
+              <div className="mb-4" id="field-password">
                 <FieldLabel>Criar senha</FieldLabel>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={form.password}
-                    onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, password: e.target.value }));
+                      clearFieldError("password");
+                    }}
                     placeholder="Mín. 8 caracteres, 1 maiúscula, 1 número e 1 símbolo"
-                    className={`${inputClass} pr-[9.5rem]`}
+                    className={`${inputClassFor(fieldErrors, "password")} pr-[9.5rem]`}
                     required
                     autoComplete="new-password"
                   />
@@ -630,14 +716,18 @@ export default function HumanitarianPatientPortalPage() {
                     </button>
                   </div>
                 </div>
+                <FieldError message={fieldErrors.password} />
               </div>
 
-              <div className="flex flex-col gap-2.5 my-5 hum-portal-consent">
-                <label className="flex items-start gap-2 text-[12.5px] leading-relaxed text-[#64748b]">
+              <div className="flex flex-col gap-2.5 my-5 hum-portal-consent" id="field-consent">
+                <label className={`flex items-start gap-2 hum-portal-consent ${fieldErrors.acceptedTelemedicineTcle ? "hum-portal-consent-error" : ""}`}>
                   <input
                     type="checkbox"
                     checked={form.acceptedTelemedicineTcle}
-                    onChange={(e) => setForm((f) => ({ ...f, acceptedTelemedicineTcle: e.target.checked }))}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, acceptedTelemedicineTcle: e.target.checked }));
+                      clearFieldError("acceptedTelemedicineTcle");
+                    }}
                     className="mt-0.5 shrink-0 accent-[#176a88]"
                     required
                   />
@@ -649,11 +739,15 @@ export default function HumanitarianPatientPortalPage() {
                     .
                   </span>
                 </label>
-                <label className="flex items-start gap-2 text-[12.5px] leading-relaxed text-[#64748b]">
+                <FieldError message={fieldErrors.acceptedTelemedicineTcle} />
+                <label className={`flex items-start gap-2 hum-portal-consent ${fieldErrors.acceptedTerms ? "hum-portal-consent-error" : ""}`}>
                   <input
                     type="checkbox"
                     checked={form.acceptedTerms}
-                    onChange={(e) => setForm((f) => ({ ...f, acceptedTerms: e.target.checked }))}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, acceptedTerms: e.target.checked }));
+                      clearFieldError("acceptedTerms");
+                    }}
                     className="mt-0.5 shrink-0 accent-[#176a88]"
                     required
                   />
@@ -665,11 +759,15 @@ export default function HumanitarianPatientPortalPage() {
                     .
                   </span>
                 </label>
-                <label className="flex items-start gap-2 text-[12.5px] leading-relaxed text-[#64748b]">
+                <FieldError message={fieldErrors.acceptedTerms} />
+                <label className={`flex items-start gap-2 hum-portal-consent ${fieldErrors.acceptedPrivacy ? "hum-portal-consent-error" : ""}`}>
                   <input
                     type="checkbox"
                     checked={form.acceptedPrivacy}
-                    onChange={(e) => setForm((f) => ({ ...f, acceptedPrivacy: e.target.checked }))}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, acceptedPrivacy: e.target.checked }));
+                      clearFieldError("acceptedPrivacy");
+                    }}
                     className="mt-0.5 shrink-0 accent-[#176a88]"
                     required
                   />
@@ -681,6 +779,7 @@ export default function HumanitarianPatientPortalPage() {
                     .
                   </span>
                 </label>
+                <FieldError message={fieldErrors.acceptedPrivacy} />
               </div>
 
               <button
@@ -691,15 +790,11 @@ export default function HumanitarianPatientPortalPage() {
                 {loading ? "Enviando..." : "Enviar e entrar no painel"}
               </button>
 
-              <div className="mt-5 flex flex-wrap justify-center gap-4 border-t border-[#e6e9ee] pt-4">
-                {["LGPD", "HIPAA", "Dados protegidos"].map((item) => (
-                  <span key={item} className="flex items-center gap-1.5 text-[11px] font-semibold text-[#64748b]">
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e7f1f5] text-[10px] text-[#176a88]">
-                      ✓
-                    </span>
-                    {item}
-                  </span>
-                ))}
+              <div className="mt-5 flex justify-center border-t border-[#e6e9ee] pt-4">
+                <span className="flex items-center gap-1.5 text-[11px] font-semibold text-[#64748b]">
+                  <Lock size={14} className="text-[#176a88]" aria-hidden />
+                  Dados protegidos
+                </span>
               </div>
             </form>
           )}
