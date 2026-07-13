@@ -4307,6 +4307,12 @@ enum CourseEnrollmentSource {
   DOCTOR_CONNECTION
   FREE
   ADMIN
+  COUPON
+}
+
+enum CouponDiscountType {
+  PERCENT
+  FIXED
 }
 
 model Course {
@@ -4325,7 +4331,7 @@ model Course {
   status           CourseStatus     @default(DRAFT)
   priceCents       Int              @default(0)
   currency         String           @default("BRL")
-  commissionPercent Int             @default(30)
+  commissionPercent Int             @default(15)
   workloadHours    Float?
 
   publishedAt      DateTime?
@@ -4335,6 +4341,7 @@ model Course {
   enrollments      CourseEnrollment[]
   purchases        CoursePurchase[]
   connectionRedemptions CourseConnectionRedemption[]
+  coupons          CourseCoupon[]
 
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -4452,6 +4459,39 @@ model CourseConnectionRedemption {
   redeemedAt   DateTime         @default(now())
 
   @@unique([userId, periodMonth])
+  @@index([userId])
+}
+
+model CourseCoupon {
+  id              String               @id @default(cuid())
+  code            String               @unique
+  description     String?
+  discountType    CouponDiscountType   @default(PERCENT)
+  discountValue   Int
+  courseId        String?
+  course          Course?              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  maxRedemptions  Int?
+  redemptionCount Int                  @default(0)
+  expiresAt       DateTime?
+  active          Boolean              @default(true)
+  createdBy       String
+  createdAt       DateTime             @default(now())
+  redemptions     CourseCouponRedemption[]
+
+  @@index([courseId])
+}
+
+model CourseCouponRedemption {
+  id             String           @id @default(cuid())
+  couponId       String
+  coupon         CourseCoupon     @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId         String
+  courseId       String
+  enrollmentId   String?          @unique
+  amountOffCents Int
+  redeemedAt     DateTime         @default(now())
+
+  @@unique([couponId, userId])
   @@index([userId])
 }
 

@@ -2,6 +2,7 @@ import { getAdminSession } from "@/lib/admin";
 import { redirect } from "next/navigation";
 import AdminCoursesClient from "@/components/courses/AdminCoursesClient";
 import AdminCourseCreatorGrant from "@/components/courses/AdminCourseCreatorGrant";
+import AdminCouponsClient from "@/components/courses/AdminCouponsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export default async function AdminCoursesPage() {
   return (
     <div className="space-y-8">
       <AdminCourseCreatorGrant />
+      <AdminCouponsClient />
       <AdminCoursesClient />
     </div>
   );

@@ -74,6 +74,19 @@ export async function getStripeConnectStatusForProfile(
   return getStripeConnectStatusForAccountId(profile?.stripeConnectAccountId);
 }
 
+export async function getStripeConnectStatusForUser(userId: string): Promise<{
+  status: StripeConnectStatus;
+  accountId: string | null;
+}> {
+  const profile = await db.professionalProfile.findUnique({
+    where: { userId },
+    select: { stripeConnectAccountId: true },
+  });
+  const accountId = profile?.stripeConnectAccountId ?? null;
+  const status = await getStripeConnectStatusForAccountId(accountId);
+  return { status, accountId };
+}
+
 export async function createOrResumeConnectOnboarding(params: {
   userId: string;
   professionalProfileId: string;

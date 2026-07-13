@@ -8,6 +8,13 @@ import {
   userHasEnrollment,
   currentPeriodMonth,
 } from "@/lib/courses/access";
+import { validateCoupon } from "@/lib/courses/coupons";
+import { redeemCouponFreeEnrollment } from "@/lib/courses/redeem-coupon";
+import { buildCourseCheckoutPaymentIntentData } from "@/lib/courses/checkout-payment";
+import {
+  getStripeConnectStatusForUser,
+  isStripeConnectEnabled,
+} from "@/lib/stripe-connect";
 import { toStripeCurrency } from "@/lib/billing-regions";
 import { z } from "zod";
 import { sendCourseEnrollmentEmail } from "@/lib/course-enrollment-notify";
@@ -15,6 +22,7 @@ import { sendCourseEnrollmentEmail } from "@/lib/course-enrollment-notify";
 const schema = z.object({
   courseId: z.string(),
   redeemConnection: z.boolean().optional(),
+  couponCode: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -35,6 +43,8 @@ export async function POST(req: NextRequest) {
       priceCents: true,
       currency: true,
       status: true,
+      instructorUserId: true,
+      commissionPercent: true,
     },
   });
   if (!course || course.status !== "PUBLISHED") {
@@ -108,6 +118,52 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ enrollmentId: enrollment.id, redeemed: true });
   }
 
+  let finalAmountCents = course.priceCents;
+  let couponId: string | undefined;
+  let couponAmountOffCents = 0;
+
+  if (parsed.data.couponCode?.trim()) {
+    const couponResult = await validateCoupon(
+      parsed.data.couponCode,
+      course.id,
+      session.user.id,
+      course.priceCents,
+    );
+    if (!couponResult.valid) {
+      return NextResponse.json(
+        { error: "INVALID_COUPON", message: couponResult.reason ?? "Cupom inválido." },
+        { status: 400 },
+      );
+    }
+    finalAmountCents = couponResult.finalCents;
+    couponAmountOffCents = couponResult.amountOffCents;
+    couponId = couponResult.coupon?.id;
+  }
+
+  // 100% coupon — enroll without Stripe
+  if (finalAmountCents === 0 && couponId) {
+    try {
+      const { enrollmentId } = await redeemCouponFreeEnrollment({
+        couponId,
+        userId: session.user.id,
+        courseId: course.id,
+        amountOffCents: couponAmountOffCents || course.priceCents,
+      });
+      return NextResponse.json({ enrollmentId, free: true, coupon: true });
+    } catch (err) {
+      const code = err instanceof Error ? err.message : "";
+      const messages: Record<string, string> = {
+        COUPON_INACTIVE: "Este cupom não está mais ativo.",
+        COUPON_EXPIRED: "Este cupom expirou.",
+        COUPON_EXHAUSTED: "Este cupom atingiu o limite de usos.",
+      };
+      return NextResponse.json(
+        { error: "INVALID_COUPON", message: messages[code] ?? "Não foi possível aplicar o cupom." },
+        { status: 400 },
+      );
+    }
+  }
+
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: { email: true },
@@ -125,6 +181,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Checkout disponível apenas em BRL no momento." }, { status: 400 });
   }
 
+  let paymentIntentData: ReturnType<typeof buildCourseCheckoutPaymentIntentData> | undefined;
+  if (isStripeConnectEnabled()) {
+    const { status, accountId } = await getStripeConnectStatusForUser(course.instructorUserId);
+    if (status === "active" && accountId) {
+      paymentIntentData = buildCourseCheckoutPaymentIntentData(
+        finalAmountCents,
+        course.commissionPercent,
+        accountId,
+      );
+    }
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org";
   const checkoutSession = await stripe.checkout.sessions.create({
     customer: customerId,
@@ -134,7 +202,7 @@ export async function POST(req: NextRequest) {
       {
         price_data: {
           currency,
-          unit_amount: course.priceCents,
+          unit_amount: finalAmountCents,
           product_data: {
             name: course.title,
             description: "Curso Doctor8",
@@ -143,6 +211,7 @@ export async function POST(req: NextRequest) {
         quantity: 1,
       },
     ],
+    ...(paymentIntentData ? { payment_intent_data: paymentIntentData } : {}),
     success_url: `${appUrl}/cursos/${course.slug}?checkout=success`,
     cancel_url: `${appUrl}/cursos/${course.slug}?checkout=cancelled`,
     metadata: {
@@ -150,6 +219,13 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
       courseId: course.id,
       courseSlug: course.slug,
+      commissionPercent: String(course.commissionPercent),
+      ...(couponId
+        ? {
+            couponId,
+            couponAmountOffCents: String(couponAmountOffCents),
+          }
+        : {}),
     },
   });
 

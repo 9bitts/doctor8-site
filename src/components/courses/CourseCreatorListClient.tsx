@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Loader2, Plus, Send } from "lucide-react";
+import { AlertCircle, BookOpen, CheckCircle2, CreditCard, Loader2, Plus, Send } from "lucide-react";
 
 type CourseRow = {
   id: string;
@@ -13,6 +13,8 @@ type CourseRow = {
   updatedAt: string;
   _count: { enrollments: number; modules: number };
 };
+
+type ConnectStatus = "none" | "onboarding_incomplete" | "pending" | "active" | null;
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Rascunho",
@@ -26,6 +28,20 @@ export default function CourseCreatorListClient() {
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatorOk, setCreatorOk] = useState(true);
+  const [connectStatus, setConnectStatus] = useState<ConnectStatus>(null);
+  const [connectEnabled, setConnectEnabled] = useState(false);
+
+  const loadConnectStatus = useCallback(async () => {
+    const res = await fetch("/api/professional/stripe-connect/status");
+    if (res.status === 503) {
+      setConnectEnabled(false);
+      return;
+    }
+    if (!res.ok) return;
+    setConnectEnabled(true);
+    const data = await res.json();
+    setConnectStatus(data.status as ConnectStatus);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,7 +54,8 @@ export default function CourseCreatorListClient() {
     const data = await res.json();
     setCourses(data.courses ?? []);
     setLoading(false);
-  }, []);
+    void loadConnectStatus();
+  }, [loadConnectStatus]);
 
   useEffect(() => {
     load();
@@ -83,6 +100,32 @@ export default function CourseCreatorListClient() {
           Novo curso
         </Link>
       </div>
+
+      {connectEnabled && connectStatus && connectStatus !== "active" && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+          <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={18} />
+          <div>
+            <p className="font-medium text-amber-900">Cadastro de recebimentos pendente</p>
+            <p className="text-sm text-amber-800 mt-1">
+              Para vender cursos pagos, conclua o cadastro Stripe Connect.
+            </p>
+            <Link
+              href="/professional/financeiro"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 mt-2 hover:underline"
+            >
+              <CreditCard size={14} />
+              Configurar recebimentos
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {connectEnabled && connectStatus === "active" && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-2 text-sm text-emerald-800">
+          <CheckCircle2 size={16} />
+          Recebimentos ativos — vendas de cursos serão repassadas automaticamente.
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-12">
@@ -145,7 +188,7 @@ export default function CourseCreatorListClient() {
         <ol className="list-decimal list-inside mt-2 space-y-1">
           <li>Crie o curso com módulos e vídeos (upload direto ou link YouTube)</li>
           <li>Envie para revisão — a Doctor8 publica após aprovação</li>
-          <li>Você recebe 70% de cada venda (comissão da plataforma: 30%)</li>
+          <li>Você recebe 85% de cada venda (comissão da plataforma: 15%)</li>
         </ol>
       </div>
     </div>

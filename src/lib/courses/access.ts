@@ -86,7 +86,7 @@ export async function getEnrollmentForUser(userId: string, courseId: string) {
 }
 
 export const DEFAULT_PLATFORM_COMMISSION_PERCENT = Number(
-  process.env.COURSE_PLATFORM_COMMISSION_PERCENT || "30",
+  process.env.COURSE_PLATFORM_COMMISSION_PERCENT || "15",
 );
 
 export function splitCourseRevenue(

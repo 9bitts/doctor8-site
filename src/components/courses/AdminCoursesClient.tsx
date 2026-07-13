@@ -38,11 +38,16 @@ export default function AdminCoursesClient() {
   }, [load]);
 
   async function setStatus(id: string, status: "PUBLISHED" | "REJECTED" | "ARCHIVED", reason?: string) {
-    await fetch(`/api/admin/courses/${id}`, {
+    const res = await fetch(`/api/admin/courses/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status, rejectedReason: reason }),
     });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.message || data.error || "Erro ao atualizar status.");
+      return;
+    }
     load();
   }
 

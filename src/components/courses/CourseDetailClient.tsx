@@ -103,6 +103,16 @@ export default function CourseDetailClient({ slug }: { slug: string }) {
   const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
   const [previewLessonId, setPreviewLessonId] = useState<string | null>(null);
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
+  const [couponPreview, setCouponPreview] = useState<{
+    amountOffCents: number;
+    finalCents: number;
+    freeWithCoupon: boolean;
+    originalCents: number;
+  } | null>(null);
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const checkoutSuccess = searchParams.get("checkout") === "success";
 
   const previewLessons = useMemo(
@@ -150,6 +160,31 @@ export default function CourseDetailClient({ slug }: { slug: string }) {
     if (checkoutSuccess) load();
   }, [checkoutSuccess, load]);
 
+  async function handleApplyCoupon() {
+    if (!course || !couponCode.trim()) return;
+    setApplyingCoupon(true);
+    setCouponMessage(null);
+    const res = await fetch(
+      `/api/courses/coupons/validate?code=${encodeURIComponent(couponCode.trim())}&courseId=${course.id}`,
+    );
+    const data = await res.json();
+    setApplyingCoupon(false);
+    if (!res.ok || !data.valid) {
+      setCouponPreview(null);
+      setAppliedCouponCode(null);
+      setCouponMessage(data.message || "Cupom inválido.");
+      return;
+    }
+    setCouponPreview({
+      amountOffCents: data.amountOffCents,
+      finalCents: data.finalCents,
+      freeWithCoupon: data.freeWithCoupon,
+      originalCents: data.originalCents,
+    });
+    setAppliedCouponCode(couponCode.trim().toUpperCase());
+    setCouponMessage(null);
+  }
+
   async function handleEnroll(redeemConnection = false) {
     if (!course) return;
     setBusy(true);
@@ -157,7 +192,11 @@ export default function CourseDetailClient({ slug }: { slug: string }) {
     const res = await fetch("/api/courses/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ courseId: course.id, redeemConnection }),
+      body: JSON.stringify({
+        courseId: course.id,
+        redeemConnection,
+        ...(appliedCouponCode ? { couponCode: appliedCouponCode } : {}),
+      }),
     });
     const data = await res.json();
     setBusy(false);
@@ -176,6 +215,10 @@ export default function CourseDetailClient({ slug }: { slug: string }) {
       return;
     }
     if (data.enrollmentId) {
+      if (data.coupon && data.free) {
+        router.push(`/professional/courses/learn/${data.enrollmentId}`);
+        return;
+      }
       setEnrollmentId(data.enrollmentId);
       await load();
     }
@@ -406,8 +449,62 @@ export default function CourseDetailClient({ slug }: { slug: string }) {
             )}
 
             <p className="text-3xl font-extrabold text-d8-dark">
-              {course.priceCents === 0 ? "Grátis" : formatPriceBrl(course.priceCents)}
+              {course.priceCents === 0 ? (
+                "Grátis"
+              ) : couponPreview ? (
+                <>
+                  <span className="text-lg font-normal text-d8-muted line-through mr-2">
+                    {formatPriceBrl(course.priceCents)}
+                  </span>
+                  {couponPreview.freeWithCoupon
+                    ? "Grátis com cupom"
+                    : formatPriceBrl(couponPreview.finalCents)}
+                </>
+              ) : (
+                formatPriceBrl(course.priceCents)
+              )}
             </p>
+
+            {couponPreview?.freeWithCoupon && (
+              <p className="text-sm font-medium text-emerald-700">
+                Curso liberado gratuitamente com este cupom.
+              </p>
+            )}
+
+            {!canAccess && course.priceCents > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-d8-dark">Tem um cupom?</p>
+                <div className="flex gap-2">
+                  <input
+                    value={couponCode}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      if (appliedCouponCode && e.target.value.toUpperCase() !== appliedCouponCode) {
+                        setCouponPreview(null);
+                        setAppliedCouponCode(null);
+                      }
+                    }}
+                    placeholder="Código do cupom"
+                    className="flex-1 rounded-lg border border-d8-border px-3 py-2 text-sm uppercase"
+                  />
+                  <button
+                    type="button"
+                    disabled={applyingCoupon || !couponCode.trim()}
+                    onClick={handleApplyCoupon}
+                    className="shrink-0 rounded-lg border border-d8-border px-3 py-2 text-sm font-medium hover:bg-d8-off disabled:opacity-60"
+                  >
+                    {applyingCoupon ? "..." : "Aplicar"}
+                  </button>
+                </div>
+                {couponMessage && <p className="text-xs text-red-600">{couponMessage}</p>}
+                {appliedCouponCode && couponPreview && !couponPreview.freeWithCoupon && (
+                  <p className="text-xs text-emerald-700">
+                    Cupom {appliedCouponCode} aplicado — desconto de{" "}
+                    {formatPriceBrl(couponPreview.amountOffCents)}
+                  </p>
+                )}
+              </div>
+            )}
 
             <ul className="space-y-2 text-sm text-d8-muted">
               <li className="flex items-center gap-2">

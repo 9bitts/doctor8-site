@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
+import {
+  getStripeConnectStatusForUser,
+  isStripeConnectEnabled,
+} from "@/lib/stripe-connect";
+import { shouldBlockCoursePublishForConnect } from "@/lib/courses/checkout-payment";
 import { z } from "zod";
 
 const schema = z.object({
@@ -18,6 +23,27 @@ export async function PATCH(
   const parsed = schema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  if (parsed.data.status === "PUBLISHED" && isStripeConnectEnabled()) {
+    const existing = await db.course.findUnique({
+      where: { id: params.id },
+      select: { instructorUserId: true, priceCents: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Curso não encontrado" }, { status: 404 });
+    }
+    const { status: connectStatus } = await getStripeConnectStatusForUser(existing.instructorUserId);
+    if (shouldBlockCoursePublishForConnect(true, existing.priceCents, connectStatus)) {
+      return NextResponse.json(
+        {
+          error: "CONNECT_REQUIRED",
+          message:
+            "O instrutor precisa concluir o cadastro de recebimentos (Stripe Connect) antes de publicar.",
+        },
+        { status: 400 },
+      );
+    }
   }
 
   const course = await db.course.update({

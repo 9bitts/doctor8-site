@@ -2,12 +2,17 @@
 
 import { db } from "@/lib/db";
 import { sendCourseEnrollmentEmail } from "@/lib/course-enrollment-notify";
+import { buildCourseApplicationFeeCents } from "@/lib/courses/checkout-payment";
+import { recordCouponRedemptionForPurchase } from "@/lib/courses/redeem-coupon";
 
 export type CoursePaymentMeta = {
   kind?: string;
   userId: string;
   courseId: string;
   courseSlug?: string;
+  commissionPercent?: string;
+  couponId?: string;
+  couponAmountOffCents?: string;
 };
 
 export async function fulfillCoursePurchase(params: {
@@ -25,14 +30,21 @@ export async function fulfillCoursePurchase(params: {
     where: {
       OR: [
         { stripePaymentIntentId: stripePaymentId },
-        ...(stripeCheckoutSessionId
-          ? [{ stripeCheckoutSessionId }]
-          : []),
+        ...(stripeCheckoutSessionId ? [{ stripeCheckoutSessionId }] : []),
       ],
     },
     include: { enrollment: true },
   });
   if (existing?.enrollment) {
+    if (metadata.couponId) {
+      await recordCouponRedemptionForPurchase({
+        couponId: metadata.couponId,
+        userId,
+        courseId,
+        enrollmentId: existing.enrollment.id,
+        amountOffCents: Number(metadata.couponAmountOffCents) || 0,
+      });
+    }
     return { enrollmentId: existing.enrollment.id, created: false };
   }
 
@@ -44,7 +56,8 @@ export async function fulfillCoursePurchase(params: {
     throw new Error("Course not available");
   }
 
-  const platformFeeCents = Math.round((amount * course.commissionPercent) / 100);
+  const commissionPercent = Number(metadata.commissionPercent) || course.commissionPercent;
+  const platformFeeCents = buildCourseApplicationFeeCents(amount, commissionPercent);
   const instructorPayoutCents = amount - platformFeeCents;
 
   const priorEnrollment = await db.courseEnrollment.findUnique({
@@ -78,6 +91,16 @@ export async function fulfillCoursePurchase(params: {
   });
 
   if (!purchase.enrollment) throw new Error("Enrollment not created");
+
+  if (metadata.couponId) {
+    await recordCouponRedemptionForPurchase({
+      couponId: metadata.couponId,
+      userId,
+      courseId,
+      enrollmentId: purchase.enrollment.id,
+      amountOffCents: Number(metadata.couponAmountOffCents) || 0,
+    });
+  }
 
   sendCourseEnrollmentEmail({
     userId,
