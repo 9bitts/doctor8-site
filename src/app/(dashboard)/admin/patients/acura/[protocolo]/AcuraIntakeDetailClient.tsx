@@ -10,7 +10,7 @@ import PatientTimeline from "@/components/admin/patients/PatientTimeline";
 import PatientStatusBadge, { AcquisitionBadge } from "@/components/admin/patients/PatientStatusBadge";
 import LastUpdatedIndicator from "@/components/admin/patients/LastUpdatedIndicator";
 import type { UnlinkedIntakeDetailDto } from "@/lib/admin/patient-monitoring";
-import { partnerIntakeWhatsAppHref } from "@/lib/partner/acura-intake";
+import AdminContactWhatsAppActions from "@/components/admin/AdminContactWhatsAppActions";
 
 const POLL_MS = 12000;
 const STORAGE_KEY = "admin-patients-queue-alert-min";
@@ -79,7 +79,6 @@ export default function AcuraIntakeDetailClient({ protocolo }: { protocolo: stri
   }
 
   const primaryAlert = intake.stuckAlerts[0]?.message ?? intake.statusDetail;
-  const whatsappHref = partnerIntakeWhatsAppHref(intake.acuraIntake.phoneDisplay);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
@@ -99,20 +98,14 @@ export default function AcuraIntakeDetailClient({ protocolo }: { protocolo: stri
             <h1 className="text-xl font-bold text-slate-900">{intake.name}</h1>
             <p className="text-sm text-slate-500 mt-0.5">{intake.email}</p>
             {intake.acuraIntake.phoneDisplay && (
-              <p className="text-sm mt-0.5">
-                {whatsappHref ? (
-                  <a
-                    href={whatsappHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-brand-600 hover:text-brand-700 font-medium"
-                  >
-                    {intake.acuraIntake.phoneDisplay}
-                  </a>
-                ) : (
-                  <span className="text-slate-600">{intake.acuraIntake.phoneDisplay}</span>
-                )}
-              </p>
+              <div className="mt-2 space-y-2">
+                <p className="text-sm text-slate-600">{intake.acuraIntake.phoneDisplay}</p>
+                <AdminContactWhatsAppActions
+                  phone={intake.acuraIntake.phoneDisplay}
+                  displayName={intake.name}
+                  layout="inline"
+                />
+              </div>
             )}
             <p className="text-xs text-violet-600 font-mono mt-1">{intake.protocolo}</p>
           </div>

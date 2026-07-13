@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   MessageCircle,
   Loader2,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
+import { buildWhatsAppUrl } from "@/lib/humanitarian/angel-utils";
 
 type ConversationRow = {
   id: string;
@@ -34,6 +36,7 @@ type ConversationRow = {
   assignedToName: string | null;
   patientProfileId: string | null;
   patientName: string | null;
+  hasInboundHistory?: boolean;
   lastMessage: {
     body: string;
     type: string;
@@ -86,7 +89,31 @@ function statusIcon(status: string): string {
   return "";
 }
 
+function formatRelativeTime(iso: string, locale: string): string {
+  const d = new Date(iso);
+  const now = Date.now();
+  const diffMs = now - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return locale.startsWith("pt") ? "agora" : locale.startsWith("es") ? "ahora" : "now";
+  if (diffMin < 60) return `${diffMin}m`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH}h`;
+  return formatTime(iso, locale);
+}
+
+function mergeConversation(
+  list: ConversationRow[],
+  row: ConversationRow,
+): ConversationRow[] {
+  const idx = list.findIndex((c) => c.id === row.id);
+  if (idx === -1) return [row, ...list];
+  const next = [...list];
+  next[idx] = { ...next[idx], ...row };
+  return next;
+}
+
 export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId: string }) {
+  const searchParams = useSearchParams();
   const { lang, t } = useI18n();
   const locale = localeOf(lang);
 
@@ -104,9 +131,14 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
   const [listError, setListError] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [selectedFallback, setSelectedFallback] = useState<ConversationRow | null>(null);
+  const [deepLinkError, setDeepLinkError] = useState<string | null>(null);
+  const deepLinkHandled = useRef(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const selected = conversations.find((c) => c.id === selectedId) ?? null;
+  const selected =
+    conversations.find((c) => c.id === selectedId)
+    ?? (selectedFallback?.id === selectedId ? selectedFallback : null);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -164,8 +196,74 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const openConversationRow = useCallback((row: ConversationRow, draft?: string | null) => {
+    setSelectedId(row.id);
+    setSelectedFallback(row);
+    setConversations((prev) => mergeConversation(prev, row));
+    setSendError(null);
+    setMobileShowChat(true);
+    if (row.status === "closed") {
+      setStatusFilter("closed");
+      setAssignedFilter("all");
+    } else if (row.status === "open") {
+      setStatusFilter("all");
+    }
+    if (draft?.trim()) setComposer(draft.trim());
+  }, []);
+
+  useEffect(() => {
+    if (deepLinkHandled.current) return;
+
+    const conversationId = searchParams.get("conversation")?.trim();
+    const phone = searchParams.get("phone")?.trim();
+    const draft = searchParams.get("draft");
+    const displayName = searchParams.get("name")?.trim();
+    const patientProfileId = searchParams.get("patientProfileId")?.trim();
+
+    if (!conversationId && !phone) return;
+
+    deepLinkHandled.current = true;
+
+    void (async () => {
+      setDeepLinkError(null);
+      try {
+        if (conversationId) {
+          const res = await fetch(`/api/admin/whatsapp/conversations/${conversationId}`);
+          if (!res.ok) {
+            setDeepLinkError(t("admin.whatsapp.deepLinkNotFound"));
+            return;
+          }
+          const data = await res.json();
+          if (data.conversation) openConversationRow(data.conversation, draft);
+          return;
+        }
+
+        if (phone) {
+          const res = await fetch("/api/admin/whatsapp/conversations/open-by-phone", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              phone,
+              displayName: displayName || undefined,
+              patientProfileId: patientProfileId || undefined,
+            }),
+          });
+          if (!res.ok) {
+            setDeepLinkError(t("admin.whatsapp.deepLinkNotFound"));
+            return;
+          }
+          const data = await res.json();
+          if (data.conversation) openConversationRow(data.conversation, draft);
+        }
+      } catch {
+        setDeepLinkError(t("admin.whatsapp.deepLinkNotFound"));
+      }
+    })();
+  }, [openConversationRow, searchParams, t]);
+
   const selectConversation = (id: string) => {
     setSelectedId(id);
+    setSelectedFallback(null);
     setSendError(null);
     setMobileShowChat(true);
   };
@@ -307,8 +405,16 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
 
       <div className="flex-1 overflow-y-auto">
         {loadingList ? (
-          <div className="flex justify-center py-16">
-            <Loader2 size={24} className="animate-spin text-slate-400" />
+          <div className="divide-y divide-slate-50">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="px-4 py-3 flex gap-3 animate-pulse">
+                <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-slate-100 rounded w-2/3" />
+                  <div className="h-2.5 bg-slate-100 rounded w-full" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : listError ? (
           <p className="text-sm text-amber-700 px-4 py-8">{t("common.loadError")}</p>
@@ -335,7 +441,7 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-semibold text-sm text-slate-900 truncate">{label}</p>
                       <span className="text-[11px] text-slate-400 shrink-0">
-                        {formatTime(c.lastMessageAt, locale)}
+                        {formatRelativeTime(c.lastMessageAt, locale)}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 truncate mt-0.5">
@@ -370,8 +476,12 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
   const chatPanel = (
     <div className={`flex flex-col min-h-[70vh] ${mobileShowChat ? "flex" : "hidden md:flex"}`}>
       {!selected ? (
-        <div className="flex-1 flex items-center justify-center text-slate-400 text-sm p-8 text-center">
-          {t("admin.whatsapp.selectConversation")}
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center gap-3">
+          <div className="w-16 h-16 rounded-full bg-[#25D366]/10 flex items-center justify-center">
+            <MessageCircle size={28} className="text-[#128C7E]" />
+          </div>
+          <p className="text-sm font-medium text-slate-500">{t("admin.whatsapp.emptyInbox")}</p>
+          <p className="text-xs text-slate-400 max-w-xs">{t("admin.whatsapp.selectConversation")}</p>
         </div>
       ) : (
         <>
@@ -386,7 +496,20 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
               </button>
               <div className="min-w-0">
                 <p className="font-semibold text-slate-900 truncate">{conversationLabel(selected)}</p>
-                <p className="text-xs text-slate-500">{selected.waPhoneDisplay}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                  <p className="text-xs text-slate-500">{selected.waPhoneDisplay}</p>
+                  <span
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      selected.within24hWindow
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                        : "bg-amber-50 text-amber-800 border border-amber-100"
+                    }`}
+                  >
+                    {selected.within24hWindow
+                      ? t("admin.whatsapp.window24hActive")
+                      : t("admin.whatsapp.window24hExpired")}
+                  </span>
+                </div>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -429,10 +552,22 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/60">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#e5ddd5]/30">
             {loadingChat && messages.length === 0 ? (
-              <div className="flex justify-center py-16">
-                <Loader2 size={24} className="animate-spin text-slate-400" />
+              <div className="space-y-3 py-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}
+                  >
+                    <div className="h-12 w-48 rounded-2xl bg-white/70 animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="text-center py-12 px-4">
+                <p className="text-sm font-medium text-slate-600">{t("admin.whatsapp.noInboundYet")}</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">{t("admin.whatsapp.noInboundHint")}</p>
               </div>
             ) : (
               messages.map((m) => {
@@ -445,8 +580,8 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
                     <div
                       className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
                         outbound
-                          ? "bg-brand-50 border border-brand-100 text-slate-800"
-                          : "bg-white border border-slate-200 text-slate-800"
+                          ? "bg-[#dcf8c6] border border-[#c8e6b8] text-slate-800 rounded-br-md"
+                          : "bg-white border border-slate-200 text-slate-800 rounded-bl-md"
                       }`}
                     >
                       {m.type !== "text" && renderMediaChip(m.type)}
@@ -485,7 +620,18 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
             <div ref={chatEndRef} />
           </div>
 
-          <div className="border-t border-slate-200 bg-white p-4">
+          <div className="border-t border-slate-200 bg-white p-4 space-y-3">
+            {buildWhatsAppUrl(selected.waPhoneDisplay, "") && (
+              <a
+                href={buildWhatsAppUrl(selected.waPhoneDisplay, "")!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#128C7E] hover:text-[#0f6b5c]"
+              >
+                <ExternalLink size={12} />
+                {t("admin.whatsapp.openPersonalWhatsApp")}
+              </a>
+            )}
             {!selected.within24hWindow ? (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
                 <p className="font-semibold">{t("admin.whatsapp.outside24h")}</p>
@@ -530,6 +676,9 @@ export default function AdminWhatsAppInboxClient({ adminUserId }: { adminUserId:
           {t("admin.whatsapp.title")}
         </h1>
         <p className="text-slate-500 text-sm mt-1">{t("admin.whatsapp.subtitle")}</p>
+        {deepLinkError && (
+          <p className="text-sm text-amber-700 mt-2">{deepLinkError}</p>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden grid md:grid-cols-[320px_1fr] min-h-[70vh]">

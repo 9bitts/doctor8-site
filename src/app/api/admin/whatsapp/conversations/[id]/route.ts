@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/admin";
+import { loadWhatsAppConversationRowById } from "@/lib/admin/whatsapp-conversation-dto";
 import { createAuditLog } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { AuditAction } from "@prisma/client";
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const session = await getAdminSession();
+  if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const conversation = await loadWhatsAppConversationRowById(params.id);
+  if (!conversation) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ conversation });
+}
 
 const patchSchema = z.object({
   status: z.enum(["open", "closed"]).optional(),

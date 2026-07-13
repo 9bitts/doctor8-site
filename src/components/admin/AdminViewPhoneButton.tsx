@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Phone, Loader2, X, MessageCircle } from "lucide-react";
+import { Phone, Loader2, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { buildWhatsAppUrl } from "@/lib/humanitarian/angel-utils";
+import AdminContactWhatsAppActions from "@/components/admin/AdminContactWhatsAppActions";
 
 interface PhoneData {
   accountPhone: string | null;
@@ -48,9 +48,6 @@ export default function AdminViewPhoneButton({
   }
 
   const displayPhone = data?.profilePhone || data?.accountPhone || "";
-  const waUrl = displayPhone
-    ? buildWhatsAppUrl(displayPhone, whatsappMessage || "")
-    : null;
 
   return (
     <>
@@ -106,16 +103,12 @@ export default function AdminViewPhoneButton({
                       : t("admin.viewPhone.notVerified")}
                   </p>
                 )}
-                {waUrl && (
-                  <a
-                    href={waUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold hover:bg-[#20bd5a] transition"
-                  >
-                    <MessageCircle size={16} />
-                    {t("admin.viewPhone.whatsapp")}
-                  </a>
+                {displayPhone && (
+                  <AdminContactWhatsAppActions
+                    phone={displayPhone}
+                    whatsappMessage={whatsappMessage}
+                    onInboxClick={close}
+                  />
                 )}
               </div>
             ) : null}
