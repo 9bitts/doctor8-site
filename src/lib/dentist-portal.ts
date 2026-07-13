@@ -7,6 +7,7 @@ export const DENTIST_REGISTER =
   "/register/professional/signup?portal=dentist&profession=dentista";
 
 export const PROFESSIONAL_TO_DENTIST_PATHS: [string, string][] = [
+  ["/professional/como-usar", "/odontologo/como-usar"],
   ["/professional/settings/availability", "/odontologo/settings/availability"],
   ["/professional/settings", "/odontologo/settings"],
   ["/professional/patients", "/odontologo/patients"],

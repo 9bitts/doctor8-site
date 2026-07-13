@@ -225,6 +225,7 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
   {
     labelKey: "nav.group.education",
     items: [
+      { href: "/professional/como-usar", labelKey: "nav.comoUsar", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
       { href: "/professional/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/professional/courses", labelKey: "nav.courses", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
       { href: "/professional/courses/learn", labelKey: "nav.myCourses", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
@@ -285,6 +286,12 @@ export const PSYCHOLOGIST_NAV_GROUPS: PlatformNavGroup[] = [
     ],
   },
   {
+    labelKey: "nav.group.education",
+    items: [
+      { href: "/psychologist/como-usar", labelKey: "nav.comoUsar", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
+    ],
+  },
+  {
     labelKey: "nav.group.accountMore",
     items: [
       { href: "/psychologist/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
@@ -326,6 +333,12 @@ export const NUTRITIONIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/nutricionista/research", labelKey: "nav.research", roles: ["PROFESSIONAL"], iconKey: "Microscope" },
       { href: "/nutricionista/diario", labelKey: "nutri.mod.foodDiary.title", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/nutricionista/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.education",
+    items: [
+      { href: "/nutricionista/como-usar", labelKey: "nav.comoUsar", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
     ],
   },
   {
@@ -375,6 +388,12 @@ export const NURSE_NAV_GROUPS: PlatformNavGroup[] = [
     ],
   },
   {
+    labelKey: "nav.group.education",
+    items: [
+      { href: "/enfermeiro/como-usar", labelKey: "nav.comoUsar", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
+    ],
+  },
+  {
     labelKey: "nav.group.accountMore",
     items: [
       { href: "/enfermeiro/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
@@ -418,6 +437,12 @@ export const PHARMACIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/farmaceutico/dispensacao", labelKey: "pharma.mod.dispensing.title", roles: ["PROFESSIONAL"], iconKey: "Shield" },
       { href: "/farmaceutico/interacoes", labelKey: "pharma.mod.interactions.title", roles: ["PROFESSIONAL"], iconKey: "FlaskConical" },
       { href: "/farmaceutico/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.education",
+    items: [
+      { href: "/farmaceutico/como-usar", labelKey: "nav.comoUsar", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
     ],
   },
   {
@@ -470,6 +495,12 @@ export const DENTIST_NAV_GROUPS: PlatformNavGroup[] = [
     ],
   },
   {
+    labelKey: "nav.group.education",
+    items: [
+      { href: "/odontologo/como-usar", labelKey: "nav.comoUsar", roles: ["PROFESSIONAL"], iconKey: "GraduationCap" },
+    ],
+  },
+  {
     labelKey: "nav.group.accountMore",
     items: [
       { href: "/odontologo/financeiro", labelKey: "nav.financeiro", roles: ["PROFESSIONAL"], iconKey: "TrendingUp" },
@@ -508,6 +539,12 @@ export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/psychoanalyst/resources", labelKey: "nav.library", roles: ["PSYCHOANALYST"], iconKey: "BookOpen" },
       { href: "/psychoanalyst/research", labelKey: "nav.research", roles: ["PSYCHOANALYST"], iconKey: "Microscope" },
       { href: "/psychoanalyst/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PSYCHOANALYST"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.education",
+    items: [
+      { href: "/psychoanalyst/como-usar", labelKey: "nav.comoUsar", roles: ["PSYCHOANALYST"], iconKey: "GraduationCap" },
     ],
   },
   {
@@ -550,6 +587,12 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/integrative-therapist/chas-medicinais", labelKey: "nav.medicinalTeas", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "FlaskConical" },
       { href: "/integrative-therapist/research", labelKey: "nav.research", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Microscope" },
       { href: "/integrative-therapist/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Video" },
+    ],
+  },
+  {
+    labelKey: "nav.group.education",
+    items: [
+      { href: "/integrative-therapist/como-usar", labelKey: "nav.comoUsar", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "GraduationCap" },
     ],
   },
   {

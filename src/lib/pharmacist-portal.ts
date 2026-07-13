@@ -7,6 +7,7 @@ export const PHARMACIST_REGISTER =
   "/register/professional/signup?portal=pharmacist&profession=farmaceutico";
 
 export const PROFESSIONAL_TO_PHARMACIST_PATHS: [string, string][] = [
+  ["/professional/como-usar", "/farmaceutico/como-usar"],
   ["/professional/settings/availability", "/farmaceutico/settings/availability"],
   ["/professional/settings", "/farmaceutico/settings"],
   ["/professional/patients", "/farmaceutico/patients"],

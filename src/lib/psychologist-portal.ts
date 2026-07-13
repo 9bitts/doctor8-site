@@ -38,6 +38,7 @@ export const PROFESSIONAL_TO_PSYCHOLOGIST_PATHS: [string, string][] = [
   ["/professional/psychology/scales", "/psychologist/scales"],
   ["/professional/psychology/sessions", "/psychologist/sessions"],
   ["/professional/psychology", "/psychologist"],
+  ["/professional/como-usar", "/psychologist/como-usar"],
   ["/professional/settings/availability", "/psychologist/settings/availability"],
   ["/professional/settings", "/psychologist/settings"],
   ["/professional/patients", "/psychologist/patients"],

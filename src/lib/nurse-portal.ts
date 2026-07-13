@@ -7,6 +7,7 @@ export const NURSE_REGISTER =
   "/register/professional/signup?portal=nurse&profession=enfermeiro";
 
 export const PROFESSIONAL_TO_NURSE_PATHS: [string, string][] = [
+  ["/professional/como-usar", "/enfermeiro/como-usar"],
   ["/professional/settings/availability", "/enfermeiro/settings/availability"],
   ["/professional/settings", "/enfermeiro/settings"],
   ["/professional/patients", "/enfermeiro/patients"],

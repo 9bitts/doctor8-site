@@ -11,6 +11,7 @@ export type ProfessionalPortalBase = "/nutricionista" | "/professional" | "/psyc
 
 /** Longest-prefix map from /professional/* to /nutricionista/* (order matters). */
 export const PROFESSIONAL_TO_NUTRITIONIST_PATHS: [string, string][] = [
+  ["/professional/como-usar", "/nutricionista/como-usar"],
   ["/professional/settings/availability", "/nutricionista/settings/availability"],
   ["/professional/settings", "/nutricionista/settings"],
   ["/professional/patients", "/nutricionista/patients"],
