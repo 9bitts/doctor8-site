@@ -23,6 +23,7 @@ import { buildWhatsAppUrl } from "@/lib/humanitarian/angel-utils";
 import type { AngelRiskSummary } from "@/lib/humanitarian/angel-risk-summary";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import AngelOnboardingTimeline from "@/components/humanitarian/AngelOnboardingTimeline";
+import AngelWellbeingPrompt from "@/components/humanitarian/AngelWellbeingPrompt";
 import type { AngelOnboardingStep } from "@/lib/humanitarian/angel-onboarding";
 import HumanitarianFlowStepper from "@/components/humanitarian/HumanitarianFlowStepper";
 import { isHumanitarianPhoneGateEnabled } from "@/lib/humanitarian/feature-flags";
@@ -907,6 +908,7 @@ export default function AngelFollowUpClient() {
           </div>
         </div>
       )}
+      <AngelWellbeingPrompt />
     </div>
   );
 }

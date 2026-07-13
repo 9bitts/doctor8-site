@@ -9,6 +9,7 @@ import HumanitarianIntakesPanel from "@/components/humanitarian/HumanitarianInta
 import HumanitarianAngelsAdminPanel from "@/components/humanitarian/HumanitarianAngelsAdminPanel";
 import AngelTrainingRequirementsPanel from "@/components/humanitarian/AngelTrainingRequirementsPanel";
 import HumanitarianMissionsAdminPanel from "@/components/humanitarian/HumanitarianMissionsAdminPanel";
+import HumanitarianAngelCoordinationPanel from "@/components/humanitarian/HumanitarianAngelCoordinationPanel";
 import AcuraVolunteersAdminPanel from "@/components/admin/AcuraVolunteersAdminPanel";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
@@ -272,6 +273,7 @@ export default function AdminHumanitarianPage() {
       <AcuraVolunteersAdminPanel />
       <AngelTrainingRequirementsPanel />
       <HumanitarianMissionsAdminPanel />
+      <HumanitarianAngelCoordinationPanel />
       <HumanitarianAngelsAdminPanel />
     </div>
   );

@@ -5,7 +5,7 @@ import Link from "next/link";
 import ShareHistoryPrompt from "@/components/ShareHistoryPrompt";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, type Lang } from "@/lib/i18n/translations";
-import { getProfessionLabel } from "@/lib/professions";
+import { getProfessionLabel, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { formatPatientProviderDisplayName } from "@/lib/profession-label";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import {
@@ -149,7 +149,7 @@ export default function VolunteerAppointmentsClient() {
     return false;
   }
 
-  async function openProfessional(pro: VolunteerProfessional) {
+  async function openProfessional(pro: VolunteerProfessional, preselectSlot?: string) {
     setSelectedPro(pro);
     setStep("slots");
     setSelectedSlot("");
@@ -169,13 +169,63 @@ export default function VolunteerAppointmentsClient() {
       const data = await res.json();
       const days = filterDaysForScheduledVolunteerBooking(data.days || []);
       setSlots(days);
-      if (days.length > 0) setSelectedDay(days[0]);
+      if (days.length === 0) return;
+
+      if (preselectSlot) {
+        const dayWithSlot = days.find((day) =>
+          day.slots.some((s) => s.datetime === preselectSlot && s.available),
+        );
+        if (dayWithSlot) {
+          setSelectedDay(dayWithSlot);
+          setSelectedSlot(preselectSlot);
+          return;
+        }
+      }
+      setSelectedDay(days[0]);
     } catch {
       setError(t("volAppt.err.loadSlots"));
     } finally {
       setSlotsLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined" || selectedPro) return;
+    const params = new URLSearchParams(window.location.search);
+    const proId = params.get("pro");
+    if (!proId) return;
+
+    const providerType = (params.get("providerType") || "health") as VolunteerProfessional["providerType"];
+    const preselectSlot = params.get("slot") || undefined;
+
+    const listed = professionals.find((p) => p.id === proId && p.providerType === providerType);
+    if (listed) {
+      void openProfessional(listed, preselectSlot);
+      return;
+    }
+
+    if (!loading) {
+      const stub: VolunteerProfessional = {
+        id: proId,
+        providerType,
+        firstName: "",
+        lastName: "",
+        specialty:
+          providerType === "psychoanalyst"
+            ? PSYCHOANALYSIS_SPECIALTY
+            : providerType === "integrative"
+              ? "Terapia integrativa"
+              : "",
+        avatarUrl: null,
+        bio: null,
+        acceptsTeleconsult: true,
+        acceptsInPerson: true,
+        upcomingSlots: [],
+      };
+      void openProfessional(stub, preselectSlot);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionals, loading]);
 
   function goToConfirm() {
     if (!selectedSlot) return;

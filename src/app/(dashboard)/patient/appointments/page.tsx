@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import AppointmentsAnchorScroll from "@/components/AppointmentsAnchorScroll";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf, formatSlotCount, Lang } from "@/lib/i18n/translations";
@@ -107,6 +107,7 @@ export default function AppointmentsPage() {
   const locale = localeOf(lang);
   const userTz = useUserTimeZone();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const highlightApptId = searchParams.get("id");
   const eapMode = searchParams.get("eap") === "1";
 
@@ -272,10 +273,23 @@ export default function AppointmentsPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
+    const from = params.get("from");
+    const legacyPublicVolunteer =
+      params.get("volunteersOnly") === "1" &&
+      (from === "public_profile" || from === "public_search" || from === "public_embed");
+    if (legacyPublicVolunteer) {
+      const redirect = new URLSearchParams();
+      for (const key of ["pro", "providerType", "slot", "from"] as const) {
+        const value = params.get(key);
+        if (value) redirect.set(key, value);
+      }
+      router.replace(`/patient/volunteer-appointments?${redirect.toString()}`);
+      return;
+    }
     if (params.get("volunteersOnly") === "1") {
       setVolunteersOnly(true);
     }
-  }, []);
+  }, [router]);
 
   // Deep link: /patient/appointments?pro=ID&providerType=...&slot=...&from=public_profile
   useEffect(() => {
@@ -504,7 +518,8 @@ export default function AppointmentsPage() {
         planSlug && planSlug !== "particular"
           ? `&healthPlan=${encodeURIComponent(planSlug)}`
           : "";
-      const volunteerParam = volunteersOnly ? "&volunteer=1" : "";
+      // Acura volunteer filter uses paid-mode volunteerOnly slots (not P8b ?volunteer=1).
+      const volunteerParam = "";
       const slotsRes = await fetch(
         `/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${providerType}${planParam}${volunteerParam}`
       );

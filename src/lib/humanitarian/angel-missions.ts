@@ -1,3 +1,4 @@
+// Onda 4+: PROJETO missions (text application + coordinator review) are planned — not in schema yet.
 import { randomBytes } from "crypto";
 import type {
   AngelAvailabilityStatus,

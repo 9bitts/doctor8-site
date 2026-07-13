@@ -3657,6 +3657,7 @@ model HumanitarianCampaign {
   angelAssignments         HumanitarianAngelAssignment[]
   volunteerOnlineAlerts    HumanitarianVolunteerOnlineAlert[]
   angelMissions            AngelMission[]
+  angelAnnouncements       AngelAnnouncement[]
 
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
@@ -3863,6 +3864,8 @@ model AngelProfile {
   hourLogs         AngelHourLog[]
   milestones       AngelMilestone[]
   volunteerCertificate AngelVolunteerCertificate?
+  wellbeingCheckins AngelWellbeingCheckin[]
+  supervisionNotes  AngelSupervisionNote[]
 
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
@@ -3992,6 +3995,42 @@ model AngelVolunteerCertificate {
   periodStart   DateTime?
   periodEnd     DateTime?
   issuedAt      DateTime     @default(now())
+}
+
+model AngelAnnouncement {
+  id          String               @id @default(cuid())
+  campaignId  String?
+  campaign    HumanitarianCampaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  track       AngelTrack?
+  title       String
+  body        String
+  createdById String
+  publishedAt DateTime?
+  createdAt   DateTime             @default(now())
+
+  @@index([campaignId, track])
+}
+
+model AngelWellbeingCheckin {
+  id        String       @id @default(cuid())
+  profileId String
+  profile   AngelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  score     Int
+  note      String?
+  createdAt DateTime     @default(now())
+
+  @@index([profileId, createdAt])
+}
+
+model AngelSupervisionNote {
+  id        String       @id @default(cuid())
+  profileId String
+  profile   AngelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  authorId  String
+  note      String
+  createdAt DateTime     @default(now())
+
+  @@index([profileId, createdAt])
 }
 
 model HumanitarianAngel {

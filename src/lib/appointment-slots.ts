@@ -44,7 +44,9 @@ export function filterDaysForScheduledVolunteerBooking(days: DaySlots[]): DaySlo
 }
 
 export function dayHasVolunteerSlots(days: DaySlots[]): boolean {
-  return days.some((day) => day.slots.some((s) => s.available && s.volunteerOnly));
+  return days.some((day) =>
+    day.slots.some((s) => s.available && (s.volunteerOnly || s.isVolunteer)),
+  );
 }
 
 /** CSS classes for patient slot picker buttons. Volunteer slots use green; regular use emerald. */

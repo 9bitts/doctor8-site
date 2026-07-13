@@ -126,12 +126,7 @@ function monthStart(): Date {
 }
 
 export async function checkAndAwardMilestones(profileId: string, userId: string): Promise<string[]> {
-  const [totalPatients, missions, minutesAgg, existing] = await Promise.all([
-    db.humanitarianAngelAssignment.findMany({
-      where: { angelUserId: userId, active: true },
-      select: { patientUserId: true },
-      distinct: ["patientUserId"],
-    }),
+  const [missions, minutesAgg, existing, totalPatients] = await Promise.all([
     db.angelMissionSignup.count({
       where: { profileId, status: { in: ["ATTENDED", "COMPLETED"] } },
     }),
@@ -143,13 +138,12 @@ export async function checkAndAwardMilestones(profileId: string, userId: string)
       where: { profileId },
       select: { key: true },
     }),
+    db.humanitarianAngelAssignment.findMany({
+      where: { angelUserId: userId },
+      select: { patientUserId: true },
+      distinct: ["patientUserId"],
+    }),
   ]);
-
-  const totalPatients = await db.humanitarianAngelAssignment.findMany({
-    where: { angelUserId: userId },
-    select: { patientUserId: true },
-    distinct: ["patientUserId"],
-  });
 
   const hours = Math.floor((minutesAgg._sum.minutes ?? 0) / 60);
   const have = new Set(existing.map((e) => e.key));

@@ -16,6 +16,7 @@ import {
   type AngelOnboardingStep,
 } from "@/lib/humanitarian/angel-onboarding";
 import { resolveAngelClaimLimit } from "@/lib/humanitarian/angel-profile";
+import type { Lang } from "@/lib/i18n/translations";
 
 function volunteerLang(req: NextRequest): Lang {
   const raw = new URL(req.url).searchParams.get("lang");

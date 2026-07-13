@@ -96,8 +96,25 @@ function formatLocation(city: string | null | undefined, state: string | null | 
   return parts.length ? parts.join(", ") : null;
 }
 
-function buildBookingUrl(publicPath: string): string {
-  return `${APP_BASE_URL}${publicPath}?volunteer=1`;
+function buildAcuraBookingUrl(
+  providerId: string,
+  providerType: AcuraVolunteerDirectoryEntry["providerType"],
+): string {
+  if (providerType === "integrative") {
+    const params = new URLSearchParams({
+      pro: providerId,
+      providerType: "integrative",
+      from: "acura_directory",
+    });
+    return `${APP_BASE_URL}/patient/volunteer-appointments?${params.toString()}`;
+  }
+  const params = new URLSearchParams({
+    volunteersOnly: "1",
+    pro: providerId,
+    providerType,
+    from: "acura_directory",
+  });
+  return `${APP_BASE_URL}/patient/appointments?${params.toString()}`;
 }
 
 async function mapHealthCard(
@@ -163,7 +180,7 @@ async function mapHealthCard(
     location: formatLocation(p.clinicCity, p.clinicState),
     publicPath,
     publicUrl: buildPublicProfileUrl({ specialtySlug, citySlug, slug: card.slug }),
-    bookingUrl: buildBookingUrl(publicPath),
+    bookingUrl: buildAcuraBookingUrl(p.id, providerType),
     volunteerBadge: true,
     doctor8: true,
     initials: initialsFromName(name),
@@ -225,7 +242,7 @@ async function mapPsychoanalystCard(
     location: formatLocation(p.clinicCity, p.clinicState),
     publicPath,
     publicUrl: buildPublicProfileUrl({ specialtySlug, citySlug, slug: card.slug }),
-    bookingUrl: buildBookingUrl(publicPath),
+    bookingUrl: buildAcuraBookingUrl(p.id, providerType),
     volunteerBadge: true,
     doctor8: true,
     initials: initialsFromName(name),
@@ -286,7 +303,7 @@ async function mapIntegrativeCard(
     location: formatLocation(p.clinicCity, p.clinicState),
     publicPath,
     publicUrl: buildPublicProfileUrl({ specialtySlug, citySlug, slug: card.slug }),
-    bookingUrl: buildBookingUrl(publicPath),
+    bookingUrl: buildAcuraBookingUrl(p.id, providerType),
     volunteerBadge: true,
     doctor8: true,
     initials: initialsFromName(name),

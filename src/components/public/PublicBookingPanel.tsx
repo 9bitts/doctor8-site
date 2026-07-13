@@ -150,16 +150,17 @@ export default function PublicBookingPanel({
       ? t("consultServices.volunteerPrice")
       : fmtPrice(displayPriceCents, displayCurrency, locale);
 
+  const bookBasePath = volunteerMode ? "/patient/volunteer-appointments" : "/patient/appointments";
   const bookParams = new URLSearchParams({
     pro: profile.providerId,
     providerType: profile.providerType,
     from: bookingFrom,
     ...(selectedSlot ? { slot: selectedSlot } : {}),
-    ...(selectedServiceId ? { service: selectedServiceId } : {}),
-    ...(volunteerMode ? { volunteersOnly: "1" } : {}),
+    ...(selectedServiceId && !volunteerMode ? { service: selectedServiceId } : {}),
   });
-  const loginUrl = `/login?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
-  const registerUrl = `/register?callbackUrl=${encodeURIComponent(`/patient/appointments?${bookParams.toString()}`)}`;
+  const bookCallback = `${bookBasePath}?${bookParams.toString()}`;
+  const loginUrl = `/login?callbackUrl=${encodeURIComponent(bookCallback)}`;
+  const registerUrl = `/register?callbackUrl=${encodeURIComponent(bookCallback)}`;
 
   const shellClass = embed
     ? "space-y-3"
@@ -274,7 +275,7 @@ export default function PublicBookingPanel({
         <ChevronRight size={16} />
       </Link>
 
-      <MagicLinkBookForm callbackUrl={`/patient/appointments?${bookParams.toString()}`} />
+      <MagicLinkBookForm callbackUrl={bookCallback} />
 
       <p className="text-center text-xs text-slate-400">
         {t("pub.noAccount")}{" "}
