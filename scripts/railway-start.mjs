@@ -77,6 +77,7 @@ function recoverMigrations() {
   }
 }
 
+console.log("[start] Doctor8 production boot...");
 console.log("[start] Running prisma migrate deploy...");
 let code = migrateDeploy();
 

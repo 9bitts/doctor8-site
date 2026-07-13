@@ -11,7 +11,8 @@
       "next.config.js",
       "tsconfig.json",
       "tailwind.config.ts",
-      "postcss.config.js"
+      "postcss.config.js",
+      "railway.json"
     ]
   }
 }
