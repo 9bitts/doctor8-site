@@ -20,7 +20,7 @@ import HumanitarianLangSwitcher from "@/components/humanitarian/HumanitarianLang
 import { translate, Lang } from "@/lib/i18n/translations";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import { HUMANITARIAN_PATIENT_HOME } from "@/lib/humanitarian/patient-identity";
-import "../../atendimentohumanitario/portal.css";
+import "@/app/atendimentohumanitario/portal.css";
 
 type NavItem = {
   href: string;
