@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import {
   Layers, Stethoscope, Users, CreditCard, Radio, Heart, ShoppingBag, Plug, ScrollText, PieChart,
   Building2, Pill, FlaskConical, BookOpen, UserCog, Loader2, AlertTriangle, Lock, Clock, Megaphone,
-  Sparkles, Globe,
+  Sparkles, Globe, MessageCircle,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { AdminOverviewStats } from "@/lib/admin/admin-overview";
@@ -21,6 +21,7 @@ const LINK_GROUPS: LinkGroup[] = [
     items: [
       { href: "/admin/users", labelKey: "nav.adminUsers", icon: UserCog },
       { href: "/admin/patients", labelKey: "nav.adminPatients", icon: Users },
+      { href: "/admin/mensagens", labelKey: "nav.adminMessages", icon: MessageCircle },
       { href: "/admin/doctors", labelKey: "nav.adminDoctors", icon: Stethoscope },
       { href: "/admin/medicos-ocupacionais", labelKey: "nav.adminOccupational", icon: Stethoscope },
       { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", icon: Heart },

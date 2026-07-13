@@ -45,7 +45,8 @@ export type NavIconKey =
   | "PieChart"
   | "Video"
   | "GraduationCap"
-  | "QrCode";
+  | "QrCode"
+  | "MessageCircle";
 
 export type PlatformNavEntry = {
   href: string;
@@ -626,6 +627,7 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
   { href: "/admin/medicos-ocupacionais", labelKey: "nav.adminOccupational", roles: ["ADMIN"], iconKey: "Stethoscope" },
   { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ADMIN"], iconKey: "Users" },
+  { href: "/admin/mensagens", labelKey: "nav.adminMessages", roles: ["ADMIN"], iconKey: "MessageCircle" },
   { href: "/admin/empresas", labelKey: "nav.adminEmployers", roles: ["ADMIN"], iconKey: "Building2" },
   { href: "/admin/clinicas", labelKey: "nav.adminClinics", roles: ["ADMIN"], iconKey: "Building2" },
   { href: "/admin/farmacias", labelKey: "nav.adminPharmacies", roles: ["ADMIN"], iconKey: "Pill" },
@@ -651,6 +653,7 @@ export const ADMIN_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/admin", labelKey: "admin.home.title", roles: ["ADMIN"], iconKey: "Shield" },
       { href: "/admin/users", labelKey: "nav.adminUsers", roles: ["ADMIN"], iconKey: "UserCog" },
       { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ADMIN"], iconKey: "Users" },
+  { href: "/admin/mensagens", labelKey: "nav.adminMessages", roles: ["ADMIN"], iconKey: "MessageCircle" },
       { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
       { href: "/admin/medicos-ocupacionais", labelKey: "nav.adminOccupational", roles: ["ADMIN"], iconKey: "Stethoscope" },
       { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", roles: ["ADMIN"], iconKey: "Heart" },

@@ -479,3 +479,62 @@ export async function sendHumanitarianYourTurnWhatsApp(opts: {
   await logWhatsAppDelivery({ messageId, template: templateName, phone: to, status: "sent" });
   return { ok: true, messageId, waMeUrl };
 }
+
+/** Free-form text message within the 24h customer care window. */
+export async function sendWhatsAppText(opts: {
+  toPhone: string;
+  body: string;
+}): Promise<{ ok: boolean; waMessageId?: string; error?: string }> {
+  if (!isWhatsAppConfigured()) {
+    return { ok: false, error: "WhatsApp not configured" };
+  }
+
+  const token = process.env.WHATSAPP_ACCESS_TOKEN!.trim();
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!.trim();
+  const to = normalizeWhatsAppPhone(opts.toPhone);
+  if (!to) return { ok: false, error: "Invalid phone number" };
+
+  const body = opts.body.trim().slice(0, 4096);
+  if (!body) return { ok: false, error: "Empty message" };
+
+  const res = await fetch(
+    `https://graph.facebook.com/${WHATSAPP_GRAPH_VERSION}/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "text",
+        text: { body },
+      }),
+    },
+  );
+
+  const data = (await res.json().catch(() => ({}))) as {
+    messages?: { id: string }[];
+    error?: { message?: string };
+  };
+
+  if (!res.ok) {
+    console.error("[WHATSAPP] Text send failed:", data.error?.message || `HTTP ${res.status}`);
+    await logWhatsAppDelivery({
+      phone: to,
+      status: "failed",
+      detail: data?.error?.message || `HTTP ${res.status}`,
+    });
+    return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
+  }
+
+  const waMessageId = data.messages?.[0]?.id;
+  await logWhatsAppDelivery({
+    messageId: waMessageId,
+    phone: to,
+    status: "sent",
+  });
+  return { ok: true, waMessageId };
+}
