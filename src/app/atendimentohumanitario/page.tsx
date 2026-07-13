@@ -19,6 +19,7 @@ import {
 import HumanitarianOriginMarker from "@/components/humanitarian/HumanitarianOriginMarker";
 import VenezuelaFlagBackdrop from "@/components/humanitarian/VenezuelaFlagBackdrop";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import "./portal.css";
 
 type PortalMode = "register" | "login";
 
@@ -113,18 +114,10 @@ const URGENCY_OPTIONS: {
   },
 ];
 
-const inputClass =
-  "w-full px-3.5 py-3 border-[1.5px] border-[#e6e9ee] rounded-xl text-sm text-[#1b2733] bg-[#fbfcfd] placeholder:text-[#9aa5b1] focus:outline-none focus:border-[#1c86ab] focus:bg-white focus:ring-4 focus:ring-[#1c86ab]/12 transition";
+const inputClass = "hum-portal-input";
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 mt-6 mb-3 first:mt-0">
-      <span className="text-xs font-bold uppercase tracking-wider text-[#125e7c] shrink-0">
-        {children}
-      </span>
-      <span className="flex-1 h-px bg-gradient-to-r from-[#e6e9ee] to-transparent" />
-    </div>
-  );
+  return <div className="hum-portal-section-label">{children}</div>;
 }
 
 function FieldLabel({
@@ -135,9 +128,9 @@ function FieldLabel({
   optional?: boolean;
 }) {
   return (
-    <label className="block text-[13px] font-semibold text-[#3a4652] mb-1.5">
+    <label className="hum-portal-field-label">
       {children}
-      {optional && <span className="font-normal text-[#64748b] text-xs ml-1">(opcional)</span>}
+      {optional && <span style={{ fontWeight: 400, color: "#64748b", fontSize: "0.75rem" }}> (opcional)</span>}
     </label>
   );
 }
@@ -154,25 +147,24 @@ function RadioChoice({
   tone?: "urgent" | "priority";
 }) {
   const toneClass =
-    tone === "urgent" && checked
-      ? "border-[#d64545] bg-[#d64545]/[0.06] shadow-[0_0_0_3px_rgba(214,69,69,0.08)]"
-      : tone === "priority" && checked
-        ? "border-[#e08a1f] bg-[#e08a1f]/[0.07] shadow-[0_0_0_3px_rgba(224,138,31,0.08)]"
-        : checked
-          ? "border-[#1c86ab] bg-[#1c86ab]/[0.06] shadow-[0_0_0_3px_rgba(23,106,136,0.08)]"
-          : "border-[#e6e9ee] bg-[#fbfcfd] hover:border-[#c7d3db]";
+    tone === "urgent"
+      ? "hum-portal-choice-urgent"
+      : tone === "priority"
+        ? "hum-portal-choice-priority"
+        : "";
 
   return (
     <label
-      className={`flex items-start gap-2.5 border-[1.5px] rounded-xl px-3.5 py-2.5 cursor-pointer transition ${toneClass}`}
+      className={`hum-portal-choice ${toneClass} ${checked ? "hum-portal-choice-checked" : ""}`}
     >
       <input
         type="radio"
         checked={checked}
         onChange={onSelect}
-        className={`mt-0.5 shrink-0 ${tone === "urgent" ? "accent-[#d64545]" : tone === "priority" ? "accent-[#e08a1f]" : "accent-[#176a88]"}`}
+        className="mt-0.5 shrink-0"
+        style={{ accentColor: tone === "urgent" ? "#d64545" : tone === "priority" ? "#e08a1f" : "#176a88" }}
       />
-      <span className="text-[13.5px] text-[#1b2733] leading-snug">{children}</span>
+      <span className="hum-portal-choice-text">{children}</span>
     </label>
   );
 }
@@ -334,48 +326,37 @@ export default function HumanitarianPatientPortalPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-start justify-center px-5 py-14">
+    <div className="hum-portal-page">
       <VenezuelaFlagBackdrop />
       <HumanitarianOriginMarker returnPath={callbackUrl} />
 
-      <div className="relative z-10 w-full max-w-[560px]">
+      <div className="hum-portal-wrap">
         <div className="flex items-center justify-center gap-2.5 mb-5">
           <BrandLogo variant="on-dark" size="sm" />
         </div>
 
-        <div className="relative overflow-hidden rounded-[28px] border border-white/50 bg-white/[0.97] p-8 sm:p-10 shadow-[0_40px_90px_-20px_rgba(0,0,0,.55),0_12px_30px_-10px_rgba(0,0,0,.4)] backdrop-blur-[18px]">
-          <div
-            className="absolute inset-x-0 top-0 h-1.5"
-            style={{ background: "linear-gradient(90deg, #FBD108, #00247D, #CF142B)" }}
-          />
-
-          <div className="flex justify-center mb-3.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f3d698] bg-gradient-to-br from-[#fdf1da] to-white px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-wide text-[#e0940a]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#CF142B] shadow-[0_0_0_3px_rgba(207,20,43,.15)]" />
+        <div className="hum-portal-card">
+          <div className="flex justify-center mb-3.5 pt-1">
+            <span className="hum-portal-badge">
+              <span className="hum-portal-badge-dot" />
               SOS Venezuela · Atendimento gratuito
             </span>
           </div>
 
-          <h1 className="text-center text-[27px] font-extrabold tracking-tight text-[#0d4a61] mb-2">
-            Atendimento Humanitário
-          </h1>
-          <p className="text-center text-[14.5px] leading-relaxed text-[#64748b] mb-6 px-2">
+          <h1 className="hum-portal-title">Atendimento Humanitário</h1>
+          <p className="hum-portal-subtitle">
             {mode === "register"
               ? "Preencha os dados abaixo para entrar na triagem e acompanhar seu atendimento."
               : "Entre com seu e-mail e senha para continuar no painel humanitário."}
           </p>
 
-          <div className="flex gap-1 rounded-[14px] bg-[#f1f4f7] p-1 mb-7">
+          <div className="hum-portal-tabs">
             {(["register", "login"] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => { setMode(tab); setError(""); }}
-                className={`flex-1 rounded-[11px] py-2.5 text-[13.5px] font-semibold transition ${
-                  mode === tab
-                    ? "bg-gradient-to-br from-[#176a88] to-[#0d4a61] text-white shadow-[0_8px_18px_-6px_rgba(23,106,136,.55)]"
-                    : "text-[#64748b] hover:text-[#1b2733]"
-                }`}
+                className={`hum-portal-tab ${mode === tab ? "hum-portal-tab-active" : ""}`}
               >
                 {tab === "register" ? "Criar conta" : "Entrar"}
               </button>
@@ -440,11 +421,7 @@ export default function HumanitarianPatientPortalPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-5 w-full rounded-[14px] border-none py-[15px] text-[15px] font-bold text-[#3a2405] disabled:opacity-50 transition hover:-translate-y-px active:translate-y-0"
-                style={{
-                  background: "linear-gradient(135deg, #ffd257, #f2a71b 55%, #e0940a)",
-                  boxShadow: "0 16px 30px -10px rgba(224,148,10,.55), inset 0 1px 0 rgba(255,255,255,.5)",
-                }}
+                className="hum-portal-submit"
               >
                 {loading ? "Entrando..." : "Entrar no painel"}
               </button>
@@ -655,7 +632,7 @@ export default function HumanitarianPatientPortalPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2.5 my-5">
+              <div className="flex flex-col gap-2.5 my-5 hum-portal-consent">
                 <label className="flex items-start gap-2 text-[12.5px] leading-relaxed text-[#64748b]">
                   <input
                     type="checkbox"
@@ -709,16 +686,12 @@ export default function HumanitarianPatientPortalPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-[14px] border-none py-[15px] text-[15px] font-bold text-[#3a2405] disabled:opacity-50 transition hover:-translate-y-px active:translate-y-0"
-                style={{
-                  background: "linear-gradient(135deg, #ffd257, #f2a71b 55%, #e0940a)",
-                  boxShadow: "0 16px 30px -10px rgba(224,148,10,.55), inset 0 1px 0 rgba(255,255,255,.5)",
-                }}
+                className="hum-portal-submit"
               >
                 {loading ? "Enviando..." : "Enviar e entrar no painel"}
               </button>
 
-              <div className="mt-5 flex justify-center gap-4 border-t border-[#e6e9ee] pt-4">
+              <div className="mt-5 flex flex-wrap justify-center gap-4 border-t border-[#e6e9ee] pt-4">
                 {["LGPD", "HIPAA", "Dados protegidos"].map((item) => (
                   <span key={item} className="flex items-center gap-1.5 text-[11px] font-semibold text-[#64748b]">
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e7f1f5] text-[10px] text-[#176a88]">
@@ -732,7 +705,7 @@ export default function HumanitarianPatientPortalPage() {
           )}
         </div>
 
-        <p className="mt-5 text-center text-xs leading-relaxed text-white/70">
+        <p className="hum-portal-footnote">
           Doctor8 — Plataforma de Saúde Segura · Teleconsulta com especialistas
         </p>
       </div>

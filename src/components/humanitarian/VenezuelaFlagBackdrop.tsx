@@ -1,7 +1,7 @@
 /** Decorative Venezuela tricolor backdrop for humanitarian patient portal. */
 export default function VenezuelaFlagBackdrop() {
   return (
-    <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden">
+    <div aria-hidden className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
       <div
         className="absolute inset-0 scale-[1.03] blur-[2px] saturate-[1.05]"
         style={{
